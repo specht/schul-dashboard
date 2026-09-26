@@ -22,8 +22,9 @@
 </style>
 
 <script>
-
 #{(teacher_logged_in? && File.exist?('/data/sitzplan/seats.js')) ? File.read('/data/sitzplan/seats.js') : 'var seats_dict = {};'}
+</script>
+<script>
 
 document.addEventListener('DOMContentLoaded', function() {
     install_clipboard_handler('.btn-clipboard');
@@ -144,26 +145,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     if ('#{teacher_logged_in?}' === 'true') {
-        if (Object.keys(seats_dict).length > 0) {
-            let first_room = true;
+        {
             let n = #{(@@schueler_for_klasse[klasse] || []).size};
-            console.log(n);
             let rooms_for_klasse = #{(@@rooms_for_klasse[klasse] || []).to_a.to_json};
-            console.log(rooms_for_klasse);
-            for (let raum of Object.keys(seats_dict)) {
-                if (rooms_for_klasse.indexOf(raum) >= 0) {
-                    if (n <= seats_dict[raum].length) {
-                        if (first_room) {
-                            $(`<hr>`).appendTo('#additional_teacher_content');
-                            $(`<h3>`).text('Sitzplan').appendTo('#additional_teacher_content');
-                            first_room = false;
-                        }
-                        let group = $(`<span>`).css('display', 'inline-block').css('margin', '0 0.6em 0.3em 0');
-                        $(`<a>`).text(`Raum ${raum}`).attr('href', `/sitzplan/#{klasse}/${raum}`).addClass('btn btn-primary').css('margin-right', '0.1em').appendTo(group);
-                        $(`<a>`).text(`Raum ${raum} (Helfer)`).attr('href', `/sitzplanhelfer/#{klasse}/${raum}`).addClass('btn btn-outline-primary').appendTo(group);
-                        group.appendTo('#additional_teacher_content');
-                    }
+            let klassenraeume = #{klassenraeume_for_klasse(klasse).to_json};
+            let editor_rooms = #{(klassenleiter_for_klasse_or_admin_logged_in?(klasse) ? sitzplan_editor_rooms(klasse) : []).to_json};
+            let is_klassenleitung = '#{klassenleiter_for_klasse_or_admin_logged_in?(klasse)}' === 'true';
+            // seats.js steht in einem eigenen <script>; ist sie fehlerhaft, fehlt nur der Sitzplan-Bereich
+            let sp_seats = (typeof seats_dict !== 'undefined') ? seats_dict : {};
+            let rooms = new Set(klassenraeume);
+            for (let raum of Object.keys(sp_seats)) {
+                if (rooms_for_klasse.indexOf(raum) >= 0) rooms.add(raum);
+            }
+            let first_room = true;
+            for (let raum of [...rooms].sort()) {
+                let layout = sp_seats[raum];
+                let too_small = layout && n > layout.length;
+                let buttons = [];
+                if (editor_rooms.indexOf(raum) >= 0)
+                    buttons.push(['Editor', '/sitzplaneditor', 'btn-outline-secondary']);
+                if (layout && (!too_small || is_klassenleitung)) {
+                    buttons.push(['Shuffler', '/sitzplan', 'btn-primary', too_small]);
+                    buttons.push(['Helfer', '/sitzplanhelfer', 'btn-outline-primary', too_small]);
                 }
+                if (layout && is_klassenleitung)
+                    buttons.push(['Verteilen', '/sitzplanverteilen', 'btn-outline-primary']);
+                if (buttons.length === 0) continue;
+                if (first_room) {
+                    $(`<hr>`).appendTo('#additional_teacher_content');
+                    $(`<h3>`).text('Sitzplan').appendTo('#additional_teacher_content');
+                    first_room = false;
+                }
+                let group = $(`<div>`).css('margin', '0 0 0.5em 0');
+                for (let [label, path, cls, disabled] of buttons) {
+                    let a = $(`<a>`).text(`${label} Raum ${raum}`).addClass(`btn ${cls}`).css('margin', '0 0.3em 0.3em 0');
+                    if (disabled)
+                        a.addClass('disabled').attr('aria-disabled', 'true').attr('tabindex', '-1');
+                    else
+                        a.attr('href', `${path}/#{klasse}/${raum}`);
+                    a.appendTo(group);
+                }
+                if (!layout)
+                    $(`<span>`).addClass('text-muted').css('margin-left', '0.3em').text('Für diesen Raum ist noch keine Bestuhlung angelegt.').appendTo(group);
+                else if (too_small && is_klassenleitung)
+                    $(`<div>`).addClass('text-muted').text(`Zu wenige Plätze: Raum ${raum} hat ${layout.length} Plätze, die Klasse ${n} Schülerinnen und Schüler. Shuffler und Helfer brauchen für alle einen Platz. ` +
+                        (editor_rooms.indexOf(raum) >= 0 ? 'Legen Sie im Editor weitere Plätze an.' : 'Die Bestuhlung dieses Raums kann nur die Administration ändern.')).appendTo(group);
+                group.appendTo('#additional_teacher_content');
             }
         }
         $('.bu-toggle-dashboard-amt').on('click', function(e) {

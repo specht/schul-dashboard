@@ -171,16 +171,16 @@ var raum = '';
 
 var seats = [];
 
-#{File.read('/data/sitzplan/seats.js')}
+#{File.exist?('/data/sitzplan/seats.js') ? File.read('/data/sitzplan/seats.js') : 'var seats_dict = {};'}
 
 var place_for_sus = [];
 
-#{File.read('/data/sitzplan/rules.js')}
+#{File.exist?('/data/sitzplan/rules.js') ? File.read('/data/sitzplan/rules.js') : 'var rules = [];'}
 
 var bff = [];
 var count = 0;
 
-#{File.read('/data/sitzplan/bff.js')}
+#{File.exist?('/data/sitzplan/bff.js') ? File.read('/data/sitzplan/bff.js') : ''}
 
 function place_sus(silent) {
     // return;
@@ -362,6 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let path = window.location.pathname.replace("/sitzplan/", '').split('/');
     klasse = path[0];
     raum = path[1];
+    $('#sitzplan_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
     seats = seats_dict[raum];
     if (seats == null)
         window.location.href = '/';
@@ -458,6 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class='teacher'>Tafel</div>
 </div>
 <div class="keys">
+    <a class="btn btn-sm btn-secondary" id="sitzplan_back_link" href="#"><i class='fa fa-arrow-left'></i>&nbsp;&nbsp;Zurück zur Klasse</a>
     <div id='dd_music' class="dropleft" style="display: inline-block;">
         <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <i class='fa fa-music'></i>

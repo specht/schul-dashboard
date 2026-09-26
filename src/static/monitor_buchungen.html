@@ -7,7 +7,7 @@
     body {
         padding-top: 0;
         overflow: hidden;
-        color: #{color_palette[:main_text]};
+        color: #000;
     }
 
     .bm-wrapper {
@@ -285,11 +285,11 @@
 <script>
     var attribution = #{@@color_scheme_info[color_scheme[0, 19]].to_json};
 
-    // Stundenraster als reine Orientierungshilfe im Hintergrund, gepflegt in
-    // MONITOR_BOOKINGS_PERIODS (credentials.rb). Die Buchungen selbst werden immer nach
-    // ihren echten Uhrzeiten platziert - weichen einzelne Jahrgangsstufen vom Raster ab,
-    // stimmen die Blöcke also trotzdem.
-    var BM_PERIODS = #{MONITOR_BOOKINGS_PERIODS.to_json};
+    // Stundenraster als reine Orientierungshilfe im Hintergrund, abgeleitet aus den echten
+    // Schulzeiten (HOURS_FOR_KLASSE, siehe todays_booking_monitor_periods in tablet_set.rb).
+    // Die Buchungen selbst werden immer nach ihren echten Uhrzeiten platziert - weichen
+    // einzelne Jahrgangsstufen vom Raster ab, stimmen die Blöcke also trotzdem.
+    var BM_PERIODS = #{todays_booking_monitor_periods.to_json};
 
     // Zeitfenster der Darstellung: deckt das Raster ab, wird aber bei Bedarf erweitert,
     // damit Buchungen außerhalb der regulären Stunden (z.B. abends) nicht unsichtbar werden.

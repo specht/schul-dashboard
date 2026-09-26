@@ -109,6 +109,13 @@
                 }
             });
         });
+        $('.bu-login-as-monitor-silentium').click(function (e) {
+            api_call('/api/login_as_special', {prefix: 'monitor-silentium'}, function (data) {
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            });
+        });
         $('.bu-login-as-bib-mobile').click(function (e) {
             api_call('/api/login_as_device', {device: 'bib-mobile'}, function (data) {
                 if (data.success) {

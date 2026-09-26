@@ -56,6 +56,17 @@ class Main < Sinatra::Base
         update_monitors_vplan()
     end
 
+    # Signalisiert den Monitoren nur, DASS sich Buchungen geändert haben - die Daten
+    # selbst werden bewusst nicht über diesen Kanal verschickt, da /ws_monitor ohne
+    # Anmeldung erreichbar ist. Der Buchungen-Monitor lädt daraufhin neu und bekommt
+    # die Daten serverseitig gerendert, also erst nach der Rechteprüfung.
+    def update_monitors_bookings
+        (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
+            ws = info[:ws]
+            ws.send({:command => 'update_bookings'}.to_json)
+        end
+    end
+
     post '/api/update_monitor_messages' do
         require_user_who_can_manage_monitors!
         data = parse_request_data(:required_keys => [:messages, :images],
@@ -129,6 +140,7 @@ class Main < Sinatra::Base
         result['flur'] ||= false
         result['lz'] ||= false
         result['sek'] ||= false
+        result['silentium'] ||= false
         result
     end
 

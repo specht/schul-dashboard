@@ -109,8 +109,8 @@
                 }
             });
         });
-        $('.bu-login-as-monitor-buchungen').click(function (e) {
-            api_call('/api/login_as_special', {prefix: 'monitor-buchungen'}, function (data) {
+        $('.bu-login-as-monitor-silentium').click(function (e) {
+            api_call('/api/login_as_special', {prefix: 'monitor-silentium'}, function (data) {
                 if (data.success) {
                     window.location.href = '/';
                 }

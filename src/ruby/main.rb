@@ -442,7 +442,7 @@ class SetupDatabase
                     neo4j_query(<<~END_OF_QUERY, :email => "monitor-lz@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: $email})
                     END_OF_QUERY
-                    neo4j_query(<<~END_OF_QUERY, :email => "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}")
+                    neo4j_query(<<~END_OF_QUERY, :email => "monitor-silentium@#{SCHUL_MAIL_DOMAIN}")
                         MERGE (u:User {email: $email})
                     END_OF_QUERY
                 end
@@ -459,7 +459,7 @@ class SetupDatabase
                     wanted_users << "monitor@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-sek@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "monitor-lz@#{SCHUL_MAIL_DOMAIN}"
-                    wanted_users << "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}"
+                    wanted_users << "monitor-silentium@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "bib-mobile@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "bib-station@#{SCHUL_MAIL_DOMAIN}"
                     wanted_users << "bib-station-with-printer@#{SCHUL_MAIL_DOMAIN}"
@@ -2055,7 +2055,7 @@ class Main < Sinatra::Base
                                         :is_monitor => true,
                                         :teacher => false,
                                     }
-                                elsif email == "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}"
+                                elsif email == "monitor-silentium@#{SCHUL_MAIL_DOMAIN}"
                                     @session_user = {
                                         :email => email,
                                         :is_monitor => true,
@@ -3470,10 +3470,10 @@ class Main < Sinatra::Base
         end
     end
 
-    before "/monitor/#{MONITOR_BUCHUNGEN_DEEP_LINK}" do
-        unless MONITOR_BUCHUNGEN_DEEP_LINK.nil?
+    before "/monitor/#{MONITOR_SILENTIUM_DEEP_LINK}" do
+        unless MONITOR_SILENTIUM_DEEP_LINK.nil?
             @session_user = {
-                :email => "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}",
+                :email => "monitor-silentium@#{SCHUL_MAIL_DOMAIN}",
                 :is_monitor => true,
                 :teacher => false,
                 :roles => Set.new(),
@@ -3668,13 +3668,19 @@ class Main < Sinatra::Base
             response.write(manifest)
         end
         if user_logged_in? && @session_user[:is_monitor]
-            path = (@session_user[:email] == "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}") ? 'monitor_buchungen' : 'monitor'
-        elsif path == 'monitor' && request.path.split('/')[2] == 'buchungen'
-            # erlaubt Verwaltungspersonal die Vorschau auf /monitor/buchungen in manage_monitor.html,
-            # ohne dafür die eigene Session in die Monitor-Session verwandeln zu müssen - der Zugriff
-            # ist trotzdem geschützt, siehe require_monitor_or_user_who_can_manage_monitors! oben in
-            # monitor_buchungen.html.
-            path = 'monitor_buchungen'
+            if @session_user[:email] == "monitor-silentium@#{SCHUL_MAIL_DOMAIN}"
+                # Silentium zeigt normalerweise den Buchungen-Monitor, schaltet aber wie Flur/Sek/LZ
+                # auf Zeugniskonferenzen um (dann via 'monitor' im main_lz-Layout, siehe monitor.html).
+                path = get_monitor_zeugniskonferenzen()['silentium'] ? 'monitor' : 'monitor_buchungen'
+            else
+                path = 'monitor'
+            end
+        elsif path == 'monitor' && request.path.split('/')[2] == 'silentium'
+            # erlaubt Verwaltungspersonal dieselbe Vorschau auf /monitor/silentium in
+            # manage_monitor.html, ohne dafür die eigene Session in die Monitor-Session verwandeln zu
+            # müssen - der Zugriff ist trotzdem geschützt, siehe
+            # require_monitor_or_user_who_can_manage_monitors! oben in monitor_buchungen.html.
+            path = get_monitor_zeugniskonferenzen()['silentium'] ? 'monitor' : 'monitor_buchungen'
         end
         if path == 'timetable'
             redirect "#{WEB_ROOT}/", 302 unless @session_user

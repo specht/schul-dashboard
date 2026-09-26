@@ -140,6 +140,7 @@ class Main < Sinatra::Base
         result['flur'] ||= false
         result['lz'] ||= false
         result['sek'] ||= false
+        result['silentium'] ||= false
         result
     end
 

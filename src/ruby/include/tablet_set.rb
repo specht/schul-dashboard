@@ -90,29 +90,21 @@ class Main < Sinatra::Base
         {:bookings => results, :datum => datum}
     end
 
-    # Stundenraster für den Buchungen-Monitor, als reine Orientierungshilfe im Hintergrund.
-    # Statt einer separat gepflegten Konstante werden dafür die echten Schulzeiten aus
-    # HOURS_FOR_KLASSE herangezogen (dieselbe Quelle wie für den Stundenplan) - damit die
-    # Zeiten nicht doppelt und potenziell abweichend im Code stehen. Da der Monitor nicht an
-    # eine einzelne Klasse gebunden ist, wird stellvertretend das Raster der ersten Klasse
-    # aus @@klassen_order genommen, für die an dem Tag Zeiten hinterlegt sind. Weichen
-    # einzelne Jahrgangsstufen davon ab, ist das unkritisch: die Buchungen selbst werden
-    # immer nach ihren echten Uhrzeiten platziert.
+    # Stundenraster im Hintergrund des Buchungen-Monitors, aus denselben Schulzeiten wie der Stundenplan.
     def todays_booking_monitor_periods
         datum = Date.today.strftime('%Y-%m-%d')
         hours_key = HOURS_FOR_KLASSE.keys.reject { |x| datum < x }.max
         return [] unless hours_key
-        hours = @@klassen_order.map { |k| HOURS_FOR_KLASSE[hours_key][k] }.compact.first || HOURS_FOR_KLASSE[hours_key].values.first
+        # der Monitor gehört zu keiner Klasse - daher dasselbe Standardraster wie in timetable.rb
+        hours = HOURS_FOR_KLASSE[hours_key]['7a'] || HOURS_FOR_KLASSE[hours_key]['5a'] || HOURS_FOR_KLASSE[hours_key].values.first
         return [] unless hours
         periods = []
-        hours.each_with_index do |(start_time, end_time), index|
-            if index > 0
-                previous_end_time = hours[index - 1][1]
-                if previous_end_time < start_time
-                    periods << {:start => previous_end_time, :end => start_time, :label => 'Pause', :is_break => true}
-                end
+        # der Index ist die Untis-Stundennummer (Index 0 = 0. Stunde), wie bei HOURS_FOR_KLASSE[..][stunde] in timetable.rb
+        hours.each_with_index do |(start_time, end_time), stunde|
+            if stunde > 0 && hours[stunde - 1][1] < start_time
+                periods << {:start => hours[stunde - 1][1], :end => start_time, :label => 'Pause', :is_break => true}
             end
-            periods << {:start => start_time, :end => end_time, :label => "#{index + 1}. Stunde"}
+            periods << {:start => start_time, :end => end_time, :label => "#{stunde}. Stunde"}
         end
         periods
     end

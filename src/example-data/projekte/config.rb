@@ -1,0 +1,4 @@
+PROJEKTTAGE_CATEGORIES = ['drinnen', 'draußen', 'kreativ', 'sportlich', 'musisch']
+
+PROJEKTWAHL_VOTE_END = '2024-06-14T23:59:00'
+PROJEKTWAHL_SWAP_PHASE_END = '2024-06-21T23:59:00'

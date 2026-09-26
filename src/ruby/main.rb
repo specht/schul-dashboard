@@ -3669,6 +3669,12 @@ class Main < Sinatra::Base
         end
         if user_logged_in? && @session_user[:is_monitor]
             path = (@session_user[:email] == "monitor-buchungen@#{SCHUL_MAIL_DOMAIN}") ? 'monitor_buchungen' : 'monitor'
+        elsif path == 'monitor' && request.path.split('/')[2] == 'buchungen'
+            # erlaubt Verwaltungspersonal die Vorschau auf /monitor/buchungen in manage_monitor.html,
+            # ohne dafür die eigene Session in die Monitor-Session verwandeln zu müssen - der Zugriff
+            # ist trotzdem geschützt, siehe require_monitor_or_user_who_can_manage_monitors! oben in
+            # monitor_buchungen.html.
+            path = 'monitor_buchungen'
         end
         if path == 'timetable'
             redirect "#{WEB_ROOT}/", 302 unless @session_user

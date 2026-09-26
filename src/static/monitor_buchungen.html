@@ -1,0 +1,515 @@
+#{require_monitor_or_user_who_can_manage_monitors!}
+<style>
+    .navbar, .foot {
+        display: none;
+    }
+
+    body {
+        padding-top: 0;
+        overflow: hidden;
+        color: #000;
+    }
+
+    .bm-wrapper {
+        width: 100vw;
+        height: 100vh;
+        box-sizing: border-box;
+        padding: 2vw 2.5vw;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .bm-card {
+        background-color: rgba(255, 255, 255, 0.3);
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        border-radius: 0.5vw;
+        box-shadow: 0 0.1vw 0.6vw rgba(0, 0, 0, 0.15);
+    }
+
+    .bm-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 1.2vw;
+        padding: 1vw 1.6vw;
+        flex-shrink: 0;
+    }
+
+    .bm-title {
+        font-size: 2.4vw;
+        font-weight: 700;
+    }
+
+    .bm-date {
+        font-size: 1.3vw;
+        opacity: 0.75;
+        margin-top: 0.2vw;
+    }
+
+    .bm-clock {
+        font-family: 'Roboto Condensed', sans-serif;
+        font-size: 2.4vw;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #{color_palette[:primary]};
+    }
+
+    .bm-board {
+        position: relative;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 0.8vw 1.6vw 1.2vw 1.6vw;
+    }
+
+    .bm-grid-header {
+        display: flex;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .bm-ruler-spacer {
+        width: 5.5vw;
+        flex-shrink: 0;
+    }
+
+    .bm-col-headers {
+        display: flex;
+        flex: 1;
+    }
+
+    .bm-col-header {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        padding: 0.5vw 0.3vw;
+        font-size: 1.0vw;
+        font-weight: 700;
+        border-left: 1px solid rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .bm-grid-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        position: relative;
+    }
+
+    .bm-ruler {
+        position: relative;
+        width: 5.5vw;
+        flex-shrink: 0;
+    }
+
+    .bm-ruler-period {
+        position: absolute;
+        left: 0;
+        right: 0;
+        box-sizing: border-box;
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+        padding: 0.15vw 0.4vw 0 0;
+        font-family: 'Roboto Condensed', sans-serif;
+        font-size: 0.85vw;
+        font-weight: 700;
+        text-align: right;
+        opacity: 0.65;
+    }
+
+    .bm-ruler-period.bm-period-break {
+        opacity: 0.45;
+        font-weight: 400;
+        font-style: italic;
+    }
+
+    .bm-ruler-period.bm-period-active {
+        opacity: 1;
+        color: #{color_palette[:primary]};
+    }
+
+    .bm-columns-container {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .bm-track-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .bm-break-band {
+        position: absolute;
+        left: 0;
+        right: 0;
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .bm-now-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 1px;
+        border-top: 1px solid #e6432c;
+        z-index: 5;
+    }
+
+    .bm-now-line::before {
+        content: '';
+        position: absolute;
+        top: -0.35vw;
+        left: -0.05vw;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 0.45vw 0.35vw 0 0.35vw;
+        border-color: #e6432c transparent transparent transparent;
+    }
+
+    .bm-columns {
+        display: flex;
+        height: 100%;
+        position: relative;
+    }
+
+    .bm-column {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+        border-left: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .bm-booking {
+        position: absolute;
+        left: 0.3vw;
+        right: 0.3vw;
+        border-radius: 0.22vw;
+        background-color: #{color_palette[:primary]};
+        color: #fff;
+        box-shadow: 0 0.08vw 0.35vw rgba(0, 0, 0, 0.3);
+        padding: 0.1vw 0.35vw;
+        box-sizing: border-box;
+        min-height: 42px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .bm-booking-time {
+        font-family: 'Roboto Condensed', sans-serif;
+        font-size: 0.68vw;
+        line-height: 1.15;
+        font-variant-numeric: tabular-nums;
+        opacity: 0.85;
+        white-space: nowrap;
+    }
+
+    .bm-booking-room {
+        font-family: 'Roboto Condensed', sans-serif;
+        font-size: 0.68vw;
+        line-height: 1.15;
+        opacity: 0.85;
+        white-space: nowrap;
+    }
+
+    .bm-booking-who {
+        font-size: 0.85vw;
+        font-weight: 700;
+        line-height: 1.15;
+    }
+
+    .bm-booking-count {
+        margin-top: auto;
+        align-self: flex-end;
+        font-family: 'Roboto Condensed', sans-serif;
+        font-size: 0.68vw;
+        font-weight: 700;
+        background-color: rgba(255, 255, 255, 0.25);
+        padding: 0 0.3vw;
+        border-radius: 0.2vw;
+    }
+
+    .bm-empty {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6vw;
+        opacity: 0.55;
+        text-align: center;
+    }
+
+    .bm-attribution {
+        margin-top: 0.8vw;
+        text-align: right;
+        font-size: 0.75vw;
+        opacity: 0.6;
+        flex-shrink: 0;
+    }
+</style>
+
+<div class='bm-wrapper'>
+    <div class='bm-header bm-card'>
+        <div>
+            <div class='bm-title'>Tabletsatz-Buchungen heute</div>
+            <div class='bm-date bm-date-here'></div>
+        </div>
+        <div class='bm-clock bm-clock-here'></div>
+    </div>
+    <div class='bm-board bm-card'>
+        <div class='bm-grid-header'>
+            <div class='bm-ruler-spacer'></div>
+            <div class='bm-col-headers bm-col-headers-here'></div>
+        </div>
+        <div class='bm-grid-body'>
+            <div class='bm-ruler bm-ruler-here'></div>
+            <div class='bm-columns-container'>
+                <div class='bm-track-overlay bm-track-overlay-here'>
+                    <div class='bm-now-line bm-now-line-here' style='display: none;'></div>
+                </div>
+                <div class='bm-columns bm-columns-here'></div>
+            </div>
+        </div>
+        <div class='bm-empty bm-empty-here' style='display: none;'>Es sind keine Tabletsätze oder Geräte hinterlegt.</div>
+    </div>
+    <div class='bm-attribution'><span class='bm-color-scheme-here'></span><span style='margin: 0 0.5em;'>//</span>Stand: <span class='bm-updated-here'></span></div>
+</div>
+
+<script>
+    var attribution = #{@@color_scheme_info[color_scheme[0, 19]].to_json};
+
+    // Stundenraster als reine Orientierungshilfe im Hintergrund, abgeleitet aus den echten
+    // Schulzeiten (HOURS_FOR_KLASSE, siehe todays_booking_monitor_periods in tablet_set.rb).
+    // Die Buchungen selbst werden immer nach ihren echten Uhrzeiten platziert - weichen
+    // einzelne Jahrgangsstufen vom Raster ab, stimmen die Blöcke also trotzdem.
+    var BM_PERIODS = #{todays_booking_monitor_periods.to_json};
+
+    // Zeitfenster der Darstellung: deckt das Raster ab, wird aber bei Bedarf erweitert,
+    // damit Buchungen außerhalb der regulären Stunden (z.B. abends) nicht unsichtbar werden.
+    var BM_DAY_START = 8 * 60;
+    var BM_DAY_END = 16 * 60;
+
+    var bm_ws = null;
+    var bm_ws_timer_id = null;
+    var bm_server_time_diff = 0;
+
+    function hhmm_to_minutes(s) {
+        return parseInt(s.substr(0, 2)) * 60 + parseInt(s.substr(3, 2));
+    }
+
+    function bm_js_time() {
+        return Math.floor(Date.now() / 1000.0);
+    }
+
+    function bm_server_time() {
+        return bm_js_time() + bm_server_time_diff;
+    }
+
+    // Position entlang der vertikalen Zeitachse (0-100).
+    function bm_percent(minutes) {
+        return Math.max(0, Math.min(100, (minutes - BM_DAY_START) / (BM_DAY_END - BM_DAY_START) * 100.0));
+    }
+
+    // Legt das dargestellte Zeitfenster fest: das Raster plus alle heutigen Buchungen.
+    // Dadurch bleibt auch eine Buchung außerhalb der regulären Stunden sichtbar.
+    function bm_update_day_window(data) {
+        let starts = [];
+        let ends = [];
+        for (let period of BM_PERIODS) {
+            starts.push(hhmm_to_minutes(period.start));
+            ends.push(hhmm_to_minutes(period.end));
+        }
+        for (let tablet_id in (data.bookings || {})) {
+            for (let booking of data.bookings[tablet_id]) {
+                starts.push(hhmm_to_minutes(booking.booking.start_time));
+                ends.push(hhmm_to_minutes(booking.booking.end_time));
+            }
+        }
+        if (starts.length === 0) return;
+        BM_DAY_START = Math.min.apply(null, starts) - 15;
+        BM_DAY_END = Math.max.apply(null, ends) + 15;
+    }
+
+    function bm_keep_alive() {
+        if (bm_ws.readyState == bm_ws.OPEN) {
+            bm_ws.send('');
+        }
+        bm_ws_timer_id = setTimeout(bm_keep_alive, 20000);
+    }
+
+    function render_ruler() {
+        let container = $('.bm-ruler-here');
+        container.empty();
+        for (let period of BM_PERIODS) {
+            let start_minutes = hhmm_to_minutes(period.start);
+            let end_minutes = hhmm_to_minutes(period.end);
+            let t = bm_percent(start_minutes);
+            let b = bm_percent(end_minutes);
+            let div = $('<div>').addClass('bm-ruler-period').addClass(period.is_break ? 'bm-period-break' : '');
+            div.css('top', `${t}%`).css('height', `${b - t}%`);
+            // sehr kurze Pausen bekommen keinen Text, sonst läuft die Beschriftung optisch über
+            if (!period.is_break || (end_minutes - start_minutes) >= 15) {
+                div.text(period.label);
+            }
+            div.data('period', period);
+            container.append(div);
+        }
+    }
+
+    function render_break_bands() {
+        let overlay = $('.bm-track-overlay-here');
+        overlay.find('.bm-break-band').remove();
+        for (let period of BM_PERIODS) {
+            if (!period.is_break) continue;
+            let t = bm_percent(hhmm_to_minutes(period.start));
+            let b = bm_percent(hhmm_to_minutes(period.end));
+            let div = $('<div>').addClass('bm-break-band');
+            div.css('top', `${t}%`).css('height', `${b - t}%`);
+            overlay.prepend(div);
+        }
+    }
+
+    function update_now_line() {
+        let now = new Date(bm_server_time() * 1000);
+        let minutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60.0;
+        let line = $('.bm-now-line-here');
+        if (minutes >= BM_DAY_START && minutes <= BM_DAY_END) {
+            line.css('top', `${bm_percent(minutes)}%`).show();
+        } else {
+            line.hide();
+        }
+        $('.bm-ruler-period').each(function () {
+            let period = $(this).data('period');
+            let active = (minutes >= hhmm_to_minutes(period.start)) && (minutes < hhmm_to_minutes(period.end));
+            $(this).toggleClass('bm-period-active', active);
+        });
+    }
+
+    function render_bookings(data) {
+        bm_update_day_window(data);
+        render_ruler();
+        render_break_bands();
+        let headers = $('.bm-col-headers-here');
+        let columns = $('.bm-columns-here');
+        headers.empty();
+        columns.empty();
+        let tablet_ids = Object.keys(data.bookings || {}).sort();
+        if (tablet_ids.length === 0) {
+            $('.bm-empty-here').show();
+            $('.bm-grid-header, .bm-grid-body').hide();
+        } else {
+            $('.bm-empty-here').hide();
+            $('.bm-grid-header, .bm-grid-body').css('display', '');
+            for (let tablet_id of tablet_ids) {
+                let bookings = data.bookings[tablet_id];
+                headers.append($('<div>').addClass('bm-col-header').text(tablet_id));
+                let col = $('<div>').addClass('bm-column');
+                for (let booking of bookings) {
+                    let t0 = hhmm_to_minutes(booking.booking.start_time);
+                    let t1 = hhmm_to_minutes(booking.booking.end_time);
+                    let t = bm_percent(t0);
+                    let b = bm_percent(t1);
+                    let div = $('<div>').addClass('bm-booking');
+                    div.css('top', `${t}%`).css('height', `${Math.max(b - t, 2)}%`);
+                    // Nur das Kürzel, bewusst kein Name - siehe todays_tablet_set_bookings_for_monitor.
+                    let who = booking.shorthand || '';
+                    // Grund bzw. Fach kommt teilweise aus freiem Text der Lehrkraft und wird
+                    // deshalb konsequent als Text und nie als HTML eingefügt.
+                    let what = booking.lesson || booking.booking.reason || '';
+                    div.append($('<div>').addClass('bm-booking-time').text(`${booking.booking.start_time} – ${booking.booking.end_time}`));
+                    if (booking.raum) {
+                        div.append($('<div>').addClass('bm-booking-room').text(`Raum ${booking.raum}`));
+                    }
+                    let who_div = $('<div>').addClass('bm-booking-who');
+                    if (who) {
+                        who_div.append($('<b>').text(who));
+                        if (what) {
+                            who_div.append(document.createTextNode(' – ' + what));
+                        }
+                    } else if (what) {
+                        who_div.append(document.createTextNode(what));
+                    }
+                    div.append(who_div);
+                    if (booking.tablet_set_count) {
+                        let count_div = $('<div>').addClass('bm-booking-count');
+                        count_div.append($("<i class='fa fa-laptop'></i>"));
+                        count_div.append(document.createTextNode(' ×' + booking.tablet_set_count));
+                        div.append(count_div);
+                    }
+                    col.append(div);
+                }
+                columns.append(col);
+            }
+        }
+        bm_keep_blocks_inside();
+        update_now_line();
+        $('.bm-updated-here').text(moment().format('HH:mm:ss'));
+    }
+
+    // Sehr kurze Buchungen bekommen über min-height eine Mindesthöhe, damit der Text lesbar
+    // bleibt. Liegt so ein Block ganz am Ende des Tages, kann er dadurch unten aus dem Raster
+    // ragen und würde abgeschnitten - deshalb hier nachträglich nach oben schieben.
+    function bm_keep_blocks_inside() {
+        let container = $('.bm-columns-container')[0];
+        if (!container) return;
+        let limit = container.getBoundingClientRect().bottom;
+        $('.bm-booking').each(function () {
+            this.style.marginTop = '';
+            let overshoot = this.getBoundingClientRect().bottom - limit;
+            if (overshoot > 0) {
+                this.style.marginTop = (-overshoot) + 'px';
+            }
+        });
+    }
+
+    function bm_setup_ws() {
+        bm_ws.onopen = function () {
+            bm_keep_alive();
+        }
+        bm_ws.onclose = function () {
+            clearTimeout(bm_ws_timer_id);
+            setTimeout(bm_establish_ws, 10000);
+        }
+        bm_ws.onmessage = function (msg) {
+            let data = JSON.parse(msg.data);
+            if (data.command == 'force_reload') {
+                window.location.reload();
+            } else if (data.command == 'update_time') {
+                bm_server_time_diff = data.time - bm_js_time();
+            } else if (data.command == 'update_bookings') {
+                // Es kommen bewusst keine Buchungsdaten über den (offenen) WebSocket -
+                // stattdessen neu laden und die Daten serverseitig gerendert holen.
+                window.location.reload();
+            }
+        }
+    }
+
+    function bm_establish_ws() {
+        let ws_uri = (location.protocol == 'http:' ? 'ws://' : 'wss://') + location.host + '/ws_monitor';
+        bm_ws = new WebSocket(ws_uri);
+        bm_setup_ws();
+    }
+
+    window.addEventListener('load', function () {
+        moment.locale('de');
+        $('.bm-date-here').text(moment().format('dddd, LL'));
+        if (attribution) {
+            let a = $('<span>').append($('<b>').text('»' + attribution[0] + '«'));
+            if (attribution[1]) a.append(' von ').append($('<b>').text(attribution[1]));
+            $('.bm-color-scheme-here').empty().append(a);
+        }
+        render_bookings(#{todays_tablet_set_bookings_for_monitor.to_json});
+        setInterval(update_now_line, 15000);
+        setInterval(function () {
+            $('.bm-clock-here').text(moment(bm_server_time() * 1000).format('HH:mm:ss'));
+        }, 1000);
+        bm_establish_ws();
+    });
+</script>

@@ -270,6 +270,11 @@ class Main < Sinatra::Base
         assert(@@user_info[sus_email][:klasse] == PK5_CURRENT_KLASSE)
         unless user_with_role_logged_in?(:oko)
             assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
+            if $pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_fach_edit)
+                data.delete(:referenzfach)
+                data.delete(:betreuende_lehrkraft)
+                data.delete(:fas)
+            end
         end
         ts = Time.now.to_i
         transaction do
@@ -814,6 +819,17 @@ class Main < Sinatra::Base
         sus_email = params[:email]
         pk5 = get_my_pk5(sus_email)
         respond_raw_with_mimetype(Main.print_voucher(pk5), 'application/pdf')
+    end
+
+    get '/api/print_all_vouchers' do
+        assert(user_with_role_logged_in?(:oko))
+        require_teacher!
+
+        pk5_list = []
+        @@schueler_for_klasse[PK5_CURRENT_KLASSE].each.with_index do |email, sus_index|
+            pk5_list << get_my_pk5(email)
+        end
+        respond_raw_with_mimetype(Main.print_voucher(pk5_list), 'application/pdf')
     end
 
     get '/api/print_my_voucher' do

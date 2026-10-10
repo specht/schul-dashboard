@@ -139,7 +139,7 @@
                     <!-- <a target='_blank' href='/api/print_my_antrag' class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</a> -->
                 </div>
                 <div style="display: #{user_with_role_logged_in?(:oko) ? 'unset' : 'none'}">
-                    <button id="bu_print_voucher" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucber)</button>
+                    <button id="bu_print_voucher" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Dokumentationsbogen (Voucher)</button>
                     <!-- <button id="bu_print_antrag" data-email="#{user_email}" class="btn btn-success"><i class='fa fa-file-pdf-o'></i>&nbsp;&nbsp;Antrag drucken</button> -->
                 </div>
             </div>
@@ -463,6 +463,12 @@ window.addEventListener('load', function() {
                 if ('true' === '#{user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && (!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))}') {
                     // OKO and SuS can edit
                     open_this_field = true;
+                }
+            }
+            if (['referenzfach', 'fas', 'betreuende_lehrkraft'].indexOf(key) >= 0) {
+                if ('true' === '#{@session_user[:klasse] == PK5_CURRENT_KLASSE && ($pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_fach_edit))}') {
+                    // don't let SuS edit faecher after a deadline
+                    open_this_field = false;
                 }
             }
             if (['betreuende_lehrkraft_fas'].indexOf(key) >= 0) {

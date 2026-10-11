@@ -89,7 +89,7 @@ class Main < Sinatra::Base
         klasse = data[:klasse]
         raum = data[:raum]
         duration_days = data[:duration_days] || 4
-        assert((1..60).include?(duration_days), 'Umfragedauer muss zwischen 1 und 60 Tagen liegen.')
+        sph_fail!('Die Umfragedauer muss zwischen 1 und 60 Tagen liegen.') unless (1..60).include?(duration_days)
         # Nur die Klassenleitung (oder Admin) darf eine Wunschrunde STARTEN -
         # sonst könnte jede Fachlehrkraft, die die Klasse aufruft, spontan eine
         # Umfrage an alle SuS auslösen. Verwaltung eines bereits laufenden
@@ -192,12 +192,19 @@ class Main < Sinatra::Base
     # Zyklus darf NIE eine noch tagelang laufende Umfrage hinterlassen, sonst
     # sehen SuS nach dem Start einer neuen Runde plötzlich zwei gleichzeitig.
     def sph_close_poll_run!(poll_run_id)
-        now_date = Date.today.strftime('%Y-%m-%d')
-        now_time = (Time.now - 60).strftime('%H:%M')
-        neo4j_query(<<~END_OF_QUERY, :prid => poll_run_id, :now_date => now_date, :now_time => now_time)
+        # Datum und Uhrzeit aus demselben Zeitpunkt: kurz nach Mitternacht läge
+        # "vor einer Minute" sonst auf 23:59 des NEUEN Tages, und die Umfrage
+        # wäre noch einen ganzen Tag offen.
+        t = Time.now - 60
+        end_s = t.strftime('%Y-%m-%dT%H:%M')
+        # Nur eine noch laufende Umfrage schließen. Beim Speichern oder
+        # Verwerfen einer Bearbeitung ist sie längst zu - ihr echtes Ende soll
+        # dann erhalten bleiben.
+        neo4j_query(<<~END_OF_QUERY, :prid => poll_run_id, :end_date => t.strftime('%Y-%m-%d'), :end_time => t.strftime('%H:%M'), :end_s => end_s)
             MATCH (pr:PollRun {id: $prid})
-            SET pr.end_date = $now_date
-            SET pr.end_time = $now_time;
+            WHERE pr.end_date + 'T' + pr.end_time > $end_s
+            SET pr.end_date = $end_date
+            SET pr.end_time = $end_time;
         END_OF_QUERY
     end
 
@@ -236,7 +243,7 @@ class Main < Sinatra::Base
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
             WHERE sc.saved_at IS NULL
             OPTIONAL MATCH (sc)-[:REOPENED_FROM]->(src:SeatingCycle)
-            RETURN sc, src.saved_at AS reopened_from
+            RETURN sc, src.saved_at AS reopened_from, src.seats AS reopened_seats
             ORDER BY sc.created_at DESC
             LIMIT 1;
         END_OF_QUERY
@@ -248,6 +255,10 @@ class Main < Sinatra::Base
             # die Oberfläche muss das anders benennen, sonst droht sie mit dem
             # Verlust von Wünschen, die in Wirklichkeit gar nicht betroffen sind.
             reopened_from = rows.first['reopened_from']
+            # Die Sitzordnung des Originals ist der Ausgangspunkt der
+            # Bearbeitung - die Lehrkraft will den bewährten Plan anpassen, nicht
+            # bei einem leeren Raum anfangen.
+            reopened_seats = rows.first['reopened_seats']
             pr_rows = neo4j_query(<<~END_OF_QUERY, :prid => sc[:poll_run_id])
                 MATCH (pr:PollRun {id: $prid})
                 RETURN pr;
@@ -264,6 +275,7 @@ class Main < Sinatra::Base
                 :end_time => pr && pr[:end_time],
                 :wishes_open => !!wishes_open,
                 :reopened_from => reopened_from,
+                :seats => reopened_seats ? JSON.parse(reopened_seats) : nil,
                 :forced_pairs => JSON.parse(sc[:forced_pairs] || '[]'),
                 :forbidden_pairs => JSON.parse(sc[:forbidden_pairs] || '[]'),
                 :fixed_rules => JSON.parse(sc[:fixed_rules] || '[]'),
@@ -271,28 +283,43 @@ class Main < Sinatra::Base
             wishes = sph_read_wishes(klasse, sc, pr ? JSON.parse(pr[:items]) : [])
         end
 
-        last_cycle = nil
-        last_rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum)
+        # Der aktuell für SuS sichtbare Plan - wird angezeigt, solange keine
+        # Runde offen ist.
+        last_cycle = sph_saved_cycle_summary(klasse, raum, nil)
+        # Bezugsplan für die Fairness beim Würfeln (vorne/hinten-Rotation,
+        # Vorrang für SuS, die zuletzt leer ausgingen): der Plan VOR dieser
+        # Runde. Bei einer Bearbeitung ist das der Vorgänger des bearbeiteten
+        # Plans - sonst würde der Plan beim Nachbessern gegen sich selbst
+        # ausgeglichen, und wer darin seinen Wunsch bekam, würde beim
+        # Neuwürfeln benachteiligt.
+        previous_cycle = (open_cycle && open_cycle[:reopened_from]) ?
+            sph_saved_cycle_summary(klasse, raum, open_cycle[:reopened_from]) : last_cycle
+
+        respond(:ok => true, :klasse => klasse, :raum => raum, :sus => sus,
+                :can_start_cycle => can_start_cycle, :klassenleiter_names => klassenleiter_names,
+                :open_cycle => open_cycle, :wishes => wishes, :last_cycle => last_cycle,
+                :previous_cycle => previous_cycle)
+    end
+
+    # Zuletzt gespeicherter Plan für Klasse+Raum - mit saved_before nur unter
+    # den Plänen, die davor gespeichert wurden.
+    def sph_saved_cycle_summary(klasse, raum, saved_before)
+        rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :before => saved_before || 2**62)
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-            WHERE sc.saved_at IS NOT NULL
+            WHERE sc.saved_at IS NOT NULL AND sc.saved_at < $before
             RETURN sc
             ORDER BY sc.saved_at DESC
             LIMIT 1;
         END_OF_QUERY
-        unless last_rows.empty?
-            sc = last_rows.first['sc']
-            last_cycle = {
-                :id => sc[:id],
-                :saved_at => sc[:saved_at],
-                :seats => JSON.parse(sc[:seats] || '{}'),
-                :unresolved => JSON.parse(sc[:unresolved] || '[]'),
-                :satisfied_emails => JSON.parse(sc[:satisfied_emails] || '[]'),
-            }
-        end
-
-        respond(:ok => true, :klasse => klasse, :raum => raum, :sus => sus,
-                :can_start_cycle => can_start_cycle, :klassenleiter_names => klassenleiter_names,
-                :open_cycle => open_cycle, :wishes => wishes, :last_cycle => last_cycle)
+        return nil if rows.empty?
+        sc = rows.first['sc']
+        {
+            :id => sc[:id],
+            :saved_at => sc[:saved_at],
+            :seats => JSON.parse(sc[:seats] || '{}'),
+            :unresolved => JSON.parse(sc[:unresolved] || '[]'),
+            :satisfied_emails => JSON.parse(sc[:satisfied_emails] || '[]'),
+        }
     end
 
     # Öffentliche (Lehrkraft + eigene Klasse), wunsch-freie Sicht auf einen
@@ -511,6 +538,9 @@ class Main < Sinatra::Base
                                   :optional_keys => [:satisfied_emails],
                                   :max_body_length => 256 * 1024, :max_string_length => 256 * 1024)
         sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        # Doppelklick oder ein zweites, veraltetes Browserfenster würde sonst
+        # einen bereits gespeicherten Plan nachträglich überschreiben.
+        sph_fail!('Dieser Sitzplan wurde bereits gespeichert. Bitte die Seite neu laden.') if sc[:saved_at]
         # Die drei JSON-Felder kommen roh vom Client. Ungeprüft abgelegt würde
         # kaputtes JSON später JEDE Anzeige dieses Plans mit einem Fehler
         # abbrechen lassen - auch die der SuS -, und fremde E-Mail-Adressen im
@@ -580,6 +610,15 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:cycle_id])
         sc = sph_load_cycle_for_edit!(data[:cycle_id])
         assert(sc[:saved_at], 'Nur gespeicherte Sitzpläne können gelöscht werden.')
+        # Wird dieser Plan gerade bearbeitet, hinge die Bearbeitung danach in
+        # der Luft: Sie sähe aus wie eine beendete Wunschrunde, und die
+        # Ausgangs-Sitzordnung wäre nach dem Neuladen weg.
+        in_edit = neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id])
+            MATCH (nc:SeatingCycle)-[:REOPENED_FROM]->(:SeatingCycle {id: $id})
+            WHERE nc.saved_at IS NULL
+            RETURN nc.id;
+        END_OF_QUERY
+        sph_fail!('Dieser Sitzplan wird gerade bearbeitet. Bitte die Bearbeitung zuerst speichern oder verwerfen.') unless in_edit.empty?
         neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id])
             MATCH (sc:SeatingCycle {id: $id})
             OPTIONAL MATCH (sw:SeatWish)-[:FOR_CYCLE]->(sc)

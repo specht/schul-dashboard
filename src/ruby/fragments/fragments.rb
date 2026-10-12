@@ -2510,7 +2510,7 @@ class Main
                             # print_date = Date.parse($pk5.phases.select { |x| x[:index] == 13 }.first[:t1][0, 10])
                             # deadline = DateTime.parse($pk5.phases.select { |x| x[:index] == 14 }.first[:t1])
                             print_date = Date.today
-                            deadline = DateTime.parse("2026-10-20T12:00:00")
+                            deadline = DateTime.parse("2026-11-16T12:00:00")
 
                             move_down 3.mm
 

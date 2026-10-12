@@ -1,0 +1,324 @@
+#{redirect_on_error { require_sitzplan_klassenleitung!(*sitzplan_path_params, true) }}
+<style>
+.spe-container {
+    max-width: 900px;
+    margin: 1.5em auto;
+    padding: 1.5em;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 0.5em;
+    box-shadow: 0 0.2em 0.6em rgba(0,0,0,0.15);
+    color: #2b2a25;
+}
+.spe-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
+.spe-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9em; color: #6f6b60; }
+.spe-field input { width: 110px; }
+.spe-warn { color: #7a4b0c; background: #fbf0dc; border-radius: 0.4em; padding: 0.5em 0.8em; margin-bottom: 1em; }
+.spe-room { background: #fff; border: 1px solid #dcd7ca; border-radius: 0.6em; padding: 20px 20px 24px; }
+.spe-front { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 40px; }
+.spe-board { width: 42%; min-width: 140px; height: 26px; border-radius: 4px; background: #2e4a3d; color: #e3ece6; font-size: 0.8em; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; }
+.spe-teacher { width: 20%; min-width: 90px; height: 30px; border-radius: 6px; border: 1.5px dashed #9a6a38; color: #6f6b60; font-size: 0.8em; display: flex; align-items: center; justify-content: center; }
+.spe-grid { display: grid; row-gap: 10px; max-width: 720px; margin: 0 auto; user-select: none; touch-action: none; }
+.spe-cell { aspect-ratio: 1; min-width: 0; min-height: 0; padding: 3px; cursor: pointer; display: flex; flex-direction: column; }
+.spe-cell.empty .spe-slot { flex: 1; border: 1px dashed #dcd7ca; border-radius: 5px; }
+.spe-cell.empty:hover .spe-slot { background: #eef3ef; }
+.spe-desk { height: 46%; background: #d9ad76; border: 1.5px solid #9a6a38; border-radius: 4px; background-image: repeating-linear-gradient(90deg, transparent 0 7px, #c99a60 7px 8px); }
+.spe-cell.seat:hover .spe-desk { filter: brightness(1.06); }
+.spe-cell.jl .spe-desk { border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -3px; }
+.spe-cell.jr .spe-desk { border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: -3px; }
+.spe-person { flex: 1; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
+.spe-person svg { display: block; width: 70%; max-width: 100%; height: auto; max-height: 100%; }
+.spe-cell.dir-d { flex-direction: column-reverse; }
+.spe-cell.dir-r { flex-direction: row-reverse; }
+.spe-cell.dir-l { flex-direction: row; }
+.spe-cell.dir-r .spe-desk, .spe-cell.dir-l .spe-desk { height: auto; width: 46%; }
+.spe-cell.dir-d .spe-person svg { transform: rotate(180deg); }
+.spe-cell.dir-r .spe-person svg { transform: rotate(90deg); }
+.spe-cell.dir-l .spe-person svg { transform: rotate(-90deg); }
+.spe-cell.jt .spe-desk { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -8px; }
+.spe-cell.jb .spe-desk { border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: -8px; }
+.spe-cell.dir-r .spe-desk, .spe-cell.dir-l .spe-desk { background-image: repeating-linear-gradient(0deg, transparent 0 7px, #c99a60 7px 8px); }
+.spe-mode .btn { white-space: nowrap; }
+.spe-back { text-align: center; font-size: 0.8em; color: #6f6b60; margin-top: 14px; }
+.spe-count { text-align: center; margin-top: 16px; }
+.spe-actions { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; margin-top: 1.2em; }
+.spe-help { color: #6f6b60; margin-top: 1.2em; }
+</style>
+
+<div class="spe-container">
+    <h3>Sitzplan-Editor</h3>
+    <p class="text-muted" id="spe_subtitle"></p>
+
+    <div class="spe-bar">
+        <div class="spe-field">
+            <span id="spe_mode_label">Neue Tische</span>
+            <div class="btn-group spe-mode" role="group" aria-labelledby="spe_mode_label">
+                <button type="button" class="btn btn-primary" id="spe_mode_h" aria-pressed="true">Quer, Blick zur Tafel</button>
+                <button type="button" class="btn btn-outline-primary" id="spe_mode_v" aria-pressed="false">Längs, für U-Form</button>
+            </div>
+        </div>
+        <div class="spe-field"><label for="spe_cols">Felder nebeneinander</label><input type="number" class="form-control" id="spe_cols" min="4" max="20" step="2"></div>
+        <div class="spe-field"><label for="spe_rows">Reihen</label><input type="number" class="form-control" id="spe_rows" min="2" max="16"></div>
+        <button class="btn btn-outline-secondary" id="spe_clear">Alle Plätze entfernen</button>
+    </div>
+    <div class="spe-warn" id="spe_warn" role="status" style="display: none;"></div>
+
+    <div class="spe-room">
+        <div class="spe-front" aria-hidden="true">
+            <div class="spe-board">Tafel</div>
+            <div class="spe-teacher">Lehrertisch</div>
+        </div>
+        <div class="spe-grid" id="spe_grid"></div>
+        <div class="spe-back" aria-hidden="true">hinten</div>
+        <p class="spe-count" id="spe_count"></p>
+    </div>
+
+    <div class="spe-actions">
+        <button class="btn btn-success" id="spe_save"><i class="fa fa-check"></i>&nbsp;&nbsp;Bestuhlung speichern</button>
+        <a class="btn btn-outline-secondary" id="spe_back_link"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a>
+        <span id="spe_status" class="text-muted"></span>
+    </div>
+
+    <ul class="spe-help">
+        <li>Klick auf ein leeres Feld setzt einen Platz, Klick auf einen Platz entfernt ihn wieder.</li>
+        <li>„Quer“: Plätze nebeneinander werden zu einem Tisch, alle schauen zur Tafel.</li>
+        <li>„Längs“: Plätze übereinander werden zu einem Tisch, zum Beispiel an den Seiten einer U-Form. Die Plätze schauen zur Raummitte.</li>
+        <li>Mit gedrückter Maustaste über mehrere Felder fahren setzt oder entfernt mehrere Plätze auf einmal.</li>
+        <li>Leere Reihen und Spalten am Rand werden beim Speichern nicht mitgezählt.</li>
+    </ul>
+</div>
+
+<script>
+#{File.exist?('/data/sitzplan/seats.js') ? File.read('/data/sitzplan/seats.js') : 'var seats_dict = {};'}
+
+var klasse = #{sitzplan_path_params[0].to_json};
+var raum = #{sitzplan_path_params[1].to_json};
+var spe_saved_plans = #{sitzplaneditor_saved_plan_count(sitzplan_path_params[1]).to_json};
+
+document.addEventListener('DOMContentLoaded', function () {
+    var PERSON = '<svg viewBox="0 0 20 20" aria-hidden="true"><ellipse cx="10" cy="13" rx="8" ry="4.6" fill="#56708c"/><circle cx="10" cy="8.2" r="4.4" fill="#7b93ad"/></svg>';
+    var state = { cols: 12, rows: 8, seats: new Map() };
+    var grid = document.getElementById('spe_grid');
+    var paint = null;
+    var saved_signature = '';
+
+    var mode = 'h';
+
+    function key(x, y) { return x + ',' + y; }
+    function has(x, y) { return state.seats.has(key(x, y)); }
+
+    // Blickrichtung aus dem optionalen dritten Wert in seats.js (Grad, im Uhrzeigersinn)
+    function dir_at(x, y) {
+        if (!has(x, y)) return null;
+        var r = (((state.seats.get(key(x, y)) || 0) % 360) + 360) % 360;
+        return r === 90 ? 'r' : r === 180 ? 'd' : r === 270 ? 'l' : 'u';
+    }
+    function vertical(d) { return d === 'l' || d === 'r'; }
+
+    function set_mode(m) {
+        mode = m;
+        $('#spe_mode_h').toggleClass('btn-primary', m === 'h').toggleClass('btn-outline-primary', m !== 'h').attr('aria-pressed', m === 'h');
+        $('#spe_mode_v').toggleClass('btn-primary', m === 'v').toggleClass('btn-outline-primary', m !== 'v').attr('aria-pressed', m === 'v');
+    }
+    $('#spe_mode_h').on('click', function () { set_mode('h'); });
+    $('#spe_mode_v').on('click', function () { set_mode('v'); });
+
+    function load_layout() {
+        var layout = seats_dict[raum] || [];
+        if (layout.length === 0) return;
+        var min_x = Math.min.apply(null, layout.map(function (s) { return s[0]; }));
+        var min_y = Math.min.apply(null, layout.map(function (s) { return s[1]; }));
+        var w = Math.max.apply(null, layout.map(function (s) { return s[0]; })) - min_x + 1;
+        var h = Math.max.apply(null, layout.map(function (s) { return s[1]; })) - min_y + 1;
+        var cols = Math.max(12, w + 4);
+        cols = Math.min(Math.max(20, w), cols + (cols % 2));
+        state.cols = cols;
+        state.rows = Math.min(Math.max(16, h), Math.max(8, h + 2));
+        var ox = Math.floor((state.cols - w) / 2);
+        layout.forEach(function (s) {
+            state.seats.set(key(s[0] - min_x + ox, s[1] - min_y), s.length > 2 ? s[2] : null);
+        });
+    }
+
+    function normalized() {
+        var list = [];
+        state.seats.forEach(function (rot, k) {
+            var p = k.split(',');
+            list.push([+p[0], +p[1], rot]);
+        });
+        if (list.length === 0) return [];
+        var min_x = Math.min.apply(null, list.map(function (s) { return s[0]; }));
+        var min_y = Math.min.apply(null, list.map(function (s) { return s[1]; }));
+        list.sort(function (a, b) { return a[1] - b[1] || a[0] - b[0]; });
+        return list.map(function (s) {
+            var out = [s[0] - min_x, s[1] - min_y];
+            if (s[2] !== null) out.push(s[2]);
+            return out;
+        });
+    }
+
+    function set_status(text) { $('#spe_status').text(text); }
+
+    function apply(x, y) {
+        if (paint === 'add')
+            state.seats.set(key(x, y), mode === 'h' ? null : (x < state.cols / 2 ? 90 : 270));
+        else
+            state.seats.delete(key(x, y));
+        set_status('');
+        render();
+    }
+
+    function cell_at(ev) {
+        var el = document.elementFromPoint(ev.clientX, ev.clientY);
+        return el && el.closest ? el.closest('.spe-cell') : null;
+    }
+
+    grid.addEventListener('pointerdown', function (ev) {
+        var c = cell_at(ev);
+        if (!c) return;
+        ev.preventDefault();
+        var x = +c.dataset.x, y = +c.dataset.y;
+        paint = has(x, y) ? 'remove' : 'add';
+        apply(x, y);
+    });
+    document.addEventListener('pointermove', function (ev) {
+        if (!paint) return;
+        var c = cell_at(ev);
+        if (!c) return;
+        var x = +c.dataset.x, y = +c.dataset.y;
+        if ((paint === 'add') !== has(x, y)) apply(x, y);
+    });
+    document.addEventListener('pointerup', function () { paint = null; });
+
+    var warn_timer = null;
+    function warn(text) {
+        $('#spe_warn').text(text).show();
+        clearTimeout(warn_timer);
+        warn_timer = setTimeout(function () { $('#spe_warn').hide(); }, 4500);
+    }
+
+    function shift_all(dx) {
+        var moved = new Map();
+        state.seats.forEach(function (rot, k) {
+            var p = k.split(',');
+            moved.set(key(+p[0] + dx, +p[1]), rot);
+        });
+        state.seats = moved;
+    }
+
+    function any_seat(test) {
+        var hit = false;
+        state.seats.forEach(function (rot, k) {
+            var p = k.split(',');
+            if (test(+p[0], +p[1])) hit = true;
+        });
+        return hit;
+    }
+
+    $('#spe_cols').on('change', function () {
+        var v = parseInt($(this).val()) || state.cols;
+        var target = Math.max(4, Math.min(20, v + (v % 2)));
+        var side = (target - state.cols) / 2;
+        if (side < 0) {
+            var k = -side, old_cols = state.cols;
+            if (any_seat(function (x) { return x < k || x >= old_cols - k; })) {
+                warn('Am linken oder rechten Rand stehen noch Plätze. Entfernen Sie diese zuerst.');
+                $(this).val(state.cols);
+                return;
+            }
+        }
+        shift_all(side);
+        state.cols = target;
+        $(this).val(target);
+        render();
+    });
+
+    $('#spe_rows').on('change', function () {
+        var target = Math.max(2, Math.min(16, parseInt($(this).val()) || state.rows));
+        if (target < state.rows && any_seat(function (x, y) { return y >= target; })) {
+            warn('In der hintersten Reihe stehen noch Plätze. Entfernen Sie diese zuerst.');
+            $(this).val(state.rows);
+            return;
+        }
+        state.rows = target;
+        $(this).val(target);
+        render();
+    });
+
+    $('#spe_clear').on('click', function () { state.seats.clear(); set_status(''); render(); });
+
+    function do_save() {
+        var seats = normalized();
+        $('#spe_save').prop('disabled', true);
+        api_call('/api/sitzplaneditor_save', {klasse: klasse, raum: raum, seats: JSON.stringify(seats)}, function (data) {
+            $('#spe_save').prop('disabled', false);
+            if (data.success) {
+                saved_signature = JSON.stringify(data.seats);
+                set_status('Gespeichert. Shuffler, Helfer und Verteilen verwenden ab sofort diese Bestuhlung.');
+            } else if (data.error && data.error !== 'unknown_error') {
+                set_status(data.error);
+            }
+        });
+    }
+
+    $('#spe_save').on('click', function () {
+        if (state.seats.size === 0) {
+            warn('Legen Sie mindestens einen Platz an.');
+            return;
+        }
+        var changed = JSON.stringify(normalized()) !== saved_signature;
+        if (!changed) {
+            set_status('Keine Änderungen zum Speichern.');
+        } else if (saved_signature !== '' && spe_saved_plans > 0) {
+            var text = $('<p>').text('Für Raum ' + raum + ' gibt es schon Sitzordnungen, die auf der bisherigen Bestuhlung beruhen. Wenn Sie Tische hinzufügen, entfernen oder verschieben, werden die Plätze neu durchnummeriert. Diese Sitzordnungen passen dann nicht mehr: Schülerinnen und Schüler säßen auf anderen oder nicht mehr vorhandenen Plätzen.').prop('outerHTML') +
+                $('<p>').text('Verteilen Sie die Klasse nach dem Speichern bitte neu, mit dem Helfer oder mit „Verteilen“.').prop('outerHTML');
+            showTemplateModal('Bestuhlung wirklich ändern?', text,
+                "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
+                'Abbrechen', 'btn-secondary', do_save);
+        } else {
+            do_save();
+        }
+    });
+
+    function render() {
+        grid.style.gridTemplateColumns = 'repeat(' + state.cols + ', minmax(0, 1fr))';
+        grid.innerHTML = '';
+        var seat_count = 0, tables = 0;
+        for (var y = 0; y < state.rows; y++) {
+            for (var x = 0; x < state.cols; x++) {
+                var c = document.createElement('div');
+                c.dataset.x = x; c.dataset.y = y;
+                if (has(x, y)) {
+                    seat_count++;
+                    var d = dir_at(x, y);
+                    c.className = 'spe-cell seat dir-' + d;
+                    if (vertical(d)) {
+                        if (dir_at(x, y - 1) === d) c.classList.add('jt'); else tables++;
+                        if (dir_at(x, y + 1) === d) c.classList.add('jb');
+                    } else {
+                        if (dir_at(x - 1, y) === d) c.classList.add('jl'); else tables++;
+                        if (dir_at(x + 1, y) === d) c.classList.add('jr');
+                    }
+                    c.innerHTML = '<div class="spe-desk"></div><div class="spe-person">' + PERSON + '</div>';
+                    c.setAttribute('aria-label', 'Sitzplatz');
+                } else {
+                    c.className = 'spe-cell empty';
+                    c.innerHTML = '<div class="spe-slot"></div>';
+                    c.setAttribute('aria-label', 'freies Feld');
+                }
+                grid.appendChild(c);
+            }
+        }
+        $('#spe_count').html('<b>' + seat_count + '</b> ' + (seat_count === 1 ? 'Sitzplatz' : 'Sitzplätze') +
+            ' an <b>' + tables + '</b> ' + (tables === 1 ? 'Tisch' : 'Tischen'));
+    }
+
+    $('#spe_subtitle').text('Raum ' + raum + ' · Klasse ' + klasse);
+    $('#spe_back_link').attr('href', '/directory/' + encodeURIComponent(klasse));
+    load_layout();
+    saved_signature = seats_dict[raum] ? JSON.stringify(normalized()) : '';
+    $('#spe_cols').val(state.cols);
+    $('#spe_rows').val(state.rows);
+    render();
+});
+</script>

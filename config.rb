@@ -203,6 +203,11 @@ if ENABLE_MAIL_FORWARDER
     docker_compose[:services][:mail_forwarder][:volumes] << "#{MAIL_FORWARDER_PATH}:/mails"
 end
 
+# Schreibzugriff für den Sitzplan-Editor nur im Web-Container, erst nach dem Kopieren
+# der Volumes in die Bots angehängt; vorher anlegen, damit Docker den Ordner nicht als root erzeugt
+FileUtils::mkpath(File::join(INPUT_DATA_PATH, 'sitzplan'))
+docker_compose[:services][:ruby][:volumes] << "#{File::join(INPUT_DATA_PATH, 'sitzplan')}:/data/sitzplan"
+
 if ENABLE_NEXTCLOUD_SANDBOX
     FileUtils::mkpath(File::join(DATA_PATH, 'nextcloud', 'nextcloud'))
     FileUtils::mkpath(File::join(DATA_PATH, 'nextcloud', 'apps'))

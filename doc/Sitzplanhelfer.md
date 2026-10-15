@@ -13,16 +13,27 @@ echte Sitzwünsche der SuS ein, und die Lehrkraft behält volle Kontrolle
    neue Umfrage an und startet einen Timer (einstellbar 1–60 Tage,
    Standard 4). Das darf **nur die Klassenleitung** der Klasse (oder
    Admin) – sonst könnte jede Fachlehrkraft spontan eine Umfrage an die
-   ganze Klasse auslösen.
+   ganze Klasse auslösen. Hat der Raum weniger Plätze als die Klasse
+   SuS, lässt sich keine Runde starten (statt erst beim Erzeugen
+   festzustellen, dass nicht alle hineinpassen).
 2. Die SuS sehen die Umfrage ganz normal über `print_current_polls()`
    (keine eigene Seite nötig) und wählen bis zu drei gleichberechtigte
    Wunschpartner sowie optional eine Person, neben der sie nicht sitzen
    möchten.
+   Solange die Runde läuft, zeigt der Sitzplanhelfer die Restlaufzeit
+   (Tage, Stunden, Minuten) und wie viele SuS schon geantwortet haben
+   (neue Antworten erscheinen alle 30 Sekunden ohne Neuladen);
+   wer noch nicht geantwortet hat, steht mit „noch keine Antwort" in
+   der Wunschliste. **„Wunschrunde jetzt beenden"** schließt die
+   Umfrage vorzeitig (nach Rückfrage) – die bis dahin abgegebenen
+   Wünsche bleiben erhalten und werden ganz normal weiterverwendet.
 3. **Wünsche verwalten**: Jede Lehrkraft der Klasse (nicht nur die
    Klassenleitung) sieht die eingehenden Wünsche live, inkl. 🤝-Symbol
-   für wechselseitige Wünsche. Wünsche zählen automatisch – die
-   Lehrkraft kann einzelne Wünsche nur aktiv **ablehnen** (rotes Kreuz),
-   eine Bestätigung ist nicht nötig.
+   für wechselseitige Wünsche. Wünsche zählen automatisch, eine
+   Bestätigung ist nicht nötig. Über einen Schalter lässt sich jeder
+   einzelne Wunsch **deaktivieren** und wieder aktivieren – er bleibt
+   dabei gespeichert, zählt aber nicht für die Planung. Ist bereits ein
+   Plan zu sehen, zeigt er die Auswirkung sofort an.
 4. Zusätzlich können **Zwangspaare** (muss/darf nicht zusammensitzen)
    und **feste Plätze** gesetzt werden – diese haben immer Vorrang vor
    Schülerwünschen. Ein Paar kann nie gleichzeitig Zwang und Verbot
@@ -44,13 +55,33 @@ echte Sitzwünsche der SuS ein, und die Lehrkraft behält volle Kontrolle
    Plätze raumspezifisch sind.
 5. **Sitzplan erzeugen** lässt einen Algorithmus (client-seitig, siehe
    unten) mehrere Versuche rechnen und zeigt die Trefferquote
-   transparent an. **Speichern** schließt die Wunschrunde automatisch
-   (falls noch nicht geschehen) und macht den Plan zum aktuellen, für
-   SuS sichtbaren Sitzplan.
-6. **Gespeicherte Sitzpläne**: jeder gespeicherte Plan bleibt in einer
+   transparent an. „Neu würfeln" rechnet erneut.
+6. **Von Hand nachbessern**: Im erzeugten Plan lässt sich jede Person
+   per Ziehen auf einen anderen Platz setzen (tauscht mit der Person
+   dort oder verschiebt auf einen freien Platz). Markierungen und
+   Trefferquote werden danach sofort neu berechnet – verletzt die
+   Änderung eine feste Platzvorgabe oder einen Wunsch, ist das
+   sichtbar, wird aber nicht verhindert. Umgesetzt mit Pointer-Events,
+   funktioniert also auch per Finger oder Stift. Jeder Zug lässt sich
+   über „Letzten Zug rückgängig" zurücknehmen, auch mehrfach. Wurde von
+   Hand geändert, fragt „Neu würfeln" vorher nach. Im Plan ist grün, wer
+   einen Wunschpartner neben sich hat, rötlich, bei wem etwas nicht
+   erfüllt ist (Grund in der Liste darunter) – rot hat Vorrang.
+7. **Speichern** schließt die Wunschrunde automatisch (falls noch nicht
+   geschehen) und macht den Plan zum aktuellen, für SuS sichtbaren
+   Sitzplan. Er bleibt danach auf der Seite sichtbar.
+8. **Gespeicherte Sitzpläne**: jeder gespeicherte Plan bleibt in einer
    Historie erhalten – einzeln für SuS anzeigbar (auch ältere, nicht
-   nur der aktuellste), löschbar (z. B. bei Versehen) und über
-   „Bearbeiten" erneut editierbar (siehe unten).
+   nur der aktuellste), löschbar (z. B. bei Versehen; nicht, solange er
+   gerade bearbeitet wird) und über
+   „Bearbeiten" erneut editierbar. Beim Bearbeiten wird die gespeicherte
+   Sitzordnung geladen und lässt sich per Ziehen anpassen oder neu
+   würfeln – ohne neue Umfrage, auf Basis der bereits erhobenen Wünsche.
+9. **Drucken**: Die SuS-Ansicht hat einen „Drucken"-Knopf, im
+   Sitzplanhelfer öffnet „Sitzplan drucken" sie direkt mit Druckdialog
+   (`?print=1`). Gedruckt wird nur Überschrift, Tafel und Sitzplätze,
+   auf eine A4-Seite quer skaliert, ohne Dashboard-Menü und
+   Hintergrund.
 
 ## Datenmodell (Neo4j)
 
@@ -63,7 +94,7 @@ echte Sitzwünsche der SuS ein, und die Lehrkraft behält volle Kontrolle
   **ein** Zyklus gleichzeitig offen (`saved_at IS NULL`).
 - **`SeatWish`**: nur die Lehrkraft-Entscheidung pro Wunsch
   (`want1_status`/`want2_status`/`want3_status`/`avoid1_status`,
-  Status `pending` oder `rejected`). Die eigentlichen Wunschdaten
+  Status `pending` = aktiv oder `rejected` = deaktiviert). Die eigentlichen Wunschdaten
   kommen live aus der ganz normalen `PollResponse` der Umfrage, nicht
   aus einer eigenen Tabelle.
 
@@ -76,7 +107,7 @@ jeder anderen Umfrage im Dashboard.
 
 - **Wunschrunde starten**: nur Klassenleitung der Klasse oder Admin
   (`klassenleiter_for_klasse_or_admin_logged_in?`).
-- **Alles andere** (Wünsche ablehnen, Paare/Regeln setzen, Plan
+- **Alles andere** (Wünsche deaktivieren, Paare/Regeln setzen, Plan
   erzeugen/speichern/löschen/bearbeiten): jede Lehrkraft, die laut
   `@@teachers_for_klasse` diese Klasse unterrichtet, oder Admin
   (`sph_can_manage?`).
@@ -85,8 +116,12 @@ jeder anderen Umfrage im Dashboard.
 
 ## Algorithmus (client-seitig, `sitzplanhelfer.html`)
 
-1. Feste Regeln, dann Zwangspaare werden zuerst platziert und danach
-   nicht mehr angetastet.
+1. Zuerst werden genaue Plätze besetzt, dann Zwangspaare (der Partner
+   einer Person mit genauem Platz bekommt deren Nachbarplatz, bevor ihn
+   eine grobe Bereichsvorgabe belegen kann), zuletzt die groben
+   Bereiche. Diese Personen werden danach nicht mehr angetastet; ein
+   Versuch, in dem eine Vorgabe trotzdem nicht aufgeht, verliert beim
+   Vergleich der Versuche immer.
 2. Die restlichen SuS werden zufällig verteilt und anschließend über
    4000 zufällige Zweiertausche lokal optimiert (Hill-Climbing).
    Bewertet werden: erfüllte aktive Wünsche (wechselseitige Wünsche
@@ -96,7 +131,12 @@ jeder anderen Umfrage im Dashboard.
 3. SuS, die in der Vorrunde einen aktiven (nicht abgelehnten) Wunsch
    hatten, der nur mangels Paarung nicht erfüllt wurde, werden dieses
    Mal bevorzugt; wer seinen Wunsch letztes Mal bekam, tritt etwas
-   zurück (Fairness über mehrere Runden hinweg).
+   zurück (Fairness über mehrere Runden hinweg). Maßstab ist immer der
+   zuletzt gespeicherte, für SuS sichtbare Plan vor dieser Runde; wird
+   ein gespeicherter Plan nachträglich bearbeitet, dessen Vorgänger
+   (sonst würde der Plan mit sich selbst verglichen). Dasselbe gilt für
+   die Rotation vorne/hinten. Wer in dieser Runde bevorzugt wird, zeigt
+   der Sitzplanhelfer offen als Namensliste über den Wünschen an.
 4. Das Ganze läuft 10-mal unabhängig mit neuem Zufall, das beste
    Ergebnis wird übernommen.
 

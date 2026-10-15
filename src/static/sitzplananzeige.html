@@ -41,10 +41,55 @@
     color: #666;
     margin-top: 2em;
 }
+#spa_bu_print {
+    display: none;
+}
+/* Ausdruck: nur Überschrift, Tafel und Plätze, ohne Dashboard-Menü,
+   Hintergrundbild und Schatten (die werden oft gar nicht oder grau gedruckt). */
+@page {
+    size: landscape;
+    margin: 1cm;
+}
+@media print {
+    nav, .foot, a.github, .info, #advent_calendar, .grain_overlay, .spa-no-print {
+        display: none !important;
+    }
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    #main_container::after {
+        display: none !important;
+    }
+    .spa-container {
+        max-width: none;
+        padding: 0;
+    }
+    .spa-container h1 {
+        margin-top: 0;
+    }
+    .spa-tafel {
+        background: #fff;
+        color: #000;
+        border: 2px solid #000;
+        box-shadow: none;
+    }
+    #spa_seats {
+        margin: 1.5em auto 0 auto;
+    }
+    #spa_seats .place {
+        box-shadow: none;
+        border: 1.5px solid #000;
+        color: #000;
+    }
+}
 </style>
 <div class="spa-container">
     <h1>Sitzplan <span id="spa_label"></span></h1>
     <p id="spa_saved_at" class="text-muted"></p>
+    <button class="btn btn-light spa-no-print" id="spa_bu_print"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</button>
     <span class="spa-tafel">Tafel</span>
     <div id="spa_seats"></div>
     <p class="spa-empty-hint" id="spa_empty_hint" style="display: none;">Für diese Klasse/diesen Raum wurde noch kein Sitzplan gespeichert.</p>
@@ -89,25 +134,49 @@ document.addEventListener('DOMContentLoaded', function () {
             let d = new Date(data.saved_at * 1000);
             $('#spa_saved_at').text(`Stand: ${d.toLocaleDateString('de-DE')}`);
         }
-        let w = 1, h = 1;
-        for (let s of seats) {
-            if (s[0] + 1 > w) w = s[0] + 1;
-            if (s[1] + 1 > h) h = s[1] + 1;
-        }
-        let container = $('#spa_seats');
-        let container_width = Math.min($('.spa-container').width() || 900, 900);
-        let scale = Math.min(90, container_width / w);
-        container.css('height', `${h * scale}px`).css('width', `${w * scale}px`);
-        for (let place of data.places) {
-            let seat = seats[place.seat_index];
-            if (!seat) continue;
-            let div = $('<div>').addClass('place')
-                .css('left', `${seat[0] * scale}px`).css('top', `${seat[1] * scale}px`)
-                .css('width', `${scale * 0.9}px`).css('height', `${scale * 0.9}px`)
-                .css('font-size', `${scale * 0.14}px`)
-                .text(place.display_name);
-            container.append(div);
+        places = data.places;
+        render_seats(false);
+        $('#spa_bu_print').show().on('click', function () { window.print(); });
+        // Für den Ausdruck auf eine Querformat-Seite zugeschnitten zeichnen,
+        // danach wieder in Bildschirmgröße.
+        window.addEventListener('beforeprint', function () { render_seats(true); });
+        window.addEventListener('afterprint', function () { render_seats(false); });
+        // ?print=1 (Link „Sitzplan drucken" im Sitzplanhelfer) öffnet direkt
+        // den Druckdialog.
+        if (new URLSearchParams(window.location.search).get('print') === '1') {
+            setTimeout(function () { window.print(); }, 300);
         }
     });
 });
+
+var places = [];
+
+function render_seats(for_print) {
+    let w = 1, h = 1;
+    for (let s of seats) {
+        if (s[0] + 1 > w) w = s[0] + 1;
+        if (s[1] + 1 > h) h = s[1] + 1;
+    }
+    let container = $('#spa_seats').empty();
+    let scale;
+    if (for_print) {
+        // A4 quer mit 1 cm Rand: ca. 1040 × 720 px nutzbar, davon gehen
+        // Überschrift und Tafel ab.
+        scale = Math.min(110, 1000 / w, 500 / h);
+    } else {
+        let container_width = Math.min($('.spa-container').width() || 900, 900);
+        scale = Math.min(90, container_width / w);
+    }
+    container.css('height', `${h * scale}px`).css('width', `${w * scale}px`);
+    for (let place of places) {
+        let seat = seats[place.seat_index];
+        if (!seat) continue;
+        let div = $('<div>').addClass('place')
+            .css('left', `${seat[0] * scale}px`).css('top', `${seat[1] * scale}px`)
+            .css('width', `${scale * 0.9}px`).css('height', `${scale * 0.9}px`)
+            .css('font-size', `${scale * 0.14}px`)
+            .text(place.display_name);
+        container.append(div);
+    }
+}
 </script>

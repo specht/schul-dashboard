@@ -28,6 +28,7 @@
             <button class='btn btn-outline-secondary mr-2 bu-allow-zeugniskonferenzen-monitor-flur'>Flur-Monitor: Zeugniskonferenzen</button>
             <button class='btn btn-outline-secondary mr-2 bu-allow-zeugniskonferenzen-monitor-sek'>Sek-Monitor: Zeugniskonferenzen</button>
             <button class='btn btn-outline-secondary mr-2 bu-allow-zeugniskonferenzen-monitor-lz'>LZ-Monitor: Zeugniskonferenzen</button>
+            <button class='btn btn-outline-secondary mr-2 bu-allow-zeugniskonferenzen-monitor-silentium'>Silentium-Monitor: Zeugniskonferenzen</button>
             <div style='clear: both;'></div>
             <hr />
             <h3>Monitore im Schulhaus</h3>
@@ -48,6 +49,13 @@
             <div class='monitor-frame'>
                 <div class="embed-responsive embed-responsive-16by9">
                     <iframe class="embed-responsive-item" src="/monitor/lz"></iframe>
+                </div>
+            </div>
+            <hr />
+            <h3>Monitor im Silentium</h3>
+            <div class='monitor-frame'>
+                <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="/monitor/silentium"></iframe>
                 </div>
             </div>
         </div>
@@ -74,7 +82,7 @@
         });
         api_call('/api/get_monitor_zeugniskonferenzen', {}, function(data) {
             if (data.success) {
-                for (let key of ['flur', 'lz', 'sek']) {
+                for (let key of ['flur', 'lz', 'sek', 'silentium']) {
                     let button = $(`.bu-allow-zeugniskonferenzen-monitor-${key}`);
                     if (data.result[key]) {
                         button.removeClass('btn-outline-secondary').addClass('btn-warning');

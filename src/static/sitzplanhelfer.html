@@ -123,6 +123,7 @@ table.sph-wishes td, table.sph-wishes th {
 <div class="sph-container">
     <h1>Sitzplanhelfer <span id='sph_label'></span></h1>
     <p class="text-muted">Wunschbasierte Sitzordnung – neben dem <a href="#" id="sph_link_shuffler">Sitzplan-Shuffler</a>.</p>
+    <p><a class="btn btn-outline-secondary" id="sph_back_link" href="#"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></p>
 
     <div class="sph-section" id="sph_cycle_controls">
         <span id="sph_duration_group" style="display: inline-block;">
@@ -902,6 +903,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     $('#sph_label').text(`${klasse} – Raum ${raum}`);
     $('#sph_link_shuffler').attr('href', `/sitzplan/${klasse}/${raum}`);
+    $('#sph_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
     $('#sph_link_public_view').attr('href', `/sitzplananzeige/${klasse}/${raum}`);
 
     $('#sph_bu_start_cycle').click(function () {

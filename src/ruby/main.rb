@@ -135,6 +135,7 @@ require './include/public_event.rb'
 require './include/roles.rb'
 require './include/salzh.rb'
 require './include/school_wifi.rb'
+require './include/sitzplaneditor.rb'
 require './include/sitzplanhelfer.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
@@ -1342,6 +1343,7 @@ class Main < Sinatra::Base
         end
         @@rooms_for_shorthand = {}
         @@rooms_for_klasse = {}
+        @@room_hours_for_klasse = {}
         room_order_set = Set.new(ROOM_ORDER)
         undeclared_rooms = Set.new()
         unless timetable_today.nil?
@@ -1366,6 +1368,8 @@ class Main < Sinatra::Base
                                     if room_order_set.include?(room)
                                         @@rooms_for_klasse[klasse] ||= Set.new()
                                         @@rooms_for_klasse[klasse] << room
+                                        @@room_hours_for_klasse[klasse] ||= Hash.new(0)
+                                        @@room_hours_for_klasse[klasse][room] += 1
                                     else
                                         undeclared_rooms << room
                                     end

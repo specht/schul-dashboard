@@ -51,6 +51,8 @@ class Main < Sinatra::Base
             io.puts "<a class='btn btn-secondary mb-1' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='/api/all_sus_untis'>Untis: Alle SuS</a>"
             io.puts "<a class='btn btn-secondary mb-1' href='/api/all_kurse_untis'>Untis: Alle Kurse</a>"
+            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_users_informatik_biber.xlsx'>Informatik-Biber: Excel (Anmeldungen)</a>"
+            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_users_informatik_biber'>Informatik-Biber: Zugangsdaten (Text)</a>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
@@ -758,38 +760,109 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
 
+    # The union of the memberships of all matching offers, in the usual class order.
+    # An empty result must stay empty: never fall back to all students.
+    def informatik_biber_student_emails
+        registered = Set.new(neo4j_query(<<~END_OF_QUERY).map { |row| row['u.email'] })
+            MATCH (u:User)-[:IS_PART_OF]->(a:Angebot)
+            WHERE a.name CONTAINS 'Informatik-Biber'
+            RETURN DISTINCT u.email;
+        END_OF_QUERY
+        @@klassen_order.flat_map do |klasse|
+            (@@schueler_for_klasse[klasse] || []).select do |email|
+                registered.include?(email) && @@user_info.include?(email)
+            end
+        end.uniq
+    end
+
+    # Matches the column names from the Informatik-Biber import instructions.
+    # "Anonym" is No because these rows contain real names; any anonymous
+    # registrations must be prepared separately using pseudonyms.
+    def informatik_biber_user_rows
+        genders = {'m' => 'male', 'w' => 'female', 'd' => 'divers'}
+        informatik_biber_student_emails.map do |email|
+            user = @@user_info[email]
+            gender = genders[user[:geschlecht]]
+            raise "Unknown gender in Informatik-Biber export for #{email}" unless gender
+            raise "Missing Informatik-Biber password for #{email}" if user[:biber_password].to_s.empty?
+            [
+                Main.tr_klasse(user[:klasse]), user[:klasse].to_i,
+                user[:first_name], user[:last_name], email, user[:biber_password],
+                gender, 'No'
+            ]
+        end
+    end
+
     def print_all_users_informatik_biber
         require_admin!
+        rows = informatik_biber_user_rows
         StringIO.open do |io|
+            rows.each { |row| io.puts row.first(7).join(';') }
             @@klassen_order.each do |klasse|
-                @@schueler_for_klasse[klasse].each do |email|
-                    user = @@user_info[email]
-                    biber_user_id = email
-                    biber_password = user[:biber_password]
-                    io.puts "#{Main.tr_klasse(user[:klasse])};#{user[:klasse].to_i};#{user[:first_name]};#{user[:last_name]};#{biber_user_id};#{biber_password};#{user[:geschlecht] == 'm' ? 'male' : 'female'}"
-                end
-            end
-            @@klassen_order.each do |klasse|
+                klasse_rows = rows.select { |row| row[0] == Main.tr_klasse(klasse) }
+                next if klasse_rows.empty?
                 io.puts
                 io.puts "Informatik-Biber Klasse #{Main.tr_klasse(klasse)}"
                 io.puts '-' * "Informatik-Biber Klasse #{Main.tr_klasse(klasse)}".size
                 io.puts
                 io.puts "Anmeldung mit schulischer E-Mail-Adresse und 4-stelligem Passwort"
                 io.puts
-                @@schueler_for_klasse[klasse].each do |email|
-                    user = @@user_info[email]
-                    biber_user_id = email
-                    biber_password = user[:biber_password]
-                    io.puts "#{biber_password} #{user[:email]}"
-                end
+                klasse_rows.each { |row| io.puts "#{row[5]} #{row[4]}" }
             end
             io.string
         end
     end
 
+    def informatik_biber_xlsx(rows)
+        file = Tempfile.new('biber')
+        begin
+            workbook = WriteXLSX.new(file.path)
+            sheet = workbook.add_worksheet('SuS')
+            headers = [
+                'Klassen-/Kursname', 'Stufe', 'Vorname', 'Nachname',
+                'Benutzername', 'Passwort', 'Geschlecht', 'Anonym'
+            ]
+            format_header = workbook.add_format(:bold => true)
+            sheet.set_column(0, 0, 22)
+            sheet.set_column(1, 1, 8)
+            sheet.set_column(2, 3, 18)
+            sheet.set_column(4, 4, 42)
+            sheet.set_column(5, 7, 12)
+            headers.each_with_index do |heading, col|
+                sheet.write_string(0, col, heading, format_header)
+            end
+            rows.each_with_index do |row, index|
+                row.each_with_index do |value, col|
+                    # Keep usernames/passwords as strings, even if numeric-looking.
+                    if col == 1
+                        sheet.write_number(index + 1, col, value)
+                    else
+                        sheet.write_string(index + 1, col, value.to_s)
+                    end
+                end
+            end
+            workbook.close
+            File.binread(file.path)
+        ensure
+            file.close
+            file.unlink
+        end
+    end
+
     get '/api/all_users_informatik_biber' do
         require_admin!
+        headers 'Cache-Control' => 'private, no-store'
         respond_raw_with_mimetype(print_all_users_informatik_biber, 'text/plain')
+    end
+
+    get '/api/all_users_informatik_biber.xlsx' do
+        require_admin!
+        headers 'Cache-Control' => 'private, no-store'
+        xlsx = informatik_biber_xlsx(informatik_biber_user_rows)
+        respond_raw_with_mimetype_and_filename(
+            xlsx, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Informatik-Biber-Teilnehmende.xlsx'
+        )
     end
 
     get '/api/get_all_user_ids' do

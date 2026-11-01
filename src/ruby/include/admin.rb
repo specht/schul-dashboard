@@ -7,6 +7,81 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
 
+    # An administrator can restore the existing three-day first-login grace
+    # period without touching the teacher's last_access or any other account.
+    def reset_teacher_two_factor!(email)
+        require_admin!
+        assert(@@lehrer_order.include?(email), '2FA reset is only allowed for teachers')
+        assert(email != @session_user[:email], 'Cannot reset your own 2FA')
+
+        timestamp = Time.now.to_i
+        deadline = timestamp + 3 * 24 * 60 * 60
+
+        transaction do
+            neo4j_query_expect_one(<<~END_OF_QUERY, :email => email, :admin_email => @session_user[:email], :timestamp => timestamp, :deadline => deadline)
+                MATCH (u:User {email: $email}), (admin:User {email: $admin_email})
+                SET u.force_2fa_exception_deadline = $deadline
+                REMOVE u.otp_token, u.otp_token_changed,
+                       u.telephone_number, u.telephone_number_changed,
+                       u.preferred_login_method
+                CREATE (event:AdminSecurityEvent {action: 'reset_teacher_2fa', ts: $timestamp, deadline: $deadline})-[:PERFORMED_BY]->(admin)
+                CREATE (event)-[:AFFECTS]->(u)
+                RETURN u.email AS email;
+            END_OF_QUERY
+
+            # Ad-hoc approvals must not be left orphaned by session deletion.
+            neo4j_query(<<~END_OF_QUERY, :email => email)
+                MATCH (a:AdHocTwoFaRequest)-[:BELONGS_TO]->(s:Session)-[:BELONGS_TO]->(u:User {email: $email})
+                DETACH DELETE a;
+            END_OF_QUERY
+
+            # Revoke every existing session and pending login/enrolment code.
+            # The next login starts with a fresh e-mail code.
+            neo4j_query(<<~END_OF_QUERY, :email => email)
+                MATCH (n)-[:BELONGS_TO]->(u:User {email: $email})
+                WHERE n:Session OR n:LoginCode OR n:PhoneNumberConfirmation
+                DETACH DELETE n;
+            END_OF_QUERY
+        end
+
+        STDERR.puts "Admin 2FA reset: #{@session_user[:email]} reset #{email}; grace until #{Time.at(deadline)}"
+        deadline
+    end
+
+    post '/api/admin_reset_teacher_2fa' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:email])
+        email = data[:email].strip.downcase
+        deadline = reset_teacher_two_factor!(email)
+        headers 'Cache-Control' => 'no-store'
+
+        # Do not report a failed reset if only the notification fails:
+        # the database transaction has already committed.
+        notification_sent = true
+        begin
+            deliver_mail do
+                to email
+                bcc SMTP_FROM
+                from SMTP_FROM
+                subject "Dashboard: Zwei-Faktor-Anmeldung zurückgesetzt"
+
+                StringIO.open do |io|
+                    io.puts "<p>Hallo!</p>"
+                    io.puts "<p>Die Zwei-Faktor-Anmeldung für dein Dashboard-Konto wurde von der Administration zurückgesetzt.</p>"
+                    io.puts "<p>Deine bisherige Authenticator-Verknüpfung und deine hinterlegte SMS-Nummer wurden entfernt; bestehende Anmeldungen sind beendet.</p>"
+                    io.puts "<p>Du kannst dich jetzt wieder mit einem Code an deine schulische E-Mail-Adresse anmelden. Bitte hinterlege <strong>bis zum #{Time.at(deadline).strftime('%d.%m.%Y um %H:%M Uhr')}</strong> in deinem Profil einen neuen zweiten Faktor.</p>"
+                    io.puts "<p>Falls du diese Zurücksetzung nicht angefordert hast, wende dich bitte an die Administration.</p>"
+                    io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                    io.string
+                end
+            end
+        rescue StandardError => e
+            notification_sent = false
+            STDERR.puts "Unable to notify #{email} of 2FA reset: #{e.class}: #{e.message}"
+        end
+        respond(:ok => 'yeah', :deadline => deadline, :notification_sent => notification_sent)
+    end
+
     def good_bad_icon(flag)
         if flag == true
             "<i class='fa fa-check text-success'></i>"
@@ -87,7 +162,12 @@ class Main < Sinatra::Base
                 end
                 io.puts "<td><a class='btn btn-xs btn-secondary' style='padding-top: 0.4em;' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
                 io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
-                io.puts "<td>#{twofa_status[email]}</td>"
+                io.puts "<td>"
+                io.puts twofa_status[email] || 'Nicht eingerichtet'
+                unless email == @session_user[:email]
+                    io.puts "<br /><button type='button' class='btn btn-xs btn-outline-danger mt-1 btn-reset-teacher-2fa' data-email='#{htmlentities(email)}'>2FA zurücksetzen…</button>"
+                end
+                io.puts "</td>"
                 if all_sessions.include?(email)
                     io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
                 else

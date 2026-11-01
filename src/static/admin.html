@@ -34,6 +34,29 @@
             else
                 row.show();
         });
+        $('.btn-reset-teacher-2fa').click(function (e) {
+            const button = $(e.currentTarget);
+            const email = button.data('email');
+            const safeEmail = $('<span>').text(email).html();
+            showTemplateModal(
+                'Zwei-Faktor-Anmeldung zurücksetzen',
+                `Für <strong>${safeEmail}</strong> werden die bisherige Authenticator-Verknüpfung und SMS-Nummer entfernt. Alle bestehenden Sitzungen werden beendet. Die Lehrkraft kann sich anschließend 72 Stunden lang mit E-Mail-Code anmelden und muss in dieser Zeit einen neuen zweiten Faktor einrichten. Wirklich zurücksetzen?`,
+                '2FA zurücksetzen', 'btn-danger',
+                'Abbrechen', 'btn-secondary', function () {
+                    button.prop('disabled', true);
+                    api_call('/api/admin_reset_teacher_2fa', {email: email}, function (data) {
+                        if (data.success) {
+                            if (data.notification_sent === false) {
+                                alert('2FA wurde zurückgesetzt, aber die Benachrichtigungs-E-Mail konnte nicht versendet werden. Bitte die Lehrkraft selbst informieren.');
+                            }
+                            window.location.reload();
+                        } else {
+                            button.prop('disabled', false);
+                        }
+                    });
+                }
+            );
+        });
         $('.btn-purge-session').click(function (e) {
             let scrambled_sid = $(e.target).data('scrambled-sid');
             let email = $(e.target).data('email');

@@ -982,7 +982,9 @@ class Parser
                         end
                         x.strip
                     end
-                    STDERR.puts "[#{line}]"
+                    if DASHBOARD_SERVICE == 'ruby'
+                        STDERR.puts "[#{line}]"
+                    end
                     where = parts[0]
                     shorthand = parts[1]
                     next if (shorthand || '').empty?

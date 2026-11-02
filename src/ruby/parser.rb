@@ -4,6 +4,8 @@ require 'yaml'
 require 'json'
 require 'digest/sha2'
 require 'nokogiri'
+require 'zip'
+require 'zlib'
 require './credentials.rb'
 require '/data/config.rb'
 
@@ -607,6 +609,231 @@ class Parser
         end
     end
 
+    # Returns start date => path for all timetable sources, sorted by date.
+    # Sources are TXT files in txt_dir and Untis HTML exports (teacher
+    # timetables) as ZIP files in /data/stundenplan. If both exist for
+    # the same date, the TXT file wins.
+    def timetable_sources(txt_dir)
+        sources = {}
+        Dir['/data/stundenplan/*.zip'].each do |path|
+            sources[File.basename(path, '.zip')] = path
+        end
+        Dir["#{txt_dir}/*.TXT"].each do |path|
+            sources[File.basename(path, '.TXT')] = path
+        end
+        sources.sort.to_h
+    end
+
+    def read_txt_rows(path, encoding = 'r:utf-8')
+        start_date = File.basename(path).sub('.TXT', '')
+        separator = start_date < '2023-08-28' ? "\t" : ","
+        rows = []
+        File.open(path, encoding) do |f|
+            f.each_line do |line|
+                line = line.encode('utf-8')
+                rows << line.split(separator).map do |x|
+                    x = x.strip
+                    if x[0] == '"' && x[x.size - 1] == '"'
+                        x = x[1, x.size - 2]
+                    end
+                    x.strip
+                end
+            end
+        end
+        rows
+    end
+
+    # Parses one timetable page of an Untis HTML export, returns its name
+    # and the cells of the timetable as {:dow, :stunden, :rows, :aufsichten}
+    # with :rows being the lines of a cell, each line split into columns
+    def read_untis_page(html)
+        doc = Nokogiri::HTML(html, nil, 'iso-8859-1')
+        name = doc.at_css('font[size="6"]')
+        table = doc.at_css('table[border="3"]')
+        return nil if name.nil? || table.nil?
+        occupied = {}
+        stunde_for_row = {}
+        dow_for_col = {}
+        cells = []
+        table.xpath('./tr').each_with_index do |tr, r|
+            c = 0
+            tr.xpath('./td').each do |td|
+                c += 1 while occupied[[r, c]]
+                rowspan = (td['rowspan'] || 1).to_i
+                colspan = (td['colspan'] || 1).to_i
+                rowspan.times { |i| colspan.times { |j| occupied[[r + i, c + j]] = true } }
+                # Pausenaufsichten have a white background, time requests
+                # ("-3") are printed in a smaller font
+                aufsichten = []
+                rows = td.xpath('./table/tr').map do |line|
+                    line.xpath('./td').map do |x|
+                        text = x.text.gsub(" ", ' ').strip.squeeze(' ')
+                        next nil if text.empty? || x.at_css('font')&.[]('size') == '2'
+                        if x['bgcolor'] == '#FFFFFF'
+                            aufsichten << text
+                            next nil
+                        end
+                        text
+                    end.compact
+                end.reject { |x| x.empty? }
+                if r == 0
+                    dow = %w(Mo Di Mi Do Fr).index((rows.first || []).first) if c > 0
+                    colspan.times { |j| dow_for_col[c + j] = dow } if dow
+                elsif c == 0
+                    rowspan.times { |i| stunde_for_row[r + i] = rows.first.first.to_i } unless rows.empty?
+                else
+                    cells << [r, c, rowspan, rows, aufsichten]
+                end
+                c += colspan
+            end
+        end
+        cells = cells.map do |r, c, rowspan, rows, aufsichten|
+            {:dow => dow_for_col[c],
+             :stunden => (r...(r + rowspan)).map { |x| stunde_for_row[x] }.compact.uniq,
+             :rows => rows,
+             :aufsichten => aufsichten}
+        end.reject { |x| x[:dow].nil? || x[:stunden].empty? }
+        return name.text.gsub(" ", ' ').strip, cells
+    end
+
+    # Parses an Untis HTML export of teacher and class timetables (ZIP file),
+    # returns :lessons => [lehrer, klasse, fach, raum, dow, stunde] from the
+    # teacher timetables and :klassen_lessons => [klasse, fach, lehrer, raum,
+    # dow, stunde] from the class timetables (both as printed by Untis),
+    # :coupled => [klasse, dow, stunde] for coupled lessons in the class
+    # timetables and :pausenaufsichten => [where, lehrer, dow, stunde]
+    def read_untis_zip(path)
+        @untis_zip_cache ||= {}
+        @untis_zip_cache[path] ||= begin
+            pages = {}
+            Zip::File.open(path) do |zip|
+                zip.entries.each do |entry|
+                    next unless entry.file?
+                    page = read_untis_page(entry.get_input_stream.read)
+                    pages[page[0]] = page[1] if page
+                end
+            end
+            # Teacher timetables list classes in the first line of a lesson,
+            # class timetables list teachers in the second line.
+            result = {:lessons => [], :klassen_lessons => [], :coupled => Set.new(), :pausenaufsichten => []}
+            pages.keys.sort.each do |name|
+                cells = pages[name]
+                lessons = cells.reject { |x| x[:rows].empty? }
+                votes = lessons.sum do |x|
+                    lines = x[:rows].map(&:first)
+                    (pages.include?(lines[0].to_s.sub(/\A\*/, '').chomp('.')) ? 1 : 0) - (pages.include?(lines[1]) ? 1 : 0)
+                end
+                cells.each do |cell|
+                    cell[:aufsichten].each do |where|
+                        result[:pausenaufsichten] << [where, name, cell[:dow] + 1, cell[:stunden].first]
+                    end
+                end
+                lessons.each do |cell|
+                    if votes >= 0
+                        lines = cell[:rows].flatten
+                        unless [2, 3].include?(lines.size)
+                            debug "Unexpected cell in timetable of #{name}: #{lines.to_json}"
+                            next
+                        end
+                        cell[:stunden].each do |stunde|
+                            result[:lessons] << [name, lines[0].sub(/\A\*/, ''), lines[1], lines[2] || '', cell[:dow] + 1, stunde]
+                        end
+                    else
+                        # coupled lessons are marked with a dot and printed
+                        # side by side, but only up to two of them
+                        if cell[:rows].first.first.start_with?('.')
+                            cell[:stunden].each do |stunde|
+                                result[:coupled] << [name, cell[:dow] + 1, stunde]
+                            end
+                        end
+                        cell[:rows].map(&:size).max.times do |i|
+                            fach, lehrer, raum = *cell[:rows].map { |x| x[i] }
+                            cell[:stunden].each do |stunde|
+                                result[:klassen_lessons] << [name, fach.to_s.sub(/\A\./, '').sub(/\A\*/, ''), lehrer, raum || '', cell[:dow] + 1, stunde]
+                            end
+                        end
+                    end
+                end
+            end
+            result
+        end
+    end
+
+    # Returns the lessons of an Untis ZIP file in the same format as the rows
+    # of the TXT files: [unr, klasse, lehrer, fach, raum, dow, stunde].
+    # Teacher timetables abbreviate coupled lessons to one of their classes
+    # plus a dot ("10a." for 10a, 10b, 10c), the other classes are taken from
+    # the class timetables. As these show only up to two coupled lessons and
+    # subject names are cut after 6 characters, both are completed from
+    # reference_rows (the previous timetable) if possible.
+    # The Unterrichtsnummer is not part of the export and is taken from the
+    # reference rows as well.
+    def untis_zip_timetable_rows(path, reference_rows)
+        untis = read_untis_zip(path)
+        klassen_for_slot = {}
+        untis[:klassen_lessons].each do |klasse, fach, lehrer, raum, dow, stunde|
+            (klassen_for_slot[[lehrer, dow, stunde]] ||= Set.new()) << klasse
+        end
+
+        reference_lessons = {}
+        reference_rows.each do |parts|
+            next if (parts[3] || '').empty?
+            lesson = reference_lessons[parts[2, 5]] ||= {:unr => parts[0], :fach => parts[3], :slot => parts[4, 3], :klassen => Set.new()}
+            lesson[:klassen] << parts[1]
+        end
+        # [lehrer, klasse] => reference lessons, for every class of a lesson
+        reference_lessons_for = {}
+        reference_lessons.each_pair do |(lehrer, fach, raum, dow, stunde), lesson|
+            lesson[:klassen].each do |klasse|
+                (reference_lessons_for[[lehrer, klasse]] ||= []) << lesson
+            end
+        end
+
+        rows = []
+        # lessons without a teacher timetable (teacher "?") are only part of
+        # the class timetables
+        lehrer_with_timetable = Set.new(untis[:lessons].map(&:first))
+        orphans = untis[:klassen_lessons].reject do |klasse, fach, lehrer, raum, dow, stunde|
+            lehrer.nil? || lehrer_with_timetable.include?(lehrer)
+        end.map do |klasse, fach, lehrer, raum, dow, stunde|
+            [lehrer, klasse, fach, raum, dow, stunde]
+        end
+        (untis[:lessons] + orphans).each do |lehrer, klasse, fach, raum, dow, stunde|
+            abbreviated = klasse.end_with?('.')
+            klasse = klasse.chomp('.')
+            candidates = reference_lessons_for[[lehrer, klasse]] || []
+            known_fach = candidates.map { |x| x[:fach] }.uniq
+            unless known_fach.include?(fach)
+                matching_fach = known_fach.select { |x| x.start_with?(fach) }
+                fach = matching_fach.first if matching_fach.size == 1
+            end
+            candidates = candidates.select { |x| x[:fach] == fach }
+            same_slot = candidates.find { |x| x[:slot] == [raum, dow.to_s, stunde.to_s] }
+            klassen = [klasse]
+            if abbreviated
+                from_klassen = klassen_for_slot[[lehrer, dow, stunde]] || Set.new()
+                if from_klassen.include?(klasse)
+                    klassen = from_klassen.to_a
+                    # class timetables don't show all coupled lessons, so
+                    # take classes from the previous timetable for these
+                    if same_slot
+                        klassen |= same_slot[:klassen].select { |k| untis[:coupled].include?([k, dow, stunde]) }
+                    end
+                elsif same_slot
+                    klassen = same_slot[:klassen].to_a
+                elsif candidates.map { |x| x[:klassen] }.uniq.size == 1
+                    klassen = candidates.first[:klassen].to_a
+                end
+            end
+            # fall back to a stable fake Unterrichtsnummer
+            unr = (same_slot || candidates.first || {})[:unr] || (Zlib.crc32("#{lehrer}/#{klasse}/#{fach}") % 1000000 + 1000000).to_s
+            klassen.each do |k|
+                rows << [unr, k, lehrer, fach, raum, dow.to_s, stunde.to_s]
+            end
+        end
+        rows
+    end
+
     def parse_timetable(config, lesson_key_tr = {}, shorthands)
         historic_lessons_for_shorthand = {}
         sub_keys_for_unr_fach = {}
@@ -615,15 +842,12 @@ class Parser
         day_messages = {}
         all_lessons = {:timetables => {}, :start_dates => [], :lesson_keys => {}}
         current_date = Date.today.strftime('%Y-%m-%d')
-        current_timetable_start_date = Dir['/data/stundenplan/*.TXT'].sort.map do |path|
-            File.basename(path).sub('.TXT', '')
-        end.select do |x|
+        sources = timetable_sources('/data/stundenplan')
+        current_timetable_start_date = sources.keys.select do |x|
             current_date >= x
         end.last
         if current_timetable_start_date.nil?
-            current_timetable_start_date = Dir['/data/stundenplan/*.TXT'].sort.map do |path|
-                File.basename(path).sub('.TXT', '')
-            end.first
+            current_timetable_start_date = sources.keys.first
         end
 
         unr_tr = {}
@@ -635,93 +859,78 @@ class Parser
         original_lesson_key_for_lesson_key = {}
         shorthands_for_fach = {}
 
-        Dir['/data/stundenplan/*.TXT'].sort.each do |path|
-            timetable_start_date = File.basename(path).sub('.TXT', '')
+        previous_rows = []
+        sources.each_pair do |timetable_start_date, path|
             next if timetable_start_date < config[:first_school_day]
             all_lessons[:start_dates] << timetable_start_date
             lessons = {}
             use_tr_date = unr_tr.keys.select { |x| x <= timetable_start_date }.first
             use_tr = unr_tr[use_tr_date] || {}
             line_cache = {}
-            separator = timetable_start_date < '2023-08-28' ? "\t" : ","
-            File.open(path, 'r:utf-8') do |f|
-                f.each_line do |line|
-                    line = line.encode('utf-8')
-                    parts = line.split(separator).map do |x|
-                        x = x.strip
-                        if x[0] == '"' && x[x.size - 1] == '"'
-                            x = x[1, x.size - 2]
-                        end
-                        x.strip
-                    end
-                    klasse = parts[1]
-                    klasse = '8o' if klasse == '8?'
-                    klasse = '8o' if klasse == '8ω'
-                    klasse = '8o' if klasse == '8w'
-                    klasse = '9o' if klasse == '9?'
-                    klasse = '9o' if klasse == '9ω'
-                    klasse = '9o' if klasse == '9w'
-                    klasse = '7e_8e' if klasse == '7e/8e'
-                    cache_key = parts[2, parts.size - 2].join('/')
-                    line_cache[cache_key] ||= Set.new()
-                    line_cache[cache_key] << klasse
-                end
+            if path.end_with?('.zip')
+                rows = untis_zip_timetable_rows(path, previous_rows)
+            else
+                rows = read_txt_rows(path)
             end
-            File.open(path, 'r:utf-8') do |f|
-                f.each_line do |line|
-                    line = line.encode('utf-8')
-                    parts = line.split(separator).map do |x|
-                        x = x.strip
-                        if x[0] == '"' && x[x.size - 1] == '"'
-                            x = x[1, x.size - 2]
-                        end
-                        x.strip
-                    end
-                    unr = parts[0].to_i
-                    unr = use_tr[unr] || unr
-                    klasse = parts[1]
-                    klasse = '8o' if klasse == '8?'
-                    klasse = '8o' if klasse == '8ω'
-                    klasse = '8o' if klasse == '8w'
-                    klasse = '9o' if klasse == '9?'
-                    klasse = '9o' if klasse == '9ω'
-                    klasse = '9o' if klasse == '9w'
-                    klasse = '7e_8e' if klasse == '7e/8e'
+            previous_rows = rows
+            rows.each do |parts|
+                klasse = parts[1]
+                klasse = '8o' if klasse == '8?'
+                klasse = '8o' if klasse == '8ω'
+                klasse = '8o' if klasse == '8w'
+                klasse = '9o' if klasse == '9?'
+                klasse = '9o' if klasse == '9ω'
+                klasse = '9o' if klasse == '9w'
+                klasse = '7e_8e' if klasse == '7e/8e'
+                cache_key = parts[2, parts.size - 2].join('/')
+                line_cache[cache_key] ||= Set.new()
+                line_cache[cache_key] << klasse
+            end
+            rows.each do |parts|
+                unr = parts[0].to_i
+                unr = use_tr[unr] || unr
+                klasse = parts[1]
+                klasse = '8o' if klasse == '8?'
+                klasse = '8o' if klasse == '8ω'
+                klasse = '8o' if klasse == '8w'
+                klasse = '9o' if klasse == '9?'
+                klasse = '9o' if klasse == '9ω'
+                klasse = '9o' if klasse == '9w'
+                klasse = '7e_8e' if klasse == '7e/8e'
 
-                    lehrer = parts[2]
-                    if @use_mock_names
-                        lehrer = @mock_shorthand[lehrer]
-                        next if lehrer.nil?
-                    end
-                    original_fach = parts[3]
-                    next if (parts[3] || '').strip.empty?
-                    fach = parts[3].gsub('/', '-')
-                    raum = parts[4].split('~').join('/')
-                    dow = parts[5].to_i - 1
-                    stunde = parts[6].to_i
-                    cache_key = parts[2, parts.size - 2].join('/')
-                    fach_unr_key = "#{fach}_#{line_cache[cache_key].to_a.sort { |a, b| (a.to_i == b.to_i) ? (a <=> b) : (a.to_i <=> b.to_i)}.join('~')}"
-                    fach_unr_key = lesson_key_tr[fach_unr_key] || fach_unr_key
-                    if ['Vert', 'Ber', 'FSL'].include?(fach)
-                        fach_unr_key = "#{fach}_#{parts[0].to_i}"
-                    end
-                    lesson_key_back_tr[fach_unr_key] = "#{fach}~#{unr}a"
-                    original_lesson_key_for_lesson_key[parts[3]] ||= Set.new()
-                    original_lesson_key_for_lesson_key[parts[3]] << fach_unr_key
-                    next if fach_unr_key == '_'
-                    lessons[fach_unr_key] ||= {}
-                    lessons[fach_unr_key]["#{dow}/#{stunde}"] ||= {}
-                    lessons[fach_unr_key]["#{dow}/#{stunde}"][raum] ||= {
-                        :lehrer => Set.new(),
-                        :klassen => Set.new()
-                    }
-                    lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:lehrer] << lehrer
-                    lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:klassen] << klasse
-                    fach_for_verteiler = FACH_CONSOLIDATE_FOR_VERTEILER[fach.downcase.split('_').first]
-                    if fach_for_verteiler && (!lehrer.strip.empty?) && shorthands[lehrer.strip]
-                        shorthands_for_fach[fach_for_verteiler] ||= Set.new()
-                        shorthands_for_fach[fach_for_verteiler] << lehrer.strip
-                    end
+                lehrer = parts[2]
+                if @use_mock_names
+                    lehrer = @mock_shorthand[lehrer]
+                    next if lehrer.nil?
+                end
+                original_fach = parts[3]
+                next if (parts[3] || '').strip.empty?
+                fach = parts[3].gsub('/', '-')
+                raum = parts[4].split('~').join('/')
+                dow = parts[5].to_i - 1
+                stunde = parts[6].to_i
+                cache_key = parts[2, parts.size - 2].join('/')
+                fach_unr_key = "#{fach}_#{line_cache[cache_key].to_a.sort { |a, b| (a.to_i == b.to_i) ? (a <=> b) : (a.to_i <=> b.to_i)}.join('~')}"
+                fach_unr_key = lesson_key_tr[fach_unr_key] || fach_unr_key
+                if ['Vert', 'Ber', 'FSL'].include?(fach)
+                    fach_unr_key = "#{fach}_#{parts[0].to_i}"
+                end
+                lesson_key_back_tr[fach_unr_key] = "#{fach}~#{unr}a"
+                original_lesson_key_for_lesson_key[parts[3]] ||= Set.new()
+                original_lesson_key_for_lesson_key[parts[3]] << fach_unr_key
+                next if fach_unr_key == '_'
+                lessons[fach_unr_key] ||= {}
+                lessons[fach_unr_key]["#{dow}/#{stunde}"] ||= {}
+                lessons[fach_unr_key]["#{dow}/#{stunde}"][raum] ||= {
+                    :lehrer => Set.new(),
+                    :klassen => Set.new()
+                }
+                lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:lehrer] << lehrer
+                lessons[fach_unr_key]["#{dow}/#{stunde}"][raum][:klassen] << klasse
+                fach_for_verteiler = FACH_CONSOLIDATE_FOR_VERTEILER[fach.downcase.split('_').first]
+                if fach_for_verteiler && (!lehrer.strip.empty?) && shorthands[lehrer.strip]
+                    shorthands_for_fach[fach_for_verteiler] ||= Set.new()
+                    shorthands_for_fach[fach_for_verteiler] << lehrer.strip
                 end
             end
             fixed_lessons = {}
@@ -966,45 +1175,38 @@ class Parser
 
     def parse_pausenaufsichten(config)
         all_pausenaufsichten = {:aufsichten => {}, :start_dates => []}
-        Dir['/data/pausenaufsichten/*.TXT'].sort.each do |path|
-            start_date = File.basename(path).sub('.TXT', '')
+        timetable_sources('/data/pausenaufsichten').each_pair do |start_date, path|
             next if start_date < config[:first_school_day]
-            separator = start_date < '2023-08-28' ? "\t" : ","
             all_pausenaufsichten[:start_dates] << start_date
             all_pausenaufsichten[:aufsichten][start_date] = {}
-            File.open(path, File.basename(path) >= '2020-10-26.TXT' ? 'r:utf-8' : 'r:iso-8859-1') do |f|
-                f.each_line do |line|
-                    line = line.encode('utf-8')
-                    parts = line.split(separator).map do |x|
-                        x = x.strip
-                        if x[0] == '"' && x[x.size - 1] == '"'
-                            x = x[1, x.size - 2]
-                        end
-                        x.strip
-                    end
-                    if DASHBOARD_SERVICE == 'ruby'
-                        STDERR.puts "[#{line}]"
-                    end
-                    where = parts[0]
-                    shorthand = parts[1]
-                    next if (shorthand || '').empty?
-                    dow = parts[2].to_i - 1
-                    stunde = parts[3].to_i
-                    #minutes = parts[4].to_i
-                    minutes = AUFSICHT_DAUER[stunde]
-                    all_pausenaufsichten[:aufsichten][start_date][shorthand] ||= {}
-                    all_pausenaufsichten[:aufsichten][start_date][shorthand][dow] ||= {}
-                    h = AUFSICHT_ZEIT[stunde].split(':')[0].to_i
-                    m = AUFSICHT_ZEIT[stunde].split(':')[1].to_i
-                    t1 = h * 60 + m
-                    t0 = t1 - minutes
-                    all_pausenaufsichten[:aufsichten][start_date][shorthand][dow][stunde] ||= {
-                        :where => where,
-                        :minutes => minutes,
-                        :start_time => sprintf('%02d:%02d', (t0 / 60).to_i, t0 % 60),
-                        :end_time => sprintf('%02d:%02d', (t1 / 60).to_i, t1 % 60)
-                    }
+            if path.end_with?('.zip')
+                rows = read_untis_zip(path)[:pausenaufsichten]
+            else
+                rows = read_txt_rows(path, File.basename(path) >= '2020-10-26.TXT' ? 'r:utf-8' : 'r:iso-8859-1')
+            end
+            rows.each do |parts|
+                if DASHBOARD_SERVICE == 'ruby'
+                    STDERR.puts "[#{parts.join(',')}]"
                 end
+                where = parts[0]
+                shorthand = parts[1]
+                next if (shorthand || '').empty?
+                dow = parts[2].to_i - 1
+                stunde = parts[3].to_i
+                #minutes = parts[4].to_i
+                minutes = AUFSICHT_DAUER[stunde]
+                all_pausenaufsichten[:aufsichten][start_date][shorthand] ||= {}
+                all_pausenaufsichten[:aufsichten][start_date][shorthand][dow] ||= {}
+                h = AUFSICHT_ZEIT[stunde].split(':')[0].to_i
+                m = AUFSICHT_ZEIT[stunde].split(':')[1].to_i
+                t1 = h * 60 + m
+                t0 = t1 - minutes
+                all_pausenaufsichten[:aufsichten][start_date][shorthand][dow][stunde] ||= {
+                    :where => where,
+                    :minutes => minutes,
+                    :start_time => sprintf('%02d:%02d', (t0 / 60).to_i, t0 % 60),
+                    :end_time => sprintf('%02d:%02d', (t1 / 60).to_i, t1 % 60)
+                }
             end
         end
 

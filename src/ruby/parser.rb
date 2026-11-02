@@ -982,6 +982,7 @@ class Parser
                         end
                         x.strip
                     end
+                    STDERR.puts parts.to_yaml
                     where = parts[0]
                     shorthand = parts[1]
                     next if (shorthand || '').empty?

@@ -591,6 +591,8 @@
 
 <script>
     var monitor_mode = 'public';
+    // Silentium verhält sich wie das Lehrerzimmer, hat aber einen eigenen Zeugniskonferenzen-Schalter
+    var is_silentium = false;
     var top_delay = 5.0;
     var bottom_delay = 2.0;
     var klassen = #{ KLASSEN_ORDER.to_json };
@@ -1078,11 +1080,17 @@
             $('.main').hide();
             $('.main_lz').show();
         }
+        else if (#{@session_user[:email] == "monitor-silentium@#{SCHUL_MAIL_DOMAIN}"} || window.location.pathname === '/monitor/silentium') {
+            monitor_mode = 'lehrerzimmer';
+            is_silentium = true;
+            $('.main').hide();
+            $('.main_lz').show();
+        }
 
         if (monitor_mode === 'public') {
             showing_zeugniskonferenzen = zeugniskonferenzen_enabled.flur;
         } else if (monitor_mode === 'lehrerzimmer') {
-            showing_zeugniskonferenzen = zeugniskonferenzen_enabled.lz;
+            showing_zeugniskonferenzen = is_silentium ? zeugniskonferenzen_enabled.silentium : zeugniskonferenzen_enabled.lz;
         } else if (monitor_mode === 'sekretariat') {
             showing_zeugniskonferenzen = zeugniskonferenzen_enabled.sek;
         }

@@ -370,6 +370,7 @@ class Timetable
         @lesson_cache = []
         @lesson_events = {}
         @lesson_events_regular = {}
+        @agenda_export_lessons = []
         hfk_ds = HOURS_FOR_KLASSE.keys.sort.first
 
         update_monitor()
@@ -671,6 +672,14 @@ class Timetable
                             e[:lehrer][1].sort!
                         end
                     end
+                end
+            end
+
+            # keep the actual lessons for the agenda export: 2b turns fach and lehrer into labels
+            day_events.each_value do |event_indices|
+                event_indices.each do |cache_index|
+                    entry = agenda_export_entry(@lesson_cache[cache_index])
+                    @agenda_export_lessons << entry if entry
                 end
             end
 
@@ -1064,30 +1073,36 @@ class Timetable
     # subjects, rooms, times and whether a lesson is cancelled or substituted.
     AGENDA_EXPORT_DIR = '/internal/agenda'
 
+    # One lesson as it actually takes place, read before step 2b of
+    # update_timetables replaces fach and lehrer by labels.
+    def agenda_export_entry(e)
+        return nil unless e && e[:lesson] && !e[:regular] && e[:datum] && e[:stunde]
+        current = lambda do |list|
+            list = [list] unless list.is_a?(Array)
+            values = (e[:entfall] ? list.first : list.last) || list.first || []
+            [values].flatten.map { |x| x.to_s.strip }.reject { |x| x.empty? }.uniq
+        end
+        {
+            :datum => e[:datum],
+            :stunde => e[:stunde],
+            :start => e[:start].to_s[11, 5],
+            :end => e[:end].to_s[11, 5],
+            :klassen => current.call(e[:klassen] || []),
+            :lehrer => current.call(e[:lehrer] || []),
+            :fach => current.call(e[:fach] || []).first,
+            :raum => current.call(e[:raum] || []).first,
+            :entfall => e[:entfall] ? true : false,
+            :vertretung => (e[:lehrer] || []).size > 1 || (e[:klassen] || []).size > 1 || !e[:vertretungs_text].nil?,
+            :aufsicht => e[:pausenaufsicht] ? true : false
+        }
+    end
+
     def write_agenda_export()
         weeks = {}
-        @lesson_cache.each do |e|
-            next unless e[:lesson] && !e[:regular] && e[:datum] && e[:stunde]
-            current = lambda do |list|
-                list = [list].flatten(1) unless list.is_a?(Array)
-                values = (e[:entfall] ? list.first : list.last) || list.first || []
-                [values].flatten.map { |x| x.to_s.strip }.reject { |x| x.empty? }.uniq
-            end
-            yw = Date.parse(e[:datum]).strftime('%G-%V')
+        (@agenda_export_lessons || []).each do |entry|
+            yw = Date.parse(entry[:datum]).strftime('%G-%V')
             weeks[yw] ||= []
-            weeks[yw] << {
-                :datum => e[:datum],
-                :stunde => e[:stunde],
-                :start => e[:start].to_s[11, 5],
-                :end => e[:end].to_s[11, 5],
-                :klassen => current.call(e[:klassen] || []),
-                :lehrer => current.call(e[:lehrer] || []),
-                :fach => current.call(e[:fach] || []).first,
-                :raum => current.call(e[:raum] || []).first,
-                :entfall => e[:entfall] ? true : false,
-                :vertretung => (e[:lehrer] || []).size > 1 || (e[:klassen] || []).size > 1 || !e[:vertretungs_text].nil?,
-                :aufsicht => e[:pausenaufsicht] ? true : false
-            }
+            weeks[yw] << entry
         end
         FileUtils.mkpath(AGENDA_EXPORT_DIR)
         generated = Time.now.strftime('%Y-%m-%dT%H:%M:%S%z')
@@ -1103,7 +1118,7 @@ class Timetable
         Dir[File.join(AGENDA_EXPORT_DIR, '*.json.gz')].each do |path|
             FileUtils.rm_f(path) unless weeks.include?(File.basename(path, '.json.gz'))
         end
-        debug "agenda export: #{weeks.size} weeks"
+        debug "agenda export: #{weeks.size} weeks, #{weeks.values.map(&:size).sum} lessons"
     end
 
     def update_weeks(only_these_lesson_keys)

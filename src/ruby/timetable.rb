@@ -1057,6 +1057,55 @@ class Timetable
         end
     end
 
+    # The whole school's lessons as they actually take place (Vertretungsplan
+    # applied), one file per ISO week in /internal/agenda (not served by nginx).
+    # The Fachbegleitung tool pulls them read-only to search for lesson swaps.
+    # No students and no Vertretungstexte: only classes, teacher shorthands,
+    # subjects, rooms, times and whether a lesson is cancelled or substituted.
+    AGENDA_EXPORT_DIR = '/internal/agenda'
+
+    def write_agenda_export()
+        weeks = {}
+        @lesson_cache.each do |e|
+            next unless e[:lesson] && !e[:regular] && e[:datum] && e[:stunde]
+            current = lambda do |list|
+                list = [list].flatten(1) unless list.is_a?(Array)
+                values = (e[:entfall] ? list.first : list.last) || list.first || []
+                [values].flatten.map { |x| x.to_s.strip }.reject { |x| x.empty? }.uniq
+            end
+            yw = Date.parse(e[:datum]).strftime('%G-%V')
+            weeks[yw] ||= []
+            weeks[yw] << {
+                :datum => e[:datum],
+                :stunde => e[:stunde],
+                :start => e[:start].to_s[11, 5],
+                :end => e[:end].to_s[11, 5],
+                :klassen => current.call(e[:klassen] || []),
+                :lehrer => current.call(e[:lehrer] || []),
+                :fach => current.call(e[:fach] || []).first,
+                :raum => current.call(e[:raum] || []).first,
+                :entfall => e[:entfall] ? true : false,
+                :vertretung => (e[:lehrer] || []).size > 1 || (e[:klassen] || []).size > 1 || !e[:vertretungs_text].nil?,
+                :aufsicht => e[:pausenaufsicht] ? true : false
+            }
+        end
+        FileUtils.mkpath(AGENDA_EXPORT_DIR)
+        generated = Time.now.strftime('%Y-%m-%dT%H:%M:%S%z')
+        weeks.each_pair do |yw, lessons|
+            path = File.join(AGENDA_EXPORT_DIR, "#{yw}.json.gz")
+            temp = "#{path}.tmp"
+            Zlib::GzipWriter.open(temp) do |f|
+                f.print({:version => 1, :week => yw, :generated => generated,
+                         :lessons => lessons.sort_by { |x| [x[:datum], x[:stunde]] }}.to_json)
+            end
+            FileUtils.mv(temp, path)
+        end
+        Dir[File.join(AGENDA_EXPORT_DIR, '*.json.gz')].each do |path|
+            FileUtils.rm_f(path) unless weeks.include?(File.basename(path, '.json.gz'))
+        end
+        debug "agenda export: #{weeks.size} weeks"
+    end
+
     def update_weeks(only_these_lesson_keys)
         hide_from_sus = Main.determine_hide_from_sus()
         debug "Updating weeks: #{only_these_lesson_keys.to_a.join(', ')} (hide_from_sus: #{hide_from_sus})"
@@ -2235,6 +2284,11 @@ class Timetable
                 update_timetables()
             rescue StandardError => e
                 STDERR.puts e
+            end
+            begin
+                write_agenda_export()
+            rescue StandardError => e
+                STDERR.puts "agenda export: #{e}"
             end
             begin
                 update_recipients()

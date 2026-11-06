@@ -643,14 +643,43 @@ class Parser
         rows
     end
 
-    # Parses one timetable page of an Untis HTML export, returns its name
-    # and the cells of the timetable as {:dow, :stunden, :rows, :aufsichten}
-    # with :rows being the lines of a cell, each line split into columns
+    # Parses the legend below a teacher timetable which lists all lessons
+    # spanning several classes or teachers (abbreviated as "10a." in the
+    # timetable) with their unabbreviated subject and all their classes.
+    # Returns the groups of lessons sharing a slot, each as a list of
+    # {:lehrer, :fach, :raum, :klassen}.
+    def read_untis_legend(table)
+        groups = []
+        header = nil
+        table.xpath('./tr').each do |tr|
+            columns = tr.xpath('./td|./th').map { |x| x.text.gsub(" ", ' ').strip.squeeze(' ') }
+            if header.nil?
+                header = columns
+                next
+            end
+            lfr = columns[header.index('Le.,Fa.,Rm.') || 1]
+            klassen = columns[header.index('Kla.') || 2]
+            next if lfr.nil? || klassen.nil?
+            groups << [] if groups.empty? || !columns[0].empty?
+            lehrer, fach, raum = *lfr.split(',', 3).map { |x| x.strip }
+            groups.last << {:lehrer => lehrer, :fach => fach || '', :raum => raum || '',
+                            :klassen => klassen.split(',').map { |x| x.strip }.reject { |x| x.empty? }}
+        end
+        groups
+    end
+
+    # Parses one timetable page of an Untis HTML export, returns its name,
+    # the cells of the timetable as {:dow, :stunden, :rows, :aufsichten}
+    # with :rows being the lines of a cell, each line split into columns,
+    # and the legend (see read_untis_legend)
     def read_untis_page(html)
         doc = Nokogiri::HTML(html, nil, 'iso-8859-1')
         name = doc.at_css('font[size="6"]')
-        table = doc.at_css('table[border="3"]')
+        tables = doc.css('table[border="3"]')
+        table = tables.first
         return nil if name.nil? || table.nil?
+        legend_table = tables.drop(1).find { |x| x.at_xpath('./tr').to_s.include?('Kla.') }
+        legend = legend_table ? read_untis_legend(legend_table) : []
         occupied = {}
         stunde_for_row = {}
         dow_for_col = {}
@@ -693,50 +722,71 @@ class Parser
              :rows => rows,
              :aufsichten => aufsichten}
         end.reject { |x| x[:dow].nil? || x[:stunden].empty? }
-        return name.text.gsub(" ", ' ').strip, cells
+        return name.text.gsub(" ", ' ').strip, cells, legend
     end
 
     # Parses an Untis HTML export of teacher and class timetables (ZIP file),
-    # returns :lessons => [lehrer, klasse, fach, raum, dow, stunde] from the
+    # returns :lessons => [lehrer, klasse, fach, raum, dow, stunde, unr] from the
     # teacher timetables and :klassen_lessons => [klasse, fach, lehrer, raum,
     # dow, stunde] from the class timetables (both as printed by Untis),
     # :coupled => [klasse, dow, stunde] for coupled lessons in the class
-    # timetables and :pausenaufsichten => [where, lehrer, dow, stunde]
+    # timetables, :pausenaufsichten => [where, lehrer, dow, stunde] and
+    # :legends => lehrer => legend groups of the teacher timetables
     def read_untis_zip(path)
         @untis_zip_cache ||= {}
         @untis_zip_cache[path] ||= begin
             pages = {}
+            legends = {}
             Zip::File.open(path) do |zip|
                 zip.entries.each do |entry|
                     next unless entry.file?
                     page = read_untis_page(entry.get_input_stream.read)
-                    pages[page[0]] = page[1] if page
+                    next unless page
+                    pages[page[0]] = page[1]
+                    legends[page[0]] = page[2]
                 end
             end
             # Teacher timetables list classes in the first line of a lesson,
             # class timetables list teachers in the second line.
-            result = {:lessons => [], :klassen_lessons => [], :coupled => Set.new(), :pausenaufsichten => []}
-            pages.keys.sort.each do |name|
-                cells = pages[name]
-                lessons = cells.reject { |x| x[:rows].empty? }
-                votes = lessons.sum do |x|
+            result = {:lessons => [], :klassen_lessons => [], :coupled => Set.new(), :pausenaufsichten => [], :legends => {}}
+            votes_for_page = {}
+            pages.each_pair do |name, cells|
+                votes_for_page[name] = cells.reject { |x| x[:rows].empty? }.sum do |x|
                     lines = x[:rows].map(&:first)
                     (pages.include?(lines[0].to_s.sub(/\A\*/, '').chomp('.')) ? 1 : 0) - (pages.include?(lines[1]) ? 1 : 0)
                 end
+            end
+            # If the teacher timetables are exported with the Unterrichtsnummer
+            # as an additional last line, a cell is klasse / fach / [raum] / unr
+            # (an empty room is left out, not printed as an empty line).
+            # Without it, a cell is klasse / fach / [raum].
+            teacher_cells = pages.select { |name, cells| votes_for_page[name] >= 0 }.values.flatten.map { |x| x[:rows].flatten }.reject(&:empty?)
+            with_unr = teacher_cells.count { |lines| lines.size == 4 && lines.last =~ /\A\d+\z/ }
+            has_unr = with_unr > 0 && with_unr >= teacher_cells.count { |lines| lines.size == 3 }
+            result[:has_unr] = has_unr
+            pages.keys.sort.each do |name|
+                cells = pages[name]
+                lessons = cells.reject { |x| x[:rows].empty? }
+                votes = votes_for_page[name]
                 cells.each do |cell|
                     cell[:aufsichten].each do |where|
                         result[:pausenaufsichten] << [where, name, cell[:dow] + 1, cell[:stunden].first]
                     end
                 end
+                result[:legends][name] = legends[name] if votes >= 0
                 lessons.each do |cell|
                     if votes >= 0
                         lines = cell[:rows].flatten
+                        unr = nil
+                        if has_unr && [3, 4].include?(lines.size) && lines.last =~ /\A\d+\z/
+                            unr = lines.pop
+                        end
                         unless [2, 3].include?(lines.size)
                             debug "Unexpected cell in timetable of #{name}: #{lines.to_json}"
                             next
                         end
                         cell[:stunden].each do |stunde|
-                            result[:lessons] << [name, lines[0].sub(/\A\*/, ''), lines[1], lines[2] || '', cell[:dow] + 1, stunde]
+                            result[:lessons] << [name, lines[0].sub(/\A\*/, ''), lines[1], lines[2] || '', cell[:dow] + 1, stunde, unr]
                         end
                     else
                         # coupled lessons are marked with a dot and printed
@@ -761,13 +811,17 @@ class Parser
 
     # Returns the lessons of an Untis ZIP file in the same format as the rows
     # of the TXT files: [unr, klasse, lehrer, fach, raum, dow, stunde].
-    # Teacher timetables abbreviate coupled lessons to one of their classes
-    # plus a dot ("10a." for 10a, 10b, 10c), the other classes are taken from
-    # the class timetables. As these show only up to two coupled lessons and
-    # subject names are cut after 6 characters, both are completed from
-    # reference_rows (the previous timetable) if possible.
-    # The Unterrichtsnummer is not part of the export and is taken from the
-    # reference rows as well.
+    # Teacher timetables abbreviate lessons with several classes to one of
+    # them plus a dot ("10a." for 10a, 10b, 10c) and cut subject names after
+    # 6 characters. The legend below each teacher timetable lists these
+    # lessons with all classes and the full subject, as well as other
+    # teachers sharing the slot (also those without a timetable of their own,
+    # like "?"). If the legend doesn't help, classes are taken from the class
+    # timetables (which show only up to two coupled lessons) and from
+    # reference_rows (the previous timetable).
+    # The Unterrichtsnummer is taken from the teacher timetables if exported
+    # (as the last line of a cell), else from the reference rows if possible,
+    # otherwise a stable fake number is used.
     def untis_zip_timetable_rows(path, reference_rows)
         untis = read_untis_zip(path)
         klassen_for_slot = {}
@@ -789,18 +843,11 @@ class Parser
             end
         end
 
-        rows = []
-        # lessons without a teacher timetable (teacher "?") are only part of
-        # the class timetables
         lehrer_with_timetable = Set.new(untis[:lessons].map(&:first))
-        orphans = untis[:klassen_lessons].reject do |klasse, fach, lehrer, raum, dow, stunde|
-            lehrer.nil? || lehrer_with_timetable.include?(lehrer)
-        end.map do |klasse, fach, lehrer, raum, dow, stunde|
-            [lehrer, klasse, fach, raum, dow, stunde]
-        end
-        (untis[:lessons] + orphans).each do |lehrer, klasse, fach, raum, dow, stunde|
-            abbreviated = klasse.end_with?('.')
-            klasse = klasse.chomp('.')
+        legend_entries = untis[:legends].values.flatten
+
+        rows = []
+        emit = lambda do |lehrer, klasse, fach, raum, dow, stunde, abbreviated, legend_klassen, unr|
             candidates = reference_lessons_for[[lehrer, klasse]] || []
             known_fach = candidates.map { |x| x[:fach] }.uniq
             unless known_fach.include?(fach)
@@ -810,7 +857,9 @@ class Parser
             candidates = candidates.select { |x| x[:fach] == fach }
             same_slot = candidates.find { |x| x[:slot] == [raum, dow.to_s, stunde.to_s] }
             klassen = [klasse]
-            if abbreviated
+            if legend_klassen
+                klassen = legend_klassen
+            elsif abbreviated
                 from_klassen = klassen_for_slot[[lehrer, dow, stunde]] || Set.new()
                 if from_klassen.include?(klasse)
                     klassen = from_klassen.to_a
@@ -825,11 +874,60 @@ class Parser
                     klassen = candidates.first[:klassen].to_a
                 end
             end
-            # fall back to a stable fake Unterrichtsnummer
-            unr = (same_slot || candidates.first || {})[:unr] || (Zlib.crc32("#{lehrer}/#{klasse}/#{fach}") % 1000000 + 1000000).to_s
+            # take the Unterrichtsnummer from the export if available, else
+            # from the reference rows or fall back to a stable fake number
+            unr ||= (same_slot || candidates.first || {})[:unr] || (Zlib.crc32("#{lehrer}/#{klasse}/#{fach}") % 1000000 + 1000000).to_s
             klassen.each do |k|
                 rows << [unr, k, lehrer, fach, raum, dow.to_s, stunde.to_s]
             end
+        end
+
+        # lessons of teachers without a timetable, taken from the legends
+        # of the other teachers: [lehrer, fach, raum, klassen, dow, stunde]
+        # => unr of the teacher lesson they are coupled with
+        legend_only = {}
+        untis[:lessons].each do |lehrer, klasse, fach, raum, dow, stunde, unr|
+            abbreviated = klasse.end_with?('.')
+            klasse = klasse.chomp('.')
+            matches = (untis[:legends][lehrer] || []).map do |group|
+                entry = group.find do |x|
+                    x[:lehrer] == lehrer && x[:raum] == raum && x[:fach].start_with?(fach) && x[:klassen].include?(klasse)
+                end
+                entry ? [entry, group] : nil
+            end.compact
+            legend_klassen = nil
+            entries = matches.map { |entry, group| [entry[:fach], entry[:klassen].sort] }.uniq
+            if entries.size == 1
+                fach = entries.first[0]
+                legend_klassen = entries.first[1] if abbreviated
+                # the same lesson may be part of several groups (in other
+                # slots), only trust the other members if all groups agree
+                others = matches.map do |entry, group|
+                    group.reject { |x| lehrer_with_timetable.include?(x[:lehrer]) }
+                end.uniq
+                if others.size == 1
+                    others.first.each do |x|
+                        legend_only[[x[:lehrer], x[:fach], x[:raum], x[:klassen].sort, dow, stunde]] ||= unr
+                    end
+                end
+            end
+            emit.call(lehrer, klasse, fach, raum, dow, stunde, abbreviated, legend_klassen, unr)
+        end
+        legend_only.each_pair do |(lehrer, fach, raum, klassen, dow, stunde), unr|
+            emit.call(lehrer, klassen.first, fach, raum, dow, stunde, false, klassen, unr)
+        end
+
+        # remaining lessons without a teacher timetable are only part of
+        # the class timetables
+        covered = Set.new(legend_only.keys.map { |lehrer, fach, raum, klassen, dow, stunde| klassen.map { |k| [lehrer, k, dow, stunde] } }.flatten(1))
+        untis[:klassen_lessons].each do |klasse, fach, lehrer, raum, dow, stunde|
+            next if lehrer.nil? || lehrer_with_timetable.include?(lehrer)
+            next if covered.include?([lehrer, klasse, dow, stunde])
+            full_fach = legend_entries.select do |x|
+                x[:lehrer] == lehrer && x[:klassen].include?(klasse) && x[:fach].start_with?(fach)
+            end.map { |x| x[:fach] }.uniq
+            fach = full_fach.first if full_fach.size == 1
+            emit.call(lehrer, klasse, fach, raum, dow, stunde, false, nil, nil)
         end
         rows
     end

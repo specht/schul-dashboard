@@ -405,7 +405,7 @@ class Main < Sinatra::Base
     post '/api/login_as_special' do
         require_user_who_can_manage_tablets!
         data = parse_request_data(:required_keys => [:prefix])
-        assert(%w(monitor monitor-sek monitor-lz).include?(data[:prefix]))
+        assert(%w(monitor monitor-sek monitor-lz monitor-silentium).include?(data[:prefix]))
         logout()
         session_id = create_session("#{data[:prefix]}@#{SCHUL_MAIL_DOMAIN}", 365 * 24)
         purge_missing_sessions(session_id, true)

@@ -12,6 +12,7 @@
 # Environment:
 #   KEEP=1                 leave the test stack running after e2e
 #   E2E_ARGS="…"           extra arguments for `playwright test`
+#   UPDATE_KNOWN_PAGE_ERRORS=1  rewrite test/e2e/tests/known-page-errors.json
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -77,7 +78,8 @@ run_playwright() {
     docker run --rm --network host --ipc host \
         --user "$(id -u):$(id -g)" -e HOME=/tmp -e npm_config_cache=/tmp/.npm \
         -e BASE_URL="$BASE_URL" -e CI=1 \
-        -v "$PWD/test/e2e:/e2e" -w /e2e \
+        -e STATIC_DIR=/static -e UPDATE_KNOWN_PAGE_ERRORS="${UPDATE_KNOWN_PAGE_ERRORS:-0}" \
+        -v "$PWD/test/e2e:/e2e" -v "$PWD/src/static:/static:ro" -w /e2e \
         "$PLAYWRIGHT_IMAGE" \
         bash -c "npm ci --no-audit --no-fund --loglevel=error && npx playwright test ${E2E_ARGS:-}"
 }

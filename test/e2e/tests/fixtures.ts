@@ -1,13 +1,27 @@
-import { test as base, expect, Page } from '@playwright/test';
+import { test as base, expect, Page, APIRequestContext } from '@playwright/test';
 
 // In the test stack (DEVELOPMENT mode, example data only) every login code is fixed.
 export const DEV_LOGIN_CODE = '123456';
 
+// Accounts from src/example-data. Parents have no accounts of their own
+// (they only appear as mailing list recipients).
 export const ACCOUNTS = {
-  // teacher + admin in src/example-data
+  // teacher, admin and class teacher of 5a
   admin: 'clarke@beispielschule.de',
   teacher: 'torstenson@beispielschule.de',
+  // students: 5a (lower school) and 11 (upper school)
+  schueler: 'max.mustermann@mail.beispielschule.de',
+  schueler_oberstufe: 'alice.mustermann@mail.beispielschule.de',
 };
+
+// Logs an API request context in via the JSON API (no browser needed).
+export async function apiLogin(request: APIRequestContext, email: string) {
+  const loginResponse = await request.post('/api/login', { data: { email } });
+  expect(loginResponse.status(), `login for ${email}`).toBe(200);
+  const { tag } = await loginResponse.json();
+  const confirmResponse = await request.post('/api/confirm_login', { data: { tag, code: DEV_LOGIN_CODE } });
+  expect(confirmResponse.status(), `confirm_login for ${email}`).toBe(200);
+}
 
 // Every test fails if the server answers with a 5xx or the page throws an
 // uncaught JavaScript error. Console errors are attached to the report.

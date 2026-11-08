@@ -45,7 +45,37 @@ Playwright-Berichte liegen nach einem Lauf unter
 - [x] E2E: Anmeldeseite, Anmeldung per Code mit Stundenplan, falscher Code
       – jeweils Desktop und Handy; jeder Test schlägt bei HTTP 5xx oder
       JavaScript-Fehlern fehl
+- [x] Seiten-Smoke-Test: jede Seite × jede Rolle (anonym, Schüler:in
+      Unter-/Oberstufe, Lehrkraft, Admin), siehe unten
 - [ ] alles Weitere aus [Reihenfolge](#Reihenfolge)
+
+## Seiten-Smoke-Test
+
+`test/e2e/tests/pages.smoke.ts` ruft jede Seite aus `src/static` für jede
+Rolle einmal ohne Browser auf (Playwright-Projekt `smoke`, ca. 1 min). Eine
+Seite darf rendern oder umleiten; HTTP 5xx ist nur erlaubt, wenn die Seite
+für diese Rolle in `test/e2e/tests/known-page-errors.json` steht – mit der
+Ursache als Text.
+
+Die Liste ist eine **Bestandsaufnahme, kein Ziel**. Der Test schlägt in beide
+Richtungen fehl:
+
+- **neue Serverfehler**: eine Seite, die vorher funktionierte, ist kaputt.
+- **behoben**: eine gelistete Seite funktioniert jetzt – dann den Eintrag
+  aus der Liste entfernen, damit der Fix nicht wieder verloren geht.
+
+Liste nach bewussten Änderungen neu schreiben (vorhandene Erklärungen
+bleiben erhalten):
+
+```
+./test.sh up
+UPDATE_KNOWN_PAGE_ERRORS=1 E2E_ARGS="--project=smoke" ./test.sh e2e-run
+git diff test/e2e/tests/known-page-errors.json
+```
+
+Stand November 2026: 257 bekannte Fälle, davon 153 Zugangsprüfungen per
+`assert` (HTTP 500 statt Umleitung), der Rest überwiegend unvollständige
+Beispieldaten und fehlende URL-Parameter.
 
 ## Grundsätze
 
@@ -210,8 +240,8 @@ Diese werden in die neue Struktur übernommen.
 
 1. ~~**Grundgerüst**: Test-Umgebung (`DASHBOARD_ENV`, Ports), `test.sh`,
    ein erster Unit-Test, ein erster E2E-Test (Anmeldung).~~ erledigt
-2. **Sicherheitsnetz für Umbauten**: Seiten-Smoke-Test, Berechtigungsmatrix,
-   alle Anmelde-Abläufe als Integration **und** E2E.
+2. **Sicherheitsnetz für Umbauten**: ~~Seiten-Smoke-Test~~ (erledigt),
+   Berechtigungsmatrix, alle Anmelde-Abläufe als Integration **und** E2E.
 3. **Hauptabläufe E2E** (Tabelle oben), Desktop und Handy.
 4. **Module**: je Modul die wichtigsten API-Abläufe als Integrationstests.
 5. **Laufend**: jeder Bugfix mit Test; CI.

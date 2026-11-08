@@ -20,7 +20,8 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 - [ ] Beispieldaten um je ein Konto pro Rolle ergänzen (Admin, Lehrkraft mit
       Klassenleitung, Schüler:in, Elternteil, Gerät)
 - [ ] Feste Systemzeit im Test-Stack (Beispieldaten: Schuljahr 2024/25)
-- [ ] Seiten-Smoke-Test: jede Seite × jede Rolle, nie HTTP 500
+- [x] Seiten-Smoke-Test: jede Seite × jede Rolle, Bestandsaufnahme in
+      `test/e2e/tests/known-page-errors.json` (257 Fälle) – Liste abbauen
 - [ ] Berechtigungsmatrix für alle API-Routen
 - [ ] Alle Anmelde-Abläufe (inkl. Zwei-Faktor-Kombinationen) als
       Integrations- und E2E-Tests; Test-Mailpostfach (z. B. Mailpit)
@@ -56,9 +57,19 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
       (z. B. `/directory` ohne Klasse, `/lessons/<unbekannt>`, `/c/<unbekannt>`);
       unbekannte Seiten liefern eine leere Seite. Freundliche 404/500-Seiten
       im Stil der Neustart-Seite
-- [ ] Zugangsprüfungen per `require_…!` auf Seiten führen zu HTTP 500 statt
-      zu Umleitung oder Hinweis (`bib_*`, `kurslisten`, `pk5`, `lab8/9`,
-      `groups`, `anmeldungen`, `aula*`)
+- [ ] Zugangsprüfungen per `require_…!`/`assert` auf Seiten führen zu
+      HTTP 500 statt zu Umleitung oder Hinweis – laut Smoke-Test 153 Fälle
+      über alle Rollen (`bib_*`, `kurslisten`, `pk5`, `lab8/9`, `aula*`,
+      `anmeldungen` …); für Abgemeldete wäre die Anmeldeseite mit
+      `return_to` richtig
+- [ ] Beispieldaten unvollständig – auf einer frischen Installation stürzen
+      dadurch Seiten ab: `NOTEN_CUTOFF` (zeugnisse/config.rb, 8 Seiten),
+      `public_events/public_events.yaml` (öffentliche Anmeldung),
+      `mittagessen/mittagessen.yaml`, `email_is_eligible_for_lab8?`/`lab9?`,
+      Phasen für Projekttage und PK5. Seiten sollten fehlende Konfiguration
+      abfangen; die Beispieldaten sollten alles enthalten
+- [ ] `salzh`, `salzh_protokoll`, `self_tests` verweisen auf die entfernte
+      Rolle `can_manage_salzh` und stürzen für alle ab
 
 ### Rückmeldung bei Laden und Fehlern
 

@@ -18,7 +18,10 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
+    // browser tests (*.spec.ts) on desktop and phone
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // request-only checks (*.smoke.ts), no browser, run once
+    { name: 'smoke', testMatch: /.*\.smoke\.ts/ },
   ],
 });

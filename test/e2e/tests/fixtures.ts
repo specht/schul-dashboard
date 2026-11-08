@@ -194,6 +194,28 @@ export async function login(page: Page, email: string) {
   await page.waitForURL((url) => !url.pathname.startsWith('/c/'));
 }
 
+// Opens the profile menu in the navbar (on phones the navbar is collapsed
+// behind the menu button first).
+export async function openProfileMenu(page: Page) {
+  const toggler = page.locator('.navbar-toggler');
+  if (await toggler.isVisible()) await toggler.click();
+  await page.locator('#navbarDropdownProfile').click();
+  await expect(page.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();
+}
+
+// Enters email and code on the login pages, without visiting / first –
+// for the "Zusätzliche Anmeldung…" flow that starts on /login.
+export async function loginOnCurrentPage(page: Page, email: string) {
+  const factors = LOGIN_FACTORS[email];
+  await clearLoginMails(email);
+  await typeEmail(page, email);
+  await page.locator('#submit').click();
+  await page.waitForURL(/\/c\//);
+  await page.locator('#code').fill(await codeFor(factors.first, email));
+  await page.locator('#submit').click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/c/'));
+}
+
 // Logs an API request context in via the JSON API (no browser needed).
 export async function apiLogin(request: APIRequestContext, email: string) {
   const factors = LOGIN_FACTORS[email];

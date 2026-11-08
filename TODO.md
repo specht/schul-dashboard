@@ -76,6 +76,12 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
       `mittagessen/mittagessen.yaml`, `email_is_eligible_for_lab8?`/`lab9?`,
       Phasen für Projekttage und PK5. Seiten sollten fehlende Konfiguration
       abfangen; die Beispieldaten sollten alles enthalten
+- [ ] `credentials.template.rb` deklariert `ROOM_ORDER = %w(101 102 103 104)`,
+      der Beispiel-Stundenplan nutzt aber 108, 129, 317, 323 – auf einer
+      frischen Installation hat keine Klasse einen Raum, Sitzpläne sind
+      nicht nutzbar (der Test-Stack setzt die passenden Räume)
+- [ ] Fußzeile: „© 2026 Gymnasium Steglitz“ ist fest im Template statt
+      `SCHUL_NAME` und aktuellem Jahr
 - [ ] `salzh`, `salzh_protokoll`, `self_tests` verweisen auf die entfernte
       Rolle `can_manage_salzh` und stürzen für alle ab
 
@@ -103,6 +109,8 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 - [ ] Profil- und Admin-Menü sind sehr lange Dropdowns
 - [ ] Summernote-Editor auf dem Handy schwer bedienbar (Nachrichten,
       Termine)
+- [ ] Sitzplan-Ansicht auf dem Handy: Namen werden mitten im Wort
+      umbrochen („Musterman / n“)
 
 ### Barrierefreiheit
 
@@ -136,7 +144,6 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
       regeln
 - [ ] Einheitliche Schreibweisen: „Nutzer“/„Nutzer:innen“, „...“/„…“,
       Fehlermeldungen
-- [ ] Jahreszahl im Fuß ist fest („© 2026“)
 - [ ] `data-testid` an Navigation, Template-Modals und Haupt-Buttons
 
 ### Aufräumen

@@ -28,6 +28,10 @@ STREAM_SITE_URL = 'https://info.test.invalid/'
 BIB_HOST = 'https://bibliothek.test.invalid'
 UNTIS_VERTRETUNGSPLAN_BASE_URL = 'https://vertretungsplan.test.invalid'
 
+# The rooms used in the example timetable (the template declares others,
+# so no class would have a room and seating plans would be unavailable).
+ROOM_ORDER = %w(108 129 317 323)
+
 # All mail goes to the Mailpit container of the test stack, where the tests
 # read login codes from (see test/e2e/tests/fixtures.ts).
 SMTP_SERVER = 'mailpit'

@@ -3,9 +3,23 @@
 require 'fileutils'
 require 'json'
 require 'yaml'
-require './env.rb'
 
-DEV_NGINX_PORT = DEVELOPMENT ? 8025 : 8020
+# DASHBOARD_ENV=env.test.rb ./config.rb … uses another environment file,
+# e.g. for the isolated test stack (see doc/Tests.md). Without it,
+# everything behaves exactly as before.
+if ENV['DASHBOARD_ENV']
+    require File.expand_path(ENV['DASHBOARD_ENV'])
+else
+    require './env.rb'
+end
+
+# Optional settings an environment file may define (defaults = previous behaviour)
+COMPOSE_FILE_PATH = defined?(COMPOSE_FILE) ? COMPOSE_FILE : 'docker-compose.yaml'
+NGINX_CONFIG_PATH = defined?(NGINX_CONFIG_FILE) ? NGINX_CONFIG_FILE : 'docker/nginx/default.conf'
+DEV_NGINX_ADDRESS = defined?(NGINX_HOST_ADDRESS) ? NGINX_HOST_ADDRESS : '0.0.0.0'
+PUBLISH_EXTRA_DEV_PORTS = defined?(PUBLISH_DEV_PORTS) ? PUBLISH_DEV_PORTS : true
+
+DEV_NGINX_PORT = defined?(NGINX_HOST_PORT) ? NGINX_HOST_PORT : (DEVELOPMENT ? 8025 : 8020)
 DEV_NEO4J_PORT = 8021
 NEO4J_DATA_PATH = File::join(DATA_PATH, 'neo4j')
 NEO4J_LOGS_PATH = File::join(LOGS_PATH, 'neo4j')
@@ -125,8 +139,12 @@ nginx_config = <<~eos
     }
 
 eos
-File::open('docker/nginx/default.conf', 'w') do |f|
+File::open(NGINX_CONFIG_PATH, 'w') do |f|
     f.write nginx_config
+end
+if NGINX_CONFIG_PATH != 'docker/nginx/default.conf'
+    # the image contains docker/nginx/default.conf – mount the other one over it
+    docker_compose[:services][:nginx][:volumes] << "./#{NGINX_CONFIG_PATH}:/etc/nginx/conf.d/default.conf:ro"
 end
 docker_compose[:services][:nginx][:depends_on] = [:ruby]
 
@@ -134,6 +152,8 @@ env = []
 env << 'DEVELOPMENT=1' if DEVELOPMENT
 env << 'PUMA_MIN_THREADS=0'
 env << 'PUMA_MAX_THREADS=16'
+# lets main.rb/parser.rb load another credentials file (test stack)
+env << "DASHBOARD_CREDENTIALS=#{CREDENTIALS_FILE}" if defined?(CREDENTIALS_FILE)
 rackup_command = lambda do |rackup_file, port|
     "rackup #{rackup_file} --server puma --env production --host 0.0.0.0 --port #{port}"
 end
@@ -245,14 +265,19 @@ end
 
 docker_compose[:services][:weasyprint] = {:image => 'lgatica/weasyprint'}
 
+# additional services an environment file may define (e.g. a test mail server)
+docker_compose[:services].merge!(EXTRA_SERVICES) if defined?(EXTRA_SERVICES)
+
 docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
 if DEVELOPMENT
-    docker_compose[:services][:nginx][:ports] = ["0.0.0.0:#{DEV_NGINX_PORT}:80"]
-    docker_compose[:services][:neo4j][:ports] = ["127.0.0.1:#{DEV_NEO4J_PORT}:7474",
-                                                 "127.0.0.1:7687:7687"]
-    docker_compose[:services][:timetable][:ports] = ['127.0.0.1:8022:8080']
-    docker_compose[:services][:invitation_bot][:ports] = ['127.0.0.1:8023:8080']
-else
+    docker_compose[:services][:nginx][:ports] = ["#{DEV_NGINX_ADDRESS}:#{DEV_NGINX_PORT}:80"]
+    if PUBLISH_EXTRA_DEV_PORTS
+        docker_compose[:services][:neo4j][:ports] = ["127.0.0.1:#{DEV_NEO4J_PORT}:7474",
+                                                     "127.0.0.1:7687:7687"]
+        docker_compose[:services][:timetable][:ports] = ['127.0.0.1:8022:8080']
+        docker_compose[:services][:invitation_bot][:ports] = ['127.0.0.1:8023:8080']
+    end
+elsif !defined?(RESTART_SERVICES) || RESTART_SERVICES
     docker_compose[:services].each_pair do |k, x|
         x[:restart] = :always
     end
@@ -269,7 +294,7 @@ unless DOCKER_NETWORK_RUBY_IP.nil?
     docker_compose[:services][:ruby][:networks][DOCKER_NETWORK_NAME][:ipv4_address] = DOCKER_NETWORK_RUBY_IP
 end
 
-File::open('docker-compose.yaml', 'w') do |f|
+File::open(COMPOSE_FILE_PATH, 'w') do |f|
     f.puts "# NOTICE: don't edit this file directly, use config.rb instead!\n"
     f.write(JSON::parse(docker_compose.to_json).to_yaml)
 end
@@ -301,4 +326,5 @@ end
 
 `docker compose 2> /dev/null`
 DOCKER_COMPOSE = ($? == 0) ? 'docker compose' : 'docker-compose'
-system("#{DOCKER_COMPOSE} --compatibility --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")
+compose_file_arg = COMPOSE_FILE_PATH == 'docker-compose.yaml' ? '' : " -f #{COMPOSE_FILE_PATH}"
+system("#{DOCKER_COMPOSE} --compatibility#{compose_file_arg} --project-name #{PROJECT_NAME} #{ARGV.map { |x| '"' + x + '"'}.join(' ')}")

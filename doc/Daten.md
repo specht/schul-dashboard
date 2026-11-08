@@ -14,14 +14,14 @@ Dokumentation um bereits angebundene Systeme erweitern.
 ## Schuljahr
 
 Das Schuljahr wird in der Datei 
-`src/example-data/config.yml` konfiguriert und enthält 
+`src/example-data/config.yaml` konfiguriert und enthält 
 Beginn- und Ende-Datum des Schuljahres sowie den ersten Schultag.
 
 ```{.yml} 
 ---
-:first_day: '2020-06-25'
-:first_school_day: '2020-08-10'
-:last_day: '2021-08-06'
+:first_day: '2024-08-25'
+:first_school_day: '2024-08-25'
+:last_day: '2025-07-17'
 ```
 
 ## Ferien + Feiertage
@@ -91,18 +91,18 @@ kann:
 ## Stundenplan
 
 Der Stundenplan unserer Beispielumgebung liegt in 
-`src/example-data/stundenplan/2020-08-10.TXT`. Änderungen am 
+`src/example-data/stundenplan/2024-08-25.TXT`. Änderungen am 
 Stundenplan werden wie auch die Ferien und Feiertage mit 
 `./update-timetables.rb` aktualisiert. Dabei ist zu beachten, dass 
 **Änderungen immer ab dem Datum** des Dateinamens gelten.
 
 Wenn wir also eine Raumänderung von Anfang an vornehmen wollen, können 
-wir dies direkt in der Datei `2020-08-10.TXT` machen (erster Schultag 
-SJ 2020/2021). Soll eine Änderung erst ab einem bestimmten Datum 
+wir dies direkt in der Datei `2024-08-25.TXT` machen (erster Schultag 
+SJ 2024/2025). Soll eine Änderung erst ab einem bestimmten Datum 
 gelten, so legen wir zu diesem Datum eine neue Datei an. Wenn man 
 keinen komplett neuen Stundenplan erstellen möchte, kann man den 
 letzten gültigen kopieren und dann dort anpassen, also z.B. mit `cp 
-2020-08-10.TXT 2021-03-29.TXT`. In der Regel wird man diesen aber aus 
+2024-08-25.TXT 2025-03-31.TXT`. In der Regel wird man diesen aber aus 
 dem System exportieren, mit dem der Stundenplan auch erstellt wurde, 
 z.B. Untis.
 

@@ -242,9 +242,13 @@ class Main < Sinatra::Base
         end
 
         assert(login_code[:tries] <= MAX_LOGIN_TRIES + 1)
+        # code2 is only set by /api/confirm_login after the first factor
+        # was verified – without it, this would be a one-factor login.
+        assert_with_delay(!login_code[:code2].nil?, "Second factor without first factor for #{user[:email]}", true)
         found_match = false
         otp_token = user[:otp_token]
-        if otp_token
+        # The same factor must not count twice.
+        if otp_token && login_code[:method] != 'otp'
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
             if totp.verify(data[:code2], drift_behind: 15, drift_ahead: 15)
                 found_match = true

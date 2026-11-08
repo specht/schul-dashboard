@@ -72,7 +72,8 @@ end
 require './credentials.template.rb'
 warn_level = $VERBOSE
 $VERBOSE = nil
-require './credentials.rb'
+# DASHBOARD_CREDENTIALS is only set by the test stack (see doc/Tests.md)
+require ENV['DASHBOARD_CREDENTIALS'] || './credentials.rb'
 require '/data/config.rb'
 require '/data/lab8/config.rb'
 require '/data/lab9/config.rb'
@@ -4011,29 +4012,9 @@ class Main < Sinatra::Base
                         login_tag = parts[2]
                         login_code = parts[3]
 
-                        STDERR.puts "LOGIN DEBUG"
-                        STDERR.puts "  request_path: #{request.path.inspect}"
-                        STDERR.puts "  parts:        #{parts.inspect}"
-                        STDERR.puts "  login_tag:    #{login_tag.inspect}"
-                        STDERR.puts "  class:        #{login_tag.class}"
-                        STDERR.puts "  encoding:     #{login_tag.encoding}"
-                        STDERR.puts "  bytes:        #{login_tag.bytes.inspect}"
-
-                        debug_rows = neo4j_query(<<~CYPHER, tag: login_tag)
-                            MATCH (l:LoginCode)
-                            RETURN l.tag AS stored_tag,
-                                l.tag = $tag AS equal,
-                                size(l.tag) AS stored_size,
-                                size($tag) AS parameter_size
-                            ORDER BY l.tag
-                        CYPHER
-
-                        STDERR.puts "  rows:         #{debug_rows.inspect}"
-
                         login_method = neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => login_tag})['method']
                             MATCH (l:LoginCode {tag: $tag}) RETURN COALESCE(l.method, 'email') AS method;
                         END_OF_QUERY
-                        STDERR.puts "[#{login_tag}] [#{login_method}] [#{login_code}]"
                     end
 
                     template_path = '_template'

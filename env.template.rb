@@ -53,3 +53,8 @@ DOCKER_NETWORK_NAME = :dashboard
 # definiert werden
 DOCKER_NETWORK_SUBNET = nil
 DOCKER_NETWORK_RUBY_IP = nil
+
+# Container-Logs rotieren (sonst behält Docker sie unbegrenzt). Empfohlen;
+# auskommentieren, um wie früher ohne Begrenzung zu loggen.
+DOCKER_LOG_MAX_SIZE = '50m'
+DOCKER_LOG_MAX_FILES = 5

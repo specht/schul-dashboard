@@ -483,17 +483,14 @@ class Parser
 
         path = "/data/schueler/geschwister.txt"
         if File.exist?(path)
+            unknown_emails = []
             File.open(path) do |f|
                 f.each_line do |line|
                     line.strip!
                     next if line.empty? || line[0] == '#'
                     emails = line.split(/\s+/)
                     emails.select! do |email|
-                        unless user_info[email]
-                            if DASHBOARD_SERVICE == 'ruby'
-                                STDERR.puts "Warning: #{email} unknown and ignored in #{path}"
-                            end
-                        end
+                        unknown_emails << email unless user_info[email]
                         user_info[email] && (!user_info[:teacher])
                     end
                     emails.sort! do |a, b|
@@ -513,6 +510,10 @@ class Parser
                         user_info[email][:siblings_next_year] = emails.dup
                     end
                 end
+            end
+            # one line per start instead of one per address
+            if DASHBOARD_SERVICE == 'ruby' && !unknown_emails.empty?
+                STDERR.puts "Warning: #{unknown_emails.size} unknown e-mail addresses ignored in #{path}: #{unknown_emails.uniq.sort.join(', ')}"
             end
         end
     end
@@ -1284,9 +1285,6 @@ class Parser
                 rows = read_txt_rows(path, File.basename(path) >= '2020-10-26.TXT' ? 'r:utf-8' : 'r:iso-8859-1')
             end
             rows.each do |parts|
-                if DASHBOARD_SERVICE == 'ruby'
-                    STDERR.puts "[#{parts.join(',')}]"
-                end
                 where = parts[0]
                 shorthand = parts[1]
                 next if (shorthand || '').empty?
@@ -1758,9 +1756,7 @@ class Parser
                             else
                                 unassigned_names << name
                             end
-                            unless email
-                                debug "SESB: Can't assign #{name}!"
-                            end
+                            # unassigned names are listed once at the end
                             if email
                                 bildungsgaenge_sus[email] = bildungsgang
                             end

@@ -177,7 +177,13 @@ def debug(message, index = 0)
     rescue
         ls = "#{l[0].sub('/app/', '').sub('.rb', '')}:#{l[1]}"
     end
-    STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [#{ls}] #{message}"
+    STDERR.puts "#{log_timestamp} [#{ls}] #{message}"
+end
+
+# Date and time in every log line, so `docker logs` (without -t) and
+# copied log excerpts can be placed in time.
+def log_timestamp
+    Time.now.strftime('%Y-%m-%d %H:%M:%S')
 end
 
 def debug_ruby(message, index = 0)
@@ -194,7 +200,7 @@ def debug_error(message)
     rescue
         ls = "#{l[0].sub('/app/', '').sub('.rb', '')}:#{l[1]}"
     end
-    STDERR.puts "#{DateTime.now.strftime('%H:%M:%S')} [ERROR] [#{ls}] #{message}"
+    STDERR.puts "#{log_timestamp} [ERROR] [#{ls}] #{message}"
 end
 
 def fix_h_to_hh(s)
@@ -883,6 +889,7 @@ class Main < Sinatra::Base
         # Now we have schueler, teacher, and extra accounts, now assign the roles
         File.open('/data/roles/roles.txt') do |f|
             role = nil
+            unknown_for_role = {}
             f.each_line do |line|
                 line.strip!
                 next if line.empty?
@@ -894,9 +901,13 @@ class Main < Sinatra::Base
                     if @@user_info.include?(email)
                         @@user_info[email][:roles] << role
                     else
-                        debug "Warning: Not assigning role #{role.to_s.upcase} to unknown email address #{email}, skipping..."
+                        (unknown_for_role[role] ||= []) << email
                     end
                 end
+            end
+            # one line per role instead of one per address
+            unknown_for_role.each_pair do |r, emails|
+                debug "Warning: role #{r.to_s.upcase} not assigned to #{emails.size} unknown e-mail addresses: #{emails.sort.join(', ')}"
             end
         end
 
@@ -1954,10 +1965,11 @@ class Main < Sinatra::Base
 
     before '*' do
         if DEVELOPMENT
-            debug "Re-including fragments.rb and data configs!"
-            Kernel.send(:load, '/app/fragments/fragments.rb')
+            # reload on every request; silence the "already initialized
+            # constant" warnings this causes
             warn_level = $VERBOSE
             $VERBOSE = nil
+            Kernel.send(:load, '/app/fragments/fragments.rb')
             Kernel.send(:load, '/data/config.rb')
             Kernel.send(:load, '/data/lab8/config.rb')
             Kernel.send(:load, '/data/lab9/config.rb')

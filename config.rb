@@ -294,6 +294,20 @@ unless DOCKER_NETWORK_RUBY_IP.nil?
     docker_compose[:services][:ruby][:networks][DOCKER_NETWORK_NAME][:ipv4_address] = DOCKER_NETWORK_RUBY_IP
 end
 
+# Optional: rotate the container logs (Docker keeps them forever otherwise),
+# e.g. DOCKER_LOG_MAX_SIZE = '50m' and DOCKER_LOG_MAX_FILES = 5 in env.rb.
+if defined?(DOCKER_LOG_MAX_SIZE) && DOCKER_LOG_MAX_SIZE
+    docker_compose[:services].each_pair do |k, v|
+        v[:logging] = {
+            :driver => 'json-file',
+            :options => {
+                'max-size' => DOCKER_LOG_MAX_SIZE.to_s,
+                'max-file' => (defined?(DOCKER_LOG_MAX_FILES) ? DOCKER_LOG_MAX_FILES : 5).to_s,
+            },
+        }
+    end
+end
+
 File::open(COMPOSE_FILE_PATH, 'w') do |f|
     f.puts "# NOTICE: don't edit this file directly, use config.rb instead!\n"
     f.write(JSON::parse(docker_compose.to_json).to_yaml)

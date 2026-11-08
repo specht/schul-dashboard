@@ -54,12 +54,58 @@ cd src/scripts && ./update-timetables.rb
 
 ## Logs
 
-- nginx: `LOGS_PATH/access.log`
-- Neo4j: `LOGS_PATH/neo4j/`
-- alle Dienste: `./config.rb logs -f <dienst>`
+| Was | Wo |
+|---|---|
+| Ruby-Dienste (`ruby`, Bots) | `./config.rb logs -f <dienst>` (Docker-Log) |
+| nginx | `LOGS_PATH/access.log`, `LOGS_PATH/error.log` |
+| Neo4j | `LOGS_PATH/neo4j/` |
 
-Logs können personenbezogene Daten enthalten (E-Mail-Adressen, IP-Adressen
-des Proxys). Aufbewahrung begrenzen und nicht weitergeben.
+Jede Zeile der Ruby-Dienste beginnt mit Datum und Uhrzeit und der Stelle im
+Code, z. B. `2026-11-09 08:15:02 [main:2145] …`; Fehler sind mit `[ERROR]`
+markiert, Ausnahmen erscheinen mit Stacktrace. Nützlich:
+
+```
+./config.rb logs --since 24h ruby | grep -E '\[ERROR\]| - [A-Z][A-Za-z:]+ - '
+```
+
+Beim Start fasst das Dashboard Probleme in den Eingangsdaten pro Datei bzw.
+Rolle in einer Zeile zusammen (z. B. unbekannte E-Mail-Adressen in
+`roles.txt` oder `geschwister.txt`) – diese Zeilen nach jedem Datenimport
+durchsehen.
+
+### Rotation
+
+Docker behält Container-Logs ohne Begrenzung. In `env.rb`:
+
+```ruby
+DOCKER_LOG_MAX_SIZE = '50m'
+DOCKER_LOG_MAX_FILES = 5
+```
+
+und danach `./config.rb up -d` (die Container werden neu erstellt). Neue
+Installationen haben das über `env.template.rb` bereits gesetzt.
+
+Die nginx-Logs liegen als Dateien in `LOGS_PATH` und wachsen ebenfalls
+unbegrenzt. Auf dem Host mit logrotate, z. B. `/etc/logrotate.d/dashboard`:
+
+```
+/pfad/zu/LOGS_PATH/*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
+```
+
+### Datenschutz
+
+Logs enthalten personenbezogene Daten (E-Mail-Adressen, Kürzel, IP-Adressen
+des Proxys, aufgerufene Seiten). Aufbewahrung begrenzen (Rotation),
+Zugriff beschränken, nicht weitergeben und keine Log-Auszüge ungeprüft in
+Issues oder Chats kopieren.
 
 ## Datensicherung
 

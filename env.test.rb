@@ -49,6 +49,9 @@ PUBLISH_DEV_PORTS = false
 CREDENTIALS_FILE = './test/credentials.rb'
 # Test-Stack nicht nach einem Neustart des Rechners wieder hochfahren
 RESTART_SERVICES = false
+# Container-Logs rotieren wie empfohlen (env.template.rb)
+DOCKER_LOG_MAX_SIZE = '10m'
+DOCKER_LOG_MAX_FILES = 3
 
 # Test-Postfach: nimmt alle Mails an (SMTP mailpit:587), Web/API für die Tests
 EXTRA_SERVICES = {

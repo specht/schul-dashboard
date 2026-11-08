@@ -712,10 +712,10 @@ class Main < Sinatra::Base
                         :label => row[:info][:name] + (who.empty? ? '' : ' (Eltern)'),
                         :recipients => [],
                     }
-                    @@angebote_mailing_lists[list_email][:recipients] << who + row[:recipient]
+                    # offerings without participants still get their (empty) list
+                    @@angebote_mailing_lists[list_email][:recipients] << who + row[:recipient] if row[:recipient]
                 rescue => e
-                    STDERR.puts "Error adding angebote mailing list:"
-                    STDERR.puts e
+                    debug_error "Error adding angebote mailing list #{list_email}: #{e}"
                 end
             end
         end
@@ -1278,7 +1278,8 @@ class Main < Sinatra::Base
             io.puts "<tbody>"
             schueler_liste = []
             KLASSEN_ORDER.each do |klasse|
-                schueler_liste += @@schueler_for_klasse[klasse]
+                # classes without students have no list
+                schueler_liste += @@schueler_for_klasse[klasse] || []
             end
             last_access = {}
             neo4j_query(<<~END_OF_QUERY).each do |x|
@@ -1329,7 +1330,9 @@ class Main < Sinatra::Base
                 if record[:tutor]
                     tutor = @@user_info[record[:tutor]][:display_name]
                 else
-                    tutor = @@klassenleiter[record[:klasse]].map { |x| @@user_info[@@shorthands[x]][:display_name] }.join(', ')
+                    # not every class has a class teacher in the data
+                    names = (@@klassenleiter[record[:klasse]] || []).map { |x| (@@user_info[@@shorthands[x]] || {})[:display_name] }.compact
+                    tutor = names.empty? ? '&ndash;' : names.join(', ')
                 end
                 io.puts "<td>#{tutor}</td>"
                 io.puts "</tr>"

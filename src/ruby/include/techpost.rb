@@ -634,6 +634,9 @@ class Main < Sinatra::Base
             io.puts "<tr><td>User</td><td>Bearbeiten</td></tr>"
             io.puts "</thead><tbody>"
             get_technikamt_users.each do |technikamt|
+                # the role is stored in the database and may outlive the
+                # person's entry in the school's data (e.g. after leaving)
+                next unless @@user_info[technikamt]
                 display_name = @@user_info[technikamt][:display_name]
                 nc_login = @@user_info[technikamt][:nc_login]
                 klasse = tr_klasse(@@user_info[technikamt][:klasse])

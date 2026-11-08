@@ -10,6 +10,13 @@ SET u.otp_token = 'JBSWY3DPEHPK3PXP',
     u.last_access = '2024-09-01',
     u.force_2fa_exception_deadline = 0;
 
+// Someone who still has the "Technikamt" role in the database but is no
+// longer in the school's data (e.g. left the school) – this happens in
+// real data and must not break the admin pages.
+MERGE (u:User {email: 'ehemalig.technikamt@mail.beispielschule.de'})
+MERGE (v:Techpost)
+MERGE (u)-[:HAS_AMT {amt: 'technikamt'}]->(v);
+
 // Teacher/admin who logs in with the OTP app as first factor (and is still
 // in the first-login grace period, so no second factor).
 MATCH (u:User {email: 'clarke@beispielschule.de'})

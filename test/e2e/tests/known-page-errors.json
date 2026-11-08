@@ -240,7 +240,6 @@
     "directory": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "email_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "ext_event": "NoMethodError: undefined method '[]' for nil",
-    "inactive_sus": "fehlender URL-Parameter (no implicit conversion of nil into Array)",
     "kurslisten": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "lab8": "Beispieldaten unvollständig: email_is_eligible_for_lab8? fehlt (lab8/config.rb)",
     "lab9": "Beispieldaten unvollständig: email_is_eligible_for_lab9? fehlt (lab9/config.rb)",

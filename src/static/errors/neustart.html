@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="de" data-look-pending>
+<!--
+    Shown by nginx (error_page 502) while the Ruby backend restarts.
+    nginx serves this file as-is, so it must stay fully self-contained:
+    no Ruby interpolation, no assets except the static ones under /fonts.
+    It polls /api/ping (answered in config.ru) and reloads the original
+    URL as soon as the backend is back.
+-->
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>Gleich wieder da – Dashboard</title>
+    <style>
+        @font-face {
+            font-family: 'AlegreyaSans';
+            font-weight: 400;
+            font-display: swap;
+            src: url(/fonts/AlegreyaSans-Regular.ttf) format('truetype');
+        }
+        @font-face {
+            font-family: 'AlegreyaSans';
+            font-weight: 700;
+            font-display: swap;
+            src: url(/fonts/AlegreyaSans-Bold.ttf) format('truetype');
+        }
+        @font-face {
+            font-family: 'PTMono';
+            font-display: swap;
+            src: url(/fonts/PTMono-Regular.ttf) format('truetype');
+        }
+
+        :root {
+            --base: #f8f8f8;
+            /* Like the timetable panel: see-through on top, solid at the bottom. */
+            --card-top: rgba(255, 255, 255, 0.55);
+            --card-bottom: rgba(248, 248, 248, 0.92);
+            --line: rgba(0, 0, 0, 0.08);
+            --text: #1d1f23;
+            --muted: #5b6069;
+            --screen: #fbfbf8;
+            --accent: #4c7fd9;
+            --accent-ink: #ffffff;
+            --left: #8a6fd8;
+            --right: #2fb3a0;
+            --bgimg: none;
+            color-scheme: light;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-look="light"]) {
+                --base: #080808;
+                --card-top: rgba(0, 0, 0, 0.4);
+                --card-bottom: rgba(8, 8, 8, 0.92);
+                --line: rgba(255, 255, 255, 0.1);
+                --text: #f1f1f1;
+                --muted: #a4a9b2;
+                --screen: #17181c;
+                color-scheme: dark;
+            }
+        }
+        :root[data-look="dark"] {
+            --base: #080808;
+            --card-top: rgba(0, 0, 0, 0.4);
+            --card-bottom: rgba(8, 8, 8, 0.92);
+            --line: rgba(255, 255, 255, 0.1);
+            --text: #f1f1f1;
+            --muted: #a4a9b2;
+            --screen: #17181c;
+            color-scheme: dark;
+        }
+
+        * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+
+        html, body { min-height: 100%; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px 16px;
+            font-family: 'AlegreyaSans', 'Segoe UI', system-ui, sans-serif;
+            font-size: 18px;
+            line-height: 1.45;
+            color: var(--text);
+            background-color: var(--page-bg, var(--base));
+            /* The user's own dashboard background if we know it, otherwise soft blobs. */
+            background-image:
+                var(--bgimg),
+                radial-gradient(60vmax 45vmax at 10% 0%, color-mix(in srgb, var(--left) 35%, transparent), transparent 70%),
+                radial-gradient(55vmax 45vmax at 50% 0%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
+                radial-gradient(60vmax 45vmax at 95% 10%, color-mix(in srgb, var(--right) 30%, transparent), transparent 70%);
+            background-repeat: no-repeat;
+            background-size: max(100vw, 1920px), auto, auto, auto;
+            background-position: 50% 0%, 0 0, 0 0, 0 0;
+        }
+        /* While we're still finding out which look to use, keep it plain. */
+        :root[data-look-pending] body { background-image: none; }
+
+        .card {
+            width: 100%;
+            max-width: 34rem;
+            padding: 28px 28px 22px;
+            border-radius: 20px;
+            background: linear-gradient(to bottom, var(--card-top), var(--card-bottom));
+            border: 1px solid var(--line);
+            box-shadow: 0 0 2em rgba(0, 0, 0, 0.4);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .buddy {
+            display: block;
+            width: 180px;
+            max-width: 60%;
+            height: auto;
+            margin: -4px auto 6px;
+            overflow: visible;
+        }
+
+        .eyebrow {
+            margin: 0 0 4px;
+            font-family: 'PTMono', ui-monospace, monospace;
+            font-size: 13px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        h1 {
+            margin: 0 0 10px;
+            font-size: clamp(26px, 6vw, 34px);
+            line-height: 1.15;
+            font-weight: 700;
+            text-wrap: balance;
+        }
+        p { margin: 0 0 10px; text-wrap: pretty; }
+        .lead { font-size: 20px; }
+        .muted { color: var(--muted); }
+
+        .ticker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 28px;
+            margin: 16px 0 4px;
+            font-style: italic;
+            color: var(--muted);
+        }
+        .ticker .dot {
+            flex: none;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        #ticker { transition: opacity 0.35s ease; }
+        #ticker.fade { opacity: 0; }
+
+        .note {
+            margin: 14px 0 0;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+            font-size: 17px;
+        }
+
+        .foot {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px 16px;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
+            font-family: 'PTMono', ui-monospace, monospace;
+            font-size: 13px;
+            color: var(--muted);
+            text-align: left;
+        }
+        .foot button {
+            font: inherit;
+            font-family: 'AlegreyaSans', system-ui, sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 7px 16px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--accent);
+            color: var(--accent-ink);
+            cursor: pointer;
+        }
+        .foot button:hover { filter: brightness(1.08); }
+        .foot button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+        .foot button:disabled { opacity: 0.6; cursor: default; }
+
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
+
+        /* --- the little dashboard buddy --- */
+        .buddy .body { fill: var(--accent); stroke: var(--line); stroke-width: 2; }
+        .buddy .stand { fill: var(--accent); opacity: 0.55; }
+        .buddy .screen { fill: var(--screen); }
+        .buddy .face { stroke: var(--text); stroke-width: 4.5; stroke-linecap: round; fill: none; }
+        .buddy .cheek { fill: #ff7a9a; opacity: 0.35; }
+        .buddy .snore { fill: var(--text); transform-box: fill-box; transform-origin: center; animation: snore 3.2s ease-in-out infinite; }
+        .buddy .z { fill: var(--text); font-family: 'AlegreyaSans', system-ui, sans-serif; font-weight: 700; opacity: 0; transform-box: fill-box; transform-origin: center; animation: float 3.6s ease-in infinite; }
+        .buddy .z2 { animation-delay: 1.2s; }
+        .buddy .z3 { animation-delay: 2.4s; }
+        .buddy .shadow { fill: var(--text); opacity: 0.12; transform-box: fill-box; transform-origin: center; animation: shadow 3.2s ease-in-out infinite; }
+        .buddy .monitor { animation: breathe 3.2s ease-in-out infinite; }
+        .buddy .awake { display: none; }
+        .buddy.is-awake .asleep, .buddy.is-awake .z { display: none; }
+        .buddy.is-awake .awake { display: inline; }
+        .buddy.is-awake .monitor { animation: hop 0.5s ease-out 2; }
+        .buddy.is-awake .shadow { animation: none; }
+
+        @keyframes breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+        @keyframes shadow  { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.06); } }
+        @keyframes snore   { 0%, 100% { transform: scale(0.7); } 50% { transform: scale(1.15); } }
+        @keyframes float {
+            0%   { opacity: 0; transform: translate(0, 0) scale(0.7); }
+            20%  { opacity: 0.8; }
+            100% { opacity: 0; transform: translate(18px, -34px) scale(1.15); }
+        }
+        @keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+            .buddy .z1 { opacity: 0.7; }
+        }
+
+        @media (max-width: 420px) {
+            .card { padding: 22px 18px 18px; }
+            .lead { font-size: 19px; }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="card">
+        <svg class="buddy" id="buddy" viewBox="0 0 200 170" aria-hidden="true">
+            <ellipse class="shadow" cx="100" cy="160" rx="54" ry="6" />
+            <rect class="stand" x="88" y="128" width="24" height="20" />
+            <rect class="stand" x="64" y="145" width="72" height="9" rx="4.5" />
+            <g class="monitor">
+                <rect class="body" x="28" y="28" width="144" height="104" rx="18" />
+                <rect class="screen" x="41" y="41" width="118" height="78" rx="11" />
+                <circle class="cheek" cx="64" cy="94" r="7" />
+                <circle class="cheek" cx="136" cy="94" r="7" />
+                <g class="asleep">
+                    <path class="face" d="M66 78 q9 8 18 0" />
+                    <path class="face" d="M116 78 q9 8 18 0" />
+                    <ellipse class="snore" cx="100" cy="99" rx="4.5" ry="3.5" />
+                </g>
+                <g class="awake">
+                    <circle cx="75" cy="76" r="6.5" fill="currentColor" style="color: var(--text)" />
+                    <circle cx="125" cy="76" r="6.5" fill="currentColor" style="color: var(--text)" />
+                    <circle cx="77.5" cy="73.5" r="2" fill="var(--screen)" />
+                    <circle cx="127.5" cy="73.5" r="2" fill="var(--screen)" />
+                    <path class="face" d="M84 92 q16 16 32 0" />
+                </g>
+            </g>
+            <text class="z z1" x="150" y="34" font-size="18">z</text>
+            <text class="z z2" x="150" y="34" font-size="22">z</text>
+            <text class="z z3" x="150" y="34" font-size="26">Z</text>
+        </svg>
+
+        <p class="eyebrow">Dashboard · Neustart</p>
+        <h1 id="title">Kurze Pause – gleich geht’s weiter!</h1>
+        <p class="lead" id="lead">Das Dashboard startet gerade neu. Das dauert meistens nicht länger als eine Minute.</p>
+        <p class="muted" id="detail">Du musst nichts tun: Diese Seite lädt automatisch neu, sobald alles wieder läuft. Deine gespeicherten Daten sind davon nicht betroffen.</p>
+
+        <div class="ticker" aria-hidden="true">
+            <span class="dot"></span>
+            <span id="ticker">Stundenpläne werden sortiert …</span>
+        </div>
+
+        <p class="note" id="long-wait" hidden>
+            Heute dauert es etwas länger als sonst. Lass die Seite einfach offen – sie meldet sich von selbst, sobald das Dashboard wieder da ist.
+        </p>
+
+        <div class="foot">
+            <span aria-hidden="true"><span id="countdown">Nächster Versuch gleich</span> · <span id="elapsed">Wartezeit 0:00</span></span>
+            <button type="button" id="retry">Jetzt prüfen</button>
+        </div>
+
+        <p class="sr-only" role="status" id="live"></p>
+    </main>
+
+    <script>
+    (function () {
+        'use strict';
+
+        var LONG_WAIT_MS = 3 * 60 * 1000;
+        var root = document.documentElement;
+
+        // ---- Look: dress up like the dashboard people know ----
+        // Scheme strings look like 'l788aa3e8a598b565760': light/dark
+        // background, then left, primary and right color, then the
+        // background style. The dashboard's dark mode is a separate user
+        // setting (body.dark) and decides how panels and text look.
+        function applyLook(scheme, bg, dark) {
+            if (typeof scheme !== 'string' || !/^[ld][0-9a-f]{18}/.test(scheme)) return false;
+            var primary = '#' + scheme.substr(7, 6);
+            var r = parseInt(primary.substr(1, 2), 16);
+            var g = parseInt(primary.substr(3, 2), 16);
+            var b = parseInt(primary.substr(5, 2), 16);
+            // Same threshold as luminance() in include/color.rb.
+            var lightPrimary = r * 0.299 + g * 0.587 + b * 0.114 > 160;
+            root.style.setProperty('--accent', primary);
+            root.style.setProperty('--accent-ink', lightPrimary ? '#111111' : '#ffffff');
+            root.style.setProperty('--left', '#' + scheme.substr(1, 6));
+            root.style.setProperty('--right', '#' + scheme.substr(13, 6));
+            root.style.setProperty('--page-bg', scheme[0] === 'l' ? '#f8f8f8' : '#080808');
+            // Unknown dark mode (standard look): follow the system setting.
+            if (typeof dark === 'boolean') root.setAttribute('data-look', dark ? 'dark' : 'light');
+            if (typeof bg === 'string') {
+                if (/^\/gen\/bg\/[\w.-]+$/.test(bg)) bg = 'url("' + bg + '")';
+                if (/^url\("?[^"()]+"?\)$/.test(bg)) root.style.setProperty('--bgimg', bg);
+            }
+            return true;
+        }
+
+        function lookDone() { root.removeAttribute('data-look-pending'); }
+
+        var haveOwnLook = false;
+        try {
+            // Remembered by _template.html on every dashboard page view.
+            var own = JSON.parse(localStorage.getItem('dashboard_look') || 'null');
+            haveOwnLook = !!own && applyLook(own.scheme, own.bg, own.dark);
+        } catch (e) { /* no storage, no problem */ }
+
+        if (haveOwnLook) {
+            lookDone();
+        } else {
+            // Never been here on this device: use one of the standard looks
+            // (written by main.rb on startup), the same one all day long.
+            fetch('/gen/bg/neustart-looks.json', { cache: 'no-cache' })
+                .then(function (r) { return r.ok ? r.json() : []; })
+                .then(function (looks) {
+                    if (looks && looks.length) {
+                        var day = Math.floor(Date.now() / 86400000);
+                        var pick = looks[day % looks.length];
+                        applyLook(pick.scheme, pick.bg);
+                    }
+                })
+                .catch(function () {})
+                .then(lookDone);
+            setTimeout(lookDone, 1500);
+        }
+
+        // ---- Something to read while waiting ----
+        var lines = [
+            'Stundenpläne werden sortiert …',
+            'Vertretungsplan wird abgestaubt …',
+            'Tafel wird gewischt …',
+            'Kaffee fürs Lehrerzimmer wird gekocht …',
+            'Bleistifte werden gespitzt …',
+            'Kalenderblätter werden geglättet …',
+            'Sitzpläne werden durchgezählt …',
+            'Einsen und Nullen werden poliert …',
+            'Kreide wird geholt …'
+        ];
+        for (var i = lines.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = lines[i]; lines[i] = lines[j]; lines[j] = t;
+        }
+        var tickerEl = document.getElementById('ticker');
+        var lineIndex = 0;
+        tickerEl.textContent = lines[0];
+        var tickerTimer = setInterval(function () {
+            tickerEl.classList.add('fade');
+            setTimeout(function () {
+                lineIndex = (lineIndex + 1) % lines.length;
+                tickerEl.textContent = lines[lineIndex];
+                tickerEl.classList.remove('fade');
+            }, 350);
+        }, 3200);
+
+        // ---- Polling ----
+        var startedAt = Date.now();
+        var attempt = 0;
+        var nextAt = 0;
+        var pollTimer = null;
+        var checking = false;
+        var done = false;
+
+        var countdownEl = document.getElementById('countdown');
+        var elapsedEl = document.getElementById('elapsed');
+        var retryBtn = document.getElementById('retry');
+
+        // Grows from ~2 s to ~5 s, with jitter so hundreds of open tabs
+        // don't all knock at the same moment.
+        function delayFor(n) {
+            var base = Math.min(2000 + n * 500, 5000);
+            return Math.round(base * (0.7 + Math.random() * 0.6));
+        }
+
+        function schedule(ms) {
+            clearTimeout(pollTimer);
+            nextAt = Date.now() + ms;
+            pollTimer = setTimeout(check, ms);
+        }
+
+        function isBackendUp(status) {
+            // 502/503/504 come from nginx while Ruby is unreachable;
+            // anything else means the app answered.
+            return status !== 502 && status !== 503 && status !== 504;
+        }
+
+        function check() {
+            if (checking || done) return;
+            checking = true;
+            clearTimeout(pollTimer);
+            retryBtn.disabled = true;
+            countdownEl.textContent = 'Prüfe …';
+
+            var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+            var abortTimer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 6000);
+
+            fetch('/api/ping?t=' + Date.now(), { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+                .then(function (r) {
+                    if (isBackendUp(r.status)) wake();
+                    else throw new Error('still restarting');
+                })
+                .catch(function () {
+                    attempt += 1;
+                    schedule(delayFor(attempt));
+                })
+                .then(function () {
+                    clearTimeout(abortTimer);
+                    checking = false;
+                    if (!done) retryBtn.disabled = false;
+                });
+        }
+
+        function wake() {
+            done = true;
+            clearTimeout(pollTimer);
+            clearInterval(tickerTimer);
+            document.getElementById('buddy').classList.add('is-awake');
+            document.getElementById('title').textContent = 'Da bin ich wieder!';
+            document.getElementById('lead').textContent = 'Das Dashboard ist wieder wach.';
+            document.getElementById('detail').textContent = 'Einen Moment, die Seite wird neu geladen …';
+            document.getElementById('long-wait').hidden = true;
+            tickerEl.parentNode.hidden = true;
+            countdownEl.textContent = 'Alles bereit';
+            retryBtn.disabled = true;
+            document.getElementById('live').textContent = 'Das Dashboard ist wieder da. Die Seite wird neu geladen.';
+            // replace() instead of reload(): never re-submits a form.
+            setTimeout(function () { location.replace(location.href); }, 1100);
+        }
+
+        function fmt(ms) {
+            var s = Math.floor(ms / 1000);
+            var m = Math.floor(s / 60);
+            s = s % 60;
+            return m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        var longShown = false;
+        setInterval(function () {
+            if (done) return;
+            var waited = Date.now() - startedAt;
+            elapsedEl.textContent = 'Wartezeit ' + fmt(waited);
+            if (!checking) {
+                var left = Math.max(0, Math.ceil((nextAt - Date.now()) / 1000));
+                countdownEl.textContent = 'Nächster Versuch in ' + left + ' s';
+            }
+            if (!longShown && waited > LONG_WAIT_MS) {
+                longShown = true;
+                document.getElementById('long-wait').hidden = false;
+                document.getElementById('live').textContent = document.getElementById('long-wait').textContent.trim();
+            }
+        }, 1000);
+
+        retryBtn.addEventListener('click', check);
+
+        // Coming back to a background tab or reconnecting: look right away.
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') schedule(Math.round(Math.random() * 800));
+        });
+        window.addEventListener('online', function () { schedule(500); });
+
+        schedule(delayFor(0));
+    })();
+    </script>
+</body>
+
+</html>

@@ -798,6 +798,16 @@
         var color_palette = #{ color_palette.to_json };
         var color_scheme = '#{color_scheme}';
 
+        // Remember this user's look for /errors/neustart.html, which nginx
+        // shows while the backend restarts and can't render anything itself.
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                var bg = getComputedStyle(document.body).backgroundImage;
+                if (bg && bg !== 'none')
+                    localStorage.setItem('dashboard_look', JSON.stringify({ scheme: color_scheme, bg: bg, dark: document.body.classList.contains('dark') }));
+            } catch (e) {}
+        });
+
         function duration_to_s(a, b) {
             let diff = 0;
             if (typeof (b) === 'undefined')

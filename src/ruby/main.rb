@@ -1831,6 +1831,21 @@ class Main < Sinatra::Base
                 @@renderer.render(palette)
             end
 
+            # Looks for static/errors/neustart.html, which nginx shows while
+            # we're restarting: the same light schemes logged-out visitors
+            # get from pick_random_color_scheme.
+            begin
+                looks = @@color_scheme_colors.reject { |s| s[4] == 'd' || s[1] == '#ff0040' }.map do |s|
+                    scheme = "l#{s[0, 3].join('').gsub('#', '')}0"
+                    ext = File.exist?("/gen/bg/bg-#{scheme}.jpg") ? 'jpg' : 'svg'
+                    { :scheme => scheme, :bg => "/gen/bg/bg-#{scheme}.#{ext}" }
+                end
+                File.write('/gen/bg/neustart-looks.json.tmp', looks.to_json)
+                File.rename('/gen/bg/neustart-looks.json.tmp', '/gen/bg/neustart-looks.json')
+            rescue StandardError => e
+                STDERR.puts e
+            end
+
             begin
                 http = Net::HTTP.new('image_bot', 8080)
                 response = http.request(Net::HTTP::Get.new("/api/update_all"))

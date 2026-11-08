@@ -95,6 +95,16 @@ nginx_config = <<~eos
             root /gen/ical;
         }
 
+        # nginx answers 502 while the Ruby container is (re)starting –
+        # show a friendly page that reloads itself once /api/ping works.
+        error_page 502 /errors/neustart.html;
+
+        location /errors/ {
+            root /usr/share/nginx/html;
+            internal;
+            add_header Cache-Control "no-store" always;
+        }
+
         location / {
             root /usr/share/nginx/html;
             try_files $uri @ruby;

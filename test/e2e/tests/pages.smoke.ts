@@ -10,9 +10,15 @@ import { ACCOUNTS, apiLogin } from './fixtures';
 // The list is a baseline of the current state, not a goal: the test also
 // fails when a listed page no longer errors, so that fixes get recorded.
 // Update it with UPDATE_KNOWN_PAGE_ERRORS=1 (see doc/Tests.md).
+//
+// Report mode (exploratory runs, e.g. against a development instance):
+// SMOKE_ACCOUNTS='{"role": "email", …}' replaces the example accounts; no
+// comparison with the baseline, instead a report with status codes and
+// response times is written to test-results/page-report.json.
 
 const STATIC_DIR = process.env.STATIC_DIR || '/static';
 const KNOWN_ERRORS_FILE = path.join(__dirname, 'known-page-errors.json');
+const REPORT_FILE = path.join(__dirname, '..', 'test-results', 'page-report.json');
 
 // Same rule as the page route in main.rb: no leading '_', no further dots.
 const pages = fs.readdirSync(STATIC_DIR)
@@ -21,21 +27,29 @@ const pages = fs.readdirSync(STATIC_DIR)
   .filter((name) => !name.startsWith('_') && !name.includes('.'))
   .sort();
 
-const roles: Record<string, string | null> = {
-  anonym: null,
-  schueler: ACCOUNTS.schueler,
-  schueler_oberstufe: ACCOUNTS.schueler_oberstufe,
-  lehrkraft: ACCOUNTS.teacher,
-  admin: ACCOUNTS.admin,
-};
+const reportMode = !!process.env.SMOKE_ACCOUNTS;
+const roles: Record<string, string | null> = reportMode
+  ? { anonym: null, ...JSON.parse(process.env.SMOKE_ACCOUNTS!) }
+  : {
+    anonym: null,
+    schueler: ACCOUNTS.schueler,
+    schueler_oberstufe: ACCOUNTS.schueler_oberstufe,
+    lehrkraft: ACCOUNTS.teacher,
+    admin: ACCOUNTS.admin,
+  };
 
 const known: Record<string, Record<string, string>> =
   fs.existsSync(KNOWN_ERRORS_FILE) ? JSON.parse(fs.readFileSync(KNOWN_ERRORS_FILE, 'utf8')) : {};
 const observed: Record<string, Record<string, string>> = {};
+const report: Record<string, Record<string, { status: number; ms: number }>> = {};
 const updating = process.env.UPDATE_KNOWN_PAGE_ERRORS === '1';
 
 test.afterAll(() => {
-  if (!updating) return;
+  if (reportMode) {
+    fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
+    fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2) + '\n');
+  }
+  if (!updating || reportMode) return;
   const merged = { ...known, ...observed };
   // keep explanations that were written by hand
   for (const role of Object.keys(observed)) {
@@ -49,18 +63,29 @@ test.afterAll(() => {
 
 for (const [role, email] of Object.entries(roles)) {
   test(`alle Seiten ohne Serverfehler: ${role}`, async ({ baseURL }) => {
-    test.setTimeout(10 * 60_000);
+    test.setTimeout(30 * 60_000);
     const request = await playwrightRequest.newContext({ baseURL });
-    if (email) await apiLogin(request, email);
+    if (email && reportMode && roles.admin && email !== roles.admin) {
+      // Report mode: accounts may log in with their OTP app, whose secrets
+      // we don't use – sign in as admin and impersonate instead.
+      await apiLogin(request, roles.admin);
+      const impersonate = await request.post('/api/impersonate', { data: { email } });
+      expect(impersonate.status(), `impersonate ${role}`).toBe(200);
+    } else if (email) {
+      await apiLogin(request, email);
+    }
 
     const errors: Record<string, string> = {};
+    report[role] = {};
     for (const page of pages) {
-      const response = await request.get(`/${page}`, { maxRedirects: 0, timeout: 60_000 });
+      const started = Date.now();
+      const response = await request.get(`/${page}`, { maxRedirects: 0, timeout: 120_000 });
+      report[role][page] = { status: response.status(), ms: Date.now() - started };
       if (response.status() >= 500) errors[page] = `HTTP ${response.status()}`;
     }
     await request.dispose();
     observed[role] = errors;
-    if (updating) return;
+    if (updating || reportMode) return;
 
     const expected = Object.keys(known[role] || {}).sort();
     const actual = Object.keys(errors).sort();

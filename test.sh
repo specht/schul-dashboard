@@ -13,6 +13,9 @@
 #   KEEP=1                 leave the test stack running after e2e
 #   E2E_ARGS="…"           extra arguments for `playwright test`
 #   UPDATE_KNOWN_PAGE_ERRORS=1  rewrite test/e2e/tests/known-page-errors.json
+#   E2E_BASE_URL, SMOKE_ACCOUNTS, LOGIN_CODE
+#                          exploratory page report against another instance,
+#                          see doc/Tests.md ("Erkundungslauf")
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -92,7 +95,8 @@ run_unit() {
 run_playwright() {
     docker run --rm --network host --ipc host \
         --user "$(id -u):$(id -g)" -e HOME=/tmp -e npm_config_cache=/tmp/.npm \
-        -e BASE_URL="$BASE_URL" -e MAILPIT_URL="$MAILPIT_URL" -e CI=1 \
+        -e BASE_URL="${E2E_BASE_URL:-$BASE_URL}" -e MAILPIT_URL="$MAILPIT_URL" -e CI=1 \
+        -e SMOKE_ACCOUNTS -e LOGIN_CODE \
         -e STATIC_DIR=/static -e UPDATE_KNOWN_PAGE_ERRORS="${UPDATE_KNOWN_PAGE_ERRORS:-0}" \
         -v "$PWD/test/e2e:/e2e" -v "$PWD/src/static:/static:ro" -w /e2e \
         "$PLAYWRIGHT_IMAGE" \

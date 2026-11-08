@@ -109,6 +109,28 @@ Beispieldaten und fehlende URL-Parameter.
    Tests abgedeckt sein, insbesondere durch E2E-Tests der echten Abläufe.
 5. **Jeder behobene Fehler bekommt einen Test**, der ihn vorher gezeigt hätte.
 
+## Erkundungslauf gegen eine Entwicklungsinstanz
+
+Der Seiten-Smoke-Test kann auch gegen eine laufende Entwicklungsinstanz
+laufen, z. B. mit einer aktuellen Kopie der echten Daten. Das findet Fehler,
+die die Beispieldaten nicht auslösen. Es gibt dabei keinen Vergleich mit der
+Bestandsaufnahme, sondern einen Bericht mit Statuscode und Antwortzeit pro
+Seite und Rolle in `test/e2e/test-results/page-report.json`.
+
+```
+E2E_BASE_URL=http://localhost:8025 LOGIN_CODE=123456 \
+SMOKE_ACCOUNTS='{"admin": "…", "lehrkraft": "…", "schueler": "…"}' \
+E2E_ARGS="--project=smoke tests/pages.smoke.ts" ./test.sh e2e-run
+```
+
+- `LOGIN_CODE` ist der feste Anmeldecode im Development-Modus.
+- Ist ein `admin` angegeben, werden die übrigen Rollen über „Anmelden als“
+  angemeldet (für Konten mit OTP-App).
+- Die Seiten werden nur abgerufen (GET), JavaScript läuft nicht.
+- **Echte Daten:** Konten nur über die Umgebung übergeben, den Bericht
+  nicht committen (`test-results/` ist ignoriert), in Auswertungen nur
+  Seitennamen, Fehlerarten und Zeiten nennen.
+
 ## Testebenen
 
 | Ebene | Werkzeug | Läuft gegen | Wofür |

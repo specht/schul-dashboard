@@ -28,7 +28,14 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   messages. They live locally in `*.local.md` (gitignored). Use neutral
   commit messages for fixes; tests that describe a hole concretely are only
   pushed once the fix runs in production.
-- Example and test data only from `src/example-data`.
+- Example and test data for the automated tests only from
+  `src/example-data`.
+- **Exploratory testing with real data** is allowed on the maintainer's
+  local dev instance (port 8025, a current copy of the live data; mails
+  are only printed to the log there). Be careful: prefer read-only checks,
+  keep write actions minimal, and never put personal data (names, emails,
+  contents) into replies, commits, reports or the repository – only page
+  names, error types and counts.
 
 ## 2. Git and collaboration
 

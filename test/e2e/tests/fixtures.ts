@@ -161,6 +161,7 @@ function mailQuery(email: string) {
 }
 
 export async function clearLoginMails(email: string) {
+  if (process.env.LOGIN_CODE) return; // fixed code, no test mailbox involved
   await fetch(`${MAILPIT_URL}/api/v1/search?query=${mailQuery(email)}`, { method: 'DELETE' });
 }
 
@@ -177,7 +178,12 @@ export async function waitForMailedCode(email: string, timeoutMs = 15_000): Prom
   throw new Error(`no login code mail for ${email} within ${timeoutMs} ms`);
 }
 
+// Exploratory runs against a development instance (fixed login code there,
+// see doc/Tests.md): LOGIN_CODE=123456
+const FIXED_LOGIN_CODE = process.env.LOGIN_CODE;
+
 async function codeFor(factor: Factor, email: string) {
+  if (FIXED_LOGIN_CODE) return FIXED_LOGIN_CODE;
   if (factor === 'otp') return totp();
   const code = await waitForMailedCode(email);
   await clearLoginMails(email);
@@ -193,7 +199,7 @@ export async function typeEmail(page: Page, email: string) {
 }
 
 export async function login(page: Page, email: string) {
-  const factors = LOGIN_FACTORS[email];
+  const factors = LOGIN_FACTORS[email] || { first: 'email' };
   await clearLoginMails(email);
   await page.goto('/');
   await typeEmail(page, email);
@@ -221,7 +227,7 @@ export async function openProfileMenu(page: Page) {
 // Enters email and code on the login pages, without visiting / first –
 // for the "Zusätzliche Anmeldung…" flow that starts on /login.
 export async function loginOnCurrentPage(page: Page, email: string) {
-  const factors = LOGIN_FACTORS[email];
+  const factors = LOGIN_FACTORS[email] || { first: 'email' };
   await clearLoginMails(email);
   await typeEmail(page, email);
   await page.locator('#submit').click();
@@ -233,7 +239,7 @@ export async function loginOnCurrentPage(page: Page, email: string) {
 
 // Logs an API request context in via the JSON API (no browser needed).
 export async function apiLogin(request: APIRequestContext, email: string) {
-  const factors = LOGIN_FACTORS[email];
+  const factors = LOGIN_FACTORS[email] || { first: 'email' };
   await clearLoginMails(email);
   const loginResponse = await request.post('/api/login', { data: { email } });
   expect(loginResponse.status(), `login for ${email}`).toBe(200);

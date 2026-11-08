@@ -12,4 +12,64 @@ env.rb
 /yardoc/
 src/static/fonts/billy-*
 src/static/fonts/riffic-*
+
+# Lokale, private Dateien – nie committen. Echte Schuldaten gehören nach
+# data/ bzw. internal/ oder ganz außerhalb des Repos.
+*.local.md
+
+# Datenbank-Dumps (enthalten personenbezogene Daten)
+dump*.txt
+dump*.txt.gz
+*-dump-*.txt
+*-dump-*.txt.gz
+
+# Datenexporte, Listen, Dokumente und Medien im Repo-Wurzelverzeichnis
+# (dort liegen nur Code und Doku)
+/*.csv
+/*.xlsx
+/*.ods
+/*.odt
+/*.pdf
+/*.ics
+/*.txt
+/*.TXT
+/*.zip
+/*.tar.gz
+/*.patch
+/*.png
+/*.jpg
+/*.webp
+/*.svg
+/*.dot
+/*.mp3
+/*.ogg
+/*.m4a
+/*.flac
+/*.mp4
+/nc-thumb-cache/
+
+# Exporte und Ausgaben von Admin-Skripten
+/src/scripts/*.txt
+/src/scripts/*.xlsx
+/src/scripts/*.json
+/src/ruby/mail*.txt
+/src/static/mail.txt
+
+# Tabellen nur als Beispieldaten
+*.xlsx
+*.csv
+!/src/example-data/**/*.csv
+
+# LaTeX-Hilfsdateien
+*.aux
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+src/ruby/email-templates/*.log
+src/ruby/email-templates/*.out
+
+# Logs, Betriebssystem-Müll
+*.log
+._*
+.DS_Store
 # Le fromage

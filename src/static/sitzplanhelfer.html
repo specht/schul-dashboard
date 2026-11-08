@@ -193,7 +193,7 @@ table.sph-wishes td, table.sph-wishes th {
     </div>
 
     <div class="sph-section" id="sph_priority_section" style="display: none;">
-        <h4>Bevorzugt in dieser Runde</h4>
+        <h4>👑 Bevorzugt in dieser Runde</h4>
         <p class="sph-legend" id="sph_priority_info"></p>
         <p id="sph_priority_names" style="margin-bottom: 0;"></p>
     </div>
@@ -203,6 +203,7 @@ table.sph-wishes td, table.sph-wishes th {
         <p class="sph-legend">Alle Wünsche fließen automatisch in die Planung ein. Mit dem Schalter neben einem Wunsch kannst du ihn <strong>deaktivieren</strong> – er bleibt gespeichert, zählt aber für die Planung nicht mehr; ein weiterer Klick aktiviert ihn wieder. Ist schon ein Plan zu sehen, zeigt er die Auswirkung sofort; „Neu würfeln“ sucht dann einen Plan, der die geänderten Wünsche berücksichtigt.
         🤝 = wechselseitiger Wunsch (beide wollen sich gegenseitig) – diese werden bei der Planung bevorzugt erfüllt.
         🚫 = die gewünschte Person möchte auf keinen Fall neben dieser Person sitzen – der Wunsch zählt nicht, solange ihr „Nicht neben“ aktiv ist.
+        👑 = bevorzugt: hatte im letzten Sitzplan keinen ihrer Wunschpartner als Tischnachbarn und bekommt diesmal sicher einen, sofern kein „Nicht neben“ und keine Vorgabe der Lehrkraft dagegen spricht.
         Die bis zu drei Wunschpartner sind gleichberechtigt (keine Rangfolge) – da an jedem Tisch nur 2 Personen sitzen, reicht es für „erfüllt", wenn <strong>einer</strong> davon tatsächlich der Tischnachbar wird.</p>
         <div class="table-responsive">
         <table class="table table-sm sph-wishes">
@@ -548,6 +549,13 @@ function vetoed_by(target_b, email_a) {
     return !!wb && wb.avoid1 === email_a && wb.avoid1_status !== 'rejected';
 }
 
+// Krone hinter dem Namen: Diese Person ging im Vorgängerplan leer aus und hat
+// diesmal Vorrang (siehe UNLUCKY_BONUS).
+function crown(email) {
+    if (!open_cycle_id || !last_unlucky_emails.has(email)) return '';
+    return " <span title='Bevorzugt: hatte im letzten Sitzplan keinen Wunschpartner und bekommt diesmal sicher einen'>👑</span>";
+}
+
 function render_wishes() {
     if (!open_cycle_id) {
         $('#sph_wishes_section').hide();
@@ -557,7 +565,7 @@ function render_wishes() {
     let rows = '';
     for (let s of sus) {
         if (!wishes[s.email]) {
-            rows += `<tr><td>${esc(s.display_name)}</td><td colspan="8" class="sph-legend"><em>noch keine Antwort</em></td></tr>`;
+            rows += `<tr><td>${esc(s.display_name)}${crown(s.email)}</td><td colspan="8" class="sph-legend"><em>noch keine Antwort</em></td></tr>`;
             continue;
         }
         let w = wishes[s.email];
@@ -580,7 +588,7 @@ function render_wishes() {
                 `<i class="fa ${inactive ? 'fa-toggle-off off' : 'fa-toggle-on'} sph-wish-toggle" data-email="${esc(s.email)}" data-slot="${statusField}" title="${title}"></i>` +
                 `</td>`;
         }
-        rows += `<tr><td>${esc(s.display_name)}</td>${cell('want1', 'want1_status')}${cell('want2', 'want2_status')}${cell('want3', 'want3_status')}${cell('avoid1', 'avoid1_status')}</tr>`;
+        rows += `<tr><td>${esc(s.display_name)}${crown(s.email)}</td>${cell('want1', 'want1_status')}${cell('want2', 'want2_status')}${cell('want3', 'want3_status')}${cell('avoid1', 'avoid1_status')}</tr>`;
     }
     $('#sph_wishes_body').html(rows);
     $('.sph-wish-toggle').off('click').on('click', function (e) {
@@ -983,6 +991,8 @@ function build_and_optimize_once(emails) {
     // (nicht abgelehnt) keine Paarung bekommen hat, wird dieses Mal
     // bevorzugt; wer letztes Mal schon seinen Wunsch bekommen hat, tritt
     // etwas zurück - jeweils VOR jemandem mit "normaler" Ausgangslage.
+    // Vorrang für SuS, die im Vorgängerplan leer ausgingen (siehe score).
+    const UNLUCKY_BONUS = 150;
     function luck_multiplier(email) {
         if (last_unlucky_emails.has(email)) return 3;
         if (last_lucky_emails.has(email)) return 0.5;
@@ -1021,8 +1031,18 @@ function build_and_optimize_once(emails) {
                 let bonus = (is_mutual_active(email, w.want3) ? 25 : 5) * luck;
                 total += neighbors(placement[email], placement[w.want3]) ? bonus : 0;
             }
+            // Vorrang: Wer im Vorgängerplan leer ausging, bekommt einen festen
+            // Bonus, sobald irgendein aktiver Wunschpartner daneben sitzt.
+            // Größer als jeder einzelne Wunsch anderer (auch gegenseitige),
+            // aber kleiner als "Nicht neben" und die Vorgaben der Lehrkraft.
+            if (last_unlucky_emails.has(email) && ['want1', 'want2', 'want3'].some(slot =>
+                    w[slot + '_status'] !== 'rejected' && w[slot] && emails.includes(w[slot]) &&
+                    !vetoed_by(w[slot], email) && neighbors(placement[email], placement[w[slot]]))) {
+                total += UNLUCKY_BONUS;
+            }
             if (w.avoid1_status !== 'rejected' && w.avoid1 && emails.includes(w.avoid1)) {
-                total -= neighbors(placement[email], placement[w.avoid1]) ? 200 : 0;
+                // "Nicht neben" wiegt so schwer wie die Vorgaben der Lehrkraft.
+                total -= neighbors(placement[email], placement[w.avoid1]) ? 1000 : 0;
             }
         }
         for (let [a, b] of forbidden_pairs) {
@@ -1188,7 +1208,7 @@ function render_placement(editable) {
             else if (satisfied_emails.has(email)) div.addClass('satisfied');
             let reasons = current_unresolved.filter(f => f.email === email).map(f => f.reason).join('; ');
             if (reasons) div.attr('title', reasons);
-            div.append($('<div>').addClass('sph-name').text(display_name(email)));
+            div.append($('<div>').addClass('sph-name').text((editable && last_unlucky_emails.has(email) ? '👑 ' : '') + display_name(email)));
         }
         container.append(div);
     });

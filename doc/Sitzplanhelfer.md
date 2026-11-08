@@ -137,9 +137,15 @@ Klassenraum.
    neben A", zählt der Wunsch von A nach B nicht (🚫 in der Tabelle),
    solange die Lehrkraft das „Nicht neben" nicht deaktiviert.
 3. SuS, die in der Vorrunde einen aktiven (nicht abgelehnten) Wunsch
-   hatten, der nur mangels Paarung nicht erfüllt wurde, werden dieses
-   Mal bevorzugt; wer seinen Wunsch letztes Mal bekam, tritt etwas
-   zurück (Fairness über mehrere Runden hinweg). Maßstab ist immer der
+   hatten, der nur mangels Paarung nicht erfüllt wurde, bekommen
+   diesmal sicher einen Wunschpartner: ein fester Vorrang-Bonus
+   (`UNLUCKY_BONUS`), größer als jeder Wunsch anderer. Vorgaben der
+   Lehrkraft und „Nicht neben“ gehen vor. Bei Zweiertischen heißt das
+   auch: Ein Zwangspaar belegt den einzigen Nachbarplatz. In Tests ohne
+   solche Vorgaben bekamen alle Bevorzugten ihren Wunsch. Wer seinen
+   Wunsch letztes Mal bekam, tritt etwas zurück (Fairness über mehrere
+   Runden hinweg). In der Wunschtabelle und im erzeugten Plan
+   kennzeichnet 👑 die Bevorzugten. Maßstab ist immer der
    zuletzt gespeicherte, für SuS sichtbare Plan vor dieser Runde; wird
    ein gespeicherter Plan nachträglich bearbeitet, dessen Vorgänger
    (sonst würde der Plan mit sich selbst verglichen). Dasselbe gilt für

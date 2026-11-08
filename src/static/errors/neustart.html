@@ -140,19 +140,22 @@
         .muted { color: var(--muted); }
 
         .ticker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
             min-height: 28px;
             margin: 16px 0 4px;
+            text-align: center;
             font-style: italic;
             color: var(--muted);
         }
+        /* Inline with the text so it sits on its baseline, then raised so its
+           center lines up with the middle of the capital letters – that is
+           where the eye places the middle of a line of text. Alegreya Sans
+           has a cap height of 0.667em, so the middle is at 0.333em. */
         .ticker .dot {
-            flex: none;
+            display: inline-block;
             width: 9px;
             height: 9px;
+            margin-right: 10px;
+            vertical-align: calc(0.333em - 4.5px);
             border-radius: 50%;
             background: var(--accent);
             animation: pulse 1.6s ease-in-out infinite;
@@ -373,17 +376,30 @@
             'Einsen und Nullen werden poliert …',
             'Kreide wird geholt …'
         ];
-        for (var i = lines.length - 1; i > 0; i--) {
-            var j = Math.floor(Math.random() * (i + 1));
-            var t = lines[i]; lines[i] = lines[j]; lines[j] = t;
+        // A new random order on every page load and after every round, without
+        // showing the same line twice in a row.
+        function shuffle(avoidFirst) {
+            for (var i = lines.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = lines[i]; lines[i] = lines[j]; lines[j] = t;
+            }
+            if (lines[0] === avoidFirst) {
+                var k = 1 + Math.floor(Math.random() * (lines.length - 1));
+                lines[0] = lines[k]; lines[k] = avoidFirst;
+            }
         }
+        shuffle(null);
         var tickerEl = document.getElementById('ticker');
         var lineIndex = 0;
         tickerEl.textContent = lines[0];
         var tickerTimer = setInterval(function () {
             tickerEl.classList.add('fade');
             setTimeout(function () {
-                lineIndex = (lineIndex + 1) % lines.length;
+                lineIndex += 1;
+                if (lineIndex >= lines.length) {
+                    shuffle(lines[lines.length - 1]);
+                    lineIndex = 0;
+                }
                 tickerEl.textContent = lines[lineIndex];
                 tickerEl.classList.remove('fade');
             }, 350);

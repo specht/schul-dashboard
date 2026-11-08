@@ -52,6 +52,16 @@ verwenden.
 | nginx-Konfiguration in `config.rb` | `./config.rb build nginx && ./config.rb up -d nginx` – die Konfiguration wird ins Image kopiert, ein Neustart allein reicht nicht |
 | `src/ruby/Gemfile` | `./config.rb build ruby` (Gemfile wird beim Aufruf von `config.rb` nach `docker/ruby` kopiert) |
 
+## Tests
+
+```
+./test.sh unit       # Ruby-Unit-Tests
+./test.sh e2e        # Browser-Tests gegen einen eigenen Test-Stack (Port 8125)
+```
+
+Der Test-Stack läuft parallel zur Entwicklungsinstanz und nur mit
+Beispieldaten. Details in [Tests](file.Tests.html).
+
 ## Logs und Konsole
 
 ```

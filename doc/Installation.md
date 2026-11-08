@@ -18,6 +18,17 @@ Es reicht für einen ersten Test, die Dateien so zu lassen, wie sie sind, also
 
 Das Skript `config.rb` ist ein Wrapper um `docker-compose`, der `docker-compose.yaml` erzeugt und dann `docker-compose` mit den angegebenen Argumenten aufruft.
 
+## Schlüssel für das Single Sign-on
+
+Nach der Anmeldung signiert das Dashboard ein Cookie mit einem eigenen
+Schlüsselpaar. Fehlt es, endet jede Seite nach der Anmeldung mit einem Fehler.
+Einmalig erzeugen (Pfad: `INTERNAL_PATH` aus `env.rb`, standardmäßig
+`./internal`):
+
+    $ mkdir -p internal/sso-keys
+    $ openssl ecparam -name prime256v1 -genkey -noout -out internal/sso-keys/sso_private.pem
+    $ openssl ec -in internal/sso-keys/sso_private.pem -pubout -out internal/sso-keys/sso_public.pem
+
 ## Bauen der Docker-Images
 
     $ ./config.rb build

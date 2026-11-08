@@ -1,0 +1,11 @@
+{
+  "name": "schul-dashboard-e2e",
+  "private": true,
+  "description": "E2E tests for the dashboard, run via ./test.sh e2e (see doc/Tests.md)",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1"
+  }
+}

@@ -12,13 +12,14 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 
 ## 1. Tests
 
-- [ ] Test-Umgebung: `config.rb` mit wählbarer env-Datei (`DASHBOARD_ENV`),
+- [x] Test-Umgebung: `config.rb` mit wählbarer env-Datei (`DASHBOARD_ENV`),
       konfigurierbaren Host-Ports und eigenem Projektnamen
-- [ ] `test`-Gruppe im Gemfile (minitest, rack-test), `src/ruby/test/`,
-      `test.sh unit|integration|e2e`
+- [x] `src/ruby/test/`, `./test.sh unit|e2e`
+- [x] Erster E2E-Test (Playwright-Container): Anmeldung und Stundenplan
+- [ ] `rack-test` als Test-Gruppe ins Gemfile, `./test.sh integration`
 - [ ] Beispieldaten um je ein Konto pro Rolle ergänzen (Admin, Lehrkraft mit
       Klassenleitung, Schüler:in, Elternteil, Gerät)
-- [ ] Erster E2E-Test (Playwright-Container): Anmeldung und Stundenplan
+- [ ] Feste Systemzeit im Test-Stack (Beispieldaten: Schuljahr 2024/25)
 - [ ] Seiten-Smoke-Test: jede Seite × jede Rolle, nie HTTP 500
 - [ ] Berechtigungsmatrix für alle API-Routen
 - [ ] Alle Anmelde-Abläufe (inkl. Zwei-Faktor-Kombinationen) als
@@ -37,6 +38,13 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
       `$(e.target).data(…)` (rund 90 Stellen) statt `e.currentTarget`,
       z. B. `.bu-launch-poll` (`_template.html`), `.btn-impersonate`
       (`admin.html`, `include/admin.rb`)
+- [ ] Anmeldeseite: Der Button „Code zusenden“ wird nur bei `keyup`/`change`
+      aktiviert – nach Einfügen per Kontextmenü oder Autofill bleibt er
+      deaktiviert, bis das Feld den Fokus verliert (`login.html`, auf
+      `input` hören)
+- [ ] Ein falscher Anmeldecode wird mit HTTP 500 beantwortet (`assert`);
+      erwartbare Fehler sollten 4xx mit Fehlercode liefern (gilt allgemein
+      für die API)
 - [ ] `c.html:55`: Selektor ohne Punkt
       (`$('send-code-via-email-confirmation')`)
 - [ ] Stundenplan: Laden der Wochendaten hat keine Fehlerbehandlung – bei
@@ -133,6 +141,12 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 - [ ] Entwicklungswerkzeuge (`pry`, `rerun`) nicht ins Produktions-Image
 - [ ] `config.rb`: `version: '3'` ist bei Compose v2 überflüssig; Container-
       Namen hängen an `--compatibility`
+- [ ] Frische Installation: Ohne `INTERNAL_PATH/sso-keys/` endet jede Seite
+      nach der Anmeldung mit HTTP 500 (`issue_dashboard_sso_cookie!`). Bis
+      das robuster ist, steht die Erzeugung in `doc/Installation.md`
+- [ ] `config.rb` reicht Argumente als Shell-String an `docker compose`
+      weiter; Argumente mit Anführungszeichen oder `$` gehen kaputt
+      (Array-Form von `system` verwenden)
 - [ ] Gemfile-Kommentar zu `mustermann` passt nicht zur Versionsangabe
 - [ ] `update-documentation.sh` wechselt in `../schul-dashboard/`, das zum
       Namen des Checkouts passen muss

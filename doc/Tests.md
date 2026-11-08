@@ -1,9 +1,51 @@
 # Tests
 
-Stand: Plan. Das Dashboard hat bisher keine automatisierten Tests im
-eigentlichen Sinn. Dieses Kapitel beschreibt, wie wir sie aufbauen wollen –
-so, dass Änderungen am Code (auch größere Umbauten) abgesichert sind, bevor
-sie in die Schule gehen.
+Dieses Kapitel beschreibt, wie die Tests aufgebaut sind und wie sie weiter
+ausgebaut werden sollen – so, dass Änderungen am Code (auch größere Umbauten)
+abgesichert sind, bevor sie in die Schule gehen.
+
+## Ausführen
+
+Voraussetzungen: Docker und Ruby (für `config.rb`). Alles andere läuft in
+Containern.
+
+```
+./test.sh unit       # Ruby-Unit-Tests (ca. 2 s, ohne Datenbank)
+./test.sh e2e        # Test-Stack starten, Playwright ausführen, Stack entfernen (ca. 1 min)
+./test.sh all        # beides
+```
+
+Zum Entwickeln von Tests:
+
+```
+./test.sh up         # Test-Stack starten: http://localhost:8125
+./test.sh e2e-run    # nur Playwright gegen den laufenden Stack
+E2E_ARGS="--project=desktop tests/login.spec.ts" ./test.sh e2e-run
+./test.sh logs ruby  # Logs des Test-Stacks
+./test.sh down       # Stack stoppen und Testdaten löschen
+```
+
+Der Test-Stack verwendet `env.test.rb`: Projektname `schuldashboardtest`,
+eigene Compose-Datei `docker-compose.test.yaml`, eigene Daten unter
+`.test-stack/`, nur Port `127.0.0.1:8125`, Beispieldaten aus
+`src/example-data` und eigene Zugangsdaten (`src/ruby/test/credentials.rb`,
+alle externen Hosts zeigen auf `*.test.invalid`). Eine laufende
+Entwicklungsinstanz wird nicht berührt.
+
+Playwright-Berichte liegen nach einem Lauf unter
+`test/e2e/playwright-report/` (HTML) und `test/e2e/test-results/`
+(Screenshots, Traces bei Fehlern).
+
+## Stand
+
+- [x] Isolierter Test-Stack (`env.test.rb`, `DASHBOARD_ENV`,
+      `DASHBOARD_CREDENTIALS`, konfigurierbare Ports in `config.rb`)
+- [x] `./test.sh` für Unit- und E2E-Tests
+- [x] Unit-Tests: Farben, Parser (Fächer, Lehrkräfte, Ferien)
+- [x] E2E: Anmeldeseite, Anmeldung per Code mit Stundenplan, falscher Code
+      – jeweils Desktop und Handy; jeder Test schlägt bei HTTP 5xx oder
+      JavaScript-Fehlern fehl
+- [ ] alles Weitere aus [Reihenfolge](#Reihenfolge)
 
 ## Grundsätze
 
@@ -127,35 +169,32 @@ Zusätzlich in jedem E2E-Lauf:
 
 ## Infrastruktur
 
-Ziel: ein Befehl pro Ebene.
+Aufbau:
 
-```
-./test.sh unit
-./test.sh integration
-./test.sh e2e
-```
+- `src/ruby/test/unit/` – Unit-Tests (`*_test.rb`, gemeinsames Setup in
+  `test_helper.rb`), Runner `src/ruby/test/run_unit.rb`. minitest ist bereits
+  im Bundle enthalten.
+- `src/ruby/test/credentials.rb` – Zugangsdaten des Test-Stacks.
+- `src/ruby/test/create_sso_keys.rb` – Wegwerf-Schlüssel für den Test-Stack.
+- `test/e2e/` – Playwright (`package.json`, `playwright.config.ts`,
+  `tests/*.spec.ts`, gemeinsame Hilfen in `tests/fixtures.ts`). Läuft im
+  Container `mcr.microsoft.com/playwright` mit derselben Version wie
+  `@playwright/test`.
+- Datenverzeichnis des Test-Stacks wird bei jedem Start und Stopp gelöscht;
+  Stundenpläne werden nach dem Start einmal geschrieben.
 
-Geplante Bausteine:
+Noch offen:
 
-1. **Testgruppe im Gemfile**: `minitest`, `rack-test` (nur im Test-Image bzw.
-   per `BUNDLE_WITH=test`).
-2. **Verzeichnis** `src/ruby/test/` mit `unit/`, `integration/`, `fixtures/`
-   und einem `test_helper.rb`; E2E unter `test/e2e/` (Playwright,
-   `package.json`, `playwright.config.ts`).
-3. **Eigene Umgebung für Tests**: `config.rb` liest bisher fest `env.rb`.
-   Vorschlag: Umgebungsvariable `DASHBOARD_ENV` (Standard `env.rb`), damit
-   `DASHBOARD_ENV=env.test.rb ./config.rb …` einen eigenen Projektnamen
-   (`schuldashboardtest`), eigene Ports und ein eigenes, temporäres
-   `DATA_PATH` verwendet. Ebenso müssen die bisher fest verdrahteten Host-Ports
-   (8021–8025, 7687) konfigurierbar werden.
-4. **Frische Datenbank pro Lauf**: Datenverzeichnis des Test-Stacks wird vor
-   jedem Lauf gelöscht; Stundenpläne werden nach dem Start einmal geschrieben.
-5. **Test-Konto-Daten**: `src/example-data` um je ein Konto pro Rolle
+1. **Integrationstests**: `rack-test` als Test-Gruppe ins Gemfile,
+   `src/ruby/test/integration/`, `./test.sh integration`.
+2. **Test-Konto-Daten**: `src/example-data` um je ein Konto pro Rolle
    ergänzen (Admin, Lehrkraft mit Klassenleitung, Schüler:in, Elternteil,
    Gerät), damit alle Abläufe abgedeckt werden können.
-6. **CI** (später): GitHub Actions, die `./test.sh unit integration e2e` auf
-   jedem Pull Request ausführen. Das Repo ist öffentlich – Testnamen und
-   Fixtures neutral halten.
+3. **Feste Systemzeit** für den Test-Stack (Beispieldaten gelten für das
+   Schuljahr 2024/25).
+4. **CI** (später): GitHub Actions, die `./test.sh all` auf jedem Pull
+   Request ausführen. Das Repo ist öffentlich – Testnamen und Fixtures
+   neutral halten.
 
 ## Vorhandene Ansätze
 
@@ -169,8 +208,8 @@ Diese werden in die neue Struktur übernommen.
 
 ## Reihenfolge
 
-1. **Grundgerüst**: Test-Umgebung (`DASHBOARD_ENV`, Ports), Gemfile-Gruppe,
-   `test.sh`, ein erster Unit-Test, ein erster E2E-Test (Anmeldung).
+1. ~~**Grundgerüst**: Test-Umgebung (`DASHBOARD_ENV`, Ports), `test.sh`,
+   ein erster Unit-Test, ein erster E2E-Test (Anmeldung).~~ erledigt
 2. **Sicherheitsnetz für Umbauten**: Seiten-Smoke-Test, Berechtigungsmatrix,
    alle Anmelde-Abläufe als Integration **und** E2E.
 3. **Hauptabläufe E2E** (Tabelle oben), Desktop und Handy.

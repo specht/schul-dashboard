@@ -72,7 +72,8 @@ end
 require './credentials.template.rb'
 warn_level = $VERBOSE
 $VERBOSE = nil
-require './credentials.rb'
+# DASHBOARD_CREDENTIALS is only set by the test stack (see doc/Tests.md)
+require ENV['DASHBOARD_CREDENTIALS'] || './credentials.rb'
 require '/data/config.rb'
 require '/data/lab8/config.rb'
 require '/data/lab9/config.rb'

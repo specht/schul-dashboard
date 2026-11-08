@@ -1,0 +1,31 @@
+# Credentials for the isolated test stack (env.test.rb, ./test.sh).
+#
+# Loaded instead of credentials.rb via DASHBOARD_CREDENTIALS. Starts from the
+# template and makes sure tests never talk to a real server: every external
+# host points to the reserved .invalid TLD (RFC 6761), and WEB_ROOT points to
+# the test stack, not to a development instance on port 8025.
+
+require './credentials.template.rb'
+
+warn_level = $VERBOSE
+$VERBOSE = nil
+
+# must match NGINX_HOST_PORT in env.test.rb
+WEB_ROOT = 'http://localhost:8125'
+
+SCHUL_MAIL_LOGIN_URL = 'https://mail.test.invalid'
+SCHUL_MAIL_LOGIN_SMTP_HOST = 'smtp.test.invalid'
+SCHUL_MAIL_LOGIN_IMAP_HOST = 'imap.test.invalid'
+SMTP_SERVER = 'smtp.test.invalid'
+IMAP_SERVER = 'imap.test.invalid'
+WEBSITE_HOST = 'dashboard.test.invalid'
+VOTING_WEBSITE_URL = 'https://abstimmung.test.invalid'
+TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.test.invalid'
+NEXTCLOUD_URL = 'http://nextcloud.test.invalid'
+NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud.test.invalid'
+JITSI_HOST = 'meet.test.invalid'
+STREAM_SITE_URL = 'https://info.test.invalid/'
+BIB_HOST = 'https://bibliothek.test.invalid'
+UNTIS_VERTRETUNGSPLAN_BASE_URL = 'https://vertretungsplan.test.invalid'
+
+$VERBOSE = warn_level

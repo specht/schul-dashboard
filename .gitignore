@@ -73,3 +73,11 @@ src/ruby/email-templates/*.out
 ._*
 .DS_Store
 # Le fromage
+
+# Test-Stack (./test.sh, env.test.rb)
+/.test-stack/
+/docker-compose.test.yaml
+/docker/nginx/default.test.conf
+/test/e2e/node_modules/
+/test/e2e/test-results/
+/test/e2e/playwright-report/

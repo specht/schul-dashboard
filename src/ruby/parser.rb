@@ -6,7 +6,8 @@ require 'digest/sha2'
 require 'nokogiri'
 require 'zip'
 require 'zlib'
-require './credentials.rb'
+# DASHBOARD_CREDENTIALS is only set by the test stack (see doc/Tests.md)
+require ENV['DASHBOARD_CREDENTIALS'] || './credentials.rb'
 require '/data/config.rb'
 
 class String

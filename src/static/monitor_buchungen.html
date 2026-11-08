@@ -505,7 +505,9 @@
             if (attribution[1]) a.append(' von ').append($('<b>').text(attribution[1]));
             $('.bm-color-scheme-here').empty().append(a);
         }
-        render_bookings(#{todays_tablet_set_bookings_for_monitor.to_json});
+        // script_safe, weil der Buchungsgrund freier Text ist: sonst könnte ein darin
+        // enthaltenes </script> den Block hier vorzeitig beenden.
+        render_bookings(#{JSON.generate(todays_tablet_set_bookings_for_monitor, :script_safe => true)});
         setInterval(update_now_line, 15000);
         setInterval(function () {
             $('.bm-clock-here').text(moment(bm_server_time() * 1000).format('HH:mm:ss'));

@@ -746,6 +746,53 @@
             });
             $('#__template_modal_with_input').modal('show');
         }
+
+        // Dashboard dialogs instead of the browser's alert() and confirm().
+        // Title and text are inserted as text, not HTML (they often contain
+        // names or server messages); line breaks in the text are kept.
+        // A button's callback runs once the dialog is fully closed, so it
+        // may open the next dialog right away.
+        function showTextModal(title, text, buttons) {
+            let modal = $('#__template_modal');
+            modal.find('.modal-title').text(title);
+            modal.find('.modal-body').empty().append($('<div>').css('white-space', 'pre-line').text(text));
+            let footer = modal.find('.modal-footer').empty();
+            let focus_button = null;
+            modal.data('pending-callback', null);
+            for (let spec of buttons) {
+                let button = $('<button>').attr('type', 'button').addClass('btn ' + spec.cls).text(spec.label);
+                button.click(function () {
+                    modal.data('pending-callback', spec.callback || null);
+                    modal.modal('hide');
+                });
+                footer.append(button);
+                if (spec.focus) focus_button = button;
+            }
+            modal.off('shown.bs.modal.textmodal').on('shown.bs.modal.textmodal', function () {
+                (focus_button || footer.find('button').first()).focus();
+            });
+            modal.off('hidden.bs.modal.textmodal').on('hidden.bs.modal.textmodal', function () {
+                let callback = modal.data('pending-callback');
+                modal.data('pending-callback', null);
+                if (callback) callback();
+            });
+            modal.modal('show');
+        }
+
+        function dashboardAlert(text, title) {
+            showTextModal(title || 'Hinweis', text, [{ label: 'OK', cls: 'btn-primary', focus: true }]);
+        }
+
+        // options: title, confirm (button label), cancel (button label),
+        // danger (red confirm button for destructive actions)
+        function dashboardConfirm(text, on_confirm, options) {
+            options = options || {};
+            showTextModal(options.title || 'Bitte bestätigen', text, [
+                { label: options.confirm || 'OK', cls: options.danger ? 'btn-danger' : 'btn-primary', callback: on_confirm },
+                // focus on cancel: Enter must not trigger a destructive action by accident
+                { label: options.cancel || 'Abbrechen', cls: 'btn-secondary', focus: true },
+            ]);
+        }
     </script>
 
     <nav

@@ -95,7 +95,9 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 - [ ] `api_call` (`code.js`): Offline, Zeitüberschreitung, fehlende
       Berechtigung und Serverfehler unterscheiden und verständlich melden;
       während eines Neustarts (502) automatisch erneut versuchen
-- [ ] 25 × `alert()` durch die vorhandenen Template-Modals ersetzen
+- [x] Native `alert()`/`confirm()` durch `dashboardAlert()`/`dashboardConfirm()`
+      ersetzt (29 Stellen in `sitzplanhelfer.html` und `admin.html`); ein
+      Unit-Test und die E2E-Tests verhindern neue native Dialoge
 - [ ] Nach Aktionen nicht pauschal `location.reload()` (51 Stellen) –
       Eingaben, Scrollposition und offene Modals gehen verloren
 

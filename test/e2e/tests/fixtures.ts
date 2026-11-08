@@ -33,7 +33,16 @@ const LOGIN_FACTORS: Record<string, { first: Factor; second?: Factor }> = {
 // Collects server errors (5xx), uncaught JavaScript errors and console
 // errors of a page.
 export function watchPage(page: Page) {
-  const watched = { serverErrors: [] as string[], pageErrors: [] as string[], consoleErrors: [] as string[] };
+  const watched = {
+    serverErrors: [] as string[], pageErrors: [] as string[], consoleErrors: [] as string[],
+    nativeDialogs: [] as string[],
+  };
+  // Native alert()/confirm()/prompt() are not allowed (AGENTS.md) – use
+  // dashboardAlert()/dashboardConfirm() from _template.html.
+  page.on('dialog', async (dialog) => {
+    watched.nativeDialogs.push(`${dialog.type()}: ${dialog.message().slice(0, 80)}`);
+    await dialog.dismiss();
+  });
   page.on('response', (response) => {
     if (response.status() >= 500) watched.serverErrors.push(`${response.status()} ${response.url()}`);
   });
@@ -84,6 +93,12 @@ async function checkWatched(watched: ReturnType<typeof watchPage>, testInfo: any
   }
   expect(watched.serverErrors, `server errors (HTTP 5xx) – ${label}`).toEqual([]);
   expect(watched.pageErrors, `uncaught JavaScript errors – ${label}`).toEqual([]);
+  expect(watched.nativeDialogs, `native browser dialogs – ${label}`).toEqual([]);
+}
+
+// The dialog of dashboardAlert()/dashboardConfirm() (#__template_modal).
+export function dashboardDialog(page: Page) {
+  return page.locator('#__template_modal');
 }
 
 // The week the timetable shows first: the current one, or the next one on

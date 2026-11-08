@@ -1,4 +1,4 @@
-import { test, expect, login, ACCOUNTS } from './fixtures';
+import { test, expect, login, ACCOUNTS, dashboardDialog } from './fixtures';
 
 // Example data: Clarke is class teacher of 5a (Max, Elli, Mallory).
 const KLASSE = '5a';
@@ -25,8 +25,8 @@ test('Sitzplanhelfer: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern',
   const discard = page.locator('#sph_bu_discard_cycle');
   if (await discard.isVisible()) {
     // left over from an earlier run on the same test stack
-    page.once('dialog', (dialog) => dialog.accept());
     await discard.click();
+    await dashboardDialog(page).getByRole('button', { name: 'Verwerfen' }).click();
     await expect(page.locator('#sph_bu_start_cycle')).toBeVisible();
   }
   const started = page.waitForResponse('**/api/sph_start_cycle');
@@ -47,10 +47,17 @@ test('Sitzplanhelfer: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern',
   // class teacher sees the wish, closes the round, generates and saves
   await page.reload();
   await expect(page.locator('#sph_wishes_body')).toContainText('Mallory');
-  // "Wunschrunde jetzt beenden" asks via the browser's confirm()
-  page.once('dialog', (dialog) => dialog.accept());
-  const closed = page.waitForResponse('**/api/sph_close_wishes');
+  // "Wunschrunde jetzt beenden" asks for confirmation; Abbrechen keeps it open
   await page.locator('#sph_bu_close_wishes').click();
+  const dialog = dashboardDialog(page);
+  await expect(dialog).toContainText('Wunschrunde jetzt vorzeitig beenden?');
+  await dialog.getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#sph_bu_close_wishes')).toBeEnabled();
+
+  await page.locator('#sph_bu_close_wishes').click();
+  const closed = page.waitForResponse('**/api/sph_close_wishes');
+  await dialog.getByRole('button', { name: 'Wunschrunde beenden' }).click();
   expect((await closed).status()).toBe(200);
 
   await page.locator('#sph_bu_generate').click();

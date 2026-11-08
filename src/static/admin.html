@@ -47,7 +47,7 @@
                     api_call('/api/admin_reset_teacher_2fa', {email: email}, function (data) {
                         if (data.success) {
                             if (data.notification_sent === false) {
-                                alert('2FA wurde zurückgesetzt, aber die Benachrichtigungs-E-Mail konnte nicht versendet werden. Bitte die Lehrkraft selbst informieren.');
+                                dashboardAlert('2FA wurde zurückgesetzt, aber die Benachrichtigungs-E-Mail konnte nicht versendet werden. Bitte die Lehrkraft selbst informieren.');
                             }
                             window.location.reload();
                         } else {

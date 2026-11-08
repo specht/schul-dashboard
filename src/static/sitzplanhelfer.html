@@ -415,7 +415,7 @@ function render_pairs() {
     $('.bu-remove-pair').off('click').on('click', function (e) {
         let a = $(this).data('a'), b = $(this).data('b'), kind = $(this).data('kind');
         api_call('/api/sph_remove_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: kind}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht entfernt werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
             forced_pairs = kind === 'forced' ? data.pairs : forced_pairs;
             forbidden_pairs = kind === 'forbidden' ? data.pairs : forbidden_pairs;
             render_pairs();
@@ -457,7 +457,7 @@ function render_rules() {
     $('.bu-remove-rule').off('click').on('click', function (e) {
         let email = $(this).data('email');
         api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: email}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht entfernt werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
             fixed_rules = data.rules;
             render_rules();
             render_rule_seatmap();
@@ -498,7 +498,7 @@ function render_rule_seatmap() {
         let existing = fixed_rules.find(r => rule_is_exact_seat(r) && r[1][0] === seat[0] && r[2][0] === seat[1]);
         if (existing) {
             api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: existing[0]}, function (data) {
-                if (data.success === false) { alert(data.error || 'Konnte nicht entfernt werden.'); return; }
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
                 fixed_rules = data.rules;
                 render_rules();
                 render_rule_seatmap();
@@ -509,11 +509,11 @@ function render_rule_seatmap() {
         if (!email) return;
         let neighbor_rule = fixed_rules.find(r => rule_is_exact_seat(r) && r[0] !== email && r[2][0] === seat[1] && Math.abs(r[1][0] - seat[0]) === 1);
         if (neighbor_rule && pair_exists(forbidden_pairs, email, neighbor_rule[0])) {
-            alert(`${display_name(email)} und ${display_name(neighbor_rule[0])} sind als "dürfen nicht zusammensitzen" markiert - bitte das zuerst entfernen, bevor du sie auf Nachbarplätze setzt.`);
+            dashboardAlert(`${display_name(email)} und ${display_name(neighbor_rule[0])} sind als "dürfen nicht zusammensitzen" markiert - bitte das zuerst entfernen, bevor du sie auf Nachbarplätze setzt.`);
             return;
         }
         api_call('/api/sph_set_fixed_rule', {cycle_id: open_cycle_id, email: email, x_min: seat[0], x_max: seat[0], y_min: seat[1], y_max: seat[1]}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
             fixed_rules = data.rules;
             render_rules();
             render_rule_seatmap();
@@ -596,7 +596,7 @@ function render_wishes() {
         let current = (wishes[email] || {})[slot] || 'pending';
         let new_status = current === 'rejected' ? 'pending' : 'rejected';
         api_call('/api/sph_set_wish_status', {cycle_id: open_cycle_id, email: email, slot: slot, status: new_status}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
             wishes[email] = wishes[email] || {};
             wishes[email][slot] = new_status;
             render_wishes();
@@ -1084,11 +1084,19 @@ function build_and_optimize_once(emails) {
 function generate_plan() {
     let emails = sus.map(s => s.email);
     if (emails.length > seats.length) {
-        alert(`Diese Klasse hat ${emails.length} SuS, aber Raum ${raum} nur ${seats.length} Plätze.`);
+        dashboardAlert(`Diese Klasse hat ${emails.length} SuS, aber Raum ${raum} nur ${seats.length} Plätze.`);
         return;
     }
-    if (manual_changes && !confirm('Neu würfeln ersetzt den Plan samt deinen Änderungen per Ziehen. Trotzdem neu würfeln?')) return;
+    if (manual_changes) {
+        dashboardConfirm('Neu würfeln ersetzt den Plan samt deinen Änderungen per Ziehen. Trotzdem neu würfeln?',
+            function () { compute_plan(emails); },
+            { confirm: 'Neu würfeln', danger: true });
+        return;
+    }
+    compute_plan(emails);
+}
 
+function compute_plan(emails) {
     // Mehrere unabhängige Zufalls-Durchläufe, besten Score behalten - ein
     // einzelner Durchlauf kann in einem mittelmäßigen lokalen Optimum
     // hängenbleiben, gerade bei vielen SuS mit überlappenden Wünschen.
@@ -1327,16 +1335,17 @@ function render_history(cycles) {
     $('#sph_history_body').html(rows);
     $('.bu-delete-cycle').off('click').on('click', function () {
         let id = $(this).data('id');
-        if (!confirm('Diesen gespeicherten Sitzplan wirklich unwiderruflich löschen?')) return;
-        api_call('/api/sph_delete_cycle', {cycle_id: id}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht gelöscht werden.'); return; }
-            load_history();
-        });
+        dashboardConfirm('Diesen gespeicherten Sitzplan wirklich unwiderruflich löschen?', function () {
+            api_call('/api/sph_delete_cycle', {cycle_id: id}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gelöscht werden.'); return; }
+                load_history();
+            });
+        }, { confirm: 'Löschen', danger: true });
     });
     $('.bu-edit-cycle').off('click').on('click', function () {
         let id = $(this).data('id');
         api_call('/api/sph_reopen_saved_cycle', {cycle_id: id}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht zur Bearbeitung geöffnet werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zur Bearbeitung geöffnet werden.'); return; }
             load_state();
             load_history();
             $('html, body').animate({scrollTop: $('#sph_cycle_controls').offset().top}, 300);
@@ -1372,21 +1381,23 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#sph_bu_start_cycle').click(function () {
         let duration_days = parseInt($('#sph_duration_days').val(), 10);
         if (!(duration_days >= 1 && duration_days <= 60)) {
-            alert('Die Umfragedauer muss zwischen 1 und 60 Tagen liegen.');
+            dashboardAlert('Die Umfragedauer muss zwischen 1 und 60 Tagen liegen.');
             return;
         }
         let carry_over = $('#sph_carry_over_group').is(':visible') && $('#sph_carry_over').is(':checked') ? 'yes' : 'no';
         api_call('/api/sph_start_cycle', {klasse: klasse, raum: raum, duration_days: duration_days, carry_over: carry_over}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht gestartet werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gestartet werden.'); return; }
             load_state();
         });
     });
     $('#sph_bu_close_wishes').click(function () {
-        if (!confirm(`Wunschrunde jetzt vorzeitig beenden?\n\nDie Umfrage verschwindet sofort bei den SuS. Die bisher abgegebenen Wünsche (${answered_count()} von ${sus.length} SuS) bleiben erhalten, und du arbeitest mit ihnen weiter. Wer noch nicht geantwortet hat, kann es danach nicht mehr.`)) return;
-        $(this).prop('disabled', true).text('Wird beendet…');
-        api_call('/api/sph_close_wishes', {cycle_id: open_cycle_id}, function (data) {
-            load_state();
-        });
+        let button = $(this);
+        dashboardConfirm(`Die Umfrage verschwindet sofort bei den SuS. Die bisher abgegebenen Wünsche (${answered_count()} von ${sus.length} SuS) bleiben erhalten, und du arbeitest mit ihnen weiter. Wer noch nicht geantwortet hat, kann es danach nicht mehr.`, function () {
+            button.prop('disabled', true).text('Wird beendet…');
+            api_call('/api/sph_close_wishes', {cycle_id: open_cycle_id}, function (data) {
+                load_state();
+            });
+        }, { title: 'Wunschrunde jetzt vorzeitig beenden?', confirm: 'Wunschrunde beenden' });
     });
     $('#sph_bu_discard_cycle').click(function () {
         let frage = is_reopened_edit
@@ -1394,38 +1405,39 @@ document.addEventListener('DOMContentLoaded', function () {
             // verloren - nur die hier gemachten Änderungen.
             ? 'Bearbeitung verwerfen? Der ursprünglich gespeicherte Sitzplan bleibt unverändert in der Historie erhalten, und die Schülerwünsche gehen nicht verloren. Verworfen werden nur die hier vorgenommenen Änderungen – am Plan selbst sowie an Zwangspaaren, Verboten, festen Plätzen und Wunsch-Schaltern.'
             : 'Diese Wunschrunde wirklich verwerfen? Alle bisher eingegangenen Wünsche, Zwangspaare, Verbote und festen Plätze für diesen Zyklus gehen dabei verloren, und die Umfrage wird bei den SuS sofort zurückgezogen. Bereits gespeicherte Pläne in der Historie sind davon nicht betroffen.';
-        if (!confirm(frage)) return;
-        api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht verworfen werden.'); return; }
-            load_state();
-        });
+        dashboardConfirm(frage, function () {
+            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+                load_state();
+            });
+        }, { confirm: 'Verwerfen', danger: true });
     });
     $('#sph_bu_add_forced').click(function () {
         let a = $('#sph_pair_a').val(), b = $('#sph_pair_b').val();
-        if (a === b) { alert('Bitte zwei unterschiedliche Personen wählen.'); return; }
+        if (a === b) { dashboardAlert('Bitte zwei unterschiedliche Personen wählen.'); return; }
         if (pair_exists(forbidden_pairs, a, b)) {
-            alert(`${display_name(a)} und ${display_name(b)} sind bereits als "darf nicht zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
+            dashboardAlert(`${display_name(a)} und ${display_name(b)} sind bereits als "darf nicht zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
             return;
         }
         api_call('/api/sph_set_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: 'forced'}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
             forced_pairs = data.pairs;
             render_pairs();
         });
     });
     $('#sph_bu_add_forbidden').click(function () {
         let a = $('#sph_pair_a').val(), b = $('#sph_pair_b').val();
-        if (a === b) { alert('Bitte zwei unterschiedliche Personen wählen.'); return; }
+        if (a === b) { dashboardAlert('Bitte zwei unterschiedliche Personen wählen.'); return; }
         if (pair_exists(forced_pairs, a, b)) {
-            alert(`${display_name(a)} und ${display_name(b)} sind bereits als "muss zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
+            dashboardAlert(`${display_name(a)} und ${display_name(b)} sind bereits als "muss zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
             return;
         }
         if (pinned_as_neighbors(a, b)) {
-            alert(`${display_name(a)} und ${display_name(b)} sitzen bereits über feste Plätze nebeneinander - bitte zuerst einen der beiden festen Plätze entfernen.`);
+            dashboardAlert(`${display_name(a)} und ${display_name(b)} sitzen bereits über feste Plätze nebeneinander - bitte zuerst einen der beiden festen Plätze entfernen.`);
             return;
         }
         api_call('/api/sph_set_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: 'forbidden'}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
             forbidden_pairs = data.pairs;
             render_pairs();
         });
@@ -1435,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let area = $('#sph_rule_area').val();
         if (area === 'any') {
             api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: email}, function (data) {
-                if (data.success === false) { alert(data.error || 'Konnte nicht entfernt werden.'); return; }
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
                 fixed_rules = data.rules;
                 render_rules();
                 render_rule_seatmap();
@@ -1443,7 +1455,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             let [xr, yr] = area_for_rule(area);
             api_call('/api/sph_set_fixed_rule', {cycle_id: open_cycle_id, email: email, x_min: xr[0], x_max: xr[1], y_min: yr[0], y_max: yr[1]}, function (data) {
-                if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
                 fixed_rules = data.rules;
                 render_rules();
                 render_rule_seatmap();
@@ -1465,8 +1477,8 @@ document.addEventListener('DOMContentLoaded', function () {
             satisfied_emails: JSON.stringify(current_satisfied_emails),
         }, function (data) {
             button.prop('disabled', false);
-            if (data.success === false) { alert(data.error || 'Konnte nicht gespeichert werden.'); return; }
-            alert('Sitzplan gespeichert.');
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            dashboardAlert('Sitzplan gespeichert.');
             // Danach ist keine Runde mehr offen; load_state() zeigt den eben
             // gespeicherten Plan zum Ansehen samt "Diesen Sitzplan bearbeiten".
             load_state();
@@ -1478,7 +1490,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     $('#sph_bu_edit_saved').click(function () {
         api_call('/api/sph_reopen_saved_cycle', {cycle_id: last_cycle.id}, function (data) {
-            if (data.success === false) { alert(data.error || 'Konnte nicht zur Bearbeitung geöffnet werden.'); return; }
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zur Bearbeitung geöffnet werden.'); return; }
             load_state();
             load_history();
         });

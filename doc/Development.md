@@ -106,6 +106,10 @@ eingesetzt werden, HTML- bzw. JSON-sicher maskieren.
 - IDs im HTML: `bu_…` für Buttons, `ti_…` für Eingabefelder, `…Modal` für
   Modals. Für E2E-Tests zusätzlich `data-testid` verwenden.
 - Texte auf Deutsch; Schüler:innen werden mit „du“ angesprochen.
+- Keine nativen Dialoge (`alert`, `confirm`, `prompt`): `dashboardAlert(text, title)`
+  und `dashboardConfirm(text, on_confirm, {title, confirm, cancel, danger})` aus
+  `_template.html` verwenden.
+- Alle Regeln für Menschen und Agenten: [AGENTS.md](https://github.com/specht/schul-dashboard/blob/master/AGENTS.md).
 - Seiten müssen mit eigenen Farbschemata und im Dunkelmodus (`body.dark`,
   `dark.css`) lesbar bleiben.
 - Echte Schuldaten, Dumps, Exporte und Zugangsdaten gehören nie ins Repo

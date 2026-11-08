@@ -5,12 +5,13 @@
 # - nur Beispieldaten (src/example-data), nie echte Schuldaten
 # - eigener Projektname, eigene Compose-Datei, eigene Daten unter
 #   .test-stack/ – eine laufende Entwicklungsinstanz bleibt unberührt
-# - nginx nur auf 127.0.0.1:8125, keine weiteren Ports
+# - nginx nur auf 127.0.0.1:8125, Mailpit (Test-Postfach) auf 127.0.0.1:8126
 # ------------------------------------------------------------------
 
-# Development-Modus: feste Anmeldecodes (123456 / 654321). Das ist nur
-# vertretbar, weil hier ausschließlich Beispieldaten verwendet werden.
-DEVELOPMENT = true
+# Produktionsmodus, damit die Tests prüfen, was in der Schule läuft:
+# zufällige Anmeldecodes per E-Mail, Zwei-Faktor-Pflicht für Lehrkräfte,
+# JS/CSS einmal beim Start gebündelt. Die Tests lesen die Codes aus Mailpit.
+DEVELOPMENT = false
 
 PROJECT_NAME = 'schuldashboardtest'
 UID = Process::UID.eid
@@ -44,3 +45,18 @@ NGINX_HOST_PORT = 8125
 NGINX_HOST_ADDRESS = '127.0.0.1'
 PUBLISH_DEV_PORTS = false
 CREDENTIALS_FILE = './test/credentials.rb'
+# Test-Stack nicht nach einem Neustart des Rechners wieder hochfahren
+RESTART_SERVICES = false
+
+# Test-Postfach: nimmt alle Mails an (SMTP mailpit:587), Web/API für die Tests
+EXTRA_SERVICES = {
+    :mailpit => {
+        :image => 'axllent/mailpit:v1.27.0',
+        :environment => [
+            'MP_SMTP_BIND_ADDR=0.0.0.0:587',
+            'MP_SMTP_AUTH_ACCEPT_ANY=true',
+            'MP_SMTP_AUTH_ALLOW_INSECURE=true',
+        ],
+        :ports => ['127.0.0.1:8126:8025'],
+    },
+}

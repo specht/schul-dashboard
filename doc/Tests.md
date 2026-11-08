@@ -27,10 +27,24 @@ E2E_ARGS="--project=desktop tests/login.spec.ts" ./test.sh e2e-run
 
 Der Test-Stack verwendet `env.test.rb`: Projektname `schuldashboardtest`,
 eigene Compose-Datei `docker-compose.test.yaml`, eigene Daten unter
-`.test-stack/`, nur Port `127.0.0.1:8125`, Beispieldaten aus
-`src/example-data` und eigene Zugangsdaten (`src/ruby/test/credentials.rb`,
-alle externen Hosts zeigen auf `*.test.invalid`). Eine laufende
-Entwicklungsinstanz wird nicht berührt.
+`.test-stack/`, Beispieldaten aus `src/example-data` und eigene Zugangsdaten
+(`src/ruby/test/credentials.rb`, alle externen Hosts zeigen auf
+`*.test.invalid`). Eine laufende Entwicklungsinstanz wird nicht berührt.
+
+Er läuft **im Produktionsmodus** – mit zufälligen Anmeldecodes,
+Zwei-Faktor-Pflicht für Lehrkräfte und einmal gebündeltem JS/CSS, also so
+wie in der Schule. Alle Mails gehen an ein Test-Postfach (Mailpit), aus dem
+die Tests die Codes lesen:
+
+| Dienst | Adresse |
+|---|---|
+| Dashboard | http://localhost:8125 |
+| Mailpit (Weboberfläche und API) | http://localhost:8126 |
+
+Nach dem Start richtet `test/e2e/seed.cypher` zwei Konten für die
+Anmelde-Tests ein: `torstenson@beispielschule.de` muss einen zweiten Faktor
+(OTP) verwenden, `clarke@beispielschule.de` meldet sich per OTP-App an.
+Das OTP-Geheimnis der Testkonten steht in `test/e2e/tests/fixtures.ts`.
 
 Playwright-Berichte liegen nach einem Lauf unter
 `test/e2e/playwright-report/` (HTML) und `test/e2e/test-results/`
@@ -47,6 +61,9 @@ Playwright-Berichte liegen nach einem Lauf unter
       JavaScript-Fehlern fehl
 - [x] Seiten-Smoke-Test: jede Seite × jede Rolle (anonym, Schüler:in
       Unter-/Oberstufe, Lehrkraft, Admin), siehe unten
+- [x] Test-Stack im Produktionsmodus mit Test-Postfach; Anmelde-Abläufe:
+      E-Mail-Code (SuS), E-Mail-Code + OTP als zweiter Faktor (Lehrkraft),
+      OTP-App als erster Faktor, falscher Code
 - [ ] alles Weitere aus [Reihenfolge](#Reihenfolge)
 
 ## Seiten-Smoke-Test
@@ -165,11 +182,10 @@ Schuljahr der Beispieldaten).
 ### E2E-Tests
 
 Playwright im offiziellen Container, gegen den kompletten Stack mit
-Beispieldaten. Im Development-Modus ist der Anmeldecode fest (`123456`,
-zweiter Faktor `654321`), sodass sich Tests ohne Mailserver anmelden können.
-Für die Prüfung der echten Zwei-Faktor-Abläufe braucht es zusätzlich einen
-Modus, in dem 2FA aktiv ist, die Codes aber abgefragt werden können (z. B. ein
-Test-Mailpostfach wie Mailpit als weiterer Container).
+Beispieldaten im Produktionsmodus. `login(page, email)` und
+`apiLogin(request, email)` in `tests/fixtures.ts` melden sich wie ein Mensch
+an: Code aus der Mail (Mailpit) oder aus der OTP-App (TOTP wird im Test
+berechnet), bei Lehrkräften mit zweitem Faktor.
 
 Abläufe, die zuerst abgedeckt werden (Desktop **und** Handy-Viewport):
 

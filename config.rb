@@ -265,6 +265,9 @@ end
 
 docker_compose[:services][:weasyprint] = {:image => 'lgatica/weasyprint'}
 
+# additional services an environment file may define (e.g. a test mail server)
+docker_compose[:services].merge!(EXTRA_SERVICES) if defined?(EXTRA_SERVICES)
+
 docker_compose[:services][:nginx][:ports] = ["127.0.0.1:#{DEV_NGINX_PORT}:80"]
 if DEVELOPMENT
     docker_compose[:services][:nginx][:ports] = ["#{DEV_NGINX_ADDRESS}:#{DEV_NGINX_PORT}:80"]
@@ -274,7 +277,7 @@ if DEVELOPMENT
         docker_compose[:services][:timetable][:ports] = ['127.0.0.1:8022:8080']
         docker_compose[:services][:invitation_bot][:ports] = ['127.0.0.1:8023:8080']
     end
-else
+elsif !defined?(RESTART_SERVICES) || RESTART_SERVICES
     docker_compose[:services].each_pair do |k, x|
         x[:restart] = :always
     end

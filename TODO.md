@@ -23,8 +23,12 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 - [x] Seiten-Smoke-Test: jede Seite × jede Rolle, Bestandsaufnahme in
       `test/e2e/tests/known-page-errors.json` (257 Fälle) – Liste abbauen
 - [ ] Berechtigungsmatrix für alle API-Routen
-- [ ] Alle Anmelde-Abläufe (inkl. Zwei-Faktor-Kombinationen) als
-      Integrations- und E2E-Tests; Test-Mailpostfach (z. B. Mailpit)
+- [x] Test-Stack im Produktionsmodus mit Test-Postfach (Mailpit)
+- [x] E2E: E-Mail-Code, E-Mail + OTP (Lehrkraft), OTP als erster Faktor,
+      falscher Code
+- [ ] E2E: OTP als erster + E-Mail als zweiter Faktor (braucht eine dritte
+      Lehrkraft in den Beispieldaten), Code per E-Mail nachfordern,
+      Kontowechsel, Abmelden, abgelaufener Code, zu viele Versuche
 - [ ] Hauptabläufe E2E auf Desktop und Handy (Tabelle in
       [doc/Tests.md](doc/Tests.md))
 - [ ] Vorhandene Einzeltests (`nextcloud-client-compatibility-test.rb`,
@@ -46,6 +50,10 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 - [ ] Ein falscher Anmeldecode wird mit HTTP 500 beantwortet (`assert`);
       erwartbare Fehler sollten 4xx mit Fehlercode liefern (gilt allgemein
       für die API)
+- [ ] `/login_otp` (nicht verlinkt) legt den Anmeldecode ohne `method`
+      an, `confirm_login` vergleicht dann mit einem E-Mail-Code – der Weg
+      funktioniert laut Code nicht. Entfernen oder reparieren; die
+      OTP-Anmeldung über die Profil-Einstellung funktioniert
 - [ ] `c.html:55`: Selektor ohne Punkt
       (`$('send-code-via-email-confirmation')`)
 - [ ] Stundenplan: Laden der Wochendaten hat keine Fehlerbehandlung – bei

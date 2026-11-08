@@ -20,7 +20,8 @@ cd "$(dirname "$0")"
 export DASHBOARD_ENV=env.test.rb
 BASE_URL=http://localhost:8125
 PLAYWRIGHT_IMAGE=mcr.microsoft.com/playwright:v1.55.1-noble
-STACK_SERVICES=(nginx ruby neo4j timetable)
+MAILPIT_URL=http://localhost:8126
+STACK_SERVICES=(nginx ruby neo4j timetable mailpit)
 
 compose() { ./config.rb "$@"; }
 
@@ -60,6 +61,13 @@ stack_up() {
     compose up -d "${STACK_SERVICES[@]}"
     wait_for "dashboard" "curl -fsS $BASE_URL/api/ping"
     wait_for "timetable service" "compose exec -T ruby curl -fsS http://timetable:8080/api/update/all"
+    wait_for "mailpit" "curl -fsS $MAILPIT_URL/api/v1/info"
+    seed
+}
+
+seed() {
+    # test accounts for the login tests (two-factor, OTP), see test/e2e/seed.cypher
+    compose exec -T neo4j cypher-shell -a bolt://localhost:7687 --format plain < test/e2e/seed.cypher
 }
 
 stack_down() {
@@ -77,7 +85,7 @@ run_unit() {
 run_playwright() {
     docker run --rm --network host --ipc host \
         --user "$(id -u):$(id -g)" -e HOME=/tmp -e npm_config_cache=/tmp/.npm \
-        -e BASE_URL="$BASE_URL" -e CI=1 \
+        -e BASE_URL="$BASE_URL" -e MAILPIT_URL="$MAILPIT_URL" -e CI=1 \
         -e STATIC_DIR=/static -e UPDATE_KNOWN_PAGE_ERRORS="${UPDATE_KNOWN_PAGE_ERRORS:-0}" \
         -v "$PWD/test/e2e:/e2e" -v "$PWD/src/static:/static:ro" -w /e2e \
         "$PLAYWRIGHT_IMAGE" \

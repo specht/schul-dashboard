@@ -28,4 +28,22 @@ STREAM_SITE_URL = 'https://info.test.invalid/'
 BIB_HOST = 'https://bibliothek.test.invalid'
 UNTIS_VERTRETUNGSPLAN_BASE_URL = 'https://vertretungsplan.test.invalid'
 
+# All mail goes to the Mailpit container of the test stack, where the tests
+# read login codes from (see test/e2e/tests/fixtures.ts).
+SMTP_SERVER = 'mailpit'
+SMTP_DOMAIN = 'test.invalid'
+if defined? Mail
+    Mail.defaults do
+        delivery_method :smtp, {
+            :address => SMTP_SERVER,
+            :port => 587,
+            :domain => SMTP_DOMAIN,
+            :user_name => 'test',
+            :password => 'test',
+            :authentication => 'login',
+            :enable_starttls_auto => false
+        }
+    end
+end
+
 $VERBOSE = warn_level

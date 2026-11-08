@@ -1,4 +1,6 @@
-import { test, expect, login, typeEmail, ACCOUNTS } from './fixtures';
+import {
+  test, expect, login, typeEmail, clearLoginMails, waitForMailedCode, totp, ACCOUNTS,
+} from './fixtures';
 
 test('Ohne Anmeldung erscheint die Anmeldeseite', async ({ page }) => {
   await page.goto('/');
@@ -8,15 +10,49 @@ test('Ohne Anmeldung erscheint die Anmeldeseite', async ({ page }) => {
   await expect(page.locator('#submit')).toBeEnabled();
 });
 
-test('Lehrkraft meldet sich mit Code an und sieht den Stundenplan', async ({ page }) => {
+test('Schüler:in meldet sich mit Code aus der E-Mail an', async ({ page }) => {
+  await login(page, ACCOUNTS.schueler);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#calendar')).toBeVisible();
+});
+
+test('Lehrkraft braucht einen zweiten Faktor (E-Mail-Code, dann OTP)', async ({ page }) => {
+  await clearLoginMails(ACCOUNTS.teacher);
+  await page.goto('/');
+  await typeEmail(page, ACCOUNTS.teacher);
+  await page.locator('#submit').click();
+  await page.waitForURL(/\/c\//);
+  await page.locator('#code').fill(await waitForMailedCode(ACCOUNTS.teacher));
+  await page.locator('#submit').click();
+
+  // first factor alone is not enough
+  await expect(page.locator('#div_forced_2fa')).toBeVisible();
+  await expect(page.locator('#span_sent')).toContainText('OTP-Code');
+  await page.goto('/');
+  await expect(page.locator('#email')).toBeVisible();
+});
+
+test('Lehrkraft meldet sich mit zwei Faktoren an und sieht den Stundenplan', async ({ page }) => {
   await login(page, ACCOUNTS.teacher);
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('#calendar')).toBeVisible();
 });
 
+test('Anmeldung mit OTP-App als erstem Faktor', async ({ page }) => {
+  await page.goto('/');
+  await typeEmail(page, ACCOUNTS.admin);
+  await page.locator('#submit').click();
+  await page.waitForURL(/\/c\//);
+  await expect(page.getByText('OTP-Code')).toBeVisible();
+  await page.locator('#code').fill(totp());
+  await page.locator('#submit').click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/c/'));
+  await expect(page.locator('#calendar')).toBeVisible();
+});
+
 test('Falscher Code wird abgelehnt', async ({ page, serverErrors }) => {
   await page.goto('/');
-  await typeEmail(page, ACCOUNTS.teacher);
+  await typeEmail(page, ACCOUNTS.schueler);
   await page.locator('#submit').click();
   await page.waitForURL(/\/c\//);
   await page.locator('#code').fill('000000');

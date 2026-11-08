@@ -33,7 +33,7 @@ var zeugnis_klassen_order = #{ZEUGNIS_KLASSEN_ORDER.to_json};
 var klassen_tr = #{KLASSEN_TR.to_json};
 var zeugnisliste_for_klasse = #{@@zeugnisliste_for_klasse.to_json};
 var my_zeugnisliste = #{@@zeugnisliste_for_lehrer[@session_user[:shorthand]].to_json};
-var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : @@zeugnisliste_for_lehrer[@session_user[:shorthand]].keys.map{ |x| x.split('/').first }.uniq).to_json};
+var my_klassen = #{(zeugnis_admin_logged_in? ? KLASSEN_ORDER : (@@zeugnisliste_for_lehrer[@session_user[:shorthand]] || {}).keys.map{ |x| x.split('/').first }.uniq).to_json};
 // var my_lessons = #{@@lessons_for_shorthand[@session_user[:shorthand]].reject { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).empty? }.to_json};
 var my_lessons = #{@@lessons_for_shorthand[@session_user[:shorthand]].reject { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).select { |x| KLASSEN_ORDER.include?(x)}.empty? }.sort { |a, b| KLASSEN_ORDER.index((@@lessons[:lesson_keys][a] || {})[:klassen].first) <=> KLASSEN_ORDER.index((@@lessons[:lesson_keys][b] || {})[:klassen].first) }.to_json};
 var lesson_labels = #{Hash[@@lessons[:lesson_keys].keys.map { |k| [k, @@lessons[:lesson_keys][k][:pretty_folder_name]]}].to_json};

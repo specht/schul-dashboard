@@ -1,6 +1,22 @@
 require 'digest'
 
 class Main < Sinatra::Base
+    UPLOAD_IMAGE_EXTENSIONS = %w(jpg jpeg png gif webp heic heif avif bmp tif tiff)
+
+    # The file name comes from the client: only accept known image types,
+    # because the extension ends up in file paths and converter calls.
+    def upload_image_extension(filename)
+        extension = (filename || '').split('.').last.to_s.downcase
+        assert(UPLOAD_IMAGE_EXTENSIONS.include?(extension), 'unsupported image type')
+        extension
+    end
+
+    def convert_uploaded_image(path, jpg_path, width)
+        system('convert', '-auto-orient', '-set', 'colorspace', 'RGB', path,
+               '-resize', "#{width}x#{width}^", '-quality', '85',
+               '-sampling-factor', '4:2:0', '-strip', jpg_path)
+    end
+
     post '/api/upload_image' do
         require_user_who_can_upload_files!
         slug = params['slug']
@@ -10,8 +26,9 @@ class Main < Sinatra::Base
         assert(slug.size > 0)
         entry = params['file']
         filename = entry['filename']
+        extension = upload_image_extension(filename)
         blob = entry['tempfile'].read
-        path = "/raw/uploads/images/#{slug}.#{filename.split('.').last}"
+        path = "/raw/uploads/images/#{slug}.#{extension}"
         File.open(path, 'w') do |f|
             f.write(blob)
         end
@@ -23,15 +40,16 @@ class Main < Sinatra::Base
         require_user!
         entry = params['file']
         filename = entry['filename']
+        extension = upload_image_extension(filename)
         blob = entry['tempfile'].read
         sha1 = Digest::SHA1.hexdigest(blob)[0, 16]
-        path = "/internal/poll_uploads/images/poll-#{sha1}.#{filename.split('.').last}"
+        path = "/internal/poll_uploads/images/poll-#{sha1}.#{extension}"
         File.open(path, 'w') do |f|
             f.write(blob)
         end
         [2048].each do |width|
             jpg_path = "/internal/poll_uploads/images/poll-#{sha1}-#{width}.jpg"
-            system("convert -auto-orient -set colorspace RGB  \"#{path}\" -resize #{width}x#{width}^ -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
+            convert_uploaded_image(path, jpg_path, width)
         end
         FileUtils.rm_f(path)
         respond(:uploaded => 'yeah', :stored_path => "poll-#{sha1}")
@@ -53,15 +71,16 @@ class Main < Sinatra::Base
         require_user!
         entry = params['file']
         filename = entry['filename']
+        extension = upload_image_extension(filename)
         blob = entry['tempfile'].read
         sha1 = Digest::SHA1.hexdigest(blob)[0, 16]
-        path = "/internal/sus_uploads/images/sus-#{sha1}.#{filename.split('.').last}"
+        path = "/internal/sus_uploads/images/sus-#{sha1}.#{extension}"
         File.open(path, 'w') do |f|
             f.write(blob)
         end
         [512].each do |width|
             jpg_path = "/internal/sus_uploads/images/sus-#{sha1}-512.jpg"
-            system("convert -auto-orient -set colorspace RGB  \"#{path}\" -resize #{width}x#{width}^ -quality 85 -sampling-factor 4:2:0 -strip \"#{jpg_path}\"")
+            convert_uploaded_image(path, jpg_path, width)
         end
         FileUtils.rm_f(path)
         display_name = @session_user[:display_name]

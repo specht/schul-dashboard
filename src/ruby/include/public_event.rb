@@ -194,6 +194,99 @@ class Main < Sinatra::Base
         end
     end
 
+    # Datum eines Termins aus dem Key, wenn dieser mit YYYY-MM-DD beginnt, sonst nil.
+    def public_event_entry_date(entry)
+        m = entry[:key].to_s.match(/\A(\d{4}-\d{2}-\d{2})/)
+        m ? (Date.parse(m[1]) rescue nil) : nil
+    end
+
+    # Die Parameter heißen event, row und entry, weil booking_text aus der
+    # Konfiguration Ausdrücke wie {entry[:description]} enthält, die hier per
+    # eval ausgewertet werden.
+    def public_event_entry_button(event, row, entry, sign_ups, not_yet)
+        text = (event[:booking_text] || '').dup
+        while true
+            index = text.index('{')
+            break if index.nil?
+            length = 1
+            balance = 1
+            while index + length < text.size && balance > 0
+                c = text[index + length]
+                balance -= 1 if c == '}'
+                balance += 1 if c == '{'
+                length += 1
+            end
+            code = text[index + 1, length - 2]
+            begin
+                text[index, length] = eval(code).to_s || ''
+            rescue
+                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
+                debug code
+                raise
+            end
+        end
+        booked_out = false
+        if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
+            booked_out = true
+        end
+        if not_yet
+            booked_out = true
+        end
+        # :label ist die kurze Beschriftung (z. B. "09:00"), :description bleibt
+        # für Buchungstext und Mail ("09:00 Uhr")
+        "<button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:label] || entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div>"
+    end
+
+    # Vorbei ist ein Termin, wenn seine Anmeldefrist abgelaufen ist, die Uhrzeit
+    # im Key (z. B. "2026-12-02T09:00") vorbei ist oder das Datum im Key vor heute liegt.
+    def public_event_entry_past?(entry, today, ts)
+        return true if entry[:deadline] && ts > entry[:deadline]
+        key = entry[:key].to_s
+        return key[0, 16] < ts if key =~ /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/
+        date = public_event_entry_date(entry)
+        !date.nil? && date < today
+    end
+
+    # Die anzuzeigenden Zeilen eines Events: vergangene Termine fallen weg, Zeilen
+    # ohne kommende Termine ganz. Mit :max_upcoming_weeks: N nur Termine aus den
+    # ersten N Kalenderwochen, in denen überhaupt Termine liegen - Wochen ohne
+    # Termine (Ferien) zählen nicht mit. Liefert [rows, ob weitere Termine
+    # ausgeblendet sind].
+    def public_event_upcoming_rows(event, today, ts)
+        filter_rows = lambda do |rows, &keep|
+            rows.map do |row|
+                entries = row[:entries].select(&keep)
+                (entries.empty? && !row[:entries].empty?) ? nil : row.merge(:entries => entries)
+            end.compact
+        end
+        rows = filter_rows.call(event[:rows] || []) { |entry| !public_event_entry_past?(entry, today, ts) }
+        weeks = event[:max_upcoming_weeks]
+        dates = rows.map { |row| row[:entries].map { |entry| public_event_entry_date(entry) } }.flatten.compact
+        return [rows, false] if weeks.nil? || dates.empty?
+        week_of = lambda { |date| [date.cwyear, date.cweek] }
+        shown_weeks = dates.map { |date| week_of.call(date) }.uniq.sort.first(weeks)
+        limited = filter_rows.call(rows) { |entry| (date = public_event_entry_date(entry)).nil? || shown_weeks.include?(week_of.call(date)) }
+        count = lambda { |list| list.sum { |row| row[:entries].size } }
+        [limited, count.call(limited) < count.call(rows)]
+    end
+
+    # "23.–27.11.", über den Monat "30.11.–04.12.", über das Jahr
+    # "28.12.2026–08.01.2027", ein einzelner Tag "21.12."
+    def public_event_date_range(dates)
+        first, last = dates.min, dates.max
+        return first.strftime('%d.%m.') if first == last
+        return "#{first.strftime('%d.%m.%Y')}–#{last.strftime('%d.%m.%Y')}" if first.year != last.year
+        return "#{first.strftime('%d.')}–#{last.strftime('%d.%m.')}" if first.month == last.month
+        "#{first.strftime('%d.%m.')}–#{last.strftime('%d.%m.')}"
+    end
+
+    def public_event_more_note(event)
+        return event[:more_rows_note] if event[:more_rows_note]
+        n = event[:max_upcoming_weeks]
+        weeks = n == 1 ? 'aus der nächsten Woche' : "aus den nächsten #{n} Wochen"
+        "Hier werden immer nur die Termine #{weeks} mit Terminen angezeigt. Sobald eine Woche vorbei ist, kommen weitere Termine dazu – es lohnt sich also, später noch einmal vorbeizuschauen."
+    end
+
     def print_public_event_table()
         self.class.refresh_public_event_config()
         ts = Time.now.strftime("%Y-%m-%dT%H:%M")
@@ -217,83 +310,68 @@ class Main < Sinatra::Base
                     io.puts event[:not_before_description]
                 end
                 sign_ups = get_sign_ups_for_public_event(event[:key])
+                rows, more_rows = public_event_upcoming_rows(event, Date.today, ts)
                 if event[:auto_rows]
-                    io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;' data-event-key='#{event[:key]}'>"
+                    # Ein Tag pro Zeile, die Termine in Spalten nach Stunden, damit
+                    # gleiche Uhrzeiten untereinander stehen. Auf schmalen Bildschirmen
+                    # stehen sie fortlaufend unter dem Tag (.pe-* in anmeldung.html).
+                    hour_of = lambda { |entry| entry[:key].to_s[11, 2].to_i }
+                    hours = rows.map { |row| row[:entries].map { |entry| hour_of.call(entry) } }.flatten
+                    io.puts "<div class='table-responsive pe-slots' data-event-key='#{event[:key]}'>"
                     io.puts "<div style='display: none;' class='event-title'>#{event[:title]}</div>"
-                    io.puts "<table class='table table-narrow narrow th-middle'>"
-                    colspan = 1
-                    io.puts "<colgroup>"
-                    io.puts "<col style='width: 180px;'/>"
-                    colspan.times do
-                        io.puts "<col style='width: auto;'/>"
-                    end
-                    io.puts "</colgroup>"
-                    io.puts "<tbody>"
-                    if event[:headings]
-                        io.puts "<tr>"
-                        io.puts "<th>#{event[:headings][0]}</th>"
-                        io.puts "<th colspan='#{colspan}'>#{event[:headings][1]}</th>"
-                        io.puts "</tr>"
-                    end
-                    event[:rows].each do |row|
-                        printed_row = false
-                        row[:entries].each do |entry|
-                            text = (event[:booking_text] || '').dup
-                            while true
-                                index = text.index('{')
-                                break if index.nil?
-                                length = 1
-                                balance = 1
-                                while index + length < text.size && balance > 0
-                                    c = text[index + length]
-                                    balance -= 1 if c == '}'
-                                    balance += 1 if c == '{'
-                                    length += 1
-                                end
-                                code = text[index + 1, length - 2]
-                                begin
-                                    text[index, length] = eval(code).to_s || ''
-                                rescue
-                                    debug "Error while evaluating for #{(@session_user || {})[:email]}:"
-                                    debug code
-                                    raise
-                                end
+                    unless hours.empty?
+                        hour_range = (hours.min..hours.max).to_a
+                        io.puts "<div class='pe-day pe-head'><div class='pe-day-label'>#{(event[:headings] || [])[0]}</div><div class='pe-hours'>"
+                        hour_range.each { |hour| io.puts "<div class='pe-hour'>#{hour} Uhr</div>" }
+                        io.puts "</div></div>"
+                        last_week = nil
+                        rows.each do |row|
+                            next if row[:entries].empty?
+                            date = public_event_entry_date(row[:entries].first)
+                            week = date && [date.cwyear, date.cweek]
+                            io.puts "<div class='pe-day#{(last_week && week != last_week) ? ' pe-new-week' : ''}'>"
+                            last_week = week
+                            io.puts "<div class='pe-day-label'>#{row[:description]}</div><div class='pe-hours'>"
+                            by_hour = row[:entries].group_by { |entry| hour_of.call(entry) }
+                            hour_range.each do |hour|
+                                slots = by_hour[hour] || []
+                                io.puts "<div class='pe-hour#{slots.empty? ? ' pe-empty' : ''}'>"
+                                slots.each { |entry| io.puts public_event_entry_button(event, row, entry, sign_ups, not_yet) }
+                                io.puts "</div>"
                             end
-                            if entry[:deadline]
-                                next if ts > entry[:deadline]
-                            end
-                            booked_out = false
-                            if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
-                                booked_out = true
-                            end
-                            if not_yet
-                                booked_out = true
-                            end
-                            unless printed_row
-                                io.puts "<tr>"
-                                io.puts "<th>#{row[:description]}</th>"
-                                io.puts "<td>"
-                                printed_row = true
-                            end
-                            io.puts "<button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' style='width: 5.3em;' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div>"
-                        end
-                        if printed_row
-                            io.puts "</td>"
-                            io.puts "</tr>"
+                            io.puts "</div></div>"
                         end
                     end
-                    io.puts "</tbody>"
-                    io.puts "</table>"
                     io.puts "</div>"
                 else
+                    # Beginnen alle Keys mit einem Datum (z. B. "2026-11-19-klasse-5"),
+                    # steht jeder Termin in der Spalte seines Wochentags. Der Spaltenbereich
+                    # kommt aus allen Zeilen, damit er sich nicht ändert, wenn Zeilen
+                    # wegfallen.
+                    all_dates = (event[:rows] || []).map { |row| row[:entries].map { |entry| public_event_entry_date(entry) } }.flatten
+                    weekday_grid = !all_dates.empty? && all_dates.all?
+                    if weekday_grid
+                        first_wday = all_dates.map(&:cwday).min
+                        colspan = all_dates.map(&:cwday).max - first_wday + 1
+                    else
+                        colspan = rows.map { |x| x[:entries].size }.max || 1
+                    end
                     io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;' data-event-key='#{event[:key]}'>"
                     io.puts "<div style='display: none;' class='event-title'>#{event[:title]}</div>"
                     io.puts "<table class='table table-narrow narrow th-middle'>"
-                    colspan = event[:rows].map { |x| x[:entries].size }.max
                     io.puts "<colgroup>"
-                    io.puts "<col style='width: 180px;'/>"
-                    colspan.times do
-                        io.puts "<col style='width: auto;'/>"
+                    if weekday_grid
+                        # Beschriftung so breit wie nötig, die Wochentage teilen sich
+                        # den Rest gleichmäßig
+                        io.puts "<col style='width: 1%;'/>"
+                        colspan.times do
+                            io.puts "<col style='width: #{(100.0 / colspan).round(2)}%;'/>"
+                        end
+                    else
+                        io.puts "<col style='width: 180px;'/>"
+                        colspan.times do
+                            io.puts "<col style='width: auto;'/>"
+                        end
                     end
                     io.puts "</colgroup>"
                     io.puts "<tbody>"
@@ -303,45 +381,40 @@ class Main < Sinatra::Base
                         io.puts "<th colspan='#{colspan}'>#{event[:headings][1]}</th>"
                         io.puts "</tr>"
                     end
-                    event[:rows].each do |row|
+                    # Im Wochenraster steht links der Zeitraum der Zeile; die Beschreibung
+                    # nur dann klein darunter, wenn sich die Zeilen darin unterscheiden.
+                    same_description = rows.map { |row| row[:description] }.uniq.size <= 1
+                    rows.each do |row|
                         io.puts "<tr>"
-                        io.puts "<th>#{row[:description]}</th>"
-                        row[:entries].each do |entry|
-                            text = (event[:booking_text] || '').dup
-                            while true
-                                index = text.index('{')
-                                break if index.nil?
-                                length = 1
-                                balance = 1
-                                while index + length < text.size && balance > 0
-                                    c = text[index + length]
-                                    balance -= 1 if c == '}'
-                                    balance += 1 if c == '{'
-                                    length += 1
+                        if weekday_grid && !row[:entries].empty?
+                            io.puts "<th>#{public_event_date_range(row[:entries].map { |entry| public_event_entry_date(entry) })}"
+                            io.puts "<div class='text-muted' style='font-weight: normal; font-size: 85%;'>#{row[:description]}</div>" unless same_description
+                            io.puts "</th>"
+                        else
+                            io.puts "<th>#{row[:description]}</th>"
+                        end
+                        if weekday_grid
+                            by_wday = row[:entries].group_by { |entry| public_event_entry_date(entry).cwday }
+                            colspan.times do |i|
+                                io.puts "<td>"
+                                (by_wday[first_wday + i] || []).each do |entry|
+                                    io.puts public_event_entry_button(event, row, entry, sign_ups, not_yet)
                                 end
-                                code = text[index + 1, length - 2]
-                                begin
-                                    text[index, length] = eval(code).to_s || ''
-                                rescue
-                                    debug "Error while evaluating for #{(@session_user || {})[:email]}:"
-                                    debug code
-                                    raise
-                                end
+                                io.puts "</td>"
                             end
-                            booked_out = false
-                            if (sign_ups[entry[:key]] || []).size >= (entry[:capacity] || 0)
-                                booked_out = true
+                        else
+                            row[:entries].each do |entry|
+                                io.puts "<td>#{public_event_entry_button(event, row, entry, sign_ups, not_yet)}</td>"
                             end
-                            if not_yet
-                                booked_out = true
-                            end
-                            io.puts "<td><button data-event-key='#{event[:key]}' data-key='#{entry[:key]}' class='btn #{booked_out ? 'btn-outline-secondary' : 'btn-info'} bu-book-public-event' #{booked_out ? 'disabled': ''}>#{entry[:description]}</button><div style='display: none;' class='booking-text'>#{text}</div></td>"
                         end
                         io.puts "</tr>"
                     end
                     io.puts "</tbody>"
                     io.puts "</table>"
                     io.puts "</div>"
+                end
+                if more_rows
+                    io.puts "<div class='alert alert-info' style='margin-top: 0.5em;'><i class='fa fa-info-circle'></i>&nbsp;&nbsp;#{public_event_more_note(event)}</div>"
                 end
             end
             io.string
@@ -373,6 +446,7 @@ class Main < Sinatra::Base
                                 :key => "#{t.strftime("%Y-%m-%dT%H:%M")}",
                                 :deadline => deadline,
                                 :description => "#{t.strftime("%H:%M")} Uhr",
+                                :label => t.strftime("%H:%M"),
                                 :row_description => row[:description],
                                 :capacity => 1,
                             }

@@ -44,7 +44,11 @@ class TimetableRepl < Sinatra::Base
         rescue
         end
         @@queue = Queue.new
-        @@queue << {:which => 'all'} unless DEVELOPMENT
+        # Write all timetables on start, in development like in production.
+        # With real data this takes a few minutes; in development `rerun`
+        # restarts this service (and the update) on every change in src/ruby.
+        debug "Full timetable update on start" + (DEVELOPMENT ? " (runs again after every code change via rerun)" : '')
+        @@queue << {:which => 'all'}
         @@worker_thread = Thread.new do
             future_queue = {}
             while true do

@@ -3323,7 +3323,20 @@ class Main < Sinatra::Base
             end
             paths << path unless path.nil?
         end
-        paths += Dir["/data/schueler/fotos/2025-#{klasse}-*"].map { |x| File.basename(x) }
+        # Dazu die noch nicht zugeordneten Fotos einer Fotoaktion dieser Klasse, damit
+        # man ihnen Namen geben kann. Die Dateien heißen "<Jahr>-<Klasse>-<id>". Nur
+        # Fotoaktionen ab dem aktuellen Schuljahr: Bei älteren stimmt der Klassenname
+        # nicht mehr (die 7b von 2025 ist heute die 8b). Zugeordnete Fotos stehen
+        # schon oben, über foto_path bei der aktuellen Klasse der Person.
+        if klasse =~ /\A[[:alnum:]_]+\z/
+            first_year = Date.parse(@@config[:first_school_day]).year
+            assigned = Set.new(get_emails_for_foto_paths().keys)
+            Dir["/data/schueler/fotos/[0-9][0-9][0-9][0-9]-#{klasse}-*"].sort.each do |file|
+                name = File.basename(file)
+                next if name[0, 4].to_i < first_year || assigned.include?(name)
+                paths << name
+            end
+        end
         paths.uniq!
         respond(:paths => paths)
     end

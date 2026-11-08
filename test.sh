@@ -25,6 +25,11 @@ STACK_SERVICES=(nginx ruby neo4j timetable mailpit)
 
 compose() { ./config.rb "$@"; }
 
+prepare_input() {
+    # example data with a school year around today (mounted as /data)
+    ruby test/prepare_example_data.rb src/example-data .test-stack/input
+}
+
 prepare() {
     # The nginx image COPYs docker/nginx/default.conf, which only exists after
     # the normal ./config.rb ran once. The test stack mounts its own config
@@ -56,6 +61,7 @@ ensure_sso_keys() {
 
 stack_up() {
     stack_down
+    prepare_input
     prepare
     ensure_sso_keys
     compose up -d "${STACK_SERVICES[@]}"
@@ -78,6 +84,7 @@ stack_down() {
 }
 
 run_unit() {
+    [ -d .test-stack/input ] || prepare_input
     compose build ruby
     compose run --rm --no-deps -T --entrypoint "ruby test/run_unit.rb" ruby
 }

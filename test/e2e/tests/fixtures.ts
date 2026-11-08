@@ -30,31 +30,89 @@ const LOGIN_FACTORS: Record<string, { first: Factor; second?: Factor }> = {
   [ACCOUNTS.schueler_oberstufe]: { first: 'email' },
 };
 
+// Collects server errors (5xx), uncaught JavaScript errors and console
+// errors of a page.
+export function watchPage(page: Page) {
+  const watched = { serverErrors: [] as string[], pageErrors: [] as string[], consoleErrors: [] as string[] };
+  page.on('response', (response) => {
+    if (response.status() >= 500) watched.serverErrors.push(`${response.status()} ${response.url()}`);
+  });
+  page.on('pageerror', (error) => {
+    // message plus the first stack frames, so the report shows where it happened
+    const frames = (error.stack || '').split('\n').filter((l) => l.trim().startsWith('at ')).slice(0, 3);
+    watched.pageErrors.push([error.message, ...frames.map((l) => l.trim())].join(' | '));
+  });
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') watched.consoleErrors.push(msg.text());
+  });
+  return watched;
+}
+
 // Every test fails if the server answers with a 5xx or the page throws an
-// uncaught JavaScript error. Console errors are attached to the report.
+// uncaught JavaScript error – for the default `page` and for every page
+// opened with `newUserPage`. Console errors are attached to the report.
 // Tests that expect a 5xx (see TODO.md) remove it from `serverErrors`.
-export const test = base.extend<{ serverErrors: string[] }>({
+export const test = base.extend<{
+  serverErrors: string[];
+  newUserPage: () => Promise<Page>;
+}>({
   serverErrors: [async ({ page }, use, testInfo) => {
-    const serverErrors: string[] = [];
-    const pageErrors: string[] = [];
-    const consoleErrors: string[] = [];
-    page.on('response', (response) => {
-      if (response.status() >= 500) serverErrors.push(`${response.status()} ${response.url()}`);
-    });
-    page.on('pageerror', (error) => pageErrors.push(error.message));
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-    });
-
-    await use(serverErrors);
-
-    if (consoleErrors.length > 0) {
-      await testInfo.attach('console-errors', { body: consoleErrors.join('\n'), contentType: 'text/plain' });
-    }
-    expect(serverErrors, 'server errors (HTTP 5xx)').toEqual([]);
-    expect(pageErrors, 'uncaught JavaScript errors').toEqual([]);
+    const watched = watchPage(page);
+    await use(watched.serverErrors);
+    await checkWatched(watched, testInfo, 'page');
   }, { auto: true }],
+
+  // A page in a separate browser context, e.g. for a second user.
+  newUserPage: async ({ browser }, use, testInfo) => {
+    const opened: { watched: ReturnType<typeof watchPage>; close: () => Promise<void> }[] = [];
+    await use(async () => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      opened.push({ watched: watchPage(page), close: () => context.close() });
+      return page;
+    });
+    for (const [i, { watched, close }] of opened.entries()) {
+      await close();
+      await checkWatched(watched, testInfo, `user page ${i + 1}`);
+    }
+  },
 });
+
+async function checkWatched(watched: ReturnType<typeof watchPage>, testInfo: any, label: string) {
+  if (watched.consoleErrors.length > 0) {
+    await testInfo.attach(`console-errors (${label})`, { body: watched.consoleErrors.join('\n'), contentType: 'text/plain' });
+  }
+  expect(watched.serverErrors, `server errors (HTTP 5xx) – ${label}`).toEqual([]);
+  expect(watched.pageErrors, `uncaught JavaScript errors – ${label}`).toEqual([]);
+}
+
+// The week the timetable shows first: the current one, or the next one on
+// weekends (same rule as the timetable page).
+export function displayedSchoolWeek(now = new Date()) {
+  const monday = new Date(now);
+  const day = (now.getDay() + 6) % 7; // 0 = Monday
+  monday.setDate(now.getDate() - day + (day >= 5 ? 7 : 0));
+  return [0, 1, 2, 3, 4].map((i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+// On phones the timetable shows a single day: tap ">" until `day` is shown.
+// On larger screens the whole week is visible and nothing happens.
+export async function showDayInTimetable(page: Page, day: Date) {
+  const column = page.locator(`td.fc-timegrid-col[data-date="${isoDate(day)}"]`);
+  for (let i = 0; i < 7 && (await column.count()) === 0; i++) {
+    await page.locator('.fc-next-button').click();
+  }
+  await expect(column).toBeVisible();
+}
+
+export const isoDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export const germanDate = (d: Date) =>
+  `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
 
 export { expect };
 

@@ -19,7 +19,9 @@ UID = Process::UID.eid
 WEBSITE_HOST = 'dashboard.test.invalid'
 LETSENCRYPT_EMAIL = 'admin@test.invalid'
 
-INPUT_DATA_PATH = './src/example-data'
+# Kopie von src/example-data mit einem Schuljahr rund um heute,
+# erzeugt von test/prepare_example_data.rb (./test.sh)
+INPUT_DATA_PATH = './.test-stack/input'
 LOGS_PATH = './.test-stack/logs'
 DATA_PATH = './.test-stack/data'
 INTERNAL_PATH = './.test-stack/internal'

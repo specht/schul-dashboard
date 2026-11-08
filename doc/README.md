@@ -2,8 +2,21 @@
 
 Das Schul-Dashboard wurde am [Gymnasium Steglitz](https://gymnasiumsteglitz.de/) entwickelt, um SuS und Lehrkräften einen Einstiegspunkt für die täglichen Abläufe im Distanzunterricht zu bieten.
 
+Erste Schritte und Betrieb:
+
 - [Installation](file.Installation.html)
+- [Daten](file.Daten.html)
+- [Betrieb](file.Betrieb.html)
+- [Nextcloud](file.Nextcloud.html)
+
+Entwicklung:
+
+- [Architektur](file.Architektur.html)
 - [Entwicklerhandbuch](file.Development.html)
+- [Tests](file.Tests.html)
+
+Funktionen:
+
 - [Sitzplanhelfer](file.Sitzplanhelfer.html)
 
 ![Login-Seite des Schul-Dashboards](https://github.com/specht/schul-dashboard/raw/master/doc/login-screen.png)

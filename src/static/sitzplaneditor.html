@@ -49,6 +49,14 @@
     <h3>Sitzplan-Editor</h3>
     <p class="text-muted" id="spe_subtitle"></p>
 
+    <div id="spe_half" class="alert alert-warning" style="display: none;">
+        In diesem Raum stehen Plätze auf halben Positionen. Der Editor kann sie nicht darstellen,
+        deshalb lässt sich diese Bestuhlung hier nicht bearbeiten. Bitte wenden Sie sich an die Administration.
+        Shuffler, Helfer und Verteilen funktionieren für diesen Raum wie gewohnt.
+        <div style="margin-top: 0.8em;"><a class="btn btn-outline-secondary" id="spe_half_back_link"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></div>
+    </div>
+
+    <div id="spe_main">
     <div class="spe-bar">
         <div class="spe-field">
             <span id="spe_mode_label">Neue Tische</span>
@@ -86,6 +94,7 @@
         <li>Mit gedrückter Maustaste über mehrere Felder fahren setzt oder entfernt mehrere Plätze auf einmal.</li>
         <li>Leere Reihen und Spalten am Rand werden beim Speichern nicht mitgezählt.</li>
     </ul>
+    </div>
 </div>
 
 <script>
@@ -314,7 +323,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     $('#spe_subtitle').text('Raum ' + raum + ' · Klasse ' + klasse);
-    $('#spe_back_link').attr('href', '/directory/' + encodeURIComponent(klasse));
+    $('#spe_back_link, #spe_half_back_link').attr('href', '/directory/' + encodeURIComponent(klasse));
+    var half = (seats_dict[raum] || []).some(function (s) { return s[0] % 1 !== 0 || s[1] % 1 !== 0; });
+    if (half) {
+        $('#spe_main').hide();
+        $('#spe_half').show();
+        return;
+    }
     load_layout();
     saved_signature = seats_dict[raum] ? JSON.stringify(normalized()) : '';
     $('#spe_cols').val(state.cols);

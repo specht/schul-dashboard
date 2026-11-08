@@ -162,7 +162,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 let layout = sp_seats[raum];
                 let too_small = layout && n > layout.length;
                 let buttons = [];
-                if (editor_rooms.indexOf(raum) >= 0)
+                // Plätze auf halben Positionen kann der Editor nicht darstellen
+                let half_positions = layout && layout.some(s => s[0] % 1 !== 0 || s[1] % 1 !== 0);
+                if (editor_rooms.indexOf(raum) >= 0 && !half_positions)
                     buttons.push(['Editor', '/sitzplaneditor', 'btn-outline-secondary']);
                 if (layout && (!too_small || is_klassenleitung)) {
                     buttons.push(['Shuffler', '/sitzplan', 'btn-primary', too_small]);

@@ -72,6 +72,10 @@ class Main < Sinatra::Base
                                   :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
         require_sitzplan_klassenleitung!(data[:klasse], data[:raum], true)
         assert(data[:raum] =~ SitzplanDaten::ROOM_NAME, 'Ungültiger Raumname.')
+        # Der Editor zeigt halbe Positionen nicht an; Speichern würde sie verlieren.
+        if SitzplanDaten.half_positions?(SitzplanDaten.room(data[:raum]))
+            sitzplan_fail!('Dieser Raum hat Plätze auf halben Positionen und kann im Editor nicht bearbeitet werden.')
+        end
         seats = JSON.parse(data[:seats]) rescue nil
         assert(seats.is_a?(Array) && seats.size <= 150, 'Ungültige Bestuhlung.')
         sitzplan_fail!('Legen Sie mindestens einen Platz an.') if seats.empty?

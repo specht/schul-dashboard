@@ -147,44 +147,56 @@ document.addEventListener('DOMContentLoaded', function () {
         return r === 90 ? 'r' : r === 180 ? 'd' : r === 270 ? 'l' : 'u';
     }
 
+    // Plätze dürfen auf halben Positionen stehen (etwa [2.5, 5]). Das Raster hat
+    // deshalb zwei Spalten pro Platzbreite, jeder Platz belegt zwei davon; x zählt
+    // hier in halben Plätzen, Nachbarn liegen also bei x - 2 und x + 2.
+    function seat_col(s) { return Math.round((s[0] - min_x) * 2); }
+    function seat_row(s) { return Math.round(s[1] - min_y); }
+
     function render_grid() {
         var grid = document.getElementById('spv_grid');
         grid.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
         grid.innerHTML = '';
-        for (var y = 0; y < rows; y++) {
-            for (var x = 0; x < cols; x++) {
-                var c = document.createElement('div');
-                var idx = seat_at[x + ',' + y];
-                if (idx === undefined) {
-                    c.className = 'spv-cell';
-                } else {
-                    var occupant = email_on_seat(idx);
-                    var d = dir_at(x, y);
-                    var is_vertical = d === 'l' || d === 'r';
-                    c.className = 'spv-cell seat dir-' + d + (occupant ? '' : ' free') + (selected ? ' target' : '');
-                    if (is_vertical) {
-                        if (dir_at(x, y - 1) === d) c.classList.add('jt');
-                        if (dir_at(x, y + 1) === d) c.classList.add('jb');
-                    } else {
-                        if (dir_at(x - 1, y) === d) c.classList.add('jl');
-                        if (dir_at(x + 1, y) === d) c.classList.add('jr');
-                    }
-                    var desk = $('<div class="spv-desk">');
-                    var figure = $('<div class="spv-person">').html(PERSON);
-                    if (occupant) {
-                        var p = person(occupant);
-                        var label = $('<span class="spv-label">').text(p.short).attr('title', p.name);
-                        (is_vertical ? figure : desk).append(label);
-                        c.setAttribute('aria-label', 'Platz von ' + p.name);
-                    } else {
-                        c.setAttribute('aria-label', 'freier Platz');
-                    }
-                    $(c).append(desk).append(figure);
-                    (function (i) { c.addEventListener('click', function () { seat_click(i); }); })(idx);
-                }
-                grid.appendChild(c);
-            }
+        // Ein leeres Feld pro Reihe gibt auch Reihen ohne Plätze ihre Höhe.
+        for (var row = 0; row < rows; row++) {
+            var filler = document.createElement('div');
+            filler.className = 'spv-cell';
+            filler.style.gridRow = String(row + 1);
+            filler.style.gridColumn = '1 / span 2';
+            grid.appendChild(filler);
         }
+        var order = layout.map(function (s, i) { return i; });
+        order.sort(function (a, b) { return seat_row(layout[a]) - seat_row(layout[b]) || seat_col(layout[a]) - seat_col(layout[b]); });
+        order.forEach(function (idx) {
+            var x = seat_col(layout[idx]), y = seat_row(layout[idx]);
+            var c = document.createElement('div');
+            c.style.gridRow = String(y + 1);
+            c.style.gridColumn = (x + 1) + ' / span 2';
+            var occupant = email_on_seat(idx);
+            var d = dir_at(x, y);
+            var is_vertical = d === 'l' || d === 'r';
+            c.className = 'spv-cell seat dir-' + d + (occupant ? '' : ' free') + (selected ? ' target' : '');
+            if (is_vertical) {
+                if (dir_at(x, y - 1) === d) c.classList.add('jt');
+                if (dir_at(x, y + 1) === d) c.classList.add('jb');
+            } else {
+                if (dir_at(x - 2, y) === d) c.classList.add('jl');
+                if (dir_at(x + 2, y) === d) c.classList.add('jr');
+            }
+            var desk = $('<div class="spv-desk">');
+            var figure = $('<div class="spv-person">').html(PERSON);
+            if (occupant) {
+                var p = person(occupant);
+                var label = $('<span class="spv-label">').text(p.short).attr('title', p.name);
+                (is_vertical ? figure : desk).append(label);
+                c.setAttribute('aria-label', 'Platz von ' + p.name);
+            } else {
+                c.setAttribute('aria-label', 'freier Platz');
+            }
+            $(c).append(desk).append(figure);
+            c.addEventListener('click', function () { seat_click(idx); });
+            grid.appendChild(c);
+        });
         var placed = Object.keys(placement).length;
         $('#spv_count').html('<b>' + placed + '</b> von <b>' + sus.length + '</b> platziert · ' + layout.length + ' Plätze im Raum');
     }
@@ -227,9 +239,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     min_x = Math.min.apply(null, layout.map(function (s) { return s[0]; }));
     min_y = Math.min.apply(null, layout.map(function (s) { return s[1]; }));
-    cols = Math.max.apply(null, layout.map(function (s) { return s[0]; })) - min_x + 1;
-    rows = Math.max.apply(null, layout.map(function (s) { return s[1]; })) - min_y + 1;
-    layout.forEach(function (s, i) { seat_at[(s[0] - min_x) + ',' + (s[1] - min_y)] = i; });
+    // cols in halben Plätzen, siehe seat_col
+    cols = Math.max.apply(null, layout.map(seat_col)) + 2;
+    rows = Math.max.apply(null, layout.map(seat_row)) + 1;
+    layout.forEach(function (s, i) { seat_at[seat_col(s) + ',' + seat_row(s)] = i; });
 
     api_call('/api/sitzplanverteilen_state', {klasse: klasse, raum: raum}, function (data) {
         if (!data.success) return;

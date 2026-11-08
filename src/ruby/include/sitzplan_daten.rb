@@ -182,10 +182,21 @@ module SitzplanDaten
         src
     end
 
+    # Koordinaten dürfen Kommazahlen sein: Einige Räume haben Plätze auf halben
+    # Positionen (etwa [2.5, 5]), um Tische mittig zu setzen. Die optionale
+    # Blickrichtung an dritter Stelle ist immer eine ganze Gradzahl.
     def self.valid_seats?(seats)
         seats.is_a?(Array) && !seats.empty? && seats.all? do |s|
-            s.is_a?(Array) && [2, 3].include?(s.size) && s.all? { |v| v.is_a?(Integer) }
+            s.is_a?(Array) && [2, 3].include?(s.size) &&
+                s[0, 2].all? { |v| v.is_a?(Numeric) && v.finite? } &&
+                (s[2].nil? || s[2].is_a?(Integer))
         end
+    end
+
+    # Der Editor arbeitet auf einem Raster aus ganzen Feldern und kann solche
+    # Räume weder darstellen noch speichern.
+    def self.half_positions?(seats)
+        seats.is_a?(Array) && seats.any? { |s| s.is_a?(Array) && s[0, 2].any? { |v| v.is_a?(Numeric) && v != v.round } }
     end
 
     def self.valid_entry?(kind, entry)

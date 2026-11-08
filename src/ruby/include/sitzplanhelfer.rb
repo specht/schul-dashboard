@@ -1,9 +1,15 @@
 class Main < Sinatra::Base
 
-    # Darf diese Person den Sitzplanhelfer für die angegebene Klasse benutzen?
-    # Gleiches Muster wie z. B. die /directory/:klasse-Route in main.rb.
+    # Darf diese Person den Sitzplan der Klasse machen (Helfer, Shuffler mit
+    # rules/bff)? Nur die Klassenleitung der eigenen Klasse, dazu Admins.
     def sph_can_manage?(klasse)
-        admin_logged_in? || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
+        admin_logged_in? || klassenleiter_for_klasse_or_admin_logged_in?(klasse)
+    end
+
+    # Den gespeicherten Plan ansehen dürfen auch die übrigen Lehrkräfte der
+    # Klasse - sie sollen wissen, wer wo sitzt.
+    def sph_can_view?(klasse)
+        sph_can_manage?(klasse) || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
     end
 
     def require_sph_access!(klasse)
@@ -92,9 +98,9 @@ class Main < Sinatra::Base
         sph_fail!('Die Umfragedauer muss zwischen 1 und 60 Tagen liegen.') unless (1..60).include?(duration_days)
         # Nur die Klassenleitung (oder Admin) darf eine Wunschrunde STARTEN -
         # sonst könnte jede Fachlehrkraft, die die Klasse aufruft, spontan eine
-        # Umfrage an alle SuS auslösen. Verwaltung eines bereits laufenden
-        # Zyklus (Wünsche bestätigen, Paare/Regeln, Plan erzeugen/speichern)
-        # bleibt bewusst für alle Lehrkräfte der Klasse offen (sph_can_manage?).
+        # Umfrage an alle SuS auslösen. Das Verwalten (Wünsche, Paare, Regeln,
+        # Plan erzeugen und speichern) ist ebenfalls der Klassenleitung
+        # vorbehalten (sph_can_manage?).
         unless klassenleiter_for_klasse_or_admin_logged_in?(klasse)
             namen = sph_klassenleiter_names(klasse).join(', ')
             sph_fail!("Nur die Klassenleitung (#{namen.empty? ? 'nicht hinterlegt' : namen}) kann eine Sitzplatzwunsch-Umfrage starten.")
@@ -333,7 +339,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:klasse, :raum], :optional_keys => [:cycle_id])
         klasse = data[:klasse]
         raum = data[:raum]
-        assert(sph_can_manage?(klasse) || @session_user[:klasse] == klasse,
+        assert(sph_can_view?(klasse) || @session_user[:klasse] == klasse,
                'Kein Zugriff auf den Sitzplan dieser Klasse.')
 
         if data[:cycle_id]

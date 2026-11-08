@@ -147,16 +147,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if ('#{teacher_logged_in?}' === 'true') {
         {
             let n = #{(@@schueler_for_klasse[klasse] || []).size};
-            let rooms_for_klasse = #{(@@rooms_for_klasse[klasse] || []).to_a.to_json};
             let klassenraeume = #{klassenraeume_for_klasse(klasse).to_json};
             let editor_rooms = #{(klassenleiter_for_klasse_or_admin_logged_in?(klasse) ? sitzplan_editor_rooms(klasse) : []).to_json};
             let is_klassenleitung = '#{klassenleiter_for_klasse_or_admin_logged_in?(klasse)}' === 'true';
             // Die Sitzdaten stehen in einem eigenen <script>; sind sie fehlerhaft, fehlt nur der Sitzplan-Bereich
             let sp_seats = (typeof seats_dict !== 'undefined') ? seats_dict : {};
+            // Der Sitzplan einer Klasse gehört zu ihrem Klassenraum. Fach- und
+            // Teilungsräume erscheinen hier nicht, auch wenn sie eine Bestuhlung haben.
             let rooms = new Set(klassenraeume);
-            for (let raum of Object.keys(sp_seats)) {
-                if (rooms_for_klasse.indexOf(raum) >= 0) rooms.add(raum);
-            }
             let first_room = true;
             for (let raum of [...rooms].sort()) {
                 let layout = sp_seats[raum];
@@ -166,12 +164,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 let half_positions = layout && layout.some(s => s[0] % 1 !== 0 || s[1] % 1 !== 0);
                 if (editor_rooms.indexOf(raum) >= 0 && !half_positions)
                     buttons.push(['Editor', '/sitzplaneditor', 'btn-outline-secondary']);
-                if (layout && (!too_small || is_klassenleitung)) {
+                // Den Sitzplan macht die Klassenleitung; die übrigen Lehrkräfte
+                // können den gespeicherten Plan nur ansehen.
+                if (layout && is_klassenleitung) {
                     buttons.push(['Shuffler', '/sitzplan', 'btn-primary', too_small]);
                     buttons.push(['Helfer', '/sitzplanhelfer', 'btn-outline-primary', too_small]);
-                }
-                if (layout && is_klassenleitung)
                     buttons.push(['Verteilen', '/sitzplanverteilen', 'btn-outline-primary']);
+                } else if (layout) {
+                    buttons.push(['Sitzplan ansehen', '/sitzplananzeige', 'btn-outline-primary']);
+                }
                 if (buttons.length === 0) continue;
                 if (first_room) {
                     $(`<hr>`).appendTo('#additional_teacher_content');

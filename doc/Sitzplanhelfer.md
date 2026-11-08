@@ -27,8 +27,8 @@ echte Sitzwünsche der SuS ein, und die Lehrkraft behält volle Kontrolle
    der Wunschliste. **„Wunschrunde jetzt beenden"** schließt die
    Umfrage vorzeitig (nach Rückfrage) – die bis dahin abgegebenen
    Wünsche bleiben erhalten und werden ganz normal weiterverwendet.
-3. **Wünsche verwalten**: Jede Lehrkraft der Klasse (nicht nur die
-   Klassenleitung) sieht die eingehenden Wünsche live, inkl. 🤝-Symbol
+3. **Wünsche verwalten**: Die Klassenleitung sieht die eingehenden
+   Wünsche live, inkl. 🤝-Symbol
    für wechselseitige Wünsche. Wünsche zählen automatisch, eine
    Bestätigung ist nicht nötig. Über einen Schalter lässt sich jeder
    einzelne Wunsch **deaktivieren** und wieder aktivieren – er bleibt
@@ -106,12 +106,16 @@ jeder anderen Umfrage im Dashboard.
 
 ## Berechtigungen
 
-- **Wunschrunde starten**: nur Klassenleitung der Klasse oder Admin
-  (`klassenleiter_for_klasse_or_admin_logged_in?`).
-- **Alles andere** (Wünsche deaktivieren, Paare/Regeln setzen, Plan
-  erzeugen/speichern/löschen/bearbeiten): jede Lehrkraft, die laut
-  `@@teachers_for_klasse` diese Klasse unterrichtet, oder Admin
-  (`sph_can_manage?`).
+Den Sitzplan einer Klasse macht ihre Klassenleitung, und zwar für den
+Klassenraum.
+
+- **Helfer, Shuffler, Editor, Verteilen**: nur die Klassenleitung der
+  eigenen Klasse oder Admin (`sph_can_manage?`,
+  `require_sitzplan_klassenleitung!`), auf den Seiten und in allen
+  Endpunkten. Den Editor bekommt die Klassenleitung nur für den
+  Klassenraum, Admins auch für Fachräume.
+- **Ansehen**: Die übrigen Lehrkräfte der Klasse sehen im Klassenbereich
+  „Sitzplan ansehen“, also die SuS-Ansicht (`sph_can_view?`).
 - Die öffentliche SuS-Ansicht (`sitzplananzeige.html`) zeigt nur Namen
   und Plätze, nie Wünsche/Paare/Regeln ("Lehrergeheimnis").
 
@@ -214,4 +218,4 @@ Einträge weiterhin im Seitenquelltext.
 | `src/ruby/include/sitzplaneditor.rb` | Endpunkte von Editor und Verteilen, Klassenraum-Ermittlung |
 | `src/static/sitzplaneditor.html`, `sitzplanverteilen.html` | Editor und Verteilen |
 | `src/ruby/main.rb` | `require`-Zeilen, Wochenstunden pro Klasse und Raum |
-| `src/static/directory.html` | pro Raum Editor, Shuffler, Helfer, Verteilen unter der Rubrik „Sitzplan" |
+| `src/static/directory.html` | für den Klassenraum Editor, Shuffler, Helfer, Verteilen unter der Rubrik „Sitzplan" (Klassenraum: Raum mit mindestens 20 Wochenstunden der Klasse, sonst der mit den meisten; jede Stunde zählt einmal, auch bei Teilung) |

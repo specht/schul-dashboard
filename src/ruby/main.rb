@@ -1348,7 +1348,7 @@ class Main < Sinatra::Base
         end
         @@rooms_for_shorthand = {}
         @@rooms_for_klasse = {}
-        @@room_hours_for_klasse = {}
+        room_slots_for_klasse = {}
         room_order_set = Set.new(ROOM_ORDER)
         undeclared_rooms = Set.new()
         unless timetable_today.nil?
@@ -1373,8 +1373,10 @@ class Main < Sinatra::Base
                                     if room_order_set.include?(room)
                                         @@rooms_for_klasse[klasse] ||= Set.new()
                                         @@rooms_for_klasse[klasse] << room
-                                        @@room_hours_for_klasse[klasse] ||= Hash.new(0)
-                                        @@room_hours_for_klasse[klasse][room] += 1
+                                        # Jede Stunde nur einmal zählen: Bei Teilung oder Kopplung
+                                        # stehen zur selben Zeit mehrere Einträge der Klasse im Plan.
+                                        room_slots_for_klasse[klasse] ||= {}
+                                        (room_slots_for_klasse[klasse][room] ||= Set.new) << [wday, stunde]
                                     else
                                         undeclared_rooms << room
                                     end
@@ -1385,6 +1387,8 @@ class Main < Sinatra::Base
                 end
             end
         end
+        # erst komplett aufbauen, dann austauschen: Anfragen sehen nie eine halbe Liste
+        @@room_hours_for_klasse = room_slots_for_klasse.transform_values { |rooms| rooms.transform_values(&:size) }
         unless undeclared_rooms.empty?
             debug("Undeclared rooms: #{undeclared_rooms.to_a.sort.join(' ')}")
         end

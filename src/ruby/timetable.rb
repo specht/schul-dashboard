@@ -2227,8 +2227,10 @@ class Timetable
                 recipients = {}
                 klassen = @@klassen_order
                 klassen.each do |klasse|
+                    # a class without students must still have a list (the
+                    # message page calls .length on it)
                     recipients["/klasse/#{klasse}"] = {:label => "Klasse #{klasse}",
-                                                       :entries => @@schueler_for_klasse[klasse]
+                                                       :entries => @@schueler_for_klasse[klasse] || []
                                                        }
                     # we don't need A/B groups anymore
                     # groups_for_klasse = Set.new()

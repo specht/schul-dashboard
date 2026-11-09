@@ -405,19 +405,6 @@ class Main < Sinatra::Base
         {:fach_order => faecher, :fach_tr => @@faecher}
     end
 
-    post '/api/set_sus_may_contact_me' do
-        require_teacher!
-        data = parse_request_data(:required_keys => [:allowed])
-        allowed = data[:allowed] == 'true'
-        allowed = neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email], :allowed => allowed)['allowed']
-            MATCH (u:User {email: $email})
-            SET u.sus_may_contact_me = $allowed
-            RETURN u.sus_may_contact_me AS allowed;
-        END_OF_QUERY
-        @session_user[:sus_may_contact_me] = allowed
-        respond(:allowed => allowed);
-    end
-
     def klasse_for_sus
         assert(user_with_role_logged_in?(:can_manage_tablets) || user_with_role_logged_in?(:teacher))
         result = {}

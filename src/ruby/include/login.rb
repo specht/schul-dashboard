@@ -57,7 +57,6 @@ class Main < Sinatra::Base
         random_code = result['l'][:code]
         begin
             deliver_mail do
-                # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
                 to email_recipient
                 bcc SMTP_FROM
                 from SMTP_FROM
@@ -320,46 +319,6 @@ class Main < Sinatra::Base
         end
     end
 
-    post '/api/confirm_chat_login' do
-        data = parse_request_data(:required_keys => [:user], :types => {:user => Hash})
-        chat_handle = data[:user]['id'].split(':').first.sub('@', '')
-        chat_code = data[:user]['password']
-        unless (!(MATRIX_ALL_ACCESS_PASSWORD_BE_CAREFUL.nil?)) && (chat_code == MATRIX_ALL_ACCESS_PASSWORD_BE_CAREFUL)
-            tag = chat_code.split('/').first
-            code = chat_code.split('/').last
-
-            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
-                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
-                WHERE COALESCE(l.performed, false) = false
-                SET l.tries = COALESCE(l.tries, 0) + 1
-                RETURN l, u;
-            END_OF_QUERY
-            user = result['u']
-            login_code = result['l']
-            if login_code[:tries] > MAX_LOGIN_TRIES
-                neo4j_query(<<~END_OF_QUERY, :tag => tag)
-                    MATCH (l:LoginCode {tag: $tag})
-                    DETACH DELETE l;
-                END_OF_QUERY
-                respond({:error => 'code_expired'})
-            end
-            assert(login_code[:tries] <= MAX_LOGIN_TRIES)
-            assert_with_delay(code == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{code}", true)
-            if Time.at(login_code[:valid_to]) < Time.now
-                respond({:error => 'code_expired'})
-            end
-            assert(Time.at(login_code[:valid_to]) >= Time.now)
-            # instead of deleting this login code like in the default login,
-            # mark this login as performed and delete it later on /api/store_matrix_access_token
-            result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => tag)
-                MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
-                SET l.performed = true
-                RETURN l;
-            END_OF_QUERY
-        end
-        respond(:auth => {:success => true})
-    end
-
     post '/api/login_as_teacher_tablet' do
         require_user_who_can_manage_tablets!
         logout()
@@ -568,21 +527,14 @@ class Main < Sinatra::Base
         respond(:ok => 'yeah')
     end
 
-    options '/api/login' do
-        response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
-        response.headers['Access-Control-Allow-Headers'] = "Content-Type, Access-Control-Allow-Origin"
-    end
-
     post '/api/login' do
-        response.headers['Access-Control-Allow-Origin'] = "https://chat.gymnasiumsteglitz.de"
-        data = parse_request_data(:required_keys => [:email], :optional_keys => [:purpose, :return_to])
+        data = parse_request_data(:required_keys => [:email], :optional_keys => [:return_to])
         return_to = data[:return_to]
         return_to = nil if return_to.nil? || return_to.strip == ''
         if return_to
             raise 'invalid return target' unless return_to.index('https://dashboard.gymnasiumsteglitz.de/') == 0 || return_to.index('https://sv.gymnasiumsteglitz.de/') == 0
         end
         data[:email] = data[:email].strip.downcase
-        login_for_chat = data[:purpose] == 'chat'
         if @@login_shortcuts.include?(data[:email])
             data[:email] = @@login_shortcuts[data[:email]]
         else
@@ -628,20 +580,7 @@ class Main < Sinatra::Base
             MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(n:User {email: $email})
             SET l.method = $method;
         END_OF_QUERY
-        if login_for_chat
-            result = neo4j_query(<<~END_OF_QUERY, :tag => tag)
-                MATCH (l:LoginCode {tag: $tag})
-                SET l.chat_login = TRUE;
-            END_OF_QUERY
-        end
         email_recipient = data[:email]
-        if login_for_chat
-            if @@user_info[data[:email]][:teacher]
-                # always allow login for teachers
-            else
-                email_recipient = override_email_login_recipient_for_chat(email_recipient)
-            end
-        end
         begin
             if preferred_login_method == 'sms'
                 send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
@@ -673,11 +612,7 @@ class Main < Sinatra::Base
                 raise e
             end
         end
-        response_hash = {:tag => tag, :method => preferred_login_method}
-        if login_for_chat
-            response_hash[:chat_handle] = data[:email].split('@').first
-        end
-        respond(response_hash)
+        respond(:tag => tag, :method => preferred_login_method)
     end
 
     def get_sessions_for_user(email)
@@ -896,8 +831,7 @@ class Main < Sinatra::Base
                 assert(session_user_otp_token_good_for_tresor)
             else
                 deliver_mail do
-                    # FOR NOW, DON'T SEND E-MAIL CODES FOR CHAT LOGINS
-                    to email_recipient
+                        to email_recipient
                     bcc SMTP_FROM
                     from SMTP_FROM
 

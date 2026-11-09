@@ -144,15 +144,6 @@ NEXTCLOUD_WAIT_SECONDS = 0
 
 NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL = 'here_be_dragons_dont_use_this_password'
 
-MATRIX_DOMAIN = 'matrix.example.com'
-MATRIX_DOMAIN_SHORT = 'example.com'
-MATRIX_ALL_ACCESS_PASSWORD_BE_CAREFUL = nil
-
-MATRIX_ADMIN_USER = nil
-MATRIX_ADMIN_PASSWORD = nil
-
-MATRIX_CORPORAL_CALLBACK_BEARER_TOKEN = 'bitte_jedes_bearer_token_nur_einmal_verwenden'
-
 # Das Dashboard vermittelt Links in Jitsi-Räume mit Hilfe von JWT
 # (JSON Web Tokens). Dafür werden ein paar Angaben benötigt,
 # die auf der Jitsi-Seite verifiziert werden müssen.
@@ -244,10 +235,6 @@ SWITCH_WEEKS = {'2021-03-08' => ['A', 2],
                 '2021-03-22' => nil}
 
 KLASSENRAUM_ACCOUNT_DEEP_LINK_CODE = nil
-
-def override_email_login_recipient_for_chat(email)
-    email
-end
 
 DEMO_ACCOUNT_EMAIL = nil
 DEMO_ACCOUNT_INFO = nil

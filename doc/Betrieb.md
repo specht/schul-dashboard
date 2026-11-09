@@ -162,7 +162,6 @@ aufrufen.
 | Datenbank | `dump-database.rb`, `load-dump.rb`, `clear-database.rb` (**löscht alles**) |
 | Nextcloud | `create-nc-users.rb`, `create-nc-folders.rb`, `share-nc-folders.rb`, `unshare-shares-to-klassen.rb`, `scan-nc-user-folders.rb`, `archive-nc-folders.rb`, `remove-broken-nc-shares.rb`, `collect-nextcloud-files-from-sus.rb` (siehe [Nextcloud](file.Nextcloud.html)) |
 | Projekte, Listen, Druck | `import-projekte.rb`, `projekttage-assign.rb`, `print-sus.rb`, `print-zeugniskonferenz.rb` |
-| Matrix | `write-matrix-corporal-policy.rb` |
 | Entwicklung | `pry.rb`, `timetable-repl.rb`, `check-all-timetables.js`, `render-cypher-letters.rb` |
 
 Viele Skripte zeigen zunächst nur an, was sie tun würden, und erwarten für

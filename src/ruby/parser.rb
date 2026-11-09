@@ -227,7 +227,6 @@ class Parser
                       :geschlecht => geschlecht,
                       :can_log_in => (line['Deaktiviert'] || '').empty?,
                       :nc_login => @nc_sub[email] || shorthand.gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue'),
-                      :matrix_login => "@#{email.split('@').first}:#{MATRIX_DOMAIN_SHORT}",
                       :initial_nc_password => gen_password_for_nc(email)
                       }
             yield record

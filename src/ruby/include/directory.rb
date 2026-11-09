@@ -514,14 +514,7 @@ class Main < Sinatra::Base
     end
 
     def self.get_switch_week_for_date(d)
-        ds = d.strftime('%Y-%m-%d')
-        d_info = SWITCH_WEEKS.keys.sort.select do |d|
-            ds >= d
-        end.last
-        info = SWITCH_WEEKS[d_info]
-        return nil if info.nil?
-        week_number = (d.strftime('%-V').to_i - Date.parse(d_info).strftime('%-V').to_i)
-        return (((week_number + (info[0].ord - 'A'.ord)) % info[1]) + 'A'.ord).chr
+        SwitchWeeks.letter(d, SWITCH_WEEKS)
     end
 
     # Returns A or B or nil

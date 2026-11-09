@@ -84,6 +84,24 @@ class String
 end
 
 class Parser
+    # Untis spells some classes differently than the dashboard: the class the
+    # dashboard calls "8o" (shown as "8ω" via KLASSEN_TR) appears as "8w" in
+    # substitution plan entries and as "8omega" in headings. Entries must use
+    # the dashboard's name, otherwise they never reach the class (monitor,
+    # timetables).
+    def self.klasse_from_untis(name, klassen_order = KLASSEN_ORDER, klassen_tr = KLASSEN_TR)
+        return name if name.empty? || klassen_order.include?(name)
+        klassen_order.each do |klasse|
+            shown = klassen_tr[klasse] || klasse
+            return klasse if [shown, shown.gsub('ω', 'omega'), shown.gsub('ω', 'w')].include?(name)
+        end
+        # omega classes without a KLASSEN_TR entry, e.g. "9w"/"9omega" -> "9o"
+        if name =~ /\A(\d+)(omega|w)\z/ && klassen_order.include?("#{$1}o")
+            return "#{$1}o"
+        end
+        name
+    end
+
 
     def initialize
         @@chars = 'BCDFGHJKMNPQRSTVWXYZ23456789'.split('')
@@ -1198,8 +1216,8 @@ class Parser
                         :sha1 => sha1,
                         :datum => datum,
                         :stunde => stunde,
-                        :klassen_alt => Set.new((jentry[1][0] || '').gsub('~', '/').gsub(',', '/').split('/')).to_a.map { |x| x.strip }.reject { |x| x.empty? }.sort,
-                        :klassen_neu => Set.new((jentry[1][1] || '').gsub('~', '/').gsub(',', '/').split('/')).to_a.map { |x| x.strip }.reject { |x| x.empty? }.sort,
+                        :klassen_alt => Set.new((jentry[1][0] || '').gsub('~', '/').gsub(',', '/').split('/')).to_a.map { |x| Parser.klasse_from_untis(x.strip) }.reject { |x| x.empty? }.uniq.sort,
+                        :klassen_neu => Set.new((jentry[1][1] || '').gsub('~', '/').gsub(',', '/').split('/')).to_a.map { |x| Parser.klasse_from_untis(x.strip) }.reject { |x| x.empty? }.uniq.sort,
                         :lehrer_alt => jentry[2][0].nil? ? [] : [jentry[2][0]],
                         :lehrer_neu => jentry[2][1].nil? ? [] : [jentry[2][1]],
                         :fach_alt => (jentry[3][0] || '').gsub('/', '-'),

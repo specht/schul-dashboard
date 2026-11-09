@@ -172,6 +172,12 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 
 ## 3. Wartung
 
+- [ ] Schulstruktur aus `credentials.rb` in die Datenkonfiguration
+      (`/data/config.rb`) verschieben: `KLASSEN_ORDER`, `KLASSEN_TR`,
+      `ROOM_ORDER`, Zeiten, Schulname … – Zugangsdaten bleiben in
+      `credentials.rb`. Die Produktion definiert Klassen bereits in
+      `/data/config.rb` (überschreibt `credentials.rb`); dokumentieren, was
+      wohin gehört, und Template/Beispieldaten entsprechend aufteilen
 - [ ] Abhängigkeiten aktualisieren: Neo4j 4.4, Nextcloud-Sandbox 30,
       Bootstrap 4.4, jQuery 3.6, FullCalendar 5.1; Neo4j-Treiber ist eine
       Beta-Version

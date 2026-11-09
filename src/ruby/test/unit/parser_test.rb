@@ -35,3 +35,38 @@ class ParserTest < Minitest::Test
         end
     end
 end
+
+# Class names from the Untis substitution plan (no data needed).
+class ParserKlasseFromUntisTest < Minitest::Test
+    ORDER = ['8a', '8o', '9o', '10a']
+    TR = {'8o' => '8ω'}
+
+    def setup
+        Dir.chdir(APP_ROOT) { require_app 'parser' } unless defined?(Parser)
+    rescue LoadError, StandardError
+        skip 'parser.rb needs the test stack (./test.sh unit)'
+    end
+
+    def tr(name) = Parser.klasse_from_untis(name, ORDER, TR)
+
+    def test_known_names_stay
+        assert_equal '8a', tr('8a')
+        assert_equal '8o', tr('8o')
+    end
+
+    def test_omega_spellings_map_to_the_dashboard_name
+        assert_equal '8o', tr('8omega')
+        assert_equal '8o', tr('8ω')
+        # Untis entries abbreviate omega as "w"
+        assert_equal '8o', tr('8w')
+        assert_equal '9o', tr('9w')
+        # no KLASSEN_TR entry, but "9o" exists
+        assert_equal '9o', tr('9omega')
+    end
+
+    def test_unknown_names_are_kept
+        assert_equal '7omega', tr('7omega')
+        assert_equal 'Bereitschaft', tr('Bereitschaft')
+        assert_equal '', tr('')
+    end
+end

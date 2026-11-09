@@ -114,14 +114,30 @@ export function displayedSchoolWeek(now = new Date()) {
   });
 }
 
-// On phones the timetable shows a single day: tap ">" until `day` is shown.
-// On larger screens the whole week is visible and nothing happens.
+// Navigates the timetable ("<" / ">") until `day` is shown – a single day on
+// phones, a week on larger screens.
 export async function showDayInTimetable(page: Page, day: Date) {
-  const column = page.locator(`td.fc-timegrid-col[data-date="${isoDate(day)}"]`);
-  for (let i = 0; i < 7 && (await column.count()) === 0; i++) {
-    await page.locator('.fc-next-button').click();
+  const target = isoDate(day);
+  const column = page.locator(`td.fc-timegrid-col[data-date="${target}"]`);
+  const shown = page.locator('td.fc-timegrid-col[data-date]');
+  await expect(shown.first()).toBeVisible();
+  for (let i = 0; i < 14 && (await column.count()) === 0; i++) {
+    const first = await shown.first().getAttribute('data-date');
+    await page.locator(target < first! ? '.fc-prev-button' : '.fc-next-button').click();
   }
   await expect(column).toBeVisible();
+}
+
+// The next Monday after today, and the Friday before it: two school days in
+// different weeks that students can both see (they only see appointments up
+// to TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS = 7 days ahead).
+export function fridayAndFollowingMonday(now = new Date()) {
+  const monday = new Date(now);
+  monday.setHours(12, 0, 0, 0);
+  monday.setDate(monday.getDate() + (((8 - monday.getDay()) % 7) || 7));
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() - 3);
+  return { friday, monday };
 }
 
 export const isoDate = (d: Date) =>

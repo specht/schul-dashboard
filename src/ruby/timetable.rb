@@ -1868,7 +1868,6 @@ class Timetable
                         # end
 
                         f.print({:events => write_events,
-                                :vplan_timestamp => @@vplan_timestamp,
                                 :switch_week => Main.get_switch_week_for_date(p)}.to_json)
                         if only_these_lesson_keys.nil? && email[0] != '_'
                             write_events.each do |event|
@@ -2295,6 +2294,21 @@ class Timetable
         end
     end
 
+    # Enters an event for a person in a week and remembers where it went.
+    def place_event(email, yw, eid, entry)
+        @events_for_user[email] ||= {}
+        @events_for_user[email][yw] ||= {}
+        @events_for_user[email][yw][eid] = entry
+        (@event_placements[eid] ||= Set.new) << [email, yw]
+    end
+
+    # Removes an event from every person and week it was entered in.
+    def remove_event_placements(eid)
+        (@event_placements.delete(eid) || []).each do |email, yw|
+            ((@events_for_user[email] || {})[yw] || {}).delete(eid)
+        end
+    end
+
     def update(only_these_lesson_keys)
         if only_these_lesson_keys.nil?
             begin
@@ -2326,6 +2340,8 @@ class Timetable
         @audio_comments_for_user ||= {}
         @messages_for_user ||= {}
         @events_for_user ||= {}
+        # where each event is entered in @events_for_user: eid => Set[[email, yw]]
+        @event_placements ||= {}
         @lesson_info_last_timestamp ||= 0
         @public_test_entries_for_klasse ||= {}
         @lesson_notes_for_lesson_key ||= {}
@@ -2359,6 +2375,11 @@ class Timetable
                     RETURN u.email;
                 END_OF_QUERY
                 add_these_lesson_keys << "_#{ou_email}"
+                # people who saw the event before (removed participants, old
+                # organizer) need their files rewritten as well
+                (@event_placements[event_id] || []).each do |email, _yw|
+                    add_these_lesson_keys << "_#{email}"
+                end
             elsif lesson_key =~ /^_poll_run_/
                 poll_run_id = lesson_key.sub('_poll_run_', '')
                 rows = neo4j_query(<<~END_OF_QUERY, {:prid => poll_run_id}).map { |x| x['u.email'] }
@@ -2619,38 +2640,27 @@ class Timetable
                                        :rt => entry[:rt]}
         end
         rows.each do |row|
+            eid = row[:info][:id]
             ds_date = Date.parse(row[:info][:date])
             ds_yw = ds_date.strftime('%G-%V')
+            entry = {:event => row[:info], :organized_by => row[:organized_by]}
+            # Take the event out of every week it was entered in before, then
+            # enter it again where it belongs now. Otherwise a moved event
+            # stays in its old week and removed participants keep seeing it
+            # ("ghost events") until the service restarts.
+            remove_event_placements(eid) if eid
             # add event to organizer's events
-            if row[:info][:id] && !row[:info][:deleted]
-                @events_for_user[row[:organized_by]] ||= {}
-                @events_for_user[row[:organized_by]][ds_yw] ||= {}
-                @events_for_user[row[:organized_by]][ds_yw][row[:info][:id]] = {
-                    :event => row[:info],
-                    :organized_by => row[:organized_by]
-                }
-            else
-                if @events_for_user[row[:organized_by]] && @events_for_user[row[:organized_by]][ds_yw]
-                    @events_for_user[row[:organized_by]][ds_yw].delete(row[:info][:id])
-                end
+            if eid && !row[:info][:deleted]
+                place_event(row[:organized_by], ds_yw, eid, entry)
             end
-            prows = all_prows[row[:info][:id]] || []
+            prows = all_prows[eid] || []
             prows.each do |prow|
-                @events_for_user[prow[:participant]] ||= {}
                 @events_last_timestamp = row[:info][:updated] if row[:info][:updated] > @events_last_timestamp
                 if (prow[:rt] || {})[:updated]
                     @events_last_timestamp = prow[:rt][:updated] if prow[:rt][:updated] > @events_last_timestamp
                 end
-                if row[:info][:id] && !row[:info][:deleted] && !(prow[:rt] || {})[:deleted]
-                    @events_for_user[prow[:participant]][ds_yw] ||= {}
-                    @events_for_user[prow[:participant]][ds_yw][row[:info][:id]] = {
-                        :event => row[:info],
-                        :organized_by => row[:organized_by]
-                    }
-                else
-                    if @events_for_user[prow[:participant]][ds_yw]
-                        @events_for_user[prow[:participant]][ds_yw].delete(row[:info][:id])
-                    end
+                if eid && !row[:info][:deleted] && !(prow[:rt] || {})[:deleted]
+                    place_event(prow[:participant], ds_yw, eid, entry)
                 end
             end
         end

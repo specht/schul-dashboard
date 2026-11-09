@@ -92,7 +92,16 @@ class Main < Sinatra::Base
             end
             results[tablet_set[:id]] << entry
         end
-        {:bookings => results, :datum => datum}
+        # Reihenfolge der Zeilen: nach der Satznummer aus :prefix, aus der auch die
+        # Gerätenamen gebildet werden (siehe tablet.rb). So steht Satz 1 oben und
+        # Halbsatz 6 unten, statt alphabetisch nach der Bauform. Bei gleicher Nummer
+        # entscheidet der Name, damit etwa Koffer A vor Koffer B steht; Sätze ganz
+        # ohne Nummer kommen danach.
+        order = results.keys.sort_by do |id|
+            prefix = (@@tablet_sets[id] || {})[:prefix]
+            [prefix.nil? ? 1 : 0, prefix.to_i, id]
+        end
+        {:bookings => results, :order => order, :datum => datum}
     end
 
     # Stundenraster im Hintergrund des Buchungen-Monitors, aus denselben Schulzeiten wie der Stundenplan.

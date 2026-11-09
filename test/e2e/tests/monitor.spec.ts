@@ -42,28 +42,32 @@ for (const size of SIZES) {
     // admins see the Silentium monitor via its preview path
     await page.goto('/monitor/silentium');
     const board = await box(page, '.bm-board');
-    const rows = page.locator('.bm-row');
-    await expect(rows.first()).toBeVisible();
-    const n = await rows.count();
+    // the page is laid out like the timetable: time runs downwards, every
+    // tablet set gets a column of its own
+    const cols = page.locator('.bm-col');
+    await expect(cols.first()).toBeVisible();
+    const n = await cols.count();
     expect(n).toBeGreaterThan(1);
-    // every device row lies completely inside the board – nothing is cut off
+    // every device column lies completely inside the board – nothing is cut off
     for (let i = 0; i < n; i++) {
-      const r = (await rows.nth(i).boundingBox())!;
-      expect(r.x, `Zeile ${i}`).toBeGreaterThanOrEqual(board.x - 1);
-      expect(r.x + r.width, `Zeile ${i}`).toBeLessThanOrEqual(board.x + board.width + 1);
-      expect(r.y + r.height, `Zeile ${i}`).toBeLessThanOrEqual(board.y + board.height + 1);
+      const r = (await cols.nth(i).boundingBox())!;
+      expect(r.x, `Spalte ${i}`).toBeGreaterThanOrEqual(board.x - 1);
+      expect(r.x + r.width, `Spalte ${i}`).toBeLessThanOrEqual(board.x + board.width + 1);
+      expect(r.y + r.height, `Spalte ${i}`).toBeLessThanOrEqual(board.y + board.height + 1);
     }
     expect(board.y + board.height).toBeLessThanOrEqual(size.height);
 
-    // the booking from test/e2e/seed.cypher: in the row of its tablet set,
+    // the booking from test/e2e/seed.cypher: in the column of its tablet set,
     // with the teacher's shorthand and the reason, not clipped
-    const row = rows.filter({ has: page.locator('.bm-label', { hasText: 'Tabletsatz 1' }) });
-    await expect(row).toHaveCount(1);
-    const booking = row.locator('.bm-booking', { hasText: 'E2E-Buchung' });
+    const col = cols.filter({ has: page.locator('.bm-col-head', { hasText: 'Tabletsatz 1' }) });
+    await expect(col).toHaveCount(1);
+    const booking = col.locator('.bm-booking', { hasText: 'E2E-Buchung' });
     await expect(booking).toHaveCount(1);
     await expect(booking).toContainText('Ts');
-    const what = booking.locator('.bm-booking-what');
-    const clipped = await what.evaluate((e) => e.scrollWidth > e.clientWidth + 1);
+    const what = booking.locator('.bm-booking-main');
+    // measured on the subject itself, not on the block: the block is a flex
+    // container whose children shrink, so it never reports an overflow
+    const clipped = await what.evaluate((e) => e.scrollHeight > e.clientHeight + 1);
     expect(clipped, 'Buchungstext abgeschnitten').toBe(false);
     if (size.width >= 1920) {
       // readable from a few metres away

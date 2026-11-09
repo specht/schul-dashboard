@@ -85,6 +85,17 @@ Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md)
 - [ ] `salzh`, `salzh_protokoll`, `self_tests` verweisen auf die entfernte
       Rolle `can_manage_salzh` und stürzen für alle ab
 
+- [ ] Schüler:innen sehen Änderungen am Stundenplan erst bis zu 60 s später:
+      `/gen/` wird mit `max-age=60` ausgeliefert, und nur Lehrkräfte laden
+      Wochendateien mit Cache-Buster (`timetable.html`). In der Entwicklung
+      ist der Cache abgeschaltet
+
+### Wünsche
+
+- [ ] Termine direkt im Stundenplan anlegen (Klick in den Kalender wie bei
+      Google Kalender) für alle, die Termine erstellen dürfen – statt über
+      die Seite „Termine“
+
 ### Rückmeldung bei Laden und Fehlern
 
 - [ ] 77 Seiten nutzen `api_call`, haben aber kein `.api_messages`-

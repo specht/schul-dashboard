@@ -51,6 +51,10 @@ if !DEVELOPMENT
     docker_compose[:services][:nginx][:expose] = ['80']
 end
 
+# Generated files (timetables, messages …): browsers may cache them for a
+# minute in production; in development always fetch the current version.
+GEN_CACHE_CONTROL = DEVELOPMENT ? 'no-cache' : 'max-age=60'
+
 nginx_config = <<~eos
     log_format custom '$http_x_forwarded_for - $remote_user [$time_local] "$request" '
                         '$status $body_bytes_sent "$http_referer" '
@@ -99,7 +103,7 @@ nginx_config = <<~eos
         }
 
         location /gen/ {
-            add_header Cache-Control max-age=60;
+            add_header Cache-Control #{GEN_CACHE_CONTROL};
             rewrite ^/gen(.*)$ $1 break;
             root /gen;
         }

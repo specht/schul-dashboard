@@ -510,7 +510,7 @@ function render_timetable(result, successCallback) {
     let this_klasse = #{(@session_user[:klasse] || '0').to_i};
     if (this_klasse === 0) {
         this_klasse = parseInt($($('.ttc.active')[0]).text());
-        if (this_klasse === NaN)
+        if (isNaN(this_klasse))
             this_klasse = 0;
     }
     if (this_klasse >= 5 && this_klasse <= 9) {
@@ -518,27 +518,30 @@ function render_timetable(result, successCallback) {
         if (this_klasse <= 6)
             which = '4-6';
 
+        // December of the current school year (from August on: this year)
+        let now = new Date();
+        let advent_year = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
         for (let i = 1; i <= 24; i++)
         {
             let title = '🎅 Mathe im Advent';
             let day_s = '' + i;
             if (day_s.length < 2)
                 day_s = '0' + day_s;
-            let ds = '2025-12-' + day_s;
+            let ds = `${advent_year}-12-` + day_s;
             let wday = new Date(ds).getDay();
             if (wday == 6) {
                 // Saturday
                 let day_s = '' + (i + 2);
                 if (day_s.length < 2)
                     day_s = '0' + day_s;
-                ds = '2025-12-' + day_s;
+                ds = `${advent_year}-12-` + day_s;
                 title += ' (Sa)';
             } else if (wday == 0) {
                 // Sunday
                 let day_s = '' + (i + 1);
                 if (day_s.length < 2)
                     day_s = '0' + day_s;
-                ds = '2025-12-' + day_s;
+                ds = `${advent_year}-12-` + day_s;
                 title += ' (So)';
             }
             if (today >= ds) {

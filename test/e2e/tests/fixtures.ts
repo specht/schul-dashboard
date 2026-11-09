@@ -133,7 +133,7 @@ export async function showDayInTimetable(page: Page, day: Date) {
   const column = page.locator(`td.fc-timegrid-col[data-date="${target}"]`);
   const shown = page.locator('td.fc-timegrid-col[data-date]');
   await expect(shown.first()).toBeVisible();
-  for (let i = 0; i < 14 && (await column.count()) === 0; i++) {
+  for (let i = 0; i < 40 && (await column.count()) === 0; i++) {
     const first = await shown.first().getAttribute('data-date');
     await page.locator(target < first! ? '.fc-prev-button' : '.fc-next-button').click();
   }

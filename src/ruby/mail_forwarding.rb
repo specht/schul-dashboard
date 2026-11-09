@@ -3,6 +3,7 @@ require 'net/smtp'
 require 'socket'
 require 'timeout'
 require 'openssl'
+require 'digest'
 
 # Sending part of the mail forwarder (mail-forwarder.rb): a mail to a mailing
 # list address is stored once and then sent to every member separately.
@@ -32,6 +33,34 @@ module MailForwarding
     # headers of the original transport that are wrong for a copy we send ourselves
     TRANSPORT_HEADERS = %w(DKIM-Signature ARC-Seal ARC-Message-Signature ARC-Authentication-Results
                            Authentication-Results Return-Path Sender Delivered-To X-Original-To).freeze
+
+    # Directory for a received mail: named after its Message-ID (hashed – IDs
+    # may contain '/' or be missing; then the content decides).
+    def self.storage_dir(message_id, raw, base = '/mails')
+        key = message_id.to_s.empty? ? "content:#{Digest::SHA1.hexdigest(raw.to_s)}" : "id:#{message_id}"
+        File.join(base, Digest::SHA1.hexdigest(key))
+    end
+
+    HANDLED_MARKER = 'handled'
+
+    # A received mail counts as handled once it is completely processed: the
+    # marker is written last; mails from before the marker existed have a
+    # recipients.yaml in some state (pending, .archived, .failed).
+    def self.handled?(dir)
+        return true if File.exist?(File.join(dir, HANDLED_MARKER))
+        # a leftover .tmp is an interrupted write, not a stored state
+        Dir[File.join(dir, 'recipients.yaml*')].any? { |path| !path.end_with?('.tmp') }
+    end
+
+    def self.mark_handled(dir)
+        File.write(File.join(dir, HANDLED_MARKER), Time.now.to_i.to_s)
+    end
+
+    def self.write_atomically(path, content)
+        tmp = "#{path}.tmp"
+        File.write(tmp, content)
+        File.rename(tmp, path)
+    end
 
     def self.copy_for(raw, recipient, own_domain:, sender_for_foreign: nil)
         mail = Mail.read_from_string(raw)

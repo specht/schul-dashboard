@@ -8,6 +8,8 @@ require './mail_forwarding.rb'
 
 MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 10 : 60
 MAIL_FORWARD_BATCH_SIZE = 30
+# at most this long for one pass over the inbox (seconds)
+IMAP_PASS_TIMEOUT = 600
 
 Mail.defaults do
     # delivery_method :logger
@@ -165,115 +167,119 @@ class Script
             #     - sent: []
             # - delete mail from Inbox
             loop do
-                imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST, :ssl => true)
-                imap.authenticate('PLAIN', MAILING_LIST_EMAIL, MAILING_LIST_PASSWORD)
-                imap.select('INBOX')
-                imap.search(['NOT', 'DELETED']).each do |mid|
-                    body = imap.fetch(mid, 'RFC822')[0].attr['RFC822']
-                    mail = Mail.read_from_string(body)
-                    from_address = Mail::Address.new(mail.from.first).address
-                    from_address_suffix_with_at = '@' + from_address.split('@').last
-                    mail_body = mail.body
-                    mail_subject = mail.subject
-                    message_id = mail.message_id
-                    storage_path = "/mails/#{message_id}"
-                    mail_path = File.join(storage_path, 'mail')
-                    recipients_path = File.join(storage_path, 'recipients.yaml')
-                    unless File.exist?(mail_path)
-                        FileUtils.mkpath(storage_path)
-                        File.open(mail_path, 'w') do |f|
-                            f.puts body
-                        end
-                        unless allowed_senders().include?(from_address.downcase)
-                            STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
-                            deliver_mail do |m2|
-                                m2.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
-                                m2.to = ["#{mail.from[0]}"]
-                                m2.from = [SMTP_FROM]
-                                m2.cc = []
-                                m2.bcc = []
-                                m2.subject = "[Nicht zustellbar: Ungültige Absender-Adresse] #{mail.subject}"
-                                m2.body = "Sie haben versucht, eine E-Mail an den Verteiler zu schicken,  allerdings ist Ihre Absender-Adresse nicht für den Versand an Verteileradressen freigeschaltet.\r\n\r\nBitte verwenden Sie Ihre schulische E-Mail-Adresse oder schreiben Sie eine E-Mail an #{MAIL_SUPPORT_EMAIL}, um sich für den Versand freischalten zu lassen.\r\n\r\n"
+                # a hanging IMAP connection must not stop receiving for hours: after the
+                # time limit the thread fails, the process ends and Docker restarts it
+                Timeout.timeout(IMAP_PASS_TIMEOUT) do
+                    imap = Net::IMAP.new(SCHUL_MAIL_LOGIN_IMAP_HOST, :ssl => true)
+                    imap.authenticate('PLAIN', MAILING_LIST_EMAIL, MAILING_LIST_PASSWORD)
+                    imap.select('INBOX')
+                    imap.search(['NOT', 'DELETED']).each do |mid|
+                        body = imap.fetch(mid, 'RFC822')[0].attr['RFC822']
+                        mail = Mail.read_from_string(body)
+                        from_address = Mail::Address.new(mail.from.first).address
+                        from_address_suffix_with_at = '@' + from_address.split('@').last
+                        mail_body = mail.body
+                        mail_subject = mail.subject
+                        message_id = mail.message_id
+                        storage_path = MailForwarding.storage_dir(message_id, body)
+                        mail_path = File.join(storage_path, 'mail')
+                        recipients_path = File.join(storage_path, 'recipients.yaml')
+                        # handled = completely processed (marker written last): after a crash
+                        # in between, the mail is processed again instead of being lost
+                        unless MailForwarding.handled?(storage_path)
+                            FileUtils.mkpath(storage_path)
+                            File.open(mail_path, 'w') do |f|
+                                f.puts body
                             end
-                            imap.copy(mid, 'Bounced')
-                        else
-                            all_recipients = Set.new
-                            recipients = ((mail.to || []) + (mail.cc || []) + (mail.bcc || []))
-                            mailing_list_email_suffix = MAILING_LIST_EMAIL.split('@').last
-                            non_existing_mailing_list_addresses = Set.new()
-                            existing_mailing_list_addresses = Set.new()
-                            relocated_mailing_list_addresses = Set.new()
-                            recipients.each do |m|
-                                suffix = m.downcase.split('@').last
-                                if suffix == mailing_list_email_suffix
-                                    if m.downcase != MAILING_LIST_EMAIL.downcase
-                                        if fresh_mailing_list().include?(m.downcase)
-                                            all_recipients |= Set.new(fresh_mailing_list()[m.downcase][:recipients])
-                                            existing_mailing_list_addresses << m.downcase
-                                        else
-                                            non_existing_mailing_list_addresses << m.downcase
-                                        end
-                                    end
-                                else
-                                    # if suffix == mailing_list_email_suffix.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')
-                                    #     relocated_mailing_list_addresses << m.split('@').first + '@' + mailing_list_email_suffix
-                                    # end
+                            unless allowed_senders().include?(from_address.downcase)
+                                STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
+                                deliver_mail do |m2|
+                                    m2.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
+                                    m2.to = ["#{mail.from[0]}"]
+                                    m2.from = [SMTP_FROM]
+                                    m2.cc = []
+                                    m2.bcc = []
+                                    m2.subject = "[Nicht zustellbar: Ungültige Absender-Adresse] #{mail.subject}"
+                                    m2.body = "Sie haben versucht, eine E-Mail an den Verteiler zu schicken,  allerdings ist Ihre Absender-Adresse nicht für den Versand an Verteileradressen freigeschaltet.\r\n\r\nBitte verwenden Sie Ihre schulische E-Mail-Adresse oder schreiben Sie eine E-Mail an #{MAIL_SUPPORT_EMAIL}, um sich für den Versand freischalten zu lassen.\r\n\r\n"
                                 end
-                            end
-                            unless all_recipients.empty?
-                                File.open(recipients_path, 'w') do |f|
-                                    data = {:pending => all_recipients.to_a.sort,
-                                            :sent => []}
-                                    f.puts data.to_yaml
-                                end
-                                STDERR.puts "Received new mail: #{mail_subject} (#{mail.message_id}) for #{all_recipients.size} recipients..."
-                                imap.copy(mid, 'Forwarded')
-                            end
-                            if all_recipients.empty? || (!non_existing_mailing_list_addresses.empty?) || (!relocated_mailing_list_addresses.empty?)
-                                STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to sender #{mail.from[0]}: #{mail.subject}"
-                                mail.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
-                                mail.to = ["#{mail.from[0]}"]
-                                mail.from = [SMTP_FROM]
-                                mail.cc = []
-                                mail.bcc = []
-                                if non_existing_mailing_list_addresses.empty? && relocated_mailing_list_addresses.empty?
-                                    mail.subject = "[Nicht zustellbar: Keine Empfänger] #{mail.subject}"
-                                else
-                                    mail.subject = "[Nicht zustellbar: Ungültige Verteiler-Adresse] #{mail.subject}"
-                                end
-                                mail.body = StringIO.open do |io|
-                                    io.puts "Sie haben versucht, eine E-Mail an den Verteiler zu senden.\r\n\r\n"
-                                    unless existing_mailing_list_addresses.empty?
-                                        io.puts "Die E-Mail wurde an folgende Verteiler ausgeliefert:\r\n\r\n"
-                                        io.puts existing_mailing_list_addresses.to_a.sort.join("\r\n")
-                                        io.puts "\r\n"
-                                    end
-                                    unless non_existing_mailing_list_addresses.empty?
-                                        io.puts "Die E-Mail wurde an folgende Verteiler nicht ausgeliefert, da diese Verteiler nicht existieren:\r\n\r\n"
-                                        io.puts non_existing_mailing_list_addresses.to_a.sort.join("\r\n")
-                                        io.puts "\r\n"
-                                    end
-                                    unless relocated_mailing_list_addresses.empty?
-                                        io.puts "Bitte beachten Sie, dass sich alle Verteileradressen geändert haben. Statt @#{MAILING_LIST_DOMAIN.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')} verwenden Sie nun bitte immer @#{MAILING_LIST_DOMAIN}. Die neue Verteileradresse lautet also:\r\n\r\n"
-                                        io.puts relocated_mailing_list_addresses.to_a.sort.join("\r\n")
-                                        io.puts "\r\n"
-                                    end
-                                    if all_recipients.empty?
-                                        io.puts "Die E-Mail wurde an niemanden weitergeleitet."
-                                        io.puts "\r\n"
-                                    end
-                                    io.string
-                                end
-                                deliver_with_development_guard!(mail)
                                 imap.copy(mid, 'Bounced')
+                            else
+                                all_recipients = Set.new
+                                recipients = ((mail.to || []) + (mail.cc || []) + (mail.bcc || []))
+                                mailing_list_email_suffix = MAILING_LIST_EMAIL.split('@').last
+                                non_existing_mailing_list_addresses = Set.new()
+                                existing_mailing_list_addresses = Set.new()
+                                relocated_mailing_list_addresses = Set.new()
+                                recipients.each do |m|
+                                    suffix = m.downcase.split('@').last
+                                    if suffix == mailing_list_email_suffix
+                                        if m.downcase != MAILING_LIST_EMAIL.downcase
+                                            if fresh_mailing_list().include?(m.downcase)
+                                                all_recipients |= Set.new(fresh_mailing_list()[m.downcase][:recipients])
+                                                existing_mailing_list_addresses << m.downcase
+                                            else
+                                                non_existing_mailing_list_addresses << m.downcase
+                                            end
+                                        end
+                                    else
+                                        # if suffix == mailing_list_email_suffix.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')
+                                        #     relocated_mailing_list_addresses << m.split('@').first + '@' + mailing_list_email_suffix
+                                        # end
+                                    end
+                                end
+                                unless all_recipients.empty?
+                                    data = {:pending => all_recipients.to_a.sort, :sent => []}
+                                    MailForwarding.write_atomically(recipients_path, data.to_yaml)
+                                    STDERR.puts "Received new mail: #{mail_subject} (#{mail.message_id}) for #{all_recipients.size} recipients..."
+                                    imap.copy(mid, 'Forwarded')
+                                end
+                                if all_recipients.empty? || (!non_existing_mailing_list_addresses.empty?) || (!relocated_mailing_list_addresses.empty?)
+                                    STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to sender #{mail.from[0]}: #{mail.subject}"
+                                    mail.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
+                                    mail.to = ["#{mail.from[0]}"]
+                                    mail.from = [SMTP_FROM]
+                                    mail.cc = []
+                                    mail.bcc = []
+                                    if non_existing_mailing_list_addresses.empty? && relocated_mailing_list_addresses.empty?
+                                        mail.subject = "[Nicht zustellbar: Keine Empfänger] #{mail.subject}"
+                                    else
+                                        mail.subject = "[Nicht zustellbar: Ungültige Verteiler-Adresse] #{mail.subject}"
+                                    end
+                                    mail.body = StringIO.open do |io|
+                                        io.puts "Sie haben versucht, eine E-Mail an den Verteiler zu senden.\r\n\r\n"
+                                        unless existing_mailing_list_addresses.empty?
+                                            io.puts "Die E-Mail wurde an folgende Verteiler ausgeliefert:\r\n\r\n"
+                                            io.puts existing_mailing_list_addresses.to_a.sort.join("\r\n")
+                                            io.puts "\r\n"
+                                        end
+                                        unless non_existing_mailing_list_addresses.empty?
+                                            io.puts "Die E-Mail wurde an folgende Verteiler nicht ausgeliefert, da diese Verteiler nicht existieren:\r\n\r\n"
+                                            io.puts non_existing_mailing_list_addresses.to_a.sort.join("\r\n")
+                                            io.puts "\r\n"
+                                        end
+                                        unless relocated_mailing_list_addresses.empty?
+                                            io.puts "Bitte beachten Sie, dass sich alle Verteileradressen geändert haben. Statt @#{MAILING_LIST_DOMAIN.split('.').map.with_index { |x, i| i == 0 ? 'mail' : x }.join('.')} verwenden Sie nun bitte immer @#{MAILING_LIST_DOMAIN}. Die neue Verteileradresse lautet also:\r\n\r\n"
+                                            io.puts relocated_mailing_list_addresses.to_a.sort.join("\r\n")
+                                            io.puts "\r\n"
+                                        end
+                                        if all_recipients.empty?
+                                            io.puts "Die E-Mail wurde an niemanden weitergeleitet."
+                                            io.puts "\r\n"
+                                        end
+                                        io.string
+                                    end
+                                    deliver_with_development_guard!(mail)
+                                    imap.copy(mid, 'Bounced')
+                                end
                             end
+                            MailForwarding.mark_handled(storage_path)
                         end
+                        imap.store(mid, '+FLAGS', [:Deleted])
                     end
-                    imap.store(mid, '+FLAGS', [:Deleted])
+                    imap.expunge
+                    imap.logout
+                    imap.disconnect
                 end
-                imap.expunge
-                imap.logout
-                imap.disconnect
                 sleep MAIL_FORWARDER_SLEEP
             end
         end

@@ -1,5 +1,6 @@
 require_relative 'test_helper'
 require_app 'mail_forwarding'
+require 'tmpdir'
 
 class MailForwardingTest < Minitest::Test
     # an HTML mail with a PDF attachment from outside the school, sent to a list
@@ -35,6 +36,37 @@ class MailForwardingTest < Minitest::Test
     def test_copy_from_own_domain_keeps_the_sender
         copy = MailForwarding.copy_for(external_mail, 'max@example.com', own_domain: true)
         assert_equal ['eva@example.org'], copy.from
+    end
+
+    def test_storage_dir_is_safe_for_every_message_id
+        a = MailForwarding.storage_dir('<abc/def@example.org>', 'x', '/mails')
+        b = MailForwarding.storage_dir('<other@example.org>', 'x', '/mails')
+        assert_match %r{\A/mails/[0-9a-f]{40}\z}, a
+        refute_equal a, b
+        # without Message-ID the content decides – two different mails don't collide
+        refute_equal MailForwarding.storage_dir(nil, 'mail one'), MailForwarding.storage_dir(nil, 'mail two')
+        assert_equal MailForwarding.storage_dir(nil, 'same'), MailForwarding.storage_dir('', 'same')
+    end
+
+    def test_a_mail_counts_as_handled_only_when_complete
+        Dir.mktmpdir do |dir|
+            File.write(File.join(dir, 'mail'), 'raw')
+            refute MailForwarding.handled?(dir), 'only the mail file: processing was interrupted'
+            File.write(File.join(dir, 'recipients.yaml.tmp'), 'half')
+            refute MailForwarding.handled?(dir), 'an interrupted write does not count'
+            File.unlink(File.join(dir, 'recipients.yaml.tmp'))
+            MailForwarding.write_atomically(File.join(dir, 'recipients.yaml'), {:pending => ['a']}.to_yaml)
+            assert MailForwarding.handled?(dir)
+            assert_equal ['mail', 'recipients.yaml'], Dir.children(dir).sort
+        end
+        Dir.mktmpdir do |dir|
+            MailForwarding.mark_handled(dir) # e.g. bounced, no recipients
+            assert MailForwarding.handled?(dir)
+        end
+        Dir.mktmpdir do |dir|
+            File.write(File.join(dir, 'recipients.yaml.archived'), '') # stored before the marker existed
+            assert MailForwarding.handled?(dir)
+        end
     end
 
     def state(*pending)

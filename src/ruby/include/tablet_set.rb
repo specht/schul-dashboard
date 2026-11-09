@@ -50,14 +50,19 @@ class Main < Sinatra::Base
             RETURN t, l, b, u.email;
         END_OF_QUERY
         results = {}
-        @@tablet_sets.keys.each do |id|
-            results[id] = []
+        # In tablet_sets.yaml stehen neben den Tabletsätzen auch Einzelgeräte
+        # (Beamer, Computer, DVD-Player ...). Auf den Monitor gehören nur die
+        # Tabletsätze, erkennbar an :is_tablet_set.
+        @@tablet_sets.each_pair do |id, info|
+            results[id] = [] if info[:is_tablet_set]
         end
         rows.each do |row|
             booking = row['b']
             tablet_set = row['t']
             email = row['u.email']
-            results[tablet_set[:id]] ||= []
+            # Buchungen für Einzelgeräte überspringen - und ebenso solche für Sätze,
+            # die inzwischen aus der Konfiguration verschwunden sind.
+            next unless (@@tablet_sets[tablet_set[:id]] || {})[:is_tablet_set]
             # bewusst nur die Felder, die der Monitor wirklich anzeigt - nicht den ganzen Knoten.
             # Von der buchenden Person geht nur das Kürzel raus, kein Name: der Monitor hängt
             # unter Umständen öffentlich einsehbar im Gebäude.

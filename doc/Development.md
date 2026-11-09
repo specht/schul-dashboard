@@ -52,17 +52,11 @@ verwenden.
 | nginx-Konfiguration in `config.rb` | `./config.rb build nginx && ./config.rb up -d nginx` – die Konfiguration wird ins Image kopiert, ein Neustart allein reicht nicht |
 | `src/ruby/Gemfile` | `./config.rb build ruby` (Gemfile wird beim Aufruf von `config.rb` nach `docker/ruby` kopiert) |
 
-### Hot Reload (optional)
+### Hot Reload
 
 Ein Neustart des Ruby-Servers dauert mit echten Daten 20–40 Sekunden
-(`collect_data`). Mit
-
-```ruby
-DEV_HOT_RELOAD = true
-```
-
-in `env.rb` und `./config.rb up -d ruby` werden geänderte Dateien unter
-`src/ruby/include/` stattdessen bei der nächsten Anfrage neu geladen
+(`collect_data`). In der Entwicklung werden geänderte Dateien unter
+`src/ruby/include/` deshalb bei der nächsten Anfrage neu geladen
 (`Sinatra::Reloader`, siehe `src/ruby/dev_reloader.rb`). Neue und geänderte
 Routen und Methoden wirken sofort; im Log steht `Hot reload: <datei>`.
 
@@ -76,9 +70,10 @@ Grenzen:
   (`./test.sh all`).
 - `main.rb`, `parser.rb`, `timetable.rb` usw. starten den Server weiterhin
   über `rerun` neu, ebenso alle Bots bei jeder Änderung unter `src/ruby`.
-- Nur in der Entwicklung: `config.rb` setzt die Option ausschließlich bei
-  `DEVELOPMENT = true` und nur für den Dienst `ruby`; ein Unit-Test prüft,
+- Nur in der Entwicklung: `config.rb` schaltet Hot Reload ausschließlich bei
+  `DEVELOPMENT = true` und nur für den Dienst `ruby` ein; ein Unit-Test prüft,
   dass der Reloader nirgends sonst geladen wird.
+- Abschalten: `DEV_HOT_RELOAD = false` in `env.rb`, dann `./config.rb up -d ruby`.
 
 ## Tests
 

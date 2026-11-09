@@ -128,7 +128,9 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 - `config.rb` generates `docker-compose.yaml` and the nginx configuration.
   Make new settings there optional: without them, the generated files and
   the `docker compose` call must stay **byte-identical** to before (check
-  for development and production settings).
+  for development and production settings). Decided exception: hot reload
+  (`DEV_HOT_RELOAD`) is on by default in development, so the development
+  output differs there; production output stays identical.
 - The nginx configuration is copied into the image: after changes run
   `./config.rb build nginx && ./config.rb up -d nginx`.
 - `src/static/errors/neustart.html` (the 502 page) is served by nginx

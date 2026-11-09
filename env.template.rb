@@ -59,6 +59,7 @@ DOCKER_NETWORK_RUBY_IP = nil
 DOCKER_LOG_MAX_SIZE = '50m'
 DOCKER_LOG_MAX_FILES = 5
 
-# Nur Entwicklung: geänderte src/ruby/include/*.rb bei der nächsten Anfrage neu
-# laden statt den Server neu zu starten (siehe doc/Development.md).
-# DEV_HOT_RELOAD = true
+# Nur Entwicklung: geänderte src/ruby/include/*.rb werden bei der nächsten
+# Anfrage neu geladen statt den Server neu zu starten (Standard, siehe
+# doc/Development.md). Zum Abschalten:
+# DEV_HOT_RELOAD = false

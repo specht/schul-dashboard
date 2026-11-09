@@ -270,11 +270,12 @@ end
 docker_compose[:services][:weasyprint] = {:image => 'lgatica/weasyprint'}
 
 # additional services an environment file may define (e.g. a test mail server)
-# Optional, development only: DEV_HOT_RELOAD = true in env.rb reloads changed
-# include/*.rb files in the web service on the next request instead of
-# restarting it (src/ruby/dev_reloader.rb). Set here, after the bots were
-# copied from the ruby service, so that only the web service gets it.
-if DEVELOPMENT && defined?(DEV_HOT_RELOAD) && DEV_HOT_RELOAD
+# Development only, on by default (DEV_HOT_RELOAD = false in env.rb turns it
+# off): changed include/*.rb files are reloaded in the web service on the next
+# request instead of restarting it (src/ruby/dev_reloader.rb). Set here, after
+# the bots were copied from the ruby service, so that only the web service
+# gets it. Production output is unaffected.
+if DEVELOPMENT && (!defined?(DEV_HOT_RELOAD) || DEV_HOT_RELOAD)
     docker_compose[:services][:ruby][:environment] = docker_compose[:services][:ruby][:environment] + ['DASHBOARD_HOT_RELOAD=1']
     docker_compose[:services][:ruby][:entrypoint] =
         "rerun -b --dir /app --ignore \"fragments/*\" --ignore \"include/*\" -s SIGTERM -- #{rackup_command.call('config.ru', 3000)}"

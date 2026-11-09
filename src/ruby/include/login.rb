@@ -1,3 +1,6 @@
+# open login attempts (login codes) per person at a time, see /api/login
+MAX_OPEN_LOGIN_ATTEMPTS = 5 unless defined?(MAX_OPEN_LOGIN_ATTEMPTS)
+
 LOGIN_METHODS = {:email => 'Code per E-Mail', :sms => 'Code per SMS', :otp => 'OTP-Code'}
 LOGIN_METHODS_SHORT = {:email => 'E-Mail', :sms => 'SMS', :otp => 'OTP'}
 
@@ -53,6 +56,8 @@ class Main < Sinatra::Base
             SET l.method = 'email'
             RETURN l, u;
         END_OF_QUERY
+        # every resend counts as a try – no more mails once the attempt is used up
+        assert_with_delay(result['l'][:tries] <= MAX_LOGIN_TRIES, "Too many code resends for #{result['u'][:email]}", true)
         email_recipient = result['u'][:email]
         random_code = result['l'][:code]
         begin
@@ -291,8 +296,17 @@ class Main < Sinatra::Base
             assert_with_delay(false, "Code expired", true)
         end
         login_code = result['l']
-        assert(data[:method] != login_code[:method])
         user = result['u']
+        assert(data[:method] != login_code[:method])
+        # code2 only exists once the first factor is confirmed (/api/confirm_login);
+        # and only a few resends per login attempt
+        assert_with_delay(!login_code[:code2].nil?, "Second code requested without first factor for #{user[:email]}", true)
+        sends = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag])['sends']
+            MATCH (l:LoginCode {tag: $tag})
+            SET l.code2_sends = COALESCE(l.code2_sends, 0) + 1
+            RETURN l.code2_sends AS sends;
+        END_OF_QUERY
+        assert_with_delay(sends <= MAX_LOGIN_TRIES, "Too many second code resends for #{user[:email]}", true)
         if data[:method] == 'sms'
             telephone_number = user[:telephone_number]
             if telephone_number.size > 0
@@ -547,11 +561,27 @@ class Main < Sinatra::Base
                 end
             end
         end
-        unless @@user_info.include?(data[:email]) && @@user_info[data[:email]][:can_log_in]
+        # :can_log_in only exists for teachers (lehrer.csv, column 'Deaktiviert');
+        # for everyone else it is nil – only an explicit false blocks
+        unless @@user_info.include?(data[:email]) && @@user_info[data[:email]][:can_log_in] != false
             sleep 3.0
             respond(:error => 'no_invitation_found')
+            return
         end
-        assert(@@user_info.include?(data[:email]), "Login requested for invalid email: #{data[:email]}", true)
+        # At most a few open login attempts per person at a time (each is valid for
+        # ten minutes): limits code mails and SMS to someone else's address, and the
+        # guessing of OTP codes (each attempt allows MAX_LOGIN_TRIES codes).
+        open_attempts = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email], :now => Time.now.to_i)['n']
+            MATCH (l:LoginCode)-[:BELONGS_TO]->(:User {email: $email})
+            WHERE l.valid_to >= $now
+            RETURN count(l) AS n;
+        END_OF_QUERY
+        if open_attempts >= MAX_OPEN_LOGIN_ATTEMPTS
+            debug "Too many open login attempts for #{data[:email]}"
+            sleep 3.0
+            respond(:error => 'too_many_login_attempts')
+            return
+        end
         srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
         random_code = (0..5).map { |x| rand(10).to_s }.join('')
         random_code = '123456' if DEVELOPMENT

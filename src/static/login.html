@@ -65,6 +65,8 @@ window.addEventListener('load', function () {
                 $('#submit').prop('disabled', false);
                 if (data.error === 'no_invitation_found')
                     show_error_message('Mit dieser E-Mail-Adresse kannst du dich nicht anmelden. Bitte verwende deine Schul-E-Mail-Adresse.');
+                else if (data.error === 'too_many_login_attempts')
+                    show_error_message('Für diese E-Mail-Adresse wurden gerade zu viele Anmeldecodes angefordert. Bitte warte ein paar Minuten und versuche es dann noch einmal.');
                 else
                     show_error_message('Bei der Anmeldung ist ein Fehler aufgetreten, bitte versuche es erneut.');
             }

@@ -56,6 +56,9 @@ append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'bibliothek@beispielschule.de,m,Bibliothek,Ben,',
     'gev@beispielschule.de,w,Elternvertretung,Gabi,',
     'externe.ag@beispielschule.de,m,Extern,Erik,',
+    # only for the test of the login attempt limit (login-codes.smoke.ts) –
+    # it leaves open login attempts behind, no other test may use it
+    'anmeldelimit@beispielschule.de,w,Limit,Lina,',
 ])
 {
     'ZEUGNIS_ADMIN' => ['zeugnis.admin@beispielschule.de'],

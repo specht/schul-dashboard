@@ -107,6 +107,11 @@ class Main < Sinatra::Base
         require_teacher!
         data = parse_request_data(:required_keys => [:klasse, :datum, :end_datum, :fach, :kommentar, :typ, :id, :public_for_klasse])
         timestamp = Time.now.to_i
+        # if the class changes, the old class's timetables need an update as well
+        old_klasse = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => data[:id])['t.klasse']
+            MATCH (t:Test {id: $id})-[:ORGANIZED_BY]->(a:User {email: $session_email})
+            RETURN t.klasse;
+        END_OF_QUERY
         test = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => data[:id], :klasse => data[:klasse], :datum => data[:datum], :end_datum => data[:end_datum], :fach => data[:fach], :kommentar => data[:kommentar], :typ => data[:typ], :public_for_klasse => data[:public_for_klasse])['t']
             MATCH (t:Test {id: $id})-[:ORGANIZED_BY]->(a:User {email: $session_email})
             SET t.updated = $timestamp
@@ -123,6 +128,7 @@ class Main < Sinatra::Base
             :tid => test[:id], 
             :test => test
         }
+        trigger_update("_klasse_#{old_klasse}") if old_klasse && old_klasse != data[:klasse]
         trigger_update("_klasse_#{data[:klasse]}")
         respond(:ok => true, :test => result)
     end

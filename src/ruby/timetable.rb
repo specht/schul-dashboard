@@ -2526,6 +2526,8 @@ class Timetable
         @message_placements ||= {}
         @lesson_info_last_timestamp ||= 0
         @public_test_entries_for_klasse ||= {}
+        # in which class each class test is entered: test id => klasse
+        @public_test_klasse ||= {}
         @lesson_notes_for_lesson_key ||= {}
         fetched_lesson_info_count = 0
         fetched_text_comments_count = 0
@@ -2756,6 +2758,12 @@ class Timetable
         rows.each do |row|
             @public_test_entries_for_klasse[row[:klasse]] ||= {}
             @public_tests_last_timestamp = row[:updated] if row[:updated] > @public_tests_last_timestamp
+            # moved to another class: out of the old one (it stayed there before)
+            old_klasse = @public_test_klasse[row[:id]]
+            if old_klasse && old_klasse != row[:klasse]
+                (@public_test_entries_for_klasse[old_klasse] || {}).delete(row[:id])
+            end
+            @public_test_klasse[row[:id]] = row[:klasse]
             if (row[:deleted] || false) || (row[:public_for_klasse] || 'no') != 'yes'
                 @public_test_entries_for_klasse[row[:klasse]].delete(row[:id])
             else

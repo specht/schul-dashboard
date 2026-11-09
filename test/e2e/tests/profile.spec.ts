@@ -46,9 +46,11 @@ test('Farbschema lässt sich im Profil wählen', async ({ page }) => {
   await page.goto('/profil');
   const before = await page.evaluate(() => (window as any).color_scheme as string);
 
-  const request = page.waitForRequest('**/api/set_color_scheme');
+  // wait for the answer, not only the request – otherwise the next page may
+  // load before the scheme is saved
+  const response = page.waitForResponse('**/api/set_color_scheme');
   await page.locator('.swatches .swatch:not(.active)').first().click();
-  const chosen = (await request).postDataJSON().scheme as string;
+  const chosen = (await response).request().postDataJSON().scheme as string;
   expect(chosen).not.toBe(before);
 
   await page.goto('/');

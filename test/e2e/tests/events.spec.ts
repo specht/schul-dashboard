@@ -37,6 +37,10 @@ test('Lehrkraft lädt Klasse 5a zu einem Termin ein, er erscheint im Stundenplan
 
   // student: timetable files are rewritten in the background
   const student = await newUserPage();
+  // timetable files may be cached for 60 s (max-age) – the student's first
+  // load can come just before the file is rewritten; with a route, Playwright
+  // bypasses the browser cache
+  await student.route('**/gen/**', (route) => route.continue());
   await login(student, ACCOUNTS.schueler);
   await expect(async () => {
     await student.reload();
@@ -53,6 +57,10 @@ test('Verschobener Termin verschwindet aus der alten Woche (kein Geister-Termin)
   await createEventFor5a(page, title, oldDay);
 
   const student = await newUserPage();
+  // timetable files may be cached for 60 s (max-age) – the student's first
+  // load can come just before the file is rewritten; with a route, Playwright
+  // bypasses the browser cache
+  await student.route('**/gen/**', (route) => route.continue());
   await login(student, ACCOUNTS.schueler);
   await expect(async () => {
     await student.reload();

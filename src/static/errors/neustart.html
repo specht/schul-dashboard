@@ -252,6 +252,10 @@
         @media (max-width: 520px) {
             /* phones: status line on top, button below over the full width */
             .foot { flex-direction: column; align-items: stretch; }
+            /* longer lines wrap here – keep room for two lines, otherwise the
+               centered card changes height and everything (button included)
+               moves whenever the line changes */
+            .ticker { min-height: calc(2 * 1.45em); }
             .foot button { width: 100%; padding: 10px 16px; }
         }
         @media (max-width: 420px) {
@@ -453,7 +457,9 @@
             if (checking || done) return;
             checking = true;
             clearTimeout(pollTimer);
-            retryBtn.disabled = true;
+            // The button stays as it is during checks (no disabled state):
+            // checks run every few seconds and the button would blink.
+            // Clicks during a check are ignored above.
             countdownEl.textContent = 'Prüfe …';
 
             var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
@@ -471,7 +477,6 @@
                 .then(function () {
                     clearTimeout(abortTimer);
                     checking = false;
-                    if (!done) retryBtn.disabled = false;
                 });
         }
 

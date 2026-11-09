@@ -179,8 +179,6 @@ hierher übernehmen, wenn sie angegangen werden.
 
 ### Aufräumen
 
-- [ ] Alte Seiten entfernen oder archivieren: `projekttage_old`,
-      `projekttage_overview_old`, `projekttage_sus_old`
 - [ ] Nicht verlinkte Seiten prüfen: `wind`, `maze`, `badges`,
       `wallpapers`, `agr_markup`, `cling-colors`, `lesson_keys_history`,
       `aula`, `logout`, `login_otp`

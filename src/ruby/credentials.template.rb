@@ -45,8 +45,6 @@ EXCLUDE_FROM_MOCKIFICATION = []
 
 # SMTP Hostname
 SMTP_SERVER = 'smtp.example.com'
-# IMAP Hostname
-IMAP_SERVER = 'imap.example.com'
 SMTP_USER = 'dashboard@beispielschule.de'
 SMTP_PASSWORD = '1234_nein_wirklich'
 SMTP_DOMAIN = 'beispielschule.de'
@@ -104,8 +102,6 @@ WEBSITE_MAINTAINER_EMAIL = 'mueller@beispielschule.de'
 
 # Website mit Voting-System (muss noch veröffentlich werden)
 VOTING_WEBSITE_URL = 'https://abstimmung.beispielschule.de'
-# Ansprechpartner für Wahlverfahren
-VOTING_CONTACT_EMAIL = 'admin@beispielschule.de'
 
 # Website für Technikhilfe (Chat und Speedtest)
 TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.beispielschule.de'
@@ -159,8 +155,6 @@ JWT_APPKEY = 'ein_langer_langer_richtig_langer_app_key'
 JWT_APPAUD_STREAM = 'stream'
 JWT_APPKEY_STREAM = 'ein_langer_langer_richtig_langer_app_key'
 JWT_DOMAIN_STREAM = '.beispielschule.de'
-JWT_APPAUD_AGRAPP = 'agrapp'
-JWT_APPISS_AGRAPP = 'dashboard'
 JWT_APPKEY_AGRAPP = 'ein_langer_langer_richtig_langer_app_key'
 STREAM_SITE_URL = 'https://info.beispielschule.de/'
 JWT_SUB = 'beispielschule.de'
@@ -192,7 +186,6 @@ DATENTRESOR_HOTLINE_MIT_NUMMERN = ''
 
 MESSAGE_DELAY = DEVELOPMENT ? 1 : 1
 LOGIN_STATS_D = [0, 7, 28, 1000]
-VPLAN_ENCODING = 'ISO-8859-1'
 JITSI_EVENT_PRE_ENTRY_TOLERANCE = DEVELOPMENT ? 2880 : 15 # minutes
 JITSI_EVENT_POST_ENTRY_TOLERANCE = DEVELOPMENT ? 2880 : 120 # minutes
 JITSI_LESSON_PRE_ENTRY_TOLERANCE = DEVELOPMENT ? 5: 5 # minutes

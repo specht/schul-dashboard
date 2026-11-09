@@ -81,14 +81,6 @@ class Main < Sinatra::Base
         end
         respond(:ok => 'yeah', :deadline => deadline, :notification_sent => notification_sent)
     end
-
-    def good_bad_icon(flag)
-        if flag == true
-            "<i class='fa fa-check text-success'></i>"
-        elsif flag == false
-            "<i class='fa fa-warning text-danger'></i>"
-        end
-    end
     
     def print_admin_dashboard()
         require_admin!

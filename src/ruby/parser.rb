@@ -48,39 +48,6 @@ class String
         }
         str
     end
-
-
-    # Convert a string to a format suitable for a URL without ever using escaped characters.
-    # It calls strip, removeaccents, downcase (optional) then removes the spaces (optional)
-    # and finally removes any characters matching the default regexp (/[^-_A-Za-z0-9]/).
-    #
-    # Options
-    #
-    # * :downcase => call downcase on the string (defaults to true)
-    # * :convert_spaces => Convert space to underscore (defaults to false)
-    # * :regexp => The regexp matching characters that will be converting to an empty string (defaults to /[^-_A-Za-z0-9]/)
-    def urlize(options = {})
-        options[:downcase] ||= true
-        options[:convert_spaces] ||= false
-        options[:regexp] ||= /[^-_A-Za-z0-9]/
-
-        str = self.strip.removeaccents
-        str.downcase! if options[:downcase]
-        str.gsub!(/\ /,'-') if options[:convert_spaces]
-        str.gsub(options[:regexp], '')
-    end
-
-    # This follows the generated ID rules
-    def anchorize(options = {})
-        options[:downcase] ||= true
-        options[:convert_spaces] ||= false
-        options[:regexp] ||= /[^-_A-Za-z0-9]/
-
-        str = self.strip.removeaccents
-        str.downcase! if options[:downcase]
-        str.gsub!(/\ /,'_') if options[:convert_spaces]
-        str.gsub(options[:regexp], '')
-    end
 end
 
 class Parser
@@ -156,10 +123,6 @@ class Parser
         @mock[:nachnamen] = JSON.parse(File.read('mock/nachnamen.json'))
         @mock[:vornamen] = JSON.parse(File.read('mock/vornamen-m.json'))
         @mock[:vornamen] += JSON.parse(File.read('mock/vornamen-w.json'))
-    end
-
-    def first_letter_dot(s)
-        (s && s.length > 0) ? "#{s[0]}." : s
     end
 
     def parse_lehrer(&block)
@@ -620,12 +583,6 @@ class Parser
             return result
         end
         return nil
-    end
-
-    def notify_if_different(a, b)
-        if a != b
-            debug "UNEXPECTED DIFFERENCE: #{a} <=> #{b}"
-        end
     end
 
     # Returns start date => path for all timetable sources, sorted by date.

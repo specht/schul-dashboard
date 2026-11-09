@@ -294,12 +294,6 @@ class Main < Sinatra::Base
         end
     end
 
-    def this_is_a_page_for_devices
-        if @session_device.nil?
-            redirect "#{WEB_ROOT}/", 303
-        end
-    end
-
     def this_is_a_page_for_logged_in_users_who_can_manage_salzh
         unless can_manage_salzh_logged_in?
             redirect "#{WEB_ROOT}/", 303

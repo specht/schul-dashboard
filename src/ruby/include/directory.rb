@@ -517,11 +517,6 @@ class Main < Sinatra::Base
         SwitchWeeks.letter(d, SWITCH_WEEKS)
     end
 
-    # Returns A or B or nil
-    def self.get_current_ab_week()
-        get_switch_week_for_date(Date.today)
-    end
-
     def self.get_homeschooling_for_user_by_dauer_salzh(email)
         info = $neo4j.neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
             MATCH (u:User {email: $email})

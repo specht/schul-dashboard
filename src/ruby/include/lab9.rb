@@ -21,20 +21,6 @@ LAB9_KEY_LABELS = {
 }
 
 class Main < Sinatra::Base
-    def parse_lab9_node(p)
-        {
-            :nr => p[:nr],
-            :titel => p[:titel],
-            :projekt => p[:projekt],
-            # :orte => p[:orte],
-            # :reflexion1 => p[:reflexion1],
-            # :reflexion2 => p[:reflexion2],
-            # :reflexion3 => p[:reflexion3],
-            # :reflexion4 => p[:reflexion4],
-            :members => [],
-        }
-    end
-
     def get_lab9_projekte
         projekte = {}
         neo4j_query(<<~END_OF_QUERY).each do |row|

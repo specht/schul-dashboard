@@ -44,6 +44,10 @@ hierher übernehmen, wenn sie angegangen werden.
 
 ### Fehler
 
+- [ ] Umfrage beantworten: Eine Freitext-Antwort wird erst übernommen, wenn das
+      Textfeld den Fokus verliert (`change`), vorher bleibt „Absenden“
+      deaktiviert. Besser auf `input` reagieren (`_template.html`,
+      `textarea.change(…)`).
 - [ ] Klick auf das Icon in einem Button liefert `undefined`: Handler lesen
       `$(e.target).data(…)` (rund 90 Stellen) statt `e.currentTarget`,
       z. B. `.bu-launch-poll` (`_template.html`), `.btn-impersonate`

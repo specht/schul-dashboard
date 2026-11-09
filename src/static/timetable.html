@@ -560,6 +560,17 @@ function render_timetable(result, successCallback) {
     successCallback(events);
 }
 
+// Topic, homework and notes are plain text from the course planning; the
+// timetable service joins several lessons with <br />. Insert as text and
+// turn only those joins into line breaks.
+function appendTextWithBreaks(element, text) {
+    (text || '').split('<br />').forEach(function (part, i) {
+        if (i > 0) element.append($('<br>'));
+        element.append(document.createTextNode(part));
+    });
+    return element;
+}
+
 function update_ha_amt_buttons() {
     let pending_changes = $('#ta_ha_amt_text').val().trim() !== $('#ta_ha_amt_text').data('stored_ha_amt_text');
     if (pending_changes) {
@@ -1004,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //                     div3.append($('<div>').html('Stundenthema'));
                     if (arg.event.extendedProps.count > 1)
                     {
-                        let description = $('<div>').html((arg.event.extendedProps.data || {}).stundenthema_text || '');
+                        let description = appendTextWithBreaks($('<div>'), (arg.event.extendedProps.data || {}).stundenthema_text);
                         description.css('opacity', 0.7);
                         description.css('white-space', 'normal');
 //                         description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
@@ -1017,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     div3.append($('<div>').html('Hausaufgaben (zu heute)'));
                     if (arg.event.extendedProps.count > 1)
                     {
-                        let description = $('<div>').html((arg.event.extendedProps.data || {}).hausaufgaben_text || '');
+                        let description = appendTextWithBreaks($('<div>'), (arg.event.extendedProps.data || {}).hausaufgaben_text);
                         description.css('opacity', 0.7);
                         description.css('white-space', 'normal');
                         // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
@@ -1381,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Stundenthema</b></p>');
                 if (event_data.stundenthema_text)
-                    body.append(`<p style='white-space: pre-line;'>${event_data.stundenthema_text}</p>`);
+                    body.append(appendTextWithBreaks($("<p style='white-space: pre-line;'>"), event_data.stundenthema_text));
                 wrote_something = true;
             }
             let nc_ausgabe_link = '#';
@@ -1542,7 +1553,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Hausaufgaben</b> (zu heute)</p>');
                 if (event_data.hausaufgaben_text)
-                    body.append("<p style='white-space: pre-line;'>" + event_data.hausaufgaben_text + '</p>');
+                    body.append(appendTextWithBreaks($("<p style='white-space: pre-line;'>"), event_data.hausaufgaben_text));
                 if (event_data.homework_nc) {
                     body.append('<p><b>Nextcloud</b></p>');
                     body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
@@ -1568,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Notizen</b> (nur für mich sichtbar)</p>');
                 if (event_data.notizen)
-                    body.append('<p>' + event_data.notizen + '</p>');
+                    body.append(appendTextWithBreaks($('<p>'), event_data.notizen));
                 wrote_something = true;
             }
             if (per_user.text_comments || per_user.audio_comments) {

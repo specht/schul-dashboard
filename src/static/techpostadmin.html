@@ -160,6 +160,13 @@
 </div>
 
 <script>
+    // texts of problem reports (from the technology duty) are always text
+    function escapeHtml(value) {
+        let div = document.createElement('div');
+        div.appendChild(document.createTextNode(value === null || value === undefined ? '' : `${value}`));
+        return div.innerHTML;
+    }
+
     let users_which_can_fix_tech_problems = `#{print_users_which_can_fix_tech_problems}`
 
     function compose_fixed_problems() {
@@ -292,13 +299,13 @@
                             let comment = tp_comment
 
                             if (entry.problem.comment) {
-                                comment = `${entry.problem.comment} ${tp_update_comment}`;
+                                comment = `${escapeHtml(entry.problem.comment)} ${tp_update_comment}`;
                             }
                             $('#__template_modal .modal-footer').empty();
-                            let modalContent = `<p>Problem: <b>${entry.problem.problem}</b><br>
-                                Gerät: <b>${entry.problem.device}</b><br>
+                            let modalContent = `<p>Problem: <b>${escapeHtml(entry.problem.problem)}</b><br>
+                                Gerät: <b>${escapeHtml(entry.problem.device)}</b><br>
                                 Datum: <b>${moment(entry.problem.date).format('dddd, D.M.Y')}</b><br>
-                                Absender: <b>${entry.display_name}${klasse}</b> ${tp_hide} ${tp_mail}<br>
+                                Absender: <b>${escapeHtml(entry.display_name)}${escapeHtml(klasse)}</b> ${tp_hide} ${tp_mail}<br>
                                 Status: <b>${current_state}</b><br>
                                 Kommentar: <b>${comment}</b></p>
                                 <div>
@@ -308,7 +315,7 @@
                                     ${fixer}
                                     ${tp_delete}
                                 </div>`;
-                            $('#__template_modal .modal-title').html(entry.problem.problem);
+                            $('#__template_modal .modal-title').text(entry.problem.problem);
                             $('#__template_modal .modal-body').html(modalContent);
                             $('#__template_modal .modal-footer').empty();
                             let bu_cancel = $('<button>').addClass('btn btn-secondary').html('Schließen').attr('data-dismiss', 'modal');
@@ -504,13 +511,13 @@
                             let comment = tp_comment
 
                             if (entry.problem.comment) {
-                                comment = `${entry.problem.comment} ${tp_update_comment}`;
+                                comment = `${escapeHtml(entry.problem.comment)} ${tp_update_comment}`;
                             }
                             $('#__template_modal .modal-footer').empty();
-                            let modalContent = `<p>Problem: <b>${entry.problem.problem}</b><br>
-                                Gerät: <b>${entry.problem.device}</b><br>
+                            let modalContent = `<p>Problem: <b>${escapeHtml(entry.problem.problem)}</b><br>
+                                Gerät: <b>${escapeHtml(entry.problem.device)}</b><br>
                                 Datum: <b>${moment(entry.problem.date).format('dddd, D.M.Y')}</b><br>
-                                Absender: <b>${entry.display_name}${klasse}</b> ${tp_hide} ${tp_mail}<br>
+                                Absender: <b>${escapeHtml(entry.display_name)}${escapeHtml(klasse)}</b> ${tp_hide} ${tp_mail}<br>
                                 Status: <b>${current_state}</b><br>
                                 Kommentar: <b>${comment}</b></p>
                                 <div>
@@ -520,7 +527,7 @@
                                     ${fixer}
                                     ${tp_delete}
                                 </div>`;
-                            $('#__template_modal .modal-title').html(entry.problem.problem);
+                            $('#__template_modal .modal-title').text(entry.problem.problem);
                             $('#__template_modal .modal-body').html(modalContent);
                             $('#__template_modal .modal-footer').empty();
                             let bu_cancel = $('<button>').addClass('btn btn-secondary').html('Schließen').attr('data-dismiss', 'modal');

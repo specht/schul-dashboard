@@ -21,6 +21,17 @@
 </style>
 
 <script>
+// project texts come from students: always insert them as text
+function escapeHtml(str) {
+    let div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
+function orDash(value) {
+    return (value === null || value === undefined) ? '&ndash;' : escapeHtml(`${value}`);
+}
+
 window.addEventListener('load', function() {
     api_call('/api/lab8_overview', {}, function(data) {
         if (data.success) {
@@ -35,15 +46,15 @@ window.addEventListener('load', function() {
                     console.log(entry);
                     let cells = [
                         entry.email,
-                        `<td>${entry.projekt.nr ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.sus}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.titel ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.produkt ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.orte ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion1 ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion2 ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion3 ?? '&ndash;'}</td>`,
-                        `<td style='max-width: 20em;'>${entry.projekt.reflexion4 ?? '&ndash;'}</td>`,
+                        `<td>${orDash(entry.projekt.nr)}</td>`,
+                        `<td style='max-width: 20em;'>${escapeHtml(entry.sus)}</td>`,
+                        `<td style='max-width: 20em;'>${orDash(entry.projekt.titel)}</td>`,
+                        `<td style='max-width: 20em;'>${orDash(entry.projekt.produkt)}</td>`,
+                        `<td style='max-width: 20em;'>${orDash(entry.projekt.orte)}</td>`,
+                        `<td style='max-width: 20em;'>${orDash(entry.projekt.reflexion1)}</td>`,
+                        `<td style='max-width: 20em;'>${orDash(entry.projekt.reflexion2)}</td>`,
+                        `<td style='max-width: 20em;'>${orDash(entry.projekt.reflexion3)}</td>`,
+                        `<td style='max-width: 20em;'>${orDash(entry.projekt.reflexion4)}</td>`,
                     ];
                     return cells;
                 }),

@@ -1618,7 +1618,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     // $('.sus-notes-here').append($('<b>Notizen von Schülerinnen und Schülern:</b>'));
                     for (let entry of (sus_for_my_lessons[event.lesson_key] || [])) {
                         if ((per_user.lesson_notes[entry.email] || '').length > 0) {
-                            $('.sus-notes-here').append($(`<p style='margin-bottom: 0.5rem;'>`).html(`<b>${entry.display_name}:</b> ${per_user.lesson_notes[entry.email]}`));
+                            // notes are free text from students: insert as text, never as HTML
+                            let p = $(`<p style='margin-bottom: 0.5rem;'>`);
+                            p.append($('<b>').text(`${entry.display_name}:`));
+                            p.append(document.createTextNode(' ' + per_user.lesson_notes[entry.email]));
+                            $('.sus-notes-here').append(p);
                         }
                     }
                     let missing_sus = [];

@@ -4,6 +4,7 @@ require './parser.rb'
 require 'json'
 require 'zlib'
 require 'fileutils'
+require './gz_output.rb'
 
 class Timetable
     include Neo4jBolt
@@ -1307,7 +1308,11 @@ class Timetable
             end
             temp.each_pair do |email, user|
                 [:private, :public].each do |mode|
-                    path = "/gen/w/#{user[(mode == :private) ? :id : :public_id]}/#{p_yw}.json.gz"
+                    file_id = user[(mode == :private) ? :id : :public_id]
+                    # classes and rooms have no public view (no public_id) –
+                    # they all wrote to the same /gen/w/<week>.json.gz before
+                    next if file_id.nil? || file_id.to_s.empty?
+                    path = "/gen/w/#{file_id}/#{p_yw}.json.gz"
                     if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
                         # # Blank all schueler timetables on the weekend before school starts
                         # if now.strftime('%Y-%m-%d') >= (Date.parse(@@config[:first_school_day]) - 2).strftime('%Y-%m-%d')
@@ -1339,7 +1344,7 @@ class Timetable
     #                 end
                     FileUtils.mkpath(File.dirname(path))
                     file_count += 1
-                    Zlib::GzipWriter.open(path) do |f|
+                    write_gz(path) do |f|
                         events = []
                         cache_indices = Set.new()
                         lesson_keys.each do |lesson_key|
@@ -2035,7 +2040,7 @@ class Timetable
             next if lesson_info.nil?
             path = "/gen/w/#{lesson_info[:id]}/all.json.gz"
             FileUtils.mkpath(File.dirname(path))
-            Zlib::GzipWriter.open(path) do |f|
+            write_gz(path) do |f|
                 events = []
                 events += holidays
                 levents.keys.sort.each do |yw|
@@ -2065,7 +2070,7 @@ class Timetable
             end
             path = "/gen/w/#{user[:id]}/messages.json.gz"
             FileUtils.mkpath(File.dirname(path))
-            Zlib::GzipWriter.open(path) do |f|
+            write_gz(path) do |f|
                 messages = []
                 (@text_comments_for_user[email] || {}).each_pair do |lesson_key, e0|
                     e0.each_pair do |offset, e1|
@@ -2120,7 +2125,7 @@ class Timetable
             end
             path = "/gen/w/#{user[:id]}/homework.json.gz"
             FileUtils.mkpath(File.dirname(path))
-            Zlib::GzipWriter.open(path) do |f|
+            write_gz(path) do |f|
                 homework = {}
                 lesson_keys.each do |lesson_key|
                     (all_homework[lesson_key] || {}).keys.sort.each do |datum|
@@ -2222,7 +2227,7 @@ class Timetable
             next unless user_has_role(email, :can_write_messages) || user_has_role(email, :gev)
             path = "/gen/w/#{user[:id]}/recipients.json.gz"
             FileUtils.mkpath(File.dirname(path))
-            Zlib::GzipWriter.open(path) do |f|
+            write_gz(path) do |f|
                 recipients = {}
                 klassen = @@klassen_order
                 klassen.each do |klasse|
@@ -2309,7 +2314,17 @@ class Timetable
         end
     end
 
+    # Writes a generated gzip file only if its content changed (see
+    # gz_output.rb) and counts written/unchanged files for the log.
+    def write_gz(path, &block)
+        written = GzOutput.write_if_changed(path, &block)
+        @gz_stats ||= Hash.new(0)
+        @gz_stats[written ? :written : :unchanged] += 1
+        written
+    end
+
     def update(only_these_lesson_keys)
+        @gz_stats = Hash.new(0)
         if only_these_lesson_keys.nil?
             begin
                 update_timetables()
@@ -2683,6 +2698,8 @@ class Timetable
         unless add_these_lesson_keys.empty?
             only_these_lesson_keys = (only_these_lesson_keys || Set.new()) | add_these_lesson_keys
         end
-        return update_weeks(only_these_lesson_keys)
+        file_count = update_weeks(only_these_lesson_keys)
+        debug "Files: #{@gz_stats[:written]} written, #{@gz_stats[:unchanged]} unchanged"
+        return file_count
     end
 end

@@ -1,6 +1,11 @@
+# sign-ups per e-mail address within an hour, see /api/sign_up_for_public_event
+MAX_PUBLIC_SIGN_UPS_PER_HOUR = 3 unless defined?(MAX_PUBLIC_SIGN_UPS_PER_HOUR)
+
 class Main < Sinatra::Base
     post '/api/sign_up_for_public_event' do
         data = parse_request_data(:required_keys => [:event_key, :entry_key, :name, :email])
+        # loaded on demand (otherwise only the sign-up page loads it)
+        self.class.refresh_public_event_config()
         event = @@public_event_config.select { |x| x[:key] == data[:event_key] }.first
         assert(!event.nil?)
         track = "#{data[:event_key]}/#{data[:entry_key]}"
@@ -25,6 +30,20 @@ class Main < Sinatra::Base
             end
         end
 
+        # A few sign-ups per address and hour at most: the sign-up sends a mail from
+        # the school's address to any address, so it must not become a mail relay.
+        since = (DateTime.now - Rational(1, 24)).strftime('%Y-%m-%d %H:%M:%S')
+        recent = neo4j_query_expect_one(<<~END_OF_QUERY, :email => data[:email].to_s.strip.downcase, :since => since)['n']
+            MATCH (p:PublicEventPerson)
+            WHERE toLower(p.email) = $email AND p.timestamp >= $since
+            RETURN count(p) AS n;
+        END_OF_QUERY
+        if recent >= MAX_PUBLIC_SIGN_UPS_PER_HOUR
+            debug "Too many sign ups for one address within an hour"
+            respond(:error => 'too_many_sign_ups')
+            return
+        end
+
         tag = RandomTag.generate(12)
         # no name or address of external people in the log
         debug "Got sign up for #{data[:event_key]} / #{data[:entry_key]}"
@@ -33,7 +52,8 @@ class Main < Sinatra::Base
             MERGE (t:PublicEventTrack {track: $track})
             CREATE (p:PublicEventPerson {tag: $tag, name: $name, email: $email, timestamp: $timestamp})-[:SIGNED_UP_FOR]->(t)
         END_OF_QUERY
-        name = data[:name]
+        # the mail is HTML; the name comes from outside
+        name = CGI.escapeHTML(data[:name].to_s)
         deliver_mail do
             to data[:email]
             bcc SMTP_FROM
@@ -43,24 +63,13 @@ class Main < Sinatra::Base
 
             subject event[:mail_subject]
 
-            text = (event[:mail_text] || '').dup
-            while true
-                index = text.index('{')
-                break if index.nil?
-                length = 1
-                balance = 1
-                while index + length < text.size && balance > 0
-                    c = text[index + length]
-                    balance -= 1 if c == '}'
-                    balance += 1 if c == '{'
-                    length += 1
-                end
-                code = text[index + 1, length - 2]
+            # {...} in the configured mail text is Ruby (e.g. {entry[:description]}),
+            # evaluated once each – what an expression returns is never evaluated
+            text = PageTemplate.evaluate(event[:mail_text] || '', open: '{') do |code|
                 begin
-                    text[index, length] = eval(code).to_s || ''
+                    eval(code)
                 rescue
-                    debug "Error while evaluating for #{(@session_user || {})[:email]}:"
-                    debug code
+                    debug "Error while evaluating mail text: #{code}"
                     raise
                 end
             end

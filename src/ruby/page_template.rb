@@ -21,12 +21,13 @@ module PageTemplate
     end
 
     # Yields the code of every #{...} (braces inside are counted) and puts the
-    # block's result in its place. Returns the new string.
-    def self.evaluate(source)
+    # block's result in its place. Returns the new string. Other templates
+    # (e.g. mail texts with {...}) pass their opening delimiter.
+    def self.evaluate(source, open: '#{')
         s = source.dup
         pos = 0
-        while (index = s.index('#{', pos))
-            length = 2
+        while (index = s.index(open, pos))
+            length = open.size
             balance = 1
             while index + length < s.size && balance > 0
                 c = s[index + length]
@@ -34,7 +35,7 @@ module PageTemplate
                 balance += 1 if c == '{'
                 length += 1
             end
-            result = (yield s[index + 2, length - 3]).to_s
+            result = (yield s[index + open.size, length - open.size - 1]).to_s
             s[index, length] = result
             pos = index + result.size
         end

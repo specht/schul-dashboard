@@ -52,6 +52,16 @@ class PageTemplateTest < Minitest::Test
         assert_equal "<h1>\#{system('id')}</h1>2", result
     end
 
+    def test_other_delimiters_for_mail_texts
+        codes = []
+        result = PageTemplate.evaluate("Termin: {row[:description]}, {name}", open: '{') do |code|
+            codes << code
+            code == 'name' ? '{system(1)}' : 'Samstag'
+        end
+        assert_equal ['row[:description]', 'name'], codes
+        assert_equal 'Termin: Samstag, {system(1)}', result
+    end
+
     def test_source_is_not_modified
         source = "\#{x}"
         PageTemplate.evaluate(source) { 'y' }

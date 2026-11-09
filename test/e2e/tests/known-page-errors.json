@@ -1,6 +1,5 @@
 {
   "anonym": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "aula_light": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -43,7 +42,6 @@
     "up": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis"
   },
   "schueler": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -94,7 +92,6 @@
     "up": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis"
   },
   "schueler_oberstufe": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -150,7 +147,6 @@
   },
   "lehrkraft": {
     "anlage_sozialverhalten": "Beispieldaten unvollständig: NOTEN_CUTOFF fehlt (zeugnisse/config.rb)",
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -207,8 +203,6 @@
   },
   "admin": {
     "anlage_sozialverhalten": "Beispieldaten unvollständig: NOTEN_CUTOFF fehlt (zeugnisse/config.rb)",
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
-    "anmeldungen": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "aula_light": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -259,7 +253,6 @@
   },
   "zeugnis_admin": {
     "anlage_sozialverhalten": "Beispieldaten unvollständig: NOTEN_CUTOFF fehlt (zeugnisse/config.rb)",
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -315,7 +308,6 @@
   },
   "technikteam": {
     "anlage_sozialverhalten": "Beispieldaten unvollständig: NOTEN_CUTOFF fehlt (zeugnisse/config.rb)",
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "bib": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -364,8 +356,6 @@
     "zeugnisuebersicht": "Beispieldaten unvollständig: NOTEN_CUTOFF fehlt (zeugnisse/config.rb)"
   },
   "sekretariat": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
-    "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "aula_light": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -419,7 +409,6 @@
     "up": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis"
   },
   "bibliothek": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -473,7 +462,6 @@
     "up": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis"
   },
   "gev": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -529,7 +517,6 @@
     "up": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis"
   },
   "externe_ag": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
@@ -585,7 +572,6 @@
     "up": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis"
   },
   "sv": {
-    "anmeldung": "Beispieldaten unvollständig: public_events/public_events.yaml fehlt",
     "anmeldungen": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",
     "at_overview": "fehlender URL-Parameter (no implicit conversion of nil into String)",
     "aula": "Zugangsprüfung per assert: HTTP 500 statt Umleitung/Hinweis",

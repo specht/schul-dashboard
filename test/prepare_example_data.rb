@@ -96,4 +96,20 @@ end
     ])
 end
 
+# A public event (sign-up without login, e.g. open day) – the example data
+# has none.
+FileUtils.mkpath(File.join(target, 'public_events'))
+File.write(File.join(target, 'public_events', 'public_events.yaml'), [{
+    :key => 'tag-der-offenen-tuer',
+    :title => 'Tag der offenen Tür',
+    :description => 'Anmeldung zum Tag der offenen Tür',
+    :headings => ['Tag', 'Uhrzeit'],
+    :mail_subject => 'Anmeldung zum Tag der offenen Tür',
+    :mail_text => "<p>Hallo!</p><p>Sie sind angemeldet: {row[:description]}, {entry[:description]}.</p>",
+    :rows => [{
+        :description => 'Samstag',
+        :entries => [{:key => 'vormittag', :description => '10:00 Uhr', :label => '10:00', :capacity => 100}],
+    }],
+}].to_yaml)
+
 puts "Example data for the test stack: school year #{first_school_day} – #{last_day}, with extra role accounts"

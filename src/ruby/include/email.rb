@@ -9,7 +9,8 @@ class Main < Sinatra::Base
         assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         data = parse_request_data(:required_keys => [:email, :reason, :details, :lesson_key, :lesson_offset, :datum],
                                   :types => {:lesson_offset => Integer})
-        debug data.to_yaml
+        # no student address, reason or details in the log
+        debug "Mail about a lesson: #{data[:lesson_key]}/#{data[:lesson_offset]}"
         t = DateTime.parse(DateTime.now.strftime("%Y-%m-%dT%H:%M:00%z")).to_time
         unless DEVELOPMENT
             while t.min % 10 != 0

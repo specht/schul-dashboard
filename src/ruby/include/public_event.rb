@@ -26,7 +26,8 @@ class Main < Sinatra::Base
         end
 
         tag = RandomTag.generate(12)
-        STDERR.puts "Got sign up: #{data.to_json}"
+        # no name or address of external people in the log
+        debug "Got sign up for #{data[:event_key]} / #{data[:entry_key]}"
         timestamp = DateTime.now.strftime('%Y-%m-%d %H:%M:%S')
         neo4j_query(<<~END_OF_QUERY, :name => data[:name], :email => data[:email], :track => track, :timestamp => timestamp, :tag => tag)
             MERGE (t:PublicEventTrack {track: $track})

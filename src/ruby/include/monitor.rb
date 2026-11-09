@@ -244,8 +244,6 @@ class Main < Sinatra::Base
                             RETURN u.telephone_number AS telephone_number;
                         END_OF_QUERY
                         if telephone_number
-                            STDERR.puts "telephone_number: #{telephone_number}"
-                            STDERR.puts "deobfuscated: #{telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE)}"
                             begin
                                 send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Zensurenkonferenz der Klasse #{klasse} beginnt jetzt.")
                             rescue

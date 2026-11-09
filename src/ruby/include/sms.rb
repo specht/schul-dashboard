@@ -41,7 +41,8 @@ class Main < Sinatra::Base
 
     def send_sms(telephone_number, message)
         data = {:telephone_number => telephone_number, :message => message}
-        debug "Sending SMS: #{data.to_json}"
+        # no number and no text in the log – the text usually is a login code
+        debug "Sending SMS (#{message.size} characters)"
         @@ws_clients[:authenticated_sms].values.first[:ws].send(data.to_json)
         ds = Date.today.strftime('%Y-%m-%d')
         neo4j_query(<<~END_OF_QUERY, {:ds => ds})
@@ -95,7 +96,7 @@ class Main < Sinatra::Base
             assert_with_delay(false, "Code expired", true)
         end
         assert(sms_code[:tries] <= MAX_LOGIN_TRIES)
-        assert_with_delay(data[:code] == sms_code[:code], "Wrong SMS confirmation code entered for #{user[:email]}: #{data[:code]}", true)
+        assert_with_delay(data[:code] == sms_code[:code], "Wrong SMS confirmation code entered for #{user[:email]}", true)
         if Time.at(sms_code[:valid_to]) < Time.now
             respond({:error => 'code_expired'})
         end
@@ -165,13 +166,12 @@ class Main < Sinatra::Base
                 rescue
                 end
                 if data
-                    if data['hello'] == SMS_GATEWAY_SECRET
+                    if Rack::Utils.secure_compare(data['hello'].to_s, SMS_GATEWAY_SECRET.to_s)
                         @@ws_clients[:sms][client_id][:authenticated] = true
                         @@ws_clients[:authenticated_sms][client_id] = {:ws => ws, :authenticated => true}
                     else
                         ws.close()
                     end
-                    STDERR.puts data.to_yaml
                 end
             end
 

@@ -58,7 +58,7 @@ class Main < Sinatra::Base
         begin
             deliver_mail do
                 to email_recipient
-                bcc SMTP_FROM
+                # no copy to SMTP_FROM: a mailbox collecting everyone's login codes
                 from SMTP_FROM
 
                 subject "Dein Anmeldecode lautet #{random_code}"
@@ -117,9 +117,9 @@ class Main < Sinatra::Base
             otp_token = user[:otp_token]
             assert(!otp_token.nil?)
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
-            assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
+            assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}", true)
         else
-            assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
+            assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}", true)
         end
         if Time.at(login_code[:valid_to]) < Time.now
             respond({:error => 'code_expired'})
@@ -171,7 +171,7 @@ class Main < Sinatra::Base
             elsif available_second_methods == ['email']
                 deliver_mail do
                     to user[:email]
-                    bcc SMTP_FROM
+                    # no copy to SMTP_FROM: a mailbox collecting everyone's login codes
                     from SMTP_FROM
 
                     subject "Dein Anmeldecode lautet #{random_code}"
@@ -301,7 +301,7 @@ class Main < Sinatra::Base
         elsif data[:method] == 'email'
             deliver_mail do
                 to user[:email]
-                bcc SMTP_FROM
+                # no copy to SMTP_FROM: a mailbox collecting everyone's login codes
                 from SMTP_FROM
 
                 subject "Dein Anmeldecode lautet #{login_code[:code2]}"
@@ -588,7 +588,7 @@ class Main < Sinatra::Base
             else
                 deliver_mail do
                     to email_recipient
-                    bcc SMTP_FROM
+                    # no copy to SMTP_FROM: a mailbox collecting everyone's login codes
                     from SMTP_FROM
 
                     subject "Dein Anmeldecode lautet #{random_code}"
@@ -832,7 +832,7 @@ class Main < Sinatra::Base
             else
                 deliver_mail do
                         to email_recipient
-                    bcc SMTP_FROM
+                    # no copy to SMTP_FROM: a mailbox collecting everyone's login codes
                     from SMTP_FROM
 
                     subject "Dein Anmeldecode lautet #{random_code}"
@@ -906,9 +906,9 @@ class Main < Sinatra::Base
             otp_token = user[:otp_token]
             assert(!otp_token.nil?)
             totp = ROTP::TOTP.new(otp_token, issuer: "Dashboard")
-            assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}: #{data[:code]}", true)
+            assert_with_delay(totp.verify(data[:code], drift_behind: 15, drift_ahead: 15), "Wrong OTP code entered for #{user[:email]}", true)
         else
-            assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}: #{data[:code]}", true)
+            assert_with_delay(data[:code] == login_code[:code], "Wrong e-mail code entered for #{user[:email]}", true)
         end
         if Time.at(login_code[:valid_to]) < Time.now
             respond({:error => 'code_expired'})

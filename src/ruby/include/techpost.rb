@@ -1,4 +1,11 @@
 class Main < Sinatra::Base
+    # Debug mails about the technology duty go to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL –
+    # if nobody is set (default in credentials.template.rb), none are sent.
+    def deliver_techpost_debug_mail(&block)
+        return if WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL.nil?
+        deliver_mail(&block)
+    end
+
 
     def check_has_technikamt(email)
         rows = neo4j_query(<<~END_OF_QUERY, :email => email)
@@ -49,7 +56,7 @@ class Main < Sinatra::Base
         recipients = get_technikamt_users()
         send_welcome_mail recipients
         display_name = @session_user[:display_name]
-        deliver_mail do
+        deliver_techpost_debug_mail do
             to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
             bcc SMTP_FROM
             from SMTP_FROM
@@ -102,7 +109,7 @@ class Main < Sinatra::Base
 
             StringIO.open do |io|
                 io.puts "<p>Hallo!</p>"
-                io.puts "<p>Du hast soeben ein neues Technikproblem angelegt. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“</p>"
+                io.puts "<p>Du hast soeben ein neues Technikproblem angelegt. Das Problem betrifft #{CGI.escapeHTML(data[:device].to_s)} und lautet: „#{CGI.escapeHTML(data[:problem].to_s)}“</p>"
                 # io.puts "<a href='#{WEBSITE_HOST}/techpost'>Probleme ansehen</a>"
                 io.puts "<p>Diese E-Mail dient nur als Bestätigung, du musst also nichts weiter tun.</p>"
                 io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
@@ -120,7 +127,7 @@ class Main < Sinatra::Base
 
                 StringIO.open do |io|
                     io.puts "<p>Liebes TechnikTeam,</p>"
-                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{data[:device]} und lautet: „#{data[:problem]}“ Das Problem wurde von #{name} abgesendet.</p>"
+                    io.puts "<p>es liegt ein neues Technikproblem vor. Das Problem betrifft #{CGI.escapeHTML(data[:device].to_s)} und lautet: „#{CGI.escapeHTML(data[:problem].to_s)}“ Das Problem wurde von #{name} abgesendet.</p>"
                     # io.puts "<a href='#{WEBSITE_HOST}/techpostadmin'>Probleme ansehen</a>"
                     io.puts "<p>Viele Grüße<br>Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}</p>"
                     io.string
@@ -128,7 +135,7 @@ class Main < Sinatra::Base
                 end
             end
         end
-        deliver_mail do
+        deliver_techpost_debug_mail do
             to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
             bcc SMTP_FROM
             from SMTP_FROM
@@ -136,7 +143,7 @@ class Main < Sinatra::Base
             subject "Debug: Neues Technikproblem"
 
             StringIO.open do |io|
-                io.puts "<p>#{neo4j_entry}</p>"
+                io.puts "<p>#{CGI.escapeHTML(neo4j_entry.to_s)}</p>"
                 io.string
 
             end
@@ -163,7 +170,7 @@ class Main < Sinatra::Base
             RETURN v, u.email;
         END_OF_QUERY
         respond(:ok => true)
-        deliver_mail do
+        deliver_techpost_debug_mail do
             to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
             bcc SMTP_FROM
             from SMTP_FROM
@@ -171,7 +178,7 @@ class Main < Sinatra::Base
             subject "Debug: Neues Technikproblem"
 
             StringIO.open do |io|
-                io.puts "<p>#{neo4j_entry}</p>"
+                io.puts "<p>#{CGI.escapeHTML(neo4j_entry.to_s)}</p>"
                 io.string
 
             end
@@ -316,7 +323,7 @@ class Main < Sinatra::Base
         end
 
         if problem[:comment] && state == "„Siehe Kommentar“"
-            comment = " Der Kommentar lautet: „#{problem[:comment]}“."
+            comment = " Der Kommentar lautet: „#{CGI.escapeHTML(problem[:comment].to_s)}“."
         elsif problem[:comment]
             comment = " Außerdem hat das TechnikTeam einen Kommentar geschrieben: „#{problem[:comment]}“."
         end
@@ -438,7 +445,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         display_name = @session_user[:display_name]
         respond(:ok => true)
-        deliver_mail do
+        deliver_techpost_debug_mail do
             to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
             bcc SMTP_FROM
             from SMTP_FROM
@@ -466,7 +473,7 @@ class Main < Sinatra::Base
         @@users_for_role[:technikamt] = Set.new()
         display_name = @session_user[:display_name]
         respond(:ok => true)
-        deliver_mail do
+        deliver_techpost_debug_mail do
             to WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL
             bcc SMTP_FROM
             from SMTP_FROM
@@ -557,11 +564,11 @@ class Main < Sinatra::Base
             io.puts "<tbody>"
             io.puts "<tr>"
             io.puts "<td>Problem</td>"
-            io.puts "<td><b>#{problem[:problem]}</b></td>"
+            io.puts "<td><b>#{CGI.escapeHTML(problem[:problem].to_s)}</b></td>"
             io.puts "</tr>"
             io.puts "<tr>"
             io.puts "<td>Gerät / Raum</td>"
-            io.puts "<td><b>#{problem[:device]}</b></td>"
+            io.puts "<td><b>#{CGI.escapeHTML(problem[:device].to_s)}</b></td>"
             io.puts "</tr>"
             io.puts "<tr>"
             io.puts "<td>Datum</td>"

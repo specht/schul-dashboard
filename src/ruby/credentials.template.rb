@@ -114,6 +114,11 @@ WEB_ROOT = DEVELOPMENT ? 'http://localhost:8025' : "https://#{WEBSITE_HOST}"
 
 MAX_LOGIN_TRIES = 3
 
+# E-Mail-Adressen des Technikteams: bekommen neue Problemmeldungen (Technikamt)
+TECHNIKTEAM = []
+# bekommt zusätzlich jede Problemmeldung als Debug-Mail (nil: niemand)
+WANTS_TO_RECEIVE_TECHPOST_DEBUG_MAIL = nil
+
 # Das Dashboard benötigt einen Nextcloud-Account, der Admin-Rechte hat
 NEXTCLOUD_URL = 'http://localhost:8024'
 # Falls die Nextcloud im Development-Modus in Docker läuft,

@@ -899,6 +899,15 @@ class Timetable
                 end
             end
         end
+        # The *_list Sets were only needed for the index (step 3). In the timetable
+        # files they end up as their text ("#<Set: {...}>") – JSON knows no Sets.
+        # Convert them once here instead of on every serialization (about
+        # 100,000 files per update, ~80 % of the JSON time). Same output.
+        @lesson_cache.each do |event|
+            [:lehrer_list, :klassen_list, :raum_list].each do |key|
+                event[key] = event[key].to_s if event[key].is_a?(Set)
+            end
+        end
         @events_by_lesson_key_and_offset = {}
         @regular_days_for_lesson_key = {}
         @lesson_cache.each.with_index do |event, cache_index|

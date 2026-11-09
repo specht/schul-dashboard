@@ -39,7 +39,9 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 
 ## 2. Git and collaboration
 
-- Never merge or push without the maintainer's explicit approval.
+- Never merge, push or deploy without explicit approval from the person
+  you are working for – the maintainer or Jonas (jonas-stdf), who may also
+  push and deploy. Each approval covers that one action only.
 - Before every push: `git fetch`, merge new commits from `origin/master`,
   **then run the full test suite** (`./test.sh all`) on the merged state.
 - No force push to `master`. Don't delete other people's branches; delete
@@ -155,5 +157,11 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 - Only pages (`src/static/*.html`) changed: no restart needed. `code.js`,
   `styles.css` and `src/static/include/*` are bundled once at startup in
   production – changes there need `./config.rb restart ruby`.
+- Before restarting, check that the server checkout is at exactly the
+  commit you pushed (`git rev-parse HEAD`) and has no local changes; never
+  edit files, reset or check out branches on the server.
+- After deploying: `/api/ping` answers 200, the heartbeats
+  (`ServiceStatus.problems`) report no problems, and the `ruby` log shows no
+  new errors.
 - After deploying, check by hand what the test stack doesn't cover (e.g.
   SMS as second factor).

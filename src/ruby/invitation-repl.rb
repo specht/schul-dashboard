@@ -15,6 +15,28 @@ class InvitationRepl < Sinatra::Base
         set :show_exceptions, false
     end
     
+    # One invitation that cannot be sent (e.g. its organizer left the school)
+    # must not stop the others – before, the error ended the worker thread,
+    # and at the next start the same invitation came first again. The request
+    # is taken back and marked as failed instead.
+    def self.invitation_failed(label, id, email, e)
+        debug_error "Invitation (#{label} #{id}) not sent: #{e.class}: #{e.message.to_s[0, 200]}"
+        query = if label == 'Event'
+            <<~END_OF_QUERY
+                MATCH (u)-[rt:IS_PARTICIPANT]->(:Event {id: $id})
+                WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND u.email = $email
+                SET rt.invitation_requested = false, rt.invitation_failed = true;
+            END_OF_QUERY
+        else
+            <<~END_OF_QUERY
+                MATCH (u)-[rt:IS_PARTICIPANT]->(:PollRun {id: $id})
+                WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND u.email = $email
+                SET rt.invitation_requested = false, rt.invitation_failed = true;
+            END_OF_QUERY
+        end
+        @@neo4j.neo4j_query(query, {:id => id, :email => email})
+    end
+
     def self.perform_update(which)
         # send event invites
         rows = @@neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| {:eid => x['eid'], :email => x['email'], :name => x['name'], :org_email => x['org_email'] } }
@@ -30,7 +52,11 @@ class InvitationRepl < Sinatra::Base
                 # send invitation mail
                 STDERR.puts ">>> Sending invite #{i + 1} of #{rows.size}..."
                 STDERR.puts '-' * 59
-                Main.invite_external_user_for_event(row[:eid], row[:email], row[:org_email])
+                begin
+                    Main.invite_external_user_for_event(row[:eid], row[:email], row[:org_email])
+                rescue StandardError => e
+                    invitation_failed('Event', row[:eid], row[:email], e)
+                end
                 sleep 10.0
                 # wait for 10 seconds
             end
@@ -50,7 +76,11 @@ class InvitationRepl < Sinatra::Base
                 # send invitation mail
                 STDERR.puts ">>> Sending invite #{i + 1} of #{rows.size}..."
                 STDERR.puts '-' * 59
-                Main.invite_external_user_for_poll_run(row[:prid], row[:email], row[:org_email])
+                begin
+                    Main.invite_external_user_for_poll_run(row[:prid], row[:email], row[:org_email])
+                rescue StandardError => e
+                    invitation_failed('PollRun', row[:prid], row[:email], e)
+                end
                 unless DEVELOPMENT
                     sleep 1.0
                 end

@@ -40,6 +40,10 @@ hierher übernehmen, wenn sie angegangen werden.
       `puma-integration-test.rb`, `check-all-timetables.js`) übernehmen
 - [ ] CI auf Pull Requests
 
+- [ ] Test-Stack um `mail_bot` und `invitation_bot` erweitern: Ihre
+      Fehlerbehandlung (eine fehlerhafte Mail bzw. Einladung hält die anderen
+      nicht mehr auf) ist bisher nur von Hand geprüft.
+
 ## 2. UI/UX
 
 ### Fehler

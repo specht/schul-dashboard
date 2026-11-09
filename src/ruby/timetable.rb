@@ -6,6 +6,20 @@ require 'zlib'
 require 'fileutils'
 require './gz_output.rb'
 
+# Read-only view of a hash with string keys, whatever its keys are (symbols
+# or strings) – like after JSON.parse(hash.to_json), without the cost of
+# serializing. Nested hashes are wrapped as well.
+class IndifferentKeys
+    def initialize(hash)
+        @hash = hash
+    end
+
+    def [](key)
+        value = if @hash.include?(key.to_sym) then @hash[key.to_sym] else @hash[key.to_s] end
+        value.is_a?(Hash) ? IndifferentKeys.new(value) : value
+    end
+end
+
 class Timetable
     include Neo4jBolt
     include UserRoleHelper
@@ -1166,6 +1180,14 @@ class Timetable
         today_plus_7_days = (Date.today + TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS + 1).strftime('%Y-%m-%d')
         regular_events_from = Date.today + TIMETABLE_ENTRIES_VISIBLE_AHEAD_DAYS + 1
         regular_events_from = regular_events_from.strftime('%Y-%m-%d')
+        # lesson events of a lesson key in a week as SuS see them (depends only on
+        # lesson key and week, not on the person) – computed once per update
+        sus_lesson_events = {}
+        # per person: lesson keys of their timetable; directories already created
+        user_lesson_keys = {}
+        made_dirs = Set.new
+        # website events (three queries, two of them cleanups) – once per update, not per week
+        all_website_events = nil
         aufsicht_start_date_index = 0
         all_homework = {}
         @@lessons[:lesson_keys].keys.each do |lesson_key|
@@ -1261,7 +1283,7 @@ class Timetable
                 end
             end
             website_events = []
-            Main.get_website_events.each do |entry|
+            (all_website_events ||= Main.get_website_events).each do |entry|
                 td0 = entry[:date]
                 td1 = entry[:date_end] ? (Date.parse(entry[:date_end]) + 1).strftime('%Y-%m-%d') : (Date.parse(entry[:date]) + 1).strftime('%Y-%m-%d')
                 unless (td0 >= p1.strftime('%Y-%m-%d') || td1 < p.strftime('%Y-%m-%d'))
@@ -1320,48 +1342,58 @@ class Timetable
                         #     next
                         # end
                     end
-                    lesson_keys = @@lessons_for_user[email].dup
-                    if email[0] == '_'
-                        lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
-                    end
-                    lesson_keys ||= Set.new()
-                    lesson_keys << "_#{user[:klasse]}" if user_has_role(email, :schueler)
-                    lesson_keys << "_@#{user[:room]}" if user[:is_room]
-                    if user_has_role(email, :praktikum)
-                        lesson_keys |= Set.new(@@lessons[:lesson_keys].keys)
-                    end
-                    if user_has_role(email, :teacher)
-                        lesson_keys << "_#{user[:shorthand]}"
-                        (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
-                            lesson_keys << lesson_key
+                    # the same for every week and both modes – computed once per person
+                    lesson_keys = user_lesson_keys[email] ||= begin
+                        lesson_keys = @@lessons_for_user[email].dup
+                        if email[0] == '_'
+                            lesson_keys = Set.new(@@lessons_for_klasse[user[:klasse]])
                         end
+                        lesson_keys ||= Set.new()
+                        lesson_keys << "_#{user[:klasse]}" if user_has_role(email, :schueler)
+                        lesson_keys << "_@#{user[:room]}" if user[:is_room]
+                        if user_has_role(email, :praktikum)
+                            lesson_keys |= Set.new(@@lessons[:lesson_keys].keys)
+                        end
+                        if user_has_role(email, :teacher)
+                            lesson_keys << "_#{user[:shorthand]}"
+                            (@@lessons_for_shorthand[user[:shorthand]] || []).each do |lesson_key|
+                                lesson_keys << lesson_key
+                            end
+                        end
+                        lesson_keys << "_#{user[:email]}"
+                        lesson_keys
                     end
-                    lesson_keys << "_#{user[:email]}"
                     next if only_these_lesson_keys && (lesson_keys & only_these_lesson_keys).empty?
     #                 unless logged_emails.include?(email)
     #                     STDERR.puts email
     #                     logged_emails << email
     #                 end
-                    FileUtils.mkpath(File.dirname(path))
+                    dir = File.dirname(path)
+                    FileUtils.mkpath(dir) if made_dirs.add?(dir)
                     file_count += 1
                     write_gz(path) do |f|
+                        # per-user setup before this file (and the checksum compare of the previous one)
+                        tick(:between_week_files)
                         events = []
                         cache_indices = Set.new()
                         lesson_keys.each do |lesson_key|
                             if (@@user_info[email] || {})[:teacher]
-                                cache_indices += ((@lesson_events[lesson_key] || {})[p_yw] || Set.new())
+                                cache_indices.merge((@lesson_events[lesson_key] || {})[p_yw] || [])
                             else
-                                cache_indices += ((@lesson_events[lesson_key] || {})[p_yw] || []).select do |x|
-                                    @lesson_cache[x][:datum] < regular_events_from
-                                end
-                                cache_indices += ((@lesson_events_regular[lesson_key] || {})[p_yw] || []).select do |x|
-                                    @lesson_cache[x][:datum] >= regular_events_from
-                                end
+                                cache_indices.merge(sus_lesson_events[[lesson_key, p_yw]] ||= (
+                                    ((@lesson_events[lesson_key] || {})[p_yw] || []).select do |x|
+                                        @lesson_cache[x][:datum] < regular_events_from
+                                    end +
+                                    ((@lesson_events_regular[lesson_key] || {})[p_yw] || []).select do |x|
+                                        @lesson_cache[x][:datum] >= regular_events_from
+                                    end
+                                ))
                             end
                         end
                         if user[:is_room]
                             cache_indices += ((@lesson_events["_@#{user[:room]}"] || {})[p_yw] || Set.new())
                         end
+                        tick(:w_cache_indices)
                         events += cache_indices.map { |x| @lesson_cache[x] }
                         holidays.each do |e|
                             e2 = e.dup
@@ -1435,32 +1467,35 @@ class Timetable
                             }
                         end
 
+                        tick(:w_collect_other_events)
+                        # roles don't change during an update – look it up once per file, not per event
+                        is_teacher = user_has_role(email, :teacher)
                         fixed_events = events.map do |e_old|
                             e = e_old.dup
                             if e[:lesson]
                                 e[:event_type] = :lesson
-                                e[:label] = user_has_role(email, :teacher) ? e[:label_klasse].dup : e[:label_lehrer].dup
-                                e[:label_lang] = user_has_role(email, :teacher) ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
-                                # if user_has_role(email, :teacher)
+                                e[:label] = is_teacher ? e[:label_klasse].dup : e[:label_lehrer].dup
+                                e[:label_lang] = is_teacher ? e[:label_klasse_lang].dup : e[:label_lehrer_lang].dup
+                                # if is_teacher
                                     # if e[:lesson_key] && @@lessons[:lesson_keys][e[:lesson_key]]
                                         # e[:label] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
                                         # e[:label_lang] = "<b>#{@@lessons[:lesson_keys][e[:lesson_key]][:pretty_folder_name].gsub(/\([^\)]+\)/, '').strip}</b> #{e[:label_klasse].scan(/\([^\)]+\)/)[0]}"
                                     # end
                                 # end
-                                e[:label_short] = user_has_role(email, :teacher) ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
+                                e[:label_short] = is_teacher ? e[:label_klasse_short].dup : e[:label_lehrer_short].dup
                                 if user[:is_room]
                                     e[:label] = e[:label_room].dup
                                     e[:label_lang] = e[:label_room_lang].dup
                                     e[:label_short] = e[:label_room_short].dup
                                 end
                                 if e[:nc_folder]
-                                    e[:nc_folder] = user_has_role(email, :teacher) ? e[:nc_folder][:teacher].dup : e[:nc_folder][:sus].dup
+                                    e[:nc_folder] = is_teacher ? e[:nc_folder][:teacher].dup : e[:nc_folder][:sus].dup
                                 end
                                 if e[:nc_collect_folder]
-                                    e[:nc_collect_folder] = user_has_role(email, :teacher) ? e[:nc_collect_folder][:teacher].dup : e[:nc_collect_folder][:sus].dup
+                                    e[:nc_collect_folder] = is_teacher ? e[:nc_collect_folder][:teacher].dup : e[:nc_collect_folder][:sus].dup
                                 end
                                 if e[:nc_return_folder]
-                                    e[:nc_return_folder] = user_has_role(email, :teacher) ? e[:nc_return_folder][:teacher].dup : e[:nc_return_folder][:sus].dup
+                                    e[:nc_return_folder] = is_teacher ? e[:nc_return_folder][:teacher].dup : e[:nc_return_folder][:sus].dup
                                 end
                                 lesson_key = e[:lesson_key]
                                 if e[:lesson] && (lesson_key != 0) && e[:lesson_offset]
@@ -1574,7 +1609,7 @@ class Timetable
                                             end
                                         end
                                         # add homework feedback
-                                        if user_has_role(email, :teacher)
+                                        if is_teacher
                                             lesson_homework_feedback[e[:lesson_key]] ||= Main.get_homework_feedback_for_lesson_key(e[:lesson_key])
                                             if lesson_homework_feedback[e[:lesson_key]] && lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
                                                 user_data[:homework_feedback] = lesson_homework_feedback[e[:lesson_key]][e[:lesson_offset]]
@@ -1585,7 +1620,7 @@ class Timetable
                                         if @@lesson_keys_with_sus_feedback[e[:lesson_key]]
                                             if @@lesson_keys_with_sus_feedback[e[:lesson_key]].include?(Date.parse(e[:datum]).wday)
                                                 user_data[:can_have_sus_feedback] = true
-                                                if user_has_role(email, :teacher)
+                                                if is_teacher
                                                     # teacher
                                                     user_data[:lesson_notes] = ((@lesson_notes_for_lesson_key[e[:lesson_key]] || {})[e[:lesson_offset]] || {}).reject do |email, text|
                                                         text.empty?
@@ -1608,6 +1643,7 @@ class Timetable
                             end
                             e
                         end
+                        tick(:w_fixed_events_with_data)
                         if user_has_role(email, :teacher)
                             fixed_events.map! do |event|
                                 if event[:lesson] && event[:lesson_key]
@@ -1689,6 +1725,7 @@ class Timetable
                                 p0 += 1
                             end
                         end
+                        tick(:w_teacher_part)
                         if user[:is_room]
                             fixed_events.reject! do |event|
                                 event[:lesson] && (!(event[:raum] || '').split('/').include?(user[:room]))
@@ -1708,6 +1745,7 @@ class Timetable
                                 event
                             end
                         end
+                        tick(:w_room_klasse_part)
                         if user_has_role(email, :schueler)
                             # if it's a schüler, remove pausenaufsichten
                             fixed_events.reject! do |event|
@@ -1774,31 +1812,15 @@ class Timetable
                                 end
                                 event
                             end
-                            # add future homework for SuS
-                            fixed_events.map! do |_event|
-                                # TODO: this code can't work because we're using symbols from parsed JSON
-                                # but it's kind of okay because we don't need homework in the lesson modal
-                                event = JSON.parse(_event.to_json)
-                                if (all_homework[event[:lesson_key]] || {})[event[:datum]]
-                                    all_homework[event[:lesson_key]][event[:datum]].each_pair do |k, v|
-    #                                                 [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
-                                        if [:homework_nc, :homework_lr].include?(k)
-                                            event[:data][k] = (event[:data][k] || false) || v
-                                        elsif k == :hausaufgaben_text
-                                            parts = []
-                                            parts << event[:data][k] if event[:data][k]
-                                            parts << v
-                                            event[:data][k] = parts.join('<br />').strip
-                                        elsif k == :homework_est_time
-                                            parts = []
-                                            parts << event[:data][k] if event[:data][k]
-                                            parts << v
-                                            event[:data][k] = (parts.map { |x| x.to_i }.sum).to_s
-                                        end
-                                    end
-                                end
-                                event.symbolize_keys
-                            end
+                            # Here used to be a JSON round trip of every event
+                            # (JSON.parse(event.to_json).symbolize_keys) followed by merging future
+                            # homework into the lesson data. It was the most expensive step of a full
+                            # update. Since the round trip turned all keys inside :data into strings,
+                            # the homework merge (which looked up symbols) never matched – SuS see
+                            # homework in homework.json, not in the lesson events – and the iCal
+                            # export found no lesson data for SuS (see sus_ical_without_lesson_data).
+                            # Nothing below changes nested hashes; top-level changes only touch the
+                            # per-user copies made in fixed_events, so no copy is needed.
                             fixed_events.map! do |event|
                                 # mark event as entfall FOR THIS PERSON only
                                 if @@user_info[email] && event[:klassen_removed]
@@ -1809,6 +1831,7 @@ class Timetable
                                 event
                             end
                         end
+                        tick(:w_sus_part)
                         write_events = fixed_events.reject { |x| x[:deleted] || x['deleted']}
                         if mode == :public || user_has_role(email, :praktikum)
                             write_events.map! do |e|
@@ -1872,13 +1895,17 @@ class Timetable
                         #     STDERR.puts write_events.to_yaml
                         # end
 
+                        tick(:week_events)
                         f.print({:events => write_events,
                                 :switch_week => Main.get_switch_week_for_date(p)}.to_json)
+                        tick(:week_to_json)
                         if only_these_lesson_keys.nil? && email[0] != '_'
-                            write_events.each do |event|
-                                # re-parse because keys are strings for SuS and symbols for LuL (?)
-                                event = JSON.parse(event.to_json)
-                                next if event['start'][0, 10] < Date.today.strftime('%Y-%m-%d')
+                            today_s = Date.today.strftime('%Y-%m-%d')
+                            write_events.each do |_event|
+                                # keys are strings for SuS and symbols for LuL – read both (this
+                                # replaces a JSON round trip of every event, which was slow)
+                                event = IndifferentKeys.new(_event)
+                                next if event['start'][0, 10] < today_s
 
                                 key = nil
                                 date = nil
@@ -1906,8 +1933,11 @@ class Timetable
                                 end
                             end
                         end
+                        tick(:week_jitsi_count)
 
                         if ical_info[email] && mode == :private
+                            # same condition as the SuS part above
+                            sus_ical_without_lesson_data = user_has_role(email, :schueler)
                             ical_events[email] ||= []
                             write_events.each do |event|
                                 # STDERR.puts event.keys.to_json
@@ -1931,7 +1961,8 @@ class Timetable
                                     end
                                     io.puts "SUMMARY:#{fix_label_for_unicode(event[:label] || event[:title] || event[:event_title])}"
                                     temp = StringIO.open do |io2|
-                                        data = event[:data] || {}
+                                        # SuS: no lesson data in the iCal export (as before, see above)
+                                        data = sus_ical_without_lesson_data ? {} : (event[:data] || {})
                                         if data[:stundenthema_text]
                                             io2.puts data[:stundenthema_text]
                                             io2.puts
@@ -1988,11 +2019,13 @@ class Timetable
                                 end
                             end
                         end
+                        tick(:week_ical)
                     end
                 end
             end
             p += 7
         end
+        tick(:between_week_files)
         ical_events.each_pair do |email, events|
             next if @@user_info[email] && (!@@user_info[email][:teacher]) && hide_from_sus
             FileUtils::mkpath('/gen/ical')
@@ -2317,35 +2350,71 @@ class Timetable
     # Writes a generated gzip file only if its content changed (see
     # gz_output.rb) and counts written/unchanged files for the log.
     def write_gz(path, &block)
-        written = GzOutput.write_if_changed(path, &block)
+        t0 = clock
+        inner = 0.0
+        written = GzOutput.write_if_changed(path) do |io|
+            t1 = clock
+            block.call(io)
+            inner += clock - t1
+        end
+        @phase_times[:gz_checksum_compare_write] += (clock - t0) - inner if @phase_times
         @gz_stats ||= Hash.new(0)
         @gz_stats[written ? :written : :unchanged] += 1
         written
     end
 
+    # Timing of a full update by phase (logged at the end), to see where the
+    # time goes: mark! starts a section, tick(:phase) adds the time since the
+    # last mark to that phase.
+    def clock
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    def mark!
+        @mark = clock
+    end
+
+    def tick(phase)
+        now = clock
+        @phase_times[phase] += now - @mark if @phase_times && @mark
+        @mark = now
+    end
+
+    def log_phase_times
+        return unless @phase_times
+        parts = @phase_times.sort_by { |_, t| -t }.map { |phase, t| sprintf('%s %.1f s', phase, t) }
+        debug "Timing: #{parts.join(', ')}"
+    end
+
     def update(only_these_lesson_keys)
         @gz_stats = Hash.new(0)
+        @phase_times = Hash.new(0.0)
+        mark!
         if only_these_lesson_keys.nil?
             begin
                 update_timetables()
             rescue StandardError => e
                 STDERR.puts e
             end
+            tick(:update_timetables)
             begin
                 write_agenda_export()
             rescue StandardError => e
                 STDERR.puts "agenda export: #{e}"
             end
+            tick(:agenda_export)
             begin
                 update_recipients()
             rescue StandardError => e
                 STDERR.puts e
             end
+            tick(:recipients)
             begin
                 Main.log_freiwillig_salzh_sus_for_today()
             rescue StandardError => e
                 STDERR.puts e
             end
+            tick(:salzh_log)
         end
 
         add_these_lesson_keys = Set.new()
@@ -2698,8 +2767,11 @@ class Timetable
         unless add_these_lesson_keys.empty?
             only_these_lesson_keys = (only_these_lesson_keys || Set.new()) | add_these_lesson_keys
         end
+        tick(:fetch_from_database)
         file_count = update_weeks(only_these_lesson_keys)
+        tick(:after_week_loop)
         debug "Files: #{@gz_stats[:written]} written, #{@gz_stats[:unchanged]} unchanged"
+        log_phase_times
         return file_count
     end
 end

@@ -4,7 +4,8 @@ class Main < Sinatra::Base
     end
 
     def self.user_has_role(email, role)
-        assert(AVAILABLE_ROLES.include?(role), "Unknown role: #{role}")
+        # called millions of times per timetable update: only build the message when it fails
+        assert(false, "Unknown role: #{role}") unless AVAILABLE_ROLES.include?(role)
         @@user_info[email] && @@user_info[email][:roles].include?(role)
     end
 

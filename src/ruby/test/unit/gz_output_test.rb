@@ -52,6 +52,38 @@ class GzOutputTest < Minitest::Test
         end
     end
 
+    def test_unchanged_files_are_not_opened_again
+        Dir.mktmpdir do |dir|
+            path = File.join(dir, 'w.json.gz')
+            write(path, {'a' => 1})
+            # the checksum is remembered as long as the file is unchanged on disk
+            GzOutput.singleton_class.send(:alias_method, :orig_stored_sha1, :stored_sha1)
+            GzOutput.define_singleton_method(:stored_sha1) { |_| raise 'header read' }
+            begin
+                refute write(path, {'a' => 1})
+            ensure
+                GzOutput.singleton_class.send(:alias_method, :stored_sha1, :orig_stored_sha1)
+            end
+        end
+    end
+
+    def test_files_changed_by_someone_else_are_noticed
+        Dir.mktmpdir do |dir|
+            path = File.join(dir, 'w.json.gz')
+            write(path, {'a' => 1})
+            # replaced behind our back (other content, new file)
+            tmp = path + '.other'
+            Zlib::GzipWriter.open(tmp) { |gz| gz.write('{"a":2}') }
+            File.rename(tmp, path)
+            assert write(path, {'a' => 1}), 'a file changed by someone else must be rewritten'
+            assert_equal({'a' => 1}, read(path))
+            # deleted behind our back
+            File.unlink(path)
+            assert write(path, {'a' => 1})
+            assert File.exist?(path)
+        end
+    end
+
     def test_no_temporary_files_are_left
         Dir.mktmpdir do |dir|
             path = File.join(dir, 'x.json.gz')

@@ -3,11 +3,11 @@
 ## Einrichtung
 
 Die grundsätzliche Einrichtung der Nextcloud für unsere Beispielumgebung 
-ist in [Installationsanweisung](Installation.md) beschrieben.
+ist in [Installationsanweisung](file.Installation.html) beschrieben.
 
 ## Pflege bei Änderung der Stammdaten
 
-[Dort](Installation.md) steht auch, welche Skripte  erneut gestartet 
+[Dort](file.Installation.html) steht auch, welche Skripte  erneut gestartet 
 werden müssen, wenn neue Benutzer oder neue Fächer eingerichtet dazu 
 kommen oder sich die Zuordnung von Fächern zu Lehrern und Schülern 
 ändert.
@@ -134,7 +134,7 @@ Namen `Beispielaufgabe.md` in seinen *Einsammelordner* hoch (Schritt 3).
 Solange kein automatischer Job läuft, müssen wir einzelne Schritte manuell ausführen, hier das Einsammeln der abgegebenen Dateien (Schritt 4).
 
 ```{.bash}
-$ ./collect-nextcloud-files-from-sus.rb --srsly | docker exec -i schuldashboarddev_nextcloud_1 ruby -
+$ ./collect-nextcloud-files-from-sus.rb --srsly | (cd ../.. && ./config.rb exec -T nextcloud ruby -)
 
 Checking for files to collect...
 cp -al [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/SuS/Max Mustermann/Einsammelordner/Beispielaufgabe.md] => [/var/www/html/data/dashboard/files/Unterricht/Ma~2a/Auto-Einsammelordner (von SuS an mich)/Max Mustermann – Beispielaufgabe.md]
@@ -174,7 +174,7 @@ Die Lehrkraft kann nun Feedback zu den Aufgaben geben. Nach Möglichkeit behält
 Zuletzt wird dieses Feedback aus dem Rückgabeordner der Lehrkraft an alle SuS verteilt (Schritt 6). Hierbei kommt dasselbe Skript wie beim Einsammeln zum Einsatz.
 
 ```{.bash}
-$ ./collect-nextcloud-files-from-sus.rb --srsly | docker exec -i schuldashboarddev_nextcloud_1 ruby -
+$ ./collect-nextcloud-files-from-sus.rb --srsly | (cd ../.. && ./config.rb exec -T nextcloud ruby -)
 Checking for files to collect...
 Checking for files to hand out...
 [Max Mustermann – Beispielaufgabe.md] found match: Max Mustermann

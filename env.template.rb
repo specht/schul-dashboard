@@ -1,6 +1,8 @@
 # ------------------------------------------------------
-# Achtung: Wenn diese Datei verändert wurde, muss erneut
-# ./config.rb build ausgeführt werden.
+# Achtung: Nach Änderungen an dieser Datei reicht meist
+# ./config.rb up -d (erzeugt docker-compose.yaml neu);
+# ./config.rb build nginx zusätzlich, wenn sich dadurch die
+# erzeugte nginx-Konfiguration ändert (z. B. PROJECT_NAME).
 # ------------------------------------------------------
 
 # für Produktionsumgebungen bitte auf false setzen
@@ -9,7 +11,7 @@ DEVELOPMENT = true
 # Präfix für Docker-Container-Namen
 PROJECT_NAME = 'schuldashboard' + (DEVELOPMENT ? 'dev' : '')
 
-# UID für Prozesse, muss in Produktionsumgebungen vtml. auf einen konkreten Wert gesetzt werden
+# UID für Prozesse, muss in Produktionsumgebungen evtl. auf einen konkreten Wert gesetzt werden
 UID = Process::UID.eid
 
 # Domain, auf der die Live-Seite läuft

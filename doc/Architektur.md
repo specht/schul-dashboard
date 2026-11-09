@@ -30,6 +30,9 @@ und für den Produktivbetrieb [Betrieb](file.Betrieb.html).
                                                               └─────────┘
 ```
 
+Nicht im Bild: `vplan_watcher`, `mail_forwarder` und `weasyprint` (siehe
+Tabelle unten).
+
 Alle Dienste laufen als Docker-Container in einem gemeinsamen Netz.
 `config.rb` erzeugt daraus `docker-compose.yaml` und die nginx-Konfiguration
 und ruft dann `docker compose` mit den übergebenen Argumenten auf
@@ -52,9 +55,13 @@ und ruft dann `docker compose` mit den übergebenen Argumenten auf
 | `nextcloud` | `docker/nextcloud` | **nur** Sandbox für die Entwicklung (`ENABLE_NEXTCLOUD_SANDBOX`) |
 | `weasyprint` | Image `lgatica/weasyprint` | HTML → PDF (Aula, Umfragen, Technik-Post) |
 
-Die Bots sind kleine Sinatra-Anwendungen auf Port 8080, die `main.rb` laden
-und damit dieselben Daten kennen. `ruby` stößt sie über interne HTTP-Aufrufe
-an (z. B. `GET http://timetable:8080/api/update/…`). Welcher Dienst gerade
+Die Bots (`timetable`, `image_bot`, `mail_bot`, `stats_bot`,
+`invitation_bot`) sind kleine Sinatra-Anwendungen auf Port 8080, die
+`main.rb` laden und damit dieselben Daten kennen. `ruby` stößt sie über
+interne HTTP-Aufrufe an (z. B. `GET http://timetable:8080/api/update/…`).
+`vplan_watcher` und `mail_forwarder` sind dagegen einfache Skripte ohne
+HTTP-Schnittstelle, die in einer Schleife arbeiten; `mail_forwarder` lädt
+ebenfalls `main.rb`. Welcher Dienst gerade
 läuft, steht in der Umgebungsvariable `DASHBOARD_SERVICE`.
 
 ## Verzeichnisse und Volumes

@@ -60,12 +60,17 @@ cd src/scripts && ./update-timetables.rb
 | nginx | `LOGS_PATH/access.log`, `LOGS_PATH/error.log` |
 | Neo4j | `LOGS_PATH/neo4j/` |
 
-Jede Zeile der Ruby-Dienste beginnt mit Datum und Uhrzeit und der Stelle im
-Code, z. B. `2026-11-09 08:15:02 [main:2145] …`; Fehler sind mit `[ERROR]`
-markiert, Ausnahmen erscheinen mit Stacktrace. Nützlich:
+Ausgaben über `debug`/`debug_error` beginnen mit Datum und Uhrzeit und der
+Stelle im Code, z. B. `2026-11-09 08:15:02 [main:2145] …`; Fehler sind mit
+`[ERROR]` markiert, Ausnahmen erscheinen mit Stacktrace. Manche Stellen
+schreiben aber direkt nach STDERR, ohne Zeitstempel und ohne `[ERROR]` –
+u. a. die Bots, `vplan_watcher`, `mail_forwarder` und Fehlerzweige der
+Stundenplan-Aktualisierung. Mit `-t` setzt Docker vor jede Zeile den
+Zeitpunkt. Nützlich:
 
 ```
 ./config.rb logs --since 24h ruby | grep -E '\[ERROR\]| - [A-Z][A-Za-z:]+ - '
+./config.rb logs -t --since 24h timetable mail_bot | grep -i -E 'error|exception'
 ```
 
 Beim Start fasst das Dashboard Probleme in den Eingangsdaten pro Datei bzw.
@@ -160,7 +165,9 @@ Empfehlungen:
 
 ## Neues Schuljahr
 
-Die Liste der zurückzusetzenden Daten steht in `TODO-NEUES-SCHULJAHR.md`.
+Die Liste der zurückzusetzenden Daten steht in
+[TODO-NEUES-SCHULJAHR.md](https://github.com/specht/schul-dashboard/blob/master/TODO-NEUES-SCHULJAHR.md)
+(im Repository, nicht Teil dieser Dokumentation).
 Ablauf:
 
 1. **Vorher** einen Dump ziehen und sicher ablegen.

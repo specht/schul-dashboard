@@ -15,6 +15,10 @@ cp src/ruby/credentials.template.rb src/ruby/credentials.rb
 ./config.rb up
 ```
 
+Vor der ersten Anmeldung braucht es einmalig die Schlüssel für das Single
+Sign-on, sonst endet jede Seite nach der Anmeldung mit HTTP 500 – siehe
+„Schlüssel für das Single Sign-on“ in [Installation](file.Installation.html).
+
 Das Dashboard läuft dann unter [http://localhost:8025](http://localhost:8025),
 der Neo4j-Browser unter [http://localhost:8021](http://localhost:8021).
 `./config.rb up` startet im Development-Modus zusätzlich `tailwind.sh`, das
@@ -37,8 +41,8 @@ verwenden.
 > Instanz mit echten Schuldaten (`INPUT_DATA_PATH` zeigt nicht auf
 > `src/example-data`) darf deshalb nur auf dem eigenen Rechner erreichbar
 > sein. Standardmäßig lauscht nginx im Development-Modus auf allen
-> Netzwerkschnittstellen – in fremden oder geteilten Netzen den Port in
-> `config.rb` auf `127.0.0.1` binden.
+> Netzwerkschnittstellen – in fremden oder geteilten Netzen in `env.rb`
+> `NGINX_HOST_ADDRESS = '127.0.0.1'` setzen.
 
 ## Was passiert bei Änderungen?
 

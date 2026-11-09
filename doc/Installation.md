@@ -3,8 +3,7 @@
 Systemvoraussetzungen: 
 
 - ruby
-- docker
-- docker-compose
+- docker mit Compose (`docker compose`; das ältere `docker-compose` funktioniert auch)
 
 Bevor das Dashboard gestartet werden kann, muss es konfiguriert werden.
 
@@ -16,7 +15,7 @@ Es reicht für einen ersten Test, die Dateien so zu lassen, wie sie sind, also
     $ cp env.template.rb env.rb
     $ cp src/ruby/credentials.template.rb src/ruby/credentials.rb 
 
-Das Skript `config.rb` ist ein Wrapper um `docker-compose`, der `docker-compose.yaml` erzeugt und dann `docker-compose` mit den angegebenen Argumenten aufruft.
+Das Skript `config.rb` ist ein Wrapper um Docker Compose: Es erzeugt `docker-compose.yaml` und ruft dann `docker compose` mit den angegebenen Argumenten auf.
 
 ## Schlüssel für das Single Sign-on
 
@@ -37,7 +36,7 @@ Einmalig erzeugen (Pfad: `INTERNAL_PATH` aus `env.rb`, standardmäßig
 
     $ ./config.rb up
     
-Das kann man zwar auch gleich mit der Option `-d` starten, aber so werden in der Entwicklungs-/Test-Phase die notwendigen Codes für die Anmeldung an der Konsole angezeigt und müssen nicht umständlich aus dem Log gesucht werden.
+Mit der Option `-d` läuft das System im Hintergrund; ohne sie sieht man die Logs aller Dienste direkt in der Konsole.
     
 Nun können folgende Seiten aufgerufen werden:
 
@@ -45,11 +44,9 @@ Nun können folgende Seiten aufgerufen werden:
 - Neo4j: [http://localhost:8021](http://localhost:8021)
 - Nextcloud-Sandbox: [http://localhost:8024](http://localhost:8024)
 
-Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun im Dashboard ([http://localhost:8025](http://localhost:8025)) anmelden als `clarke@beispielschule.de`. Da standardmäßig kein E-Mail-Server konfiguriert ist, muss man den Zahlencode aus den Logs holen:
+Da es in den mitgelieferten Beispieldaten schon einen Lehrer gibt, kann man sich nun im Dashboard ([http://localhost:8025](http://localhost:8025)) anmelden als `clarke@beispielschule.de`. Im Development-Modus ist der Anmeldecode immer `123456` und ein zweiter Faktor `654321` – eine E-Mail wird dafür nicht gebraucht (siehe [Entwicklerhandbuch](file.Development.html)).
 
-    ruby_1            | !!!!! clarke@beispielschule.de => 224529 !!!!!
-    ruby_1            | Cannot send e-mail in DEVELOPMENT mode, continuing anyway:
-    ruby_1            | getaddrinfo: Name does not resolve
+Für den Betrieb an einer Schule siehe [Betrieb](file.Betrieb.html).
     
 ## Schreiben der Stundenpläne
 
@@ -103,14 +100,11 @@ Das Skript kann jederzeit erneut gestartet werden, wenn Nutzer dazukommen.
 
     $ ./create-nc-folders.rb
     
-**Hinweis**: Wer an dieser Stelle einen Fehler `the input device is not a TTY` bekommt,
-kann ihn mit `export COMPOSE_INTERACTIVE_NO_CLI=1` beheben.
-
 **Bitte auch hier den Hinweis in der Ausgabe beachten**: Auch diese 
 Befehle wurden nicht direkt ausgeführt, können aber in der Testumgebung 
 an den Docker-Container übergeben werden:
 
-    $ ./create-nc-folders.rb | docker exec -i schuldashboarddev_nextcloud_1 bash -
+    $ ./create-nc-folders.rb | (cd ../.. && ./config.rb exec -T nextcloud bash -)
 
 Im Ergebnis sieht man, dass unterhalb eines Ordners `Unterricht` verschiedene Ordner für für die Klassen/Kurse, Fächer und Schüler angelegt wurden.
     
@@ -132,5 +126,7 @@ Das Skript kann jederzeit erneut gestartet werden, wenn Fächer dazukommen.
     
 Das Skript kann jederzeit erneut gestartet werden, wenn sich die Zuordnung von Fächern zu Lehrern oder Schülern verändert.
 
-Für dieses Skript wird die App »user_external« in Nextcloud benötigt, da sich das Skript als der jeweilige Nutzer anmelden muss, um einen geteilten Ordner ins richtige Verzeichnis zu verschieben. Damit das in der Nextcloud-Sandbox funktioniert, haben wir weiter oben das Skript `install-nextcloud-sandbox.rb` ausgeführt. **Achtung:** Solange diese App aktiviert ist und die Nextcloud so konfiguriert ist, dass diese App auch verwendet wird, gibt es ein Blanko-Passwort, mit jeder in jeden Account kommt: `NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL`.
+Ohne `--srsly` zeigt das Skript nur, was es tun würde. Mit `--srsly` verschiebt es die geteilten Ordner direkt in Nextcloud: Dazu startet es auf dem Rechner, auf dem Nextcloud installiert ist, `src/scripts/nextcloud-share-move-worker.php` (standardmäßig mit `sudo --user www-data /usr/bin/php`, anpassbar über `NEXTCLOUD_PHP_COMMAND`). Dafür muss in `env.rb` `NEXTCLOUD_INSTALL_PATH` auf die Nextcloud-Installation zeigen – in der Vorlage ist der Wert `nil`, dann bricht das Skript mit einem Hinweis ab. Mit der Sandbox lässt sich dieser Schritt deshalb nicht ohne Weiteres ausprobieren.
+
+Die App »user_external«, die `install-nextcloud-sandbox.rb` weiter oben installiert hat, nutzen andere Skripte (z. B. `create-nc-users.rb`), um sich als der jeweilige Nutzer anzumelden. **Achtung:** Solange diese App aktiviert ist und die Nextcloud so konfiguriert ist, dass diese App auch verwendet wird, gibt es ein Blanko-Passwort, mit jeder in jeden Account kommt: `NEXTCLOUD_ALL_ACCESS_PASSWORD_BE_CAREFUL`.
 

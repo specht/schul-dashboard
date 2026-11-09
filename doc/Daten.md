@@ -3,7 +3,7 @@
 Woher kommen die Daten im Dashboard und wie werden sie verarbeitet?
 
 Zum Einstieg dienen die Dateien unterhalb von 
-`/schul-dashboard/src/example-data/`, die im Folgenden beschrieben 
+`src/example-data/`, die im Folgenden beschrieben 
 werden (inkl. eigener Eingaben).
 
 Später kommen diese Daten natürlich per Schnittstelle aus den jeweiligen 
@@ -28,7 +28,7 @@ Beginn- und Ende-Datum des Schuljahres sowie den ersten Schultag.
 
 Ferien, Feiertage und sonstige freie Tage (ohne Stundenplan!) werden 
 durch den Aufruf von `./update-timetables.rb` aktualisiert (siehe 
-[Installationsanweisung](Installation.md)). In unserer Testumgebung 
+[Installationsanweisung](file.Installation.html)). In unserer Testumgebung 
 stehen die Daten dazu in 
 `src/example-data/ferien_feiertage/ferien_feiertage.csv`.
 
@@ -72,6 +72,9 @@ Beginn,Ende,Titel
 2021-05-24,,Pfingstmontag
 2021-06-24,2021-08-06,Sommerferien
 ```
+
+Die Beispieldatei enthält nur Termine bis 2021 – für einen eigenen Test
+mit dem aktuellen Schuljahr die Termine entsprechend ergänzen.
 
 Hier können wir eigene Daten ergänzen. Neue Termine können wir einfach 
 am Ende einfügen, es dient aber natürlich der besseren Übersicht diese 
@@ -137,12 +140,12 @@ Anführungsstrichen. Die Spalten haben folgende Bedeutungen:
 | Spalte | Bedeutung                                                                   |
 | ------ | --------------------------------------------------------------------------- |
 |      1 | Unterrichts-ID aus Untis                                                    | 
-|      2 | die Klasse (siehe zum Mapping ggf. `src/ruby/credentials.rb`)               |
-|      3 | Kürzel des Fachlehrers ( siehe `faecher/faecher.csv`)                       |
+|      2 | die Klasse (Umbenennungen: `PARSE_KLASSE_TR` in `credentials.rb`, `KLASSEN_TR` in `/data/config.rb`) |
+|      3 | Kürzel der Lehrkraft (siehe `lehrer/lehrer.csv`)                            |
 |      4 | Kürzel des Fachs (siehe `faecher/faecher.csv`)                              |
 |      5 | Raumnummer                                                                  |
 |      6 | Wochentag (Mo=1, Di=2,...)                                                  |
-|      7 | Stunde (die Stundenzeiten sind auch in `src/ruby/credentials.rb` definiert) |
+|      7 | Stunde (die Stundenzeiten stehen in `/data/config.rb`, `fix_stundenzeiten`) |
 
 Wir sehen hier auch, dass Kurse problemlos zusammengelegt werden 
 können, z.B. findet der Latein-Leistungskurs gemeinsam für die 11. und 12. Klassen statt.

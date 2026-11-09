@@ -52,19 +52,32 @@ Playwright-Berichte liegen nach einem Lauf unter
 
 ## Stand
 
-- [x] Isolierter Test-Stack (`env.test.rb`, `DASHBOARD_ENV`,
-      `DASHBOARD_CREDENTIALS`, konfigurierbare Ports in `config.rb`)
-- [x] `./test.sh` für Unit- und E2E-Tests
-- [x] Unit-Tests: Farben, Parser (Fächer, Lehrkräfte, Ferien)
-- [x] E2E: Anmeldeseite, Anmeldung per Code mit Stundenplan, falscher Code
-      – jeweils Desktop und Handy; jeder Test schlägt bei HTTP 5xx oder
-      JavaScript-Fehlern fehl
-- [x] Seiten-Smoke-Test: jede Seite × jede Rolle (anonym, Schüler:in
-      Unter-/Oberstufe, Lehrkraft, Admin), siehe unten
-- [x] Test-Stack im Produktionsmodus mit Test-Postfach; Anmelde-Abläufe:
-      E-Mail-Code (SuS), E-Mail-Code + OTP als zweiter Faktor (Lehrkraft),
-      OTP-App als erster Faktor, falscher Code
-- [ ] alles Weitere aus [Reihenfolge](#Reihenfolge)
+- Isolierter Test-Stack (`env.test.rb`, `DASHBOARD_ENV`,
+  `DASHBOARD_CREDENTIALS`, konfigurierbare Ports in `config.rb`), Test-Stack
+  im Produktionsmodus mit Test-Postfach (Mailpit)
+- **Unit-Tests** (`src/ruby/test/unit/`): Parser, Farben, Template-Renderer
+  (`page_template`), Regeln für Backend und Frontend (`backend_rules`,
+  `frontend_rules`, z. B. keine nativen Dialoge), Mail-Schutz in der
+  Entwicklung (`mail_guard`), Mail-Weiterleitung, Dienst-Überwachung
+  (`service_status`), A/B-Wochen, Tablet-Sets, Bild-Uploads, `gz_output`,
+  Hot Reload (`dev_reloader`)
+- **E2E im Browser** (`*.spec.ts`, Desktop und Handy): Anmeldung und Sitzung,
+  Profil, Nachrichten, Termine, Umfragen, Kursplanung, Kommentare,
+  Klassenarbeiten, Adventskalender, Sitzplan, Verzeichnis (Admin), Monitore,
+  Dialoge, Dienste-Seite, Neustart-Seite, Ausgabe von Texten im Template,
+  Web-App-Manifest
+- **Ohne Browser** (`*.smoke.ts`, Projekt `smoke`): Seiten-Smoke-Test (siehe
+  unten), Zugriffsrechte, Anmeldecodes und Anmeldemethoden, öffentliche
+  Anmeldung zu Veranstaltungen, News, Lab 8/9, `hardening.smoke.ts`
+  (Prüfungen rund um Anmeldung und Uploads)
+- **UI-Tour** (`ui-tour.screens.ts`, Projekt `screens`, nur auf Anfrage):
+  ganzseitige Screenshots der wichtigsten Seiten je Rolle für UI/UX-Reviews,
+  `E2E_ARGS="--project=screens" ./test.sh e2e-run`, Ergebnis unter
+  `test/e2e/test-results/ui-tour/`
+
+Jeder E2E-Test schlägt bei HTTP 5xx, nicht abgefangenen JavaScript-Fehlern
+und nativen Browser-Dialogen fehl. Offen ist alles Weitere aus
+[Reihenfolge](#Reihenfolge).
 
 ## Seiten-Smoke-Test
 
@@ -142,9 +155,8 @@ E2E_ARGS="--project=smoke tests/pages.smoke.ts" ./test.sh e2e-run
 
 ### Unit-Tests
 
-Viele Funktionen hängen an `Main` und Klassenvariablen. Es gibt aber schon ein
-brauchbares Muster (siehe die bisherigen Einzeltests unter `src/ruby/test-*.rb`
-bzw. `nextcloud-client-compatibility-test.rb`):
+Viele Funktionen hängen an `Main` und Klassenvariablen. Für Unit-Tests
+(`src/ruby/test/unit/`) gibt es deshalb dieses Muster:
 
 ```ruby
 require 'minitest/autorun'
@@ -162,11 +174,11 @@ class ColorTest < Minitest::Test
 end
 ```
 
-Gute erste Kandidaten:
+Weitere Kandidaten:
 
-- `parser.rb`: Untis-Stundenplan, Lehrkräfte-/SuS-Listen, Ferien, Kurswahlen
-  mit den Dateien aus `src/example-data`.
-- `include/color.rb`, `include/theme.rb`, `color_palette_for_color_scheme`.
+- `parser.rb`: Untis-Stundenplan und Kurswahlen (Fächer, Lehrkräfte und
+  Ferien sind abgedeckt).
+- `include/theme.rb`, `color_palette_for_color_scheme`.
 - `parse_request_data`: Pflichtfelder, Typen, Längen.
 - Hilfsfunktionen in `include/user.rb` (Rollen-Helfer mit gestubbten
   `@@users_for_role`).
@@ -180,10 +192,9 @@ Beispieldaten und einer frischen Datenbank – und sprechen die Anwendung über
 
 Geplante Suiten:
 
-1. **Seiten-Smoke-Test**: Jede Seite in `src/static/*.html` wird für jede
-   Rolle (anonym, Schüler:in, Lehrkraft, Admin, Gerät) einmal abgerufen.
-   Erwartet: Seite rendert oder leitet um, aber nie HTTP 500. Diese Suite ist
-   die Voraussetzung für Umbauten am Template-Renderer.
+1. **Seiten-Smoke-Test** – umgesetzt in `pages.smoke.ts` (siehe oben) für
+   anonym, Schüler:innen, Lehrkraft, Admin und weitere Rollen; es fehlt noch
+   die Rolle „Gerät“.
 2. **Berechtigungsmatrix**: Für jede API-Route (`grep -h "^ *\(get\|post\) '/api/" src/ruby -r`)
    wird mit jeder Rolle ein minimaler Aufruf gemacht. Die erwarteten
    Ergebnisse stehen in einer Tabelle (`test/fixtures/api_roles.yaml`).

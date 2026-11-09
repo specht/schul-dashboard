@@ -2147,7 +2147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             else
             {
                 if ($('.lesson-table-info-row.today').length > 0) {
-                    if ($(window.width) >= 768) {
+                    if ($(window).width() >= 768) {
                         $('html, body').animate({
                             scrollTop: $('.lesson-table-info-row.today').position().top - 200,
                         }, 1);

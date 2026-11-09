@@ -47,3 +47,14 @@ test('Lehrkraft trägt Stundenthema und Hausaufgaben ein, Schüler:in sieht sie 
   await expect(modal).toContainText(homework);
   await expect(modal).not.toContainText(internal);
 });
+
+// On larger screens the course planning opens at today's lesson (before, a
+// typo kept it at the start of the school year).
+test('Kursplanung springt zur heutigen Stunde', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) < 768, 'only on larger screens');
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/lessons/Ma_5a');
+  const today = page.locator('.lesson-table-info-row.today').first();
+  await expect(today).toBeAttached();
+  await expect(today).toBeInViewport({ timeout: 5_000 });
+});

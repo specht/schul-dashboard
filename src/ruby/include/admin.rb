@@ -317,7 +317,7 @@ class Main < Sinatra::Base
             io.puts "<p>Mit einem Klick auf diesen Button können Sie dieses Gerät dauerhaft als Lehrer-Tablet anmelden.</p>"
             io.puts "<button class='btn btn-success bu_login_teacher_tablet'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Lehrer-Tablet-Modus aktivieren</button>"
             io.puts "<hr />"
-            io.puts "<p>Bitte wählen Sie ein order mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
+            io.puts "<p>Bitte wählen Sie ein oder mehrere Kürzel, um dieses Gerät dauerhaft als Kurs-Tablet anzumelden.</p>"
             @@shorthands.keys.sort.each do |shorthand|
                 io.puts "<button class='btn-teacher-for-kurs-tablet-login btn btn-xs btn-outline-secondary' data-shorthand='#{shorthand}'>#{shorthand}</button>"
             end

@@ -65,7 +65,7 @@
                 Diese Karteikarte fasst die Informationen zu deinem Lab 8-Projekt zusammen.
             </p>
             <div style="#{user_email == @session_user[:email] ? '' : 'display: none;'}">
-                #{print_pending_lab8_projekt_invitations_incoming(user_email)}
+                #{user_email == @session_user[:email] ? print_pending_lab8_projekt_invitations_incoming(user_email) : ''}
             </div>
             <div class='karteikarte'>
                 <div class='row'>
@@ -152,7 +152,7 @@
             <div style="#{(teacher_logged_in? || user_email == @session_user[:email]) ? '' : 'display: none;'}">
                 <hr>
                 <h4>Bearbeitungshistorie</h4>
-                <div id='div_history'>#{my_lab8_projekt_history(user_email)}</div>
+                <div id='div_history'>#{(teacher_logged_in? || user_email == @session_user[:email]) ? my_lab8_projekt_history(user_email) : ''}</div>
             </div>
         </div>
     </div>

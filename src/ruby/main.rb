@@ -3712,12 +3712,13 @@ class Main < Sinatra::Base
             end
         elsif path == 'lab8' || path == 'lab9'
             user_email = @session_user[:email]
-            # if user_with_role_logged_in?(:teacher)
             parts = request.path.split('/')
             if parts[2]
+                # someone else's project (read-only, linked from the overview): only for
+                # existing accounts – the address is also used in the page's JavaScript
+                assert(@@user_info.include?(parts[2]))
                 user_email = parts[2]
             end
-            # end
         elsif path == 'index'
             if @session_user
                 if @session_device

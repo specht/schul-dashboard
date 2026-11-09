@@ -506,7 +506,7 @@
             $('.bm-color-scheme-here').empty().append(a);
         }
         // script_safe, weil der Buchungsgrund freier Text ist: sonst könnte ein darin
-        // enthaltenes </script> den Block hier vorzeitig beenden.
+        // enthaltenes script-Tag den Block hier vorzeitig beenden.
         render_bookings(#{JSON.generate(todays_tablet_set_bookings_for_monitor, :script_safe => true)});
         setInterval(update_now_line, 15000);
         setInterval(function () {

@@ -1,7 +1,7 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { ACCOUNTS, apiLogin } from './fixtures';
+import { ACCOUNTS, ROLE_ACCOUNTS, apiLogin } from './fixtures';
 
 // Page smoke test: every page in src/static is requested once per role,
 // without a browser. A page may render (200) or redirect (3xx) – a server
@@ -36,6 +36,7 @@ const roles: Record<string, string | null> = reportMode
     schueler_oberstufe: ACCOUNTS.schueler_oberstufe,
     lehrkraft: ACCOUNTS.teacher,
     admin: ACCOUNTS.admin,
+    ...ROLE_ACCOUNTS,
   };
 
 const known: Record<string, Record<string, string>> =

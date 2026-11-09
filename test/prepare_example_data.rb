@@ -38,4 +38,48 @@ File.write(File.join(target, 'config.yaml'), {
     FileUtils.mv(files.last, File.join(target, dir, "#{first_school_day}.TXT"))
 end
 
-puts "Example data for the test stack: school year #{first_school_day} – #{last_day}"
+# More accounts and roles than the example data has, so that tests and the
+# UI tour cover the role spectrum of a real school. Must match ROLE_ACCOUNTS
+# in test/e2e/tests/fixtures.ts.
+def append_lines(path, lines)
+    text = File.exist?(path) ? File.read(path) : ''
+    text += "\n" unless text.empty? || text.end_with?("\n")
+    File.write(path, text + lines.join("\n") + "\n")
+end
+
+append_lines(File.join(target, 'lehrer', 'lehrer.csv'), [
+    'zeugnis.admin@beispielschule.de,Za,w,Zeugnis,Zoe,,',
+    'technik@beispielschule.de,Tk,m,Technik,Tom,,',
+])
+append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
+    'sekretariat@beispielschule.de,w,Sekretariat,Sabine,',
+    'bibliothek@beispielschule.de,m,Bibliothek,Ben,',
+    'gev@beispielschule.de,w,Elternvertretung,Gabi,',
+    'externe.ag@beispielschule.de,m,Extern,Erik,',
+])
+{
+    'ZEUGNIS_ADMIN' => ['zeugnis.admin@beispielschule.de'],
+    'OKO' => ['zeugnis.admin@beispielschule.de'],
+    'CAN_SEE_KURSLISTEN' => ['zeugnis.admin@beispielschule.de'],
+    'CAN_MANAGE_PROJEKTTAGE' => ['zeugnis.admin@beispielschule.de'],
+    'CAN_MANAGE_LAB8' => ['zeugnis.admin@beispielschule.de'],
+    'CAN_MANAGE_LAB9' => ['zeugnis.admin@beispielschule.de'],
+    'TECHNIKTEAM' => ['technik@beispielschule.de'],
+    'CAN_USE_AULA' => ['technik@beispielschule.de'],
+    'CAN_MANAGE_NEWS' => ['technik@beispielschule.de'],
+    'CAN_MANAGE_MONITORS' => ['technik@beispielschule.de'],
+    'SEKRETARIAT' => ['sekretariat@beispielschule.de'],
+    'MITTAGESSEN' => ['sekretariat@beispielschule.de'],
+    'CAN_PRINT_PHOTOS' => ['sekretariat@beispielschule.de'],
+    'CAN_MANAGE_BIB' => ['bibliothek@beispielschule.de'],
+    'CAN_MANAGE_BIB_MEMBERS' => ['bibliothek@beispielschule.de'],
+    'CAN_MANAGE_BIB_PAYMENT' => ['bibliothek@beispielschule.de'],
+    'GEV' => ['gev@beispielschule.de'],
+    'EXTERNE_AG_LEITUNG' => ['externe.ag@beispielschule.de'],
+    'SV' => ['elli.mustermann@mail.beispielschule.de'],
+    'SV_EDITOR' => ['elli.mustermann@mail.beispielschule.de'],
+}.each_pair do |role, emails|
+    append_lines(File.join(target, 'roles', 'roles.txt'), [">> #{role}"] + emails)
+end
+
+puts "Example data for the test stack: school year #{first_school_day} – #{last_day}, with extra role accounts"

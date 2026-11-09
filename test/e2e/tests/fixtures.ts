@@ -22,6 +22,18 @@ export const ACCOUNTS = {
   schueler_oberstufe: 'alice.mustermann@mail.beispielschule.de',
 };
 
+// Further role accounts, only in the test stack's copy of the example data
+// (test/prepare_example_data.rb). All log in with an e-mail code.
+export const ROLE_ACCOUNTS: Record<string, string> = {
+  zeugnis_admin: 'zeugnis.admin@beispielschule.de', // teacher: report cards, OKO, Kurslisten, Projekttage, Lab8/9
+  technikteam: 'technik@beispielschule.de', // teacher: technology team, aula, news, monitors
+  sekretariat: 'sekretariat@beispielschule.de', // staff: Sekretariat, lunch, photos
+  bibliothek: 'bibliothek@beispielschule.de', // staff: library management
+  gev: 'gev@beispielschule.de', // parent council
+  externe_ag: 'externe.ag@beispielschule.de', // external club leader
+  sv: 'elli.mustermann@mail.beispielschule.de', // student with student council roles
+};
+
 type Factor = 'email' | 'otp';
 const LOGIN_FACTORS: Record<string, { first: Factor; second?: Factor }> = {
   [ACCOUNTS.admin]: { first: 'otp' },

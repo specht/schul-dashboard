@@ -11,7 +11,8 @@
 #
 # Environment:
 #   KEEP=1                 leave the test stack running after e2e
-#   E2E_ARGS="…"           extra arguments for `playwright test`
+#   E2E_ARGS="…"           arguments for `playwright test` (default: the desktop,
+#                          mobile and smoke projects; UI tour: --project=screens)
 #   UPDATE_KNOWN_PAGE_ERRORS=1  rewrite test/e2e/tests/known-page-errors.json
 #   E2E_BASE_URL, SMOKE_ACCOUNTS, LOGIN_CODE
 #                          exploratory page report against another instance,
@@ -100,7 +101,7 @@ run_playwright() {
         -e STATIC_DIR=/static -e UPDATE_KNOWN_PAGE_ERRORS="${UPDATE_KNOWN_PAGE_ERRORS:-0}" \
         -v "$PWD/test/e2e:/e2e" -v "$PWD/src/static:/static:ro" -w /e2e \
         "$PLAYWRIGHT_IMAGE" \
-        bash -c "npm ci --no-audit --no-fund --loglevel=error && npx playwright test ${E2E_ARGS:-}"
+        bash -c "npm ci --no-audit --no-fund --loglevel=error && npx playwright test ${E2E_ARGS:---project=desktop --project=mobile --project=smoke}"
 }
 
 run_e2e() {

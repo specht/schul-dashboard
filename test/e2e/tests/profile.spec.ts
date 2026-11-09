@@ -4,9 +4,13 @@ import type { Page } from '@playwright/test';
 async function toggleDarkMode(page: Page) {
   await page.goto('/profil');
   const saved = page.waitForResponse('**/api/set_dark_css');
+  // the page reloads itself after saving – wait for that, otherwise the
+  // next page.goto() collides with the reload (net::ERR_ABORTED)
+  const reloaded = page.waitForEvent('load');
   // bootstrap-toggle hides the checkbox and puts a clickable wrapper around it
   await page.locator('.toggle:has(#dark_css_switch)').click();
   expect((await saved).status()).toBe(200);
+  await reloaded;
 }
 
 test('Dunkelmodus lässt sich im Profil ein- und ausschalten', async ({ page }) => {

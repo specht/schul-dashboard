@@ -23,5 +23,7 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
     // request-only checks (*.smoke.ts), no browser, run once
     { name: 'smoke', testMatch: /.*\.smoke\.ts/ },
+    // screenshots for UI/UX reviews (*.screens.ts), only when asked for
+    { name: 'screens', testMatch: /.*\.screens\.ts/ },
   ],
 });

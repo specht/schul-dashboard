@@ -124,7 +124,6 @@ require './include/lab9.rb'
 require './include/lehrbuchverein.rb'
 require './include/lesson.rb'
 require './include/login.rb'
-require './include/matrix.rb'
 require './include/message.rb'
 require './include/mittagessen.rb'
 require './include/monitor.rb'
@@ -326,7 +325,6 @@ class SetupDatabase
         'Lesson/key',
         'LoginCode/tag',
         'Mail/tag',
-        'MatrixAccessToken/access_token',
         'Message/key',
         'NewsEntry/timestamp',
         'Poll/key',
@@ -681,7 +679,6 @@ class Main < Sinatra::Base
     def self.collect_data
         @@user_info = {}
         @@login_shortcuts = {}
-        @@email_for_matrix_login = {}
         @@shorthands = {}
         @@shorthand_order = []
         @@shorthands_for_fach = {}
@@ -766,13 +763,9 @@ class Main < Sinatra::Base
                 :email => record[:email],
                 :can_log_in => record[:can_log_in],
                 :nc_login => record[:nc_login],
-                :matrix_login => record[:matrix_login],
                 :initial_nc_password => record[:initial_nc_password],
                 :roles => Set.new([:teacher]),
             }
-            matrix_login = record[:matrix_login]
-            raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
-            @@email_for_matrix_login[matrix_login] = record[:email]
             @@shorthands[record[:shorthand]] = record[:email]
             @@lehrer_order << record[:email]
         end
@@ -833,7 +826,6 @@ class Main < Sinatra::Base
         end
 
         parser.parse_schueler do |record|
-            matrix_login = "@#{record[:email].split('@').first.sub(/\.\d+$/, '')}:#{MATRIX_DOMAIN_SHORT}"
             unless KLASSEN_ORDER.include?(record[:klasse])
                 next
                 # raise "Klasse #{record[:klasse]} is included in KLASSEN_ORDER"
@@ -855,15 +847,12 @@ class Main < Sinatra::Base
                 :bildungsgang => :altsprachlich,
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:nc_login],
-                :matrix_login => matrix_login,
                 :initial_nc_password => record[:initial_nc_password],
                 :biber_password => Main.gen_password_for_email(record[:email] + 'biber')[0, 4].downcase,
                 :jitsi_disabled => disable_jitsi_for_email.include?(record[:email]),
                 :geburtstag => record[:geburtstag],
                 :roles => Set.new([:schueler]),
             }
-            raise "oops: duplicate matrix / nc login: #{matrix_login}" if @@email_for_matrix_login.include?(matrix_login)
-            @@email_for_matrix_login[matrix_login] = record[:email]
             @@schueler_for_klasse[record[:klasse]] ||= []
             @@schueler_for_klasse[record[:klasse]] << record[:email]
             birthday = record[:geburtstag]
@@ -2141,7 +2130,6 @@ class Main < Sinatra::Base
                                         @session_user[:group2] = results.first['u'][:group2] || 'A'
                                         @session_user[:group_af] = results.first['u'][:group_af] || ''
                                         @session_user[:group_ft] = results.first['u'][:group_ft] || ''
-                                        @session_user[:sus_may_contact_me] = results.first['u'][:sus_may_contact_me] || false
                                         @session_user[:user_agent] = results.first['s'][:user_agent]
                                         @session_user[:ip] = request.ip
                                         @session_user[:force_2fa_exception_deadline] = results.first['u'][:force_2fa_exception_deadline] || 0
@@ -3230,7 +3218,8 @@ class Main < Sinatra::Base
     end
 
     post '/api/get_bib_jwt_token' do
-        # require_user_who_can_manage_bib!
+        # jede angemeldete Person braucht ein Token für die Bibliotheksseiten
+        require_user!
         debug "Creating bib token for #{@session_user[:email]}"
         payload = {
             :email => @session_user[:email],
@@ -3259,20 +3248,34 @@ class Main < Sinatra::Base
         respond(:token => token, :ttl => TRESOR_JWT_TTL, :time_left => refresh_second_factor())
     end
 
-    get '/api/get_bib_dump_etag' do
+    # Nur für den Bibliotheksserver: Sein Token enthält keine Person, Nutzer-Tokens aus
+    # /api/get_bib_jwt_token haben immer eine E-Mail-Adresse.
+    def require_bib_server_jwt!
         jwt = request.env["HTTP_X_JWT"]
+        assert(!jwt.nil?)
         decoded_token = JWT.decode(jwt, JWT_APPKEY_BIB, true, { :algorithm => "HS256" }).first
         diff = decoded_token["exp"] - Time.now.to_i
         assert(diff >= 0)
+        assert(!decoded_token.include?('email'))
+    end
+
+    get '/api/get_bib_dump_etag' do
+        require_bib_server_jwt!
         respond(:etag => @@server_etag)
     end
 
     get '/api/get_bib_dump' do
-        jwt = request.env["HTTP_X_JWT"]
-        decoded_token = JWT.decode(jwt, JWT_APPKEY_BIB, true, { :algorithm => "HS256" }).first
-        diff = decoded_token["exp"] - Time.now.to_i
-        assert(diff >= 0)
-        respond(:user_info => @@user_info, :etag => @@server_etag, :lessons => @@lessons)
+        require_bib_server_jwt!
+        # nur, was der Bibliotheksserver braucht (Namen, Kürzel, Kursnamen)
+        user_info = {}
+        @@user_info.each_pair do |email, info|
+            user_info[email] = {:display_name => info[:display_name], :shorthand => info[:shorthand]}.compact
+        end
+        lesson_keys = {}
+        @@lessons[:lesson_keys].each_pair do |lesson_key, info|
+            lesson_keys[lesson_key] = {:pretty_folder_name => info[:pretty_folder_name]}
+        end
+        respond(:user_info => user_info, :etag => @@server_etag, :lessons => {:lesson_keys => lesson_keys})
     end
 
     get '/api/get_hackschule_users' do

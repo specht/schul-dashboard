@@ -269,12 +269,6 @@ class Main < Sinatra::Base
         results
     end
 
-    post '/api/get_lesson_data' do
-        data = parse_request_data(:required_keys => [:lesson_key])
-        results = Main.get_lesson_data(data[:lesson_key])
-        respond(:results => results)
-    end
-
     post '/api/insert_lesson' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :offset, :shift],

@@ -369,8 +369,19 @@ class Main < Sinatra::Base
         result
     end
 
+    # Zeugnisse drucken: Zeugnis-Admins alle Klassen, Klassenleitungen nur ihre eigenen
+    # (wie bei /api/print_zeugnislisten_sheets)
+    def require_zeugnis_print_access!(klassen)
+        require_teacher!
+        return if zeugnis_admin_logged_in?
+        assert(!klassen.empty?)
+        klassen.each do |klasse|
+            assert((@session_user[:klassenleitung] || []).include?(klasse))
+        end
+    end
+
     post '/api/print_zeugnis' do
-        # require_zeugnis_admin!
+        require_teacher!
         data = parse_request_data(
             :required_keys => [
                 :schueler,
@@ -387,6 +398,7 @@ class Main < Sinatra::Base
             :max_body_length => 1024 * 1024 * 10,
             :max_string_length => 1024 * 1024 * 10,
         )
+        require_zeugnis_print_access!(data[:schueler].map { |x| x.to_s.split('/').first }.uniq)
         cache = {}
         cache.merge!(parse_paths_and_values(data[:paths_fach], data[:values_fach]))
         cache.merge!(parse_paths_and_values(data[:paths_fehltage], data[:values_fehltage]))
@@ -780,7 +792,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/print_sozialzeugnis' do
-        # require_zeugnis_admin!
+        require_teacher!
         data = parse_request_data(
             :required_keys => [
                 :paths, :values, :klasse
@@ -791,6 +803,7 @@ class Main < Sinatra::Base
             :max_body_length => 1024 * 1024 * 10,
             :max_string_length => 1024 * 1024 * 10,
         )
+        require_zeugnis_print_access!([data[:klasse]])
         cache = {}
         cache.merge!(parse_paths_and_values(data[:paths], data[:values]))
 

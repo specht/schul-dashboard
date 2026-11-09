@@ -82,4 +82,15 @@ append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     append_lines(File.join(target, 'roles', 'roles.txt'), [">> #{role}"] + emails)
 end
 
+# Lab 8/9: the real configuration decides who takes part (by grade); in the
+# test stack the students of class 5a do, so the pages can be tested.
+%w(lab8 lab9).each do |lab|
+    append_lines(File.join(target, lab, 'config.rb'), [
+        "# test stack (test/prepare_example_data.rb): students of class 5a take part",
+        "def email_is_eligible_for_#{lab}?(user_info, email)",
+        "    (user_info[email] || {})[:klasse] == '5a'",
+        "end",
+    ])
+end
+
 puts "Example data for the test stack: school year #{first_school_day} – #{last_day}, with extra role accounts"

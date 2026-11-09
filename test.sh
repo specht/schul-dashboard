@@ -97,7 +97,7 @@ run_playwright() {
     docker run --rm --network host --ipc host \
         --user "$(id -u):$(id -g)" -e HOME=/tmp -e npm_config_cache=/tmp/.npm \
         -e BASE_URL="${E2E_BASE_URL:-$BASE_URL}" -e MAILPIT_URL="$MAILPIT_URL" -e CI=1 \
-        -e SMOKE_ACCOUNTS -e LOGIN_CODE \
+        -e SMOKE_ACCOUNTS -e LOGIN_CODE -e SAVE_PAGES_DIR \
         -e STATIC_DIR=/static -e UPDATE_KNOWN_PAGE_ERRORS="${UPDATE_KNOWN_PAGE_ERRORS:-0}" \
         -v "$PWD/test/e2e:/e2e" -v "$PWD/src/static:/static:ro" -w /e2e \
         "$PLAYWRIGHT_IMAGE" \

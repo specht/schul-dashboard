@@ -11,6 +11,10 @@ import { ACCOUNTS, ROLE_ACCOUNTS, apiLogin } from './fixtures';
 // fails when a listed page no longer errors, so that fixes get recorded.
 // Update it with UPDATE_KNOWN_PAGE_ERRORS=1 (see doc/Tests.md).
 //
+// Golden master: SAVE_PAGES_DIR=<name> also stores every
+// rendered page as test/e2e/golden/<name>/<role>/<page>.html, to compare two
+// versions (e.g. before and after a change of the template renderer).
+//
 // Report mode (exploratory runs, e.g. against a development instance):
 // SMOKE_ACCOUNTS='{"role": "email", …}' replaces the example accounts; no
 // comparison with the baseline, instead a report with status codes and
@@ -19,6 +23,8 @@ import { ACCOUNTS, ROLE_ACCOUNTS, apiLogin } from './fixtures';
 const STATIC_DIR = process.env.STATIC_DIR || '/static';
 const KNOWN_ERRORS_FILE = path.join(__dirname, 'known-page-errors.json');
 const REPORT_FILE = path.join(__dirname, '..', 'test-results', 'page-report.json');
+const SAVE_DIR = process.env.SAVE_PAGES_DIR
+  ? path.join(__dirname, '..', 'golden', path.basename(process.env.SAVE_PAGES_DIR)) : null;
 
 // Same rule as the page route in main.rb: no leading '_', no further dots.
 const pages = fs.readdirSync(STATIC_DIR)
@@ -82,6 +88,10 @@ for (const [role, email] of Object.entries(roles)) {
       const started = Date.now();
       const response = await request.get(`/${page}`, { maxRedirects: 0, timeout: 120_000 });
       report[role][page] = { status: response.status(), ms: Date.now() - started };
+      if (SAVE_DIR) {
+        fs.mkdirSync(path.join(SAVE_DIR, role), { recursive: true });
+        fs.writeFileSync(path.join(SAVE_DIR, role, `${page}.html`), await response.body());
+      }
       if (response.status() >= 500) errors[page] = `HTTP ${response.status()}`;
     }
     await request.dispose();

@@ -10,6 +10,11 @@ der den Fehler zeigt.
 
 Für das neue Schuljahr siehe [TODO-NEUES-SCHULJAHR.md](TODO-NEUES-SCHULJAHR.md).
 
+Ausführliche Befunde einer Projekt-Durchsicht (UI/UX, Funktionalität,
+Performance, DevOps, Monitoring, Wartung, Doku) stehen in
+[review/2026-11/](review/2026-11/README.md) – von dort einzelne Punkte
+hierher übernehmen, wenn sie angegangen werden.
+
 ## 1. Tests
 
 - [x] Test-Umgebung: `config.rb` mit wählbarer env-Datei (`DASHBOARD_ENV`),

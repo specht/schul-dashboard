@@ -13,6 +13,7 @@ require 'kramdown'
 require 'mail'
 require './mail_guard.rb'
 require './page_template.rb'
+require './tablet_set_sync.rb'
 require 'neo4j_bolt'
 require 'net/http'
 require 'net/imap'
@@ -440,11 +441,22 @@ class SetupDatabase
                     end
                     # remove tablet sets which are no more present,
                     # this automatically invalidates all tablet set bookings
-                    neo4j_query(<<~END_OF_QUERY, :tablet_sets => main.class_variable_get(:@@tablet_sets).keys)
-                        MATCH (t:TabletSet)
-                        WHERE NOT (t.id IN $tablet_sets)
-                        DETACH DELETE t;
+                    configured = main.class_variable_get(:@@tablet_sets).keys
+                    existing = neo4j_query(<<~END_OF_QUERY).map { |x| x['id'] }
+                        MATCH (t:TabletSet) RETURN t.id AS id;
                     END_OF_QUERY
+                    if configured.empty? && !existing.empty?
+                        debug_error "No tablet sets configured (/data/tablets/tablet_sets.yaml missing or empty?) – keeping the #{existing.size} tablet sets and their bookings"
+                    end
+                    remove = TabletSetSync.ids_to_remove(existing, configured)
+                    unless remove.empty?
+                        debug "Removing tablet sets that are no longer configured: #{remove.join(', ')}"
+                        neo4j_query(<<~END_OF_QUERY, :ids => remove)
+                            MATCH (t:TabletSet)
+                            WHERE t.id IN $ids
+                            DETACH DELETE t;
+                        END_OF_QUERY
+                    end
                 end
                 transaction do
                     neo4j_query(<<~END_OF_QUERY, :email => "lehrer.tablet@#{SCHUL_MAIL_DOMAIN}")

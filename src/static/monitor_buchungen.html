@@ -1,6 +1,14 @@
 #{require_monitor_or_user_who_can_manage_monitors!}
 <style>
+    /* Auf dem Monitor gibt es niemanden, der navigiert: Leiste und Fußzeile des
+       Dashboards weg, sonst schieben sie die Tafel nach unten und überdecken die
+       Überschrift. Genauso macht es monitor.html für die übrigen Monitore. */
+    .navbar, .foot {
+        display: none;
+    }
+
     body {
+        padding-top: 0;
         color: #{color_palette[:contrast]};
         overflow: hidden;
     }

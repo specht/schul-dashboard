@@ -484,6 +484,31 @@ class Main < Sinatra::Base
         respond(:result => omitted_types.include?(type))
     end
 
+    # Side panels of the start page (timetable.html): polls, books, deadlines,
+    # 2FA hotline. The page renders them once and fetches them again through
+    # /api/refresh_start_page, so a page that stays open doesn't show a poll
+    # that is long over.
+    def start_page_panels_html()
+        [
+            print_ad_hoc_2fa_panel(),
+            print_summoned_books_panel(),
+            print_tresor_countdown_panel(),
+            print_current_polls(),
+        ].join('')
+    end
+
+    def print_start_page_panels()
+        html = start_page_panels_html()
+        "<div id='start_page_panels' style='display: contents;' data-sha1='#{Digest::SHA1.hexdigest(html)}'>#{html}</div>"
+    end
+
+    post '/api/refresh_start_page' do
+        require_user!
+        html = start_page_panels_html()
+        respond(:panels => html, :sha1 => Digest::SHA1.hexdigest(html),
+                :unread_ids => get_unread_messages(Time.now.to_i - MESSAGE_DELAY))
+    end
+
     def print_summoned_books_panel()
         require_user!
         email = @session_user[:email]

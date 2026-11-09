@@ -2530,9 +2530,8 @@ class Main < Sinatra::Base
                 if user_with_role_logged_in?(:can_receive_messages)
                     new_messages_count_s = new_messages_count.to_s
                     new_messages_count_s = '99+' if new_messages_count > 99
-                    if new_messages_count > 0
-                        io.puts "<a href='/messages' class='new-messages-indicator-mini'><i class='fa fa-comment' style='color: #{primary_color};'></i><span>#{new_messages_count_s}</span></a>"
-                    end
+                    # always there (hidden when 0), so pages can update it
+                    io.puts "<a href='/messages' class='new-messages-indicator-mini'#{new_messages_count > 0 ? '' : ' hidden'}><i class='fa fa-comment' style='color: #{primary_color};'></i><span>#{new_messages_count > 0 ? new_messages_count_s : ''}</span></a>"
                 end
             else
                 nav_items << ['/hilfe', 'Hilfe', 'fa fa-question-circle']
@@ -2847,11 +2846,7 @@ class Main < Sinatra::Base
                     io.puts "</li>"
                 elsif x == :messages
                     io.puts "<li class='nav-item text-nowrap'>"
-                    if new_messages_count > 0
-                        io.puts "<a class='nav-link nav-icon' href='/messages'><div class='icon'><i class='fa fa-comment'></i></div>Nachrichten<span class='new-messages-indicator' style='background-color: #{primary_color}'><span>#{new_messages_count_s}</span></span></a>"
-                    else
-                        io.puts "<a class='nav-link nav-icon' href='/messages'><div class='icon'><i class='fa fa-comment'></i></div>Nachrichten</a>"
-                    end
+                    io.puts "<a class='nav-link nav-icon' href='/messages'><div class='icon'><i class='fa fa-comment'></i></div>Nachrichten<span class='new-messages-indicator' style='background-color: #{primary_color}'#{new_messages_count > 0 ? '' : ' hidden'}><span>#{new_messages_count > 0 ? new_messages_count_s : ''}</span></span></a>"
                     io.puts "</li>"
                 elsif x == :tresor
                     io.puts "<li class='nav-item text-nowrap'>"

@@ -114,12 +114,9 @@
                         </div>
                     </div>
                 </div>
-                #{print_ad_hoc_2fa_panel()}
-                #{print_summoned_books_panel()}
-                #{print_tresor_countdown_panel()}
+                #{print_start_page_panels()}
                 #{#print_lehrerzimmer_panel()}
                 #{#print_self_test_panel()}
-                #{print_current_polls()}
                 #{#print_projektwahl_countdown_panel()}
                 #{#print_phishing_panel()}
                 #{#print_salzh_panel()}
@@ -1600,18 +1597,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (read_entries.length > 0) {
                     api_call('/api/mark_as_read', {ids: read_entries}, function(data) {
-                        if (data.success) {
-                            unread_message_ids = data.new_unread_ids;
-                            if (unread_message_ids.length > 0) {
-                                $('.new-messages-indicator span').html('' + unread_message_ids.length);
-                                $('.new-messages-indicator-mini span').html('' + unread_message_ids.length);
-                            } else {
-                                $('.new-messages-indicator span').html('');
-                                $('.new-messages-indicator-mini span').html('');
-                                $('.new-messages-indicator').hide();
-                                $('.new-messages-indicator-mini').hide();
-                            }
-                        }
+                        if (data.success)
+                            update_new_messages_indicators(data.new_unread_ids);
                     });
                 }
                 wrote_something = true;
@@ -1987,9 +1974,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    $('.bu_open_ad_hoc_2fa_request').click(function(e) {
-        let email = $(e.target).data('email');
-        let name = $(e.target).data('name');
+    // delegated: the panels are replaced when the start page refreshes
+    $(document).on('click', '.bu_open_ad_hoc_2fa_request', function(e) {
+        let email = $(e.currentTarget).data('email');
+        let name = $(e.currentTarget).data('name');
         api_call('/api/fresh_2fa_credentials_for_user', {email: email}, function(data) {
             console.log(data);
             $('.ad_hoc_login_name_here').text(name);
@@ -2032,8 +2020,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     mail_reason_changed();
     window.addEventListener('load', function() {
-        if ($('#tresor_countdown_here').length > 0) {
-            setInterval(function() {
+        // the panel may also appear later, when the start page refreshes
+        setInterval(function() {
+            if ($('#tresor_countdown_here').length > 0) {
                 let ts0 = moment();
                 let deadline = $('#tresor_countdown_here').data('deadline');
                 let ts1 = moment.unix(deadline);
@@ -2051,8 +2040,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     $('#tresor_countdown_here').slideUp();
                 }
-            }, 1000);
+            }
+        }, 1000);
+    });
+
+    // An open start page stays current: the side panels (polls …), the unread
+    // messages and the timetable are fetched again every few minutes while the
+    // page is visible, and right away when it becomes visible again after a
+    // while. Not while a dialog is open or someone is typing.
+    const START_PAGE_REFRESH_INTERVAL = 5 * 60 * 1000;
+    const START_PAGE_REFRESH_ON_RETURN = 60 * 1000;
+    let start_page_last_refresh = Date.now();
+    let start_page_day = moment().format('YYYY-MM-DD');
+    function start_page_busy() {
+        if ($('.modal.show').length > 0)
+            return true;
+        let el = document.activeElement;
+        return !!el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
+    }
+    function refresh_start_page() {
+        if (document.visibilityState !== 'visible' || start_page_busy())
+            return;
+        start_page_last_refresh = Date.now();
+        // quietly: no "please wait", no error message when the network is gone
+        jQuery.post({url: '/api/refresh_start_page', data: '{}', contentType: 'application/json', dataType: 'json'}).done(function(data) {
+            let panels = $('#start_page_panels');
+            if (panels.length > 0 && panels.attr('data-sha1') !== data.sha1) {
+                panels.html(data.panels).attr('data-sha1', data.sha1);
+                update_moment_countdowns();
+            }
+            update_new_messages_indicators(data.unread_ids || []);
+        });
+        if (window.calendar) {
+            let today = moment().format('YYYY-MM-DD');
+            if (today !== start_page_day) {
+                // left open overnight: show the new day (on weekends the next Monday, as on load)
+                start_page_day = today;
+                let d = moment();
+                while (d.day() === 6 || d.day() === 0)
+                    d.add(1, 'days');
+                window.calendar.gotoDate(d.format('YYYY-MM-DD'));
+            }
+            window.calendar.refetchEvents();
         }
+    }
+    setInterval(function() {
+        if (Date.now() - start_page_last_refresh >= START_PAGE_REFRESH_INTERVAL)
+            refresh_start_page();
+    }, 30 * 1000);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible' && Date.now() - start_page_last_refresh >= START_PAGE_REFRESH_ON_RETURN)
+            refresh_start_page();
     });
     $('.bu-sort-at-table-by-recency').on('click', function(e) {
         let value = $('.bu-sort-at-table-by-recency').data('value');

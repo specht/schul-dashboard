@@ -839,6 +839,25 @@
         var pb_url = null;
         var show_messages_from = #{ now };
         var unread_message_ids = #{ unread_message_ids.to_json };
+
+        // Unread messages badges in the navigation (rendered hidden when 0).
+        function update_new_messages_indicators(ids) {
+            unread_message_ids = ids;
+            let label = ids.length > 99 ? '99+' : ('' + ids.length);
+            $('.new-messages-indicator span, .new-messages-indicator-mini span').text(ids.length > 0 ? label : '');
+            $('.new-messages-indicator, .new-messages-indicator-mini').prop('hidden', ids.length === 0);
+        }
+
+        function update_moment_countdowns() {
+            for (let e of $('.moment-countdown')) {
+                let t = moment($(e).data('target-timestamp'));
+                let s = duration_to_s(t);
+                if (s === null)
+                    $(e).text($(e).data('after-label'));
+                else
+                    $(e).text(`${$(e).data('before-label')} ${s}`);
+            }
+        }
         window.FontAwesomeConfig = { autoReplaceSvg: false };
         var weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
         var weekdays_long = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -926,7 +945,8 @@
                     }
                 });
             });
-            $('#show_hidden_polls').click(function (e) {
+            // delegated: the start page replaces its panels when it refreshes
+            $(document).on('click', '#show_hidden_polls', function (e) {
                 $('.hint_poll_hidden_indicator').slideUp();
                 $('.hint_poll').slideDown();
                 e.preventDefault();
@@ -939,28 +959,11 @@
                     return false;
                 }
             });
-            jQuery.each($('.moment-countdown'), function (_, e) {
-                let t = moment($(e).data('target-timestamp'));
-                let bl = $(e).data('before-label');
-                let al = $(e).data('after-label');
-                let s = duration_to_s(t);
-                if (s === null)
-                    $(e).text(al);
-                else
-                    $(e).text(`${bl} ${s}`);
-                (function (e, t, bl, al) {
-                    setInterval(function () {
-                        let s = duration_to_s(t);
-                        if (s === null)
-                            $(e).text(al);
-                        else
-                            $(e).text(`${bl} ${s}`);
-                    }, 60000);
-                })(e, t, bl, al);
-            });
-            $('.bu-launch-poll').click(function (e) {
-                let prid = $(e.target).data('poll-run-id');
-                let external_code = $(e.target).data('poll-external-code') || '';
+            update_moment_countdowns();
+            setInterval(update_moment_countdowns, 60000);
+            $(document).on('click', '.bu-launch-poll', function (e) {
+                let prid = $(e.currentTarget).data('poll-run-id');
+                let external_code = $(e.currentTarget).data('poll-external-code') || '';
                 launch_poll(prid, external_code);
             });
             $('.bu-launch-adventskalender').click(function (e) {

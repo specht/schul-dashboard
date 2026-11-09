@@ -1503,6 +1503,10 @@ span.bv {
     font-weight: bold;
 }
 
+.new-messages-indicator[hidden], .new-messages-indicator-mini[hidden] {
+    display: none !important;
+}
+
 .new-messages-indicator span {
     position: relative;
     top: 2px;

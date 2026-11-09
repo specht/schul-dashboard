@@ -186,6 +186,11 @@
             color: var(--muted);
             text-align: left;
         }
+        /* Fixed widths (monospaced font), so changing texts ("Prüfe …",
+           "in 9 s" / "in 10 s", "Wartezeit 9:59" / "10:00") never move the
+           button. */
+        #countdown { display: inline-block; min-width: 24ch; }
+        #elapsed { display: inline-block; min-width: 15ch; }
         .foot button {
             font: inherit;
             font-family: 'AlegreyaSans', system-ui, sans-serif;
@@ -244,9 +249,17 @@
             .buddy .z1 { opacity: 0.7; }
         }
 
+        @media (max-width: 520px) {
+            /* phones: status line on top, button below over the full width */
+            .foot { flex-direction: column; align-items: stretch; }
+            .foot button { width: 100%; padding: 10px 16px; }
+        }
         @media (max-width: 420px) {
             .card { padding: 22px 18px 18px; }
             .lead { font-size: 19px; }
+            /* always two lines, so the length of the texts doesn't matter */
+            #countdown, #elapsed { display: block; min-width: 0; }
+            .foot .sep { display: none; }
         }
     </style>
 </head>
@@ -295,7 +308,7 @@
         </p>
 
         <div class="foot">
-            <span aria-hidden="true"><span id="countdown">Nächster Versuch gleich</span> · <span id="elapsed">Wartezeit 0:00</span></span>
+            <span aria-hidden="true"><span id="countdown">Nächster Versuch gleich</span><span class="sep"> · </span><span id="elapsed">Wartezeit 0:00</span></span>
             <button type="button" id="retry">Jetzt prüfen</button>
         </div>
 

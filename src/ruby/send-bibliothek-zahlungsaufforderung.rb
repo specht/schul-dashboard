@@ -279,7 +279,7 @@ class Script
                         exit
                     end
                     if ARGV.include?('--srsly')
-                        mail.deliver!
+                        deliver_with_development_guard!(mail)
                         sleep 2
                     else
                         STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"
@@ -343,7 +343,7 @@ class Script
                     exit
                 end
                 if ARGV.include?('--srsly')
-                    mail.deliver!
+                    deliver_with_development_guard!(mail)
                     sleep 2
                 else
                     STDERR.puts "Not sending mail to #{recipient} unless you specify --srsly!"

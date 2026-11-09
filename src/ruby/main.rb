@@ -11,6 +11,7 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
+require './mail_guard.rb'
 require 'neo4j_bolt'
 require 'net/http'
 require 'net/imap'
@@ -270,17 +271,27 @@ def deliver_mail(plain_text = nil, &block)
             end
         end
     end
+    deliver_with_development_guard!(mail)
+end
+
+# Every mail is sent through here. In development, recipients that are not on
+# DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST are removed (to, cc and bcc); if
+# nobody is left, the mail is only printed to the log. Returns whether the
+# mail was sent.
+def deliver_with_development_guard!(mail)
     if DEVELOPMENT
-        if DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST.include?(mail.to.first)
-            debug "Sending mail to #{mail.to.join(' / ')} because first recipient is included in DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST..."
-            mail.deliver!
-        else
-            debug "Not sending mail to because we're in development: #{mail.subject} => #{mail.to.join(' / ')}"
-            debug mail.to_s
+        original = mail.to_s
+        removed = MailGuard.restrict!(mail, DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST)
+        unless MailGuard.deliverable?(mail)
+            debug "Development: not sending mail (no recipient on DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST): #{mail.subject}"
+            debug original
+            return false
         end
-    else
-        mail.deliver!
+        debug "Development: sending mail to #{MailGuard.recipients(mail).join(' / ')}" +
+              (removed.empty? ? '' : " (#{removed.size} other recipient(s) removed)")
     end
+    mail.deliver!
+    true
 end
 
 def parse_markdown(s)

@@ -199,7 +199,7 @@ class Script
                                     end
                                     io.string
                                 end
-                                mail.deliver!
+                                deliver_with_development_guard!(mail)
                                 imap.copy(mid, 'Bounced')
                             end
                         end
@@ -264,7 +264,7 @@ class Script
                                     end
                                     mail = mail_copy
                                 end
-                                mail.deliver!
+                                deliver_with_development_guard!(mail)
                             end
                         rescue StandardError => e
                             # sending failed!

@@ -22,3 +22,13 @@ MERGE (u)-[:HAS_AMT {amt: 'technikamt'}]->(v);
 MATCH (u:User {email: 'clarke@beispielschule.de'})
 SET u.otp_token = 'JBSWY3DPEHPK3PXP',
     u.preferred_login_method = 'otp';
+
+// A tablet set booking for the Silentium monitor (monitor.spec.ts). Seeded
+// for yesterday, today and tomorrow so that exactly one of them is "today"
+// for the dashboard, whatever the time zone difference of date() is.
+MATCH (t:TabletSet {id: 'Tabletsatz 1'}), (u:User {email: 'torstenson@beispielschule.de'})
+UNWIND [-1, 0, 1] AS offset
+WITH t, u, toString(date() + duration({days: offset})) AS datum
+MERGE (b:Booking {datum: datum, start_time: '09:00', end_time: '10:30', reason: 'E2E-Buchung'})
+MERGE (b)-[:BOOKED]->(t)
+MERGE (b)-[:BOOKED_BY]->(u);

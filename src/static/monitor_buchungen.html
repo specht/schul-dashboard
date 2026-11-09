@@ -1,5 +1,10 @@
 #{require_monitor_or_user_who_can_manage_monitors!}
 <style>
+    /* Sieht aus wie die anderen Monitore (monitor.html): Schrift des Dashboards,
+       halbtransparente Karten, alles in vw – damit die kleine Vorschau in
+       manage_monitor.html genauso aussieht wie der Monitor im Silentium.
+       Eine Zeile pro Gerät, die Zeit läuft waagerecht: so bleiben auch bei
+       vielen Geräten die Buchungen breit genug für lesbaren Text. */
     .navbar, .foot {
         display: none;
     }
@@ -7,53 +12,54 @@
     body {
         padding-top: 0;
         overflow: hidden;
-        color: #000;
+        color: #{color_palette[:contrast]};
     }
 
     .bm-wrapper {
         width: 100vw;
         height: 100vh;
         box-sizing: border-box;
-        padding: 2vw 2.5vw;
+        padding: 1.5vw 2vw 0.6vw 2vw;
         display: flex;
         flex-direction: column;
-        font-family: 'Roboto', sans-serif;
     }
 
     .bm-card {
-        background-color: rgba(255, 255, 255, 0.3);
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
-        border-radius: 0.5vw;
-        box-shadow: 0 0.1vw 0.6vw rgba(0, 0, 0, 0.15);
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 0.7vw;
+        box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.4);
+        color: #{color_palette[:darker]};
     }
 
     .bm-header {
         display: flex;
         justify-content: space-between;
         align-items: baseline;
-        margin-bottom: 1.2vw;
-        padding: 1vw 1.6vw;
+        margin-bottom: 1vw;
+        padding: 0.7vw 1.5vw;
         flex-shrink: 0;
+        white-space: nowrap;
     }
 
     .bm-title {
-        font-size: 2.4vw;
-        font-weight: 700;
+        font-size: 2.2vw;
+        font-weight: bold;
+        line-height: 1.2;
     }
 
     .bm-date {
-        font-size: 1.3vw;
-        opacity: 0.75;
-        margin-top: 0.2vw;
+        font-size: 1.5vw;
+        margin-left: 1vw;
+        opacity: 0.8;
     }
 
     .bm-clock {
-        font-family: 'Roboto Condensed', sans-serif;
-        font-size: 2.4vw;
-        font-weight: 700;
+        font-size: 2.2vw;
+        font-weight: bold;
+        line-height: 1.2;
         font-variant-numeric: tabular-nums;
-        color: #{color_palette[:primary]};
     }
 
     .bm-board {
@@ -62,178 +68,185 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
-        padding: 0.8vw 1.6vw 1.2vw 1.6vw;
+        padding: 0.4vw 1.5vw 0.8vw 1.5vw;
     }
 
-    .bm-grid-header {
+    .bm-axis, .bm-row {
         display: flex;
         flex-shrink: 0;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     }
 
-    .bm-ruler-spacer {
-        width: 5.5vw;
+    .bm-axis {
+        height: 2.4vw;
+    }
+
+    .bm-label, .bm-axis-spacer {
+        width: 10vw;
         flex-shrink: 0;
     }
 
-    .bm-col-headers {
-        display: flex;
-        flex: 1;
-    }
-
-    .bm-col-header {
+    .bm-axis-track, .bm-track {
+        position: relative;
         flex: 1;
         min-width: 0;
+    }
+
+    .bm-axis-period {
+        position: absolute;
+        bottom: 0.3vw;
+        transform: translateX(-50%);
+        font-size: 1.05vw;
+        font-weight: bold;
+        line-height: 1.1;
         text-align: center;
-        padding: 0.5vw 0.3vw;
-        font-size: 1.0vw;
-        font-weight: 700;
-        border-left: 1px solid rgba(0, 0, 0, 0.12);
-        overflow: hidden;
         white-space: nowrap;
+        opacity: 0.7;
+    }
+
+    .bm-axis-period small {
+        display: block;
+        font-size: 0.8vw;
+        font-weight: normal;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .bm-axis-period.bm-period-active {
+        opacity: 1;
+    }
+
+    .bm-rows {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bm-rows-list {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bm-row {
+        flex: 1 1 0;
+        min-height: 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .bm-label {
+        display: flex;
+        align-items: center;
+        padding-right: 0.6vw;
+        font-size: 1.15vw;
+        font-weight: bold;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    .bm-grid-body {
-        display: flex;
-        flex: 1;
-        min-height: 0;
-        position: relative;
+    .bm-row.bm-row-free .bm-label {
+        opacity: 0.55;
+        font-weight: normal;
     }
 
-    .bm-ruler {
-        position: relative;
-        width: 5.5vw;
-        flex-shrink: 0;
+    .bm-label-count {
+        margin-left: 0.4vw;
+        font-size: 0.8vw;
+        font-weight: normal;
+        opacity: 0.8;
     }
 
-    .bm-ruler-period {
+    /* Pausen und Jetzt-Linie liegen über allen Zeilen, rechts neben den Namen */
+    .bm-overlay {
         position: absolute;
-        left: 0;
+        top: 0;
+        bottom: 0;
+        left: 10vw;
         right: 0;
-        box-sizing: border-box;
-        border-top: 1px solid rgba(0, 0, 0, 0.12);
-        padding: 0.15vw 0.4vw 0 0;
-        font-family: 'Roboto Condensed', sans-serif;
-        font-size: 0.85vw;
-        font-weight: 700;
-        text-align: right;
-        opacity: 0.65;
-    }
-
-    .bm-ruler-period.bm-period-break {
-        opacity: 0.45;
-        font-weight: 400;
-        font-style: italic;
-    }
-
-    .bm-ruler-period.bm-period-active {
-        opacity: 1;
-        color: #{color_palette[:primary]};
-    }
-
-    .bm-columns-container {
-        position: relative;
-        flex: 1;
-        overflow: hidden;
-    }
-
-    .bm-track-overlay {
-        position: absolute;
-        inset: 0;
         pointer-events: none;
     }
 
     .bm-break-band {
         position: absolute;
-        left: 0;
-        right: 0;
-        background-color: rgba(0, 0, 0, 0.05);
+        top: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.06);
     }
 
     .bm-now-line {
         position: absolute;
-        left: 0;
-        right: 0;
-        height: 1px;
-        border-top: 1px solid #e6432c;
+        top: -0.4vw;
+        bottom: 0;
+        width: 0;
+        border-left: 0.15vw solid #e6432c;
         z-index: 5;
     }
 
     .bm-now-line::before {
         content: '';
         position: absolute;
-        top: -0.35vw;
-        left: -0.05vw;
-        width: 0;
-        height: 0;
+        top: 0;
+        left: -0.5vw;
         border-style: solid;
-        border-width: 0.45vw 0.35vw 0 0.35vw;
+        border-width: 0.5vw 0.425vw 0 0.425vw;
         border-color: #e6432c transparent transparent transparent;
-    }
-
-    .bm-columns {
-        display: flex;
-        height: 100%;
-        position: relative;
-    }
-
-    .bm-column {
-        flex: 1;
-        min-width: 0;
-        position: relative;
-        border-left: 1px solid rgba(0, 0, 0, 0.12);
     }
 
     .bm-booking {
         position: absolute;
-        left: 0.3vw;
-        right: 0.3vw;
-        border-radius: 0.22vw;
-        background-color: #{color_palette[:primary]};
-        color: #fff;
-        box-shadow: 0 0.08vw 0.35vw rgba(0, 0, 0, 0.3);
-        padding: 0.1vw 0.35vw;
-        box-sizing: border-box;
-        min-height: 42px;
-        overflow: hidden;
+        top: 12%;
+        bottom: 12%;
+        min-width: 4vw;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 0 0.5vw;
+        border-radius: 0.4vw;
+        background-color: #{color_palette[:darker]};
+        color: #fff;
+        box-shadow: 0 0 0.3vw rgba(0, 0, 0, 0.3);
+        font-size: 1.05vw;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        z-index: 2;
     }
 
-    .bm-booking-time {
-        font-family: 'Roboto Condensed', sans-serif;
-        font-size: 0.68vw;
-        line-height: 1.15;
-        font-variant-numeric: tabular-nums;
-        opacity: 0.85;
-        white-space: nowrap;
+    .bm-booking.bm-booking-now {
+        background-color: rgba(250, 211, 28, 0.95);
+        color: #222;
     }
 
-    .bm-booking-room {
-        font-family: 'Roboto Condensed', sans-serif;
-        font-size: 0.68vw;
-        line-height: 1.15;
-        opacity: 0.85;
-        white-space: nowrap;
+    .bm-booking.bm-booking-past {
+        opacity: 0.4;
     }
 
     .bm-booking-who {
-        font-size: 0.85vw;
-        font-weight: 700;
-        line-height: 1.15;
+        font-weight: bold;
+        margin-right: 0.4vw;
+        flex-shrink: 0;
     }
 
-    .bm-booking-count {
-        margin-top: auto;
-        align-self: flex-end;
-        font-family: 'Roboto Condensed', sans-serif;
-        font-size: 0.68vw;
-        font-weight: 700;
-        background-color: rgba(255, 255, 255, 0.25);
-        padding: 0 0.3vw;
-        border-radius: 0.2vw;
+    .bm-booking-what {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .bm-booking-klasse {
+        font-weight: bold;
+        margin-right: 0.4vw;
+        flex-shrink: 0;
+    }
+
+    .bm-booking-room {
+        margin-left: 0.5vw;
+        opacity: 0.8;
+        flex-shrink: 0;
     }
 
     .bm-empty {
@@ -242,39 +255,33 @@
         align-items: center;
         justify-content: center;
         font-size: 1.6vw;
-        opacity: 0.55;
+        opacity: 0.6;
         text-align: center;
     }
 
     .bm-attribution {
-        margin-top: 0.8vw;
+        user-select: none;
+        margin-top: 0.4vw;
         text-align: right;
-        font-size: 0.75vw;
-        opacity: 0.6;
+        font-size: 0.9vw;
         flex-shrink: 0;
     }
 </style>
 
 <div class='bm-wrapper'>
     <div class='bm-header bm-card'>
-        <div>
-            <div class='bm-title'>Tabletsatz-Buchungen heute</div>
-            <div class='bm-date bm-date-here'></div>
-        </div>
+        <div><span class='bm-title'>Gerätebuchungen heute</span><span class='bm-date bm-date-here'></span></div>
         <div class='bm-clock bm-clock-here'></div>
     </div>
     <div class='bm-board bm-card'>
-        <div class='bm-grid-header'>
-            <div class='bm-ruler-spacer'></div>
-            <div class='bm-col-headers bm-col-headers-here'></div>
+        <div class='bm-axis'>
+            <div class='bm-axis-spacer'></div>
+            <div class='bm-axis-track bm-axis-here'></div>
         </div>
-        <div class='bm-grid-body'>
-            <div class='bm-ruler bm-ruler-here'></div>
-            <div class='bm-columns-container'>
-                <div class='bm-track-overlay bm-track-overlay-here'>
-                    <div class='bm-now-line bm-now-line-here' style='display: none;'></div>
-                </div>
-                <div class='bm-columns bm-columns-here'></div>
+        <div class='bm-rows'>
+            <div class='bm-rows-list bm-rows-here'></div>
+            <div class='bm-overlay bm-overlay-here'>
+                <div class='bm-now-line bm-now-line-here' style='display: none;'></div>
             </div>
         </div>
         <div class='bm-empty bm-empty-here' style='display: none;'>Es sind keine Tabletsätze oder Geräte hinterlegt.</div>
@@ -312,19 +319,23 @@
         return bm_js_time() + bm_server_time_diff;
     }
 
-    // Position entlang der vertikalen Zeitachse (0-100).
+    // Position entlang der Zeitachse (0-100).
     function bm_percent(minutes) {
         return Math.max(0, Math.min(100, (minutes - BM_DAY_START) / (BM_DAY_END - BM_DAY_START) * 100.0));
     }
 
-    // Legt das dargestellte Zeitfenster fest: das Raster plus alle heutigen Buchungen.
-    // Dadurch bleibt auch eine Buchung außerhalb der regulären Stunden sichtbar.
+    // Legt das dargestellte Zeitfenster fest: normalerweise 1. bis 6. Stunde, erweitert um
+    // alle heutigen Buchungen. Frühere und spätere Stunden nehmen so nur Platz weg, wenn dann
+    // wirklich etwas gebucht ist - die Buchungsbalken bleiben breit genug für lesbaren Text.
+    // Ohne Raster (keine Stundenzeiten hinterlegt) bleibt es bei 8 bis 16 Uhr.
     function bm_update_day_window(data) {
         let starts = [];
         let ends = [];
         for (let period of BM_PERIODS) {
-            starts.push(hhmm_to_minutes(period.start));
-            ends.push(hhmm_to_minutes(period.end));
+            let stunde = parseInt(period.label);
+            if (period.is_break || isNaN(stunde)) continue;
+            if (stunde === 1) starts.push(hhmm_to_minutes(period.start));
+            if (stunde === 6) ends.push(hhmm_to_minutes(period.end));
         }
         for (let tablet_id in (data.bookings || {})) {
             for (let booking of data.bookings[tablet_id]) {
@@ -332,9 +343,8 @@
                 ends.push(hhmm_to_minutes(booking.booking.end_time));
             }
         }
-        if (starts.length === 0) return;
-        BM_DAY_START = Math.min.apply(null, starts) - 15;
-        BM_DAY_END = Math.max.apply(null, ends) + 15;
+        if (starts.length > 0) BM_DAY_START = Math.min.apply(null, starts) - 10;
+        if (ends.length > 0) BM_DAY_END = Math.max.apply(null, ends) + 10;
     }
 
     function bm_keep_alive() {
@@ -344,108 +354,123 @@
         bm_ws_timer_id = setTimeout(bm_keep_alive, 20000);
     }
 
-    function render_ruler() {
-        let container = $('.bm-ruler-here');
+    // Position entlang der waagerechten Zeitachse (0-100).
+    function bm_left(minutes) {
+        return bm_percent(minutes);
+    }
+
+    function render_axis() {
+        let container = $('.bm-axis-here');
         container.empty();
         for (let period of BM_PERIODS) {
-            let start_minutes = hhmm_to_minutes(period.start);
-            let end_minutes = hhmm_to_minutes(period.end);
-            let t = bm_percent(start_minutes);
-            let b = bm_percent(end_minutes);
-            let div = $('<div>').addClass('bm-ruler-period').addClass(period.is_break ? 'bm-period-break' : '');
-            div.css('top', `${t}%`).css('height', `${b - t}%`);
-            // sehr kurze Pausen bekommen keinen Text, sonst läuft die Beschriftung optisch über
-            if (!period.is_break || (end_minutes - start_minutes) >= 15) {
-                div.text(period.label);
-            }
+            if (period.is_break) continue;
+            let t0 = hhmm_to_minutes(period.start);
+            let t1 = hhmm_to_minutes(period.end);
+            // Stunden außerhalb des Zeitfensters bekommen keine Beschriftung
+            if ((t0 + t1) / 2 < BM_DAY_START || (t0 + t1) / 2 > BM_DAY_END) continue;
+            let div = $('<div>').addClass('bm-axis-period');
+            div.css('left', `${(bm_left(t0) + bm_left(t1)) / 2}%`);
+            // "3. Stunde" → "3.", darunter die Anfangszeit
+            div.append(document.createTextNode(period.label.replace(/\s*Stunde$/, '')));
+            div.append($('<small>').text(period.start));
             div.data('period', period);
             container.append(div);
         }
     }
 
     function render_break_bands() {
-        let overlay = $('.bm-track-overlay-here');
+        let overlay = $('.bm-overlay-here');
         overlay.find('.bm-break-band').remove();
         for (let period of BM_PERIODS) {
             if (!period.is_break) continue;
-            let t = bm_percent(hhmm_to_minutes(period.start));
-            let b = bm_percent(hhmm_to_minutes(period.end));
+            let l = bm_left(hhmm_to_minutes(period.start));
+            let r = bm_left(hhmm_to_minutes(period.end));
             let div = $('<div>').addClass('bm-break-band');
-            div.css('top', `${t}%`).css('height', `${b - t}%`);
+            div.css('left', `${l}%`).css('width', `${r - l}%`);
             overlay.prepend(div);
         }
     }
 
-    function update_now_line() {
+    function now_minutes() {
         let now = new Date(bm_server_time() * 1000);
-        let minutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60.0;
+        return now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60.0;
+    }
+
+    function update_now_line() {
+        let minutes = now_minutes();
         let line = $('.bm-now-line-here');
         if (minutes >= BM_DAY_START && minutes <= BM_DAY_END) {
-            line.css('top', `${bm_percent(minutes)}%`).show();
+            line.css('left', `${bm_left(minutes)}%`).show();
         } else {
             line.hide();
         }
-        $('.bm-ruler-period').each(function () {
+        $('.bm-axis-period').each(function () {
             let period = $(this).data('period');
             let active = (minutes >= hhmm_to_minutes(period.start)) && (minutes < hhmm_to_minutes(period.end));
             $(this).toggleClass('bm-period-active', active);
+        });
+        // laufende Buchungen hervorheben (wie Vertretungen auf dem Flur-Monitor), vergangene abblenden
+        $('.bm-booking').each(function () {
+            let t0 = $(this).data('t0');
+            let t1 = $(this).data('t1');
+            $(this).toggleClass('bm-booking-now', minutes >= t0 && minutes < t1);
+            $(this).toggleClass('bm-booking-past', minutes >= t1);
         });
     }
 
     function render_bookings(data) {
         bm_update_day_window(data);
-        render_ruler();
+        render_axis();
         render_break_bands();
-        let headers = $('.bm-col-headers-here');
-        let columns = $('.bm-columns-here');
-        headers.empty();
-        columns.empty();
+        let rows = $('.bm-rows-here');
+        rows.empty();
         let tablet_ids = Object.keys(data.bookings || {}).sort();
         if (tablet_ids.length === 0) {
             $('.bm-empty-here').show();
-            $('.bm-grid-header, .bm-grid-body').hide();
+            $('.bm-axis, .bm-rows').hide();
         } else {
             $('.bm-empty-here').hide();
-            $('.bm-grid-header, .bm-grid-body').css('display', '');
+            $('.bm-axis, .bm-rows').css('display', '');
             for (let tablet_id of tablet_ids) {
                 let bookings = data.bookings[tablet_id];
-                headers.append($('<div>').addClass('bm-col-header').text(tablet_id));
-                let col = $('<div>').addClass('bm-column');
+                let row = $('<div>').addClass('bm-row').toggleClass('bm-row-free', bookings.length === 0);
+                let label = $('<div>').addClass('bm-label').text(tablet_id);
+                let count = (bookings.find((x) => x.tablet_set_count) || {}).tablet_set_count;
+                if (count) {
+                    label.append($('<span>').addClass('bm-label-count').text(`(${count})`));
+                }
+                row.append(label);
+                let track = $('<div>').addClass('bm-track');
                 for (let booking of bookings) {
                     let t0 = hhmm_to_minutes(booking.booking.start_time);
                     let t1 = hhmm_to_minutes(booking.booking.end_time);
-                    let t = bm_percent(t0);
-                    let b = bm_percent(t1);
-                    let div = $('<div>').addClass('bm-booking');
-                    div.css('top', `${t}%`).css('height', `${Math.max(b - t, 2)}%`);
+                    let l = bm_left(t0);
+                    let r = bm_left(t1);
+                    let div = $('<div>').addClass('bm-booking').data('t0', t0).data('t1', t1);
+                    div.css('left', `${l}%`).css('width', `${r - l}%`);
+                    div.attr('title', `${booking.booking.start_time} – ${booking.booking.end_time}`);
                     // Nur das Kürzel, bewusst kein Name - siehe todays_tablet_set_bookings_for_monitor.
                     let who = booking.shorthand || '';
                     // Grund bzw. Fach kommt teilweise aus freiem Text der Lehrkraft und wird
                     // deshalb konsequent als Text und nie als HTML eingefügt.
                     let what = booking.lesson || booking.booking.reason || '';
-                    div.append($('<div>').addClass('bm-booking-time').text(`${booking.booking.start_time} – ${booking.booking.end_time}`));
+                    // "Mathematik (9a)" → Klasse zuerst, damit sie nie dem Abschneiden zum Opfer fällt
+                    let klasse = null;
+                    let m = booking.lesson ? booking.lesson.match(/^(.+?)\s*\(([^()]+)\)$/) : null;
+                    if (m) {
+                        what = m[1];
+                        klasse = m[2];
+                    }
+                    if (who) div.append($('<span>').addClass('bm-booking-who').text(who));
+                    if (klasse) div.append($('<span>').addClass('bm-booking-klasse').text(klasse));
+                    div.append($('<span>').addClass('bm-booking-what').text(what));
                     if (booking.raum) {
-                        div.append($('<div>').addClass('bm-booking-room').text(`Raum ${booking.raum}`));
+                        div.append($('<span>').addClass('bm-booking-room').append($("<i class='fa fa-map-marker'></i>")).append(document.createTextNode(' ' + booking.raum)));
                     }
-                    let who_div = $('<div>').addClass('bm-booking-who');
-                    if (who) {
-                        who_div.append($('<b>').text(who));
-                        if (what) {
-                            who_div.append(document.createTextNode(' – ' + what));
-                        }
-                    } else if (what) {
-                        who_div.append(document.createTextNode(what));
-                    }
-                    div.append(who_div);
-                    if (booking.tablet_set_count) {
-                        let count_div = $('<div>').addClass('bm-booking-count');
-                        count_div.append($("<i class='fa fa-laptop'></i>"));
-                        count_div.append(document.createTextNode(' ×' + booking.tablet_set_count));
-                        div.append(count_div);
-                    }
-                    col.append(div);
+                    track.append(div);
                 }
-                columns.append(col);
+                row.append(track);
+                rows.append(row);
             }
         }
         bm_keep_blocks_inside();
@@ -453,18 +478,16 @@
         $('.bm-updated-here').text(moment().format('HH:mm:ss'));
     }
 
-    // Sehr kurze Buchungen bekommen über min-height eine Mindesthöhe, damit der Text lesbar
-    // bleibt. Liegt so ein Block ganz am Ende des Tages, kann er dadurch unten aus dem Raster
-    // ragen und würde abgeschnitten - deshalb hier nachträglich nach oben schieben.
+    // Sehr kurze Buchungen bekommen über min-width eine Mindestbreite, damit der Text lesbar
+    // bleibt. Liegt so ein Block ganz am Ende des Tages, kann er dadurch rechts aus dem Raster
+    // ragen und würde abgeschnitten - deshalb hier nachträglich nach links schieben.
     function bm_keep_blocks_inside() {
-        let container = $('.bm-columns-container')[0];
-        if (!container) return;
-        let limit = container.getBoundingClientRect().bottom;
         $('.bm-booking').each(function () {
-            this.style.marginTop = '';
-            let overshoot = this.getBoundingClientRect().bottom - limit;
+            this.style.marginLeft = '';
+            let limit = this.parentElement.getBoundingClientRect().right;
+            let overshoot = this.getBoundingClientRect().right - limit;
             if (overshoot > 0) {
-                this.style.marginTop = (-overshoot) + 'px';
+                this.style.marginLeft = (-overshoot) + 'px';
             }
         });
     }
@@ -499,7 +522,7 @@
 
     window.addEventListener('load', function () {
         moment.locale('de');
-        $('.bm-date-here').text(moment().format('dddd, LL'));
+        $('.bm-date-here').text(moment().format('dddd, D. MMMM YYYY'));
         if (attribution) {
             let a = $('<span>').append($('<b>').text('»' + attribution[0] + '«'));
             if (attribution[1]) a.append(' von ').append($('<b>').text(attribution[1]));
@@ -509,9 +532,11 @@
         // enthaltenes script-Tag den Block hier vorzeitig beenden.
         render_bookings(#{JSON.generate(todays_tablet_set_bookings_for_monitor, :script_safe => true)});
         setInterval(update_now_line, 15000);
-        setInterval(function () {
+        let update_clock = function () {
             $('.bm-clock-here').text(moment(bm_server_time() * 1000).format('HH:mm:ss'));
-        }, 1000);
+        };
+        update_clock();
+        setInterval(update_clock, 1000);
         bm_establish_ws();
     });
 </script>

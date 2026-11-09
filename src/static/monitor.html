@@ -97,6 +97,10 @@
         box-shadow: 0 0 0.4vw rgba(0, 0, 0, 0.4);
         text-align: center;
         padding-top: 0.7vw;
+        /* inline-block on the baseline would follow the line height of the
+           body font (px, not vw) – in small previews the pebble then slides
+           down; on full HD monitors this changes nothing */
+        vertical-align: top;
     }
 
     .row {

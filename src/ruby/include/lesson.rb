@@ -280,6 +280,13 @@ class Main < Sinatra::Base
             SET n.offset = n.offset + $shift
             SET n.updated = $timestamp;
         END_OF_QUERY
+        # comments to students carry the offset of their lesson as well
+        neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => data[:offset], :shift => data[:shift], :timestamp => timestamp)
+            MATCH (c)-[:BELONGS_TO]->(:Lesson {key: $key})
+            WHERE (c:TextComment OR c:AudioComment) AND c.offset >= $offset
+            SET c.offset = c.offset + $shift
+            SET c.updated = $timestamp;
+        END_OF_QUERY
         trigger_update(data[:lesson_key])
         respond(:ok => 'yeah')
     end
@@ -292,7 +299,6 @@ class Main < Sinatra::Base
         data[:offsets].each do |offset|
             raise 'no a number' unless offset.is_a?(Integer)
         end
-        STDERR.puts data.to_yaml
         data[:offsets].sort!
         cumulative_offset = 0
         timestamp = Time.now.to_i
@@ -306,6 +312,19 @@ class Main < Sinatra::Base
                 WHERE n.offset > $offset
                 SET n.offset = n.offset - 1
                 SET n.updated = $timestamp;
+            END_OF_QUERY
+            # comments to students belong to their lesson: deleted with it, the
+            # following ones move up like the lessons
+            neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => offset - cumulative_offset)
+                MATCH (c)-[:BELONGS_TO]->(:Lesson {key: $key})
+                WHERE (c:TextComment OR c:AudioComment) AND c.offset = $offset
+                DETACH DELETE c;
+            END_OF_QUERY
+            neo4j_query(<<~END_OF_QUERY, :key => data[:lesson_key], :offset => offset - cumulative_offset, :timestamp => timestamp)
+                MATCH (c)-[:BELONGS_TO]->(:Lesson {key: $key})
+                WHERE (c:TextComment OR c:AudioComment) AND c.offset > $offset
+                SET c.offset = c.offset - 1
+                SET c.updated = $timestamp;
             END_OF_QUERY
             cumulative_offset += 1
         end

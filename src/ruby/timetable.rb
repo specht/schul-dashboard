@@ -2358,6 +2358,93 @@ class Timetable
 
     # Writes a generated gzip file only if its content changed (see
     # gz_output.rb) and counts written/unchanged files for the log.
+    # Enters one text comment row (from the database) into the caches.
+    def apply_text_comment_row(row)
+        @lesson_info[row[:key]] ||= {}
+        @lesson_info[row[:key]][row[:info][:offset]] ||= {}
+        @lesson_info[row[:key]][row[:info][:offset]][:comments] ||= {}
+        @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]] ||= {}
+        @text_comments_for_user[row[:schueler]] ||= {}
+        @text_comments_for_user[row[:schueler]][row[:key]] ||= {}
+        if row[:info][:comment]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:text_comment] = row[:info][:comment]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:tcf] = row[:tcf]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:timestamp] = row[:info][:updated]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:id] = row[:info][:id]
+            @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]] ||= {}
+            @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:text_comment] = row[:info][:comment]
+            @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:from] = row[:tcf]
+            @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:timestamp] = row[:info][:updated]
+            @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:id] = row[:info][:id]
+        else
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:text_comment)
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:tcf)
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:timestamp)
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:id)
+            @text_comments_for_user[row[:schueler]][row[:key]].delete(row[:info][:offset])
+            if @text_comments_for_user[row[:schueler]][row[:key]].empty?
+                @text_comments_for_user[row[:schueler]].delete(row[:key])
+            end
+        end
+    end
+
+    # Enters one audio comment row (from the database) into the caches.
+    def apply_audio_comment_row(row)
+        @lesson_info[row[:key]] ||= {}
+        @lesson_info[row[:key]][row[:info][:offset]] ||= {}
+        @lesson_info[row[:key]][row[:info][:offset]][:comments] ||= {}
+        @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]] ||= {}
+        @audio_comments_for_user[row[:schueler]] ||= {}
+        @audio_comments_for_user[row[:schueler]][row[:key]] ||= {}
+        if row[:info][:tag]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:audio_comment_tag] = row[:info][:tag]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:duration] = row[:info][:duration]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:acf] = row[:acf]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:timestamp] = row[:info][:updated]
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:id] = row[:info][:id]
+            @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]] ||= {}
+            @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:audio_comment_tag] = row[:info][:tag]
+            @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:duration] = row[:info][:duration]
+            @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:from] = row[:acf]
+            @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:timestamp] = row[:info][:updated]
+            @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:id] = row[:info][:id]
+        else
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:audio_comment_tag)
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:duration)
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:acf)
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:timestamp)
+            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:id)
+            @audio_comments_for_user[row[:schueler]][row[:key]].delete(row[:info][:offset])
+            if @audio_comments_for_user[row[:schueler]][row[:key]].empty?
+                @audio_comments_for_user[row[:schueler]].delete(row[:key])
+            end
+        end
+    end
+
+    # Takes the comments of a lesson completely from the database: inserting or
+    # deleting lessons shifts their offsets (/api/insert_lesson, delete_lessons),
+    # and incremental updates would keep them at their old offsets as well.
+    def reload_comments_for_lesson_key(lesson_key)
+        (@lesson_info[lesson_key] || {}).each_value { |info| info.delete(:comments) }
+        [@text_comments_for_user, @audio_comments_for_user].each do |per_user|
+            per_user.each_value { |per_key| per_key.delete(lesson_key) }
+        end
+        neo4j_query(<<~END_OF_QUERY, {:key => lesson_key}).each do |x|
+            MATCH (s:User)<-[:TO]-(c:TextComment)-[:BELONGS_TO]->(l:Lesson {key: $key})
+            OPTIONAL MATCH (c)-[:FROM]->(tcf:User)
+            RETURN c, l.key AS key, s.email, tcf.email;
+        END_OF_QUERY
+            apply_text_comment_row({:info => x['c'], :key => x['key'], :schueler => x['s.email'], :tcf => x['tcf.email']})
+        end
+        neo4j_query(<<~END_OF_QUERY, {:key => lesson_key}).each do |x|
+            MATCH (s:User)<-[:TO]-(c:AudioComment)-[:BELONGS_TO]->(l:Lesson {key: $key})
+            OPTIONAL MATCH (c)-[:FROM]->(acf:User)
+            RETURN c, l.key AS key, s.email, acf.email;
+        END_OF_QUERY
+            apply_audio_comment_row({:info => x['c'], :key => x['key'], :schueler => x['s.email'], :acf => x['acf.email']})
+        end
+    end
+
     def write_gz(path, &block)
         t0 = clock
         inner = 0.0
@@ -2562,33 +2649,8 @@ class Timetable
         END_OF_QUERY
         fetched_text_comments_count = rows.size
         rows.each do |row|
-            @lesson_info[row[:key]] ||= {}
             @text_comments_last_timestamp = row[:info][:updated] if row[:info][:updated] > @text_comments_last_timestamp
-            @lesson_info[row[:key]][row[:info][:offset]] ||= {}
-            @lesson_info[row[:key]][row[:info][:offset]][:comments] ||= {}
-            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]] ||= {}
-            @text_comments_for_user[row[:schueler]] ||= {}
-            @text_comments_for_user[row[:schueler]][row[:key]] ||= {}
-            if row[:info][:comment]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:text_comment] = row[:info][:comment]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:tcf] = row[:tcf]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:timestamp] = row[:info][:updated]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:id] = row[:info][:id]
-                @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]] ||= {}
-                @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:text_comment] = row[:info][:comment]
-                @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:from] = row[:tcf]
-                @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:timestamp] = row[:info][:updated]
-                @text_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:id] = row[:info][:id]
-            else
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:text_comment)
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:tcf)
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:timestamp)
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:id)
-                @text_comments_for_user[row[:schueler]][row[:key]].delete(row[:info][:offset])
-                if @text_comments_for_user[row[:schueler]][row[:key]].empty?
-                    @text_comments_for_user[row[:schueler]].delete(row[:key])
-                end
-            end
+            apply_text_comment_row(row)
         end
         # refresh audio comments from database
         @audio_comments_last_timestamp ||= 0
@@ -2601,36 +2663,13 @@ class Timetable
         END_OF_QUERY
         fetched_audio_comments_count = rows.size
         rows.each do |row|
-            @lesson_info[row[:key]] ||= {}
             @audio_comments_last_timestamp = row[:info][:updated] if row[:info][:updated] > @audio_comments_last_timestamp
-            @lesson_info[row[:key]][row[:info][:offset]] ||= {}
-            @lesson_info[row[:key]][row[:info][:offset]][:comments] ||= {}
-            @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]] ||= {}
-            @audio_comments_for_user[row[:schueler]] ||= {}
-            @audio_comments_for_user[row[:schueler]][row[:key]] ||= {}
-            if row[:info][:tag]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:audio_comment_tag] = row[:info][:tag]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:duration] = row[:info][:duration]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:acf] = row[:acf]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:timestamp] = row[:info][:updated]
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]][:id] = row[:info][:id]
-                @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]] ||= {}
-                @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:audio_comment_tag] = row[:info][:tag]
-                @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:duration] = row[:info][:duration]
-                @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:from] = row[:acf]
-                @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:timestamp] = row[:info][:updated]
-                @audio_comments_for_user[row[:schueler]][row[:key]][row[:info][:offset]][:id] = row[:info][:id]
-            else
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:audio_comment_tag)
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:duration)
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:acf)
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:timestamp)
-                @lesson_info[row[:key]][row[:info][:offset]][:comments][row[:schueler]].delete(:id)
-                @audio_comments_for_user[row[:schueler]][row[:key]].delete(row[:info][:offset])
-                if @audio_comments_for_user[row[:schueler]][row[:key]].empty?
-                    @audio_comments_for_user[row[:schueler]].delete(row[:key])
-                end
-            end
+            apply_audio_comment_row(row)
+        end
+        # comments of updated lessons: completely from the database (offsets may have shifted)
+        (only_these_lesson_keys || []).each do |lesson_key|
+            next unless @@lessons[:lesson_keys].include?(lesson_key)
+            reload_comments_for_lesson_key(lesson_key)
         end
         begin
             # refresh messages from database

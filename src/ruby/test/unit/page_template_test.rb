@@ -40,6 +40,18 @@ class PageTemplateTest < Minitest::Test
         assert_equal 'a<1>b<2>c', result
     end
 
+    # The security property: output (e.g. a poll title from the database) is
+    # inserted as text and never evaluated, even if it contains #{...}.
+    def test_output_is_never_evaluated_again
+        codes = []
+        result = PageTemplate.evaluate("<h1>\#{title}</h1>\#{n}") do |code|
+            codes << code
+            code == 'title' ? "\#{system('id')}" : '2'
+        end
+        assert_equal ['title', 'n'], codes
+        assert_equal "<h1>\#{system('id')}</h1>2", result
+    end
+
     def test_source_is_not_modified
         source = "\#{x}"
         PageTemplate.evaluate(source) { 'y' }

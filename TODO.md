@@ -44,6 +44,11 @@ hierher übernehmen, wenn sie angegangen werden.
 
 ### Fehler
 
+- [ ] Externe Nutzer:innen hinzufügen: Steht statt einer E-Mail-Adresse etwas
+      anderes im Feld (z. B. ein Gruppenname wie „Eltern 10a“), endet
+      `/api/add_external_users` mit HTTP 500 (`Mail::AddressList` in
+      `include/ext_user.rb`) statt mit einem verständlichen Hinweis. Kommt in
+      Produktion vor.
 - [ ] Umfrage beantworten: Eine Freitext-Antwort wird erst übernommen, wenn das
       Textfeld den Fokus verliert (`change`), vorher bleibt „Absenden“
       deaktiviert. Besser auf `input` reagieren (`_template.html`,

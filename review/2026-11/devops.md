@@ -1,206 +1,206 @@
-# DevOps-Review gyst-dashboard
+# DevOps review gyst-dashboard
 
-Ich habe nur gelesen und nichts verändert. Nicht geöffnet habe ich `data/`, `internal/`, `logs/`, `env.rb`, `credentials.rb`, `docker-compose.yaml` und `SICHERHEIT.local.md`. Gemessen habe ich nur am laufenden Test-Stack, also mit Beispieldaten: Startlog von `schuldashboardtest_ruby_1`, Ladezeit der Gems im Container, Image-Inhalt.
+I only read and changed nothing. I did not open `data/`, `internal/`, `logs/`, `env.rb`, `credentials.rb`, `docker-compose.yaml` and `SICHERHEIT.local.md`. I only took measurements on the running test stack, i.e. with example data: startup log of `schuldashboardtest_ruby_1`, gem load time in the container, image contents.
 
-## Kurzfazit
+## Summary
 
-Die Basis ist solide. Ruby ist gepinnt (`ruby:3.4.10-alpine3.24`), die Dienste laufen ohne Root, Code und Eingangsdaten sind read-only gemountet, Logs rotieren, und der Test-Stack läuft isoliert im Produktionsmodus. Die größten Hebel:
+The foundation is solid. Ruby is pinned (`ruby:3.4.10-alpine3.24`), the services run without root, code and input data are mounted read-only, logs rotate, and the test stack runs isolated in production mode. The biggest levers:
 
-1. **Startzeit**: Der Start rechnet viel Unnötiges.
-   - `parse_timetable` läuft zweimal und liest dabei jedes Mal alle `/vplan/*.json` des Schuljahrs. Der Start wird deshalb bis zum Sommer immer langsamer.
-   - Bei jedem Start werden alle Klassenvariablen als YAML nach `/internal/debug` geschrieben.
-   - `setup()` schickt für jede Person eine eigene `MERGE`-Abfrage.
-   - Beim Start laufen synchrone HTTP-Aufrufe ohne Timeout.
-2. **Deployment**: Es gibt keinen Rollback-Pfad, keine Healthchecks und keine Migrationen. `setup()` arbeitet beim Start destruktiv. Eine falsche Annahme in AGENTS.md §7 (siehe unten).
-3. **Backups**: Sie laufen nicht automatisch, sind nicht verschlüsselt, und die Wiederherstellung wird nicht geprüft.
-4. **Neo4j 4.4**: Seit November 2025 ohne Support. Der Treiber (neo4j-ruby-driver 6.x) ist schon 5.x-fähig. Etwa 10 Cypher-Stellen und eine Neo4j-Einstellung blockieren noch.
-5. **Hot Reload** mit `Sinatra::Reloader` geht, hat aber eine konkrete Falle: Die Catch-all-Route `get '/*'` verdeckt danach alle neu geladenen GET-Routen.
+1. **Startup time**: The startup computes a lot of unnecessary things.
+   - `parse_timetable` runs twice and reads all `/vplan/*.json` of the school year each time. The startup therefore keeps getting slower until the summer.
+   - On every start, all class variables are written as YAML to `/internal/debug`.
+   - `setup()` sends a separate `MERGE` query for each person.
+   - Synchronous HTTP calls without a timeout run at startup.
+2. **Deployment**: There is no rollback path, no health checks and no migrations. `setup()` works destructively at startup. One wrong assumption in AGENTS.md §7 (see below).
+3. **Backups**: They don't run automatically, aren't encrypted, and restoring is not checked.
+4. **Neo4j 4.4**: Without support since November 2025. The driver (neo4j-ruby-driver 6.x) is already 5.x-capable. About 10 Cypher spots and one Neo4j setting are still blocking.
+5. **Hot reload** with `Sinatra::Reloader` works, but has a concrete trap: the catch-all route `get '/*'` then shadows all reloaded GET routes.
 
-**Fehler in AGENTS.md §7 / Betrieb.md:** Dort steht „Nur `src/static` geändert: kein Neustart nötig“. Das gilt für die HTML-Seiten, nicht aber für JS und CSS. `compile_js`/`compile_css` (`src/ruby/main.rb:1752–1816`) bündeln `code.js`, `styles.css` und die Bibliotheken unter `include/*` in der Produktion nur beim Start. Ohne Neustart wird weiter das alte Bundle ausgeliefert.
+**Error in AGENTS.md §7 / Betrieb.md:** It says “Only `src/static` changed: no restart needed”. This holds for the HTML pages, but not for JS and CSS. In production, `compile_js`/`compile_css` (`src/ruby/main.rb:1752–1816`) bundle `code.js`, `styles.css` and the libraries under `include/*` only at startup. Without a restart the old bundle keeps being served.
 
-## Deployment & Betrieb
+## Deployment & operations
 
-| # | Vorschlag | Aufwand | Risiko |
+| # | Suggestion | Effort | Risk |
 |---|---|---|---|
-| D1 | **`deploy.sh`** (eigenes Skript, `config.rb` bleibt unverändert), Schritte siehe unten | S–M | niedrig |
-| D2 | **Images für Rollback aufheben**, siehe unten | S | niedrig |
-| D3 | **Puma-Hot-Restart statt Container-Neustart**, siehe unten | M | mittel |
-| D4 | **nginx-Upstream dynamisch auflösen**, siehe unten | S | niedrig |
-| D5 | **Kein zweiter Ruby-Prozess parallel** (Blue/Green, Puma-Cluster), siehe unten | – | – |
-| D6 | **`compile_js`/`compile_css`: altes Bundle nicht löschen**, siehe unten | S | niedrig |
-| D7 | **Migrationen einführen**, siehe unten | M | mittel |
-| D8 | **Healthchecks in Compose**, siehe unten | S | niedrig |
-| D9 | **Stündliches Neuschreiben der Stundenpläne in den Timetable-Dienst verlegen**, siehe unten | S | niedrig |
-| D10 | **`config.rb` schreibt Dateien nur bei Änderung**, siehe unten | S | sehr niedrig |
+| D1 | **`deploy.sh`** (separate script, `config.rb` stays unchanged), steps see below | S–M | low |
+| D2 | **Keep images for rollback**, see below | S | low |
+| D3 | **Puma hot restart instead of container restart**, see below | M | medium |
+| D4 | **Resolve the nginx upstream dynamically**, see below | S | low |
+| D5 | **No second Ruby process in parallel** (blue/green, Puma cluster), see below | – | – |
+| D6 | **`compile_js`/`compile_css`: don't delete the old bundle**, see below | S | low |
+| D7 | **Introduce migrations**, see below | M | medium |
+| D8 | **Health checks in Compose**, see below | S | low |
+| D9 | **Move the hourly rewriting of the timetables into the timetable service**, see below | S | low |
+| D10 | **`config.rb` writes files only when changed**, see below | S | very low |
 
-**D1 – `deploy.sh`.** Ablauf:
-- Abbrechen, wenn das Arbeitsverzeichnis nicht sauber ist.
-- `git fetch`, die neuen Commits anzeigen, `PREV=$(git rev-parse HEAD)` merken, `git merge --ff-only`.
-- Nur bauen, wenn sich `docker/` oder `Gemfile*` geändert haben.
-- `ruby` neu starten und auf `curl 127.0.0.1:8020/api/ping` warten, mit Timeout.
-- Die ersten 60 s im Log nach `[ERROR]` suchen.
-- Danach die Bots nacheinander neu starten, `timetable` zuletzt, weil es beim Start alles neu schreibt.
-- Bei einem Fehler `git reset --hard $PREV` und erneut starten.
+**D1 – `deploy.sh`.** Procedure:
+- Abort if the working directory is not clean.
+- `git fetch`, show the new commits, remember `PREV=$(git rev-parse HEAD)`, `git merge --ff-only`.
+- Only build if `docker/` or `Gemfile*` have changed.
+- Restart `ruby` and wait for `curl 127.0.0.1:8020/api/ping`, with a timeout.
+- Search the first 60 s of the log for `[ERROR]`.
+- Then restart the bots one after the other, `timetable` last, because it rewrites everything at startup.
+- On an error, `git reset --hard $PREV` and start again.
 
-Beim Deployment gibt es ein grundsätzliches Problem: Der Code ist eingebunden (`./src/ruby:/app:ro`). Nach `git pull` sehen laufende Container sofort den neuen Code. Seiten (`src/static`) werden pro Request gelesen, also läuft bis zum fertigen Neustart neues HTML gegen alten Ruby-Code. Ein Bot, der in dieser Zeit abstürzt, startet wegen `restart: always` mit dem neuen Code. Daher Pull und Neustart direkt hintereinander, per Skript.
+There is a fundamental problem with deployment: the code is mounted (`./src/ruby:/app:ro`). After `git pull`, running containers immediately see the new code. Pages (`src/static`) are read per request, so until the restart is complete, new HTML runs against old Ruby code. A bot that crashes during this time restarts with the new code because of `restart: always`. Hence pull and restart directly one after the other, by script.
 
-**D2 – Images für Rollback aufheben.** Vor `build` die aktuellen Images mit `docker tag …_ruby:latest …_ruby:prev` sichern. Ohne das braucht ein Rollback nach einer Gemfile-Änderung einen Neubau, und der ist wegen `apk upgrade` nicht reproduzierbar.
+**D2 – Keep images for rollback.** Before `build`, save the current images with `docker tag …_ruby:latest …_ruby:prev`. Without that, a rollback after a Gemfile change needs a rebuild, and that is not reproducible because of `apk upgrade`.
 
-**D3 – Puma-Hot-Restart.**
-- `docker compose kill -s SIGUSR2 ruby` behält das Listen-Socket. Neue Verbindungen warten im Kernel-Backlog, statt einen 502 zu bekommen.
-- Voraussetzung: Puma direkt starten (`puma -e production -b tcp://0.0.0.0:3000 config.ru`), nicht über `rackup`. Ob der Restart über den rackup-Handler sauber neu startet, ist unsicher, deshalb erst im Test-Stack prüfen.
-- Als optionale Einstellung in `config.rb`, damit die Standardausgabe byte-identisch bleibt.
-- Dazu `error_page 502 504` und `proxy_read_timeout` ≥ Startzeit. Sonst sehen wartende Requests nach 60 s einen 504 statt der Neustart-Seite.
+**D3 – Puma hot restart.**
+- `docker compose kill -s SIGUSR2 ruby` keeps the listen socket. New connections wait in the kernel backlog instead of getting a 502.
+- Prerequisite: start Puma directly (`puma -e production -b tcp://0.0.0.0:3000 config.ru`), not via `rackup`. Whether the restart via the rackup handler restarts cleanly is uncertain, so check in the test stack first.
+- As an optional setting in `config.rb`, so that the default output stays byte-identical.
+- Plus `error_page 502 504` and `proxy_read_timeout` ≥ startup time. Otherwise waiting requests see a 504 after 60 s instead of the restart page.
 
-**D4 – nginx-Upstream dynamisch auflösen.** `proxy_pass http://#{PROJECT_NAME}_ruby_1:3000` wird nur beim Start von nginx aufgelöst. Wird `ruby` neu erstellt (`up -d` nach `build`) und bekommt eine neue IP, liefert nginx 502, bis es selbst neu startet. Mit `DOCKER_NETWORK_RUBY_IP` tritt das nicht auf. Abhilfe: `resolver 127.0.0.11 valid=10s; set $up http://ruby:3000; proxy_pass $up;`. Der Alias `ruby` existiert schon, dann fällt auch die Abhängigkeit von `--compatibility` weg. Das ändert die Ausgabe von `config.rb`, also eine bewusste Entscheidung oder eine optionale Einstellung.
+**D4 – Resolve the nginx upstream dynamically.** `proxy_pass http://#{PROJECT_NAME}_ruby_1:3000` is only resolved when nginx starts. If `ruby` is recreated (`up -d` after `build`) and gets a new IP, nginx returns 502 until it restarts itself. With `DOCKER_NETWORK_RUBY_IP` this doesn't happen. Remedy: `resolver 127.0.0.11 valid=10s; set $up http://ruby:3000; proxy_pass $up;`. The alias `ruby` already exists; this also removes the dependency on `--compatibility`. This changes the output of `config.rb`, so it is a deliberate decision or an optional setting.
 
-**D5 – Kein zweiter Ruby-Prozess parallel.** Etwa 96 Klassenvariablen dienen als Cache (z. B. `@@lehrmittelverein_state_cache`, `@@ws_clients`). Zwei Prozesse würden auseinanderlaufen. Zusätzlich löscht `compile_js` beim Start `/gen/js/` komplett (`FileUtils::rm_rf`), dem alten Prozess fehlen dann seine Bundles. Erst nach dem TODO „Klassenvariablen absichern“ angehen.
+**D5 – No second Ruby process in parallel.** About 96 class variables serve as caches (e.g. `@@lehrmittelverein_state_cache`, `@@ws_clients`). Two processes would drift apart. In addition, `compile_js` deletes `/gen/js/` completely at startup (`FileUtils::rm_rf`), and the old process then lacks its bundles. Only tackle this after the TODO „Klassenvariablen absichern“ (secure class variables).
 
-**D6 – Altes Bundle behalten.** Die letzten 2–3 `compiled-*.js/css` liegen lassen. Sonst bekommen Seiten, die während des Neustarts ausgeliefert wurden, beim Laden des Bundles einen 404.
+**D6 – Keep the old bundle.** Leave the last 2–3 `compiled-*.js/css` in place. Otherwise pages that were served during the restart get a 404 when loading the bundle.
 
-**D7 – Migrationen.** Heute gibt es nur einmalige Skripte (`mig-2021-09-05.rb`, `migrate-sitzplan.rb` …) und `setup()` bei jedem Start.
-- Nummerierte, idempotente Skripte, die in `(:Migration {id})` festhalten, was gelaufen ist. Explizit im Deploy-Skript nach einem Dump ausführen.
-- **Wichtig:** `setup()` löscht beim Start alle `TabletSet`s samt Buchungen, die nicht in den Eingangsdaten stehen. Fehlt die Datei, ist `parse_tablet_sets || {}` leer, und es werden *alle* gelöscht (`src/ruby/main.rb:439–451`). Bei leerer Liste abbrechen. Das ist eine kleine Änderung (S) und sollte zuerst kommen.
+**D7 – Migrations.** Today there are only one-off scripts (`mig-2021-09-05.rb`, `migrate-sitzplan.rb` …) and `setup()` on every start.
+- Numbered, idempotent scripts that record in `(:Migration {id})` what has run. Run them explicitly in the deploy script after a dump.
+- **Important:** At startup, `setup()` deletes all `TabletSet`s, including bookings, that are not in the input data. If the file is missing, `parse_tablet_sets || {}` is empty, and *all* of them are deleted (`src/ruby/main.rb:439–451`). Abort on an empty list. This is a small change (S) and should come first.
 
-**D8 – Healthchecks.** `neo4j`: `cypher-shell 'RETURN 1'`. `ruby`: `curl -f localhost:3000/api/ping` (curl ist im Image). `depends_on: condition: service_healthy`. Optional einschalten, wegen der Byte-Identität.
+**D8 – Health checks.** `neo4j`: `cypher-shell 'RETURN 1'`. `ruby`: `curl -f localhost:3000/api/ping` (curl is in the image). `depends_on: condition: service_healthy`. Optionally switchable, because of the byte identity.
 
-**D9 – Stündliches Neuschreiben im Timetable-Dienst.** Heute läuft es per Host-Cron über `update-timetables.rb` → `config.rb`. Das erzeugt dabei jede Stunde `docker-compose.yaml` und `default.conf` neu und braucht Ruby auf dem Host. Besser ein Thread im Timetable-Dienst, der stündlich `{which: 'all'}` in die Queue legt. Das ist versioniert und testbar. Seit Commit 49d2caae („write files only when changed“) ist der Lauf ohnehin billig.
+**D9 – Hourly rewriting in the timetable service.** Today it runs via host cron through `update-timetables.rb` → `config.rb`. In the process this regenerates `docker-compose.yaml` and `default.conf` every hour and needs Ruby on the host. Better a thread in the timetable service that puts `{which: 'all'}` into the queue every hour. That is versioned and testable. Since commit 49d2caae (“write files only when changed”) the run is cheap anyway.
 
-**D10 – Dateien nur bei Änderung schreiben.** `config.rb` soll seine Dateien nur schreiben, wenn sich der Inhalt geändert hat. Die Ausgabe bleibt byte-identisch.
+**D10 – Write files only when changed.** `config.rb` should only write its files when the content has changed. The output stays byte-identical.
 
-## Images & Container
+## Images & containers
 
-Das Ruby-Image ist **2,23 GB** groß und wird für jeden Ruby-Dienst einzeln gebaut, mit eigenem Tag.
+The Ruby image is **2.23 GB** in size and is built separately for each Ruby service, with its own tag.
 
-| # | Befund / Vorschlag | Aufwand | Risiko |
+| # | Finding / suggestion | Effort | Risk |
 |---|---|---|---|
-| I1 | **Docker-Engine im Ruby-Image** (`apk add docker`: dockerd, containerd, CLI, ca. 180 MB). Wird nirgends genutzt, kein Socket gemountet → entfernen | S | niedrig |
-| I2 | **`ruby-dev` (apk) installiert eine zweite Ruby-Version** (`/usr/bin/ruby` neben `/usr/local/bin/ruby`). Die Header bringt `ruby:alpine` selbst mit → entfernen, `build-base`/`curl-dev` behalten oder in einen Build-Stage verschieben | S | niedrig–mittel (Neubau der nativen Gems prüfen) |
-| I3 | **`openjdk11-jre`** (155 MB): LibreOffice braucht für die Umwandlung DOCX→PDF (`include/zeugnisse.rb`) kein Java → testweise entfernen | S | mittel (Zeugnisse liegen nicht im Test-Stack, also von Hand prüfen) |
-| I4 | **Ein Image für alle Ruby-Dienste**: `build` nur bei `ruby`, die anderen mit `image: <projekt>_ruby`. Spart Bauzeit und Tags. Ändert die Ausgabe von `config.rb` | S | niedrig |
-| I5 | **`apk upgrade` / `apt-get upgrade`**: Reproduzierbarkeit gegen Patches abwägen. Mein Vorschlag: im Dockerfile lassen, aber monatlich `build --pull` (CI-Cron oder Host), dazu Trivy-Scan. Das eigentliche Problem ist, dass Images nur neu gebaut werden, wenn sich das Dockerfile ändert | S | niedrig |
-| I6 | **Feste Versionen**: `nginx:stable` → z. B. `nginx:1.28-alpine`; `neo4j:4.4-community` → feste Patch-Version; `lgatica/weasyprint` hat gar keinen Tag und ist ein Fremd-Image → Version oder Digest festlegen, mittelfristig eigenes kleines Image. `MAINTAINER` ist veraltet | S | niedrig |
-| I9 | `pry`/`rerun` im Produktions-Image: `main.rb:24` lädt `pry` immer, und `src/scripts/pry.rb` ist die Admin-Konsole der Produktion → `pry` **bewusst behalten**, `rerun` in die Gruppe `:development` | S | niedrig |
+| I1 | **Docker engine in the Ruby image** (`apk add docker`: dockerd, containerd, CLI, about 180 MB). Not used anywhere, no socket mounted → remove | S | low |
+| I2 | **`ruby-dev` (apk) installs a second Ruby version** (`/usr/bin/ruby` next to `/usr/local/bin/ruby`). `ruby:alpine` brings the headers itself → remove, keep `build-base`/`curl-dev` or move them into a build stage | S | low–medium (check the rebuild of native gems) |
+| I3 | **`openjdk11-jre`** (155 MB): LibreOffice doesn't need Java for the DOCX→PDF conversion (`include/zeugnisse.rb`) → remove on a trial basis | S | medium (Zeugnisse (report cards) aren't in the test stack, so check by hand) |
+| I4 | **One image for all Ruby services**: `build` only for `ruby`, the others with `image: <projekt>_ruby`. Saves build time and tags. Changes the output of `config.rb` | S | low |
+| I5 | **`apk upgrade` / `apt-get upgrade`**: weigh reproducibility against patches. My suggestion: leave it in the Dockerfile, but `build --pull` monthly (CI cron or host), plus a Trivy scan. The actual problem is that images are only rebuilt when the Dockerfile changes | S | low |
+| I6 | **Fixed versions**: `nginx:stable` → e.g. `nginx:1.28-alpine`; `neo4j:4.4-community` → fixed patch version; `lgatica/weasyprint` has no tag at all and is a third-party image → pin a version or digest, in the medium term a small image of our own. `MAINTAINER` is deprecated | S | low |
+| I9 | `pry`/`rerun` in the production image: `main.rb:24` always loads `pry`, and `src/scripts/pry.rb` is the production admin console → **deliberately keep** `pry`, move `rerun` into the `:development` group | S | low |
 
 ## Backups
 
-Heute: nur das manuelle `dump-database.rb`, Empfehlungen in `doc/Betrieb.md`.
+Today: only the manual `dump-database.rb`, recommendations in `doc/Betrieb.md`.
 
-| # | Vorschlag | Aufwand | Risiko |
+| # | Suggestion | Effort | Risk |
 |---|---|---|---|
-| B1 | **Nächtlicher Lauf per systemd-Timer/Cron** (`backup.sh` im Repo), siehe unten | S–M | niedrig |
-| B2 | **Restic als Ziel**: verschlüsselt auf dem Client, dedupliziert, Rotation mit `forget --keep-daily 7 --keep-weekly 8 --keep-monthly 12 --prune`, offsite. Repo-Passwort getrennt vom Server aufbewahren (Papier oder Passwortmanager der Schulleitung). Externer Speicher nur mit AV-Vertrag | S | niedrig |
-| B3 | **Wiederherstellung automatisch prüfen**, siehe unten | M | niedrig |
-| B4 | **Überwachung**: Erfolg oder Fehler per Ping (Healthchecks.io o. Ä.) oder Mail. Ohne Alarm bemerkt niemand ein ausgefallenes Backup | S | – |
-| B5 | Vor jedem Deployment mit Migration und vor dem Schuljahreswechsel einen Pflicht-Dump, über `deploy.sh` | S | – |
+| B1 | **Nightly run via systemd timer/cron** (`backup.sh` in the repo), see below | S–M | low |
+| B2 | **Restic as the target**: encrypted on the client, deduplicated, rotation with `forget --keep-daily 7 --keep-weekly 8 --keep-monthly 12 --prune`, offsite. Keep the repo password separate from the server (paper or the school management's password manager). External storage only with a data processing agreement | S | low |
+| B3 | **Check restoring automatically**, see below | M | low |
+| B4 | **Monitoring**: success or failure via ping (Healthchecks.io or similar) or mail. Without an alert nobody notices a failed backup | S | – |
+| B5 | A mandatory dump before every deployment with a migration and before the school year change, via `deploy.sh` | S | – |
 
-**B1 – Nächtlicher Lauf.**
-- `dump-database.rb` mit Ausgabe nach stdout, durch `gzip`.
-- Dazu `DATA_PATH/raw`, `INTERNAL_PATH` **ohne `debug/`**, `INPUT_DATA_PATH`, `env.rb`, `credentials.rb`.
-- Der logische Dump über Bolt ist unabhängig vom Store-Format und damit zugleich der Migrationsweg zu Neo4j 5. Er ist nicht transaktional konsistent, nachts aber unkritisch.
-- `neo4j-admin dump` müsste in der Community-Edition die DB anhalten.
+**B1 – Nightly run.**
+- `dump-database.rb` with output to stdout, through `gzip`.
+- Plus `DATA_PATH/raw`, `INTERNAL_PATH` **without `debug/`**, `INPUT_DATA_PATH`, `env.rb`, `credentials.rb`.
+- The logical dump via Bolt is independent of the store format and thus also the migration path to Neo4j 5. It is not transactionally consistent, but uncritical at night.
+- `neo4j-admin dump` would have to stop the DB in the Community Edition.
 
-**B3 – Wiederherstellung prüfen.**
-- Monatlich, auf dem Server.
-- Einen Wegwerf-Neo4j-Container starten (ohne Ruby, ohne Mail, ohne Ports) und den letzten Dump einspielen.
-- Knoten- und Kantenzahlen je Label mit der Live-DB oder dem Dump-Header vergleichen.
-- Auf das Ergebnis alarmieren und den Container wieder löschen.
-- Echte Daten bleiben dabei auf dem Server, nie in CI.
+**B3 – Check restoring.**
+- Monthly, on the server.
+- Start a throwaway Neo4j container (without Ruby, without mail, without ports) and load the latest dump.
+- Compare node and relationship counts per label with the live DB or the dump header.
+- Alert on the result and delete the container again.
+- Real data stays on the server in the process, never in CI.
 
 ## CI
 
-| # | Vorschlag | Aufwand | Risiko |
+| # | Suggestion | Effort | Risk |
 |---|---|---|---|
-| C1 | **`.github/workflows/test.yml`**, siehe unten | M | niedrig |
-| C2 | **Prüfung der Byte-Identität automatisieren**, siehe unten | S | niedrig |
-| C3 | **Dependabot** für `bundler` (`src/ruby`), `npm` (`test/e2e`), `github-actions`, `docker` (FROM-Zeilen in `docker/*`) | S | niedrig |
-| C4 | **Monatlicher Lauf** (`schedule`): fängt datumsabhängige Fehler und Drift der Basis-Images ab. Dazu `trivy image` (nur berichten) | S | – |
-| C5 | Test-Stack näher an die Produktion bringen: `image_bot`, `mail_bot`, `weasyprint` aufnehmen, siehe unten | S–M | niedrig |
+| C1 | **`.github/workflows/test.yml`**, see below | M | low |
+| C2 | **Automate the byte-identity check**, see below | S | low |
+| C3 | **Dependabot** for `bundler` (`src/ruby`), `npm` (`test/e2e`), `github-actions`, `docker` (FROM lines in `docker/*`) | S | low |
+| C4 | **Monthly run** (`schedule`): catches date-dependent bugs and drift of the base images. Plus `trivy image` (report only) | S | – |
+| C5 | Bring the test stack closer to production: add `image_bot`, `mail_bot`, `weasyprint`, see below | S–M | low |
 
 **C1 – Workflow.**
-- Trigger: `pull_request` und `push` auf master. **Kein `pull_request_target`**.
-- `permissions: contents: read`, `concurrency` mit `cancel-in-progress`, Actions per SHA festlegen.
-- Erst `./test.sh unit` für schnelle Rückmeldung, dann `./test.sh e2e`.
-- Bei Fehlschlag `playwright-report`/`test-results` und `./test.sh logs` als Artefakt (7 Tage). Das geht nur, weil ausschließlich Beispieldaten im Spiel sind.
-- Es werden keine Secrets gebraucht. Das ist für ein öffentliches Repo mit Forks ideal.
-- Die Bauzeit des 2,2-GB-Images ist der Engpass: buildx-Cache (`type=gha`) oder ein wöchentlich nach GHCR gebautes Basis-Image als `cache-from`. I1–I3 machen das Image deutlich kleiner.
-- Den Status-Check auf master verpflichtend machen.
+- Trigger: `pull_request` and `push` on master. **No `pull_request_target`**.
+- `permissions: contents: read`, `concurrency` with `cancel-in-progress`, pin actions by SHA.
+- First `./test.sh unit` for quick feedback, then `./test.sh e2e`.
+- On failure, `playwright-report`/`test-results` and `./test.sh logs` as an artifact (7 days). This is only possible because exclusively example data is involved.
+- No secrets are needed. That is ideal for a public repo with forks.
+- The build time of the 2.2 GB image is the bottleneck: buildx cache (`type=gha`) or a base image built weekly to GHCR as `cache-from`. I1–I3 make the image considerably smaller.
+- Make the status check on master mandatory.
 
-**C2 – Byte-Identität prüfen.** `config.rb` mit `env.template.rb` erzeugen, je einmal mit `DEVELOPMENT=true` und `false`, `UID` normalisieren. Das Ergebnis mit eingecheckten Referenzdateien vergleichen (`test/fixtures/compose-*.yaml`, `nginx-*.conf`). So wird die Regel aus AGENTS.md maschinell geprüft.
+**C2 – Check byte identity.** Generate `config.rb` with `env.template.rb`, once each with `DEVELOPMENT=true` and `false`, normalise `UID`. Compare the result with checked-in reference files (`test/fixtures/compose-*.yaml`, `nginx-*.conf`). This way the rule from AGENTS.md is checked mechanically.
 
-**C5 – Test-Stack erweitern.** Ohne `image_bot` wartet `ruby` beim Start im Test-Stack 5 s auf einen DNS-Timeout (siehe Startlog).
+**C5 – Extend the test stack.** Without `image_bot`, `ruby` waits 5 s for a DNS timeout at startup in the test stack (see startup log).
 
-## Abhängigkeiten & Upgrades (inkl. Neo4j 5)
+## Dependencies & upgrades (incl. Neo4j 5)
 
-**Neo4j 4.4 → 5.26 LTS bzw. 2025.x/2026.x** (lokal liegt bereits `neo4j:2026.06.0-enterprise` aus einem anderen Projekt). Aufwand M, Risiko mittel.
+**Neo4j 4.4 → 5.26 LTS or 2025.x/2026.x** (`neo4j:2026.06.0-enterprise` from another project is already present locally). Effort M, risk medium.
 
-1. **Treiber**: `neo4j_bolt 0.5.0` verwendet `neo4j-ruby-driver 6.2.1.beta.4` (Bolt 5, `element_id` vorhanden). Die Schema-Befehle im Gem verwenden schon die 5er-Syntax (`CREATE CONSTRAINT … IF NOT EXISTS FOR … REQUIRE`). Der Haken: Die Beta-Version ist exakt festgelegt.
-2. **Cypher** (≈10 Stellen):
-   - `EXISTS(n.prop)` ist in 5 entfernt und wird zu `n.prop IS NOT NULL`. Betroffen: `timetable.rb:1132`, `include/stats.rb:6`, `include/message.rb:121–123`, `include/ical.rb:6`, `include/salzh.rb:22,1003`, `include/directory.rb:868,873`.
-   - Musterform `EXISTS((u)-[…]->(v))` in `include/techpost.rb:6` → `EXISTS { … }`.
-   - `id()` (≈17 Stellen) ist nur veraltet und funktioniert weiter.
-3. **Konfiguration**: `NEO4J_dbms_logs__timezone` gibt es in 5 nicht mehr (Logging läuft über log4j2). Wegen der strikten Konfigurationsprüfung startet der Container sonst nicht.
-4. **Daten**: logischer Dump aus 4.4, Laden in ein leeres 5.x, Zahlen vergleichen. Das alte Datenverzeichnis als Rollback aufheben.
-5. **Ablauf**: Auf einem Branch nur die FROM-Zeile in `docker/neo4j/Dockerfile` ändern und `./test.sh all` laufen lassen. Der Test-Stack ist dafür genau richtig. Danach die Generalprobe mit einer Kopie der echten Daten auf der Dev-Instanz.
+1. **Driver**: `neo4j_bolt 0.5.0` uses `neo4j-ruby-driver 6.2.1.beta.4` (Bolt 5, `element_id` available). The schema commands in the gem already use the 5.x syntax (`CREATE CONSTRAINT … IF NOT EXISTS FOR … REQUIRE`). The catch: the beta version is pinned exactly.
+2. **Cypher** (≈10 spots):
+   - `EXISTS(n.prop)` is removed in 5 and becomes `n.prop IS NOT NULL`. Affected: `timetable.rb:1132`, `include/stats.rb:6`, `include/message.rb:121–123`, `include/ical.rb:6`, `include/salzh.rb:22,1003`, `include/directory.rb:868,873`.
+   - Pattern form `EXISTS((u)-[…]->(v))` in `include/techpost.rb:6` → `EXISTS { … }`.
+   - `id()` (≈17 spots) is only deprecated and keeps working.
+3. **Configuration**: `NEO4J_dbms_logs__timezone` no longer exists in 5 (logging runs via log4j2). Because of the strict configuration check, the container won't start otherwise.
+4. **Data**: logical dump from 4.4, load into an empty 5.x, compare counts. Keep the old data directory as a rollback.
+5. **Procedure**: On a branch, only change the FROM line in `docker/neo4j/Dockerfile` and run `./test.sh all`. The test stack is exactly right for this. After that, the dress rehearsal with a copy of the real data on the dev instance.
 
-**Ruby-Gems**: aktuell (Sinatra 4.2.1, Puma 8.0.2, Rack 3.2.7). Offene Punkte:
-- Festlegungen `rubyzip <3`, `prawn <2.5`, `ttfunk <1.8` begründen oder lösen.
-- Der `mustermann`-Kommentar passt nicht zur Angabe `>=3.0.3` (steht schon in TODO).
-- Dependabot (C3) übernimmt die laufende Pflege. Aufwand S.
+**Ruby gems**: up to date (Sinatra 4.2.1, Puma 8.0.2, Rack 3.2.7). Open points:
+- Justify or lift the pins `rubyzip <3`, `prawn <2.5`, `ttfunk <1.8`.
+- The `mustermann` comment doesn't match the specification `>=3.0.3` (already in TODO).
+- Dependabot (C3) takes over the ongoing maintenance. Effort S.
 
-**JS unter `src/static/include`** (fest eingecheckt, unsichtbar für Dependabot):
+**JS under `src/static/include`** (checked in, invisible to Dependabot):
 
-| Bibliothek | Version | Stand |
+| Library | Version | Status |
 |---|---|---|
-| Bootstrap | 4.4.1 | seit 2023 ohne Fixes |
+| Bootstrap | 4.4.1 | no fixes since 2023 |
 | jQuery | 3.6.1 | |
 | jQuery UI | 1.13.2 | |
-| FullCalendar | 5.1.0 | aktuell 6.x |
+| FullCalendar | 5.1.0 | current 6.x |
 | Chart.js | 2.9.4 | |
 | JSZip | 3.6.0 | |
 | clipboard | 2.0.0 | |
-| moment | ? | nur noch im Wartungsmodus |
+| moment | ? | only in maintenance mode |
 
-Vorschläge:
-- Zuerst eine Inventarliste (`src/static/include/VERSIONS.md`). Aufwand S.
-- Dann Patch-Updates, die nichts brechen: jQuery 3.7.x, JSZip 3.10. Aufwand S, Risiko niedrig.
-- Der Wechsel Bootstrap 4 → 5 / FullCalendar 6 hängt an der UI-Entscheidung Bootstrap/Tailwind/Flowbite. Erst mit E2E-Abdeckung angehen. Aufwand L, Risiko hoch.
+Suggestions:
+- First an inventory list (`src/static/include/VERSIONS.md`). Effort S.
+- Then patch updates that don't break anything: jQuery 3.7.x, JSZip 3.10. Effort S, risk low.
+- The switch Bootstrap 4 → 5 / FullCalendar 6 depends on the UI decision Bootstrap/Tailwind/Flowbite. Only tackle it with E2E coverage. Effort L, risk high.
 
-**Nextcloud-Sandbox 30.0.6** → aktuelle Version, nur Entwicklung. Aufwand S, Risiko niedrig.
+**Nextcloud sandbox 30.0.6** → current version, development only. Effort S, risk low.
 
-## Entwicklung: Startzeit & Hot Reload (konkreter Plan mit Risiken)
+## Development: startup time & hot reload (concrete plan with risks)
 
-### Wohin die Startzeit geht
+### Where the startup time goes
 
-Messung im Test-Stack (Beispieldaten), 32 s vom Containerstart bis „Server is up“:
+Measurement in the test stack (example data), 32 s from container start to “Server is up”:
 
-| Phase | Dauer | Bemerkung |
+| Phase | Duration | Remark |
 |---|---|---|
-| Containerstart, Gem-Requires, `wait_for_neo4j` | ≈7 s | davon Requires 1,7 s, gemessen |
-| `collect_data` | ≈1 s | mit echten Daten das Vielfache |
-| `setup()` | 3,5 s | Constraints/Indizes einzeln mit `IF NOT EXISTS` |
-| SVG-Hintergründe | 15 s | 920 Dateien, nur weil `.test-stack` jedes Mal gelöscht wird; in der Produktion gecacht |
-| DNS-Timeout `image_bot` | 5 s | Dienst fehlt im Test-Stack |
-| `refresh_bib_data` | – | scheitert hier sofort |
+| Container start, gem requires, `wait_for_neo4j` | ≈7 s | requires 1.7 s of that, measured |
+| `collect_data` | ≈1 s | a multiple with real data |
+| `setup()` | 3.5 s | constraints/indexes individually with `IF NOT EXISTS` |
+| SVG backgrounds | 15 s | 920 files, only because `.test-stack` is deleted every time; cached in production |
+| DNS timeout `image_bot` | 5 s | service missing in the test stack |
+| `refresh_bib_data` | – | fails immediately here |
 
-In der Produktion dürften die 30–40 s vor allem hier entstehen:
+In production, the 30–40 s probably arise mainly here:
 
-1. **`parse_timetable` zweimal** (`main.rb:1044` und `:1077`, Letzteres nur zum „Patchen“). Jeder Aufruf liest alle Stundenplan-Quellen und **alle `/vplan/*.json` des Jahres** (`parser.rb:1163`). Ergebnis wiederverwenden. Aufwand S–M, Risiko mittel (Kernlogik; erst `parser_test.rb` ergänzen).
-2. **YAML-Dump aller Klassenvariablen** nach `/internal/debug` bei jedem Start (`main.rb:1449–1460`). Psych ist bei großen Hashes langsam. Außerdem ist das eine unverschlüsselte Kopie aller Personendaten, die mit `INTERNAL_PATH` im Backup landet. Nur noch mit `DASHBOARD_DEBUG_DUMP=1` oder im Hintergrund-Thread. Aufwand S, Risiko niedrig.
-3. **`setup()`**: einzelne `MERGE` je E-Mail-Adresse, Tablet und PEU. Ersetzen durch `UNWIND $emails AS e MERGE (:User {email: e})`. Constraints nur anlegen, wenn sie nach `SHOW CONSTRAINTS` fehlen (Änderung im Gem). Aufwand S, Risiko niedrig.
-4. **Synchrone Netzaufrufe beim Start**: `image_bot/api/update_all` (Net::HTTP mit 60-s-Timeouts) und `refresh_bib_data` (Curl ohne Timeout). Letzteres blockiert in der Produktion auch einmal pro Stunde einen Request im `before`-Filter. In einen Thread verlegen und Timeouts von 2–5 s setzen. Aufwand S, Risiko niedrig.
-5. **Jeder Bot führt `collect_data` aus**, weil er `main.rb` lädt. Bei `restart` laufen also sechs Prozesse gleichzeitig um die CPU. Mittelfristig das Ergebnis von `collect_data` als Marshal-Cache ablegen, mit den Änderungszeiten der Eingangsdateien als Schlüssel; Bots und Neustarts lesen ihn in Millisekunden. Aufwand M, Risiko mittel (Cache-Invalidierung).
-6. **Erst messen**: Dauer jeder Phase mit `debug` ausgeben. Aufwand S. Ohne Zahlen aus der Produktion sind 1, 2 und 5 Schätzungen.
-7. Im Test-Stack `.test-stack/data/gen/bg` über Läufe hinweg behalten: ≈15 s weniger pro E2E-Lauf. Aufwand S.
-8. Geringer Nutzen: YJIT (`RUBY_YJIT_ENABLE=1`), bootsnap (spart weniger als 1 s).
+1. **`parse_timetable` twice** (`main.rb:1044` and `:1077`, the latter only for “patching”). Each call reads all timetable sources and **all `/vplan/*.json` of the year** (`parser.rb:1163`). Reuse the result. Effort S–M, risk medium (core logic; extend `parser_test.rb` first).
+2. **YAML dump of all class variables** to `/internal/debug` on every start (`main.rb:1449–1460`). Psych is slow with large hashes. In addition, this is an unencrypted copy of all personal data that ends up in the backup along with `INTERNAL_PATH`. Only with `DASHBOARD_DEBUG_DUMP=1` or in a background thread. Effort S, risk low.
+3. **`setup()`**: individual `MERGE` per email address, tablet and PEU. Replace with `UNWIND $emails AS e MERGE (:User {email: e})`. Only create constraints if they are missing according to `SHOW CONSTRAINTS` (change in the gem). Effort S, risk low.
+4. **Synchronous network calls at startup**: `image_bot/api/update_all` (Net::HTTP with 60 s timeouts) and `refresh_bib_data` (Curl without timeout). In production the latter also blocks a request in the `before` filter once an hour. Move into a thread and set timeouts of 2–5 s. Effort S, risk low.
+5. **Every bot runs `collect_data`**, because it loads `main.rb`. So on `restart`, six processes compete for the CPU at the same time. In the medium term, store the result of `collect_data` as a Marshal cache, keyed by the modification times of the input files; bots and restarts read it in milliseconds. Effort M, risk medium (cache invalidation).
+6. **Measure first**: output the duration of each phase with `debug`. Effort S. Without numbers from production, 1, 2 and 5 are estimates.
+7. In the test stack, keep `.test-stack/data/gen/bg` across runs: ≈15 s less per E2E run. Effort S.
+8. Little benefit: YJIT (`RUBY_YJIT_ENABLE=1`), bootsnap (saves less than 1 s).
 
-### Hot Reload: heute
+### Hot reload: today
 
-`rerun` beobachtet `/app` in **jedem** Ruby-Dienst (7 Container). Jede Änderung, auch unter `test/` oder in `email-templates/*.html`, startet alle neu. Jeder führt `collect_data` aus, und `timetable` schreibt alle Stundenpläne neu (mit echten Daten Minuten). Schon `--ignore "test/*"` hilft. Aufwand S.
+`rerun` watches `/app` in **every** Ruby service (7 containers). Every change, even under `test/` or in `email-templates/*.html`, restarts all of them. Each runs `collect_data`, and `timetable` rewrites all timetables (minutes with real data). Even `--ignore "test/*"` helps. Effort S.
 
-### Plan mit Sinatra::Reloader (sinatra-contrib 4.2.1 ist im Bundle)
+### Plan with Sinatra::Reloader (sinatra-contrib 4.2.1 is in the bundle)
 
-1. **Neue Datei `src/ruby/dev_reloader.rb`**, in `main.rb` *vor* den `include/*.rb` geladen (≈Zeile 99). So wird der `before`-Hook des Reloaders vor `before '*'` registriert, und alle Routen werden erfasst:
+1. **New file `src/ruby/dev_reloader.rb`**, loaded in `main.rb` *before* the `include/*.rb` (≈line 99). This way the reloader's `before` hook is registered before `before '*'`, and all routes are captured:
 
 ```ruby
 if DEVELOPMENT && ENV['DASHBOARD_HOT_RELOAD'] == '1' && ENV['DASHBOARD_SERVICE'] == 'ruby'
@@ -221,50 +221,50 @@ if DEVELOPMENT && ENV['DASHBOARD_HOT_RELOAD'] == '1' && ENV['DASHBOARD_SERVICE']
 end
 ```
 
-2. **`config.rb`**: Mit einer optionalen Einstellung `DEV_HOT_RELOAD = true` setzt `ruby` die Variable `DASHBOARD_HOT_RELOAD=1` und `rerun … --ignore "include/*"`. Ohne die Einstellung bleibt die Ausgabe byte-identisch. Die Bots ignorieren `include/*` ebenfalls. Wer Bot-Code in `include/` ändert, startet den Bot von Hand neu (dokumentieren).
-3. **Absicherung durch Unit-Test** (Stil `backend_rules_test.rb`): `sinatra/reloader` darf nur in `dev_reloader.rb` vorkommen, und diese Datei nur unter der dreifachen Bedingung.
+2. **`config.rb`**: With an optional setting `DEV_HOT_RELOAD = true`, `ruby` sets the variable `DASHBOARD_HOT_RELOAD=1` and `rerun … --ignore "include/*"`. Without the setting the output stays byte-identical. The bots ignore `include/*` as well. Whoever changes bot code in `include/` restarts the bot by hand (document this).
+3. **Safeguard via unit test** (in the style of `backend_rules_test.rb`): `sinatra/reloader` may only appear in `dev_reloader.rb`, and that file only under the triple condition.
 
-**Risiken:**
+**Risks:**
 
-- **Catch-all-Route (das eigentliche Problem)**: Der Reloader entfernt die Routen einer geänderten Datei und hängt sie beim Neuladen *ans Ende*, hinter `get '/*'` (`main.rb:3570`). Ohne den `after_reload`-Fix ist jede GET-Route einer neu geladenen Include-Datei stumm tot. POST ist nicht betroffen. Die Signatur von `after_reload` in 4.2.1 prüfen.
-- **Reihenfolge allgemein**: Auch zwischen Include-Dateien ändert sich die Vorrangfolge. Bei überlappenden Mustern (`/api/x/:id` gegen `/api/x/foo`) kann sich das Verhalten ändern. Ein Test auf überlappende Routen hilft.
-- **Warum nicht einfach `load`**: Ein schlichtes `load include/x.rb` (wie heute für `fragments.rb`) ist nur für die ≈10 Dateien ohne Routen sicher. In Dateien mit Routen hängt es Duplikate an, die alte Route gewinnt, und Änderungen am Routenrumpf wirken *still nicht*. Deshalb der Reloader.
-- **`main.rb` nie neu laden**: Das würde alle `configure`-Blöcke erneut ausführen (`collect_data`, `setup`, Schreiben nach `/gen`, `@@ws_clients = {}`, Konstante `ES256_PRIVATE_KEY`). Das ist praktisch ein Neustart mit halb initialisiertem Zustand unter 16 Threads. Deshalb `dont_reload`; für `main.rb` bleibt `rerun` zuständig.
-- **Zustand auf Klassenebene**:
-  - `include/sitzplaneditor.rb:2` setzt `@@room_hours_for_klasse = {}` zurück.
-  - `include/sitzplan_daten.rb:29` erzeugt einen neuen `WRITE_MUTEX` (kurzzeitig zwei Mutexe). Absichern mit `const_defined?`.
-  - Top-Level-Konstanten erzeugen Warnungen.
-  - `color-schemes.rb` wird nur beim Start ausgewertet, deshalb auf `dont_reload`.
-- **Startcode wird nicht erneut ausgeführt**: `self.*`-Methoden (`parse_zeugnisformulare`, `determine_lehrmittelverein_state_for_all` …) werden zwar neu definiert, aber nicht neu ausgeführt. Im Log melden: „neu geladen, Startdaten unverändert“.
-- **Gelöschte und umbenannte Methoden bleiben definiert**: Lokal funktioniert dann noch, was nach einem Neustart scheitert. Der Test-Stack läuft ohne Reloader, und `./test.sh all` vor jedem Push fängt das ab.
-- **Threads**: `Reloader.perform` läuft unter einer Mutex, parallele Requests laufen aber weiter. Laufende Aufrufe behalten den alten Methodenrumpf. Für die Entwicklung vertretbar.
+- **Catch-all route (the actual problem)**: The reloader removes the routes of a changed file and, on reloading, appends them *at the end*, behind `get '/*'` (`main.rb:3570`). Without the `after_reload` fix, every GET route of a reloaded include file is silently dead. POST is not affected. Check the signature of `after_reload` in 4.2.1.
+- **Order in general**: The precedence between include files changes too. With overlapping patterns (`/api/x/:id` vs. `/api/x/foo`), the behaviour can change. A test for overlapping routes helps.
+- **Why not simply `load`**: A plain `load include/x.rb` (as done today for `fragments.rb`) is only safe for the ≈10 files without routes. In files with routes it appends duplicates, the old route wins, and changes to the route body *silently have no effect*. Hence the reloader.
+- **Never reload `main.rb`**: That would run all `configure` blocks again (`collect_data`, `setup`, writing to `/gen`, `@@ws_clients = {}`, constant `ES256_PRIVATE_KEY`). That is practically a restart with half-initialised state under 16 threads. Hence `dont_reload`; `rerun` remains responsible for `main.rb`.
+- **State at class level**:
+  - `include/sitzplaneditor.rb:2` resets `@@room_hours_for_klasse = {}`.
+  - `include/sitzplan_daten.rb:29` creates a new `WRITE_MUTEX` (briefly two mutexes). Guard with `const_defined?`.
+  - Top-level constants produce warnings.
+  - `color-schemes.rb` is only evaluated at startup, hence on `dont_reload`.
+- **Startup code is not run again**: `self.*` methods (`parse_zeugnisformulare`, `determine_lehrmittelverein_state_for_all` …) are redefined, but not run again. Report in the log: “reloaded, startup data unchanged”.
+- **Deleted and renamed methods stay defined**: Locally, things then still work that fail after a restart. The test stack runs without the reloader, and `./test.sh all` before every push catches this.
+- **Threads**: `Reloader.perform` runs under a mutex, but parallel requests keep running. Running calls keep the old method body. Acceptable for development.
 
-**Gewinn:** Änderungen an `include/*.rb` (49 von 59 Dateien mit Routen) wirken beim nächsten Request statt nach 30–40 s, und es gibt keinen Neustart-Sturm über 7 Container. Gesamtaufwand M, Risiko für die Produktion niedrig (dreifach abgesichert), in der Entwicklung mittel.
+**Gain:** Changes to `include/*.rb` (49 of 59 files with routes) take effect on the next request instead of after 30–40 s, and there is no restart storm across 7 containers. Total effort M, risk for production low (triple safeguard), medium in development.
 
-## Kann weg / vereinfachen
+## Can go / simplify
 
-Alle Punkte mit Aufwand S:
+All items with effort S:
 
-| Was | Risiko |
+| What | Risk |
 |---|---|
-| Docker-Engine, `ruby-dev` (zweite Ruby-Version), wahrscheinlich `openjdk11-jre` im Ruby-Image | niedrig |
-| Das zweite `parse_timetable` in `collect_data` | mittel |
-| Debug-YAML-Dump bei jedem Start (`/internal/debug`) | niedrig |
-| `version: '3'`, `MAINTAINER`; Abhängigkeit von `_ruby_1`/`--compatibility` (über den Alias `ruby`) | niedrig |
-| Sechsfacher Build desselben Ruby-Images | niedrig |
-| Host-Cron für das stündliche Neuschreiben → Thread im Timetable-Dienst | niedrig |
-| `src/scripts/reload-monitors.rb` („not functional yet“), `migrate-to-neo4j-4.rb`, alte `mig-*`/`migrate-*.rb` → archivieren | niedrig |
-| `rerun` in allen Bots in der Entwicklung → nur `ruby` automatisch, Bots von Hand | niedrig |
-| `rm_rf('/gen/js/')` → nur alte Bundles aufräumen | niedrig |
-| Korrektur in AGENTS.md §7 und `doc/Betrieb.md`: Änderungen an JS/CSS im Bundle brauchen in der Produktion einen Neustart von `ruby` | keins |
+| Docker engine, `ruby-dev` (second Ruby version), probably `openjdk11-jre` in the Ruby image | low |
+| The second `parse_timetable` in `collect_data` | medium |
+| Debug YAML dump on every start (`/internal/debug`) | low |
+| `version: '3'`, `MAINTAINER`; dependency on `_ruby_1`/`--compatibility` (via the alias `ruby`) | low |
+| Sixfold build of the same Ruby image | low |
+| Host cron for the hourly rewriting → thread in the timetable service | low |
+| `src/scripts/reload-monitors.rb` (“not functional yet”), `migrate-to-neo4j-4.rb`, old `mig-*`/`migrate-*.rb` → archive | low |
+| `rerun` in all bots in development → only `ruby` automatically, bots by hand | low |
+| `rm_rf('/gen/js/')` → only clean up old bundles | low |
+| Correction in AGENTS.md §7 and `doc/Betrieb.md`: changes to JS/CSS in the bundle need a restart of `ruby` in production | none |
 
-## Relevante Dateien
+## Relevant files
 
 - `config.rb`
 - `docker/ruby/Dockerfile`
 - `docker/neo4j/Dockerfile`
 - `docker/nginx/Dockerfile`
-- `src/ruby/main.rb`: setup 390–537, collect_data 681–1462, compile 1704–1816, configure 1818–1898, Dev-`before` 1977–1995, Catch-all 3570
+- `src/ruby/main.rb`: setup 390–537, collect_data 681–1462, compile 1704–1816, configure 1818–1898, dev `before` 1977–1995, catch-all 3570
 - `src/ruby/parser.rb`: 955ff., 1163
 - `src/ruby/timetable-repl.rb`
 - `src/ruby/include/sitzplaneditor.rb`

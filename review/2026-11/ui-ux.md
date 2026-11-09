@@ -1,185 +1,185 @@
-# UI/UX-Review Schul-Dashboard (Desktop + Mobil)
+# UI/UX review of the school dashboard (desktop + mobile)
 
-Grundlage: Screenshots aus `test/e2e/test-results/ui-tour/` (anonym, schueler, lehrkraft), Quellcode in `src/static` und `src/ruby/main.rb`. Punkte, die schon in TODO.md Abschnitt 2 stehen, wiederhole ich nicht. Wo ich sie genauer fasse, steht „(präzisiert TODO …)“. Annahmen, die ich nicht am Code oder Screenshot belegen konnte, sind mit **[Annahme]** markiert.
+Basis: screenshots from `test/e2e/test-results/ui-tour/` (anonym, schueler, lehrkraft), source code in `src/static` and `src/ruby/main.rb`. I don't repeat points that are already in TODO.md section 2. Where I state them more precisely, this is marked “(refines TODO …)”. Assumptions I could not back up with code or a screenshot are marked **[assumption]**.
 
-## Kurzfazit
+## Summary
 
-Das Dashboard läuft stabil: keine JS-Fehler, alle Seiten liefern HTTP 200. Die größten Hürden liegen im Stundenplan auf dem Handy. Man kann nicht wischen. Es fehlt eine Angabe, welcher Tag oder welche Woche gerade angezeigt wird. Unter dem Unterricht folgen etwa 6 leere Stunden Raster (bis 22 Uhr). Darunter liegen Hausaufgaben und, für Lehrkräfte, die Stundenplan-Auswahl, die man erst nach langem Scrollen erreicht. Dazu kommen einige kleine, risikoarme Fehler, die man sofort beheben kann: In der Kursplanung springt die Seite nie zu „heute“, „Mathe im Advent“ ist fest auf 2025 programmiert, und auf Desktop-Breiten zwischen 768 und 1280 px wird die Navigation für Lehrkräfte zu eng. Viele Seiten tragen außerdem alte Corona-Funktionen, Spaß-Code und leere Tabellen mit sich, die man ohne Nutzerverlust entfernen kann.
+The dashboard runs stably: no JS errors, all pages return HTTP 200. The biggest obstacles are in the timetable on the phone. You can't swipe. There is no indication of which day or week is currently shown. Below the lessons follow about 6 empty hours of grid (until 10 pm). Below that are the homework and, for teachers, the timetable selection, which you only reach after a lot of scrolling. On top of that there are some small, low-risk bugs that can be fixed right away: in the course planning the page never jumps to „heute“ (today), „Mathe im Advent“ (Maths Advent calendar) is hard-coded to 2025, and at desktop widths between 768 and 1280 px the navigation becomes too cramped for teachers. Many pages also carry old Corona features, fun code and empty tables that can be removed without any loss for users.
 
-## Quick Wins (geringes Risiko, hoher Nutzen)
+## Quick wins (low risk, high benefit)
 
-1. **Kursplanung springt nie zu „heute“ (Fehler)**
-   - Was: Beim Öffnen von `/lessons/…` sollte die Seite zur Zeile „heute“ scrollen. Wegen eines Tippfehlers passiert das nie: `if ($(window.width) >= 768)` statt `$(window).width()`.
-   - Warum: Lehrkräfte sehen das Schuljahr ab Stunde 1 (mehr als 150 Zeilen) und scrollen jedes Mal selbst. Die Seite wird oft genutzt.
-   - Wo: `src/static/lessons.html:2149`; Screenshot `lehrkraft/desktop-lessons_Ma_5a.png` (Zeile „heute“ liegt etwa bei Nr. 20, die Seite steht oben).
-   - Vorschlag: `$(window).width()` einsetzen. Auf dem Handy ebenfalls zu „heute“ scrollen (die Bedingung `>= 768` ganz weglassen). E2E-Test: Nach dem Laden ist `.lesson-table-info-row.today` im Sichtbereich.
-   - Aufwand S, Risiko niedrig.
+1. **Course planning never jumps to „heute“ (bug)**
+   - What: When opening `/lessons/…` the page should scroll to the „heute“ row. Because of a typo this never happens: `if ($(window.width) >= 768)` instead of `$(window).width()`.
+   - Why: Teachers see the school year from lesson 1 onwards (more than 150 rows) and scroll by themselves every time. The page is used often.
+   - Where: `src/static/lessons.html:2149`; screenshot `lehrkraft/desktop-lessons_Ma_5a.png` (the „heute“ row is at about no. 20, the page stays at the top).
+   - Suggestion: Use `$(window).width()`. Also scroll to „heute“ on the phone (drop the `>= 768` condition entirely). E2E test: after loading, `.lesson-table-info-row.today` is in the viewport.
+   - Effort S, risk low.
 
-2. **„Mathe im Advent“ fest auf 2025**
-   - Was: Die Termine werden als `'2025-12-' + day_s` erzeugt. Ab Dezember 2026 erscheinen sie nicht mehr.
-   - Wo: `timetable.html:527` und `:541`. Nebenbei: `this_klasse === NaN` (`:513`) ist immer `false`, richtig wäre `isNaN()`.
-   - Vorschlag: Das Jahr aus `initial_date` bzw. dem aktuellen Datum ableiten. Das ist in drei Wochen relevant.
-   - Aufwand S, Risiko niedrig.
+2. **„Mathe im Advent“ hard-coded to 2025**
+   - What: The dates are generated as `'2025-12-' + day_s`. From December 2026 on they no longer appear.
+   - Where: `timetable.html:527` and `:541`. Incidentally: `this_klasse === NaN` (`:513`) is always `false`, correct would be `isNaN()`.
+   - Suggestion: Derive the year from `initial_date` or the current date. This becomes relevant in three weeks.
+   - Effort S, risk low.
 
-3. **Stundenplan auf dem Handy wischen und am Desktop mit Pfeiltasten blättern** (Wunsch des Maintainers)
-   - Was: Eine waagrechte Wischgeste auf `#calendar` ruft `calendar.prev()`/`calendar.next()` auf. Am Desktop zusätzlich ←/→ (und „T“ für heute), solange kein Eingabefeld fokussiert und kein Modal offen ist.
-   - Warum: Die Pfeil-Buttons auf dem Handy sind die einzige Möglichkeit zu blättern, und sie liegen oben rechts. Wischen ist die erwartete Geste.
-   - Wo: `timetable.html` nach `window.calendar.render()` (`:1655–1657`). FullCalendar 5.1 hat keine eigene Wischgeste.
-   - Vorschlag: `touchstart`/`touchend` als `passive` registrieren. Auslösen nur, wenn |dx| > 60 px, |dx| > 1,5·|dy| und die Geste kürzer als 600 ms ist. Gesten ignorieren, die näher als 25 px am Bildschirmrand beginnen, denn dort liegt die „Zurück“-Geste von iOS/Android. Nur in `timeGridDay` aktivieren. Bei offenem `.modal.show` nichts tun. `validRange` für Schüler:innen begrenzt `prev()` bereits.
-   - Aufwand S, Risiko niedrig. Im Tagesansicht-Kalender gibt es keinen waagrechten Scroll, der kollidieren könnte. Ein E2E-Test mit `page.touchscreen` bzw. dispatchten Touch-Events im Mobil-Projekt ist möglich.
+3. **Swipe through the timetable on the phone and page with arrow keys on desktop** (maintainer's request)
+   - What: A horizontal swipe gesture on `#calendar` calls `calendar.prev()`/`calendar.next()`. On desktop additionally ←/→ (and “T” for today), as long as no input field is focused and no modal is open.
+   - Why: The arrow buttons on the phone are the only way to page, and they sit at the top right. Swiping is the expected gesture.
+   - Where: `timetable.html` after `window.calendar.render()` (`:1655–1657`). FullCalendar 5.1 has no swipe gesture of its own.
+   - Suggestion: Register `touchstart`/`touchend` as `passive`. Only trigger if |dx| > 60 px, |dx| > 1.5·|dy| and the gesture is shorter than 600 ms. Ignore gestures that start closer than 25 px to the screen edge, because that is where the iOS/Android “back” gesture lives. Only enable in `timeGridDay`. Do nothing while a `.modal.show` is open. `validRange` already limits `prev()` for students.
+   - Effort S, risk low. In the day-view calendar there is no horizontal scroll that could collide. An E2E test with `page.touchscreen` or dispatched touch events in the mobile project is possible.
 
-4. **Stundenplan aktualisieren, wenn man zur Seite zurückkehrt**
-   - Was: Kein `visibilitychange`-Handler. Das Manifest setzt `display: standalone` (`main.rb:3731`), viele haben das Dashboard also als App auf dem Startbildschirm. Wer die App am nächsten Morgen wieder öffnet, sieht den Tag von gestern und alte Vertretungen. In der Standalone-Ansicht gibt es auf iOS auch kein „Ziehen zum Aktualisieren“.
-   - Wo: `timetable.html` (Initialisierung), ggf. `_template.html`.
-   - Vorschlag: Bei `visibilitychange → visible` und mehr als 10 Minuten Abwesenheit `calendar.refetchEvents()` aufrufen. Hat sich das Datum geändert, zusätzlich `calendar.today()`.
-   - Aufwand S, Risiko niedrig.
+4. **Refresh the timetable when returning to the page**
+   - What: No `visibilitychange` handler. The manifest sets `display: standalone` (`main.rb:3731`), so many people have the dashboard as an app on their home screen. Whoever reopens the app the next morning sees yesterday's day and old substitutions. In the standalone view on iOS there is also no “pull to refresh”.
+   - Where: `timetable.html` (initialisation), possibly `_template.html`.
+   - Suggestion: On `visibilitychange → visible` and more than 10 minutes of absence, call `calendar.refetchEvents()`. If the date has changed, additionally `calendar.today()`.
+   - Effort S, risk low.
 
-5. **Titel und Datum über dem Stundenplan**
-   - Was: `headerToolbar.start` ist leer (`timetable.html:789`). Am Desktop steht nirgends Monat, Jahr oder Kalenderwoche. Auf dem Handy zeigt der Kopf nur „Mo. 9.11.“, ohne Hinweis, ob das heute oder morgen ist. Die Seite „Klassenarbeiten“ zeigt dagegen einen Titel („November 2026“, `tests.html:223`, Screenshot `lehrkraft/desktop-tests.png`).
-   - Vorschlag: `start: 'title'` setzen. Für `timeGridDay` über `views: {timeGridDay: {dayHeaderFormat: {weekday:'long', day:'numeric', month:'long'}}}` z. B. „Montag, 9. November“ anzeigen, dazu „heute“/„morgen“. Am Desktop ein Titel wie „9.–13. Nov. 2026 · KW 46“.
-   - Aufwand S, Risiko niedrig (nur Toolbar).
+5. **Title and date above the timetable**
+   - What: `headerToolbar.start` is empty (`timetable.html:789`). On desktop, month, year or calendar week are shown nowhere. On the phone the header only shows „Mo. 9.11.“, with no hint whether that is today or tomorrow. The „Klassenarbeiten“ (class tests) page, by contrast, shows a title („November 2026“, `tests.html:223`, screenshot `lehrkraft/desktop-tests.png`).
+   - Suggestion: Set `start: 'title'`. For `timeGridDay` show e.g. „Montag, 9. November“ via `views: {timeGridDay: {dayHeaderFormat: {weekday:'long', day:'numeric', month:'long'}}}`, plus „heute“/„morgen“ (today/tomorrow). On desktop a title like „9.–13. Nov. 2026 · KW 46“.
+   - Effort S, risk low (toolbar only).
 
-6. **Drehen des Handys bzw. Fensterbreite ändern**
-   - Was: `narrow_window` wird nur einmal beim Laden geprüft (`timetable.html:780`, ebenso `tests.html:219`). Wer im Querformat lädt oder das Fenster verkleinert, bleibt in der falschen Ansicht.
-   - Vorschlag: Im FullCalendar-Callback `windowResize` per `changeView` zwischen `timeGridDay` und `timeGridWeek` an der Grenze 640 px umschalten (nicht für Tablet- und Praktikum-Modus).
-   - Aufwand S, Risiko niedrig.
+6. **Rotating the phone or changing the window width**
+   - What: `narrow_window` is only checked once on load (`timetable.html:780`, likewise `tests.html:219`). Whoever loads in landscape or shrinks the window stays in the wrong view.
+   - Suggestion: In the FullCalendar callback `windowResize`, switch between `timeGridDay` and `timeGridWeek` via `changeView` at the 640 px boundary (not for tablet and Praktikum (internship) mode).
+   - Effort S, risk low.
 
-7. **Navigation für Lehrkräfte bei 768–1279 px**
-   - Was: Die Navigation klappt schon ab `md` (768 px) auf (`_template.html:799`). Mit 7 Einträgen ist sie bei 1280 px schon randvoll: „Beispielschule“ stößt an „Stundenplan“ (`lehrkraft/desktop-start.png`). Darunter bricht sie um bzw. läuft über **[Annahme, nicht gerendert]**. In `styles.css:559–565` gibt es eine fertige Kompaktvariante `.navbar.hide_icons`, die aber nirgends gesetzt wird.
-   - Vorschlag: Dieselben Regeln in `@media (min-width:768px) and (max-width:1279px)` anwenden, dazu das Padding `.nav-icon {padding-right:45px}` verkleinern. Alternativ für Lehrkräfte `navbar-expand-lg`.
-   - Aufwand S, Risiko niedrig (reines CSS, auf 1024/1280 prüfen).
+7. **Navigation for teachers at 768–1279 px**
+   - What: The navigation already expands from `md` (768 px) (`_template.html:799`). With 7 entries it is already full to the brim at 1280 px: „Beispielschule“ (example school) bumps into „Stundenplan“ (timetable) (`lehrkraft/desktop-start.png`). Below that it wraps or overflows **[assumption, not rendered]**. In `styles.css:559–565` there is a ready-made compact variant `.navbar.hide_icons`, but it is not set anywhere.
+   - Suggestion: Apply the same rules in `@media (min-width:768px) and (max-width:1279px)`, and reduce the padding `.nav-icon {padding-right:45px}`. Alternatively `navbar-expand-lg` for teachers.
+   - Effort S, risk low (pure CSS, check at 1024/1280).
 
-8. **Aktiven Navigationspunkt markieren**
-   - Was: Auf `/messages` ist „Nachrichten“ nicht hervorgehoben (`lehrkraft/desktop-messages.png`). In `nav_items` gibt es kein `active`/`aria-current`.
-   - Wo: `main.rb:2357ff`.
-   - Vorschlag: `request.path` mit dem `href` vergleichen und `active` sowie `aria-current="page"` setzen.
-   - Aufwand S, Risiko niedrig.
+8. **Mark the active navigation item**
+   - What: On `/messages`, „Nachrichten“ (messages) is not highlighted (`lehrkraft/desktop-messages.png`). There is no `active`/`aria-current` in `nav_items`.
+   - Where: `main.rb:2357ff`.
+   - Suggestion: Compare `request.path` with the `href` and set `active` as well as `aria-current="page"`.
+   - Effort S, risk low.
 
-9. **Tippfehler im Admin-Bereich:** „Bitte wählen Sie ein **order** mehrere Kürzel“
-   - Wo: `src/ruby/include/admin.rb:320`, `include/techpost.rb:675`; Screenshot `lehrkraft/desktop-admin.png`.
-   - Aufwand S, Risiko niedrig.
+9. **Typo in the admin area:** „Bitte wählen Sie ein **order** mehrere Kürzel“ (“Please select one **order** [sic, for „oder“ = or] more abbreviations”)
+   - Where: `src/ruby/include/admin.rb:320`, `include/techpost.rb:675`; screenshot `lehrkraft/desktop-admin.png`.
+   - Effort S, risk low.
 
-10. **Sitzplanhelfer ohne Weg zum Editor**
-    - Was: Der Text verweist auf den „Sitzplan-Editor im Klassenbereich“, verlinkt ihn aber nicht (`lehrkraft/phone-sitzplanhelfer_5a_108.png`).
-    - Vorschlag: Einen Button „Zum Sitzplan-Editor“ einfügen. Ziel ist dasselbe wie „Editor Raum 108“ auf `/directory/5a`.
-    - Aufwand S, Risiko niedrig.
+10. **Sitzplanhelfer (seating plan helper) with no way to the editor**
+    - What: The text refers to the „Sitzplan-Editor im Klassenbereich“ (seating plan editor in the class area), but does not link to it (`lehrkraft/phone-sitzplanhelfer_5a_108.png`).
+    - Suggestion: Add a button „Zum Sitzplan-Editor“ (to the seating plan editor). The target is the same as „Editor Raum 108“ (editor room 108) on `/directory/5a`.
+    - Effort S, risk low.
 
-11. **Login-Feld:** `autocomplete='on'` statt `autocomplete="username"` bzw. `"email"` (`login.html:16`). Passwortmanager und iOS schlagen die Adresse dann zuverlässiger vor. Aufwand S, Risiko niedrig.
+11. **Login field:** `autocomplete='on'` instead of `autocomplete="username"` or `"email"` (`login.html:16`). Password managers and iOS then suggest the address more reliably. Effort S, risk low.
 
-## Verbesserungen Mobil
+## Mobile improvements
 
-**M1. Sichtbaren Zeitraum an den Inhalt anpassen statt 7–22 Uhr.**
-- Was: `slotMinTime 07:00`, `slotMaxTime 22:00`, feste Höhe 1330/1350 px (`timetable.html:791–796`). Auf dem Handy folgen auf den letzten Block etwa 6 leere Stunden, also rund 450 px (`schueler/phone-start.png`, `lehrkraft/phone-start.png`).
-- Vorschlag: In `render_timetable` das späteste Ende der Woche ermitteln (mindestens 16:00, plus eine Stunde Puffer). Dann `setOption('slotMaxTime', …)` und **gleichzeitig** `setOption('height', Kopf + Stunden × 75)`. Wichtig: Wegen `expandRows: true` müssen 75 px pro Stunde erhalten bleiben, sonst verrutschen die Pausen-Streifen, die mit `75.0/60.0` rechnen (`:863–864`). Eine Stunde mit Abendtermin bleibt damit sichtbar.
-- Aufwand M, Risiko mittel. E2E-Test mit Termin nach 18 Uhr nötig.
+**M1. Fit the visible time range to the content instead of 7 am–10 pm.**
+- What: `slotMinTime 07:00`, `slotMaxTime 22:00`, fixed height 1330/1350 px (`timetable.html:791–796`). On the phone the last block is followed by about 6 empty hours, i.e. around 450 px (`schueler/phone-start.png`, `lehrkraft/phone-start.png`).
+- Suggestion: In `render_timetable` determine the latest end of the week (at least 16:00, plus one hour of buffer). Then `setOption('slotMaxTime', …)` and **at the same time** `setOption('height', header + hours × 75)`. Important: because of `expandRows: true`, 75 px per hour must be kept, otherwise the break stripes, which calculate with `75.0/60.0` (`:863–864`), shift. An hour with an evening appointment thus stays visible.
+- Effort M, risk medium. E2E test with an appointment after 6 pm needed.
 
-**M2. Hausaufgaben und Wochenend-Termine liegen unter dem Kalender** (präzisiert TODO „Kalender mit fester Höhe“).
-- Was: Unter 992 px stapelt sich das rechte Seitenpanel (`timetable.html:143–147`) unter den etwa 1350 px hohen Kalender. Schüler:innen sehen ihre Hausaufgaben auf dem Handy erst nach langem Scrollen **[Annahme, Beispieldaten ohne HA]**.
-- Vorschlag (risikoarm): Neben „Heute“ auf dem Handy einen Chip „Hausaufgaben (n)“ einblenden, der zum Panel scrollt. Stärker wäre, das Panel unter 992 px eingeklappt *über* dem Kalender anzuzeigen (Bootstrap-Klasse `order-first order-lg-0`).
-- Aufwand S–M, Risiko niedrig.
+**M2. Homework and weekend appointments are below the calendar** (refines TODO „Kalender mit fester Höhe“ (calendar with fixed height)).
+- What: Below 992 px the right side panel (`timetable.html:143–147`) stacks under the roughly 1350 px tall calendar. Students only see their homework on the phone after a lot of scrolling **[assumption, example data without homework]**.
+- Suggestion (low-risk): Next to „Heute“ (today) on the phone, show a chip „Hausaufgaben (n)“ (homework (n)) that scrolls to the panel. Stronger would be to show the panel collapsed *above* the calendar below 992 px (Bootstrap class `order-first order-lg-0`).
+- Effort S–M, risk low.
 
-**M3. Stundenplan-Auswahl für Lehrkräfte auf dem Handy.**
-- Was: Die Buttons für Kürzel, Klassen und Räume liegen unter dem Kalender (`lehrkraft/phone-start.png`, etwa y = 1470). Wählt man dort z. B. „108“ aus, ändert sich der Kalender außerhalb des Sichtbereichs, und es gibt keine Beschriftung, welcher Plan gerade angezeigt wird. „Alle Lehrkräfte“ blendet alle Kürzel als Buttons ein (`main.rb:2894`), an der echten Schule vermutlich etwa 100 **[Annahme]**.
-- Vorschlag:
-  - (a) Nach `load_timetable()` auf schmalen Bildschirmen `#calendar.scrollIntoView()` aufrufen.
-  - (b) Den Titel aus Quick Win 5 um „Stundenplan 5a / Raum 108 / Ta“ ergänzen.
-  - (c) „Alle Lehrkräfte“ durch ein Such- bzw. Auswahlfeld ersetzen.
-- Aufwand S (a, b), M (c). Risiko niedrig.
+**M3. Timetable selection for teachers on the phone.**
+- What: The buttons for abbreviations, classes and rooms are below the calendar (`lehrkraft/phone-start.png`, at about y = 1470). If you select e.g. „108“ there, the calendar changes outside the viewport, and there is no label saying which plan is currently shown. „Alle Lehrkräfte“ (all teachers) shows all abbreviations as buttons (`main.rb:2894`), probably about 100 at the real school **[assumption]**.
+- Suggestion:
+  - (a) After `load_timetable()` call `#calendar.scrollIntoView()` on narrow screens.
+  - (b) Extend the title from quick win 5 with „Stundenplan 5a / Raum 108 / Ta“ (timetable 5a / room 108 / Ta).
+  - (c) Replace „Alle Lehrkräfte“ with a search or select field.
+- Effort S (a, b), M (c). Risk low.
 
-**M4. Wochentags-Leiste in der Tagesansicht.**
-- Was: Auf dem Handy springt man nur tageweise. Für „Was habe ich Donnerstag?“ braucht man drei Taps.
-- Vorschlag: Unter der Toolbar eine Leiste „Mo Di Mi Do Fr“ der aktuellen Woche mit `calendar.gotoDate()`, der aktive Tag hervorgehoben.
-- Aufwand M, Risiko niedrig. Optional, die Wischgeste deckt das Grundbedürfnis schon ab.
+**M4. Weekday bar in the day view.**
+- What: On the phone you can only move day by day. “What do I have on Thursday?” takes three taps.
+- Suggestion: Below the toolbar, a bar „Mo Di Mi Do Fr“ (Mon Tue Wed Thu Fri) for the current week using `calendar.gotoDate()`, with the active day highlighted.
+- Effort M, risk low. Optional, the swipe gesture already covers the basic need.
 
-**M5. Nach Schulschluss den nächsten Schultag anzeigen (optional).**
-- Was: Abends zeigt das Handy weiterhin den heutigen, schon vergangenen Tag. Gebraucht wird meist „morgen“.
-- Vorschlag: Nur auf dem Handy nach dem Ende der letzten Stunde (oder ab 17 Uhr) mit dem nächsten Schultag starten. Im Titel muss dann deutlich „morgen“ stehen (Quick Win 5).
-- Aufwand S, Risiko mittel (geänderte Gewohnheit, vorher abstimmen).
+**M5. After school show the next school day (optional).**
+- What: In the evening the phone still shows today's day, which is already over. What is usually needed is „morgen“ (tomorrow).
+- Suggestion: Only on the phone, after the end of the last lesson (or from 5 pm), start with the next school day. The title must then clearly say „morgen“ (quick win 5).
+- Effort S, risk medium (changes a habit, agree on it beforehand).
 
-**M6. Kursplanung auf dem Handy:** Der Bearbeitungsbereich steht oben, die Liste darunter ist etwa 8000 px lang (`lehrkraft/phone-lessons_Ma_5a.png`). Nach dem Antippen einer Stunde sieht man das Formular nicht.
-- Vorschlag: Nach `selection_updated()` auf schmalen Bildschirmen zum Bereich `.lesson_pane` scrollen und dort einen Button „Zurück zur Liste“ (zur gewählten Zeile) anbieten. Dazu Quick Win 1 (zu „heute“ springen).
-- Aufwand S–M, Risiko niedrig.
+**M6. Course planning on the phone:** The editing area is at the top, the list below it is about 8000 px long (`lehrkraft/phone-lessons_Ma_5a.png`). After tapping a lesson you don't see the form.
+- Suggestion: After `selection_updated()` on narrow screens, scroll to the `.lesson_pane` area and offer a button „Zurück zur Liste“ (back to the list) there (to the selected row). Plus quick win 1 (jump to „heute“).
+- Effort S–M, risk low.
 
-**M7. Profil ist etwa 8500 px lang** (`schueler/phone-profil.png`).
-- Was: Etwa 45 Farbschemata stehen je als volle Zeile untereinander. „Anmeldung und Zwei-Faktor-Authentifizierung“, also die einzige sicherheitsrelevante Einstellung (für Lehrkräfte mit Frist), steht ganz unten (`profil.html:237`).
-- Vorschlag:
-  - (a) Die Farbfelder auf dem Handy als Raster mit 3–4 Spalten anzeigen.
-  - (b) Oben eine Sprungnavigation: Persönliches · Darstellung · Anmeldung & Geräte · Kalender (iCal).
-  - (c) „Anmeldung/2FA“ und „Angemeldete Geräte“ vor die Darstellung verschieben.
-- Aufwand S–M, Risiko niedrig.
+**M7. Profile is about 8500 px long** (`schueler/phone-profil.png`).
+- What: About 45 colour schemes are listed one below the other, each as a full row. „Anmeldung und Zwei-Faktor-Authentifizierung“ (login and two-factor authentication), i.e. the only security-relevant setting (for teachers with a deadline), is at the very bottom (`profil.html:237`).
+- Suggestion:
+  - (a) Show the colour swatches on the phone as a grid with 3–4 columns.
+  - (b) A jump navigation at the top: Persönliches · Darstellung · Anmeldung & Geräte · Kalender (iCal) (personal · appearance · login & devices · calendar (iCal)).
+  - (c) Move „Anmeldung/2FA“ and „Angemeldete Geräte“ (logged-in devices) before the appearance section.
+- Effort S–M, risk low.
 
-**M8. Fußzeile auf dem Handy nicht fixieren** (ergänzt TODO „Fixierte Fußzeile“).
-- Was: Die 24 px hohe, fixierte `.foot` (`styles.css:284`) kostet dauerhaft Platz. Der runde GitHub-Button (`.github`, `styles.css:333`) überlappt sie (`anonym/phone-start.png`).
-- Vorschlag: Unter 768 px `position: static` (am Seitenende) verwenden. Damit ist auch das Problem mit den Modals gelöst. Den GitHub-Link als Textlink in die Fußzeile verschieben.
-- Aufwand S, Risiko niedrig.
+**M8. Don't fix the footer on the phone** (complements TODO „Fixierte Fußzeile“ (fixed footer)).
+- What: The 24 px tall, fixed `.foot` (`styles.css:284`) permanently takes up space. The round GitHub button (`.github`, `styles.css:333`) overlaps it (`anonym/phone-start.png`).
+- Suggestion: Below 768 px use `position: static` (at the end of the page). This also solves the problem with the modals. Move the GitHub link into the footer as a text link.
+- Effort S, risk low.
 
-**M9. Verteiler-Adressen auf `/directory/<klasse>` sind auf dem Handy unsichtbar** (präzisiert TODO „table-responsive“).
-- Was: „E-Mail an die Klasse“ bzw. „an alle Eltern“ stehen als letzte Tabellenzeile in den rechten Spalten. Auf dem Handy sieht man nur graue, leere Balken (`lehrkraft/phone-directory_5a.png`, y ≈ 380 und 1335). Selbst am Desktop bei 1280 px ist der Eltern-Verteiler abgeschnitten (`desktop-directory_5a.png`).
-- Vorschlag: Die Verteiler als eigene Karte mit Kopier-Buttons über die Tabelle setzen. Das ist die meistgenutzte Information der Seite **[Annahme]**.
-- Aufwand S–M, Risiko niedrig.
+**M9. Distribution list addresses on `/directory/<klasse>` are invisible on the phone** (refines TODO „table-responsive“).
+- What: „E-Mail an die Klasse“ (email to the class) and „an alle Eltern“ (to all parents) are in the last table row in the right-hand columns. On the phone you only see grey, empty bars (`lehrkraft/phone-directory_5a.png`, y ≈ 380 and 1335). Even on desktop at 1280 px the parents' list is cut off (`desktop-directory_5a.png`).
+- Suggestion: Put the distribution lists above the table as a separate card with copy buttons. This is the most used information on the page **[assumption]**.
+- Effort S–M, risk low.
 
-## Verbesserungen Desktop
+## Desktop improvements
 
-**D1. Leere Abendstunden:** Wie M1 liegt auch am Desktop auf einem 1080p-Bildschirm etwa die Hälfte des Rasters unterhalb des sichtbaren Bereichs, obwohl dort meist nichts steht (`schueler/desktop-start.png`). Dieselbe Lösung (M1) hilft hier am meisten.
+**D1. Empty evening hours:** As in M1, on desktop on a 1080p screen about half of the grid is below the visible area, although there is usually nothing there (`schueler/desktop-start.png`). The same solution (M1) helps most here.
 
-**D2. Lehrkräfte-Funktionen stecken im Profilmenü** (präzisiert TODO „Profil- und Admin-Menü sind sehr lange Dropdowns“).
-- Was: Klassenarbeiten, Termine, Umfragen, Abstimmungen, E-Mail-Verteiler, Meine Gruppen, AGs, Lab 8/9, 5. PK und Projekttage liegen im Avatar-Menü (`main.rb:2603–2648`). Funktionen unter dem eigenen Namen erwartet dort niemand. Lab 8/9, 5. PK und Projekttage erscheinen für alle Lehrkräfte unabhängig von Phase und Zuständigkeit (`:2603–2607`).
-- Vorschlag: Ein Menü „Werkzeuge“ (oder Erweiterung von „Planung“) für Termine, Umfragen, Klassenarbeiten, Abstimmungen, Verteiler und Gruppen. Das Avatar-Menü behält nur Konto-Themen: Profil, Kontowechsel, Hell/Dunkel, Hilfe, Abmelden. Saisonale Punkte nur in ihrer Phase anzeigen (wie bei Schüler:innen schon über `projekttage_phase()`).
-- Aufwand M, Risiko mittel (gewohnte Wege ändern sich, kurz ankündigen).
+**D2. Teacher features are hidden in the profile menu** (refines TODO „Profil- und Admin-Menü sind sehr lange Dropdowns“ (profile and admin menus are very long dropdowns)).
+- What: Klassenarbeiten, Termine (appointments), Umfragen (surveys), Abstimmungen (votes), E-Mail-Verteiler (email distribution lists), Meine Gruppen (my groups), AGs (clubs), Lab 8/9, 5. PK (5th exam component) and Projekttage (project days) are in the avatar menu (`main.rb:2603–2648`). Nobody expects features under their own name. Lab 8/9, 5. PK and Projekttage appear for all teachers regardless of phase and responsibility (`:2603–2607`).
+- Suggestion: A menu „Werkzeuge“ (tools) (or an extension of „Planung“ (planning)) for Termine, Umfragen, Klassenarbeiten, Abstimmungen, Verteiler and Gruppen. The avatar menu keeps only account topics: Profil, Kontowechsel (switch account), Hell/Dunkel (light/dark), Hilfe (help), Abmelden (log out). Show seasonal items only in their phase (as already done for students via `projekttage_phase()`).
+- Effort M, risk medium (familiar paths change, announce briefly).
 
-**D3. „Planung“ und „Lerngruppen“ haben dasselbe Icon** (`fa-address-book`, `main.rb:~2664` und `~2700`). Für Lerngruppen z. B. `fa-users`. Aufwand S, Risiko niedrig.
+**D3. „Planung“ and „Lerngruppen“ (learning groups) have the same icon** (`fa-address-book`, `main.rb:~2664` and `~2700`). For Lerngruppen e.g. `fa-users`. Effort S, risk low.
 
-**D4. Admin-Seite** (`lehrkraft/desktop-admin.png`): Alle Nutzer:innen stehen in einer langen Liste ohne Filter. Bei rund 1000 Konten ist das nur mit Strg+F nutzbar **[Annahme zur realen Länge]**.
-- Vorschlag: Ein Filterfeld über den Tabellen (clientseitig Zeilen ausblenden). Die 15 grauen Sprung-Buttons oben lieber als schlichte Ankerleiste.
-- Aufwand S–M, Risiko niedrig.
+**D4. Admin page** (`lehrkraft/desktop-admin.png`): All users are in one long list without a filter. With around 1000 accounts this is only usable with Ctrl+F **[assumption about the real length]**.
+- Suggestion: A filter field above the tables (hide rows client-side). The 15 grey jump buttons at the top would be better as a plain anchor bar.
+- Effort S–M, risk low.
 
-**D5. Fehler auf `/bibliothek` lässt die Seite leer:** Bei fehlgeschlagener Anfrage sieht man nur das Overlay „Bei der Bearbeitung der Anfrage ist ein Fehler aufgetreten.“ und sonst nichts (`schueler/phone-bibliothek.png`, im Test-Stack ohne Bibliotheksdienst **[Annahme zur Ursache]**). Ergänzend zum TODO zu `api_call`: eine Platzhalterkarte „Die Bibliothek ist gerade nicht erreichbar – versuch es später noch einmal.“ Aufwand S, Risiko niedrig.
+**D5. Error on `/bibliothek` leaves the page empty:** When the request fails you only see the overlay „Bei der Bearbeitung der Anfrage ist ein Fehler aufgetreten.“ (An error occurred while processing the request.) and nothing else (`schueler/phone-bibliothek.png`, in the test stack without a library service **[assumption about the cause]**). In addition to the TODO about `api_call`: a placeholder card „Die Bibliothek ist gerade nicht erreichbar – versuch es später noch einmal.“ (The library is currently unreachable – try again later.) Effort S, risk low.
 
-## Konsistenz & Barrierefreiheit (nur Neues gegenüber TODO.md)
+## Consistency & accessibility (only what is new compared to TODO.md)
 
-**K1. Kalender-Buttons heißen für Screenreader „prev“/„next“.** FullCalendar 5.1 setzt bei Icon-Buttons `aria-label` auf den internen Namen (`main.min.js`: `{"aria-label":c}`). Der Druck-Button hat gar kein Label, weil sein Inhalt durch ein Icon ersetzt wird (`timetable.html:687`). Vorschlag: Nach `render()` `aria-label`/`title` setzen: „Vorheriger Tag/Woche“, „Nächster …“, „Stundenplan als PDF drucken“. Aufwand S, Risiko niedrig.
+**K1. Calendar buttons are called “prev”/“next” for screen readers.** FullCalendar 5.1 sets `aria-label` on icon buttons to the internal name (`main.min.js`: `{"aria-label":c}`). The print button has no label at all, because its content is replaced by an icon (`timetable.html:687`). Suggestion: After `render()` set `aria-label`/`title`: „Vorheriger Tag/Woche“ (previous day/week), „Nächster …“ (next …), „Stundenplan als PDF drucken“ (print timetable as PDF). Effort S, risk low.
 
-**K2. Stundenplan-Auswahl ist per Tastatur nicht erreichbar.** Die Buttons sind `<a … onclick=…>` ohne `href` (`main.rb:2860, 2870, 2889, 2911`) und bekommen deshalb keinen Fokus. Vorschlag: `<button type="button">` mit denselben Klassen verwenden. Aufwand S, Risiko niedrig (Selektoren `.ttc` bleiben gleich).
+**K2. The timetable selection cannot be reached by keyboard.** The buttons are `<a … onclick=…>` without `href` (`main.rb:2860, 2870, 2889, 2911`) and therefore get no focus. Suggestion: Use `<button type="button">` with the same classes. Effort S, risk low (the `.ttc` selectors stay the same).
 
-**K3. Einheitliche Leerzustände.**
-- Nachrichten: „Keine Nachrichten gefunden! ¯\\_(ツ)_/¯“ (`messages.html:508`).
-- Umfragen: gar kein Text (`lehrkraft/phone-polls.png`).
-- Termine, Gruppen, „Externe Nutzer“ im Admin: nur Tabellenköpfe (`phone-events.png`, `phone-groups.png`).
-- Vorschlag: Ein Muster „Noch keine Umfragen. Mit „Neue Umfrage“ kannst du …“ (Anrede passend zur Rolle) und leere Tabellen ausblenden.
-- Aufwand S, Risiko niedrig.
+**K3. Consistent empty states.**
+- Messages: „Keine Nachrichten gefunden! ¯\\_(ツ)_/¯“ (No messages found!) (`messages.html:508`).
+- Surveys: no text at all (`lehrkraft/phone-polls.png`).
+- Appointments, groups, „Externe Nutzer“ (external users) in the admin area: only table headers (`phone-events.png`, `phone-groups.png`).
+- Suggestion: A pattern „Noch keine Umfragen. Mit „Neue Umfrage“ kannst du …“ (No surveys yet. With „Neue Umfrage“ (new survey) you can …) (form of address matching the role) and hide empty tables.
+- Effort S, risk low.
 
-**K4. Sitzplananzeige ohne Karte:** Der Text steht direkt auf dem Hintergrundbild (`schueler/phone-sitzplananzeige_5a_108.png`). Bei dunklen oder bunten Farbschemata wird er unlesbar. Der Sitzplanhelfer nutzt bereits eine Karte. Vorschlag: `.container` bzw. Karte verwenden. Aufwand S, Risiko niedrig.
+**K4. Sitzplananzeige (seating plan display) without a card:** The text sits directly on the background image (`schueler/phone-sitzplananzeige_5a_108.png`). With dark or colourful colour schemes it becomes unreadable. The Sitzplanhelfer already uses a card. Suggestion: Use `.container` or a card. Effort S, risk low.
 
-**K5. Corona-Texte mit „Dich/Deine“ in Großschreibung** (`timetable.html:459–463`). Erledigt sich mit dem Entfernen dieses Blocks (siehe unten).
+**K5. Corona texts with „Dich/Deine“ (you/your) capitalised** (`timetable.html:459–463`). Resolved by removing this block (see below).
 
-**K6. Abgeschnittene Hausaufgaben:** `.ha_text {max-height: 300px; overflow-y: hidden}` (`styles.css:2805`) schneidet lange Hausaufgabentexte ohne Hinweis ab. Vorschlag: Einen „mehr“-Link einblenden oder die Begrenzung entfernen. Aufwand S, Risiko niedrig.
+**K6. Truncated homework:** `.ha_text {max-height: 300px; overflow-y: hidden}` (`styles.css:2805`) cuts off long homework texts without any hint. Suggestion: Show a „mehr“ (more) link or remove the limit. Effort S, risk low.
 
-**K7. Ereignisse im Kalender sind nur per Maus bzw. Tippen zu öffnen.** FullCalendar 5.1 macht Termine ohne `url` nicht fokussierbar **[Annahme, nicht getestet]**. Vorschlag: In `eventDidMount` `tabindex="0"`, `role="button"` und einen Enter-Handler setzen. Aufwand S, Risiko niedrig.
+**K7. Events in the calendar can only be opened by mouse or tap.** FullCalendar 5.1 does not make events without a `url` focusable **[assumption, not tested]**. Suggestion: In `eventDidMount` set `tabindex="0"`, `role="button"` and an Enter handler. Effort S, risk low.
 
-## Kann weg / vereinfachen (UI-Elemente, Seiten, Optionen)
+## Can go / simplify (UI elements, pages, options)
 
-1. **Spaß- und Einzelnutzer-Code im Stundenplan** (alles in `timetable.html`):
-   - `rsag()` mit rund 250 fest eingetragenen Rostocker Haltestellen und iframe (`:580–599`)
+1. **Fun and single-user code in the timetable** (all in `timetable.html`):
+   - `rsag()` with around 250 hard-coded Rostock stops and an iframe (`:580–599`)
    - `porsche()` (`:601–608`)
-   - beide per Hash auf einzelne Konten geschaltet (`:1922–1926`)
-   - Physik-Animation, deren Funktion sofort `return` ausführt (`:610–678`, `:1927–1940`)
-   - eine nutzerspezifische Drehung `body{transform:rotate(1deg)}` in `_template.html:111`
+   - both switched on for individual accounts via hash (`:1922–1926`)
+   - physics animation whose function immediately executes `return` (`:610–678`, `:1927–1940`)
+   - a user-specific rotation `body{transform:rotate(1deg)}` in `_template.html:111`
 
-   Das verlängert die Seite, ohne Nutzen für die rund 1000 Nutzer:innen. Aufwand S, Risiko niedrig.
-2. **Corona-Reste:**
-   - Wechselunterrichts-/„zu Hause“-Hinweis (`timetable.html:453–470`)
-   - Selbsttest-Button `.bu-add-self-test` mit „Sie“-Anrede (`:1941–1953`)
+   This makes the page longer without any benefit for the roughly 1000 users. Effort S, risk low.
+2. **Corona leftovers:**
+   - Wechselunterricht (alternating classes) / „zu Hause“ (at home) notice (`timetable.html:453–470`)
+   - self-test button `.bu-add-self-test` with the formal „Sie“ form of address (`:1941–1953`)
    - `bu_minimize_salzh_explanation` (`:1878`)
-   - Hybrid-Notizfeld `#ta_sus_notes` („Hybridstunde … zu Hause“, `:167–170`)
-   - auskommentierte Panels (`:120–125`)
+   - hybrid note field `#ta_sus_notes` („Hybridstunde … zu Hause“ (hybrid lesson … at home), `:167–170`)
+   - commented-out panels (`:120–125`)
 
-   Prüfen und entfernen. Ergänzt TODO „Corona-Seiten“ um diese Stellen *im* Stundenplan. Aufwand S, Risiko niedrig bis mittel (vorher prüfen, ob `WECHSELUNTERRICHT_KLASSENSTUFEN` leer ist).
-3. **Auskommentierter Android-WebView-Hinweis** mit festen Adressen (`timetable.html:76–93`). Er wird mit ausgeliefert, weil HTML-Kommentare im Template ausgewertet und gesendet werden. Aufwand S, Risiko niedrig.
-4. **Profil, Bereich „Rollen“:** eine interne Rechte-Tabelle. Für Schüler:innen und Eltern ohne Nutzen. In einen aufklappbaren Bereich „Technische Details“ verschieben oder nur für Lehrkräfte zeigen. **„Muster“** erscheint im Test-Stack leer (`schueler/desktop-profil.png`), vermutlich wegen fehlender generierter Bilder **[Annahme, passt zu den vielen 404 in `*-notes.txt`]**. Bei leerer Liste ausblenden. Aufwand S, Risiko niedrig.
-5. **Analog-, Sepia- und Kontrast-Regler** in eine einklappbare Gruppe „Erweitert“ (ergänzt das TODO zu den Helligkeits-Schaltern). Weniger Optionen, gleiche Möglichkeiten. Aufwand S, Risiko niedrig.
-6. **Kursplanung, Dashboard-Amt und Hybrid:** Bereiche wie „Rückmeldung von Schülerinnen und Schülern“ und „Notizen“ füllen auf dem Handy den Bildschirm, bevor die Liste beginnt (`lehrkraft/phone-lessons_Ma_5a.png`). Prüfen, ob sie noch genutzt werden. Sonst standardmäßig einklappen. Aufwand S, Risiko mittel (Nutzung vorher klären).
-7. **Druck-Button auf dem Handy:** Er öffnet ein Wochen-PDF und wird mobil vermutlich selten gebraucht **[Annahme]**. Auf schmalen Bildschirmen ausblenden, um Platz für den Titel zu schaffen. Aufwand S, Risiko niedrig.
+   Check and remove. Complements TODO „Corona-Seiten“ (Corona pages) with these spots *in* the timetable. Effort S, risk low to medium (check beforehand whether `WECHSELUNTERRICHT_KLASSENSTUFEN` is empty).
+3. **Commented-out Android WebView notice** with hard-coded addresses (`timetable.html:76–93`). It is shipped along, because HTML comments in the template are evaluated and sent. Effort S, risk low.
+4. **Profile, „Rollen“ (roles) section:** an internal permissions table. No use for students and parents. Move it into a collapsible section „Technische Details“ (technical details) or show it only to teachers. **„Muster“** (patterns) appears empty in the test stack (`schueler/desktop-profil.png`), probably because of missing generated images **[assumption, matches the many 404s in `*-notes.txt`]**. Hide it when the list is empty. Effort S, risk low.
+5. **Analog, sepia and contrast sliders** into a collapsible group „Erweitert“ (advanced) (complements the TODO about the brightness switches). Fewer options, same possibilities. Effort S, risk low.
+6. **Course planning, Dashboard-Amt (dashboard duty) and hybrid:** Sections like „Rückmeldung von Schülerinnen und Schülern“ (feedback from students) and „Notizen“ (notes) fill the screen on the phone before the list starts (`lehrkraft/phone-lessons_Ma_5a.png`). Check whether they are still used. Otherwise collapse them by default. Effort S, risk medium (clarify usage beforehand).
+7. **Print button on the phone:** It opens a weekly PDF and is probably rarely needed on mobile **[assumption]**. Hide it on narrow screens to make room for the title. Effort S, risk low.
 
-**Empfohlene Reihenfolge:** Quick Wins 1, 2, 9 (reine Fehler) → 3, 4, 5, 6 (Stundenplan auf dem Handy, je mit E2E im Projekt `mobile`) → M1/M2/M3 → Navigation (7, 8, D2) → Aufräumen.
+**Recommended order:** Quick wins 1, 2, 9 (pure bugs) → 3, 4, 5, 6 (timetable on the phone, each with E2E in the `mobile` project) → M1/M2/M3 → navigation (7, 8, D2) → clean-up.
 
-**Hinweis zu den Konsolenmeldungen:** Die vielen `404` und `ERR_NAME_NOT_RESOLVED` in den `*-notes.txt` stammen vermutlich von fehlenden generierten Dateien und externen Hosts im Test-Stack, nicht von UI-Fehlern **[Annahme]**. Sie sollten aber geprüft werden, damit echte Fehler in der Liste nicht untergehen.
+**Note on the console messages:** The many `404` and `ERR_NAME_NOT_RESOLVED` in the `*-notes.txt` probably come from missing generated files and external hosts in the test stack, not from UI bugs **[assumption]**. They should still be checked, though, so that real errors in the list don't get lost.

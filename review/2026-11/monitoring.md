@@ -1,88 +1,88 @@
-# Monitoring-Review gyst-dashboard
+# Monitoring review gyst-dashboard
 
-## Kurzfazit
+## Summary
 
-Heute fällt ein Problem fast nur auf, wenn sich jemand meldet („Stundenplan ist leer“, „Mail kam nicht an“). Es gibt **keinen Healthcheck außer `/api/ping`**, keine „letzter erfolgreicher Lauf“-Marker, keine Statusseite und keinen Alarm. Die einzige Ausnahme: Scheitert eine Verteiler-Mail, bekommt der Maintainer eine Kopie (cc). Mehrere Ausfälle bleiben **still**: Der Sende-Thread des Mail-Forwarders kann sterben, ohne dass der Prozess endet. Der Mail-Bot kann an einer einzelnen fehlerhaften Mail für immer hängen bleiben. Der Worker-Thread vom Einladungs- und vom Statistik-Bot kann sterben, und Aufträge landen danach nur noch in der Warteschlange. Der vplan-watcher schreibt bei Teil-Fehlern trotzdem seinen Zeitstempel.
+Today a problem is almost only noticed when someone reports it („Stundenplan ist leer“ (timetable is empty), „Mail kam nicht an“ (mail didn't arrive)). There is **no health check except `/api/ping`**, no “last successful run” markers, no status page and no alerting. The only exception: if a distribution list mail fails, the maintainer gets a copy (cc). Several failures stay **silent**: the mail forwarder's sending thread can die without the process ending. The mail bot can get stuck forever on a single faulty mail. The worker thread of the invitation bot and of the statistics bot can die, and jobs then only end up in the queue. The vplan-watcher writes its timestamp even on partial failures.
 
-Für eine Schule genügt etwas Kleines:
-1. Jeder Dienst schreibt Heartbeat-Dateien nach `/internal/status/`.
-2. Eine `/api/health` pro Dienst.
-3. Eine Admin-Statusseite.
-4. Ein Watchdog, der bei Zustandswechsel per `deliver_mail` alarmiert.
-5. Ein externer Uptime-Check als Totmannschalter.
-6. Eine Log-Zeile pro Request mit Dauer, Status und Rolle.
+For a school, something small is enough:
+1. Every service writes heartbeat files to `/internal/status/`.
+2. An `/api/health` per service.
+3. An admin status page.
+4. A watchdog that alerts via `deliver_mail` on a state change.
+5. An external uptime check as a dead man's switch.
+6. One log line per request with duration, status and role.
 
-Docker-Healthchecks kommen als optionale Einstellung in `config.rb` dazu.
+Docker health checks are added as an optional setting in `config.rb`.
 
-**Doku-Korrektur nötig:** `doc/Betrieb.md` sagt „Jede Zeile der Ruby-Dienste beginnt mit Datum und Uhrzeit“. Das gilt aber nur für `debug`/`debug_error`. Viele Stellen schreiben direkt mit `STDERR.puts` und haben weder Zeitstempel noch `[ERROR]`: vplan-watcher, mail-forwarder, alle Bots, die `rescue`-Zweige in `timetable.rb` (Zeilen ~2331–2347) und `trigger_update` und Verwandte in `main.rb:2306–2340`. Der empfohlene `grep` findet deshalb z. B. Fehler aus dem Stundenplan-Update nicht.
+**Documentation correction needed:** `doc/Betrieb.md` says “Every line of the Ruby services starts with date and time”. But that only holds for `debug`/`debug_error`. Many places write directly with `STDERR.puts` and have neither a timestamp nor `[ERROR]`: vplan-watcher, mail-forwarder, all bots, the `rescue` branches in `timetable.rb` (lines ~2331–2347) and `trigger_update` and relatives in `main.rb:2306–2340`. The recommended `grep` therefore doesn't find e.g. errors from the timetable update.
 
-## Was heute erkennbar ist – und was nicht
+## What is detectable today – and what isn't
 
-| Ausfallart | Wie bemerkt? | Lücke |
+| Failure type | How noticed? | Gap |
 |---|---|---|
-| `ruby` down/Neustart | nginx zeigt `neustart.html`, die `/api/ping` abfragt; vorgelagerter Proxy | Kein Alarm. `/api/ping` prüft nur „main.rb geladen“, nicht Neo4j. Läuft `ruby` dauerhaft in einer Restart-Schleife, sieht man nur die Neustartseite. |
-| Ganzer Server/nginx down | Nutzer:innen melden es | Kein externer Check. |
-| Bot-Container crasht (`restart: always`) | `./config.rb ps` (Restart-Zähler), Docker-Log | Niemand schaut hin; kein Healthcheck. |
-| Stundenplan seit Stunden nicht aktualisiert | Logzeile `<<< Finished updating … in X s` (`timetable-repl.rb:31`) | Kein Marker für den letzten Erfolg. Fehler aus `update_timetables` landen als nacktes `STDERR.puts e` ohne Zeitstempel und Backtrace. Ein toter Worker-Thread fällt nicht auf. |
-| Vertretungsplan veraltet | `/vplan/timestamp.txt`; der Monitor zeigt `vplan_timestamp` (`timetable.rb:229`) | Man kann nicht unterscheiden: Untis hat nichts Neues veröffentlicht, oder der Watcher ist kaputt. Es gibt kein „zuletzt geprüft“. `loop do` (`vplan-watcher.rb:345`) hat kein `rescue`, jeder HTTP-Fehler crasht den Prozess. Fehlende Einzelseiten führen nur zu `WARNING` (`:267`), danach wird trotzdem der Zeitstempel geschrieben (`:340`): Der Teilplan gilt dann als aktuell. |
-| Mail-Queue (Unterrichts-Mails) hängt | Lehrkräfte sehen „nicht gesendet“ (`ts_sent` nil) | Ausgelöst wird nur über `send-pending-emails.rb`, also über einen Host-Cron, der nicht dokumentiert ist. Fällt der Cron weg, stauen sich die Mails still. `Thread.abort_on_exception = true` plus eine Mail, die z. B. zu einem gelöschten Schüler gehört (`@@user_info[sus_email]` ist nil), führt zu Crash, Neustart, Crash beim nächsten Lauf: Diese eine Mail blockiert alle. |
-| Verteiler-Forwarder scheitert | Eine einzelne Mail scheitert: Mail an den Absender mit cc an den Maintainer, dazu `recipients.yaml.failed` | Ist SMTP ganz weg, scheitert auch die Hinweis-Mail (`mail-forwarder.rb:290`) und t2 stirbt. t1 läuft weiter, `t1.join` blockiert, der Prozess lebt also: **Mails werden angenommen und aus dem Postfach gelöscht, aber nie verschickt.** IMAP-Fehler beenden t1, das `join` wirft und der Prozess startet neu (nur im Docker-Log sichtbar). |
-| Einladungs- oder Statistik-Bot | – | `perform_update` ohne `rescue` und ohne `abort_on_exception`: Der Worker stirbt still, `/api/send_invites` füllt nur noch die Queue. |
-| Platte voll | – | Keine Prüfung. Die Docker-Logrotation ist optional, Rotation der nginx-Logs nur per Doku. Neo4j-Store, `/raw` und `/mails` wachsen ohne Grenze (`.archived` wird nie gelöscht). |
-| Neo4j langsam | Nutzer:innen merken es | Keine Zeitmessung der Queries. Community 4.4 hat kein `query.log`, Heap und Pagecache sind nicht konfiguriert. GC-Pausen stehen nur in `LOGS_PATH/neo4j/debug.log`. |
-| Zertifikat | Browser-Warnung | Liegt beim externen Proxy (acme-companion); kein Ablauf-Check. |
-| Backups | – | Noch nicht automatisiert (TODO). Kein Nachweis „letzter Dump OK“. |
-| Langsame Requests/500er | `dump_errors` von Sinatra (`- Klasse - Nachricht`); nginx-`$request_time` | Kein Status und keine Dauer im Ruby-Log, keine Request-ID, keine Aggregation. Erwartbare Fehler (falscher Code, `assert` auf Seiten, laut Smoke-Test 153 Fälle) kommen ebenfalls als 500 und machen echte Fehler unsichtbar. |
+| `ruby` down/restart | nginx shows `neustart.html`, which polls `/api/ping`; upstream proxy | No alert. `/api/ping` only checks “main.rb loaded”, not Neo4j. If `ruby` is permanently in a restart loop, you only see the restart page. |
+| Whole server/nginx down | users report it | No external check. |
+| Bot container crashes (`restart: always`) | `./config.rb ps` (restart counter), Docker log | Nobody looks; no health check. |
+| Timetable not updated for hours | log line `<<< Finished updating … in X s` (`timetable-repl.rb:31`) | No marker for the last success. Errors from `update_timetables` end up as a bare `STDERR.puts e` without timestamp and backtrace. A dead worker thread goes unnoticed. |
+| Vertretungsplan (substitution plan) out of date | `/vplan/timestamp.txt`; the monitor shows `vplan_timestamp` (`timetable.rb:229`) | You can't distinguish: Untis hasn't published anything new, or the watcher is broken. There is no “last checked”. `loop do` (`vplan-watcher.rb:345`) has no `rescue`, every HTTP error crashes the process. Missing individual pages only lead to a `WARNING` (`:267`), after which the timestamp is written anyway (`:340`): the partial plan then counts as current. |
+| Mail queue (lesson mails) stuck | teachers see „nicht gesendet“ (not sent) (`ts_sent` nil) | Only triggered via `send-pending-emails.rb`, i.e. via a host cron that is not documented. If the cron goes away, the mails pile up silently. `Thread.abort_on_exception = true` plus a mail that e.g. belongs to a deleted student (`@@user_info[sus_email]` is nil) leads to crash, restart, crash on the next run: this one mail blocks all of them. |
+| Distribution list forwarder fails | A single mail fails: mail to the sender with cc to the maintainer, plus `recipients.yaml.failed` | If SMTP is completely gone, the notification mail (`mail-forwarder.rb:290`) fails too and t2 dies. t1 keeps running, `t1.join` blocks, so the process stays alive: **mails are accepted and deleted from the mailbox, but never sent.** IMAP errors end t1, the `join` raises and the process restarts (only visible in the Docker log). |
+| Invitation or statistics bot | – | `perform_update` without `rescue` and without `abort_on_exception`: the worker dies silently, `/api/send_invites` only fills the queue. |
+| Disk full | – | No check. Docker log rotation is optional, rotation of the nginx logs only by documentation. Neo4j store, `/raw` and `/mails` grow without limit (`.archived` is never deleted). |
+| Neo4j slow | users notice it | No timing of the queries. Community 4.4 has no `query.log`, heap and page cache are not configured. GC pauses are only in `LOGS_PATH/neo4j/debug.log`. |
+| Certificate | browser warning | Handled by the external proxy (acme-companion); no expiry check. |
+| Backups | – | Not automated yet (TODO). No evidence of “last dump OK”. |
+| Slow requests/500s | Sinatra's `dump_errors` (`- class - message`); nginx `$request_time` | No status and no duration in the Ruby log, no request ID, no aggregation. Expected errors (wrong code, `assert` on pages, 153 cases according to the smoke test) also come as 500 and make real errors invisible. |
 
-## Vorschläge, priorisiert
+## Suggestions, prioritised
 
-**1. Heartbeat-Dateien „letzter Erfolg/letzter Fehler“** – Nutzen hoch, Aufwand S, Risiko gering.
-Ein kleiner Helfer, z. B. `include/status.rb`, ohne Abhängigkeit von `main.rb`, damit `vplan-watcher.rb` ihn auch laden kann. Signatur etwa `Status.ok!(name, extra)` und `Status.error!(name, e)`. Er schreibt atomar (`.tmp` + `rename`, wie schon bei `neustart-looks.json`) nach `/internal/status/<dienst>.json`, mit Feldern wie `{ok_at, error_at, error_class, duration_s, files, queue}`. Das Verzeichnis ist `/internal` und **nicht** `/gen`, denn `/gen` liefert nginx öffentlich aus. `/internal` ist in allen Ruby-Diensten beschreibbar gemountet. Aufrufstellen:
+**1. Heartbeat files “last success/last error”** – benefit high, effort S, risk low.
+A small helper, e.g. `include/status.rb`, without a dependency on `main.rb`, so that `vplan-watcher.rb` can load it too. Signature roughly `Status.ok!(name, extra)` and `Status.error!(name, e)`. It writes atomically (`.tmp` + `rename`, as already done for `neustart-looks.json`) to `/internal/status/<dienst>.json`, with fields like `{ok_at, error_at, error_class, duration_s, files, queue}`. The directory is `/internal` and **not** `/gen`, because nginx serves `/gen` publicly. `/internal` is mounted writable in all Ruby services. Call sites:
 - `TimetableRepl.perform_update`
-- `perform_refresh`: zusätzlich `checked_at` bei jedem Durchlauf, auch ohne Änderung, damit „geprüft“ und „neu“ unterscheidbar sind
+- `perform_refresh`: additionally `checked_at` on every pass, even without a change, so that “checked” and “new” can be distinguished
 - `MailBotRepl.perform_update`
-- beide Forwarder-Threads, je eine Datei
-- `InvitationRepl` und `StatsBotRepl`
-- das Backup-Skript auf dem Host: schreibt `INTERNAL_PATH/status/backup.json` mit Größe und Knotenzahl
+- both forwarder threads, one file each
+- `InvitationRepl` and `StatsBotRepl`
+- the backup script on the host: writes `INTERNAL_PATH/status/backup.json` with size and node count
 
-**2. Stille Tode verhindern** – Nutzen hoch, Aufwand S, Risiko gering, aber vorher Tests.
-- `vplan-watcher.rb`: `rescue StandardError` in der Schleife, dann `Status.error!`. Fehlende Seiten als Fehler werten und den Zeitstempel dann **nicht** schreiben.
-- `mail-forwarder.rb`: Der Thread-Körper bekommt `begin/rescue`, und die Hinweis-Mail ein eigenes `rescue`. Alternativ `Thread.abort_on_exception = true`, damit Docker neu startet.
-- `mail-bot-repl.rb`: Fehler pro Mail abfangen und loggen, die Mail markieren (`m.error`) und überspringen, statt den ganzen Prozess zu beenden.
-- Invitation- und Stats-Bot: `rescue` im Worker.
-- `trigger_*` in `main.rb`: `open_timeout`/`read_timeout` kurz setzen und `debug_error` statt `STDERR.puts e`.
+**2. Prevent silent deaths** – benefit high, effort S, risk low, but tests first.
+- `vplan-watcher.rb`: `rescue StandardError` in the loop, then `Status.error!`. Treat missing pages as errors and then **don't** write the timestamp.
+- `mail-forwarder.rb`: The thread body gets `begin/rescue`, and the notification mail its own `rescue`. Alternatively `Thread.abort_on_exception = true`, so that Docker restarts it.
+- `mail-bot-repl.rb`: Catch and log errors per mail, mark the mail (`m.error`) and skip it, instead of ending the whole process.
+- Invitation and stats bot: `rescue` in the worker.
+- `trigger_*` in `main.rb`: set `open_timeout`/`read_timeout` short and use `debug_error` instead of `STDERR.puts e`.
 
-**3. `/api/health` pro Dienst** – Nutzen hoch, Aufwand S–M, Risiko gering.
-- **ruby**: in `config.ru` neben `/api/ping`, also ohne den before-Filter. Prüft:
-  - Neo4j `RETURN 1` mit gemessener Latenz und Timeout
-  - freien Platz unter `/gen`, `/raw`, `/internal` (`df -P` als Array-`system`/`IO.popen`)
-  - das Alter der Heartbeat-Dateien
+**3. `/api/health` per service** – benefit high, effort S–M, risk low.
+- **ruby**: in `config.ru` next to `/api/ping`, i.e. without the before filter. Checks:
+  - Neo4j `RETURN 1` with measured latency and timeout
+  - free space under `/gen`, `/raw`, `/internal` (`df -P` as array `system`/`IO.popen`)
+  - the age of the heartbeat files
 
-  Öffentlich nur `200 ok` bzw. `503 degraded` ohne Details. Details nur auf der Admin-Seite. `/api/ping` bleibt unverändert für `neustart.html`.
-- **Bots auf 8080**: `get '/api/health'` mit `worker_alive` (`@@worker_thread.alive?`), `@@queue.size`, `future_queue.size` und dem letzten Erfolg. 503, wenn der Worker tot ist.
-- **vplan_watcher und mail_forwarder** haben keinen HTTP-Server. Für sie reicht das Alter der Heartbeat-Datei.
+  Publicly only `200 ok` or `503 degraded` without details. Details only on the admin page. `/api/ping` stays unchanged for `neustart.html`.
+- **Bots on 8080**: `get '/api/health'` with `worker_alive` (`@@worker_thread.alive?`), `@@queue.size`, `future_queue.size` and the last success. 503 if the worker is dead.
+- **vplan_watcher and mail_forwarder** have no HTTP server. For them the age of the heartbeat file is enough.
 
-**4. Admin-Statusseite** – Nutzen hoch, Aufwand M, Risiko gering.
-Neue Seite `src/static/status.html` mit `#{this_is_a_page_for_logged_in_admins}` als erster Zeile, dazu `.api_messages` und `POST /api/admin_status`. Gezeigt wird eine Ampel pro Dienst, mit diesen Spalten:
-- Alter des letzten Erfolgs, letzter Fehler (Klasse, Zeit)
-- Queue-Längen: `Mail` mit `ts_sent IS NULL AND ts < now-15min`; Anzahl `/mails/*/recipients.yaml`, `*.failed`
-- Alter von Vplan-Prüfung und Vplan-Inhalt
-- Neo4j-Latenz
-- Platz auf der Platte
-- Zertifikat, Tage bis zum Ablauf: Ruby-`OpenSSL::SSL::SSLSocket` zu `WEBSITE_HOST:443`. Falls Hairpin-NAT das verhindert, über den externen Check.
-- Alter des Backups
-- Top-Fehler der letzten 24 h (siehe Logging)
+**4. Admin status page** – benefit high, effort M, risk low.
+New page `src/static/status.html` with `#{this_is_a_page_for_logged_in_admins}` as the first line, plus `.api_messages` and `POST /api/admin_status`. It shows a traffic light per service, with these columns:
+- age of the last success, last error (class, time)
+- queue lengths: `Mail` with `ts_sent IS NULL AND ts < now-15min`; number of `/mails/*/recipients.yaml`, `*.failed`
+- age of the Vplan check and of the Vplan content
+- Neo4j latency
+- disk space
+- certificate, days until expiry: Ruby `OpenSSL::SSL::SSLSocket` to `WEBSITE_HOST:443`. If hairpin NAT prevents this, via the external check.
+- age of the backup
+- top errors of the last 24 h (see Logging)
 
-Keine personenbezogenen Daten, nur Zahlen. Ein E2E-Test mit Admin-Rolle gehört dazu.
+No personal data, only numbers. An E2E test with the admin role belongs with it.
 
-**5. Watchdog mit Mail-Alarm** – Nutzen hoch, Aufwand M, Risiko mittel (Alarm-Spam).
-Ein Thread in **einem** Dienst, z. B. `stats_bot`, oder optional ein eigener Dienst `watchdog`. Er wertet alle 5 min dieselben Checks wie die Statusseite aus (gemeinsamer Code). Schwellen beachten die Schulzeit, z. B. Vplan nur Mo–Fr 6–16 Uhr älter als 60 min. Gemailt wird nur bei **Zustandswechsel** ok→fail und fail→ok, plus eine Erinnerung alle 24 h; der Zustand liegt in `/internal/status/alerts.json`. Versand über `deliver_mail` an `WEBSITE_MAINTAINER_EMAIL`. **Dev-Guard:** Die Mail geht zwar nur an die Positivliste, aber auf der Dev-Instanz wären fast alle Checks rot (kein Untis, kein Forwarder), und der Maintainer bekäme Spam. Deshalb nur mit `ENABLE_ALERTS = true` in `env.rb` scharf schalten, Standard aus; in DEVELOPMENT nur loggen. Scheitert der Alarm selbst (SMTP down), nur `debug_error`.
+**5. Watchdog with mail alert** – benefit high, effort M, risk medium (alert spam).
+A thread in **one** service, e.g. `stats_bot`, or optionally a separate `watchdog` service. Every 5 min it evaluates the same checks as the status page (shared code). Thresholds take school hours into account, e.g. Vplan older than 60 min only Mon–Fri 6 am–4 pm. Mail is only sent on a **state change** ok→fail and fail→ok, plus a reminder every 24 h; the state lives in `/internal/status/alerts.json`. Sent via `deliver_mail` to `WEBSITE_MAINTAINER_EMAIL`. **Dev guard:** The mail only goes to the positive list, but on the dev instance almost all checks would be red (no Untis, no forwarder), and the maintainer would get spam. So only arm it with `ENABLE_ALERTS = true` in `env.rb`, off by default; in DEVELOPMENT only log. If the alert itself fails (SMTP down), only `debug_error`.
 
-**6. Externer Totmannschalter** – Nutzen hoch, Aufwand S, Risiko gering.
-Ein externer Dienst (selbst gehostetes healthchecks.io/Uptime Kuma, z. B. auf einem anderen Schulserver) prüft `https://…/api/health` alle 5 min. Nur er erkennt „Server, Proxy oder SMTP ganz weg“. Optional pingt der Watchdog dort zusätzlich eine Heartbeat-URL. Das deckt auch ab, dass der Watchdog selbst tot ist.
+**6. External dead man's switch** – benefit high, effort S, risk low.
+An external service (self-hosted healthchecks.io/Uptime Kuma, e.g. on another school server) checks `https://…/api/health` every 5 min. Only it detects “server, proxy or SMTP completely gone”. Optionally the watchdog additionally pings a heartbeat URL there. This also covers the watchdog itself being dead.
 
-**7. Docker-Healthchecks in `config.rb`** – Nutzen mittel, Aufwand S, Risiko gering.
-`ENABLE_HEALTHCHECKS` als optionale Einstellung. Ohne sie wird nichts gesetzt, die erzeugten Dateien bleiben byte-identisch. **Wichtig:** Der Healthcheck muss *nach* dem Klonen der Dienste per `YAML.load(…to_yaml)` gesetzt werden, also im Block vor `File::open(COMPOSE_FILE_PATH…)`. Sonst erben alle Bots den Check von `ruby` mit Port 3000. Skizze:
+**7. Docker health checks in `config.rb`** – benefit medium, effort S, risk low.
+`ENABLE_HEALTHCHECKS` as an optional setting. Without it nothing is set, the generated files stay byte-identical. **Important:** The health check must be set *after* the services are cloned via `YAML.load(…to_yaml)`, i.e. in the block before `File::open(COMPOSE_FILE_PATH…)`. Otherwise all bots inherit the check from `ruby` with port 3000. Sketch:
 
 ```ruby
 if defined?(ENABLE_HEALTHCHECKS) && ENABLE_HEALTHCHECKS
@@ -98,51 +98,51 @@ if defined?(ENABLE_HEALTHCHECKS) && ENABLE_HEALTHCHECKS
 end
 ```
 
-`curl` ist im Ruby-Image. `start_period` großzügig wählen, denn `collect_data` und das volle Stundenplan-Update brauchen mit echten Daten Minuten. Hinweis für die Doku: `restart: always` startet *unhealthy*-Container **nicht** neu. Der Healthcheck dient der Sichtbarkeit (`./config.rb ps`) und dem Watchdog. Kein Autoheal einbauen, das riskiert Restart-Schleifen beim langen Start. Nach der Änderung beide Varianten (Dev und Produktion) per Diff prüfen.
+`curl` is in the Ruby image. Choose `start_period` generously, because `collect_data` and the full timetable update take minutes with real data. Note for the docs: `restart: always` does **not** restart *unhealthy* containers. The health check serves visibility (`./config.rb ps`) and the watchdog. Don't build in autoheal, that risks restart loops during the long startup. After the change, check both variants (dev and production) by diff.
 
-**8. Neo4j und Platte** – Aufwand S.
-- Heap und Pagecache als optionale Einstellung setzen.
-- `debug.log` auf `stop-the-world pause` prüfen, z. B. mit `grep`.
-- Alte `/mails/*/*.archived` und `mail` nach N Tagen löschen; das ist auch eine Frage des Datenschutzes.
+**8. Neo4j and disk** – effort S.
+- Set heap and page cache as an optional setting.
+- Check `debug.log` for `stop-the-world pause`, e.g. with `grep`.
+- Delete old `/mails/*/*.archived` and `mail` after N days; that is also a data protection matter.
 
-## Logging: konkrete Verbesserungen
+## Logging: concrete improvements
 
-1. **Eine Zeile pro Request statt am Anfang.** Statt `debug "[nc_login|email] GET /path"` (`main.rb:2168`, also bevor Status und Dauer bekannt sind) eine Rack-Middleware in `config.ru` vor `map '/'`, oder `after '*'`: Die after-Filter von Sinatra laufen auch nach Exceptions, mit Status 500. Format, das zum bestehenden `grep` passt:
+1. **One line per request instead of at the start.** Instead of `debug "[nc_login|email] GET /path"` (`main.rb:2168`, i.e. before status and duration are known), a Rack middleware in `config.ru` before `map '/'`, or `after '*'`: Sinatra's after filters also run after exceptions, with status 500. A format that fits the existing `grep`:
    `2026-11-09 08:15:02 [req] id=3f9a2c role=lehrer POST /api/send_email 200 87ms db=4/31ms`
-   - `role` (`lehrer`/`sus`/`eltern`/`admin`/`tablet`/`monitor`/`anon`) statt E-Mail oder nc_login; zur Korrelation höchstens ein kurzer HMAC der User-ID.
-   - Route-Muster aus `env['sinatra.route']` statt Pfad mit IDs (gruppierbar, ohne Tokens oder Tags).
-   - `db=` zählt Queries und deren Gesamtzeit über ein `prepend` auf `Neo4jBolt#neo4j_query`. Queries über 500 ms extra loggen, mit der ersten Zeile der Query, **ohne** Parameter.
-2. **Request-ID**: nginx-`$request_id` per `proxy_set_header X-Request-Id` durchreichen und ins `log_format` aufnehmen, zusammen mit `$upstream_response_time`. Das ändert die erzeugte nginx-Konfiguration bewusst; danach `build nginx`. Ohne Header erzeugt die Middleware selbst eine ID. Die ID in der 500-Antwort zeigen, dann können Nutzer:innen sie melden.
-3. **Alle `STDERR.puts` auf `debug`/`debug_error`** in Bots, Forwarder und den `rescue`-Zweigen von `timetable.rb`; Fehler immer mit Klasse und gekürztem Backtrace. Für `vplan-watcher.rb`, der `main.rb` nicht lädt, `debug` in eine kleine `include/log.rb` auslagern.
-4. **Fehler-Aggregation ohne Sentry**: Der Fingerabdruck ist Exception-Klasse plus erste `/app/`-Backtracezeile. Zähler mit first_seen, last_seen und Beispiel-Route kommen nach `/internal/status/errors.json`, die Top-Liste auf die Statusseite. Der Watchdog mailt einmal pro *neuem* Fingerabdruck. Voraussetzung: Erwartbare Fehler (falscher Code, Zugriffs-`assert` auf Seiten) liefern 4xx, wie im TODO vorgesehen. Sonst ist die Liste Rauschen.
-5. **Metriken** in der Status-JSON, kein Prometheus:
-   - p50/p95 und Anzahl pro Route-Muster, letzte Stunde
-   - Anzahl 5xx
-   - Dauer und Dateizahl des Stundenplan-Updates, voll und inkrementell (steht schon in der Logzeile)
-   - Queue-Längen der Bots
-   - offene Unterrichts-Mails, Forwarder-pending/failed
-   - Alter von Vplan-Prüfung und -Inhalt
-   - Neo4j-Ping
-   - Platz auf der Platte
+   - `role` (`lehrer`/`sus`/`eltern`/`admin`/`tablet`/`monitor`/`anon`) instead of email or nc_login; for correlation at most a short HMAC of the user ID.
+   - Route pattern from `env['sinatra.route']` instead of the path with IDs (groupable, without tokens or tags).
+   - `db=` counts queries and their total time via a `prepend` on `Neo4jBolt#neo4j_query`. Log queries over 500 ms separately, with the first line of the query, **without** parameters.
+2. **Request ID**: pass nginx `$request_id` through via `proxy_set_header X-Request-Id` and include it in the `log_format`, together with `$upstream_response_time`. This deliberately changes the generated nginx configuration; `build nginx` afterwards. Without the header, the middleware generates an ID itself. Show the ID in the 500 response, then users can report it.
+3. **All `STDERR.puts` to `debug`/`debug_error`** in bots, forwarder and the `rescue` branches of `timetable.rb`; errors always with class and shortened backtrace. For `vplan-watcher.rb`, which doesn't load `main.rb`, move `debug` out into a small `include/log.rb`.
+4. **Error aggregation without Sentry**: The fingerprint is the exception class plus the first `/app/` backtrace line. Counters with first_seen, last_seen and an example route go to `/internal/status/errors.json`, the top list onto the status page. The watchdog mails once per *new* fingerprint. Prerequisite: expected errors (wrong code, access `assert` on pages) return 4xx, as planned in the TODO. Otherwise the list is noise.
+5. **Metrics** in the status JSON, no Prometheus:
+   - p50/p95 and count per route pattern, last hour
+   - number of 5xx
+   - duration and file count of the timetable update, full and incremental (already in the log line)
+   - queue lengths of the bots
+   - pending lesson mails, forwarder pending/failed
+   - age of the Vplan check and content
+   - Neo4j ping
+   - disk space
    - `@@ws_clients.size`
-6. **Datenschutz in Logs** (wichtig): Diese Stellen schreiben heute Inhalte über Schüler:innen ins Docker-Log:
-   - `include/email.rb:12` (`debug data.to_yaml` mit E-Mail, Grund und Freitext)
-   - `mail-bot-repl.rb:65` (Lehrkraft, Schüler-E-Mail, Grund **und Details** wie Störverhalten)
-   - `mail-forwarder.rb:248` (jede Empfängeradresse einzeln)
+6. **Data protection in logs** (important): These places currently write content about students into the Docker log:
+   - `include/email.rb:12` (`debug data.to_yaml` with email, reason and free text)
+   - `mail-bot-repl.rb:65` (teacher, student email, reason **and details** such as disruptive behaviour)
+   - `mail-forwarder.rb:248` (every recipient address individually)
 
-   Ersetzen durch Tag, Grund-Code und Anzahl. Mit der neuen Request-Zeile verschwinden auch E-Mail-Adressen aus jedem Request-Log.
+   Replace with tag, reason code and count. With the new request line, email addresses also disappear from every request log.
 
-## Kann weg / vereinfachen
+## Can go / simplify
 
-- **Ping-Threads** in `image-bot-repl.rb` und `audio-bot-repl.rb`: `future_queue` wird nie gefüllt. Der Ping-Zweig würde `perform_update(which)` mit falscher Stelligkeit aufrufen, und `DELAYED_UPDATE_TIME` ist dort undefiniert. Toter Code.
-- `PING_TIME` in `mail-bot-repl.rb`: wird nicht benutzt. In `timetable-repl.rb` ist `PING_TIME = DEVELOPMENT ? 1 : 1` und `DELAYED_UPDATE_TIME = … 0 : 0`; vereinfachen.
-- `audio-bot-repl.rb`/`.ru`: Kein Dienst in `config.rb`, und die Datei listet nur Pfade auf. Entfernen oder versionieren (steht schon im TODO).
-- Doppeltes `docker_compose[:services][:ruby][:user] = …` in `config.rb`. Achtung: Entfernen ändert die Reihenfolge der YAML-Keys nicht, trotzdem per Diff prüfen.
-- `STDERR.puts "mail_path: …"` und `'-' * 59`-Trennzeilen in Bots und Forwarder: reines Rauschen.
-- `Main.log_freiwillig_salzh_sus_for_today` im vollen Stundenplan-Update: ein Corona-Überbleibsel (siehe TODO zu `salzh`).
-- Langfristig: Den Mail-Bot nicht per Host-Cron anstoßen, sondern mit einem eigenen Timer-Thread wie in `TimetableRepl`. Dann gibt es eine Abhängigkeit weniger, die nicht dokumentiert ist. Bis dahin den Cron in `doc/Betrieb.md` dokumentieren.
+- **Ping threads** in `image-bot-repl.rb` and `audio-bot-repl.rb`: `future_queue` is never filled. The ping branch would call `perform_update(which)` with the wrong arity, and `DELAYED_UPDATE_TIME` is undefined there. Dead code.
+- `PING_TIME` in `mail-bot-repl.rb`: is not used. In `timetable-repl.rb`, `PING_TIME = DEVELOPMENT ? 1 : 1` and `DELAYED_UPDATE_TIME = … 0 : 0`; simplify.
+- `audio-bot-repl.rb`/`.ru`: no service in `config.rb`, and the file only lists paths. Remove or version it (already in the TODO).
+- Duplicate `docker_compose[:services][:ruby][:user] = …` in `config.rb`. Caution: removing it doesn't change the order of the YAML keys, still check by diff.
+- `STDERR.puts "mail_path: …"` and `'-' * 59` separator lines in bots and forwarder: pure noise.
+- `Main.log_freiwillig_salzh_sus_for_today` in the full timetable update: a Corona leftover (see TODO on `salzh`).
+- Long term: Don't trigger the mail bot via host cron, but with its own timer thread as in `TimetableRepl`. Then there is one fewer undocumented dependency. Until then, document the cron in `doc/Betrieb.md`.
 
-Relevante Dateien:
+Relevant files:
 - config.rb
 - doc/Betrieb.md
 - src/ruby/config.ru

@@ -1,117 +1,117 @@
-# Funktionalitäts-Review gyst-dashboard
+# Functionality review gyst-dashboard
 
-## Kurzfazit
+## Summary
 
-Die meisten Fehler entstehen an vier Stellen. Erstens halten die Bots Zustand im Speicher und lesen nur inkrementell nach. Dadurch gibt es neben den behobenen Geister-Terminen noch Geister-Nachrichten und Geister-Klassenarbeiten. Zweitens fangen die Bot-Worker-Threads Fehler nicht ab: Sie sterben still oder stürzen bei jeder fehlerhaften Nachricht (Poison Message) erneut ab. Drittens identifizieren Kommentare Stunden über einen Offset, der beim Löschen oder Einfügen von Stunden nicht mitgeführt wird. Viertens hat der Mail-Forwarder keine Fehlerbehandlung für einzelne Empfänger, keine Wiederholungen und keine Timeouts. Ein Teil der gemeldeten Aussetzer lässt sich sehr wahrscheinlich mit SMTP-Ratenlimits plus einem dabei sterbenden Sende-Thread erklären. Zwei Fehler habe ich lokal nachgestellt: dass Mails externer Absender als roher MIME-Text ankommen, und die A/B-Woche über den Jahreswechsel 2026/27. Alles mit „(Vermutung)“ ist aus dem Code abgeleitet und nicht reproduziert.
+Most bugs arise in four places. First, the bots keep state in memory and only re-read incrementally. As a result, besides the ghost appointments that have been fixed, there are also ghost messages and ghost class tests. Second, the bot worker threads don't catch errors: they die silently or crash again on every faulty message (poison message). Third, comments identify lessons via an offset that is not carried along when lessons are deleted or inserted. Fourth, the mail forwarder has no error handling for individual recipients, no retries and no timeouts. Part of the reported dropouts can very probably be explained by SMTP rate limits plus a sending thread that dies in the process. I reproduced two bugs locally: that mails from external senders arrive as raw MIME text, and the A/B week across the 2026/27 year change. Everything marked “(assumption)” is derived from the code and not reproduced.
 
-## Bugs (nach Schwere)
+## Bugs (by severity)
 
-### Hoch
+### High
 
-**1. Mail-Forwarder: Mails externer Absender kommen als MIME-Salat an, Anhänge gehen verloren**
-- *Symptom:* Empfänger:innen sehen Text mit `----==_mimepart…`-Grenzen und Base64-Blöcken, HTML und Anhänge fehlen.
-- *Ursache:* `mail-forwarder.rb:258-264` baut `Mail.new { body mail.body.to_s }`. Bei multipart-Mails ist das der rohe MIME-Körper, aber ohne `Content-Type: multipart/...`. Lokal mit dem mail-Gem nachgestellt: Das Ergebnis ist `text/plain` mit allen Teilen als Text.
-- *Repro:* Eine HTML-Mail mit Anhang von einer Adresse aus `mail-forwarder-emails.txt` an einen Verteiler senden.
-- *Fix:* Original-Mail klonen und nur From/Reply-To/To ändern, statt den Body zu kopieren. Alternativ als `message/rfc822` anhängen.
-- *Test:* Unit-Test mit multipart-Fixture: Der weitergeleitete Teil bleibt multipart, die Anhangsanzahl stimmt.
+**1. Mail forwarder: mails from external senders arrive as MIME mush, attachments get lost**
+- *Symptom:* Recipients see text with `----==_mimepart…` boundaries and Base64 blocks, HTML and attachments are missing.
+- *Cause:* `mail-forwarder.rb:258-264` builds `Mail.new { body mail.body.to_s }`. For multipart mails this is the raw MIME body, but without `Content-Type: multipart/...`. Reproduced locally with the mail gem: the result is `text/plain` with all parts as text.
+- *Repro:* Send an HTML mail with an attachment from an address in `mail-forwarder-emails.txt` to a distribution list.
+- *Fix:* Clone the original mail and only change From/Reply-To/To, instead of copying the body. Alternatively attach it as `message/rfc822`.
+- *Test:* Unit test with a multipart fixture: the forwarded part stays multipart, the number of attachments matches.
 
-**2. Mail-Forwarder: ein einziger Fehler beim Senden bricht den Versand an alle übrigen Empfänger:innen ab**
-- *Symptom:* Ein Teil eines Verteilers bekommt die Mail nicht. Der Absender bekommt eine Mail „Weiterleitung fehlgeschlagen“ mit der Liste aller noch offenen Adressen.
-- *Ursache:* `mail-forwarder.rb:269-300`. Jede Exception, auch ein 550 für eine einzelne Adresse oder ein vorübergehender 4xx-Fehler, benennt `recipients.yaml` in `.failed` um und bricht ab. Es gibt kein automatisches Wiederholen.
-- *Fix:* Pro Empfänger unterscheiden: Permanente Fehler protokollieren und überspringen. Vorübergehende Fehler (4xx, Timeout) in der Liste lassen und mit Backoff später erneut versuchen.
-- *Test:* SMTP-Mock lehnt eine Adresse ab: Alle anderen werden zugestellt.
+**2. Mail forwarder: a single sending error aborts delivery to all remaining recipients**
+- *Symptom:* Part of a distribution list doesn't get the mail. The sender gets a mail „Weiterleitung fehlgeschlagen“ (forwarding failed) with the list of all still pending addresses.
+- *Cause:* `mail-forwarder.rb:269-300`. Every exception, even a 550 for a single address or a temporary 4xx error, renames `recipients.yaml` to `.failed` and aborts. There is no automatic retry.
+- *Fix:* Distinguish per recipient: log and skip permanent errors. Leave temporary errors (4xx, timeout) in the list and retry later with backoff.
+- *Test:* SMTP mock rejects one address: all others are delivered.
 
-**3. Mail-Forwarder: Mails gehen still verloren, wenn er abstürzt, nachdem die Mail auf Platte liegt**
-- *Ursache:* `mail-forwarder.rb:117-121` schreibt zuerst `/mails/<id>/mail`. Erst danach laufen `allowed_senders()` (Neo4j-Abfrage, `@@schueler_for_klasse['11'].each` bei `:87`) und das Schreiben von `recipients.yaml`. Stürzt etwas dazwischen ab (z. B. Neo4j nicht erreichbar), sieht der neue Prozess `File.exist?(mail_path)`, überspringt die Mail und löscht sie aus der INBOX (`:207`).
-- Ähnlich: Ohne Message-ID landen Mails unter `/mails/mail`. Alle späteren Mails ohne ID gelten dann als Dubletten. Außerdem findet der Glob in `:225` den Pfad `/mails/recipients.yaml` nicht, solche Mails werden also nie verschickt. Message-IDs mit `/` erzeugen Unterordner, die der Glob ebenfalls übersieht (Vermutung).
-- *Fix:* `recipients.yaml` zuerst über eine Temp-Datei schreiben, dann umbenennen. Die Datei `mail` dient erst danach als „erledigt“-Marker. Die Message-ID hashen (SHA1) statt sie direkt als Pfad zu nehmen. Fehlt die ID, den Hash des Inhalts verwenden.
-- *Test:* Einen Fehler in `allowed_senders` erzwingen, neu starten: Die Mail wird trotzdem zugestellt.
+**3. Mail forwarder: mails get lost silently if it crashes after the mail is on disk**
+- *Cause:* `mail-forwarder.rb:117-121` first writes `/mails/<id>/mail`. Only after that do `allowed_senders()` (Neo4j query, `@@schueler_for_klasse['11'].each` at `:87`) and the writing of `recipients.yaml` run. If something crashes in between (e.g. Neo4j unreachable), the new process sees `File.exist?(mail_path)`, skips the mail and deletes it from the INBOX (`:207`).
+- Similarly: without a Message-ID, mails end up under `/mails/mail`. All later mails without an ID are then considered duplicates. In addition, the glob in `:225` doesn't find the path `/mails/recipients.yaml`, so such mails are never sent. Message-IDs containing `/` create subdirectories that the glob also misses (assumption).
+- *Fix:* Write `recipients.yaml` first via a temp file, then rename. Only after that does the file `mail` serve as the “done” marker. Hash the Message-ID (SHA1) instead of using it directly as a path. If the ID is missing, use the hash of the content.
+- *Test:* Force an error in `allowed_senders`, restart: the mail is delivered anyway.
 
-**4. Mail-Forwarder: Verteiler in BCC wird als „Keine Empfänger“ zurückgeschickt**
-- *Ursache:* `mail-forwarder.rb:136` wertet nur die Kopfzeilen To/Cc/Bcc aus. Die Bcc-Zeile entfernt der sendende Server. Der Empfänger aus dem Umschlag (`Delivered-To`/`X-Original-To`) wird nicht gelesen.
-- *Fix:* Auch `Delivered-To`, `X-Original-To` und `Envelope-To` auswerten.
-- *Test:* Fixture ohne Verteiler in To/Cc, aber mit `Delivered-To`.
+**4. Mail forwarder: distribution list in BCC is bounced as „Keine Empfänger“ (no recipients)**
+- *Cause:* `mail-forwarder.rb:136` only evaluates the To/Cc/Bcc header lines. The sending server removes the Bcc line. The recipient from the envelope (`Delivered-To`/`X-Original-To`) is not read.
+- *Fix:* Also evaluate `Delivered-To`, `X-Original-To` and `Envelope-To`.
+- *Test:* Fixture without the distribution list in To/Cc, but with `Delivered-To`.
 
-**5. Nachrichten: entfernte Empfänger:innen sehen die Nachricht weiter (Geister-Nachricht)**
-- *Ursache:* `include/message.rb:54-60` löscht beim Bearbeiten die `TO`-Kanten (`DELETE r`). `timetable.rb:2558-2589` liest nur vorhandene Kanten, deshalb bleibt `@messages_for_user[entfernt][mid]` stehen. Ein späteres Löschen der Nachricht erreicht diese Person auch nicht, weil sie keine Kante mehr hat. Das hält bis zum Neustart des timetable-Dienstes an. Die Datei `/gen/m/…` bleibt abrufbar.
-- *Fix:* Wie bei den Events eine Platzierungs-Map `mid → Set[email]` führen und bei jedem Treffer die alten Platzierungen entfernen. Oder statt `DELETE` die Kante mit `rt.deleted=true, rt.updated=$ts` markieren.
-- *Test:* E2E: Nachricht an A und B senden, B entfernen, als B einloggen: Nachricht nicht sichtbar.
+**5. Messages: removed recipients still see the message (ghost message)**
+- *Cause:* `include/message.rb:54-60` deletes the `TO` edges when editing (`DELETE r`). `timetable.rb:2558-2589` only reads existing edges, so `@messages_for_user[entfernt][mid]` stays. A later deletion of the message doesn't reach this person either, because they no longer have an edge. This lasts until the timetable service restarts. The file `/gen/m/…` remains retrievable.
+- *Fix:* As with the events, keep a placement map `mid → Set[email]` and remove the old placements on every hit. Or, instead of `DELETE`, mark the edge with `rt.deleted=true, rt.updated=$ts`.
+- *Test:* E2E: send a message to A and B, remove B, log in as B: message not visible.
 
-**6. Stunden löschen oder einfügen: Kommentare und Notizen verrutschen, vorgemerkte Eltern-Mails verschwinden**
-- *Ursache:* `include/lesson.rb:280-318` verschiebt nur `LessonInfo.offset`. `TextComment` und `AudioComment` tragen den Offset als eigene Property (`comment.rb:66,95`) und hängen danach an der falschen Stunde. `DETACH DELETE` einer `LessonInfo` trennt `Mail-[:REGARDING]` ab. Der Mail-Bot findet die Mail dann nicht mehr (`mail-bot-repl.rb:34`): kein Versand, und sie ist auch nicht mehr stornierbar. `@lesson_notes_for_lesson_key` ist nach Offset sortiert und wird nicht neu geladen (`timetable.rb:2684`).
-- *Fix:* Kommentare ebenfalls verschieben (gleiche Abfrage auf `c.offset`, dabei `updated` setzen). Ungesendete Mails vor dem Löschen stornieren oder umhängen.
-- *Test:* Kommentar auf Stunde 3, Stunde 2 löschen: Der Kommentar steht bei der neuen Stunde 2.
+**6. Deleting or inserting lessons: comments and notes shift, queued parent mails disappear**
+- *Cause:* `include/lesson.rb:280-318` only shifts `LessonInfo.offset`. `TextComment` and `AudioComment` carry the offset as their own property (`comment.rb:66,95`) and afterwards hang on the wrong lesson. `DETACH DELETE` of a `LessonInfo` detaches `Mail-[:REGARDING]`. The mail bot then no longer finds the mail (`mail-bot-repl.rb:34`): it isn't sent, and it can no longer be cancelled either. `@lesson_notes_for_lesson_key` is sorted by offset and is not reloaded (`timetable.rb:2684`).
+- *Fix:* Shift comments as well (same query on `c.offset`, setting `updated` in the process). Cancel or reattach unsent mails before deleting.
+- *Test:* Comment on lesson 3, delete lesson 2: the comment is at the new lesson 2.
 
-**7. Race bei `updated >= ts`: Änderungen erscheinen bis zum Neustart nie**
-- *Ursache:* Request-Threads setzen `timestamp = Time.now.to_i` vor einer mehrteiligen Transaktion (z. B. `lesson.rb:14-60`). Committet eine andere Transaktion mit T+1 früher und läuft der timetable-Dienst dazwischen, steht `@lesson_info_last_timestamp` auf T+1 (`timetable.rb:2449`). Der spätere Commit mit T wird nie gelesen. Das gilt genauso für Kommentare, Nachrichten, Tests, Events und Notizen (Vermutung, unter Last am Montagmorgen plausibel).
-- *Fix:* Mit Überlappung abfragen (`>= last_ts - 120`, die Verarbeitung ist idempotent). Oder einen Zähler auf DB-Seite nutzen.
-- *Test:* Unit-Test mit zwei Zeilen in umgekehrter Commit-Reihenfolge.
+**7. Race with `updated >= ts`: changes never appear until a restart**
+- *Cause:* Request threads set `timestamp = Time.now.to_i` before a multi-part transaction (e.g. `lesson.rb:14-60`). If another transaction with T+1 commits earlier and the timetable service runs in between, `@lesson_info_last_timestamp` is at T+1 (`timetable.rb:2449`). The later commit with T is never read. The same applies to comments, messages, tests, events and notes (assumption, plausible under load on Monday morning).
+- *Fix:* Query with overlap (`>= last_ts - 120`, the processing is idempotent). Or use a counter on the DB side.
+- *Test:* Unit test with two rows in reverse commit order.
 
-### Mittel
+### Medium
 
-**8. Klasse einer Klassenarbeit ändern: Termin bleibt in der alten Klasse stehen.** `tests.rb:107-126` löst die Aktualisierung nur für die neue Klasse aus, und `timetable.rb:2624-2630` löscht nie aus `@public_test_entries_for_klasse[alte_klasse]`. *Fix:* alte Klasse vorher lesen, beide auslösen und Platzierungen pro Test-ID führen. *Test:* E2E: Klasse ändern, dann als SuS der alten Klasse prüfen.
+**8. Changing the class of a class test: the date stays in the old class.** `tests.rb:107-126` only triggers the update for the new class, and `timetable.rb:2624-2630` never deletes from `@public_test_entries_for_klasse[alte_klasse]`. *Fix:* read the old class beforehand, trigger both and keep placements per test ID. *Test:* E2E: change the class, then check as SuS (students) of the old class.
 
-**9. A/B-Wochen nach dem Jahreswechsel 2026/27 vertauscht** (falls `SWITCH_WEEKS` in Produktion aktiv ist). `directory.rb:523` bildet die Differenz von ISO-Wochennummern. 2026 hat 53 ISO-Wochen. Simuliert: 28.12. „A“, 04.01.2027 „A“, danach dauerhaft vertauscht. Betrifft `tests.rb:23` und `timetable.rb:1876`. *Fix:* `((d - montag(d_info)).to_i / 7)`. *Test:* Unit-Test über 2026-12 bis 2027-01.
+**9. A/B weeks swapped after the 2026/27 year change** (if `SWITCH_WEEKS` is active in production). `directory.rb:523` takes the difference of ISO week numbers. 2026 has 53 ISO weeks. Simulated: 28.12. “A”, 04.01.2027 “A”, permanently swapped after that. Affects `tests.rb:23` and `timetable.rb:1876`. *Fix:* `((d - montag(d_info)).to_i / 7)`. *Test:* Unit test across 2026-12 to 2027-01.
 
-**10. Mail-Bot (Eltern-Mails aus dem Unterricht) verschickt nur auf externen Anstoß und kann sich festfahren.** `PING_TIME` wird nie benutzt. `perform_update` läuft nur über `/api/send_pending_mails`, aufgerufen von `src/scripts/send-pending-emails.rb`. Ein Cronjob dafür ist nirgends dokumentiert (Vermutung: ohne Cron gehen keine Mails raus). Mit `Thread.abort_on_exception = true` (`:16`) beendet jede Exception den Prozess, etwa `@@user_info[sus_email]` = nil für abgegangene SuS (`:53`) oder `@@klassenleiter[klasse]` = nil (`:59`). Danach stürzt jeder weitere Lauf an derselben Mail wieder ab, und alle anderen Mails bleiben liegen. *Fix:* Ping-Thread im Bot, Fehler pro Mail abfangen und Mail als fehlgeschlagen markieren.
+**10. Mail bot (parent mails from lessons) only sends when triggered externally and can get stuck.** `PING_TIME` is never used. `perform_update` only runs via `/api/send_pending_mails`, called by `src/scripts/send-pending-emails.rb`. A cron job for this is not documented anywhere (assumption: without cron no mails go out). With `Thread.abort_on_exception = true` (`:16`), every exception ends the process, for instance `@@user_info[sus_email]` = nil for SuS who have left (`:53`) or `@@klassenleiter[klasse]` = nil (`:59`). After that, every further run crashes again on the same mail, and all other mails stay pending. *Fix:* Ping thread in the bot, catch errors per mail and mark the mail as failed.
 
-**11. Einladungs-Bot: Endlosschleife aus Absturz und Neustart bei fehlerhaften Einträgen (Vermutung).** `event.rb:179-185`: Mit `temp = ….first` entsteht bei nil ein NoMethodError. Hat die Organisatorin die Schule verlassen, ist `@@user_info[...]` nil. Das passiert, bevor `invitation_requested` entfernt wird. `invitation-repl.rb:78` ruft `perform_update(:all)` im `configure` auf, also stürzt der Bot schon beim Start wieder ab. Im Worker-Thread gibt es kein `rescue`, der Thread stirbt still. *Fix:* `rescue` pro Einladung, Request-Flag zuerst entfernen.
+**11. Invitation bot: endless loop of crash and restart on faulty entries (assumption).** `event.rb:179-185`: With `temp = ….first`, nil leads to a NoMethodError. If the organiser has left the school, `@@user_info[...]` is nil. This happens before `invitation_requested` is removed. `invitation-repl.rb:78` calls `perform_update(:all)` in `configure`, so the bot crashes again right at startup. There is no `rescue` in the worker thread, the thread dies silently. *Fix:* `rescue` per invitation, remove the request flag first.
 
-**12. Monitor und Vertretungsplan: „Stand“ 1–2 Stunden zu früh.** `vplan-watcher.rb:298` formatiert `Last-Modified` in GMT. `timetable.rb:234` hängt den lokalen Offset an. *Fix:* vor dem Formatieren `.new_offset(DateTime.now.offset)`.
+**12. Monitor and Vertretungsplan (substitution plan): „Stand“ (as of) 1–2 hours too early.** `vplan-watcher.rb:298` formats `Last-Modified` in GMT. `timetable.rb:234` appends the local offset. *Fix:* `.new_offset(DateTime.now.offset)` before formatting.
 
-**13. Vertretungsplan:** Tage, die aus dem Untis-Export verschwinden, behalten ihre alten `/vplan/<datum>.json` (`:222` schreibt nur Tage aus `datum_list`, Vermutung). Bei jeder Änderung landet ein `update/all` in der Queue (`:342`). Die FIFO-Queue im timetable-Dienst dedupliziert nicht. Ändert Untis öfter, als ein Vollupdate dauert, warten Lehrkräfte-Aktionen hinter mehreren Vollläufen. Wenn sich das Format ändert (`raise 'unexpected table'`, `assert` auf Überschriften), stürzt der Watcher bei jedem Lauf erneut ab.
+**13. Vertretungsplan:** Days that disappear from the Untis export keep their old `/vplan/<datum>.json` (`:222` only writes days from `datum_list`, assumption). Every change puts an `update/all` into the queue (`:342`). The FIFO queue in the timetable service does not deduplicate. If Untis changes more often than a full update takes, teacher actions wait behind several full runs. If the format changes (`raise 'unexpected table'`, `assert` on headings), the watcher crashes again on every run.
 
-### Niedrig
-- `timetable-repl.rb:93-96`: Aus `"<key>/wait"` werden zwei Queue-Einträge, auch `"wait"` als eigener Schlüssel. Folge: unnötige Läufe.
-- `timetable.rb:2571`: `fetched_message_count = rows.size` nimmt die falsche Variable (das Log zeigt Audio-Kommentare).
-- `timetable.rb:2672-2676`: `@events_last_timestamp` rückt nur vor, wenn das Event Teilnehmende hat. Events ohne Teilnehmende werden bei jedem Update erneut geladen.
-- `stats-bot-repl.rb:271`: kein `rescue`, der Worker stirbt still, HTTP nimmt aber weiter Aufträge an.
-- `admin.rb:675`: Das EV-Passwort hängt vom Kalenderjahr ab (`Date.today.year`) statt vom Schuljahr und ändert sich am 1. Januar (Vermutung).
-- `poll.rb:699`: `WHERE pr.anonymous = $anonymous`. Schickt der Client einen anderen Wert, gibt es HTTP 500 statt einer verständlichen Meldung.
+### Low
+- `timetable-repl.rb:93-96`: `"<key>/wait"` becomes two queue entries, including `"wait"` as a key of its own. Consequence: unnecessary runs.
+- `timetable.rb:2571`: `fetched_message_count = rows.size` takes the wrong variable (the log shows audio comments).
+- `timetable.rb:2672-2676`: `@events_last_timestamp` only advances if the event has participants. Events without participants are reloaded on every update.
+- `stats-bot-repl.rb:271`: no `rescue`, the worker dies silently, but HTTP keeps accepting jobs.
+- `admin.rb:675`: The EV (parents' council) password depends on the calendar year (`Date.today.year`) instead of the school year and changes on 1 January (assumption).
+- `poll.rb:699`: `WHERE pr.anonymous = $anonymous`. If the client sends a different value, there is an HTTP 500 instead of an understandable message.
 
-## Veralteter/inkonsistenter Zustand
+## Stale/inconsistent state
 
-- **timetable-Caches** ohne Behandlung für Löschen und Umziehen: Nachrichten (#5), Klassenarbeiten (#8), Notizen und Kommentare nach Offset-Verschiebung (#6). `@lesson_info` wird nur gelöscht, wenn genau dieser Lesson-Key ausgelöst wird (`timetable.rb:2369-2378`).
-- **Abhängigkeit von `Date.today` beim Schreiben:** `regular_events_from` und das Ausblenden vergangener Events (`timetable.rb:1165-1167, 1881`) sowie `today`/`tomorrow` des Monitors (`:211`) werden nur bei Vollläufen neu berechnet. Ohne Änderung im Vertretungsplan nach Mitternacht (Montag früh, nach Ferien) zeigt der Monitor weiter den alten Tag (`monitor.html:732`).
-- **`update_mailing_lists` (`main.rb:1465ff`):** wird aus Puma-Request-Threads aufgerufen und setzt `@@mailing_lists = {}`, bevor die Liste neu befüllt ist. Gleichzeitige Leser sehen leere oder halbe Listen. Zwei gleichzeitige Aufrufe schreiben in **dieselbe** Datei `mailing_lists.yaml.tmp` (`:1697-1700`). Dadurch kann eine verschränkte oder abgeschnittene YAML entstehen, oder das zweite `mv` scheitert mit HTTP 500 (Vermutung). Fix: Liste lokal bauen und am Ende in einem Schritt zuweisen, eindeutige Temp-Namen, Mutex.
-- Dasselbe Muster findet sich in `directory.rb:583-760` (`@@angebote_mailing_lists = {}` usw.).
-- **`@@ws_clients`** wird in `monitor.rb:36-51` durchlaufen, während `open`/`close` in anderen Threads Schlüssel hinzufügen oder entfernen. Mögliche Folge: „can't add a new key into hash during iteration“. `monitor.json` wird nicht atomar geschrieben (`timetable.rb:320`), gleichzeitiges Lesen kann einen JSON-ParserError auslösen.
-- **`MERGE (i:LessonInfo {offset})-[:BELONGS_TO]->(l)`** (`lesson.rb:17`, `email.rb:28`) ist ohne Constraint nicht atomar. Gleichzeitige Saves können doppelte LessonInfos anlegen, spätere `expect_one` brechen dann mit HTTP 500 ab (Vermutung).
-- **Die Bots arbeiten mit Daten vom Start:** Mail-Forwarder (erlaubte Absender, Rollen), Stats-Bot (`@@user_info`) und Einladungs-Bot kennen neue Lehrkräfte oder Rollen erst nach ihrem eigenen Neustart. `doc/Betrieb.md` nennt nur `restart ruby`.
-- **`trigger_update` schluckt Fehler** (`main.rb:2306-2313`), ohne Timeout und ohne Wiederholung. Ist der timetable-Dienst hängend erreichbar, blockiert der Request-Thread bis zu 60 s.
-- **`update(nil)`** fängt Fehler in `update_timetables` und `update_recipients` ab und protokolliert sie ohne Backtrace (`timetable.rb:2329-2348`). Ein einzelner `nil`-Eintrag bricht das Schreiben **aller** `recipients.json` ab (z. B. `:2257`).
+- **timetable caches** without handling for deletion and moving: messages (#5), class tests (#8), notes and comments after an offset shift (#6). `@lesson_info` is only deleted if exactly this lesson key is triggered (`timetable.rb:2369-2378`).
+- **Dependency on `Date.today` when writing:** `regular_events_from` and the hiding of past events (`timetable.rb:1165-1167, 1881`) as well as the monitor's `today`/`tomorrow` (`:211`) are only recalculated on full runs. Without a change in the Vertretungsplan after midnight (Monday morning, after holidays), the monitor keeps showing the old day (`monitor.html:732`).
+- **`update_mailing_lists` (`main.rb:1465ff`):** is called from Puma request threads and sets `@@mailing_lists = {}` before the list has been refilled. Concurrent readers see empty or half lists. Two concurrent calls write to the **same** file `mailing_lists.yaml.tmp` (`:1697-1700`). This can produce interleaved or truncated YAML, or the second `mv` fails with HTTP 500 (assumption). Fix: build the list locally and assign it in one step at the end, unique temp names, mutex.
+- The same pattern is found in `directory.rb:583-760` (`@@angebote_mailing_lists = {}` etc.).
+- **`@@ws_clients`** is iterated in `monitor.rb:36-51` while `open`/`close` add or remove keys in other threads. Possible consequence: “can't add a new key into hash during iteration”. `monitor.json` is not written atomically (`timetable.rb:320`), concurrent reading can raise a JSON ParserError.
+- **`MERGE (i:LessonInfo {offset})-[:BELONGS_TO]->(l)`** (`lesson.rb:17`, `email.rb:28`) is not atomic without a constraint. Concurrent saves can create duplicate LessonInfos, later `expect_one` calls then abort with HTTP 500 (assumption).
+- **The bots work with data from startup:** mail forwarder (allowed senders, roles), stats bot (`@@user_info`) and invitation bot only know new teachers or roles after their own restart. `doc/Betrieb.md` only mentions `restart ruby`.
+- **`trigger_update` swallows errors** (`main.rb:2306-2313`), without timeout and without retry. If the timetable service is reachable but hanging, the request thread blocks for up to 60 s.
+- **`update(nil)`** catches errors in `update_timetables` and `update_recipients` and logs them without a backtrace (`timetable.rb:2329-2348`). A single `nil` entry aborts the writing of **all** `recipients.json` (e.g. `:2257`).
 
-## Mail-Forwarder: mögliche Ursachen der Aussetzer
+## Mail forwarder: possible causes of the dropouts
 
-Nach Wahrscheinlichkeit sortiert, alles abgeleitet aus dem Code:
+Sorted by likelihood, all derived from the code:
 
-1. **SMTP-Ratenlimit des Providers.** Jede:r Empfänger:in bedeutet eine eigene SMTP-Verbindung mit AUTH, im Abstand von nur 0,1 s (`:267, :307`). Eine große Elternliste erreicht schnell Limits pro Minute oder Stunde. Folge: Exception, Rest geht nach `.failed`, und es gibt **keine Wiederholung** (#2). Wird das Limit nach einer Stunde zurückgesetzt, „funktioniert es wieder“. Das passt genau zum Symptom.
-2. **Der Sende-Thread t2 stirbt still.** Schlägt im `rescue` auch die Benachrichtigungsmail fehl (`:290`, bei Ratenlimit sehr wahrscheinlich), verlässt die Exception den Thread. Der Hauptthread wartet aber in `t1.join` (`:317`). t1 holt deshalb weiter Mails, kopiert sie nach „Forwarded“ und löscht sie, verschickt aber nichts mehr. Erst ein IMAP-Fehler in t1 beendet den Prozess, Docker startet ihn neu (`restart: always`), und t2 arbeitet die liegengebliebenen `recipients.yaml` ab. Wann der nächste IMAP-Schluckauf kommt, ist zufällig: „ein paar Stunden Aussetzer, dann wieder gut“. Ein abgeschnittenes `recipients.yaml` nach SIGKILL (Trap auskommentiert, `:26-30`, nicht-atomares Schreiben `:304`) tötet t2 dauerhaft.
-3. **IMAP ohne Lese-Timeout:** Hängt eine Verbindung (NAT, Provider), blockiert t1, bis TCP aufgibt. Das kann zig Minuten bis zu 2 h dauern (Vermutung). In der Zeit kommen keine neuen Mails an.
-4. **Defekte `mailing_lists.yaml`** durch die tmp-Kollision (siehe oben). Ungültiges YAML führt zu Absturzschleifen. Fehlende Listen erzeugen Bounces „Ungültige Verteiler-Adresse“, bis zum nächsten `update_mailing_lists`. Nebenbei: Der Tippfehler `@@mailing_lists` vs. `@@mailing_list` (`:51/58`) bewirkt, dass die Datei bei jedem Aufruf neu gelesen wird.
-5. **Fehlerhafte Nachrichten:** Ein nicht parsebarer `From` (`:109`) lässt t1 bei derselben INBOX-Mail immer wieder abstürzen. Dann ruht alles, bis jemand die Mail entfernt.
+1. **The provider's SMTP rate limit.** Each recipient means a separate SMTP connection with AUTH, only 0.1 s apart (`:267, :307`). A large parents' list quickly hits per-minute or per-hour limits. Consequence: exception, the rest goes to `.failed`, and there is **no retry** (#2). If the limit resets after an hour, “it works again”. This matches the symptom exactly.
+2. **The sending thread t2 dies silently.** If the notification mail in the `rescue` also fails (`:290`, very likely with a rate limit), the exception leaves the thread. The main thread, however, waits in `t1.join` (`:317`). t1 therefore keeps fetching mails, copies them to “Forwarded” and deletes them, but no longer sends anything. Only an IMAP error in t1 ends the process, Docker restarts it (`restart: always`), and t2 works through the pending `recipients.yaml`. When the next IMAP hiccup comes is random: “a few hours of dropouts, then fine again”. A truncated `recipients.yaml` after SIGKILL (trap commented out, `:26-30`, non-atomic writing `:304`) kills t2 permanently.
+3. **IMAP without a read timeout:** If a connection hangs (NAT, provider), t1 blocks until TCP gives up. That can take dozens of minutes up to 2 h (assumption). During that time no new mails arrive.
+4. **Broken `mailing_lists.yaml`** due to the tmp collision (see above). Invalid YAML leads to crash loops. Missing lists produce bounces „Ungültige Verteiler-Adresse“ (invalid distribution list address) until the next `update_mailing_lists`. Incidentally: the typo `@@mailing_lists` vs. `@@mailing_list` (`:51/58`) causes the file to be re-read on every call.
+5. **Faulty messages:** An unparseable `From` (`:109`) makes t1 crash again and again on the same INBOX mail. Then everything rests until someone removes the mail.
 
-**Diagnose:** Im Log nach `terminated with exception`, `Forwarding mail failed`, SMTP-Codes `421|45[0-4]|5\.7\.` und `Unable to resolve` suchen. In `MAIL_FORWARDER_PATH` nach `*.failed` und nach `recipients.yaml` suchen, die älter als eine Stunde sind.
+**Diagnosis:** Search the log for `terminated with exception`, `Forwarding mail failed`, SMTP codes `421|45[0-4]|5\.7\.` and `Unable to resolve`. In `MAIL_FORWARDER_PATH` look for `*.failed` and for `recipients.yaml` older than an hour.
 
-**Fix-Paket:** Pro Empfänger `rescue` mit Retry-Queue. Eine SMTP-Verbindung für den ganzen Batch und Drosselung nach Provider-Limit. `Thread.abort_on_exception = true` oder ein `begin/rescue/retry` um jeden Loop-Durchlauf. IMAP-Timeouts. Atomare Schreibvorgänge. Ein Heartbeat-File, das ein Healthcheck prüft.
+**Fix package:** Per-recipient `rescue` with a retry queue. One SMTP connection for the whole batch and throttling according to the provider limit. `Thread.abort_on_exception = true` or a `begin/rescue/retry` around each loop iteration. IMAP timeouts. Atomic writes. A heartbeat file that a health check checks.
 
-## Halbfertig / tot / kaputt
+## Half-finished / dead / broken
 
-- `timetable.rb:2183` „TODO: Also handle angebote!“: Der Trigger `_angebote_` (`angebote.rb:85,130,148`) schreibt nur `recipients.json` neu, ohne Angebote. Effektiv bewirkt er nichts.
-- `poll.rb:686, 749`: Trigger auskommentiert. Damit ist der Zweig `_poll_run_` in `timetable.rb:2398-2411` und in `timetable-repl.rb:88` toter Code.
-- `image-bot-repl.rb:93-101`: Logik für `future_queue` und Ping ist tot. Würde sie greifen, ruft sie `perform_update(which)` mit falscher Argumentzahl auf.
-- `mail-bot-repl.rb:10`: `PING_TIME` wird nie benutzt (siehe #10).
-- `main.rb:2350-2351`: Adventskalender fest auf 2021, liefert immer 0. `monitor.html:450` hängt daran.
-- `main.rb:3572-3573`: Header `X-Tage-Bis-…` mit fest eingetragenen Daten aus 2026.
+- `timetable.rb:2183` “TODO: Also handle angebote!”: The trigger `_angebote_` (`angebote.rb:85,130,148`) only rewrites `recipients.json`, without Angebote (offerings). Effectively it does nothing.
+- `poll.rb:686, 749`: trigger commented out. This makes the `_poll_run_` branch in `timetable.rb:2398-2411` and in `timetable-repl.rb:88` dead code.
+- `image-bot-repl.rb:93-101`: the logic for `future_queue` and ping is dead. If it were to kick in, it would call `perform_update(which)` with the wrong number of arguments.
+- `mail-bot-repl.rb:10`: `PING_TIME` is never used (see #10).
+- `main.rb:2350-2351`: Advent calendar hard-coded to 2021, always returns 0. `monitor.html:450` depends on it.
+- `main.rb:3572-3573`: header `X-Tage-Bis-…` with hard-coded dates from 2026.
 - `mail-forwarder.rb`:
-  - `:85` feste Schul-Domain statt `SCHUL_MAIL_DOMAIN` (bricht in Forks)
-  - `:87` fest eingetragene Klasse „11“ als erlaubte Absender
-  - `:153-155/191-195` Hinweis auf umgezogene Adressen, halb auskommentiert
-  - `:26-30` SIGTERM-Trap auskommentiert
-  - `:40-44` ungenutzte Klartext-IMAP-Verbindung als „DNS-Test“
-- `main.rb:1667`: `:extra_allowed_users` (Projekt-Organisator:innen) wird geschrieben, aber nirgends gelesen. Organisator:innen ohne Rolle bekommen ihre Mails zurückgeschickt.
-- `timetable.rb:1779`: eigenes TODO „this code can't work“ (Hausaufgaben im Stunden-Modal).
-- `timetable.rb:2345`: Corona-Logging `log_freiwillig_salzh_sus_for_today` läuft bei jedem Volllauf mit. `timetable.rb:656`: Datumsweiche von 2022.
-- `include/test_events.rb:4-8`: Aufräumen alter Einträge auskommentiert, `TestEvent`-Knoten sammeln sich an.
-- `lab8.rb`/`lab9.rb`: fast identische Kopien. Zusammen mit `projekte_old.rb` Kandidaten zum Konsolidieren oder Entfernen.
-- `main.rb:1445` „TODO: Temporarily disabled“ steht über Code, der aktiv läuft. Der Kommentar ist irreführend.
+  - `:85` hard-coded school domain instead of `SCHUL_MAIL_DOMAIN` (breaks in forks)
+  - `:87` hard-coded class “11” as allowed senders
+  - `:153-155/191-195` notice about moved addresses, half commented out
+  - `:26-30` SIGTERM trap commented out
+  - `:40-44` unused plain-text IMAP connection as a “DNS test”
+- `main.rb:1667`: `:extra_allowed_users` (project organisers) is written but read nowhere. Organisers without a role get their mails bounced.
+- `timetable.rb:1779`: its own TODO “this code can't work” (homework in the lesson modal).
+- `timetable.rb:2345`: Corona logging `log_freiwillig_salzh_sus_for_today` runs along on every full run. `timetable.rb:656`: date switch from 2022.
+- `include/test_events.rb:4-8`: clean-up of old entries commented out, `TestEvent` nodes accumulate.
+- `lab8.rb`/`lab9.rb`: almost identical copies. Together with `projekte_old.rb` candidates for consolidation or removal.
+- `main.rb:1445` “TODO: Temporarily disabled” sits above code that is actively running. The comment is misleading.

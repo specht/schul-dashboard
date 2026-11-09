@@ -138,7 +138,7 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 ## 6. Documentation
 
 - `doc/` and `TODO.md` are written in **German**; this file (agent rules)
-  in English.
+  and review reports (`review/`) in English.
 - `doc/*.md` is published publicly – general information only, no internal
   details of the school, no vulnerabilities.
 - Record findings from tests (bugs, UX problems) in `TODO.md`; security
@@ -148,6 +148,10 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 
 - On the server: `git pull`, then `./config.rb restart ruby` (run
   `./config.rb build` first after changes to Dockerfiles, Gemfile or the
-  nginx configuration). Only `src/static` changed: no restart needed.
+  nginx configuration). The bots (`timetable`, `mail_bot`, …) load the same
+  Ruby code – restart the ones whose code changed, in doubt all of them.
+- Only pages (`src/static/*.html`) changed: no restart needed. `code.js`,
+  `styles.css` and `src/static/include/*` are bundled once at startup in
+  production – changes there need `./config.rb restart ruby`.
 - After deploying, check by hand what the test stack doesn't cover (e.g.
   SMS as second factor).

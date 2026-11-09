@@ -1,21 +1,21 @@
-# Projekt-Review November 2026
+# Project review November 2026
 
-Durchsicht des ganzen Projekts aus mehreren Blickwinkeln, erstellt von
-KI-Agenten (Claude Code) am 9. November 2026 auf Stand `master`. Die
-Agenten haben Code gelesen und im Test-Stack mit Beispieldaten gemessen –
-nichts davon ist gegen echte Daten geprüft. Befunde mit „(Vermutung)“ oder
-„[Annahme]“ sind aus dem Code abgeleitet und nicht reproduziert.
+Review of the whole project from several perspectives, written by AI
+agents (Claude Code) on 9 November 2026 against `master`. The agents read
+code and took measurements in the test stack with example data – none of
+it has been checked against real data. Findings marked “(assumption)” or
+“[assumption]” are derived from the code and not reproduced.
 
-Die Berichte sind Arbeitsmaterial, keine Beschlüsse. Was umgesetzt werden
-soll, wandert nach [TODO.md](../../TODO.md); Erledigtes dort abhaken.
-Sicherheitsbefunde stehen bewusst nicht hier (siehe AGENTS.md §1).
+The reports are working material, not decisions. Whatever is to be
+implemented moves to [TODO.md](../../TODO.md); tick off completed items there.
+Security findings are deliberately not included here (see AGENTS.md §1).
 
-| Bericht | Inhalt |
+| Report | Contents |
 |---|---|
-| [ui-ux.md](ui-ux.md) | Bedienung auf Desktop und Handy, Quick Wins, was weg kann |
-| [funktionalitaet.md](funktionalitaet.md) | Fehler, veralteter Zustand in den Bots, Mail-Forwarder-Aussetzer |
-| [performance.md](performance.md) | Stundenplan-Update, Seiten-Renderer, Datenbank-Indizes, Bundle |
-| [devops.md](devops.md) | Deployment, Images, Backups, CI, Neo4j 5, Startzeit und Hot Reload |
-| [monitoring.md](monitoring.md) | Healthchecks, stille Ausfälle, Logs, Alarmierung |
-| [wartung.md](wartung.md) | Toter Code, Doppelungen, Struktur von main.rb/timetable.rb |
-| [dokumentation.md](dokumentation.md) | Fehler und Lücken in doc/, Konfiguration, Endnutzer-Hilfe |
+| [ui-ux.md](ui-ux.md) | Usability on desktop and phone, quick wins, what can go |
+| [funktionalitaet.md](funktionalitaet.md) | Bugs, stale state in the bots, mail forwarder dropouts |
+| [performance.md](performance.md) | Timetable update, page renderer, database indexes, bundle |
+| [devops.md](devops.md) | Deployment, images, backups, CI, Neo4j 5, startup time and hot reload |
+| [monitoring.md](monitoring.md) | Health checks, silent failures, logs, alerting |
+| [wartung.md](wartung.md) | Dead code, duplication, structure of main.rb/timetable.rb |
+| [dokumentation.md](dokumentation.md) | Errors and gaps in doc/, configuration, end-user help |

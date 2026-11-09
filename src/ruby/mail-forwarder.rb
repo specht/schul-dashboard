@@ -4,6 +4,7 @@ require 'mail'
 require 'yaml'
 require 'net/imap'
 require './main.rb'
+require './mail_forwarding.rb'
 
 MAIL_FORWARDER_SLEEP = DEVELOPMENT ? 10 : 60
 MAIL_FORWARD_BATCH_SIZE = 30
@@ -88,6 +89,70 @@ class Script
             results << email
         end
         results.map { |x| x.downcase }
+    end
+
+    # Sends one stored mail to its pending recipients (one pass; temporary
+    # errors are retried in later passes, see MailForwarding.deliver_pending).
+    def forward_stored_mail(path)
+        dir = File.dirname(path)
+        raw = File.read(File.join(dir, 'mail'))
+        original = Mail.read_from_string(raw)
+        original_sender = original[:from].formatted.first
+        from_address = Mail::Address.new(original.from.first).address
+        from_address_suffix_with_at = '@' + from_address.split('@').last
+        # mails from our own domains keep their sender, others are sent as SMTP_USER
+        own_domain = MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
+        smtp_settings = MAILING_LIST_FORWARDER_ACCOUNTS[own_domain ? from_address_suffix_with_at : 'default']
+        state = YAML::load(File.read(path))
+        save = lambda do |st|
+            tmp = "#{path}.tmp"
+            File.write(tmp, st.to_yaml)
+            File.rename(tmp, path)
+        end
+        log = lambda { |message| STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] #{message}" }
+        result = MailForwarding.deliver_pending(state, on_progress: save, log: log) do |recipient|
+            if DEVELOPMENT && !(VERTEILER_DEVELOPMENT_EMAILS.include?(recipient))
+                STDERR.puts "(skipping mail forwarding because we're in development mode)"
+            else
+                copy = MailForwarding.copy_for(raw, recipient, own_domain: own_domain, sender_for_foreign: SMTP_USER)
+                copy.delivery_method :smtp, smtp_settings
+                deliver_with_development_guard!(copy)
+                sleep 0.1
+            end
+        end
+        case result
+        when :done
+            log.call("Forwarded \"#{original.subject}\": #{state[:sent].size} sent, #{state[:failed].size} refused")
+            FileUtils::mv(path, path + '.archived')
+        when :retry_later
+            log.call("Forwarding \"#{original.subject}\" paused, #{state[:pending].size} recipients left, next try at #{Time.at(state[:retry_at]).strftime('%H:%M')}")
+        when :gave_up
+            log.call("Giving up on \"#{original.subject}\": #{state[:pending].size} recipients left")
+            notify_forwarding_failed(original, original_sender, state)
+            FileUtils::mv(path, path + '.failed')
+        end
+    end
+
+    # The sender learns that not everyone got the mail – without the list of
+    # addresses (they belong to the mailing list, not to the sender).
+    def notify_forwarding_failed(original, original_sender, state)
+        missing = state[:pending].size
+        total = missing + state[:sent].size + state[:failed].size
+        body = StringIO.open do |io|
+            io.puts "Hallo!\r\n\r\n"
+            io.puts "Die folgende E-Mail an einen Verteiler konnte leider nicht an alle Empfänger:innen weitergeleitet werden (#{missing} von #{total} haben sie nicht erhalten):\r\n\r\n"
+            io.puts "Betreff: #{original.subject}\r\n\r\n"
+            io.puts "Wir haben es mehrfach versucht. Bitte senden Sie die E-Mail später noch einmal an den Verteiler. Bei Fragen schreiben Sie bitte an #{WEBSITE_MAINTAINER_EMAIL}.\r\n\r\n"
+            io.puts "Vielen Dank für Ihr Verständnis!\r\n"
+            io.string
+        end
+        deliver_mail(body) do
+            to original_sender
+            cc WEBSITE_MAINTAINER_EMAIL
+            bcc SMTP_FROM
+            from SMTP_FROM
+            subject "E-Mail-Weiterleitung fehlgeschlagen: #{original.subject}"
+        end
     end
 
     def run
@@ -213,107 +278,27 @@ class Script
             end
         end
         t2 = Thread.new do
-            # Second thread: check for e-mails to send
-            # - glob for /mails/*/recipients.yaml
-            #   - read /mails/*/recipients.yaml
-            #   - for each pending recipient:
-            #     - send mail from disk to recipient
-            #     - move recipient from pending to sent, write recipients.yaml to disk
-            #     - wait 1s
-            #   - we're done, delete recipients.yaml and clear contents of /mails/<message-id>/mail
+            # Second thread: send stored mails (/mails/<id>/recipients.yaml) to their
+            # recipients, see forward_stored_mail and mail_forwarding.rb
             loop do
                 Dir["/mails/*/recipients.yaml"].each do |path|
-                    mail_path = File.join(File.dirname(path), 'mail')
-                    STDERR.puts "mail_path: #{mail_path}"
-                    mail = Mail.read_from_string(File.read(mail_path))
-                    from_address = Mail::Address.new(mail.from.first).address
-                    from_address_suffix_with_at = '@' + from_address.split('@').last
-                    unless MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
-                        # we are forwarding a mail from another account and have to make a few adjustments
-                        mail.delivery_method :smtp, MAILING_LIST_FORWARDER_ACCOUNTS['default']
-                    else
-                        # we are forwarding a mail from our domain and thus can keep [from] intact
-                        mail.delivery_method :smtp, MAILING_LIST_FORWARDER_ACCOUNTS[from_address_suffix_with_at]
+                    begin
+                        forward_stored_mail(path)
+                    rescue StandardError => e
+                        # one broken mail must neither stop the others nor this thread
+                        STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Forwarding #{File.dirname(path)} failed: #{e.class}: #{e}"
+                        STDERR.puts e.backtrace.first(8)
+                        FileUtils::mv(path, path + '.failed') if File.exist?(path)
                     end
-                    mail.to = nil
-                    mail.cc = []
-                    mail.bcc = []
-                    mail.reply_to = mail[:from].formatted.first
-                    #                     mail.from = ["#{mail[:from].formatted.first.gsub(/<[^>]+>/, '').strip} <#{MAILING_LIST_EMAIL}>"]
-                    recipients = YAML::load(File.read(path))
-                    while !recipients[:pending].empty?
-                        recipient = recipients[:pending].first
-                        mail.to = recipient
-                        # STDERR.puts mail
-                        STDERR.puts "Forwarding mail to #{recipient}..."
-                        File.open(File.join(File.dirname(path), 'last_forwarded_mail'), 'w') do |f|
-                            f.write mail.to_s
-                        end
-                        original_sender = mail[:from].formatted.first
-                        begin
-                            if DEVELOPMENT && !(VERTEILER_DEVELOPMENT_EMAILS.include?(recipient))
-                                STDERR.puts "(skipping mail forwarding because we're in development mode)"
-                            else
-                                unless MAILING_LIST_FORWARDER_ACCOUNTS.include?(from_address_suffix_with_at)
-                                    mail_copy = Mail.new do
-                                        from     SMTP_USER
-                                        to       mail.to
-                                        reply_to mail.reply_to
-                                        subject  mail.subject
-                                        body     mail.body.to_s
-                                    end
-                                    mail = mail_copy
-                                end
-                                deliver_with_development_guard!(mail)
-                            end
-                        rescue StandardError => e
-                            # sending failed!
-                            STDERR.puts "Forwarding mail failed, notifying admin..."
-                            STDERR.puts "Error: #{e}"
-                            STDERR.puts e.backtrace
-                            # 1. notify WEBSITE_MAINTAINER_EMAIL
-                            _sender = original_sender
-                            _subject = "E-Mail-Weiterleitung fehlgeschlagen: #{mail.subject}"
-                            _body = StringIO.open do |io|
-                                io.puts "Hallo!\r\n\r\n"
-                                io.puts "Wir haben momentan leider bei manchen E-Mails technische Probleme mit der Weiterleitung. Die folgende E-Mail konnte leider nicht weitergeleitet werden:\r\n\r\n"
-                                io.puts "Betreff: #{mail.subject}\r\n"
-                                io.puts "Absender: #{original_sender}\r\n\r\n"
-                                io.puts "Die meisten Mails gehen durch, aber manche nicht. Wir arbeiten an einer Lösung des Problems. Bitte entschuldigen Sie die Unannehmlichkeiten.\r\n\r\n"
-                                io.puts "Bitte senden Sie Ihre E-Mail noch einmal direkt an die folgenden Empfängeraddressen, die Sie per Copy & Paste in BCC setzen können:\r\n\r\n"
-                                io.puts "#{recipients[:pending].join(', ')}\r\n\r\n"
-                                io.puts "Bitte beachten Sie, dass sich die oben stehenden Empfängeradressen in Zukunft ändern können. Wir bitten Sie deshalb um Geduld und darum, weiterhin die E-Mail-Verteileradressen zu verwenden.\r\n\r\n"
-                                io.puts "Bei Fragen schreiben Sie bitte an #{WEBSITE_MAINTAINER_EMAIL}.\r\n\r\n"
-                                io.puts "Vielen Dank für Ihr Verständnis!\r\n\r\n"
-                                io.string
-                            end
-                            deliver_mail(_body) do
-                                to _sender
-                                cc WEBSITE_MAINTAINER_EMAIL
-                                bcc SMTP_FROM
-                                from SMTP_FROM
-                                subject _subject
-                            end
-                            # 2. rename recipients.yaml to recipients.yaml.failed
-                            FileUtils::mv(path, path + '.failed')
-                            # 3. break from loop
-                            break
-                        end
-                        recipients[:pending].delete_at(0)
-                        recipients[:sent] << recipient
-                        File.open(path, 'w') do |f|
-                            f.puts recipients.to_yaml
-                        end
-                        sleep 0.1
-                    end
-                    if File.exist?(path)
-                        FileUtils::mv(path, path + '.archived')
-                    end
-#                     File.open(mail_path, 'w') { |f| f.puts 'nothing to see here' }
                 end
                 sleep MAIL_FORWARDER_SLEEP
             end
         end
+        # If a thread dies anyway, end the whole process (Docker restarts it) –
+        # before, a dead sending thread went unnoticed while new mails kept
+        # being received and nothing was sent.
+        t1.abort_on_exception = true
+        t2.abort_on_exception = true
         t1.join
         t2.join
     end

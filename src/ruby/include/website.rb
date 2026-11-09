@@ -227,7 +227,9 @@ class Main < Sinatra::Base
         end
     end
     
-    def fix_images(s)
+    # image{slug, [pos,] "caption"} and file{...}{...} in news texts become HTML by
+    # calling the helpers directly – the text itself is never evaluated as Ruby.
+    def render_news_includes(s)
         s.gsub(/image{[^}]+}/) do |x|
             m = x.match(/^image{([^}]+)}$/)
             parts = m[1].split(',')
@@ -241,37 +243,11 @@ class Main < Sinatra::Base
                 pos = nil
             end
             caption = (caption[1, caption.size - 2] || '').strip
-            '#{' + "_include_image(\"#{slug}\", \"#{pos}\", \"#{caption.gsub('"', '\\"')}\")}"
+            _include_image(slug, pos, caption)
         end.gsub(/file{[^}]+}{[^}]+}/) do |x|
             m = x.match(/^file{([^}]+)}{([^}]+)}$/)
-            '#{_include_file("' + m[1] + '", "' + m[2] + '")}'
+            _include_file(m[1], m[2])
         end
-    end
-
-    def eval_lilypads(_content)
-        content = _content.dup
-        while true
-            index = content.index('#{')
-            break if index.nil?
-            length = 2
-            balance = 1
-            while index + length < content.size && balance > 0
-                c = content[index + length]
-                balance -= 1 if c == '}'
-                balance += 1 if c == '{'
-                length += 1
-            end
-            code = content[index + 2, length - 3]
-            begin
-                # STDERR.puts code
-                content[index, length] = eval(code).to_s || ''
-            rescue
-                STDERR.puts "Error while evaluating:"
-                STDERR.puts code
-                raise
-            end
-        end
-        content
     end
 
     post '/api/get_news_entry' do
@@ -282,8 +258,7 @@ class Main < Sinatra::Base
             RETURN n;
         END_OF_QUERY
         content = result[:content]
-        content = fix_images(content)
-        content = eval_lilypads(content)
+        content = render_news_includes(content)
         result[:content_html] = parse_markdown(content)
         respond(result)
     end
@@ -293,8 +268,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:markdown], :max_body_length => 64 * 1024,
             :max_string_length => 64 * 1024)
         content = data[:markdown]
-        content = fix_images(content)
-        content = eval_lilypads(content)
+        content = render_news_includes(content)
         respond(:html => parse_markdown(content))
     end
 
@@ -335,8 +309,7 @@ class Main < Sinatra::Base
         results = []
         entries.each do |entry|
             content = entry[:content]
-            content = fix_images(content)
-            content = eval_lilypads(content)
+            content = render_news_includes(content)
             results << {
                 :title => entry[:title],
                 :timestamp => entry[:timestamp],
@@ -361,8 +334,7 @@ class Main < Sinatra::Base
         results = []
         entries.each do |entry|
             content = entry[:content]
-            content = fix_images(content)
-            content = eval_lilypads(content)
+            content = render_news_includes(content)
             results << {
                 :title => entry[:title],
                 :timestamp => entry[:timestamp],

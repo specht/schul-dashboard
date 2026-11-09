@@ -220,7 +220,7 @@ class Main < Sinatra::Base
             # io.puts "<p style='text-align: left; margin-top: 0;'><b>#{@session_user[:first_name]}</b> &lt;#{@session_user[:email]}&gt;</p>"
             if @hack_level == MAX_HACK_LEVEL
                 # io.puts "<p style='float: right; margin-top: 0;'><a href='/hackers'>=&gt; Hall of Fame</a></p>"
-                io.puts File.read('/static/hack/hall_of_fame.html')
+                io.puts render_static_template('/static/hack/hall_of_fame.html')
                 result = neo4j_query(<<~END_OF_QUERY)
                     MATCH (u:User)
                     WHERE COALESCE(u.hack_level, 0) > 0
@@ -275,9 +275,9 @@ class Main < Sinatra::Base
                 names.each do |name|
                     io.puts "<p class='name'>#{name}</p>"
                 end
-                io.puts File.read('/static/hack/hall_of_fame_foot.html')
+                io.puts render_static_template('/static/hack/hall_of_fame_foot.html')
             else
-                io.puts File.read('/static/hack/title.html').gsub('#{next_hack_level}', (@hack_level + 1).to_s)
+                io.puts render_static_template('/static/hack/title.html', '#{next_hack_level}' => (@hack_level + 1).to_s)
                 if failed_tries == 0
                     if @hack_level > 0
                         io.puts "<p><b>Gut gemacht!</b></p>"
@@ -295,9 +295,9 @@ class Main < Sinatra::Base
                 end
                 path = "/static/hack/level_#{@hack_level + 1}.html"
                 if File.exist?(path)
-                    io.puts File.read(path)
+                    io.puts render_static_template(path)
                 end
-                io.puts File.read('/static/hack/form.html')
+                io.puts render_static_template('/static/hack/form.html')
             end
             io.string
         end

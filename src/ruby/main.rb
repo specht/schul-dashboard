@@ -12,6 +12,7 @@ require 'jwt'
 require 'kramdown'
 require 'mail'
 require './mail_guard.rb'
+require './page_template.rb'
 require 'neo4j_bolt'
 require 'net/http'
 require 'net/imap'
@@ -3572,6 +3573,16 @@ class Main < Sinatra::Base
         end
     end
 
+    # For helpers that insert a template file from src/static into a page (the
+    # games): evaluates its #{...} once, like the page renderer – the result is
+    # not evaluated again.
+    def render_static_template(path, replacements = {})
+        assert(path.start_with?('/static/') && !path.include?('..'))
+        s = File.read(path, encoding: 'utf-8')
+        replacements.each_pair { |from, to| s = s.gsub(from, to) }
+        PageTemplate.evaluate(s) { |code| eval(code) }
+    end
+
     get '/*' do
         # first things first
         response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{(Date.parse('2026-07-09') - Date.today).to_i}"
@@ -4063,21 +4074,12 @@ class Main < Sinatra::Base
                     compiled_css_sha1 = @@compiled_files[:css][:sha1]
                     meta_tags = ''
 
-                    while true
-                        index = s.index('#{')
-                        break if index.nil?
-                        length = 2
-                        balance = 1
-                        while index + length < s.size && balance > 0
-                            c = s[index + length]
-                            balance -= 1 if c == '}'
-                            balance += 1 if c == '{'
-                            length += 1
-                        end
-                        code = s[index + 2, length - 3]
+                    # Shared sub-templates are part of the page source; then every #{...}
+                    # is evaluated once, never its output (see page_template.rb).
+                    s = PageTemplate.expand_includes(s)
+                    s = PageTemplate.evaluate(s) do |code|
                         begin
-                            # STDERR.puts code
-                            s[index, length] = eval(code).to_s || ''
+                            eval(code)
                         rescue
                             debug "Error while evaluating for #{(@session_user || {})[:email]}:"
                             debug code

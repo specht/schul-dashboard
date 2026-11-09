@@ -342,7 +342,7 @@ class Main < Sinatra::Base
             # io.puts "<p style='text-align: left; margin-top: 0;'><b>#{@session_user[:first_name]}</b> &lt;#{@session_user[:email]}&gt;</p>"
             if @cypher_level == MAX_CYPHER_LEVEL
                 # io.puts "<p style='float: right; margin-top: 0;'><a href='/hackers'>=&gt; Hall of Fame</a></p>"
-                io.puts File.read('/static/cypher/hall_of_fame.html')
+                io.puts render_static_template('/static/cypher/hall_of_fame.html')
                 result = neo4j_query(<<~END_OF_QUERY)
                     MATCH (u:User)
                     WHERE COALESCE(u.cypher_level, 0) > 0
@@ -397,9 +397,9 @@ class Main < Sinatra::Base
                 names.each do |name|
                     io.puts "<p class='name'>#{name}</p>"
                 end
-                io.puts File.read('/static/cypher/hall_of_fame_foot.html')
+                io.puts render_static_template('/static/cypher/hall_of_fame_foot.html')
             else
-                io.puts File.read('/static/cypher/title.html').gsub('#{next_cypher_level}', (@cypher_level + 1).to_s)
+                io.puts render_static_template('/static/cypher/title.html', '#{next_cypher_level}' => (@cypher_level + 1).to_s)
                 if failed_cypher_tries == 0
                     if @cypher_level > 0
                         io.puts "<p><b>Gut gemacht!</b></p>"
@@ -416,9 +416,9 @@ class Main < Sinatra::Base
                 end
                 path = "/static/cypher/level_#{@cypher_level + 1}.html"
                 if File.exist?(path)
-                    io.puts File.read(path)
+                    io.puts render_static_template(path)
                 end
-                io.puts File.read('/static/cypher/form.html')
+                io.puts render_static_template('/static/cypher/form.html')
             end
             io.string
         end

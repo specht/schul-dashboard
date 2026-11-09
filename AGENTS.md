@@ -114,6 +114,14 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 - Uploaded files: check the extension against a whitelist, never take the
   client's extension unchecked.
 - New `include/*.rb` files must be required explicitly in `main.rb`.
+- **Mail** is only sent through `deliver_mail` or
+  `deliver_with_development_guard!(mail)` (`main.rb`), never with
+  `mail.deliver!` directly. In development it removes every recipient not on
+  `DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST` and only sends if someone the
+  mail is addressed to (to/cc) is allowed. A unit test enforces this.
+- When testing on the dev instance with real data, log in with accounts
+  that are **not** on the positive list where possible – otherwise every
+  login sends a real code mail to the maintainer.
 
 **Infrastructure**
 

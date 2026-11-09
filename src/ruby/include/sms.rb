@@ -73,6 +73,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/confirm_telephone_number' do
+        require_user!
         data = parse_request_data(:required_keys => [:tag, :code])
         data[:code] = data[:code].gsub(/[^0-9]/, '')
         begin
@@ -87,6 +88,8 @@ class Main < Sinatra::Base
         end
         user = result['u']
         sms_code = result['l']
+        # the confirmation belongs to the person who is logged in
+        assert(user[:email] == @session_user[:email])
         if sms_code[:tries] > MAX_LOGIN_TRIES
             neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
                 MATCH (l:PhoneNumberConfirmation {tag: $tag})
@@ -136,12 +139,14 @@ class Main < Sinatra::Base
 
     post '/api/delete_telephone_number' do
         require_user!
+        had_number = !(@session_user[:telephone_number] || '').empty?
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email]})
             MATCH (u:User {email: $email})
             REMOVE u.preferred_login_method
             REMOVE u.telephone_number_changed
             REMOVE u.telephone_number;
         END_OF_QUERY
+        notify_login_method_change('SMS-Anmeldung deaktiviert', 'Die SMS-Anmeldung wurde deaktiviert und die Telefonnummer gelöscht.') if had_number
         respond(:yay => 'sure')
     end
 

@@ -44,8 +44,33 @@ class Main < Sinatra::Base
 
     post '/api/delete_otp_token' do
         require_user!
+        had_otp = !@session_user[:otp_token].nil?
         delete_session_user_otp_token()
+        notify_login_method_change('OTP-Anmeldung deaktiviert', 'Die OTP-Anmeldung wurde deaktiviert.') if had_otp
         respond(:ok => 'yeah')
+    end
+
+    # Mail to the person whenever a login method is removed – so that a change
+    # made by someone else (e.g. on a device left logged in) does not go
+    # unnoticed. (Activating OTP or SMS sends a similar mail.)
+    def notify_login_method_change(subject_text, message)
+        session_user = @session_user.dup
+        deliver_mail do
+            to session_user[:email]
+            bcc SMTP_FROM
+            from SMTP_FROM
+
+            subject "Dashboard: #{subject_text}"
+
+            StringIO.open do |io|
+                io.puts "<p>Hallo!</p>"
+                io.puts "<p>#{message}</p>"
+                io.puts "<p>Falls Sie diese Änderung nicht selbst veranlasst haben, setzen Sie sich bitte dringend mit #{WEBSITE_MAINTAINER_NAME_AKKUSATIV} unter der E-Mail-Adresse <a href='mailto:#{WEBSITE_MAINTAINER_EMAIL}'>#{WEBSITE_MAINTAINER_EMAIL}</a> in Verbindung.</p>"
+                io.puts "<p>Die Änderung erfolgte am #{DateTime.now.strftime('%d.%m.%Y')} um #{DateTime.now.strftime('%H:%M')} Uhr (Gerät: #{CGI.escapeHTML(session_user[:user_agent].to_s)}, IP: #{session_user[:ip]}).</p>"
+                io.puts "<p>Viele Grüße,<br />#{WEBSITE_MAINTAINER_NAME}</p>"
+                io.string
+            end
+        end
     end
 
     def session_user_otp_qr_code(reveal = false)

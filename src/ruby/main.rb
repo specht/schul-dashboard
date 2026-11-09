@@ -2873,19 +2873,6 @@ class Main < Sinatra::Base
         end
     end
 
-    def bytes_to_str(ai_Size)
-        if ai_Size < 1024
-            return "#{ai_Size} B"
-        elsif ai_Size < 1024 * 1024
-            return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0)} kB"
-        elsif ai_Size < 1024 * 1024 * 1024
-            return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0 / 1024.0)} MB"
-        elsif ai_Size < 1024 * 1024 * 1024 * 1024
-            return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0 / 1024.0 / 1024.0)} GB"
-        end
-        return "#{sprintf('%1.1f', ai_Size.to_f / 1024.0 / 1024.0 / 1024.0 / 1024.0)} TB"
-    end
-
     def print_email_field(io, email)
         io.puts "<div class='input-group'><input type='text' class='form-control' readonly value='#{email}' style='min-width: 100px;' /><div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' title='Eintrag in die Zwischenablage kopieren' data-clipboard-text='#{email}'><i class='fa fa-clipboard'></i></button></div></div>"
     end
@@ -3294,21 +3281,6 @@ class Main < Sinatra::Base
         respond(:ok => 'yay')
     end
 
-    def print_adventskalender_sidepanel()
-        require_user!
-        StringIO.open do |io|
-            io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
-            io.puts "<div class='hint'>"
-            io.puts "<div>Adventskalender</div>"
-            io.puts "<hr />"
-            io.puts "<button style='white-space: nowrap;' class='float-right btn btn-success bu-launch-adventskalender'>Adventskalender öffnen&nbsp;<i class='fa fa-angle-double-right'></i></button>"
-            io.puts "<div style='clear: both;'></div>"
-            io.puts "</div>"
-            io.puts "</div>"
-            io.string
-        end
-    end
-
     post '/api/get_agr_jwt_token' do
         require_user_who_can_manage_agr_app!
         data = parse_request_data(:required_keys => [:url, :payload], :max_body_length => 0x10000000)
@@ -3687,6 +3659,24 @@ class Main < Sinatra::Base
         PageTemplate.evaluate(s) { |code| eval(code) }
     end
 
+    # Web app manifest (linked in _template.html)
+    get '/site.webmanifest' do
+        content_type 'application/manifest+json'
+        {
+            :name => "Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}",
+            :short_name => "Dashboard #{SCHUL_NAME}",
+            :description => "Das Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME} vereint deinen Stunden- und Vertretungsplan, Nextcloud und Jitsi.",
+            :icons => [
+                {:src => '/android-chrome-192x192.png', :sizes => '192x192', :type => 'image/png'},
+                {:src => '/android-chrome-512x512.png', :sizes => '512x512', :type => 'image/png'},
+            ],
+            :theme_color => '#ffffff',
+            :background_color => '#ffffff',
+            :display => 'standalone',
+            :start_url => '/',
+        }.to_json
+    end
+
     get '/*' do
         # first things first
         response.headers['X-Tage-Bis-Zu-Den-Sommerferien'] = "#{(Date.parse('2026-07-09') - Date.today).to_i}"
@@ -3697,16 +3687,11 @@ class Main < Sinatra::Base
         path = path[1, path.size - 1]
         path = 'index' if path.empty?
         path = path.split('/').first
-        brand = SCHUL_NAME
         if path.include?('..') || (path[0] == '/')
             status 404
             return
         end
 
-        slug = nil
-        task = nil
-        sha1 = nil
-        cat_slug = nil
         klasse = nil
         show_lesson_key = nil
         lesson_key_id = nil
@@ -3721,7 +3706,6 @@ class Main < Sinatra::Base
            initial_date += 1
         end
         initial_date = initial_date.strftime('%Y-%m-%d')
-        os_family = 'unknown'
         jitsi_data = nil
         poll_data = nil
 
@@ -3849,10 +3833,6 @@ class Main < Sinatra::Base
                 command = "neo4j_bolt -h neo4j:7687 visualize | dot -Tsvg > /gen/schema-i6wbb4YtA5l2BzdNjedMtd.svg"
                 system(command)
             end
-        elsif path == 'site.webmanifest'
-            manifest = "{\"name\":\"Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}\",\"short_name\":\"Dashboard #{SCHUL_NAME}\",\"description\":\"Das Dashboard #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME} vereint deinen Stunden- und Vertretungsplan, Nextcloud und Jitsi.\",\"icons\":[{\"src\":\"/android-chrome-192x192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"},{\"src\":\"/android-chrome-512x512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\"}],\"theme_color\":\"#ffffff\",\"background_color\":\"#ffffff\",\"display\":\"standalone\",\"start_url\":\"/\"}"
-            response['Content-Type'] = 'application/manifest+json'
-            response.write(manifest)
         end
         if user_logged_in? && @session_user[:is_monitor]
             if @session_user[:email] == "monitor-silentium@#{SCHUL_MAIL_DOMAIN}"
@@ -4143,14 +4123,11 @@ class Main < Sinatra::Base
         unless path.include?('/')
             unless path.include?('.') || path[0] == '_'
                 original_path = path.dup
-                show_offer = {}
 
                 path = File::join('/static', path) + '.html'
                 if File::exist?(path)
                     content = File::read(path, :encoding => 'utf-8')
 
-                    @original_path = original_path
-                    @task_slug = slug
                     if original_path == 'c'
                         parts = request.path.split('/')
                         login_tag = parts[2]
@@ -4168,7 +4145,7 @@ class Main < Sinatra::Base
 
                     s = @template[template_path].dup
                     s.sub!('#{CONTENT}', content)
-                    s.gsub!('{BRAND}', brand);
+                    s.gsub!('{BRAND}', SCHUL_NAME)
                     purge_missing_sessions()
                     page_css = ''
                     if File::exist?(path.sub('.html', '.css'))
@@ -4198,42 +4175,7 @@ class Main < Sinatra::Base
                     status 404
                 end
             else
-                debug path
-                if path == "site.webmanifest"
-                    path = File::join('/static', path)
-                    if File::exist?(path)
-                        content = File::read(path, :encoding => 'utf-8')
-                        purge_missing_sessions()
-                        while true
-                            index = s.index('#{')
-                            break if index.nil?
-                            length = 2
-                            balance = 1
-                            while index + length < s.size && balance > 0
-                                c = s[index + length]
-                                balance -= 1 if c == '}'
-                                balance += 1 if c == '{'
-                                length += 1
-                            end
-                            code = s[index + 2, length - 3]
-                            begin
-    #                             STDERR.puts code
-                                s[index, length] = eval(code).to_s || ''
-                            rescue
-                                debug "Error while evaluating for #{(@session_user || {})[:email]}:"
-                                debug code
-                                raise
-                            end
-                        end
-                        s.gsub!('<!--PAGE_TITLE-->', @page_title)
-                        s.gsub!('<!--PAGE_DESCRIPTION-->', @page_description)
-                        s
-                    else
-                        status 404
-                    end
-                else
-                    status 404
-                end
+                status 404
             end
         else
             status 404

@@ -2435,6 +2435,8 @@ class Timetable
         @events_for_user ||= {}
         # where each event is entered in @events_for_user: eid => Set[[email, yw]]
         @event_placements ||= {}
+        # for whom each message is entered in @messages_for_user: mid => Set[email]
+        @message_placements ||= {}
         @lesson_info_last_timestamp ||= 0
         @public_test_entries_for_klasse ||= {}
         @lesson_notes_for_lesson_key ||= {}
@@ -2633,6 +2635,7 @@ class Timetable
         begin
             # refresh messages from database
             @messages_last_timestamp ||= 0
+            messages_query_ts = @messages_last_timestamp
             new_rows = neo4j_query(<<~END_OF_QUERY, {:ts => @messages_last_timestamp})
                 MATCH (u:User)<-[rt:TO]-(m:Message)-[:FROM]->(mf:User)
                 WHERE m.updated >= $ts OR rt.updated >= $ts
@@ -2648,6 +2651,17 @@ class Timetable
             end
             fetched_message_count = rows.size
             new_rows.each do |row|
+                mid = row[:info][:id]
+                # A changed message comes with its complete recipient list: take it out
+                # for everyone no longer on it – otherwise removed recipients kept seeing
+                # it until the service restarted (like @event_placements for events).
+                # If only single recipient edges changed, the list is not complete.
+                if mid && (row[:info][:updated] || 0) >= messages_query_ts
+                    ((@message_placements[mid] || Set.new) - Set.new(row[:to_list])).each do |email|
+                        (@messages_for_user[email] || {}).delete(mid)
+                    end
+                    @message_placements[mid] = Set.new
+                end
                 row[:to_list].each.with_index do |to, to_index|
                     rt = row[:rt_list][to_index]
                     @messages_for_user[to] ||= {}
@@ -2660,8 +2674,10 @@ class Timetable
                             :timestamp => row[:info][:created],
                             :from => row[:from]
                         }
+                        (@message_placements[mid] ||= Set.new) << to if mid
                     else
                         @messages_for_user[to].delete(row[:info][:id])
+                        @message_placements[mid]&.delete(to) if mid
                     end
                 end
             end

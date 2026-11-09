@@ -31,3 +31,34 @@ test('Lehrkraft schreibt eine Nachricht, Schüler:in findet sie im Posteingang',
     await expect(student.locator('.messages-container-inbox')).toContainText(text, { timeout: 2_000 });
   }).toPass({ timeout: 30_000 });
 });
+
+// Removing a recipient from a message takes it out of their inbox (before,
+// removed recipients kept seeing it until the timetable service restarted).
+test('Entfernte Empfänger:innen sehen die Nachricht nicht mehr', async ({ page, newUserPage }) => {
+  const text = `Nur noch für Max – ${Date.now().toString(36)}`;
+  const max = ACCOUNTS.schueler;
+  const elli = 'elli.mustermann@mail.beispielschule.de';
+  await login(page, ACCOUNTS.teacher);
+  const sent = await page.request.post('/api/send_message', { data: { recipients: [max, elli], message: `<p>${text}</p>` } });
+  expect(sent.status()).toBe(200);
+  const mid = (await sent.json()).message.mid as string;
+
+  const student = await newUserPage();
+  // inbox files may be cached for 60 s – with a route, Playwright bypasses the cache
+  await student.route('**/gen/**', (route) => route.continue());
+  await login(student, elli);
+  const inbox = student.locator('.messages-container-inbox');
+  await expect(async () => {
+    await student.goto('/messages');
+    await expect(inbox).toContainText(text, { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+
+  // the teacher removes Elli
+  const updated = await page.request.post('/api/update_message', { data: { mid, recipients: [max], message: `<p>${text}</p>` } });
+  expect(updated.status()).toBe(200);
+  await expect(async () => {
+    await student.goto('/messages');
+    await expect(student.locator('.messages-container-inbox')).toBeVisible();
+    await expect(inbox).not.toContainText(text, { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+});

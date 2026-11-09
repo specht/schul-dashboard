@@ -92,14 +92,18 @@ class Main < Sinatra::Base
             end
             results[tablet_set[:id]] << entry
         end
-        # Reihenfolge der Zeilen: nach der Satznummer aus :prefix, aus der auch die
-        # Gerätenamen gebildet werden (siehe tablet.rb). So steht Satz 1 oben und
-        # Halbsatz 6 unten, statt alphabetisch nach der Bauform. Bei gleicher Nummer
-        # entscheidet der Name, damit etwa Koffer A vor Koffer B steht; Sätze ganz
-        # ohne Nummer kommen danach.
+        # Reihenfolge der Spalten: nach der Nummer, die im Namen des Satzes steht -
+        # "Satz 1 / Koffer A" vor "Satz 2" vor "Halbsatz 4". Also so, wie man die
+        # Namen auf dem Monitor liest, statt alphabetisch nach der Bauform, wo alle
+        # Halbsätze vor allen Sätzen landen.
+        # Bewusst nicht über :prefix, obwohl das Feld dafür gemacht scheint: es ist
+        # nicht in jeder Installation als Zahl gepflegt, und dann fiele die Sortierung
+        # stillschweigend auf den Namen zurück. Der angezeigte Name ist immer da.
+        # Bei gleicher Nummer entscheidet der Name, damit Koffer A vor Koffer B steht;
+        # Sätze ganz ohne Nummer kommen danach.
         order = results.keys.sort_by do |id|
-            prefix = (@@tablet_sets[id] || {})[:prefix]
-            [prefix.nil? ? 1 : 0, prefix.to_i, id]
+            nummer = id.to_s[/\d+/]
+            [nummer.nil? ? 1 : 0, nummer.to_i, id.to_s]
         end
         {:bookings => results, :order => order, :datum => datum}
     end

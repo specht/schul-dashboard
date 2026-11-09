@@ -97,6 +97,8 @@ TRESOR_JWT_TTL = 60
 TRESOR_JWT_TTL_EXTRA = 20
 
 require './background-renderer.rb'
+# development only: hot reload of include/*.rb (must come before the includes)
+require './dev_reloader.rb'
 require './include/admin.rb'
 require './include/angebote.rb'
 require './include/at.rb'

@@ -58,3 +58,7 @@ DOCKER_NETWORK_RUBY_IP = nil
 # auskommentieren, um wie früher ohne Begrenzung zu loggen.
 DOCKER_LOG_MAX_SIZE = '50m'
 DOCKER_LOG_MAX_FILES = 5
+
+# Nur Entwicklung: geänderte src/ruby/include/*.rb bei der nächsten Anfrage neu
+# laden statt den Server neu zu starten (siehe doc/Development.md).
+# DEV_HOT_RELOAD = true

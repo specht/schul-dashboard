@@ -44,13 +44,41 @@ verwenden.
 
 | Geändert | Wirkung |
 |---|---|
-| `src/ruby/**/*.rb` | `rerun` startet den Ruby-Server neu. Bis er wieder da ist, zeigt nginx die Neustart-Seite, die sich selbst neu lädt. |
+| `src/ruby/**/*.rb` | `rerun` startet den Ruby-Server neu. Bis er wieder da ist, zeigt nginx die Neustart-Seite, die sich selbst neu lädt.  Mit Hot Reload (siehe unten) gilt das nicht für `src/ruby/include/*.rb`. |
 | `src/static/*.html` | sofort wirksam (Templates werden bei jeder Anfrage gelesen) |
 | JS/CSS, die gebündelt werden (`compile_js`/`compile_css` in `main.rb`) | im Development-Modus bei jeder Seitenanfrage neu gebündelt |
 | Tailwind-Klassen in HTML/JS | `tailwind.sh` muss laufen |
 | Eingangsdaten unter `/data` | Konfigurationsdateien werden im Development-Modus bei jeder Anfrage neu geladen; für Stundenplan- oder Personendaten Ruby neu starten und `update-timetables.rb` ausführen |
 | nginx-Konfiguration in `config.rb` | `./config.rb build nginx && ./config.rb up -d nginx` – die Konfiguration wird ins Image kopiert, ein Neustart allein reicht nicht |
 | `src/ruby/Gemfile` | `./config.rb build ruby` (Gemfile wird beim Aufruf von `config.rb` nach `docker/ruby` kopiert) |
+
+### Hot Reload (optional)
+
+Ein Neustart des Ruby-Servers dauert mit echten Daten 20–40 Sekunden
+(`collect_data`). Mit
+
+```ruby
+DEV_HOT_RELOAD = true
+```
+
+in `env.rb` und `./config.rb up -d ruby` werden geänderte Dateien unter
+`src/ruby/include/` stattdessen bei der nächsten Anfrage neu geladen
+(`Sinatra::Reloader`, siehe `src/ruby/dev_reloader.rb`). Neue und geänderte
+Routen und Methoden wirken sofort; im Log steht `Hot reload: <datei>`.
+
+Grenzen:
+
+- Startcode läuft nicht noch einmal: Daten aus `collect_data`,
+  `configure`-Blöcke und beim Start gesetzte Klassenvariablen bleiben, wie
+  sie waren. Wer daran etwas ändert, startet neu (`./config.rb restart ruby`).
+- Gelöschte oder umbenannte Methoden bleiben bis zum nächsten Neustart
+  definiert. Vor dem Push laufen die Tests ohnehin ohne Hot Reload
+  (`./test.sh all`).
+- `main.rb`, `parser.rb`, `timetable.rb` usw. starten den Server weiterhin
+  über `rerun` neu, ebenso alle Bots bei jeder Änderung unter `src/ruby`.
+- Nur in der Entwicklung: `config.rb` setzt die Option ausschließlich bei
+  `DEVELOPMENT = true` und nur für den Dienst `ruby`; ein Unit-Test prüft,
+  dass der Reloader nirgends sonst geladen wird.
 
 ## Tests
 

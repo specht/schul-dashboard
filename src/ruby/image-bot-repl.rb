@@ -105,6 +105,8 @@ class ImageBotRepl < Sinatra::Base
                 end
             end
         end
+        # a worker thread that dies shows up on /dienste and in the watchdog's mail
+        ServiceStatus.watch('worker', @@worker_thread)
         @@ping_thread = Thread.new do
             while true do
                 @@queue << {:ping => true}

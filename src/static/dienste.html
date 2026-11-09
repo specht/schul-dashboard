@@ -1,0 +1,12 @@
+#{this_is_a_page_for_logged_in_admins}
+<div class='container bg-white' style='padding-top: 20px; padding-bottom: 20px;'>
+    <h2>Dienste</h2>
+    <p>
+        Jeder Dienst des Dashboards meldet sich einmal pro Minute. Bleibt eine
+        Rückmeldung länger als fünf Minuten aus oder ist ein Arbeits-Thread
+        beendet, bekommt die Administration eine E-Mail – und eine, wenn es
+        wieder in Ordnung ist. Fällt der Webdienst selbst aus, kann er das nicht
+        melden.
+    </p>
+    #{print_service_status()}
+</div>

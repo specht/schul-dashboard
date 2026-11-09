@@ -269,6 +269,8 @@ class MailBotRepl < Sinatra::Base
                 self.perform_update()
             end
         end
+        # a worker thread that dies shows up on /dienste and in the watchdog's mail
+        ServiceStatus.watch('worker', @@worker_thread)
     end
 
     get '/api/send_pending_mails' do

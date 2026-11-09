@@ -305,6 +305,8 @@ class Script
         # being received and nothing was sent.
         t1.abort_on_exception = true
         t2.abort_on_exception = true
+        ServiceStatus.watch('receive', t1)
+        ServiceStatus.watch('send', t2)
         t1.join
         t2.join
     end

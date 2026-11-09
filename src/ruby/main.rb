@@ -13,6 +13,7 @@ require 'kramdown'
 require 'mail'
 require './mail_guard.rb'
 require './page_template.rb'
+require './service_status.rb'
 require './tablet_set_sync.rb'
 require 'neo4j_bolt'
 require 'net/http'
@@ -87,6 +88,11 @@ require '/data/unterstufenparty/config.rb'
 require '/data/zeugnisse/config.rb'
 $VERBOSE = warn_level
 DASHBOARD_SERVICE = ENV['DASHBOARD_SERVICE']
+# every running service reports once a minute (see service_status.rb and the
+# watchdog below); not scripts and not the console
+if DASHBOARD_SERVICE && DASHBOARD_SERVICE != 'script' && File.basename($0) != 'pry.rb'
+    ServiceStatus.start_heartbeat(DASHBOARD_SERVICE)
+end
 
 Neo4jBolt.bolt_host = 'neo4j'
 Neo4jBolt.bolt_port = 7687
@@ -1705,6 +1711,90 @@ class Main < Sinatra::Base
         end
     end
 
+    # Checks the services' heartbeats (service_status.rb) once a minute and mails
+    # the maintainer once per problem and once when it is resolved. Starts
+    # after a grace period: after a restart, the others need time as well.
+    # Cannot report its own outage – that needs a check from outside.
+    def self.start_service_watchdog
+        Thread.new do
+            sleep ServiceStatus::STALE_AFTER
+            known = {}
+            loop do
+                begin
+                    current = ServiceStatus.problems(ServiceStatus.read_all)
+                    new_problems, resolved = ServiceStatus.changes(known, current)
+                    known = current
+                    self.notify_service_problems(new_problems, resolved) unless new_problems.empty? && resolved.empty?
+                rescue StandardError => e
+                    STDERR.puts "Service watchdog: #{e.class}: #{e}"
+                end
+                sleep ServiceStatus::INTERVAL
+            end
+        end
+    end
+
+    def self.notify_service_problems(new_problems, resolved)
+        new_problems.each_pair { |service, reason| debug_error "Service problem: #{service}: #{reason}" }
+        resolved.each { |service| debug "Service OK again: #{service}" }
+        # in development, services are stopped and started all the time
+        return if DEVELOPMENT
+        mail_subject = if new_problems.empty?
+            "Dashboard: wieder in Ordnung (#{resolved.join(', ')})"
+        else
+            "Dashboard: Problem mit #{new_problems.keys.join(', ')}"
+        end
+        mail_body = StringIO.open do |io|
+            io.puts "<p>Hallo!</p>"
+            unless new_problems.empty?
+                io.puts "<p>Bei folgenden Diensten des Dashboards gibt es ein Problem:</p><ul>"
+                new_problems.each_pair { |service, reason| io.puts "<li><b>#{service}</b>: #{CGI.escapeHTML(reason)}</li>" }
+                io.puts "</ul>"
+            end
+            unless resolved.empty?
+                io.puts "<p>Wieder in Ordnung: #{resolved.join(', ')}</p>"
+            end
+            io.puts "<p>Übersicht: #{WEB_ROOT}/dienste</p>"
+            io.string
+        end
+        deliver_mail do
+            to WEBSITE_MAINTAINER_EMAIL
+            from SMTP_FROM
+            subject mail_subject
+            mail_body
+        end
+    end
+
+    # Table of the services' heartbeats for /dienste (admins only).
+    def print_service_status
+        require_admin!
+        statuses = ServiceStatus.read_all
+        problems = ServiceStatus.problems(statuses)
+        now = Time.now.to_i
+        ago = lambda do |t|
+            s = now - t.to_i
+            s < 120 ? "vor #{s} s" : (s < 7200 ? "vor #{s / 60} min" : "vor #{s / 3600} h")
+        end
+        StringIO.open do |io|
+            if statuses.empty?
+                io.puts "<p class='text-muted'>Noch keine Rückmeldungen.</p>"
+                next io.string
+            end
+            io.puts "<div class='table-responsive'><table class='table table-sm' data-testid='service-status'>"
+            io.puts "<thead><tr><th>Dienst</th><th>Zustand</th><th>Letzte Rückmeldung</th><th>Läuft seit</th><th>Überwachte Threads</th></tr></thead><tbody>"
+            statuses.each do |s|
+                problem = problems[s['service']]
+                state = problem ? "<span class='badge badge-danger'>#{CGI.escapeHTML(problem)}</span>" : "<span class='badge badge-success'>in Ordnung</span>"
+                io.puts "<tr data-service='#{CGI.escapeHTML(s['service'].to_s)}'>"
+                io.puts "<td><b>#{CGI.escapeHTML(s['service'].to_s)}</b></td><td>#{state}</td>"
+                io.puts "<td>#{s['time'].to_i > 0 ? ago.call(s['time']) : '–'}</td>"
+                io.puts "<td>#{s['started'] ? Time.at(s['started']).strftime('%d.%m.%Y %H:%M') : '–'}</td>"
+                io.puts "<td>#{CGI.escapeHTML((s['threads'] || []).join(', '))}</td></tr>"
+            end
+            io.puts "</tbody></table></div>"
+            io.string
+        end
+    end
+
     def self.compile_files(key, mimetype, paths)
         @@compiled_files[key] ||= {:timestamp => nil, :content => nil}
 
@@ -1890,6 +1980,7 @@ class Main < Sinatra::Base
             self.compile_css()
             self.determine_lehrmittelverein_state_for_all()
             # STDERR.puts @@color_scheme_info.to_yaml
+            self.start_service_watchdog()
         end
 
         if ['puma', 'rackup'].include?(File.basename($0))

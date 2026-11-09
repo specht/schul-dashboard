@@ -107,6 +107,27 @@ des Proxys, aufgerufene Seiten). Aufbewahrung begrenzen (Rotation),
 Zugriff beschränken, nicht weitergeben und keine Log-Auszüge ungeprüft in
 Issues oder Chats kopieren.
 
+## Überwachung
+
+Jeder Dienst (Webdienst `ruby`, `timetable`, die Bots, `vplan_watcher`,
+`mail_forwarder`) schreibt einmal pro Minute eine Statusdatei nach
+`/internal/status/<dienst>.json` (`src/ruby/service_status.rb`). Dienste mit
+Arbeits-Threads melden dabei auch, ob diese noch laufen – ein still
+beendeter Thread, während der Prozess weiterläuft, fällt so ebenfalls auf.
+
+- **Übersicht:** `/dienste` (nur Administration, verlinkt auf `/admin`).
+- **E-Mail:** Der Webdienst prüft die Statusdateien jede Minute. Meldet sich
+  ein Dienst länger als fünf Minuten nicht oder ist ein Arbeits-Thread
+  beendet, geht **eine** E-Mail an `WEBSITE_MAINTAINER_EMAIL` – und eine
+  weitere, wenn es wieder in Ordnung ist. Nach einem Neustart des
+  Webdienstes wartet die Prüfung fünf Minuten. In der Entwicklung wird nur
+  ins Log geschrieben.
+- **Grenze:** Fällt der Webdienst selbst (oder der ganze Server) aus, kann er
+  das nicht melden. Dafür braucht es eine Prüfung von außen, z. B. einen
+  Dienst, der regelmäßig `/api/ping` abruft.
+- Ein Dienst, der dauerhaft entfernt wurde, bleibt als „keine Rückmeldung“
+  stehen, bis seine Datei in `/internal/status` gelöscht wird.
+
 ## Datensicherung
 
 Was gesichert werden muss:

@@ -342,7 +342,12 @@ def perform_refresh
     system("curl -s http://timetable:8080/api/update/all")
 end
 
+require './service_status.rb'
+
 loop do
     perform_refresh
+    # reports only after a successful check: a failing download or a changed
+    # format shows up as a missing heartbeat (see service_status.rb)
+    ServiceStatus.write(ENV['DASHBOARD_SERVICE'] || 'vplan_watcher')
     sleep 60
 end

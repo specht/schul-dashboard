@@ -75,6 +75,8 @@ class InvitationRepl < Sinatra::Base
                 self.perform_update(entry[:which])
             end
         end
+        # a worker thread that dies shows up on /dienste and in the watchdog's mail
+        ServiceStatus.watch('worker', @@worker_thread)
         self.perform_update(:all)
         STDERR.puts "REPL is ready."
     end

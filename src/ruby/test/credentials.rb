@@ -31,6 +31,9 @@ UNTIS_VERTRETUNGSPLAN_BASE_URL = 'https://vertretungsplan.test.invalid'
 # so no class would have a room and seating plans would be unavailable).
 ROOM_ORDER = %w(108 129 317 323)
 
+# for the fake bot in test/e2e/tests/mail-password-reset.spec.ts
+MAIL_PASSWORD_RESET_BOT_TOKEN = 'test-mail-password-reset-bot-token-0123456789'
+
 # All mail goes to the Mailpit container of the test stack, where the tests
 # read login codes from (see test/e2e/tests/fixtures.ts).
 SMTP_SERVER = 'mailpit'

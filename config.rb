@@ -184,12 +184,15 @@ docker_compose[:services][:ruby][:depends_on] << :neo4j
 docker_compose[:services][:neo4j] = {
     :build => './docker/neo4j',
     :volumes => ["#{NEO4J_DATA_PATH}:/data",
-                 "#{NEO4J_LOGS_PATH}:/logs"]
+                 "#{NEO4J_LOGS_PATH}:/logs"],
+    # Neo4j needs time for its checkpoint when stopping; Docker kills after
+    # 10 s by default, which can leave damaged transaction logs behind
+    :stop_grace_period => '120s',
 }
+# Neo4j 5 refuses to start with unknown settings (strict validation) – the
+# 4.4 settings dbms_logs__timezone / dbms_allow__upgrade must not come back
 docker_compose[:services][:neo4j][:environment] = [
     'NEO4J_AUTH=none',
-    'NEO4J_dbms_logs__timezone=SYSTEM',
-    # 'NEO4J_dbms_allow__upgrade=true',
 ]
 docker_compose[:services][:neo4j][:user] = "#{UID}"
 

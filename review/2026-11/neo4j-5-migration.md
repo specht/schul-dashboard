@@ -116,11 +116,11 @@ The changes for the switch are on branch `neo4j-5-migration`:
 ## Phase C – production window (only with the maintainer's go-ahead)
 
 Choose the window: evening or holidays, not around 19:30 (cron), announced
-to the school beforehand. During the window nginx shows the restart page
-(`errors/neustart.html`): it polls `/api/ping` and reloads by itself once
-the app is back. Its text says a restart "usually takes no longer than a
-minute" and only adds "takes longer than usual" after 3 minutes – see the
-open decision on a maintenance page.
+to the school beforehand. During the window nginx shows the maintenance
+page (`errors/wartung.html`, master 79980c65 – deployed beforehand, with the
+one-time nginx rebuild): at the start write `<DATA_PATH>/gen/wartung.json`
+with the planned end (`{"bis": "…", "text": "…"}`), delete it at the very
+end (doc/Betrieb.md, "Wartungsseite").
 
 1. **Before:**
    - free disk space (store about 1 GB, plus dump and backup)
@@ -182,8 +182,3 @@ open decision on a maintenance page.
   while the new data directory has no "loaded" marker. With the steps above
   and fail-safe 5.26 it isn't strictly necessary, but it protects against
   an accidental `up -d` during the window.
-- Maintenance page for the window: keep the restart page as it is, or add a
-  self-contained `errors/wartung.html` (same polling, text like "Wartung bis
-  ca. …") and point nginx's `error_page 502` at it for the window. Switching
-  needs an nginx rebuild and restart before and after the window (a few
-  seconds without any page).

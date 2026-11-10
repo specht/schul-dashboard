@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tr = $('<tr>').attr('data-id', entry.id);
                 tr.append($('<td>').text(entry.label).append($('<br>')).append($('<small>').addClass('text-muted').text(entry.mailbox)));
                 tr.append($('<td>').text(entry.requested_by || '').append($('<br>')).append($('<small>').addClass('text-muted').text(fmt_ts(entry.ts))));
-                const state = $('<td>').append(state_cell(Object.assign({}, entry, { password: null }), true));
+                const state = $('<td>').append(state_cell(entry, true));
                 if (entry.message) state.append($('<div>').addClass('text-muted').text(entry.message));
                 tr.append(state);
                 const actions = $('<td>').css('text-align', 'right').css('white-space', 'nowrap');

@@ -75,7 +75,9 @@ E-Mail-Brief zurückgesetzt werden:
 - Schüler:innen: das eigene Postfach. Danach bekommen die Eltern
   (`eltern.…`) eine kurze Nachricht.
 - Klassenleitungen: die Postfächer der Schüler:innen ihrer Klassen.
-- Administration: zusätzlich die Eltern-Postfächer.
+- Administration: zusätzlich die Eltern-Postfächer. Eltern haben kein
+  Dashboard-Konto; sie wenden sich an die Administration, die das Passwort
+  nach dem Zurücksetzen auf der Seite abliest und weitergibt.
 
 Pro Postfach ist immer nur eine offene Anfrage möglich und nur wenige pro
 Tag. Das Ändern beim Mail-Anbieter übernimmt ein Bot, der die offenen

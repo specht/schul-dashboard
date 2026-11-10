@@ -160,7 +160,7 @@ test('Wer darf was: fremde Postfächer, Eltern-Postfächer, Grenzen, Bot ohne To
   expect((await wrongToken.post('/api/mail_password_reset_bot/result', { data: { id: 'x', ok: true } })).status()).toBe(401);
 });
 
-test('Administration: Eltern-Postfach zurücksetzen und von Hand als erledigt markieren', async ({ page }, testInfo) => {
+test('Administration: Eltern-Postfach zurücksetzen, von Hand als erledigt markieren, Passwort für die Eltern ablesen', async ({ page, baseURL }, testInfo) => {
   const [a] = students(testInfo);
   const parents = `eltern.${a.email}`;
   const noticesBefore = (await mails(parents, PARENT_NOTICE)).length;
@@ -175,8 +175,14 @@ test('Administration: Eltern-Postfach zurücksetzen und von Hand als erledigt ma
   const row = page.locator('#mail_reset_requests tbody tr').filter({ hasText: parents }).first();
   await expect(row).toContainText('Eltern von');
   await expect(row.locator('.mail-reset-state-label')).toHaveAttribute('data-state', 'pending');
+  // the password the mailbox gets (parents have no dashboard account; the
+  // admin passes it on)
+  const pending = await (await (await bot(baseURL)).get('/api/mail_password_reset_bot/pending')).json();
+  const password = pending.requests.find((r: { mailbox: string }) => r.mailbox === parents).password;
   await row.locator('.bu_mail_reset_done').click();
   await expect(row.locator('.mail-reset-state-label')).toHaveAttribute('data-state', 'done');
+  await row.locator('.bu_show_mail_password').click();
+  await expect(row.locator('.mail-reset-password')).toHaveText(password);
   // requested by the admin: no notice (only students' own requests send one)
   expect((await mails(parents, PARENT_NOTICE)).length).toBe(noticesBefore);
 });

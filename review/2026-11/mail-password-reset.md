@@ -24,6 +24,8 @@ automation – but it can run without waiting for a person.
   - admin: student and parent (`eltern.…`) mailboxes – parent mailboxes
     only by the admin, so nobody else resets them without the parents
     wanting it
+    (parents have no dashboard account: they ask the admin, who reads the
+    password off the page after the reset and passes it on)
 - After a **student's own** reset, the parents' mailbox gets a short notice
   (a left-open session could otherwise be used to take over a mailbox).
 - The provider account gets app-based two-factor authentication (set up by

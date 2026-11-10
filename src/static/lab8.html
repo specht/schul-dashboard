@@ -55,6 +55,7 @@
       </div>
     </div>
 </div>
+#{print_student_group_invitation_script('lab8_projekt', user_email)}
 
 <div class='container'>
     <div class='row'>
@@ -65,7 +66,7 @@
                 Diese Karteikarte fasst die Informationen zu deinem Lab 8-Projekt zusammen.
             </p>
             <div style="#{user_email == @session_user[:email] ? '' : 'display: none;'}">
-                #{user_email == @session_user[:email] ? print_pending_lab8_projekt_invitations_incoming(user_email) : ''}
+                #{user_email == @session_user[:email] ? print_pending_student_group_invitations_incoming('lab8_projekt', user_email) : ''}
             </div>
             <div class='karteikarte'>
                 <div class='row'>
@@ -228,77 +229,6 @@ window.addEventListener('load', function() {
                         $('#div_history').html(response2.html);
                     }
                 });
-            }
-        });
-    });
-    $("#bu_add_sus").on('click', function(e) {
-        api_call('/api/pending_lab8_projekt_invitations_outgoing', {sus_email: '#{user_email}'}, function(response) {
-            if (response.success) {
-                $('#div_pending_invitations').html(response.html);
-                $('#ti_add_sus').val('');
-                $('#modal_add_sus').modal('show');
-                $('#ti_add_sus').focus();
-                $('#div_pending_invitations .bu-delete-invitation').on('click', function(e) {
-                    let other_email = $($(e.target).closest('button')[0]).data('email');
-                    api_call('/api/delete_invitation_for_lab8_projekt', {sus_email: '#{user_email}', other_email: other_email}, function(response2) {
-                        if (response2.success) {
-                            api_call('/api/my_lab8_projekt_history', {sus_email: '#{user_email}'}, function(response3) {
-                                if (response3.success) {
-                                    $('#div_history').html(response3.html);
-                                    $('#modal_add_sus').modal('hide');
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-        });
-    });
-    $('#ti_add_sus').on('change keyup', function(e) {
-        let name = $('#ti_add_sus').val().trim();
-        let found_name = false;
-        for (let entry of $('datalist#li_sus_q1').find('option')) {
-            if (entry.value === name) {
-                found_name = true;
-                break;
-            }
-        }
-        $('#bu_send_sus_invitation').prop('disabled', !found_name);
-    });
-    $('#bu_send_sus_invitation').on('click', function(e) {
-        api_call('/api/send_invitation_for_lab8_projekt', {sus_email: '#{user_email}', name: $('#ti_add_sus').val().trim()}, function(response) {
-            if (response.success) {
-                $('#modal_add_sus').modal('hide');
-                api_call('/api/my_lab8_projekt_history', {sus_email: '#{user_email}'}, function(response2) {
-                    if (response2.success) {
-                        $('#div_history').html(response2.html);
-                    }
-                });
-            }
-        });
-    });
-    // accepting moves the student out of a group they're already in
-    const already_in_group = #{(user_email == @session_user[:email] && student_has_group?('Lab8Projekt', user_email)) ? 'true' : 'false'};
-    $('.bu-accept-invitation').on('click', function(e) {
-        let other_email = $(e.currentTarget).data('email');
-        let accept = function() {
-            api_call('/api/accept_lab8_projekt_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
-                if (response.success) {
-                    window.location.reload();
-                }
-            });
-        };
-        if (already_in_group) {
-            dashboardConfirm("Du bist schon in einem Projekt oder hast ein eigenes angelegt. Wenn du die Einladung annimmst, wechselst du in das neue Projekt – dein bisheriges wird dir dann nicht mehr angezeigt.", accept, {title: "Projekt wechseln?", confirm: "Projekt wechseln", danger: true});
-        } else {
-            accept();
-        }
-    });
-    $('.bu-reject-invitation').on('click', function(e) {
-        let other_email = $(e.currentTarget).data('email');
-        api_call('/api/reject_lab8_projekt_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
-            if (response.success) {
-                window.location.reload();
             }
         });
     });

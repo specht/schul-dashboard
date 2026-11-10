@@ -129,6 +129,7 @@
       </div>
     </div>
 </div>
+#{print_student_group_invitation_script('pk5', user_email)}
 
 <div class='container'>
     <div class='row'>
@@ -161,7 +162,7 @@
                 <em><strong>Hinweis:</strong> Du kannst die folgenden Angaben in der aktuellen Phase nicht bearbeiten.</em>
             </div>
             <div style="#{user_email == @session_user[:email] ? '' : 'display: none;'}">
-                #{print_pending_pk5_invitations_incoming(user_email)}
+                #{print_pending_student_group_invitations_incoming('pk5', user_email)}
             </div>
             <div class='karteikarte'>
                 <div class='row'>
@@ -548,77 +549,6 @@ window.addEventListener('load', function() {
                         $('#div_history').html(response2.html);
                     }
                 });
-            }
-        });
-    });
-    $("#bu_add_sus").on('click', function(e) {
-        api_call('/api/pending_pk5_invitations_outgoing', {sus_email: '#{user_email}'}, function(response) {
-            if (response.success) {
-                $('#div_pending_invitations').html(response.html);
-                $('#ti_add_sus').val('');
-                $('#modal_add_sus').modal('show');
-                $('#ti_add_sus').focus();
-                $('#div_pending_invitations .bu-delete-invitation').on('click', function(e) {
-                    let other_email = $($(e.target).closest('button')[0]).data('email');
-                    api_call('/api/delete_invitation_for_pk5', {sus_email: '#{user_email}', other_email: other_email}, function(response2) {
-                        if (response2.success) {
-                            api_call('/api/my_pk5_history', {sus_email: '#{user_email}'}, function(response3) {
-                                if (response3.success) {
-                                    $('#div_history').html(response3.html);
-                                    $('#modal_add_sus').modal('hide');
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-        });
-    });
-    $('#ti_add_sus').on('change keyup', function(e) {
-        let name = $('#ti_add_sus').val().trim();
-        let found_name = false;
-        for (let entry of $('datalist#li_sus_q2').find('option')) {
-            if (entry.value === name) {
-                found_name = true;
-                break;
-            }
-        }
-        $('#bu_send_sus_invitation').prop('disabled', !found_name);
-    });
-    $('#bu_send_sus_invitation').on('click', function(e) {
-        api_call('/api/send_invitation_for_pk5', {sus_email: '#{user_email}', name: $('#ti_add_sus').val().trim()}, function(response) {
-            if (response.success) {
-                $('#modal_add_sus').modal('hide');
-                api_call('/api/my_pk5_history', {sus_email: '#{user_email}'}, function(response2) {
-                    if (response2.success) {
-                        $('#div_history').html(response2.html);
-                    }
-                });
-            }
-        });
-    });
-    // accepting moves the student out of a group they're already in
-    const already_in_group = #{(user_email == @session_user[:email] && student_has_group?('Pk5', user_email)) ? 'true' : 'false'};
-    $('.bu-accept-invitation').on('click', function(e) {
-        let other_email = $(e.currentTarget).data('email');
-        let accept = function() {
-            api_call('/api/accept_pk5_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
-                if (response.success) {
-                    window.location.reload();
-                }
-            });
-        };
-        if (already_in_group) {
-            dashboardConfirm("Du hast schon Angaben zu deiner Präsentationsprüfung gemacht oder bist in einer anderen Gruppe. Wenn du die Einladung annimmst, wechselst du in die neue Gruppe – deine bisherigen Angaben werden dir dann nicht mehr angezeigt.", accept, {title: "Gruppe wechseln?", confirm: "Gruppe wechseln", danger: true});
-        } else {
-            accept();
-        }
-    });
-    $('.bu-reject-invitation').on('click', function(e) {
-        let other_email = $(e.currentTarget).data('email');
-        api_call('/api/reject_pk5_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
-            if (response.success) {
-                window.location.reload();
             }
         });
     });

@@ -3,7 +3,7 @@ class Main < Sinatra::Base
         require_user!
         result = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| x['u.ical_token'] }
             MATCH (u:User {email: $email})
-            WHERE EXISTS(u.ical_token)
+            WHERE u.ical_token IS NOT NULL
             RETURN u.ical_token;
         END_OF_QUERY
         result.each do |token|

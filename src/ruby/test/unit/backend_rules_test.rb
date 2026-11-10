@@ -25,4 +25,18 @@ class BackendRulesTest < Minitest::Test
                      "Send mail via deliver_with_development_guard!(mail):\n" + offenders.join("\n")
         assert_equal 1, offenders.size, offenders.join("\n")
     end
+
+    # Neo4j 5 no longer knows exists(n.prop) – a syntax error there; the
+    # replacement works on 4.4 as well. (exists() with a pattern is fine.)
+    def test_no_exists_function_on_properties
+        offenders = []
+        own_ruby_files.each do |path|
+            File.readlines(path, encoding: 'utf-8').each_with_index do |line, i|
+                next if line.strip.start_with?('#')
+                next unless line =~ /\bexists\s*\(\s*\w+\.\w+\s*\)/i
+                offenders << "#{path.sub(RUBY_DIR + '/', '')}:#{i + 1}: #{line.strip}"
+            end
+        end
+        assert_empty offenders, "Use n.prop IS NOT NULL / IS NULL instead of EXISTS(n.prop):\n" + offenders.join("\n")
+    end
 end

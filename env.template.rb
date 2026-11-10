@@ -65,3 +65,8 @@ DOCKER_LOG_MAX_FILES = 5
 # Anfrage neu geladen statt den Server neu zu starten (Standard, siehe
 # doc/Development.md). Zum Abschalten:
 # DEV_HOT_RELOAD = false
+
+# Nur Entwicklung: Server für src/scripts/pull-prod-data.rb, das die
+# Produktionsdaten in die Entwicklungsinstanz holt (Name aus ~/.ssh/config).
+# PROD_SSH_HOST = 'mein-server'
+# PROD_CHECKOUT_PATH = 'dashboard'   # Verzeichnis des Checkouts, relativ zum Home

@@ -44,6 +44,52 @@ verwenden.
 > Netzwerkschnittstellen – in fremden oder geteilten Netzen in `env.rb`
 > `NGINX_HOST_ADDRESS = '127.0.0.1'` setzen.
 
+### Produktionsdaten in die Entwicklungsinstanz holen
+
+Wer SSH-Zugang zum Server hat, kann den Stand der Produktion in die eigene
+Entwicklungsinstanz holen, um einen Fehler mit echten Daten nachzustellen.
+In `env.rb` den Server eintragen (Name aus `~/.ssh/config`, siehe
+`env.template.rb`):
+
+```
+PROD_SSH_HOST = 'mein-server'
+```
+
+Dann:
+
+```
+cd src/scripts
+./pull-prod-data.rb            # zeigt nur, was passieren würde
+./pull-prod-data.rb --srsly    # Datenbank und Dateien holen
+```
+
+- Auf dem Server wird nur gelesen: Die Datenbank wird im laufenden Betrieb
+  exportiert (wie mit `dump-database.rb`, ohne Sperren) und direkt über SSH
+  übertragen. Die Dateien kommen per `rsync`. Beides läuft mit niedrigster
+  CPU- und I/O-Priorität, `rsync` mit Bandbreitenbegrenzung
+  (`--bwlimit=KBPS`, Standard 20000).
+- Lokal wird die Entwicklungsinstanz angehalten. `raw`, `gen` und `vplan`
+  werden gespiegelt (lokale Dateien, die es auf dem Server nicht gibt,
+  werden gelöscht). Die bisherige Datenbank wird nach
+  `DATA_PATH/neo4j.previous` verschoben und der Dump in eine leere Neo4j
+  geladen. Danach wird geprüft, ob die Zahl der Knoten und Beziehungen
+  stimmt. Wenn nicht, wird die alte Datenbank automatisch
+  wiederhergestellt.
+- `--db-only` / `--files-only` holen nur einen Teil.
+  `--restore-previous --srsly` holt die Datenbank von vor dem letzten
+  Abruf zurück.
+- Vorher prüft das Skript, ob genug Platz auf der Platte ist (`gen` ist
+  mehrere GB groß).
+- Nicht übertragen werden `DATA_PATH/mails`, `INTERNAL_PATH` und
+  `INPUT_DATA_PATH`.
+- Das Skript läuft nur mit einer Entwicklungskonfiguration
+  (`DEVELOPMENT = true`) und nicht mit `DASHBOARD_ENV`, also nie gegen den
+  Test-Stack.
+
+Danach liegen echte personenbezogene Daten auf dem eigenen Rechner – es
+gelten dieselben Regeln wie für die Instanz selbst (nur lokal erreichbar,
+nichts davon weitergeben).
+
 ## Was passiert bei Änderungen?
 
 | Geändert | Wirkung |

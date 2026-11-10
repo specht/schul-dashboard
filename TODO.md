@@ -208,6 +208,11 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] `config.rb` reicht Argumente als Shell-String an `docker compose`
       weiter; Argumente mit Anführungszeichen oder `$` gehen kaputt
       (Array-Form von `system` verwenden)
+- [ ] `config.rb` endet immer mit Exit-Code 0, auch wenn `docker compose`
+      fehlschlägt (z. B. `./config.rb restart ruby` oder
+      `./config.rb exec … false`). Skripte und Deploys können sich darauf
+      nicht verlassen; den Exit-Code von `docker compose` weiterreichen
+      (vorher prüfen, welche Aufrufer das betrifft)
 - [ ] Gemfile-Kommentar zu `mustermann` passt nicht zur Versionsangabe
 - [ ] `update-documentation.sh` wechselt in `../schul-dashboard/`, das zum
       Namen des Checkouts passen muss

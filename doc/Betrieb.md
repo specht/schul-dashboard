@@ -42,6 +42,30 @@ git pull
   die sich automatisch neu lädt. Bei `./config.rb down` ist auch nginx weg –
   dann antwortet der vorgelagerte Proxy mit seiner eigenen Fehlerseite.
 
+## Wartungsseite
+
+Für geplante, längere Unterbrechungen (z. B. Datenbank-Umzug) gibt es statt
+der Neustart-Seite die Wartungsseite `errors/wartung.html`. nginx zeigt sie,
+solange die Datei `wartung.json` im `gen`-Verzeichnis liegt (im Container
+`/gen/wartung.json`) und `ruby` nicht erreichbar ist:
+
+```
+echo '{"bis": "19:30", "text": "Wir ziehen die Datenbank um."}' > <DATA_PATH>/gen/wartung.json
+# … Wartung …
+rm <DATA_PATH>/gen/wartung.json
+```
+
+- Beide Angaben sind optional. `bis` (Uhrzeit, heute) erscheint als
+  „Voraussichtlich wieder da“; ist die Zeit um mehr als 5 Minuten
+  überschritten, sagt die Seite, dass es länger dauert. `text` erscheint als
+  zusätzlicher Satz.
+- Die Datei ist öffentlich abrufbar (`/gen/wartung.json`) – nur Text
+  hineinschreiben, den alle sehen dürfen.
+- Ein Neustart von nginx ist dafür nicht nötig. Die Datei nach der Wartung
+  wieder löschen, sonst erscheint bei jedem Neustart die Wartungsseite.
+- Die Seite prüft wie die Neustart-Seite regelmäßig `/api/ping` und lädt neu,
+  sobald das Dashboard wieder antwortet.
+
 ## Neue Eingangsdaten
 
 Neue Stundenpläne, Personenlisten usw. in `INPUT_DATA_PATH` ablegen (Format:

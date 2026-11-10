@@ -30,9 +30,10 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   pushed once the fix runs in production.
 - Example and test data for the automated tests only from
   `src/example-data`.
-- **Exploratory testing with real data** is allowed on the maintainer's
-  local dev instance (port 8025, a current copy of the live data; mails
-  are only printed to the log there). Be careful: prefer read-only checks,
+- **Exploratory testing with real data** is allowed on the local dev
+  instances of the maintainer and of Jonas (port 8025, a current copy of
+  the live data via `src/scripts/pull-prod-data.rb`; mails are only
+  printed to the log there). Be careful: prefer read-only checks,
   keep write actions minimal, and never put personal data (names, emails,
   contents) into replies, commits, reports or the repository – only page
   names, error types and counts.

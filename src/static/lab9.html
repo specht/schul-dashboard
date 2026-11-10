@@ -245,16 +245,25 @@ window.addEventListener('load', function() {
             }
         });
     });
+    // accepting moves the student out of a group they're already in
+    const already_in_group = #{(user_email == @session_user[:email] && student_has_group?('Lab9Projekt', user_email)) ? 'true' : 'false'};
     $('.bu-accept-invitation').on('click', function(e) {
-        let other_email = $($(e.target).closest('button')[0]).data('email');
-        api_call('/api/accept_lab9_projekt_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
-            if (response.success) {
-                window.location.reload();
-            }
-        });
+        let other_email = $(e.currentTarget).data('email');
+        let accept = function() {
+            api_call('/api/accept_lab9_projekt_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+                if (response.success) {
+                    window.location.reload();
+                }
+            });
+        };
+        if (already_in_group) {
+            dashboardConfirm("Du bist schon in einem Projekt oder hast ein eigenes angelegt. Wenn du die Einladung annimmst, wechselst du in das neue Projekt – dein bisheriges wird dir dann nicht mehr angezeigt.", accept, {title: "Projekt wechseln?", confirm: "Projekt wechseln", danger: true});
+        } else {
+            accept();
+        }
     });
     $('.bu-reject-invitation').on('click', function(e) {
-        let other_email = $($(e.target).closest('button')[0]).data('email');
+        let other_email = $(e.currentTarget).data('email');
         api_call('/api/reject_lab9_projekt_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
             if (response.success) {
                 window.location.reload();

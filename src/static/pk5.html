@@ -597,16 +597,25 @@ window.addEventListener('load', function() {
             }
         });
     });
+    // accepting moves the student out of a group they're already in
+    const already_in_group = #{(user_email == @session_user[:email] && student_has_group?('Pk5', user_email)) ? 'true' : 'false'};
     $('.bu-accept-invitation').on('click', function(e) {
-        let other_email = $($(e.target).closest('button')[0]).data('email');
-        api_call('/api/accept_pk5_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
-            if (response.success) {
-                window.location.reload();
-            }
-        });
+        let other_email = $(e.currentTarget).data('email');
+        let accept = function() {
+            api_call('/api/accept_pk5_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
+                if (response.success) {
+                    window.location.reload();
+                }
+            });
+        };
+        if (already_in_group) {
+            dashboardConfirm("Du hast schon Angaben zu deiner Präsentationsprüfung gemacht oder bist in einer anderen Gruppe. Wenn du die Einladung annimmst, wechselst du in die neue Gruppe – deine bisherigen Angaben werden dir dann nicht mehr angezeigt.", accept, {title: "Gruppe wechseln?", confirm: "Gruppe wechseln", danger: true});
+        } else {
+            accept();
+        }
     });
     $('.bu-reject-invitation').on('click', function(e) {
-        let other_email = $($(e.target).closest('button')[0]).data('email');
+        let other_email = $(e.currentTarget).data('email');
         api_call('/api/reject_pk5_invitation', {sus_email: '#{user_email}', other_email: other_email}, function(response) {
             if (response.success) {
                 window.location.reload();

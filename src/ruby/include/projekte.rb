@@ -56,6 +56,75 @@ PROJEKT_VOTE_LABELS = [
 
 class Main < Sinatra::Base
 
+    # --- Groups of students: Projekttage, Lab8Projekt, Lab9Projekt, Pk5 -----
+    # (group)-[:BELONGS_TO]->(:User); a student belongs to at most one group
+    # of each kind. A group is created with MERGE on the first save or
+    # invitation and joined by accepting an invitation.
+    STUDENT_GROUP_LABELS = %w(Projekttage Lab8Projekt Lab9Projekt Pk5)
+
+    # Takes a write lock on the student's user node until the end of the
+    # current transaction. Concurrent requests for the same student (double
+    # clicks, two saves at once) then run one after another, so MERGE can't
+    # create a second group and an invitation can't be accepted twice.
+    def lock_student_for_group_change!(email)
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:email => email})
+            MATCH (u:User {email: $email})
+            SET u._group_lock = true
+            REMOVE u._group_lock
+            RETURN u.email;
+        END_OF_QUERY
+    end
+
+    def student_has_group?(label, email)
+        assert(STUDENT_GROUP_LABELS.include?(label))
+        !neo4j_query(<<~END_OF_QUERY, {:email => email}).to_a.empty?
+            MATCH (p:#{label})-[:BELONGS_TO]->(:User {email: $email})
+            RETURN p LIMIT 1;
+        END_OF_QUERY
+    end
+
+    # sus_email accepts the invitation into other_email's group and leaves
+    # every other group of this kind. Call inside a transaction. Returns
+    # :joined, or :already_member if the invitation had already been accepted
+    # (second click); fails if there is no invitation.
+    def accept_group_invitation!(label, sus_email, other_email)
+        assert(STUDENT_GROUP_LABELS.include?(label))
+        assert(sus_email != other_email)
+        lock_student_for_group_change!(sus_email)
+        joined = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email}).to_a
+            MATCH (ou:User {email: $other_email})<-[:BELONGS_TO]-(p:#{label})-[r:INVITATION_FOR]->(u:User {email: $sus_email})
+            WITH p, u, collect(r) AS invitations
+            LIMIT 1
+            FOREACH (x IN invitations | DELETE x)
+            MERGE (p)-[:BELONGS_TO]->(u)
+            WITH p, u
+            OPTIONAL MATCH (u)<-[old:BELONGS_TO]-(op:#{label})
+            WHERE op <> p
+            WITH p, collect(old) AS old_memberships
+            FOREACH (x IN old_memberships | DELETE x)
+            RETURN size(old_memberships) AS left_groups;
+        END_OF_QUERY
+        # (grouped by p: no invitation, no row)
+        return :joined unless joined.empty?
+        member = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email}).to_a
+            MATCH (:User {email: $other_email})<-[:BELONGS_TO]-(p:#{label})-[:BELONGS_TO]->(:User {email: $sus_email})
+            RETURN p LIMIT 1;
+        END_OF_QUERY
+        assert(!member.empty?, 'no invitation')
+        :already_member
+    end
+
+    # A student may not invite themselves or someone already in their group.
+    def assert_can_invite_into_group!(label, sus_email, other_email)
+        assert(STUDENT_GROUP_LABELS.include?(label))
+        assert(sus_email != other_email)
+        rows = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email}).to_a
+            MATCH (:User {email: $sus_email})<-[:BELONGS_TO]-(p:#{label})-[:BELONGS_TO]->(:User {email: $other_email})
+            RETURN p LIMIT 1;
+        END_OF_QUERY
+        assert(rows.empty?, 'already in this group')
+    end
+
     def user_eligible_for_projekt_katalog?
         return true if teacher_logged_in?
         return schueler_logged_in?
@@ -338,6 +407,7 @@ class Main < Sinatra::Base
         end
         ts = Time.now.to_i
         transaction do
+            lock_student_for_group_change!(sus_email)
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
                 MATCH (u:User {email: $sus_email})
                 MERGE (p:Projekttage)-[:BELONGS_TO]->(u)
@@ -545,11 +615,13 @@ class Main < Sinatra::Base
         assert(!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
+            lock_student_for_group_change!(sus_email)
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
                 MATCH (u:User {email: $sus_email})
                 MERGE (p:Projekttage)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
+            assert_can_invite_into_group!('Projekttage', sus_email, other_email)
             rows = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
                 MATCH (p:Projekttage)-[:BELONGS_TO]->(u:User {email: $sus_email})
                 MATCH (p)-[r:INVITATION_FOR]->(ou:User {email: $other_email})
@@ -683,25 +755,22 @@ class Main < Sinatra::Base
         assert(!$projekttage.phases[$projekttage.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
-            neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
-                MATCH (ou:User {email: $other_email})<-[:BELONGS_TO]-(p:Projekttage)-[r:INVITATION_FOR]->(u:User {email: $sus_email})
-                DELETE r
-                CREATE (p)-[:BELONGS_TO]->(u);
-            END_OF_QUERY
-            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email, :ts => ts, :editor_email => @session_user[:email]})
-                MATCH (eu:User {email: $editor_email})
-                MATCH (p:Projekttage)-[:BELONGS_TO]->(:User {email: $other_email})
-                CREATE (eu)<-[:BY]-(c: ProjekttageChange)-[:TO]->(p)
-                SET c.type = 'accept_invitation'
-                SET c.email = $sus_email
-                SET c.ts = $ts
-                RETURN p;
-            END_OF_QUERY
+            if accept_group_invitation!('Projekttage', sus_email, other_email) == :joined
+                neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email, :ts => ts, :editor_email => @session_user[:email]})
+                    MATCH (eu:User {email: $editor_email})
+                    MATCH (p:Projekttage)-[:BELONGS_TO]->(:User {email: $other_email})
+                    CREATE (eu)<-[:BY]-(c: ProjekttageChange)-[:TO]->(p)
+                    SET c.type = 'accept_invitation'
+                    SET c.email = $sus_email
+                    SET c.ts = $ts
+                    RETURN p;
+                END_OF_QUERY
+            end
         end
         respond(:yay => 'sure')
     end
 
-    post '/api/reject_projektage_invitation' do
+    post '/api/reject_projekttage_invitation' do
         data = parse_request_data(:required_keys => [:sus_email, :other_email])
         sus_email = data[:sus_email]
         if user_with_role_logged_in?(:can_manage_projekttage)

@@ -86,15 +86,84 @@ append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
 end
 
 # Lab 8/9: the real configuration decides who takes part (by grade); in the
-# test stack the students of class 5a do, so the pages can be tested.
+# test stack the students of class 5a do, so the pages can be tested, and
+# the group test students of class 11 (see below).
 %w(lab8 lab9).each do |lab|
     append_lines(File.join(target, lab, 'config.rb'), [
         "# test stack (test/prepare_example_data.rb): students of class 5a take part",
+        "# (and the Labtest students of class 11 for the group tests)",
         "def email_is_eligible_for_#{lab}?(user_info, email)",
-        "    (user_info[email] || {})[:klasse] == '5a'",
+        "    info = user_info[email] || {}",
+        "    info[:klasse] == '5a' || (info[:klasse] == '11' && info[:last_name] == 'Labtest')",
         "end",
     ])
 end
+
+# Student groups (Projekttage, Lab 8/9, Pk5): students for the group tests
+# (test/e2e/tests/student-groups.spec.ts), each test project (desktop,
+# mobile) uses its own three per module. Class 11 organizes Projekttage, class
+# 12 is PK5_CURRENT_KLASSE (credentials.template.rb); the Labtest students
+# (class 11) take part in Lab 8/9 (see above). Not in 5a: other tests rely on
+# its size (sitzplan.spec.ts: eight seats).
+GROUP_TEST_FIRST_NAMES = %w(Anna Ben Cem Dana Emil Fiona)
+{ 'Gruppentest' => '11', 'Pruefungstest' => '12', 'Labtest' => '11' }.each_pair do |last_name, klasse|
+    append_lines(File.join(target, 'schueler', 'ASCII.TXT'), GROUP_TEST_FIRST_NAMES.map.with_index do |first_name, i|
+        "#{last_name}\t#{first_name}\t#{klasse}\t#{i.even? ? 'w' : 'm'}\t01.0#{i + 1}.2010"
+    end)
+end
+
+# Projekttage and Pk5 are planned in phases; the real configuration (input
+# data) defines them with PhasedEvent. In the test stack there is a single
+# phase in which students may edit everything.
+File.write(File.join(target, 'phased_event.rb'), <<~'RUBY')
+    # test stack (test/prepare_example_data.rb): same interface as the
+    # PhasedEvent of the real input data
+    class PhasedEvent
+        def initialize()
+            @phases = []
+        end
+
+        attr_reader :phases
+
+        def add_phase(section:, index:, t0:, t1:, label:, flags: [], description:)
+            raise 'Index mismatch' unless index == @phases.length
+            @phases << {section: section, index: index, t0: t0, t1: t1, label: label, flags: flags, description: description}
+        end
+
+        def get_current_phase()
+            ts = Time.now.strftime('%Y-%m-%dT%H:%M:%S')
+            phase_index = -1
+            while (phase_index < @phases.length - 1) && (ts >= @phases[phase_index + 1][:t0])
+                phase_index += 1
+            end
+            phase_index
+        end
+
+        def print_schedule()
+            phase = @phases[get_current_phase()]
+            "<div>Aktuelle Phase: <strong>#{CGI.escapeHTML(phase[:label])}</strong></div>"
+        end
+    end
+RUBY
+{ 'projekte' => '$projekttage', 'pk5' => '$pk5' }.each_pair do |dir, variable|
+    append_lines(File.join(target, dir, 'config.rb'), [
+        "# test stack (test/prepare_example_data.rb): one open phase",
+        "require File.join(File.dirname(__FILE__), '..', 'phased_event.rb')",
+        "#{variable} = PhasedEvent.new",
+        "#{variable}.add_phase(section: 1, index: 0, t0: '2000-01-01T00:00:00', t1: '2100-01-01T00:00:00', label: 'Testphase', description: 'Alles kann bearbeitet werden.')",
+    ])
+end
+append_lines(File.join(target, 'pk5', 'config.rb'), [
+    "PK5_PUBLISH_FINAL_THEMA = '2100-01-01T00:00'",
+])
+append_lines(File.join(target, 'projekte', 'config.rb'), [
+    "def email_is_projekttage_organizer?(user_info, email)",
+    "    (user_info[email] || {})[:klasse] == '11'",
+    "end",
+    "def projekttage_phase",
+    "    1",
+    "end",
+])
 
 # A public event (sign-up without login, e.g. open day) – the example data
 # has none.

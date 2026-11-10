@@ -278,6 +278,7 @@ class Main < Sinatra::Base
         end
         ts = Time.now.to_i
         transaction do
+            lock_student_for_group_change!(sus_email)
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
                 MATCH (u:User {email: $sus_email})
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
@@ -467,11 +468,13 @@ class Main < Sinatra::Base
         assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
+            lock_student_for_group_change!(sus_email)
             p = neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email})['p']
                 MATCH (u:User {email: $sus_email})
                 MERGE (p:Pk5)-[:BELONGS_TO]->(u)
                 RETURN p;
             END_OF_QUERY
+            assert_can_invite_into_group!('Pk5', sus_email, other_email)
             rows = neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
                 MATCH (p:Pk5)-[:BELONGS_TO]->(u:User {email: $sus_email})
                 MATCH (p)-[r:INVITATION_FOR]->(ou:User {email: $other_email})
@@ -605,20 +608,17 @@ class Main < Sinatra::Base
         assert(!$pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit))
         ts = Time.now.to_i
         transaction do
-            neo4j_query(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email})
-                MATCH (ou:User {email: $other_email})<-[:BELONGS_TO]-(p:Pk5)-[r:INVITATION_FOR]->(u:User {email: $sus_email})
-                DELETE r
-                CREATE (p)-[:BELONGS_TO]->(u);
-            END_OF_QUERY
-            neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email, :ts => ts, :editor_email => @session_user[:email]})
-                MATCH (eu:User {email: $editor_email})
-                MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $other_email})
-                CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
-                SET c.type = 'accept_invitation'
-                SET c.email = $sus_email
-                SET c.ts = $ts
-                RETURN p;
-            END_OF_QUERY
+            if accept_group_invitation!('Pk5', sus_email, other_email) == :joined
+                neo4j_query_expect_one(<<~END_OF_QUERY, {:sus_email => sus_email, :other_email => other_email, :ts => ts, :editor_email => @session_user[:email]})
+                    MATCH (eu:User {email: $editor_email})
+                    MATCH (p:Pk5)-[:BELONGS_TO]->(:User {email: $other_email})
+                    CREATE (eu)<-[:BY]-(c:Pk5Change)-[:TO]->(p)
+                    SET c.type = 'accept_invitation'
+                    SET c.email = $sus_email
+                    SET c.ts = $ts
+                    RETURN p;
+                END_OF_QUERY
+            end
         end
         respond(:yay => 'sure')
     end

@@ -108,6 +108,11 @@ The changes for the switch are on branch `neo4j-5-migration`:
    - Optionally an API probe before/after (gyst-bib `api-probe.rb` /
      `compare-probes.rb`: the same read-only requests against the old and
      the new stack, compared ignoring row order and timestamps).
+     Also ignore values counted relative to now (e.g. "last 7 days", a
+     365-day window): in gyst-bib such a value changed between two probes
+     minutes apart because one entry dropped out of the window.
+   - Bring the stack up the way C7 does, **nginx included**, and load
+     pages through nginx, not only through `ruby` directly (see C7).
 5. **Measure the time** for the production steps C3–C6. Expected: dump
    about 30 s, cold backup about 1 min, load about 30 s, start and checks a
    few minutes. Planned downtime: 30 minutes including buffer.
@@ -153,6 +158,13 @@ end (doc/Betrieb.md, "Wartungsseite").
    - only then go on
 7. **Start everything:**
    - `./config.rb up -d`
+   - then `./config.rb up -d --no-deps --force-recreate nginx`: nginx
+     resolves `…_ruby_1` only once at startup (static `proxy_pass`, no
+     `resolver`), so after `ruby` was recreated (new image) it can keep
+     the old container address and answer 502. `--no-deps` leaves the
+     running services alone. (gyst-bib, 2026-11-11: there nginx did not
+     come back at all because of a legacy `links:` entry; the dashboard
+     has no `links:`, but the stale address has the same cure.)
    - `/api/ping` 200, heartbeats without problems, no new errors in the
      `ruby` and `neo4j` logs
    - log in as several roles and check by hand
@@ -162,7 +174,7 @@ end (doc/Betrieb.md, "Wartungsseite").
    - `mv DATA_PATH/neo4j DATA_PATH/neo4j-5.26-failed`,
      `mv DATA_PATH/neo4j-4.4 DATA_PATH/neo4j`
    - revert the merge on master and pull, `./config.rb build neo4j`,
-     `./config.rb up -d`, checks as in 7
+     `./config.rb up -d`, recreate nginx as in 7, checks as in 7
    - If the problem only shows after go-live: don't roll back blindly,
      because data written since then would be lost. Dump 5.26 and load it
      into a fresh 4.4 store instead (rehearsed in B6).

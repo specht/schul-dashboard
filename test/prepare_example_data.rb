@@ -115,7 +115,7 @@ GROUP_TEST_FIRST_NAMES = %w(Anna Ben Cem Dana Emil Fiona)
 end
 
 # A student without a birthday in the student list (the student list of new
-# 5th graders sometimes has none yet), for the LoGoDidact export
+# 5th graders sometimes has none yet), for the LogoDIDACT export
 # (test/e2e/tests/admin-exports.spec.ts).
 append_lines(File.join(target, 'schueler', 'ASCII.TXT'), ["Ohnegeburtstag\tGina\t11\tw\t"])
 

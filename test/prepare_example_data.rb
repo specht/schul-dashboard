@@ -114,6 +114,11 @@ GROUP_TEST_FIRST_NAMES = %w(Anna Ben Cem Dana Emil Fiona)
     end)
 end
 
+# A student without a birthday in the student list (the student list of new
+# 5th graders sometimes has none yet), for the LoGoDidact export
+# (test/e2e/tests/admin-exports.spec.ts).
+append_lines(File.join(target, 'schueler', 'ASCII.TXT'), ["Ohnegeburtstag\tGina\t11\tw\t"])
+
 # A Klassenleitung that is not an admin (the admin account leads 5a):
 # Torsta Torstensonin leads class 11.
 append_lines(File.join(target, 'klassenleiter', 'klassenleiter.txt'), ['11,Ta'])

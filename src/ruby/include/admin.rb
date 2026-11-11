@@ -509,10 +509,11 @@ class Main < Sinatra::Base
         require_admin!
         StringIO.open do |io|
             @@klassen_order.each do |klasse|
-                @@schueler_for_klasse[klasse].each do |email|
+                (@@schueler_for_klasse[klasse] || []).each do |email|
                     user = @@user_info[email]
-                    next if user[:geburtstag].nil?
-                    geburtstag = "#{user[:geburtstag][8, 2]}.#{user[:geburtstag][5, 2]}.#{user[:geburtstag][0, 4]}"
+                    # the student list of new 5th graders may lack birthdays:
+                    # export them anyway, with an empty field
+                    geburtstag = user[:geburtstag] ? "#{user[:geburtstag][8, 2]}.#{user[:geburtstag][5, 2]}.#{user[:geburtstag][0, 4]}" : ''
                     io.puts "#{user[:last_name]};#{user[:first_name]};#{user[:klasse]};#{user[:geschlecht]};#{geburtstag}"
                 end
             end

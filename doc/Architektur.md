@@ -42,7 +42,7 @@ und ruft dann `docker compose` mit den übergebenen Argumenten auf
 
 | Dienst | Code | Aufgabe |
 |---|---|---|
-| `nginx` | `docker/nginx`, Konfiguration in `config.rb` | liefert `src/static` und die generierten Dateien aus, leitet alles andere an `ruby` weiter, zeigt beim Neustart von `ruby` die Seite `errors/neustart.html` |
+| `nginx` | `docker/nginx`, Konfiguration in `config.rb` | liefert `src/static` und die generierten Dateien aus, leitet alles andere an `ruby` weiter, zeigt beim Neustart von `ruby` die Seite `errors/neustart.html` (während einer Wartung `errors/wartung.html`) |
 | `ruby` | `src/ruby/main.rb` + `src/ruby/include/*.rb`, gestartet über `config.ru` (Puma, Port 3000) | die eigentliche Anwendung: Seiten, API, Anmeldung |
 | `neo4j` | `docker/neo4j` (Neo4j 4.4) | Datenbank für alles, was Nutzer:innen anlegen (Sessions, Notizen, Nachrichten, Umfragen, Buchungen …) |
 | `timetable` | `timetable-repl.rb`, `timetable.rb` | schreibt pro Person und Woche den fertigen Stundenplan als JSON nach `/gen/w/…` sowie iCal-Dateien |

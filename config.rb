@@ -121,6 +121,11 @@ nginx_config = <<~eos
             root /usr/share/nginx/html;
             internal;
             add_header Cache-Control "no-store" always;
+            # Maintenance window: while /gen/wartung.json exists, show the
+            # maintenance page instead (see doc/Betrieb.md).
+            if (-f /gen/wartung.json) {
+                rewrite ^/errors/neustart\\.html$ /errors/wartung.html break;
+            }
         }
 
         location / {

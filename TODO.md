@@ -188,6 +188,10 @@ hierher übernehmen, wenn sie angegangen werden.
 
 ## 3. Wartung
 
+- [ ] Bot für das Zurücksetzen von E-Mail-Passwörtern (Phase 2 in
+      `review/2026-11/mail-password-reset.md`): Zwei-Faktor-Anmeldung per
+      App beim Mail-Anbieter einrichten, Ablauf „Passwort ändern“ im
+      Kundenbereich aufzeichnen, Standort des Bots festlegen
 - [ ] Schulstruktur aus `credentials.rb` in die Datenkonfiguration
       (`/data/config.rb`) verschieben: `KLASSEN_ORDER`, `KLASSEN_TR`,
       `ROOM_ORDER`, Zeiten, Schulname … – Zugangsdaten bleiben in

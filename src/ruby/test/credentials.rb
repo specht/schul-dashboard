@@ -21,7 +21,8 @@ WEBSITE_HOST = 'dashboard.test.invalid'
 VOTING_WEBSITE_URL = 'https://abstimmung.test.invalid'
 TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.test.invalid'
 NEXTCLOUD_URL = 'http://nextcloud.test.invalid'
-NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud.test.invalid'
+# the stand-in of the test stack (src/ruby/test/fake_nextcloud.ru)
+NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud'
 JITSI_HOST = 'meet.test.invalid'
 STREAM_SITE_URL = 'https://info.test.invalid/'
 BIB_HOST = 'https://bibliothek.test.invalid'
@@ -30,6 +31,9 @@ UNTIS_VERTRETUNGSPLAN_BASE_URL = 'https://vertretungsplan.test.invalid'
 # The rooms used in the example timetable (the template declares others,
 # so no class would have a room and seating plans would be unavailable).
 ROOM_ORDER = %w(108 129 317 323)
+
+# for the fake bot in test/e2e/tests/mail-password-reset.spec.ts
+MAIL_PASSWORD_RESET_BOT_TOKEN = 'test-mail-password-reset-bot-token-0123456789'
 
 # All mail goes to the Mailpit container of the test stack, where the tests
 # read login codes from (see test/e2e/tests/fixtures.ts).

@@ -25,7 +25,7 @@ export DASHBOARD_ENV=env.test.rb
 BASE_URL=http://localhost:8125
 PLAYWRIGHT_IMAGE=mcr.microsoft.com/playwright:v1.55.1-noble
 MAILPIT_URL=http://localhost:8126
-STACK_SERVICES=(nginx ruby neo4j timetable mailpit)
+STACK_SERVICES=(nginx ruby neo4j timetable mailpit nextcloud)
 
 compose() { ./config.rb "$@"; }
 
@@ -72,6 +72,7 @@ stack_up() {
     wait_for "dashboard" "curl -fsS $BASE_URL/api/ping"
     wait_for "timetable service" "compose exec -T ruby curl -fsS http://timetable:8080/api/update/all"
     wait_for "mailpit" "curl -fsS $MAILPIT_URL/api/v1/info"
+    wait_for "nextcloud stand-in" "curl -fsS http://localhost:8127/_requests"
     seed
 }
 

@@ -178,6 +178,9 @@ LOGIN_CODE_SALT = 'bitte_jeden_salt_nur_einmal_verwenden'
 WEBSITE_READ_INFO_SECRET = 'bitte_ein_zufälliges_secret_generieren'
 SMS_GATEWAY_SECRET = 'bitte_ein_zufälliges_secret_generieren'
 SMS_PHONE_NUMBER_PASSPHRASE = 'bitte_ein_zufälliges_secret_generieren'
+# Bot that resets school mailbox passwords (include/mail_password_reset.rb),
+# at least 32 characters; nil: the bot interface is off
+MAIL_PASSWORD_RESET_BOT_TOKEN = nil
 DATENTRESOR_UNLOCKED_FOR = nil
 DATENTRESOR_HOST = ''
 DATENTRESOR_JWT_APPKEY = ''

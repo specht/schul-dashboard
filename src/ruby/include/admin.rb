@@ -106,20 +106,34 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             bolt_connections = neo4j_query("CALL dbms.listConnections();").size
             io.puts "<span style='float: right;'>SMS Gateway: #{Main.sms_gateway_ready? ? 'online' : 'offline'} / Aktive Bolt-Verbindungen: #{bolt_connections} / <a href='/schema'>Schema</a></span>"
-            io.puts "<a class='btn btn-secondary mb-1' href='#teachers'>Lehrerinnen und Lehrer</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='#sus'>Schülerinnen und Schüler</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='#external_users'>Externe Nutzer</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='#website'>Website</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='#tablets'>Tablets</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='#monitor'>Monitor</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='#bibliothek'>Bibliothek</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/sus_ohne_kurse'>SuS ohne Kurse</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_sus_logo_didact'>LDC: Alle SuS</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_lul_logo_didact'>LDC: Alle Lehrkräfte</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_sus_untis'>Untis: Alle SuS</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_kurse_untis'>Untis: Alle Kurse</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_users_informatik_biber.xlsx'>Informatik-Biber: Excel (Anmeldungen)</a>"
-            io.puts "<a class='btn btn-secondary mb-1' href='/api/all_users_informatik_biber'>Informatik-Biber: Zugangsdaten (Text)</a>"
+            # sections of this page, lists, and the exports per external tool
+            link_rows = [
+                ['Springen zu', [
+                    ['#teachers', 'Lehrkräfte'], ['#sus', 'Schüler:innen'], ['#external_users', 'Externe'],
+                    ['#website', 'Website'], ['#tablets', 'Tablets'], ['#monitor', 'Monitor'], ['#bibliothek', 'Bibliothek'],
+                ], nil],
+                ['Seiten', [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse']], nil],
+                ['LogoDIDACT', [['/api/all_sus_logo_didact', 'Alle SuS'], ['/api/all_lul_logo_didact', 'Alle Lehrkräfte']], 'fa-download'],
+                ['Untis', [['/api/all_sus_untis', 'Alle SuS'], ['/api/all_kurse_untis', 'Alle Kurse']], 'fa-download'],
+                ['Informatik-Biber', [['/api/all_users_informatik_biber.xlsx', 'Anmeldungen (Excel)'], ['/api/all_users_informatik_biber', 'Zugangsdaten (Text)']], 'fa-download'],
+            ]
+            io.puts "<style>"
+            io.puts ".admin-links { margin: 1em 0; }"
+            io.puts ".admin-link-row { display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 0.4em; }"
+            io.puts ".admin-link-label { width: 9em; flex-shrink: 0; font-weight: bold; }"
+            io.puts ".admin-link-row .btn { margin: 0 0.4em 0.3em 0; }"
+            io.puts "@media (max-width: 575px) { .admin-link-label { width: 100%; margin-bottom: 0.2em; } }"
+            io.puts "</style>"
+            io.puts "<div class='admin-links'>"
+            link_rows.each do |label, links, icon|
+                io.puts "<div class='admin-link-row'><span class='admin-link-label'>#{label}</span>"
+                links.each do |href, text, link_icon|
+                    icon_html = (link_icon || icon) ? "<i class='fa #{link_icon || icon}'></i>&nbsp;&nbsp;" : ''
+                    io.puts "<a class='btn btn-sm btn-outline-secondary' href='#{href}'>#{icon_html}#{text}</a>"
+                end
+                io.puts "</div>"
+            end
+            io.puts "</div>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
@@ -154,11 +168,13 @@ class Main < Sinatra::Base
                 end
                 io.puts "<td><a class='btn btn-xs btn-secondary' style='padding-top: 0.4em;' href='/timetable/#{user[:id]}'><i class='fa fa-calendar'></i>&nbsp;&nbsp;Stundenplan</a></td>"
                 io.puts "<td><button class='btn btn-warning btn-xs btn-impersonate' data-impersonate-email='#{user[:email]}'><i class='fa fa-id-badge'></i>&nbsp;&nbsp;Anmelden</button></td>"
-                io.puts "<td>"
-                io.puts twofa_status[email] || 'Nicht eingerichtet'
+                # status and button on one line, the buttons aligned on the right
+                io.puts "<td class='teacher-2fa' style='white-space: nowrap;'><div class='d-flex align-items-center'>"
+                io.puts "<span class='teacher-2fa-status' style='margin-right: 1em;'>#{twofa_status[email] || 'Nicht eingerichtet'}</span>"
                 unless email == @session_user[:email]
-                    io.puts "<br /><button type='button' class='btn btn-xs btn-outline-danger mt-1 btn-reset-teacher-2fa' data-email='#{htmlentities(email)}'>2FA zurücksetzen…</button>"
+                    io.puts "<button type='button' class='btn btn-xs btn-outline-secondary ml-auto btn-reset-teacher-2fa' data-email='#{htmlentities(email)}'>2FA zurücksetzen…</button>"
                 end
+                io.puts "</div>"
                 io.puts "</td>"
                 if all_sessions.include?(email)
                     io.puts "<td><button class='btn-sessions btn btn-xs btn-secondary' data-sessions-id='#{@@user_info[email][:id]}'>#{all_sessions[email].size} Session#{all_sessions[email].size == 1 ? '' : 's'}</button></td>"
@@ -509,10 +525,11 @@ class Main < Sinatra::Base
         require_admin!
         StringIO.open do |io|
             @@klassen_order.each do |klasse|
-                @@schueler_for_klasse[klasse].each do |email|
+                (@@schueler_for_klasse[klasse] || []).each do |email|
                     user = @@user_info[email]
-                    next if user[:geburtstag].nil?
-                    geburtstag = "#{user[:geburtstag][8, 2]}.#{user[:geburtstag][5, 2]}.#{user[:geburtstag][0, 4]}"
+                    # the student list of new 5th graders may lack birthdays:
+                    # export them anyway, with an empty field
+                    geburtstag = user[:geburtstag] ? "#{user[:geburtstag][8, 2]}.#{user[:geburtstag][5, 2]}.#{user[:geburtstag][0, 4]}" : ''
                     io.puts "#{user[:last_name]};#{user[:first_name]};#{user[:klasse]};#{user[:geschlecht]};#{geburtstag}"
                 end
             end

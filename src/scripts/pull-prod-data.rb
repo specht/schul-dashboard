@@ -192,9 +192,31 @@ end
 
 # --- plan ------------------------------------------------------------------
 
+# Space: what the local disk holds afterwards minus what it holds now, in
+# disk blocks (gen has hundreds of thousands of small files). Files that are
+# only replaced or deleted don't need extra space, so the rsync transfer size
+# would overestimate a lot. The directories are synced one after another,
+# the database comes last – the peak counts.
+def local_usage(path)
+    File.exist?(path) ? IO.popen(['du', '-s', '--block-size=1', path], err: File::NULL, &:read).to_i : 0
+end
+
+def file_device(path)
+    path = File.dirname(path) until File.exist?(path)
+    File.stat(path).dev
+end
+
 needed = 0
+growth = 0
 if do_files
     step 'Prüfe die Dateien (Probelauf von rsync)'
+    remote_usage = {}
+    du_command = "cd #{Shellwords.escape(prod['data_path'])} && for d in #{DATA_DIRS.join(' ')}; do " \
+                 "[ -d \"$d\" ] && nice -n 19 ionice -c3 du -s --block-size=1 \"$d\"; done; true"
+    ssh_capture(prod_host, du_command).each_line do |line|
+        size, dir = line.split("\t", 2)
+        remote_usage[dir.to_s.strip] = size.to_i
+    end
     DATA_DIRS.each do |dir|
         remote_dir = File.join(prod['data_path'], dir)
         local_dir = File.join(local_data_path, dir)
@@ -203,17 +225,33 @@ if do_files
         transfer = stats[/Total transferred file size: ([\d,.]+)/, 1].to_s.delete(',.').to_i
         deleted = stats[/Number of deleted files: ([\d,.]+)/, 1].to_s.delete(',.').to_i
         count = stats[/Number of regular files transferred: ([\d,.]+)/, 1].to_s.delete(',.').to_i
-        needed += transfer
-        STDERR.puts format('%-6s %8d Dateien zu übertragen (%s), %d lokal zu löschen', dir, count, human(transfer), deleted)
+        local = local_usage(local_dir)
+        # without a size from the server: assume every transferred byte is new
+        delta = remote_usage.key?(dir) ? remote_usage[dir] - local : transfer
+        growth += delta
+        needed = [needed, growth].max
+        STDERR.puts format('%-6s %8d Dateien zu übertragen (%s), %d lokal zu löschen; Server %s, lokal %s, %s %s',
+                           dir, count, human(transfer), deleted, human(remote_usage[dir] || 0), human(local),
+                           delta >= 0 ? 'Zuwachs' : 'frei werden', human(delta.abs))
     end
 end
 if do_db
-    # the new database is about as large as the old one, which is kept
-    db_size = File.directory?(local_neo4j) ? IO.popen(['du', '-sb', local_neo4j], &:read).to_i : 0
-    needed += [db_size, 1024 ** 3].max
+    # neo4j.previous is deleted, neo4j becomes neo4j.previous, the new
+    # database is about as large as the current one
+    db_size = [local_usage(local_neo4j), 1024 ** 3].max
+    db_growth = db_size - local_usage(local_neo4j_previous)
+    needed = [needed, growth + db_growth].max
+    # the dump is downloaded into a temporary directory (gzip, then unpacked)
+    if file_device(Dir.tmpdir) == file_device(local_data_path)
+        needed = [needed, growth + db_size].max
+    else
+        tmp_free = IO.popen(['df', '-Pk', Dir.tmpdir], &:read).lines.last.split[3].to_i * 1024
+        STDERR.puts "Temporärer Dump in #{Dir.tmpdir}: frei #{human(tmp_free)}"
+        fail!("Nicht genug freier Speicherplatz in #{Dir.tmpdir} für den Dump.") if db_size > tmp_free
+    end
 end
 free = IO.popen(['df', '-Pk', local_data_path], &:read).lines.last.split[3].to_i * 1024
-STDERR.puts "\nPlatz: benötigt etwa #{human(needed)} + #{human(FREE_SPACE_RESERVE)} Reserve, frei #{human(free)}"
+STDERR.puts "\nPlatz: benötigt etwa #{human([needed, 0].max)} + #{human(FREE_SPACE_RESERVE)} Reserve, frei #{human(free)}"
 fail!('Nicht genug freier Speicherplatz.') if needed + FREE_SPACE_RESERVE > free
 
 step 'Ablauf'

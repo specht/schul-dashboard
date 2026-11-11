@@ -42,6 +42,70 @@ git pull
   die sich automatisch neu lädt. Bei `./config.rb down` ist auch nginx weg –
   dann antwortet der vorgelagerte Proxy mit seiner eigenen Fehlerseite.
 
+## Wartungsseite
+
+Für geplante, längere Unterbrechungen (z. B. Datenbank-Umzug) gibt es statt
+der Neustart-Seite die Wartungsseite `errors/wartung.html`. nginx zeigt sie,
+solange die Datei `wartung.json` im `gen`-Verzeichnis liegt (im Container
+`/gen/wartung.json`) und `ruby` nicht erreichbar ist:
+
+```
+echo '{"bis": "19:30", "text": "Wir ziehen die Datenbank um."}' > <DATA_PATH>/gen/wartung.json
+# … Wartung …
+rm <DATA_PATH>/gen/wartung.json
+```
+
+- Beide Angaben sind optional. `bis` (Uhrzeit, heute) erscheint als
+  „Voraussichtlich wieder da“; ist die Zeit um mehr als 5 Minuten
+  überschritten, sagt die Seite, dass es länger dauert. `text` erscheint als
+  zusätzlicher Satz.
+- Die Datei ist öffentlich abrufbar (`/gen/wartung.json`) – nur Text
+  hineinschreiben, den alle sehen dürfen.
+- Ein Neustart von nginx ist dafür nicht nötig. Die Datei nach der Wartung
+  wieder löschen, sonst erscheint bei jedem Neustart die Wartungsseite.
+- Die Seite prüft wie die Neustart-Seite regelmäßig `/api/ping` und lädt neu,
+  sobald das Dashboard wieder antwortet.
+
+## Passwörter zurücksetzen
+
+Die Seite `/passwoerter` (Profilmenü „Passwörter und Nextcloud…“; die alten
+Adressen `/login_nc` und `/mail_passwort` leiten dorthin weiter) hat zwei
+Teile:
+
+- **Nextcloud:** Zugangsdaten anzeigen und das eigene Nextcloud-Passwort
+  sofort auf das Initialpasswort zurücksetzen – ohne Rückfrage, für alle mit
+  Nextcloud-Zugang.
+- **E-Mail-Postfach:** Zurücksetzen auf das ursprüngliche Passwort aus dem
+  E-Mail-Brief. Jede Anfrage landet in der Liste „Offene Anfragen“ der
+  Administration; ohne ihre Entscheidung wird nichts zurückgesetzt:
+  - Schüler:innen beantragen es für das eigene Postfach; nach dem
+    Zurücksetzen bekommen die Eltern (`eltern.…`) eine kurze Nachricht.
+    Haben die Eltern ihr Passwort vergessen, verweist die Seite sie an die
+    Klassenleitung oder per E-Mail an die Administration.
+  - Klassenleitungen beantragen es für das Postfach oder das Eltern-Postfach
+    der Schüler:innen ihrer Klassen. E-Mails mit solchen Bitten leiten sie an
+    die Administration weiter.
+  - Anfragen per E-Mail trägt die Administration selbst ein („Neue Anfrage“:
+    betroffene Postfächer, Antwortadresse, Notiz).
+  - Jeder offene Fall zeigt den nächsten Schritt: 1. prüfen (Zurücksetzen
+    oder Ablehnen), 2. zurücksetzen (Bot oder von Hand im Kundenbereich des
+    Mail-Anbieters, dann „Erledigt“ oder „Hat nicht geklappt“), 3. antworten
+    – bei Anfragen per E-Mail an die Antwortadresse, bei Anfragen einer
+    Klassenleitung an sie. „Antwort senden…“ schickt einen änderbaren Text
+    mit dem E-Mail-Brief als PDF im Anhang; Antworten gehen an die
+    Administration, die eine Kopie bekommt. Erledigte Fälle stehen unter
+    „Abgeschlossen“.
+
+Pro Postfach ist immer nur ein offener Fall möglich und nur wenige Anfragen
+pro Tag. Das Ändern beim Mail-Anbieter übernimmt ein Bot, der nur
+freigegebene Fälle über `GET /api/mail_password_reset_bot/pending` abholt und
+das Ergebnis an `POST /api/mail_password_reset_bot/result` meldet
+(`Authorization: Bearer <MAIL_PASSWORD_RESET_BOT_TOKEN>` aus
+`credentials.rb`; ohne Token ist die Schnittstelle aus). Solange der Bot
+nicht läuft, setzt die Administration freigegebene Fälle von Hand zurück und
+markiert sie auf der Seite als erledigt. Schlägt der Bot fehl, bekommt die
+Administration eine Mail.
+
 ## Neue Eingangsdaten
 
 Neue Stundenpläne, Personenlisten usw. in `INPUT_DATA_PATH` ablegen (Format:

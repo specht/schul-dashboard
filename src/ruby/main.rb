@@ -136,6 +136,7 @@ require './include/lab9.rb'
 require './include/lehrbuchverein.rb'
 require './include/lesson.rb'
 require './include/login.rb'
+require './include/mail_password_reset.rb'
 require './include/message.rb'
 require './include/mittagessen.rb'
 require './include/monitor.rb'
@@ -2387,8 +2388,15 @@ class Main < Sinatra::Base
     post '/api/reset_nc_password' do
         require_user!
         ocs = DashboardNextcloud.admin
-        ocs.user.update(@session_user[:nc_login], 'password', @session_user[:initial_nc_password])
-        respond(:ok => 'yay')
+        result = ocs.user.update(@session_user[:nc_login], 'password', @session_user[:initial_nc_password])
+        # the client raises nothing when Nextcloud refuses – check the answer
+        meta = result.respond_to?(:meta) ? (result.meta || {}) : {}
+        if meta['status'] == 'ok'
+            respond(:ok => 'yay')
+        else
+            debug "Nextcloud password reset for #{@session_user[:nc_login]} refused: #{meta['statuscode']} #{meta['message']}"
+            respond(:error => 'nextcloud_refused')
+        end
     end
 
     post '/api/parse_markdown' do
@@ -2648,8 +2656,8 @@ class Main < Sinatra::Base
                         end
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
-                    if user_with_role_logged_in?(:can_use_nextcloud)
-                        io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
+                    if may_use_password_page?
+                        io.puts "<a class='dropdown-item nav-icon' href='/passwoerter'><div class='icon'><i class='fa fa-key'></i></div><span class='label'>Passwörter und Nextcloud…</span></a>"
                     end
                     if @session_user[:dark]
                         io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='fa fa-sun-o'></i></div><span class='label'>Hell</span></button>"
@@ -4076,10 +4084,6 @@ class Main < Sinatra::Base
                 end
 
                 stored_poll_runs = temp_order.map { |x| temp[x] }
-            end
-        elsif path == 'login_nc'
-            unless @session_user
-                redirect "#{WEB_ROOT}/", 302
             end
         end
 

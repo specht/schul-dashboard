@@ -106,11 +106,22 @@ end
 # (class 11) take part in Lab 8/9 (see above). Not in 5a: other tests rely on
 # its size (sitzplan.spec.ts: eight seats).
 GROUP_TEST_FIRST_NAMES = %w(Anna Ben Cem Dana Emil Fiona)
-{ 'Gruppentest' => '11', 'Pruefungstest' => '12', 'Labtest' => '11' }.each_pair do |last_name, klasse|
+# The Postfachtest students are for the mailbox password reset
+# (test/e2e/tests/mail-password-reset.spec.ts).
+{ 'Gruppentest' => '11', 'Pruefungstest' => '12', 'Labtest' => '11', 'Postfachtest' => '11' }.each_pair do |last_name, klasse|
     append_lines(File.join(target, 'schueler', 'ASCII.TXT'), GROUP_TEST_FIRST_NAMES.map.with_index do |first_name, i|
         "#{last_name}\t#{first_name}\t#{klasse}\t#{i.even? ? 'w' : 'm'}\t01.0#{i + 1}.2010"
     end)
 end
+
+# A student without a birthday in the student list (the student list of new
+# 5th graders sometimes has none yet), for the LogoDIDACT export
+# (test/e2e/tests/admin-exports.spec.ts).
+append_lines(File.join(target, 'schueler', 'ASCII.TXT'), ["Ohnegeburtstag\tGina\t11\tw\t"])
+
+# A Klassenleitung that is not an admin (the admin account leads 5a):
+# Torsta Torstensonin leads class 11.
+append_lines(File.join(target, 'klassenleiter', 'klassenleiter.txt'), ['11,Ta'])
 
 # Projekttage and Pk5 are planned in phases; the real configuration (input
 # data) defines them with PhasedEvent. In the test stack there is a single

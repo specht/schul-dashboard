@@ -522,7 +522,8 @@ class Main < Sinatra::Base
     # ---- interface for the bot (Authorization: Bearer <token>) ----
 
     def require_mail_password_reset_bot!
-        token = MAIL_PASSWORD_RESET_BOT_TOKEN
+        # off unless credentials.rb defines a long enough token
+        token = defined?(MAIL_PASSWORD_RESET_BOT_TOKEN) ? MAIL_PASSWORD_RESET_BOT_TOKEN : nil
         halt 404 unless token.is_a?(String) && token.size >= 32
         given = request.env['HTTP_AUTHORIZATION'].to_s.sub(/\ABearer /, '')
         halt 401 unless Rack::Utils.secure_compare(given, token)

@@ -356,6 +356,27 @@ if DEVELOPMENT && ARGV == ['up']
     Process.spawn('bash', './tailwind.sh')
 end
 
+# Neo4j 5 migration (review/2026-11/neo4j-5-migration.md): while the old 4.4
+# store has been moved aside to neo4j-4.4 and the new one has not been marked
+# as loaded, refuse to start anything – the dashboard would come up on an
+# empty database and take writes the real data never sees. The steps of the
+# window that start Neo4j and load the dump set NEO4J_MIGRATION=1. Without a
+# neo4j-4.4 directory this changes nothing.
+NEO4J_LEGACY_DATA_PATH = File::join(DATA_PATH, 'neo4j-4.4')
+NEO4J_LOADED_MARKER = File::join(NEO4J_DATA_PATH, '.dashboard-data-loaded')
+if %w(up start restart run create).include?(ARGV.first) &&
+   Dir.exist?(File::join(NEO4J_LEGACY_DATA_PATH, 'databases')) &&
+   !File.exist?(NEO4J_LOADED_MARKER) &&
+   ENV['NEO4J_MIGRATION'] != '1'
+    STDERR.puts <<~EOS
+        Refusing to start: #{NEO4J_DATA_PATH} has not been marked as loaded
+        (#{File.basename(NEO4J_LOADED_MARKER)}), but #{NEO4J_LEGACY_DATA_PATH}
+        still holds the Neo4j 4.4 data. Follow review/2026-11/neo4j-5-migration.md.
+        Set NEO4J_MIGRATION=1 to override, e.g. to start only neo4j for loading.
+    EOS
+    exit 1
+end
+
 `docker compose 2> /dev/null`
 DOCKER_COMPOSE = ($? == 0) ? 'docker compose' : 'docker-compose'
 compose_file_arg = COMPOSE_FILE_PATH == 'docker-compose.yaml' ? '' : " -f #{COMPOSE_FILE_PATH}"

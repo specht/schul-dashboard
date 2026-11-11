@@ -84,7 +84,9 @@ The changes for the switch are on branch `neo4j-5-migration`:
 1. Deploy 550bb557 (`IS NOT NULL`). It works on both versions.
 2. neo4j_bolt 0.5.1 (`Gemfile`, image build) – decided: yes (2026-11-12).
    Not needed for the dashboard data (no temporal values), but both projects
-   then use the same version, and its dump runs in one transaction. A normal
+   then use the same version. 0.5.1 only changes dump and load: dates, times
+   and points keep their type instead of becoming text; older dumps load as
+   before (the dump already runs in one transaction in 0.5.0). A normal
    deploy on 4.4 before the window, with the full suite.
 
 ## Phase B – rehearsal on a development machine with production data
@@ -148,15 +150,19 @@ end (doc/Betrieb.md, "Wartungsseite").
 5. **Switch:**
    - merge `neo4j-5-migration` into master and pull on the server (check
      the commit hash)
-   - `./config.rb build neo4j`, then `./config.rb up -d neo4j`
+   - `./config.rb build neo4j`, then `NEO4J_MIGRATION=1 ./config.rb up -d neo4j`
+     (the start guard in `config.rb` refuses everything else from now on:
+     `neo4j-4.4` exists and the new store has no marker yet)
    - wait until `cypher-shell 'RETURN 1'` answers in the container
 6. **Load and verify:**
    - load the dump with a one-off container
-     (`./config.rb run --rm --no-deps -T --entrypoint 'neo4j_bolt --host
-     neo4j:7687 load /dev/stdin' ruby`, dump on stdin)
+     (`NEO4J_MIGRATION=1 ./config.rb run --rm --no-deps -T --entrypoint
+     'neo4j_bolt --host neo4j:7687 load /dev/stdin' ruby`, dump on stdin)
    - counts per label/type must equal the dump
    - content comparison (B3)
-   - only then go on
+   - only then mark the store as loaded:
+     `date -Is > DATA_PATH/neo4j/.dashboard-data-loaded` – from now on
+     `config.rb` starts everything again
 7. **Start everything:**
    - `./config.rb up -d`
    - then `./config.rb up -d --no-deps --force-recreate nginx`: nginx

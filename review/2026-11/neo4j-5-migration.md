@@ -121,6 +121,40 @@ The changes for the switch are on branch `neo4j-5-migration`:
    few minutes. Planned downtime: 30 minutes including buffer.
 6. **Rehearse the rollback** (C8), including "dump 5.26 → load into 4.4".
 
+## Rehearsal on the maintainer's dev instance (2026-11-12)
+
+Production data (77,746 nodes, 409,518 relationships), the runbook steps C2
+to C8 one by one, neo4j_bolt 0.5.1:
+
+| Step | Time |
+|---|---|
+| C2 stop the app | 11 s |
+| C3 dump | 22 s |
+| C4 stop Neo4j, cold backup, move aside | 14 s |
+| C5 checkout, Neo4j 5.26 answering | 13 s |
+| C6 load / dump again / compare | 27 s / 24 s / 19 s |
+| C7 start everything until ping | 35 s |
+| C8 rollback until ping | 50 s |
+| B6 5.26 dump into a fresh 4.4, compared | 86 s |
+
+- Content comparison 4.4 → 5.26: identical (`src/scripts/compare-dumps.rb`),
+  schema included; the same after the rollback and for 5.26 → 4.4.
+- The start guard refused `up -d` before the marker, allowed
+  `NEO4J_MIGRATION=1 up -d neo4j` and everything after the marker.
+- Clicked through as several roles: no Cypher or Ruby errors in the logs.
+- **`./config.rb run … ruby` only works while the `ruby` service is
+  stopped**: `ruby` has a fixed network address (production too), the
+  one-off container would take the same one ("Address already in use"). In
+  C3 and C6 it is stopped; otherwise use `docker exec <ruby container>
+  neo4j_bolt …`.
+
+Server checks (read-only, 2026-11-12): Docker 26.1.4, Compose 2.27.1, 111 GB
+free, store 810 MB. The data directories belong to UID 33 (`www-data`, the
+user of the services): backup, moving, the new empty `neo4j` (owner 33),
+the marker and `wartung.json` need `sudo`. Cron: the minutely and hourly
+jobs only `exec` into `ruby` (they fail while it is stopped), the 19:30
+`restart mail_bot` would be refused by the start guard.
+
 ## Phase C – production window (only with the maintainer's go-ahead)
 
 Choose the window: evening or holidays, not around 19:30 (cron), announced

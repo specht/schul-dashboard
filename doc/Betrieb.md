@@ -76,19 +76,25 @@ Teile:
   sofort auf das Initialpasswort zurücksetzen – ohne Rückfrage, für alle mit
   Nextcloud-Zugang.
 - **E-Mail-Postfach:** Zurücksetzen auf das ursprüngliche Passwort aus dem
-  E-Mail-Brief. Jede Anfrage ist ein Fall, den die Administration freigibt
-  oder ablehnt:
+  E-Mail-Brief. Jede Anfrage landet in der Liste „Offene Anfragen“ der
+  Administration; ohne ihre Entscheidung wird nichts zurückgesetzt:
   - Schüler:innen beantragen es für das eigene Postfach; nach dem
     Zurücksetzen bekommen die Eltern (`eltern.…`) eine kurze Nachricht.
-  - Klassenleitungen beantragen es für die Schüler:innen ihrer Klassen.
-  - Die Administration bekommt für jede Anfrage eine Mail. Anfragen, die per
-    E-Mail kommen (auch für Eltern-Postfächer), trägt sie selbst ein:
-    betroffene Postfächer, Antwortadresse, Notiz – damit sind sie
-    freigegeben.
-  - Ist ein per E-Mail gekommener Fall erledigt, schickt „Antwort senden…“
-    eine Mail an die Antwortadresse: Text vorausgefüllt und änderbar, der
-    E-Mail-Brief als PDF im Anhang, Antworten gehen an die Administration,
-    die eine Kopie bekommt.
+    Haben die Eltern ihr Passwort vergessen, verweist die Seite sie an die
+    Klassenleitung oder per E-Mail an die Administration.
+  - Klassenleitungen beantragen es für das Postfach oder das Eltern-Postfach
+    der Schüler:innen ihrer Klassen. E-Mails mit solchen Bitten leiten sie an
+    die Administration weiter.
+  - Anfragen per E-Mail trägt die Administration selbst ein („Neue Anfrage“:
+    betroffene Postfächer, Antwortadresse, Notiz).
+  - Jeder offene Fall zeigt den nächsten Schritt: 1. prüfen (Zurücksetzen
+    oder Ablehnen), 2. zurücksetzen (Bot oder von Hand im Kundenbereich des
+    Mail-Anbieters, dann „Erledigt“ oder „Hat nicht geklappt“), 3. antworten
+    – bei Anfragen per E-Mail an die Antwortadresse, bei Anfragen einer
+    Klassenleitung an sie. „Antwort senden…“ schickt einen änderbaren Text
+    mit dem E-Mail-Brief als PDF im Anhang; Antworten gehen an die
+    Administration, die eine Kopie bekommt. Erledigte Fälle stehen unter
+    „Abgeschlossen“.
 
 Pro Postfach ist immer nur ein offener Fall möglich und nur wenige Anfragen
 pro Tag. Das Ändern beim Mail-Anbieter übernimmt ein Bot, der nur

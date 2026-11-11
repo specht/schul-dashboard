@@ -49,9 +49,10 @@ async function latestCase(api: APIRequestContext, mailbox: string) {
   return (await cases(api)).find((c) => c.mailboxes.some((m) => m.mailbox === mailbox && m.latest));
 }
 
-async function decide(admin: APIRequestContext, id: string, decision: 'approve' | 'reject') {
-  const response = await admin.post('/api/decide_mail_password_case', { data: { id, decision } });
-  expect((await response.json()).result).toBe('ok');
+// the admin's steps on a case (update_mail_password_case)
+async function step(admin: APIRequestContext, id: string, action: string) {
+  const response = await admin.post('/api/update_mail_password_case', { data: { id, action } });
+  expect((await response.json()).result, action).toBe('ok');
 }
 
 // the bot: fetch approved cases, report the result for the case of one mailbox
@@ -121,11 +122,14 @@ test('Schüler:in beantragt das Zurücksetzen, die Administration gibt frei, die
   const adminPage = await adminContext.newPage();
   await login(adminPage, ACCOUNTS.admin);
   await adminPage.goto(PAGE);
-  const caseRow = adminPage.locator('#mail_cases tr.mail-case').filter({ hasText: student.email }).first();
+  const caseRow = adminPage.locator('#mail_cases_open tr.mail-case').filter({ hasText: student.email }).first();
   await expect(caseRow).toHaveAttribute('data-state', 'open');
-  await expect(caseRow).toContainText('Dashboard');
-  await caseRow.locator('.bu_mail_case_approve').click();
+  await expect(caseRow).toContainText('Klick im Dashboard');
+  await expect(caseRow).toContainText('1. Prüfen');
+  await caseRow.locator('.bu_mail_case_action[data-action="approve"]').click();
+  await dashboardDialog(adminPage).getByRole('button', { name: 'Zurücksetzen' }).click();
   await expect(caseRow).toHaveAttribute('data-state', 'approved');
+  await expect(caseRow).toContainText('2. ');
   await adminContext.close();
 
   const password = await botFinishes(baseURL, student.email, true);
@@ -148,14 +152,14 @@ test('Klassenleitung beantragt; Ablehnen, Fehler des Bots landen bei der Adminis
   // a second request while the first one is open
   expect((await (await requestReset(kl, student.email)).json()).result).toBe('pending');
   // rejected: nothing changes
-  await decide(admin, (await latestCase(admin, student.email))!.id, 'reject');
+  await step(admin, (await latestCase(admin, student.email))!.id, 'reject');
   let latest = (await latestCase(kl, student.email))!;
   expect(latest.state).toBe('rejected');
   expect((await botCases(baseURL, student.email)).open).toHaveLength(0);
 
   const failuresBefore = (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length;
   expect((await (await requestReset(kl, student.email)).json()).result).toBe('requested');
-  await decide(admin, (await latestCase(admin, student.email))!.id, 'approve');
+  await step(admin, (await latestCase(admin, student.email))!.id, 'approve');
   await botFinishes(baseURL, student.email, false, 'Testfehler');
   await expect.poll(async () => (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length).toBe(failuresBefore + 1);
   latest = (await latestCase(kl, student.email))!;
@@ -164,8 +168,8 @@ test('Klassenleitung beantragt; Ablehnen, Fehler des Bots landen bei der Adminis
   // the bot's message is for the admin only
   expect(latest.message).toBeUndefined();
 
-  expect((await (await requestReset(kl, student.email)).json()).result).toBe('requested');
-  await decide(admin, (await latestCase(admin, student.email))!.id, 'approve');
+  // the admin tries again
+  await step(admin, latest.id, 'retry');
   const password = await botFinishes(baseURL, student.email, true);
   latest = (await latestCase(kl, student.email))!;
   expect(latest.state).toBe('done');
@@ -173,6 +177,47 @@ test('Klassenleitung beantragt; Ablehnen, Fehler des Bots landen bei der Adminis
 
   // requested by the Klassenleitung: no notice to the parents
   expect(await mails(`eltern.${student.email}`, PARENT_NOTICE)).toHaveLength(0);
+});
+
+test('Klassenleitung: Schüler- und Eltern-Postfach, die Antwort mit dem E-Mail-Brief geht an sie', async ({ page, baseURL }, testInfo) => {
+  const [, b] = students(testInfo);
+  const parents = `eltern.${b.email}`;
+  await login(page, KLASSENLEITUNG);
+  await page.goto(PAGE);
+  await expect(page.locator('.mail-reset-forward-hint')).toContainText('leite sie bitte an');
+  const studentRow = page.locator(`.mail-reset-student[data-student="${b.email}"]`);
+  // two buttons: the student's and the parents' mailbox
+  await expect(studentRow.locator('.bu_request_mail_reset')).toHaveCount(2);
+  const parentsBox = studentRow.locator(`.mail-reset-row[data-mailbox="${parents}"]`);
+  await parentsBox.locator('.bu_request_mail_reset').scrollIntoViewIfNeeded();
+  await expect(parentsBox.locator('.bu_request_mail_reset')).toBeInViewport({ ratio: 1 });
+  await parentsBox.locator('.bu_request_mail_reset').click();
+  await expect(dashboardDialog(page)).toContainText(parents);
+  await dashboardDialog(page).getByRole('button', { name: 'Beantragen' }).click();
+  await expect(parentsBox.locator('.mail-reset-state-label')).toHaveAttribute('data-state', 'open');
+
+  const admin = await apiAs(ACCOUNTS.admin, baseURL);
+  const id = (await latestCase(admin, parents))!.id;
+  await step(admin, id, 'approve');
+  const password = await botFinishes(baseURL, parents, true);
+  await page.reload();
+  await expect(parentsBox.locator('.mail-reset-state-label')).toHaveAttribute('data-state', 'done');
+  await parentsBox.locator('.bu_show_mail_password').click();
+  await expect(parentsBox.locator('.mail-reset-password')).toHaveText(password);
+
+  // the admin answers the Klassenleitung with the letter to pass on
+  const draft = await (await admin.post('/api/mail_password_case_reply_draft', { data: { id } })).json();
+  expect(draft.to).toBe(KLASSENLEITUNG);
+  expect(draft.body).toContain(`für das Eltern-Postfach von ${b.name} zurückgesetzt`);
+  expect(draft.body).toContain('bitte gib ihn weiter');
+  const subject = `${REPLY_SUBJECT} (${testInfo.project.name})`;
+  const sent = await admin.post('/api/send_mail_password_case_reply', { data: { id, to: draft.to, subject, body: draft.body } });
+  expect((await sent.json()).result).toBe('sent');
+  await expect.poll(async () => (await mails(KLASSENLEITUNG, subject)).length).toBe(1);
+  const [summary] = await mails(KLASSENLEITUNG, subject);
+  const message = await (await fetch(`${MAILPIT_URL}/api/v1/message/${summary.ID}`)).json();
+  expect(message.Attachments).toHaveLength(1);
+  expect(message.Attachments[0].ContentType).toBe('application/pdf');
 });
 
 test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Mail-Brief antworten', async ({ page, baseURL }, testInfo) => {
@@ -192,20 +237,27 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await page.locator('#ti_mail_case_reply_to').fill(family);
   await page.locator('#ti_mail_case_note').fill('Mail vom Vater');
   await page.locator('#bu_create_mail_case').click();
-  await dashboardDialog(page).getByRole('button', { name: 'Freigeben' }).click();
 
-  const row = page.locator('#mail_cases tr.mail-case').filter({ hasText: family }).first();
-  await expect(row).toHaveAttribute('data-state', 'approved');
+  // in the list, waiting for the decision
+  const row = page.locator('#mail_cases_open tr.mail-case').filter({ hasText: family }).first();
+  await expect(row).toHaveAttribute('data-state', 'open');
   await expect(row).toContainText('Eltern von');
   await expect(row).toContainText('Mail vom Vater');
+  expect((await botCases(baseURL, parents)).open).toHaveLength(0);
+
+  await row.locator('.bu_mail_case_action[data-action="approve"]').click();
+  await dashboardDialog(page).getByRole('button', { name: 'Zurücksetzen' }).click();
+  await expect(row).toHaveAttribute('data-state', 'approved');
   // what the mailboxes get (passed on with the E-Mail-Brief)
   const { open } = await botCases(baseURL, parents);
   expect(open).toHaveLength(1);
   expect(open[0].mailboxes.map((m) => m.mailbox).sort()).toEqual([a.email, parents].sort());
   const parentsPassword = open[0].mailboxes.find((m) => m.mailbox === parents)!.password;
 
-  await row.locator('.bu_mail_case_done').click();
+  // reset by hand, then answer
+  await row.locator('.bu_mail_case_action[data-action="done"]').click();
   await expect(row).toHaveAttribute('data-state', 'done');
+  await expect(row).toContainText('3. Antworten');
   await row.locator(`.mail-case-mailbox-entry[data-mailbox="${parents}"] .bu_show_mail_password`).click();
   await expect(row.locator(`.mail-case-mailbox-entry[data-mailbox="${parents}"] .mail-reset-password`)).toHaveText(parentsPassword);
 
@@ -220,7 +272,11 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await modal.locator('#ta_reply_body').fill(`Sehr geehrter Herr Postfachtest,\n\nanbei die Zugangsdaten.\n\nViele Grüße`);
   await modal.locator('#bu_send_mail_case_reply').click();
   await expect(modal).toBeHidden();
-  await expect(row.locator('.mail-case-replied')).toContainText(family);
+  // answered: off the open list, into the history
+  await expect(page.locator('#mail_cases_open tr.mail-case').filter({ hasText: family })).toHaveCount(0);
+  await page.locator('#mail_cases_closed').locator('xpath=ancestor::details').locator('summary').click();
+  const closedRow = page.locator('#mail_cases_closed tr.mail-case').filter({ hasText: family }).first();
+  await expect(closedRow.locator('.mail-case-replied')).toContainText(family);
 
   await expect.poll(async () => (await mails(family, REPLY_SUBJECT)).length).toBe(1);
   const [summary] = await mails(family, REPLY_SUBJECT);
@@ -246,9 +302,9 @@ test('Wer darf was: fremde Postfächer, Eltern-Postfächer, Freigabe, Grenzen, B
   // students: only their own mailbox, not their parents' one
   expect((await requestReset(studentApi, a.email)).ok()).toBe(false);
   expect((await requestReset(studentApi, `eltern.${c.email}`)).ok()).toBe(false);
-  // Klassenleitung: students of their class only, no parents' mailboxes
+  // Klassenleitung: students and parents of their class only
   expect((await requestReset(kl, ACCOUNTS.schueler)).ok()).toBe(false);
-  expect((await requestReset(kl, `eltern.${c.email}`)).ok()).toBe(false);
+  expect((await requestReset(kl, `eltern.${ACCOUNTS.schueler}`)).ok()).toBe(false);
   // other teachers: nothing
   expect((await requestReset(teacher, c.email)).ok()).toBe(false);
   // nobody sees requests they may not make
@@ -256,7 +312,7 @@ test('Wer darf was: fremde Postfächer, Eltern-Postfächer, Freigabe, Grenzen, B
   // deciding, entering mail requests and answering: only the admin
   for (const api of [studentApi, kl]) {
     expect((await api.post('/api/create_mail_password_case', { data: { mailboxes: [c.email] } })).ok()).toBe(false);
-    expect((await api.post('/api/decide_mail_password_case', { data: { id: 'x', decision: 'approve' } })).ok()).toBe(false);
+    expect((await api.post('/api/update_mail_password_case', { data: { id: 'x', action: 'approve' } })).ok()).toBe(false);
     expect((await api.post('/api/send_mail_password_case_reply', { data: { id: 'x', to: 'a@example.org', subject: 's', body: 'b' } })).ok()).toBe(false);
   }
 
@@ -267,10 +323,33 @@ test('Wer darf was: fremde Postfächer, Eltern-Postfächer, Freigabe, Grenzen, B
     results.push(result);
     if (result === 'limit') break;
     expect(result).toBe('requested');
-    await decide(admin, (await latestCase(admin, c.email))!.id, 'approve');
+    await step(admin, (await latestCase(admin, c.email))!.id, 'approve');
     await botFinishes(baseURL, c.email, true);
   }
   expect(results).toEqual(['requested', 'requested', 'requested', 'limit']);
+
+  // a request by mail that can't be done: give up
+  const mailCase = async () => {
+    const created = await admin.post('/api/create_mail_password_case', { data: { mailboxes: [c.email], reply_to: 'x@example.org' } });
+    expect((await created.json()).result).toBe('requested');
+    const entry = (await latestCase(admin, c.email))!;
+    expect(entry.state).toBe('open');
+    return entry.id;
+  };
+  let id = await mailCase();
+  // steps only from the right state
+  expect((await (await admin.post('/api/update_mail_password_case', { data: { id, action: 'done' } })).json()).result).toBe('wrong_state');
+  await step(admin, id, 'approve');
+  await step(admin, id, 'failed');
+  await step(admin, id, 'cancel');
+  expect((await latestCase(studentApi, c.email))!.state).toBe('cancelled');
+  // done, answered some other way: closed without the reply mail
+  id = await mailCase();
+  await step(admin, id, 'approve');
+  await step(admin, id, 'done');
+  await step(admin, id, 'close');
+  const closed = (await (await admin.post('/api/mail_password_reset_status', { data: {} })).json()).cases.find((x: { id: string }) => x.id === id);
+  expect(closed.ts_closed).toBeTruthy();
 
   // the bot interface wants the token
   const noToken = await playwrightRequest.newContext({ baseURL });
@@ -289,4 +368,7 @@ test('Alte Adressen führen zur Seite Passwörter', async ({ page }) => {
   // Nextcloud and the own mailbox on one page
   await expect(page.locator('#ti_nc_login')).toBeVisible();
   await expect(page.locator(`.mail-reset-row[data-mailbox="${ACCOUNTS.schueler_oberstufe}"]`)).toBeVisible();
+  // what to do when the parents lost their password
+  await expect(page.locator('.mail-reset-parents-hint')).toContainText(`eltern.${ACCOUNTS.schueler_oberstufe}`);
+  await expect(page.locator('.mail-reset-parents-hint')).toContainText('Klassenleitung');
 });

@@ -34,11 +34,17 @@ automation – but it can run without waiting for a person.
   redirect there.
 - **Every mailbox reset goes through the admin**, automated or not: a
   request is a case that waits for the admin's approval; the bot only gets
-  approved cases. The Klassenleitung may still open cases for their classes.
+  approved cases. The Klassenleitung may open cases for the students' and
+  the parents' mailboxes of their classes and forwards requests that reach
+  them by mail to the admin; the admin answers the Klassenleitung with the
+  E-Mail-Brief to pass on.
+- The admin first adds a request to the list, then resolves it step by
+  step: check (reset / reject), reset (bot or by hand: done / didn't work,
+  then retry or give up), answer (send the reply or close without one).
 - Requests that come in **by mail** (from private addresses; the admin
   establishes who is writing) are entered by the admin as a case: affected
   mailboxes (several possible, also `eltern.…`), reply address, note.
-  Entering it is the approval.
+  It lands in the list as an open case like a click on the page.
 - When such a case is done, the dashboard sends the **answer**: editable
   text (default: "Sehr geehrte Frau / Herr …, ich habe das Passwort für das
   Postfach von [Name] zurückgesetzt und sende Ihnen die Zugangsdaten im

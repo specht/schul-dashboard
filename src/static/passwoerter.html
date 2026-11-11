@@ -45,16 +45,27 @@
     .mail-reset-password { font-family: monospace; font-size: 110%; }
     .mail-case-mailbox { display: inline-block; margin: 0 0.3em 0.3em 0; }
     .nc-actions .btn { margin: 0.2em; }
+    .mail-case-actions .btn { margin: 0.3em 0.2em 0 0; }
+    .mail-case-step-text { margin-bottom: 0.2em; }
+    .mail-reset-klasse td { vertical-align: middle; }
+    .mail-reset-klasse th:nth-child(2), .mail-reset-klasse th:nth-child(3) { width: 30%; }
+    .mail-reset-sub .mail-reset-state:not(:empty) { margin-top: 0.3em; font-size: 90%; }
     /* phones: name, status and button one below the other */
     @media (max-width: 575px) {
         .mail-reset-row td { display: block; border-top: none; padding: 0.3em 0.75em; }
         .mail-reset-row td:first-child { padding-top: 0.75em; }
         .mail-reset-row td.mail-reset-action { text-align: left !important; padding-bottom: 0.75em; }
         .mail-reset-row + .mail-reset-row td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
-        #mail_cases td { display: block; border-top: none; }
-        #mail_cases tr td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
-        #mail_cases thead { display: none; }
-        #mail_cases td.mail-case-actions { text-align: left !important; white-space: normal !important; }
+        .mail-cases td { display: block; border-top: none; }
+        .mail-reset-klasse thead { display: none; }
+        .mail-reset-student td { display: block; border-top: none; padding: 0.25em 0.75em; }
+        .mail-reset-student td.mail-reset-name { border-top: 1px solid rgba(128, 128, 128, 0.3); padding-top: 0.75em; font-weight: bold; }
+        .mail-reset-student td.mail-reset-sub::before { content: attr(data-title); display: inline-block; width: 8.5em; }
+        .mail-reset-student td.mail-reset-sub:last-child { padding-bottom: 0.75em; }
+        /* under the button: the label is 8.5em wide, the status has 90 % font size */
+        .mail-reset-student td.mail-reset-sub .mail-reset-state { margin-left: calc(8.5em / 0.9); }
+        .mail-cases tr td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
+        .mail-cases thead { display: none; }
         .nc-login-table th, .nc-login-table td { display: block; border-top: none; padding: 0.2em 0; }
         .nc-login-table tr + tr th { padding-top: 0.75em; }
     }
@@ -69,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         done: 'zurückgesetzt',
         failed: 'hat nicht geklappt',
         rejected: 'abgelehnt',
+        cancelled: 'nicht zurückgesetzt',
     };
     let refresh_timer = null;
     let case_mailboxes = [];
@@ -121,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .text(STATE_LABELS[entry.state] || entry.state);
         if (entry.state === 'approved') label.prepend("<i class='fa fa-cog fa-spin'></i>&nbsp;");
         if (entry.state === 'done') label.addClass('text-success');
-        if (entry.state === 'failed' || entry.state === 'rejected') label.addClass('text-danger');
+        if (['failed', 'rejected', 'cancelled'].indexOf(entry.state) >= 0) label.addClass('text-danger');
         return label;
     }
 
@@ -137,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.append($('<div>').addClass('text-muted').text(IS_STUDENT
                 ? 'Die Administration wurde informiert und kümmert sich darum.'
                 : 'Die Administration wurde informiert.'));
-        } else if (entry.state === 'rejected') {
+        } else if (entry.state === 'rejected' || entry.state === 'cancelled') {
             cell.append($('<div>').addClass('text-muted').text('Bitte wende dich an die Administration.'));
         }
         return cell;
@@ -158,59 +170,93 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function render_cases(data) {
-        const table = $('#mail_cases tbody');
-        if (table.length === 0) return;
-        table.empty();
-        // open and approved cases first, then the history (newest first)
-        const active = (entry) => (entry.state === 'open' || entry.state === 'approved') ? 0 : 1;
-        const sorted = data.cases.slice().sort((a, b) => active(a) - active(b) || b.ts - a.ts);
-        for (const entry of sorted) {
-            const tr = $('<tr>').addClass('mail-case').attr('data-id', entry.id).attr('data-state', entry.state);
-            const boxes = $('<td>');
-            for (const item of entry.mailboxes) {
-                const div = $('<div>').addClass('mail-case-mailbox-entry').attr('data-mailbox', item.mailbox);
-                div.append($('<span>').text(item.label)).append($('<br>')).append($('<small>').addClass('text-muted').text(item.mailbox));
-                if (entry.state === 'done' && item.password) div.append(password_widget(item.password));
-                boxes.append(div);
-            }
-            tr.append(boxes);
-            const origin = $('<td>');
-            if (entry.source === 'mail') {
-                origin.append($('<span>').text('E-Mail' + (entry.reply_to ? ' von ' + entry.reply_to : '')));
-            } else {
-                origin.append($('<span>').text('Dashboard: ' + (entry.requested_by || '')));
-            }
-            origin.append($('<br>')).append($('<small>').addClass('text-muted').text(fmt_ts(entry.ts)));
-            if (entry.note) origin.append($('<div>').addClass('text-muted').text(entry.note));
-            tr.append(origin);
-            const state = $('<td>').append(state_label(entry));
-            if (entry.ts_done) state.append($('<small>').addClass('text-muted').text(' (' + fmt_ts(entry.ts_done) + ')'));
-            if (entry.message) state.append($('<div>').addClass('text-muted').text(entry.message));
+    // admin: is the case finished, or what is the next step?
+    function case_closed(entry) {
+        if (entry.state === 'rejected' || entry.state === 'cancelled') return true;
+        // done: finished unless someone is waiting for the E-Mail-Brief
+        if (entry.state === 'done') return !(entry.source === 'mail' || entry.reply_to) || !!entry.ts_reply || !!entry.ts_closed;
+        return false;
+    }
+
+    function case_row(entry, bot_active) {
+        const tr = $('<tr>').addClass('mail-case').attr('data-id', entry.id).attr('data-state', entry.state);
+        const boxes = $('<td>');
+        for (const item of entry.mailboxes) {
+            const div = $('<div>').addClass('mail-case-mailbox-entry').attr('data-mailbox', item.mailbox);
+            div.append($('<span>').text(item.label)).append($('<br>')).append($('<small>').addClass('text-muted').text(item.mailbox));
+            if (entry.state === 'done' && item.password) div.append(password_widget(item.password));
+            boxes.append(div);
+        }
+        tr.append(boxes);
+        const origin = $('<td>');
+        if (entry.source === 'mail') {
+            origin.append($('<span>').text('E-Mail' + (entry.reply_to ? ' von ' + entry.reply_to : '')));
+        } else {
+            origin.append($('<span>').text('Klick im Dashboard: ' + (entry.requested_by || '')));
+        }
+        origin.append($('<br>')).append($('<small>').addClass('text-muted').text(fmt_ts(entry.ts)));
+        if (entry.note) origin.append($('<div>').addClass('text-muted').text(entry.note));
+        tr.append(origin);
+
+        const step = $('<td>').addClass('mail-case-step');
+        const text = (t) => step.append($('<div>').addClass('mail-case-step-text').text(t));
+        const buttons = $('<div>').addClass('mail-case-actions');
+        const button = (action, label, style) => buttons.append(
+            $('<button>').addClass(`btn btn-sm ${style} bu_mail_case_action`).attr('data-id', entry.id)
+                .attr('data-action', action).text(label)).append(' ');
+        if (entry.state === 'open') {
+            text('1. Prüfen: Soll das Passwort zurückgesetzt werden?');
+            button('approve', 'Zurücksetzen', 'btn-danger');
+            button('reject', 'Ablehnen', 'btn-outline-secondary');
+        } else if (entry.state === 'approved') {
+            text(bot_active
+                ? '2. Der Bot setzt das Passwort gerade zurück. Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:'
+                : '2. Im Kundenbereich des Mail-Anbieters auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:');
+            button('done', 'Erledigt', 'btn-success');
+            button('failed', 'Hat nicht geklappt', 'btn-outline-secondary');
+        } else if (entry.state === 'failed') {
+            text('Hat nicht geklappt' + (entry.message ? ': ' + entry.message : '.'));
+            button('retry', 'Nochmal versuchen', 'btn-outline-danger');
+            button('cancel', 'Aufgeben', 'btn-outline-secondary');
+        } else if (entry.state === 'done' && !case_closed(entry)) {
+            text('3. Antworten: E-Mail-Brief an ' + (entry.reply_to || 'die anfragende Person') + ' schicken.');
+            buttons.append($('<button>').addClass('btn btn-sm btn-success bu_mail_case_reply').attr('data-id', entry.id).text('Antwort senden…')).append(' ');
+            button('close', 'Ohne Antwort abschließen', 'btn-outline-secondary');
+        } else {
+            step.append(state_label(entry));
+            if (entry.ts_done) step.append($('<small>').addClass('text-muted').text(' (' + fmt_ts(entry.ts_done) + ')'));
+            if (entry.message && entry.state !== 'done') step.append($('<div>').addClass('text-muted').text(entry.message));
             if (entry.ts_reply) {
-                state.append($('<div>').addClass('text-muted mail-case-replied').text('Antwort an ' + entry.reply_sent_to + ' gesendet (' + fmt_ts(entry.ts_reply) + ')'));
+                step.append($('<div>').addClass('text-muted mail-case-replied').text('Antwort an ' + entry.reply_sent_to + ' gesendet (' + fmt_ts(entry.ts_reply) + ')'));
+            } else if (entry.ts_closed) {
+                step.append($('<div>').addClass('text-muted').text('ohne Antwort abgeschlossen'));
             }
-            tr.append(state);
-            const actions = $('<td>').addClass('mail-case-actions').css('text-align', 'right').css('white-space', 'nowrap');
-            const button = (cls, text, style) => $('<button>').addClass(`btn btn-sm ${style} ${cls}`).attr('data-id', entry.id).text(text);
-            if (entry.state === 'open') {
-                actions.append(button('bu_mail_case_approve', 'Freigeben', 'btn-outline-success')).append(' ');
-                actions.append(button('bu_mail_case_reject', 'Ablehnen', 'btn-outline-secondary'));
-            } else if (entry.state === 'approved') {
-                actions.append(button('bu_mail_case_done', 'erledigt', 'btn-outline-success')).append(' ');
-                actions.append(button('bu_mail_case_failed', 'fehlgeschlagen', 'btn-outline-secondary'));
-            } else if (entry.state === 'done' && entry.source === 'mail') {
-                actions.append(button('bu_mail_case_reply', entry.ts_reply ? 'Erneut antworten…' : 'Antwort senden…', entry.reply_to && !entry.ts_reply ? 'btn-success' : 'btn-outline-secondary'));
+            if (entry.state === 'done' && (entry.source === 'mail' || entry.reply_to)) {
+                buttons.append($('<button>').addClass('btn btn-sm btn-outline-secondary bu_mail_case_reply').attr('data-id', entry.id).text('Erneut antworten…'));
             }
-            tr.append(actions);
-            table.append(tr);
         }
-        if (data.cases.length === 0) {
-            table.append($('<tr>').append($('<td>').attr('colspan', 4).addClass('text-muted').text('Keine Anfragen in den letzten 30 Tagen.')));
+        step.append(buttons);
+        tr.append(step);
+        return tr;
+    }
+
+    function render_cases(data) {
+        if ($('#mail_cases_open').length === 0) return;
+        const open = data.cases.filter((entry) => !case_closed(entry));
+        const closed = data.cases.filter(case_closed);
+        for (const [selector, list, empty] of [
+            ['#mail_cases_open', open, 'Keine offenen Anfragen.'],
+            ['#mail_cases_closed', closed, 'Keine abgeschlossenen Anfragen.'],
+        ]) {
+            const tbody = $(`${selector} tbody`).empty();
+            for (const entry of list) tbody.append(case_row(entry, data.bot_active));
+            if (list.length === 0) tbody.append($('<tr>').append($('<td>').attr('colspan', 3).addClass('text-muted').text(empty)));
         }
+        $('#mail_cases_open_count').text(open.length);
+        $('#mail_cases_closed_count').text(closed.length);
         $('#mail_reset_bot_state').text(data.bot_last_seen
             ? 'Bot zuletzt aktiv: ' + fmt_ts(data.bot_last_seen)
-            : 'Der Bot war noch nie aktiv – freigegebene Anfragen bitte von Hand erledigen.');
+            : 'Der Bot läuft noch nicht – freigegebene Anfragen bitte selbst zurücksetzen.');
     }
 
     function render(data) {
@@ -223,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function load() {
-        if ($('.mail-reset-row').length === 0 && $('#mail_cases').length === 0) return;
+        if ($('.mail-reset-row').length === 0 && $('#mail_cases_open').length === 0) return;
         api_call('/api/mail_password_reset_status', {}, function(data) {
             if (data.success) render(data);
         }, { no_please_wait: true });
@@ -287,37 +333,38 @@ document.addEventListener('DOMContentLoaded', function() {
             reply_to: $('#ti_mail_case_reply_to').val().trim(),
             note: $('#ti_mail_case_note').val().trim(),
         };
-        dashboardConfirm(`Die Passwörter für ${case_mailboxes.join(', ')} werden auf das ursprüngliche Passwort aus dem E-Mail-Brief zurückgesetzt.`, function() {
-            api_call('/api/create_mail_password_case', payload, function(data) {
-                if (!data.success) return;
-                if (data.result === 'pending') {
-                    dashboardAlert('Für eines dieser Postfächer läuft schon eine Anfrage.', 'Schon beantragt');
-                    return;
-                }
-                case_mailboxes = [];
-                render_case_mailboxes();
-                $('#ti_mail_case_reply_to').val('');
-                $('#ti_mail_case_note').val('');
-                load();
-            });
-        }, { title: 'Passwörter zurücksetzen?', confirm: 'Freigeben', danger: true });
+        api_call('/api/create_mail_password_case', payload, function(data) {
+            if (!data.success) return;
+            if (data.result === 'pending') {
+                dashboardAlert('Für eines dieser Postfächer gibt es schon eine offene Anfrage.', 'Schon in der Liste');
+                return;
+            }
+            case_mailboxes = [];
+            render_case_mailboxes();
+            $('#ti_mail_case_reply_to').val('');
+            $('#ti_mail_case_note').val('');
+            load();
+        });
     });
 
-    $('#mail_cases').on('click', '.bu_mail_case_approve, .bu_mail_case_reject', function(e) {
-        const button = $(e.currentTarget);
-        const decision = button.hasClass('bu_mail_case_approve') ? 'approve' : 'reject';
-        api_call('/api/decide_mail_password_case', { id: button.data('id'), decision: decision }, function(data) {
+    function case_action(id, action) {
+        api_call('/api/update_mail_password_case', { id: id, action: action }, function(data) {
             if (data.success) load();
         });
-    });
-    $('#mail_cases').on('click', '.bu_mail_case_done, .bu_mail_case_failed', function(e) {
+    }
+    $('.mail-cases').on('click', '.bu_mail_case_action', function(e) {
         const button = $(e.currentTarget);
-        const state = button.hasClass('bu_mail_case_done') ? 'done' : 'failed';
-        api_call('/api/set_mail_password_case_state', { id: button.data('id'), state: state }, function(data) {
-            if (data.success) load();
-        });
+        const id = button.data('id');
+        const action = button.data('action');
+        if (action === 'approve' || action === 'retry') {
+            const mailboxes = button.closest('tr').find('.mail-case-mailbox-entry').map((_, x) => $(x).data('mailbox')).get();
+            dashboardConfirm(`Das Passwort für ${mailboxes.join(', ')} wird auf das ursprüngliche Passwort aus dem E-Mail-Brief zurückgesetzt.`,
+                () => case_action(id, action), { title: 'Passwort zurücksetzen?', confirm: 'Zurücksetzen', danger: true });
+        } else {
+            case_action(id, action);
+        }
     });
-    $('#mail_cases').on('click', '.bu_mail_case_reply', function(e) {
+    $('.mail-cases').on('click', '.bu_mail_case_reply', function(e) {
         reply_case_id = $(e.currentTarget).data('id');
         api_call('/api/mail_password_case_reply_draft', { id: reply_case_id }, function(data) {
             if (!data.success) return;

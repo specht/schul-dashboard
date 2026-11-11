@@ -1,28 +1,37 @@
-# Resetting a school mailbox to its original password – the one on the
-# E-Mail-Brief (Main.gen_password_for_email). The dashboard collects the
-# requests; a separate bot changes the password in the mail provider's
-# control panel and reports back (plan: review/2026-11/mail-password-reset.md).
+# Resetting school mailboxes to their original password – the one on the
+# E-Mail-Brief (Main.gen_password_for_email), on the page /passwoerter (which
+# also has the Nextcloud self-service). Every reset is a case the admin
+# decides; a separate bot changes the passwords in the mail provider's control
+# panel and reports back, or the admin does it by hand and marks the case
+# (plan: review/2026-11/mail-password-reset.md).
 #
-#   (:MailPasswordReset {id, mailbox, requested_by, ts, state, ts_done, message})
-#       -[:FOR]->(:MailPasswordResetMailbox {mailbox})
-#   state: 'pending' -> 'done' | 'failed'
-#   ts, ts_done: Unix time with fractions, so requests made within the same
-#   second are still in order
+#   (:MailPasswordCase {id, ts, source, requested_by, reply_to, note, mailboxes,
+#                       state, ts_decided, decided_by, ts_done, message,
+#                       ts_reply, reply_sent_to})
+#       -[:FOR]->(:MailPasswordResetMailbox {mailbox})   one per mailbox
+#   source: 'dashboard' (requested on the page) | 'mail' (the admin entered a
+#           request that came in by mail; reply_to is the address to answer)
+#   state:  'open' (waits for the admin) -> 'approved' -> 'done' | 'failed'
+#           'open' -> 'rejected'
+#   ts…:    Unix time with fractions, so cases within the same second stay in
+#           order
 #   (:MailPasswordResetBot {key: 'bot', last_seen})   last request of the bot
 #
 # Who may request which mailbox: students their own, Klassenleitung the
 # students of their classes, the admin also the parents' (eltern.…) ones.
-# Until the bot has been seen recently, the admin gets a mail for every new
-# request and can mark it done by hand on /mail_passwort.
+# After a done case the admin can answer the requester by mail, with the
+# E-Mail-Brief attached.
 
 class Main < Sinatra::Base
     MAIL_PASSWORD_RESET_MAX_PER_DAY = 3
     MAIL_PASSWORD_RESET_BOT_STALE_AFTER = 15 * 60
     MAIL_PASSWORD_RESET_SHOW_DAYS = 30
+    MAIL_PASSWORD_CASE_ACTIVE = %w(open approved)
+    MAIL_PASSWORD_CASE_MAX_MAILBOXES = 10
 
     # the student a mailbox belongs to (their own or their parents' mailbox)
     def mail_password_reset_student(mailbox)
-        email = mailbox.sub(/\Aeltern\./, '')
+        email = mailbox.to_s.sub(/\Aeltern\./, '')
         return nil unless @@user_info[email] && user_has_role(email, :schueler)
         email
     end
@@ -51,35 +60,85 @@ class Main < Sinatra::Base
         @@klassen_order.select { |klasse| klassenleiter_for_klasse_logged_in?(klasse) }
     end
 
-    def this_is_a_page_for_mail_password_reset
-        unless user_logged_in? && (schueler_logged_in? || admin_logged_in? || !mail_password_reset_klassen.empty?)
-            redirect "#{WEB_ROOT}/", 303
-        end
+    def may_use_mail_password_reset?
+        user_logged_in? && (schueler_logged_in? || admin_logged_in? || !mail_password_reset_klassen.empty?)
     end
 
-    # one table row per mailbox the user may reset; status, password and
+    def may_use_password_page?
+        user_logged_in? && (user_with_role_logged_in?(:can_use_nextcloud) || may_use_mail_password_reset?)
+    end
+
+    def this_is_a_page_for_passwords
+        redirect "#{WEB_ROOT}/", 303 unless may_use_password_page?
+    end
+
+    # Nextcloud: login data and resetting the own password to the initial
+    # one – no questions asked (POST /api/reset_nc_password, main.rb)
+    def print_nextcloud_password_section
+        return '' unless user_with_role_logged_in?(:can_use_nextcloud)
+        nc_login = CGI.escapeHTML(@session_user[:nc_login].to_s)
+        password = CGI.escapeHTML(@session_user[:initial_nc_password].to_s)
+        url = CGI.escapeHTML(NEXTCLOUD_URL)
+        login_url = CGI.escapeHTML("#{NEXTCLOUD_URL}/index.php/login?user=#{CGI.escape(@session_user[:nc_login].to_s)}")
+        <<~END_OF_HTML
+            <h3>Nextcloud</h3>
+            <p>Mit diesen Zugangsdaten meldest du dich in der Nextcloud an:</p>
+            <table class='table nc-login-table'><tbody>
+            <tr><th>Adresse:</th><td>
+                <div class='input-group'>
+                    <input type='text' class='form-control' value='#{url}' readonly />
+                    <div class='input-group-append'><a class='btn btn-secondary' target='_blank' href='#{login_url}'><i class='fa fa-external-link'></i><span class='d-none d-sm-inline'>&nbsp;&nbsp;Öffnen…</span></a></div>
+                </div>
+            </td></tr>
+            <tr><th>Login:</th><td>
+                <div class='input-group'>
+                    <input id='ti_nc_login' type='text' class='form-control' value='#{nc_login}' readonly />
+                    <div class='input-group-append'><button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-target='#ti_nc_login'><i class='fa fa-clipboard'></i><span class='d-none d-sm-inline'>&nbsp;&nbsp;Kopieren</span></button></div>
+                </div>
+            </td></tr>
+            <tr><th>Initialpasswort:</th><td>
+                <div class='input-group'>
+                    <input id='ti_initial_nc_password' type='password' class='form-control' value='#{password}' readonly />
+                    <div class='input-group-append'>
+                        <button class='btn bu-show-password btn-secondary' style='border-right: 2px solid #444;'><i class='fa fa-eye'></i><span class='d-none d-sm-inline'>&nbsp;&nbsp;Anzeigen</span></button>
+                        <button class='btn btn-secondary btn-clipboard' data-clipboard-action='copy' data-clipboard-text='#{password}'><i class='fa fa-clipboard'></i><span class='d-none d-sm-inline'>&nbsp;&nbsp;Kopieren</span></button>
+                    </div>
+                </div>
+            </td></tr>
+            </tbody></table>
+            <p>Du kannst dein Nextcloud-Passwort jederzeit in der Nextcloud ändern. Falls du ein selbst gewähltes Passwort vergessen hast, kannst du es hier sofort wieder auf dein Initialpasswort zurücksetzen:</p>
+            <div class='nc-actions' style='text-align: center;'>
+                <a href='#{login_url}' target='_blank' class='btn btn-success'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Zur Nextcloud-Anmeldung…</a>
+                <button class='btn btn-outline-danger bu-reset-nc-password'><i class='fa fa-key'></i>&nbsp;&nbsp;Nextcloud-Passwort zurücksetzen</button>
+            </div>
+            <div id='nc_reset_result' style='margin-top: 1em;'></div>
+        END_OF_HTML
+    end
+
+    # one table row per mailbox the user may request; status, password and
     # button are filled in by the page script from /api/mail_password_reset_status
     def print_mail_password_reset_row(io, mailbox, label)
         io.puts "<tr class='mail-reset-row' data-mailbox='#{CGI.escapeHTML(mailbox)}'>"
         io.puts "<td>#{CGI.escapeHTML(label)}<br /><small class='text-muted'>#{CGI.escapeHTML(mailbox)}</small></td>"
         io.puts "<td class='mail-reset-state'></td>"
-        io.puts "<td class='mail-reset-action' style='text-align: right;'><button class='btn btn-sm btn-outline-danger bu_request_mail_reset' data-mailbox='#{CGI.escapeHTML(mailbox)}' data-label='#{CGI.escapeHTML(label)}'><i class='fa fa-key'></i>&nbsp;&nbsp;Zurücksetzen</button></td>"
+        io.puts "<td class='mail-reset-action' style='text-align: right;'><button class='btn btn-sm btn-outline-danger bu_request_mail_reset' data-mailbox='#{CGI.escapeHTML(mailbox)}' data-label='#{CGI.escapeHTML(label)}'><i class='fa fa-key'></i>&nbsp;&nbsp;Zurücksetzen beantragen</button></td>"
         io.puts "</tr>"
     end
 
     def print_mail_password_reset_page
+        return '' unless may_use_mail_password_reset?
         StringIO.open do |io|
+            io.puts "<h3 style='margin-top: 1.5em;'>E-Mail-Postfach</h3>"
             if schueler_logged_in?
                 email = @session_user[:email]
-                io.puts "<h3>Dein E-Mail-Postfach</h3>"
-                io.puts "<p>Wenn du das Passwort für dein schulisches E-Mail-Postfach vergessen hast, kannst du es hier auf dein ursprüngliches Passwort zurücksetzen lassen – das aus deinem E-Mail-Brief. Das dauert meistens nur wenige Minuten. Deine Eltern bekommen danach eine kurze Nachricht an ihre E-Mail-Adresse.</p>"
+                io.puts "<p>Wenn du das Passwort für dein schulisches E-Mail-Postfach vergessen hast, kannst du hier beantragen, dass es auf dein ursprüngliches Passwort zurückgesetzt wird – das aus deinem E-Mail-Brief. Die Administration prüft jede Anfrage; danach geht es meistens schnell. Deine Eltern bekommen anschließend eine kurze Nachricht an ihre E-Mail-Adresse.</p>"
                 io.puts "<div class='table-responsive'><table class='table'><tbody>"
                 print_mail_password_reset_row(io, email, @session_user[:display_name])
                 io.puts "</tbody></table></div>"
             end
             mail_password_reset_klassen.each do |klasse|
-                io.puts "<h3>Klasse #{CGI.escapeHTML(tr_klasse(klasse))}</h3>"
-                io.puts "<p>Das Passwort wird auf das ursprüngliche Passwort aus dem E-Mail-Brief zurückgesetzt. Sobald es erledigt ist, kannst du es hier anzeigen oder den E-Mail-Brief drucken.</p>" if klasse == mail_password_reset_klassen.first
+                io.puts "<h4>Klasse #{CGI.escapeHTML(tr_klasse(klasse))}</h4>"
+                io.puts "<p>Das Passwort wird nach Freigabe durch die Administration auf das ursprüngliche Passwort aus dem E-Mail-Brief zurückgesetzt. Sobald es erledigt ist, kannst du es hier anzeigen.</p>" if klasse == mail_password_reset_klassen.first
                 io.puts "<div class='table-responsive'><table class='table'><tbody>"
                 (@@schueler_for_klasse[klasse] || []).each do |student|
                     print_mail_password_reset_row(io, student, @@user_info[student][:display_name])
@@ -87,12 +146,21 @@ class Main < Sinatra::Base
                 io.puts "</tbody></table></div>"
             end
             if admin_logged_in?
-                io.puts "<h3>Administration</h3>"
+                io.puts "<h4 style='margin-top: 1em;'>Anfragen</h4>"
                 io.puts "<p id='mail_reset_bot_state' class='text-muted'></p>"
-                io.puts "<div class='input-group' style='max-width: 40em;'>"
-                io.puts "<input id='ti_mail_reset_mailbox' class='form-control' list='li_mail_reset_mailboxes' placeholder='E-Mail-Adresse (auch eltern.…)' autocomplete='off' />"
-                io.puts "<div class='input-group-append'><button id='bu_request_mail_reset_mailbox' class='btn btn-outline-danger'><i class='fa fa-key'></i>&nbsp;&nbsp;Zurücksetzen</button></div>"
-                io.puts "</div>"
+                io.puts "<div class='card' style='margin-bottom: 1em;'><div class='card-body'>"
+                io.puts "<h5 class='card-title'>Anfrage per E-Mail eintragen</h5>"
+                io.puts "<div class='form-group'><label for='ti_mail_case_mailbox'>Postfächer</label>"
+                io.puts "<div class='input-group'>"
+                io.puts "<input id='ti_mail_case_mailbox' class='form-control' list='li_mail_reset_mailboxes' placeholder='E-Mail-Adresse (auch eltern.…)' autocomplete='off' />"
+                io.puts "<div class='input-group-append'><button id='bu_add_mail_case_mailbox' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Hinzufügen</button></div>"
+                io.puts "</div><div id='mail_case_mailboxes' style='margin-top: 0.5em;'></div></div>"
+                io.puts "<div class='form-group'><label for='ti_mail_case_reply_to'>Antwort an</label>"
+                io.puts "<input id='ti_mail_case_reply_to' type='email' class='form-control' placeholder='Absender der E-Mail' autocomplete='off' /></div>"
+                io.puts "<div class='form-group'><label for='ti_mail_case_note'>Notiz</label>"
+                io.puts "<input id='ti_mail_case_note' class='form-control' maxlength='500' autocomplete='off' /></div>"
+                io.puts "<button id='bu_create_mail_case' class='btn btn-outline-danger'><i class='fa fa-key'></i>&nbsp;&nbsp;Eintragen und freigeben</button>"
+                io.puts "</div></div>"
                 io.puts "<datalist id='li_mail_reset_mailboxes'>"
                 @@klassen_order.each do |klasse|
                     (@@schueler_for_klasse[klasse] || []).each do |student|
@@ -101,8 +169,8 @@ class Main < Sinatra::Base
                     end
                 end
                 io.puts "</datalist>"
-                io.puts "<div class='table-responsive' style='margin-top: 1em;'><table class='table table-sm' id='mail_reset_requests'>"
-                io.puts "<thead><tr><th>Postfach</th><th>Angefordert</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>"
+                io.puts "<div class='table-responsive'><table class='table table-sm' id='mail_cases'>"
+                io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>"
             end
             io.string
         end
@@ -113,11 +181,6 @@ class Main < Sinatra::Base
         row ? row['last_seen'] : nil
     end
 
-    def mail_password_reset_bot_active?
-        last_seen = mail_password_reset_bot_last_seen
-        !last_seen.nil? && Time.now.to_i - last_seen < MAIL_PASSWORD_RESET_BOT_STALE_AFTER
-    end
-
     def notify_admin_about_mail_password_reset(subject_text, lines)
         deliver_mail do
             to WEBSITE_MAINTAINER_EMAIL
@@ -126,7 +189,7 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 io.puts "<p>Hallo!</p>"
                 lines.each { |line| io.puts "<p>#{line}</p>" }
-                io.puts "<p><a href='#{WEB_ROOT}/mail_passwort'>#{WEB_ROOT}/mail_passwort</a></p>"
+                io.puts "<p><a href='#{WEB_ROOT}/passwoerter'>#{WEB_ROOT}/passwoerter</a></p>"
                 io.string
             end
         end
@@ -150,109 +213,251 @@ class Main < Sinatra::Base
         end
     end
 
-    # pending -> done / failed; returns the request or nil if it wasn't pending
-    def finish_mail_password_reset!(id, ok, message, notify_admin_on_failure)
+    def mail_password_case(id)
+        row = neo4j_query("MATCH (c:MailPasswordCase {id: $id}) RETURN c;", :id => id).first
+        row ? row['c'] : nil
+    end
+
+    # Creates a case unless one of the mailboxes has an active case or (with
+    # a limit) was reset too often today. Returns 'requested', 'pending' or
+    # 'limit'.
+    def create_mail_password_case!(mailboxes, attrs, daily_limit)
+        now = Time.now.to_f
+        result = nil
+        transaction do
+            # one lock node per mailbox, so parallel requests are counted one after the other
+            counts = neo4j_query_expect_one(<<~END_OF_QUERY, :mailboxes => mailboxes, :active => MAIL_PASSWORD_CASE_ACTIVE, :since => now - 24 * 3600)
+                UNWIND $mailboxes AS mailbox
+                MERGE (m:MailPasswordResetMailbox {mailbox: mailbox})
+                SET m._lock = true REMOVE m._lock
+                WITH m
+                OPTIONAL MATCH (c:MailPasswordCase)-[:FOR]->(m)
+                WITH m.mailbox AS mailbox,
+                     count(CASE WHEN c.state IN $active THEN 1 END) AS active,
+                     count(CASE WHEN c.ts >= $since AND c.source = 'dashboard' THEN 1 END) AS recent
+                RETURN sum(active) AS active, max(recent) AS recent;
+            END_OF_QUERY
+            if counts['active'] > 0
+                result = 'pending'
+            elsif daily_limit && counts['recent'] >= MAIL_PASSWORD_RESET_MAX_PER_DAY
+                result = 'limit'
+            else
+                props = attrs.merge(:id => RandomTag.generate(16), :ts => now, :mailboxes => mailboxes)
+                neo4j_query(<<~END_OF_QUERY, :props => props, :mailboxes => mailboxes)
+                    CREATE (c:MailPasswordCase)
+                    SET c = $props
+                    WITH c
+                    UNWIND $mailboxes AS mailbox
+                    MATCH (m:MailPasswordResetMailbox {mailbox: mailbox})
+                    CREATE (c)-[:FOR]->(m);
+                END_OF_QUERY
+                result = 'requested'
+            end
+        end
+        result
+    end
+
+    # approved -> done / failed; returns the case or nil if it wasn't approved
+    def finish_mail_password_case!(id, ok, message, notify_admin_on_failure)
         ts = Time.now.to_f
         row = neo4j_query(<<~END_OF_QUERY, :id => id, :state => ok ? 'done' : 'failed', :ts => ts, :message => message).first
-            MATCH (r:MailPasswordReset {id: $id, state: 'pending'})
-            SET r.state = $state, r.ts_done = $ts, r.message = $message
-            RETURN r.mailbox AS mailbox, r.requested_by AS requested_by;
+            MATCH (c:MailPasswordCase {id: $id, state: 'approved'})
+            SET c.state = $state, c.ts_done = $ts, c.message = $message
+            RETURN c;
         END_OF_QUERY
         return nil unless row
-        mailbox = row['mailbox']
+        c = row['c']
         if ok
             # a student's own request: the parents get to know about it
-            notify_parents_about_mail_password_reset(mailbox, ts) if row['requested_by'] == mailbox
+            if c[:source] == 'dashboard' && c[:mailboxes] == [c[:requested_by]]
+                notify_parents_about_mail_password_reset(c[:requested_by], ts)
+            end
         elsif notify_admin_on_failure
             notify_admin_about_mail_password_reset('Dashboard: E-Mail-Passwort konnte nicht zurückgesetzt werden', [
-                "Das Passwort für #{CGI.escapeHTML(mailbox)} konnte nicht zurückgesetzt werden.",
+                "Das Passwort für #{CGI.escapeHTML(c[:mailboxes].join(', '))} konnte nicht zurückgesetzt werden.",
                 "Meldung: #{CGI.escapeHTML(message.to_s)}",
             ])
         end
-        row
+        c
+    end
+
+    def normalize_mailbox(mailbox)
+        mailbox.to_s.strip.downcase
     end
 
     post '/api/request_mail_password_reset' do
         require_user!
         data = parse_request_data(:required_keys => [:mailbox], :max_value_lengths => {:mailbox => 256})
-        mailbox = data[:mailbox].strip.downcase
+        mailbox = normalize_mailbox(data[:mailbox])
         assert(mail_password_reset_allowed?(mailbox), 'mail password reset not allowed')
-        now = Time.now.to_f
-        result = nil
-        transaction do
-            # one lock node per mailbox, so parallel requests are counted one after the other
-            counts = neo4j_query_expect_one(<<~END_OF_QUERY, :mailbox => mailbox, :since => now - 24 * 3600)
-                MERGE (m:MailPasswordResetMailbox {mailbox: $mailbox})
-                SET m._lock = true REMOVE m._lock
-                WITH m
-                OPTIONAL MATCH (r:MailPasswordReset)-[:FOR]->(m)
-                RETURN count(CASE WHEN r.state = 'pending' THEN 1 END) AS pending,
-                       count(CASE WHEN r.ts >= $since THEN 1 END) AS recent;
-            END_OF_QUERY
-            if counts['pending'] > 0
-                result = 'pending'
-            elsif counts['recent'] >= MAIL_PASSWORD_RESET_MAX_PER_DAY
-                result = 'limit'
-            else
-                neo4j_query(<<~END_OF_QUERY, :mailbox => mailbox, :id => RandomTag.generate(16), :requested_by => @session_user[:email], :ts => now)
-                    MATCH (m:MailPasswordResetMailbox {mailbox: $mailbox})
-                    CREATE (r:MailPasswordReset {id: $id, mailbox: $mailbox, requested_by: $requested_by, ts: $ts, state: 'pending'})-[:FOR]->(m);
-                END_OF_QUERY
-                result = 'requested'
-            end
-        end
-        if result == 'requested' && !mail_password_reset_bot_active?
-            notify_admin_about_mail_password_reset('Dashboard: E-Mail-Passwort zurücksetzen', [
-                "#{CGI.escapeHTML(@session_user[:display_name])} möchte das Passwort für #{CGI.escapeHTML(mailbox)} zurücksetzen lassen.",
-                "Der Bot war in den letzten #{MAIL_PASSWORD_RESET_BOT_STALE_AFTER / 60} Minuten nicht aktiv – bitte von Hand erledigen und auf der Seite als erledigt markieren.",
+        result = create_mail_password_case!([mailbox], {
+            :source => 'dashboard', :requested_by => @session_user[:email], :state => 'open',
+        }, !admin_logged_in?)
+        if result == 'requested'
+            notify_admin_about_mail_password_reset('Dashboard: E-Mail-Passwort zurücksetzen – bitte freigeben', [
+                "#{CGI.escapeHTML(@session_user[:display_name])} möchte das Passwort für #{CGI.escapeHTML(mailbox)} (#{CGI.escapeHTML(mail_password_reset_label(mailbox))}) zurücksetzen lassen.",
             ])
         end
         respond(:result => result)
     end
 
-    # requests the logged in user may see, newest first; the password only
-    # for mailboxes whose latest request is done
-    post '/api/mail_password_reset_status' do
-        require_user!
-        rows = neo4j_query(<<~END_OF_QUERY, :since => Time.now.to_i - MAIL_PASSWORD_RESET_SHOW_DAYS * 24 * 3600).map { |x| x['r'] }
-            MATCH (r:MailPasswordReset)
-            WHERE r.ts >= $since OR r.state = 'pending'
-            RETURN r ORDER BY r.ts DESC;
-        END_OF_QUERY
-        seen = Set.new
-        requests = []
-        rows.each do |r|
-            next unless mail_password_reset_allowed?(r[:mailbox])
-            latest = !seen.include?(r[:mailbox])
-            seen << r[:mailbox]
-            entry = {
-                :id => r[:id],
-                :mailbox => r[:mailbox],
-                :label => mail_password_reset_label(r[:mailbox]),
-                :state => r[:state],
-                :ts => r[:ts],
-                :ts_done => r[:ts_done],
-                :latest => latest,
-            }
-            entry[:password] = Main.gen_password_for_email(r[:mailbox]) if latest && r[:state] == 'done'
-            if admin_logged_in?
-                entry[:requested_by] = (@@user_info[r[:requested_by]] || {})[:display_name] || r[:requested_by]
-                entry[:message] = r[:message]
-            end
-            requests << entry
+    # a request that came in by mail, entered by the admin: approved at once
+    post '/api/create_mail_password_case' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:mailboxes], :optional_keys => [:reply_to, :note],
+                                  :types => {:mailboxes => Array},
+                                  :max_value_lengths => {:reply_to => 256, :note => 500})
+        mailboxes = data[:mailboxes].map { |x| normalize_mailbox(x) }.reject(&:empty?).uniq
+        assert(!mailboxes.empty? && mailboxes.size <= MAIL_PASSWORD_CASE_MAX_MAILBOXES, 'invalid mailboxes')
+        mailboxes.each do |mailbox|
+            assert(mailbox.size <= 256 && mail_password_reset_allowed?(mailbox), "unknown mailbox #{mailbox}")
         end
-        result = {:requests => requests}
-        result[:bot_last_seen] = mail_password_reset_bot_last_seen if admin_logged_in?
-        respond(result)
+        reply_to = (data[:reply_to] || '').strip
+        assert(reply_to.empty? || reply_to =~ /\A[^@\s]+@[^@\s]+\.[^@\s]+\z/, 'invalid reply address')
+        now = Time.now.to_f
+        result = create_mail_password_case!(mailboxes, {
+            :source => 'mail', :requested_by => @session_user[:email],
+            :reply_to => reply_to.empty? ? nil : reply_to, :note => (data[:note] || '').strip,
+            :state => 'approved', :ts_decided => now, :decided_by => @session_user[:email],
+        }, false)
+        respond(:result => result)
     end
 
-    post '/api/set_mail_password_reset_state' do
+    post '/api/decide_mail_password_case' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:id, :decision], :optional_keys => [:message],
+                                  :max_value_lengths => {:id => 64, :decision => 16, :message => 500})
+        assert(%w(approve reject).include?(data[:decision]))
+        row = neo4j_query(<<~END_OF_QUERY, :id => data[:id], :state => data[:decision] == 'approve' ? 'approved' : 'rejected', :ts => Time.now.to_f, :by => @session_user[:email], :message => data[:message]).first
+            MATCH (c:MailPasswordCase {id: $id, state: 'open'})
+            SET c.state = $state, c.ts_decided = $ts, c.decided_by = $by, c.message = $message
+            RETURN c.id AS id;
+        END_OF_QUERY
+        respond(:result => row ? 'ok' : 'not_open')
+    end
+
+    # done by hand in the control panel (or it didn't work)
+    post '/api/set_mail_password_case_state' do
         require_admin!
         data = parse_request_data(:required_keys => [:id, :state], :optional_keys => [:message],
                                   :max_value_lengths => {:id => 64, :state => 16, :message => 500})
         assert(%w(done failed).include?(data[:state]))
-        row = finish_mail_password_reset!(data[:id], data[:state] == 'done', data[:message] || 'von Hand', false)
-        respond(:result => row ? 'ok' : 'not_pending')
+        c = finish_mail_password_case!(data[:id], data[:state] == 'done', data[:message] || 'von Hand', false)
+        respond(:result => c ? 'ok' : 'not_approved')
+    end
+
+    # Cases the logged in user may see, newest first. The admin sees
+    # everything; others only the mailboxes they may request, without who
+    # asked, notes and reply addresses, and passwords only for mailboxes
+    # whose latest case is done.
+    post '/api/mail_password_reset_status' do
+        require_user!
+        rows = neo4j_query(<<~END_OF_QUERY, :since => Time.now.to_f - MAIL_PASSWORD_RESET_SHOW_DAYS * 24 * 3600, :active => MAIL_PASSWORD_CASE_ACTIVE).map { |x| x['c'] }
+            MATCH (c:MailPasswordCase)
+            WHERE c.ts >= $since OR c.state IN $active
+            RETURN c ORDER BY c.ts DESC;
+        END_OF_QUERY
+        admin = admin_logged_in?
+        seen = Set.new
+        cases = []
+        rows.each do |c|
+            mailboxes = c[:mailboxes].select { |mailbox| mail_password_reset_allowed?(mailbox) }
+            next if mailboxes.empty?
+            entry = {
+                :id => c[:id],
+                :state => c[:state],
+                :ts => c[:ts],
+                :ts_done => c[:ts_done],
+                :mailboxes => mailboxes.map do |mailbox|
+                    latest = !seen.include?(mailbox)
+                    seen << mailbox
+                    item = {:mailbox => mailbox, :label => mail_password_reset_label(mailbox), :latest => latest}
+                    item[:password] = Main.gen_password_for_email(mailbox) if c[:state] == 'done' && (latest || admin)
+                    item
+                end,
+            }
+            if admin
+                requester = @@user_info[c[:requested_by]] || {}
+                entry.merge!(
+                    :source => c[:source],
+                    :requested_by => requester[:display_name] || c[:requested_by],
+                    :reply_to => c[:reply_to],
+                    :note => c[:note],
+                    :message => c[:message],
+                    :ts_decided => c[:ts_decided],
+                    :ts_reply => c[:ts_reply],
+                    :reply_sent_to => c[:reply_sent_to],
+                )
+            end
+            cases << entry
+        end
+        result = {:cases => cases}
+        result[:bot_last_seen] = mail_password_reset_bot_last_seen if admin
+        respond(result)
+    end
+
+    # ---- answering the requester, with the E-Mail-Brief attached ----
+
+    def mail_password_case_students(c)
+        c[:mailboxes].map { |mailbox| mail_password_reset_student(mailbox) }.compact.uniq
+    end
+
+    # "das Postfach von Anna Muster", "das Eltern-Postfach von …", both
+    def mail_password_case_phrase(c)
+        mail_password_case_students(c).map do |student|
+            kinds = []
+            kinds << 'das Postfach' if c[:mailboxes].include?(student)
+            kinds << 'das Eltern-Postfach' if c[:mailboxes].include?("eltern.#{student}")
+            "#{kinds.join(' und ')} von #{@@user_info[student][:display_name]}"
+        end.join(' sowie ')
+    end
+
+    def mail_password_case_reply_draft(c)
+        sender = [@session_user[:first_name], @session_user[:last_name]].map(&:to_s).reject(&:empty?).join(' ')
+        {
+            :to => c[:reply_to] || '',
+            :subject => 'Passwort für das schulische E-Mail-Postfach zurückgesetzt',
+            :body => "Sehr geehrte Frau / Herr …,\n\nich habe das Passwort für #{mail_password_case_phrase(c)} zurückgesetzt und sende Ihnen die Zugangsdaten im Anhang.\n\nViele Grüße\n#{sender}\n",
+            :attachment => "E-Mail-Brief (#{mail_password_case_students(c).map { |x| @@user_info[x][:display_name] }.join(', ')})",
+        }
+    end
+
+    post '/api/mail_password_case_reply_draft' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:id], :max_value_lengths => {:id => 64})
+        c = mail_password_case(data[:id])
+        assert(c && c[:state] == 'done', 'case not done')
+        respond(mail_password_case_reply_draft(c))
+    end
+
+    post '/api/send_mail_password_case_reply' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:id, :to, :subject, :body],
+                                  :max_value_lengths => {:id => 64, :to => 256, :subject => 200, :body => 10000})
+        c = mail_password_case(data[:id])
+        assert(c && c[:state] == 'done', 'case not done')
+        recipient = data[:to].strip
+        assert(recipient =~ /\A[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+\z/, 'invalid recipient')
+        students = mail_password_case_students(c)
+        assert(!students.empty?)
+        pdf = Main.print_email_letters(students)
+        filename = students.size == 1 ? "E-Mail-Brief #{@@user_info[students.first][:display_name]}.pdf" : 'E-Mail-Briefe.pdf'
+        admin_email = @session_user[:email]
+        subject_text = data[:subject].strip
+        body_text = data[:body]
+        deliver_mail(body_text) do
+            to recipient
+            from SMTP_FROM
+            reply_to admin_email
+            bcc admin_email
+            subject subject_text
+            add_file :content_type => 'application/pdf', :content => pdf, :filename => filename
+        end
+        neo4j_query(<<~END_OF_QUERY, :id => c[:id], :ts => Time.now.to_f, :to => recipient)
+            MATCH (c:MailPasswordCase {id: $id})
+            SET c.ts_reply = $ts, c.reply_sent_to = $to;
+        END_OF_QUERY
+        respond(:result => 'sent')
     end
 
     # ---- interface for the bot (Authorization: Bearer <token>) ----
@@ -264,12 +469,13 @@ class Main < Sinatra::Base
         halt 401 unless Rack::Utils.secure_compare(given, token)
     end
 
+    # approved cases only: nothing is reset without the admin's decision
     get '/api/mail_password_reset_bot/pending' do
         require_mail_password_reset_bot!
         neo4j_query("MERGE (b:MailPasswordResetBot {key: 'bot'}) SET b.last_seen = $ts;", :ts => Time.now.to_i)
-        rows = neo4j_query("MATCH (r:MailPasswordReset {state: 'pending'}) RETURN r.id AS id, r.mailbox AS mailbox ORDER BY r.ts;")
-        respond(:requests => rows.map do |row|
-            {:id => row['id'], :mailbox => row['mailbox'], :password => Main.gen_password_for_email(row['mailbox'])}
+        rows = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN c.id AS id, c.mailboxes AS mailboxes ORDER BY c.ts;")
+        respond(:cases => rows.map do |row|
+            {:id => row['id'], :mailboxes => row['mailboxes'].map { |mailbox| {:mailbox => mailbox, :password => Main.gen_password_for_email(mailbox)} }}
         end)
     end
 
@@ -279,7 +485,7 @@ class Main < Sinatra::Base
                                   :types => {:ok => Object},
                                   :max_value_lengths => {:id => 64, :message => 500})
         assert([true, false].include?(data[:ok]))
-        row = finish_mail_password_reset!(data[:id], data[:ok], data[:message], true)
-        respond(:result => row ? 'ok' : 'not_pending')
+        c = finish_mail_password_case!(data[:id], data[:ok], data[:message], true)
+        respond(:result => c ? 'ok' : 'not_approved')
     end
 end

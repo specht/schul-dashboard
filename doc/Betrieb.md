@@ -66,29 +66,39 @@ rm <DATA_PATH>/gen/wartung.json
 - Die Seite prüft wie die Neustart-Seite regelmäßig `/api/ping` und lädt neu,
   sobald das Dashboard wieder antwortet.
 
-## E-Mail-Passwörter zurücksetzen
+## Passwörter zurücksetzen
 
-Auf der Seite `/mail_passwort` (Profilmenü „E-Mail-Passwort zurücksetzen…“)
-kann ein schulisches E-Mail-Postfach auf das ursprüngliche Passwort aus dem
-E-Mail-Brief zurückgesetzt werden:
+Die Seite `/passwoerter` (Profilmenü „Passwörter und Nextcloud…“; die alten
+Adressen `/login_nc` und `/mail_passwort` leiten dorthin weiter) hat zwei
+Teile:
 
-- Schüler:innen: das eigene Postfach. Danach bekommen die Eltern
-  (`eltern.…`) eine kurze Nachricht.
-- Klassenleitungen: die Postfächer der Schüler:innen ihrer Klassen.
-- Administration: zusätzlich die Eltern-Postfächer. Eltern haben kein
-  Dashboard-Konto; sie wenden sich an die Administration, die das Passwort
-  nach dem Zurücksetzen auf der Seite abliest und weitergibt.
+- **Nextcloud:** Zugangsdaten anzeigen und das eigene Nextcloud-Passwort
+  sofort auf das Initialpasswort zurücksetzen – ohne Rückfrage, für alle mit
+  Nextcloud-Zugang.
+- **E-Mail-Postfach:** Zurücksetzen auf das ursprüngliche Passwort aus dem
+  E-Mail-Brief. Jede Anfrage ist ein Fall, den die Administration freigibt
+  oder ablehnt:
+  - Schüler:innen beantragen es für das eigene Postfach; nach dem
+    Zurücksetzen bekommen die Eltern (`eltern.…`) eine kurze Nachricht.
+  - Klassenleitungen beantragen es für die Schüler:innen ihrer Klassen.
+  - Die Administration bekommt für jede Anfrage eine Mail. Anfragen, die per
+    E-Mail kommen (auch für Eltern-Postfächer), trägt sie selbst ein:
+    betroffene Postfächer, Antwortadresse, Notiz – damit sind sie
+    freigegeben.
+  - Ist ein per E-Mail gekommener Fall erledigt, schickt „Antwort senden…“
+    eine Mail an die Antwortadresse: Text vorausgefüllt und änderbar, der
+    E-Mail-Brief als PDF im Anhang, Antworten gehen an die Administration,
+    die eine Kopie bekommt.
 
-Pro Postfach ist immer nur eine offene Anfrage möglich und nur wenige pro
-Tag. Das Ändern beim Mail-Anbieter übernimmt ein Bot, der die offenen
-Anfragen über `GET /api/mail_password_reset_bot/pending` abholt und das
-Ergebnis an `POST /api/mail_password_reset_bot/result` meldet
+Pro Postfach ist immer nur ein offener Fall möglich und nur wenige Anfragen
+pro Tag. Das Ändern beim Mail-Anbieter übernimmt ein Bot, der nur
+freigegebene Fälle über `GET /api/mail_password_reset_bot/pending` abholt und
+das Ergebnis an `POST /api/mail_password_reset_bot/result` meldet
 (`Authorization: Bearer <MAIL_PASSWORD_RESET_BOT_TOKEN>` aus
 `credentials.rb`; ohne Token ist die Schnittstelle aus). Solange der Bot
-nicht läuft, bekommt die Administration für jede neue Anfrage eine Mail,
-setzt das Passwort von Hand zurück und markiert die Anfrage auf der Seite
-als erledigt. Schlägt der Bot fehl, bekommt die Administration ebenfalls
-eine Mail.
+nicht läuft, setzt die Administration freigegebene Fälle von Hand zurück und
+markiert sie auf der Seite als erledigt. Schlägt der Bot fehl, bekommt die
+Administration eine Mail.
 
 ## Neue Eingangsdaten
 

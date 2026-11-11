@@ -2656,11 +2656,8 @@ class Main < Sinatra::Base
                         end
                     end
                     io.puts "<a class='dropdown-item nav-icon' href='/login'><div class='icon'><i class='fa fa-sign-in'></i></div><span class='label'>Zusätzliche Anmeldung…</span></a>"
-                    if user_with_role_logged_in?(:can_use_nextcloud)
-                        io.puts "<a class='dropdown-item nav-icon' href='/login_nc'><div class='icon'><i class='fa fa-nextcloud'></i></div><span class='label'>In Nextcloud anmelden…</span></a>"
-                    end
-                    if schueler_logged_in? || admin_logged_in? || !mail_password_reset_klassen.empty?
-                        io.puts "<a class='dropdown-item nav-icon' href='/mail_passwort'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Passwort zurücksetzen…</span></a>"
+                    if may_use_password_page?
+                        io.puts "<a class='dropdown-item nav-icon' href='/passwoerter'><div class='icon'><i class='fa fa-key'></i></div><span class='label'>Passwörter und Nextcloud…</span></a>"
                     end
                     if @session_user[:dark]
                         io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='fa fa-sun-o'></i></div><span class='label'>Hell</span></button>"
@@ -4087,10 +4084,6 @@ class Main < Sinatra::Base
                 end
 
                 stored_poll_runs = temp_order.map { |x| temp[x] }
-            end
-        elsif path == 'login_nc'
-            unless @session_user
-                redirect "#{WEB_ROOT}/", 302
             end
         end
 

@@ -1,6 +1,6 @@
 # Mailbox password reset from the dashboard
 
-Status: plan, phase 1 in progress (2026-11-10).
+Status: phase 1 (dashboard) built, not yet deployed (2026-11-11).
 
 ## Problem
 
@@ -28,14 +28,31 @@ automation – but it can run without waiting for a person.
     password off the page after the reset and passes it on)
 - After a **student's own** reset, the parents' mailbox gets a short notice
   (a left-open session could otherwise be used to take over a mailbox).
+- **One page for both** (2026-11-11): `/passwoerter` combines the Nextcloud
+  login data and self-service (reset to the initial password at once, no
+  questions asked) with the mailbox reset. `/login_nc` and `/mail_passwort`
+  redirect there.
+- **Every mailbox reset goes through the admin**, automated or not: a
+  request is a case that waits for the admin's approval; the bot only gets
+  approved cases. The Klassenleitung may still open cases for their classes.
+- Requests that come in **by mail** (from private addresses; the admin
+  establishes who is writing) are entered by the admin as a case: affected
+  mailboxes (several possible, also `eltern.…`), reply address, note.
+  Entering it is the approval.
+- When such a case is done, the dashboard sends the **answer**: editable
+  text (default: "Sehr geehrte Frau / Herr …, ich habe das Passwort für das
+  Postfach von [Name] zurückgesetzt und sende Ihnen die Zugangsdaten im
+  Anhang. Viele Grüße [Name des Admins]"), the E-Mail-Brief as PDF attached,
+  from the dashboard's address with Reply-To and Bcc to the admin.
 - The provider account gets app-based two-factor authentication (set up by
   the maintainer with the Schulleitung), so the bot can confirm logins
   itself instead of waiting for a code sent by mail.
 
 ## Phase 1 – dashboard (tests first)
 
-- Node `MailPasswordReset {id, mailbox, requested_by, ts, state, ts_done,
-  message}`; states `pending` → `done` | `failed`.
+- Node `MailPasswordCase {id, ts, source, requested_by, reply_to, note,
+  mailboxes, state, …}` with `[:FOR]` to one lock node per mailbox; states
+  `open` → `approved` → `done` | `failed`, or `open` → `rejected`.
 - `POST /api/request_mail_password_reset {mailbox}`: permission check as
   above; at most one open request per mailbox; a limit per mailbox and day.
 - Status for the requester: pending ("dauert meist nur wenige Minuten"),
@@ -45,8 +62,8 @@ automation – but it can run without waiting for a person.
   by hand, so phase 1 already helps before the bot exists (the admin gets a
   mail per new request while no bot is configured).
 - Bot interface, only active when `MAIL_PASSWORD_RESET_BOT_TOKEN` is set:
-  - `GET /api/mail_password_reset_bot/pending` → open requests with mailbox
-    and password
+  - `GET /api/mail_password_reset_bot/pending` → approved cases, each with
+    its mailboxes and passwords
   - `POST /api/mail_password_reset_bot/result {id, ok, message}`
   - `Authorization: Bearer <token>`, compared in constant time; the bot can
     run anywhere that reaches the dashboard.

@@ -1,11 +1,11 @@
-import { test, expect, login, ACCOUNTS } from './fixtures';
+import { test, expect, login, dashboardDialog, ACCOUNTS } from './fixtures';
 
-// Resetting the own Nextcloud password to the initial one, without asking
-// anybody. The test stack's Nextcloud is a stand-in that records password
+// Resetting the own Nextcloud password to the initial one on /passwoerter,
+// without asking anybody. The test stack's Nextcloud is a stand-in that records password
 // changes (src/ruby/test/fake_nextcloud.ru).
 
 const NEXTCLOUD = process.env.NEXTCLOUD_FAKE_URL || 'http://localhost:8127';
-const PAGE = '/login_nc';
+const PAGE = '/passwoerter';
 
 type Change = { login: string; key: string; value: string; admin: string | null };
 
@@ -28,7 +28,7 @@ for (const [who, email] of [
     const before = (await changesFor(ncLogin)).length;
 
     await page.locator('.bu-reset-nc-password').click();
-    await page.locator('.bu-perform-nc-password-reset').click();
+    await dashboardDialog(page).getByRole('button', { name: 'Zurücksetzen' }).click();
     await expect(page.locator('.result-success')).toBeVisible();
 
     const changes = await changesFor(ncLogin);
@@ -43,7 +43,7 @@ test('Nextcloud lehnt ab: die Seite meldet einen Fehler', async ({ page }) => {
   const ncLogin = await page.locator('#ti_nc_login').inputValue();
   await fetch(`${NEXTCLOUD}/_fail?login=${encodeURIComponent(ncLogin)}`, { method: 'POST' });
   await page.locator('.bu-reset-nc-password').click();
-  await page.locator('.bu-perform-nc-password-reset').click();
+  await dashboardDialog(page).getByRole('button', { name: 'Zurücksetzen' }).click();
   await expect(page.locator('.result-error')).toBeVisible();
-  await expect(page.locator('.result-success')).toBeHidden();
+  await expect(page.locator('.result-success')).toHaveCount(0);
 });

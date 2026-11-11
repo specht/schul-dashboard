@@ -64,4 +64,14 @@ EXTRA_SERVICES = {
         ],
         :ports => ['127.0.0.1:8126:8025'],
     },
+    # Nextcloud-Attrappe: nimmt nur das Setzen von Passwörtern an und merkt
+    # es sich (src/ruby/test/fake_nextcloud.ru), API für die Tests auf 8127
+    :nextcloud => {
+        :build => './docker/ruby',
+        :volumes => ['./src/ruby/test:/fake:ro'],
+        :working_dir => '/fake',
+        :entrypoint => 'rackup fake_nextcloud.ru --server puma --env production --host 0.0.0.0 --port 80',
+        :user => '1000',
+        :ports => ['127.0.0.1:8127:80'],
+    },
 }

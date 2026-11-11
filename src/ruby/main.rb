@@ -2388,8 +2388,15 @@ class Main < Sinatra::Base
     post '/api/reset_nc_password' do
         require_user!
         ocs = DashboardNextcloud.admin
-        ocs.user.update(@session_user[:nc_login], 'password', @session_user[:initial_nc_password])
-        respond(:ok => 'yay')
+        result = ocs.user.update(@session_user[:nc_login], 'password', @session_user[:initial_nc_password])
+        # the client raises nothing when Nextcloud refuses – check the answer
+        meta = result.respond_to?(:meta) ? (result.meta || {}) : {}
+        if meta['status'] == 'ok'
+            respond(:ok => 'yay')
+        else
+            debug "Nextcloud password reset for #{@session_user[:nc_login]} refused: #{meta['statuscode']} #{meta['message']}"
+            respond(:error => 'nextcloud_refused')
+        end
     end
 
     post '/api/parse_markdown' do

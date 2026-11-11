@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
         $('.bu-perform-nc-password-reset').prop('disabled', true);
         $('.bu-close-dialog').html('Schließen');
         api_call('/api/reset_nc_password', {}, function(data) {
-            if (data.success) {
+            if (data.success && !data.error) {
                 $('.result-success').show();
             } else {
                 $('.result-error').show();

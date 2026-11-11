@@ -82,9 +82,10 @@ The changes for the switch are on branch `neo4j-5-migration`:
 ## Phase A – before the switch, on 4.4 (normal deploys)
 
 1. Deploy 550bb557 (`IS NOT NULL`). It works on both versions.
-2. Optional: neo4j_bolt 0.5.1 (`Gemfile`, image build). Not needed for the
-   dashboard data (no temporal values). It makes both projects use the same
-   version, and its dump runs in one transaction.
+2. neo4j_bolt 0.5.1 (`Gemfile`, image build) – decided: yes (2026-11-12).
+   Not needed for the dashboard data (no temporal values), but both projects
+   then use the same version, and its dump runs in one transaction. A normal
+   deploy on 4.4 before the window, with the full suite.
 
 ## Phase B – rehearsal on a development machine with production data
 
@@ -186,11 +187,14 @@ end (doc/Betrieb.md, "Wartungsseite").
    - update the documentation (Installation, Development: dev instances
      need a reload)
 
+## Decisions (maintainer)
+
+- neo4j_bolt 0.5.1 before the switch (A2): yes (2026-11-12).
+- A guard in `config.rb` (as in gyst-bib): yes (2026-11-12). It refuses to
+  start the app services while the new data directory has no "loaded"
+  marker – protects against an accidental `up -d` during the window. Without
+  the new data directory, the generated files stay byte-identical.
+
 ## Open decisions (maintainer)
 
 - Date and time of the window.
-- neo4j_bolt 0.5.1 before the switch (A2): yes or no.
-- A guard in `config.rb` (as in gyst-bib): refuse to start the app services
-  while the new data directory has no "loaded" marker. With the steps above
-  and fail-safe 5.26 it isn't strictly necessary, but it protects against
-  an accidental `up -d` during the window.

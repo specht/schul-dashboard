@@ -40,10 +40,21 @@ test('Stundenplan: Tage wischen auf dem Handy', async ({ page }, testInfo) => {
   });
   await page.goto('/');
   await page.waitForFunction(() => (window as any).calendar && (window as any).calendar.view.type === 'timeGridDay');
-  const box = (await page.locator('#calendar .fc-view-harness').boundingBox())!;
-  const y = box.y + Math.min(box.height / 2, 250);
-  const left = { x: box.x + box.width * 0.85, y };
-  const right = { x: box.x + box.width * 0.15, y };
+  // the calendar on screen (cards above it, e.g. polls, push it down), touch
+  // points measured fresh before each gesture
+  let box: { x: number; y: number; width: number; height: number };
+  let y = 0;
+  let left = { x: 0, y: 0 };
+  let right = { x: 0, y: 0 };
+  const onScreen = async () => {
+    await page.locator('#calendar .fc-view-harness').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(200);
+    box = (await page.locator('#calendar .fc-view-harness').boundingBox())!;
+    y = box.y + 200;
+    left = { x: box.x + box.width * 0.85, y };
+    right = { x: box.x + box.width * 0.15, y };
+  };
+  await onScreen();
   const client = await page.context().newCDPSession(page);
 
   const today = await currentDay(page);
@@ -91,25 +102,30 @@ test('Stundenplan: Tage wischen auf dem Handy', async ({ page }, testInfo) => {
   await expect(neighbour).toHaveCount(0);
 
   // scrolling up and down does not change the day
+  await onScreen();
   await drag(client, page, { x: box.x + box.width / 2, y }, { x: box.x + box.width / 2 + 15, y: y - 150 }, 200);
   await page.waitForTimeout(500);
   expect(await currentDay(page)).toBe(today);
   // a short, slow sideways move snaps back
+  await onScreen();
   await drag(client, page, { x: box.x + box.width / 2, y }, { x: box.x + box.width / 2 - 40, y }, 800);
   await page.waitForTimeout(500);
   expect(await currentDay(page)).toBe(today);
-  // from a Friday the neighbour is next week's Monday, from the preloaded week
+  // across the weekend the neighbour comes from the preloaded week: from next
+  // week's Monday, a look back at this week's Friday (which has lessons in
+  // the example data)
   const friday = await page.evaluate((d) => (window as any).moment(d).day(5).format('YYYY-MM-DD'), today);
   const monday = await schoolDay(page, friday, 1);
-  await page.evaluate((d) => (window as any).calendar.gotoDate(d), friday);
-  await expect.poll(() => currentDay(page)).toBe(friday);
+  await page.evaluate((d) => (window as any).calendar.gotoDate(d), monday);
+  await expect.poll(() => currentDay(page)).toBe(monday);
   await page.waitForTimeout(300);
-  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left] });
+  await onScreen();
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [right] });
   for (let i = 1; i <= 4; i++) {
-    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: left.x - i * 20, y }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: right.x + i * 20, y }] });
     await page.waitForTimeout(100);
   }
-  await expect(neighbour.locator(`.fc-col-header-cell[data-date="${monday}"]`)).toHaveCount(1);
+  await expect(neighbour.locator(`.fc-col-header-cell[data-date="${friday}"]`)).toHaveCount(1);
   expect(await neighbour.locator('.fc-event').count()).toBeGreaterThan(0);
   await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await expect(neighbour).toHaveCount(0);

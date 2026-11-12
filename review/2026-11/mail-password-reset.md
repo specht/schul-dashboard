@@ -83,12 +83,56 @@ automation – but it can run without waiting for a person.
 ## Phase 2 – bot
 
 - Small separate service (Node + Puppeteer, like the existing script):
-  persistent browser profile, TOTP for the login confirmation, fetches open
-  requests every minute, sets the password, reports the result, a screenshot
-  on failure for the admin.
+  persistent browser profile, TOTP for the login confirmation, sets the
+  password for approved cases, reports the result, a screenshot on failure
+  for the admin.
 - Access data only in its own configuration (not in the dashboard, not in
   the repository).
-- Where it runs: open (maintainer's machine or its own container on the
-  server).
+- **Where it runs (decided 2026-11-12): only on the maintainer's machine.**
+  The IONOS session (browser profile, cookies) lives where the browser runs,
+  so IONOS always sees the maintainer's machine. The dashboard server only
+  keeps the list of cases and never talks to IONOS; the bot fetches approved
+  cases over HTTPS with the bot token and reports back.
+  - The bot's configuration (IONOS login, TOTP secret, dashboard token) is a
+    chmod-600 file outside the repository, only on that machine. Without it
+    the bot refuses to start; it also checks a hostname named in that file,
+    so a copied configuration doesn't run elsewhere.
+  - Nobody else starts it – not Jonas, not an agent. Recorded in AGENTS.md.
+  - The dashboard hands each approved case to one bot run only (claim before
+    reset), so two instances can never reset the same mailbox twice.
+  - When the machine is off, approved cases simply wait; the admin can still
+    reset by hand and mark them done.
 - The control panel flow for "change password" has to be recorded with the
   maintainer once the two-factor login is set up.
+
+### Don't get the account locked (decided 2026-11-12)
+
+The IONOS account is the school's only access to all mailboxes. If IONOS
+takes the bot for an account takeover and locks or challenges the account,
+nobody can reset passwords until support unlocks it. So the bot behaves like
+one careful person at one computer:
+
+- **Few logins.** One persistent browser profile (cookies kept), the same
+  machine and IP every time, a normal visible Chrome rather than an obvious
+  headless setup with a changing fingerprint. Reuse the session as long as
+  IONOS keeps it; log in (password + TOTP) only when it has expired.
+- **Batches, not polling the control panel.** The bot may ask the dashboard
+  every few minutes whether approved cases exist (that never touches
+  IONOS); it only opens the control panel when there are some, then handles
+  all of them in one sitting. Optionally only within fixed hours (school
+  day), so a burst of approvals doesn't become a burst of logins.
+- **Human pace.** Wait for each page to finish, pauses of a few seconds
+  between steps with some variation, one mailbox after the other, never in
+  parallel. A hard cap per day (e.g. 20 resets); above it the rest waits for
+  the next day or for the admin.
+- **Stop at the first surprise, never retry blindly.** A failed login, a
+  wrong TOTP, a captcha, a "new device / security check" page, a layout the
+  recorded flow doesn't know: take a screenshot, mark the case "didn't
+  work", notify the admin, and pause the bot (no further logins) until the
+  admin resumes it. At most one login attempt per run; a TOTP code is never
+  used twice (wait for the next 30-second window).
+- **Dry run first.** Record the flow with the maintainer, then run it against
+  a test mailbox by hand-triggered single runs before it handles real cases.
+- Keep the IONOS recovery codes from the 2FA setup offline (not with the
+  bot), so a lockout can be undone without support.
+

@@ -471,11 +471,7 @@ function render_timetable(result, successCallback) {
     $('.weekend_events').empty();
     for (let event of events)
     {
-        event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'};
-        if (event.entfall)
-            event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.disabled'};
-        if (event.is_event)
-            event.color = #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'};
+        event.color = timetable_event_color(event);
         if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
             if (wrote_weekend_event_header == false) {
                 $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p><hr />'));
@@ -580,6 +576,86 @@ function update_ha_amt_buttons() {
 }
 
 var timetable_id = '#{timetable_id}';
+
+function timetable_event_color(event) {
+    if (event.is_event)
+        return #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'};
+    if (event.entfall)
+        return #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.disabled'};
+    return #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.primary'};
+}
+
+// Week files of the timetable, kept for a few minutes – the shown week and
+// the ones before and after it, so that going to another day (swiping) is
+// instant. Kept as text and parsed for every use: render_timetable changes
+// the parsed data.
+const TIMETABLE_WEEK_TTL = 2 * 60 * 1000;
+var timetable_weeks = {};   // 'id/yyyy-ww' -> {text, ts} or {waiting: [callbacks]}
+
+function timetable_week_key(date) {
+    let start_date = new Date(date);
+    while (start_date.getDay() != 1)
+        start_date.setDate(start_date.getDate() - 1);
+    let week = '' + start_date.getWeek();
+    if (week.length < 2)
+        week = '0' + week;
+    return start_date.getWeekYear() + '-' + week;
+}
+
+function forget_timetable_weeks() {
+    timetable_weeks = {};
+}
+
+// callback(result) with the parsed week, or null if it could not be loaded
+function load_timetable_week(yw_date, callback) {
+    let key = timetable_id + '/' + yw_date;
+    let entry = timetable_weeks[key];
+    if (entry && entry.text && Date.now() - entry.ts < TIMETABLE_WEEK_TTL) {
+        if (callback) callback(JSON.parse(entry.text));
+        return;
+    }
+    if (entry && entry.waiting) {
+        if (callback) entry.waiting.push(callback);
+        return;
+    }
+    entry = { waiting: callback ? [callback] : [] };
+    timetable_weeks[key] = entry;
+    let done = function(text) {
+        if (timetable_weeks[key] === entry) {
+            if (text === null) delete timetable_weeks[key];
+            else timetable_weeks[key] = { text: text, ts: Date.now() };
+        }
+        for (let cb of entry.waiting)
+            cb(text === null ? null : JSON.parse(text));
+    };
+    let uri = '/gen/w/' + key + '.json.gz';
+    if (#{teacher_logged_in? ? true: false})
+        uri += '?' + Date.now();
+    let oReq = new XMLHttpRequest();
+    oReq.open('GET', uri, true);
+    oReq.responseType = 'arraybuffer';
+    oReq.onload = function(e) {
+        if (e.target.status !== 200) { done(null); return; }
+        let f = new FileReader();
+        f.onload = function(e) { done(e.target.result); };
+        f.readAsText(new Blob([new Uint8Array(pako.ungzip(oReq.response))]));
+    };
+    oReq.onerror = function() { done(null); };
+    oReq.send();
+}
+
+// lessons of one day from the cached week, for the neighbouring day while
+// swiping into another week (render_timetable is not run for it)
+function timetable_cached_events(date) {
+    let entry = timetable_weeks[timetable_id + '/' + timetable_week_key(date)];
+    if (!entry || !entry.text) return [];
+    return JSON.parse(entry.text).events.filter(function(event) {
+        return (event.start || '').substr(0, 10) === date && !(tablet_logged_in && !event.lesson);
+    }).map(function(event) {
+        event.color = timetable_event_color(event);
+        return event;
+    });
+}
 var room_ids_rev = #{teacher_logged_in? ? @@room_ids_rev.to_json : {}.to_json};
 
 function load_timetable(id) {
@@ -787,6 +863,184 @@ Date.prototype.getWeekYear = function() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Swiping between days in the day view: the day follows the finger and
+    // the neighbouring day comes in beside it. While dragging, the neighbour
+    // is a second, non-interactive calendar with the same look (lessons the
+    // timetable already has, or from the preloaded week files). On letting
+    // go, the real calendar switches to the new day at once and slides in
+    // from where the neighbour was, while a still picture of the old day
+    // slides out – so nothing is swapped once the movement has stopped.
+    // Only clearly horizontal moves count, so scrolling, tapping lessons and
+    // pinch-zooming stay as they were.
+    function install_calendar_day_swipe(calendar, el, options) {
+        if (calendar.view.type !== 'timeGridDay') return;
+        el.style.touchAction = 'pan-y pinch-zoom';
+        // the days slide to the edge of the screen; the page itself never
+        // gets wider than the screen
+        const wrap = $('<div>').css({ position: 'relative' }).insertBefore(el).append(el)[0];
+        document.documentElement.style.overflowX = 'clip';
+        document.body.style.overflowX = 'clip';
+        const GAP = 16;           // space between the two days
+        const MAX_DURATION = 240; // ms for a full slide
+        let start = null;
+        let dragging = false;
+        let neighbour = null;     // { dir, div, calendar }
+        let settling = null;      // the slide after letting go: { finish }
+        const harness = () => el.querySelector('.fc-view-harness');
+
+        // how far a day moves to be just outside the screen
+        function travel() {
+            const r = el.getBoundingClientRect();
+            return Math.max(r.width + GAP, window.innerWidth - r.left + GAP, r.right + GAP);
+        }
+
+        function day_after(date, dir) {
+            const d = moment(date);
+            do { d.add(dir, 'days'); } while ((options.hiddenDays || []).indexOf(d.day()) >= 0);
+            return d.format('YYYY-MM-DD');
+        }
+
+        function drop_neighbour() {
+            if (!neighbour) return;
+            neighbour.calendar.destroy();
+            neighbour.div.remove();
+            neighbour = null;
+        }
+
+        // a box exactly where the visible day is
+        function overlay(css_class) {
+            const r = harness().getBoundingClientRect();
+            const w = wrap.getBoundingClientRect();
+            return $('<div>').addClass(css_class).css({
+                position: 'absolute', left: (r.left - w.left) + 'px', top: (r.top - w.top) + 'px',
+                width: r.width + 'px', 'pointer-events': 'none', 'z-index': 2,
+            }).appendTo(wrap)[0];
+        }
+
+        function show_neighbour(dir) {
+            if (neighbour && neighbour.dir === dir) return;
+            drop_neighbour();
+            const date = day_after(calendar.getDate(), dir);
+            const div = overlay('calendar-swipe-neighbour');
+            let events = calendar.getEvents().filter(function(e) {
+                return e.start && moment(e.start).format('YYYY-MM-DD') === date;
+            }).map(function(e) {
+                return {
+                    id: e.id, title: e.title, start: e.start, end: e.end, allDay: e.allDay,
+                    display: e.display, classNames: e.classNames, extendedProps: e.extendedProps,
+                    backgroundColor: e.backgroundColor, borderColor: e.borderColor, textColor: e.textColor,
+                };
+            });
+            // another week: the lessons from the preloaded week file
+            if (events.length === 0) events = timetable_cached_events(date);
+            const other = new FullCalendar.Calendar(div, {
+                initialView: 'timeGridDay', initialDate: date, headerToolbar: false,
+                height: harness().getBoundingClientRect().height, dayHeaderFormat: options.dayHeaderFormat,
+                allDaySlot: options.allDaySlot, slotMinTime: options.slotMinTime, slotMaxTime: options.slotMaxTime,
+                expandRows: options.expandRows, locale: options.locale, hiddenDays: options.hiddenDays,
+                slotEventOverlap: options.slotEventOverlap, slotLabelFormat: options.slotLabelFormat,
+                nowIndicator: options.nowIndicator, eventContent: options.eventContent,
+                eventDidMount: options.eventDidMount, events: events,
+            });
+            other.render();
+            neighbour = { dir: dir, div: div, calendar: other };
+        }
+
+        function move(node, x, duration) {
+            node.style.transition = duration ? `transform ${duration}ms ease-out` : 'none';
+            node.style.transform = x === 0 ? '' : `translateX(${x}px)`;
+        }
+
+        // dx: how far the current day has moved
+        function place(dx, duration) {
+            const h = harness();
+            if (h) move(h, dx, duration);
+            if (neighbour) move(neighbour.div, dx + neighbour.dir * travel(), duration);
+        }
+
+        wrap.addEventListener('touchstart', function(e) {
+            // a quick next swipe: the previous slide ends at once
+            if (settling) settling.finish();
+            start = (e.touches.length === 1) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+            dragging = false;
+        }, { passive: true });
+
+        wrap.addEventListener('touchmove', function(e) {
+            if (!start || e.touches.length !== 1) return;
+            const dx = e.touches[0].clientX - start.x;
+            const dy = e.touches[0].clientY - start.y;
+            if (!dragging) {
+                // vertical first: that's scrolling, leave it alone
+                if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { start = null; return; }
+                if (Math.abs(dx) < 12) return;
+                dragging = true;
+            }
+            if (dx !== 0) show_neighbour(dx < 0 ? 1 : -1);
+            place(dx, 0);
+        }, { passive: true });
+
+        function finish(e, cancelled) {
+            const s = start;
+            start = null;
+            if (!s || !dragging) return;
+            dragging = false;
+            const dx = cancelled ? 0 : e.changedTouches[0].clientX - s.x;
+            const dist = travel();
+            const quick = Math.abs(dx) > 40 && (Date.now() - s.t) < 300;
+            const dir = dx < 0 ? 1 : -1;
+            const duration = function(remaining) {
+                return Math.round(Math.max(90, MAX_DURATION * Math.min(1, Math.abs(remaining) / dist)));
+            };
+            const swipe = !(Math.abs(dx) < el.getBoundingClientRect().width * 0.25 && !quick) && neighbour && neighbour.dir === dir;
+            if (swipe) {
+                const old_harness = harness();
+                const ghost = old_harness.cloneNode(true);
+                const before = calendar.getDate().getTime();
+                if (dir > 0) calendar.next(); else calendar.prev();
+                if (calendar.getDate().getTime() !== before) {
+                    // the old day as a still picture, sliding out
+                    const box = overlay('calendar-swipe-ghost');
+                    box.appendChild(ghost);
+                    ghost.style.transform = '';
+                    ghost.style.transition = '';
+                    move(box, dx, 0);
+                    // the real calendar, already on the new day, slides in
+                    // from where the neighbour was
+                    drop_neighbour();
+                    const h = harness();
+                    move(h, dx + dir * dist, 0);
+                    void h.offsetWidth;
+                    const ms = duration(dir * dist + dx);
+                    move(h, 0, ms);
+                    move(box, dx - dir * dist, ms);
+                    const done = function() {
+                        if (!settling) return;
+                        settling = null;
+                        box.remove();
+                        move(harness(), 0, 0);
+                    };
+                    settling = { finish: done };
+                    setTimeout(done, ms + 20);
+                    return;
+                }
+            }
+            // not far enough (or the end of the valid range): back in place
+            const ms = duration(dx);
+            place(0, ms);
+            const n = neighbour;
+            if (n) move(n.div, n.dir * dist, ms);
+            const done = function() {
+                if (!settling) return;
+                settling = null;
+                if (neighbour === n) drop_neighbour();
+            };
+            settling = { finish: done };
+            setTimeout(done, ms + 20);
+        }
+        wrap.addEventListener('touchend', function(e) { finish(e, false); });
+        wrap.addEventListener('touchcancel', function(e) { finish(e, true); });
+    }
+
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
     let initial_date = '#{initial_date}';
@@ -807,48 +1061,24 @@ document.addEventListener('DOMContentLoaded', function() {
         height: (!!window.chrome) ? 1330 : 1350,
         initialDate: initial_date,
         events: function(info, successCallback, failureCallback) {
-            let start_date = new Date(info.startStr);
-            while (start_date.getDay() != 1)
-                start_date.setDate(start_date.getDate() - 1);
-            let week = '' + start_date.getWeek();
-            if (week.length < 2)
-                week = '0' + week;
-
-            let yw_date = start_date.getWeekYear() + '-' + week;
-            let month = '' + (start_date.getMonth() + 1);
-            let day = '' + start_date.getDate();
-            if (month.length < 2) month = '0' + month;
-            if (day.length < 2) day = '0' + day;
-
             if (fixed_timetable_data !== null) {
                 render_timetable(fixed_timetable_data, successCallback);
-            } else {
-                let uri = '/gen/w/' + timetable_id + '/' + yw_date + '.json.gz';
-                if (#{teacher_logged_in? ? true: false})
-                    uri += '?' + Date.now();
-                let oReq = new XMLHttpRequest();
-                oReq.open('GET', uri, true);
-                oReq.responseType = 'arraybuffer';
-
-                oReq.onload = function(e) {
-                    $('.timetable_updated').empty();
-                    if (e.target.status === 200) {
-                        $('.ttc').removeClass('active');
-                        $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
-
-                        let data = pako.ungzip(oReq.response);
-                        let bb = new Blob([new Uint8Array(data)]);
-                        let f = new FileReader();
-                        f.onload = function(e) {
-                            let result = JSON.parse(e.target.result);
-                            console.log(result);
-                            render_timetable(result, successCallback);
-                        };
-                        f.readAsText(bb);
-                    }
-                };
-                oReq.send();
+                return;
             }
+            let shown_id = timetable_id;
+            load_timetable_week(timetable_week_key(info.startStr), function(result) {
+                if (result === null) return;
+                $('.timetable_updated').empty();
+                $('.ttc').removeClass('active');
+                $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
+                console.log(result);
+                render_timetable(result, successCallback);
+                if (shown_id !== timetable_id) return;
+                // the weeks before and after, for going to another day quickly
+                let d = moment(info.startStr);
+                load_timetable_week(timetable_week_key(d.clone().subtract(7, 'days').format('YYYY-MM-DD')));
+                load_timetable_week(timetable_week_key(d.clone().add(7, 'days').format('YYYY-MM-DD')));
+            });
         },
         hiddenDays: [6, 0],
         slotEventOverlap: false,
@@ -1660,6 +1890,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     window.calendar.render();
+    // phones (day view): swipe left/right for the next/previous day, the day
+    // follows the finger; not on classroom tablets, which stay on today
+    if (!tablet_logged_in) install_calendar_day_swipe(window.calendar, document.getElementById('calendar'), options);
     reload_print_button(null);
     $('#lessonModal').on('hidden.bs.modal', function() {
         if (pb_playing)
@@ -2081,6 +2314,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     d.add(1, 'days');
                 window.calendar.gotoDate(d.format('YYYY-MM-DD'));
             }
+            // the regular refresh picks up changes: not from the cache
+            forget_timetable_weeks();
             window.calendar.refetchEvents();
         }
     }

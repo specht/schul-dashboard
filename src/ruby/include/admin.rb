@@ -118,7 +118,8 @@ class Main < Sinatra::Base
                 ['Informatik-Biber', [['/api/all_users_informatik_biber.xlsx', 'Anmeldungen (Excel)'], ['/api/all_users_informatik_biber', 'Zugangsdaten (Text)']], 'fa-download'],
             ]
             io.puts "<style>"
-            io.puts ".admin-links { margin: 1em 0; }"
+            # below the floating status line, not squeezed next to it
+            io.puts ".admin-links { margin: 1em 0; clear: both; }"
             io.puts ".admin-link-row { display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 0.4em; }"
             io.puts ".admin-link-label { width: 9em; flex-shrink: 0; font-weight: bold; }"
             io.puts ".admin-link-row .btn { margin: 0 0.4em 0.3em 0; }"

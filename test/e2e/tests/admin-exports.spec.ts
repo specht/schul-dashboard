@@ -49,3 +49,18 @@ test('Admin-Seite: Exporte und Listen sind verlinkt', async ({ page }) => {
     await expect(page.locator(`.admin-links a[href="${href}"]`)).toHaveCount(1);
   }
 });
+
+// The link rows start below the floating status line and use the full width
+// (on phones the first row was squeezed next to it: one button per line).
+test('Admin-Seite: Link-Zeilen nutzen die ganze Breite', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/admin');
+  const row = page.locator('.admin-link-row').first();
+  const label = await row.locator('.admin-link-label').boundingBox();
+  const lineHeight = await row.locator('.admin-link-label').evaluate((el) => parseFloat(getComputedStyle(el).lineHeight) || 24);
+  expect(label!.height).toBeLessThan(lineHeight * 1.5);
+  const buttons = row.locator('a.btn');
+  const first = await buttons.nth(0).boundingBox();
+  const second = await buttons.nth(1).boundingBox();
+  expect(Math.abs(first!.y - second!.y)).toBeLessThan(4);
+});

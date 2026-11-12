@@ -66,6 +66,12 @@ DOCKER_LOG_MAX_FILES = 5
 # doc/Development.md). Zum Abschalten:
 # DEV_HOT_RELOAD = false
 
+# Nur Entwicklung: die Instanz ist nur auf diesem Rechner erreichbar
+# (127.0.0.1:8025). Feste Anmeldecodes funktionieren hier für jedes Konto –
+# im Netz freigeben nur bewusst und nur in einem vertrauenswürdigen Netz,
+# z. B. zum Testen mit dem eigenen Handy im WLAN:
+# NGINX_HOST_ADDRESS = '0.0.0.0'
+
 # Nur Entwicklung: Server für src/scripts/pull-prod-data.rb, das die
 # Produktionsdaten in die Entwicklungsinstanz holt (Name aus ~/.ssh/config).
 # PROD_SSH_HOST = 'mein-server'

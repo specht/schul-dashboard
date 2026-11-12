@@ -16,7 +16,9 @@ end
 # Optional settings an environment file may define (defaults = previous behaviour)
 COMPOSE_FILE_PATH = defined?(COMPOSE_FILE) ? COMPOSE_FILE : 'docker-compose.yaml'
 NGINX_CONFIG_PATH = defined?(NGINX_CONFIG_FILE) ? NGINX_CONFIG_FILE : 'docker/nginx/default.conf'
-DEV_NGINX_ADDRESS = defined?(NGINX_HOST_ADDRESS) ? NGINX_HOST_ADDRESS : '0.0.0.0'
+# development: only this machine by default (fixed login codes work for every
+# account there); NGINX_HOST_ADDRESS = '0.0.0.0' opts in to the network
+DEV_NGINX_ADDRESS = defined?(NGINX_HOST_ADDRESS) ? NGINX_HOST_ADDRESS : '127.0.0.1'
 PUBLISH_EXTRA_DEV_PORTS = defined?(PUBLISH_DEV_PORTS) ? PUBLISH_DEV_PORTS : true
 
 DEV_NGINX_PORT = defined?(NGINX_HOST_PORT) ? NGINX_HOST_PORT : (DEVELOPMENT ? 8025 : 8020)

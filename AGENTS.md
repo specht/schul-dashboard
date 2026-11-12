@@ -80,7 +80,18 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 - In the dev instance, `rerun` restarts Ruby on every file change under
   `src/ruby`; page templates take effect immediately.
 - Never make a dev instance with real data reachable on the network: in
-  development mode, fixed login codes work for every account.
+  development mode, fixed login codes work for every account. The dev nginx
+  listens on `127.0.0.1` by default; only the person who owns the instance
+  may opt in with `NGINX_HOST_ADDRESS = '0.0.0.0'` in their own `env.rb`
+  (trusted network only, e.g. testing with the own phone). Agents never set
+  it on their own.
+- **Neo4j 5.26 since 2026-11-12** (was 4.4; plan and rehearsal in
+  `review/2026-11/neo4j-5-migration.md`). A dev instance still on a 4.4
+  store won't start – Neo4j 5 refuses the old store instead of touching it.
+  Switch once: `./config.rb build neo4j`, then
+  `./src/scripts/pull-prod-data.rb --srsly --db-only` (loads the production
+  data into a fresh 5.26 store; the old one goes to `data/neo4j.previous`).
+  Dumps and `load-dump.rb` work across both versions (neo4j_bolt 0.5.1).
 
 ## 5. Code rules
 
@@ -131,9 +142,10 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 - `config.rb` generates `docker-compose.yaml` and the nginx configuration.
   Make new settings there optional: without them, the generated files and
   the `docker compose` call must stay **byte-identical** to before (check
-  for development and production settings). Decided exception: hot reload
-  (`DEV_HOT_RELOAD`) is on by default in development, so the development
-  output differs there; production output stays identical.
+  for development and production settings). Decided exceptions, both
+  development only (production output stays identical): hot reload
+  (`DEV_HOT_RELOAD`) is on by default, and the dev nginx binds to
+  `127.0.0.1` unless `NGINX_HOST_ADDRESS` is set.
 - The nginx configuration is copied into the image: after changes run
   `./config.rb build nginx && ./config.rb up -d nginx`.
 - `src/static/errors/neustart.html` (the 502 page) is served by nginx

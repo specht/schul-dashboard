@@ -76,6 +76,35 @@ module MailForwarding
         mail
     end
 
+    # Turns a received mail into a bounce to its sender, sent by us: without
+    # the transport headers, the envelope sender (MAIL FROM) is our address.
+    # Otherwise the mail gem takes the original Return-Path as the envelope
+    # sender and the provider refuses it – which once crashed the forwarder
+    # in a loop on the same mail.
+    def self.prepare_bounce(mail, from:, reply_to:)
+        mail.to = [mail.from.first]
+        mail.from = [from]
+        mail.reply_to = reply_to
+        mail.cc = []
+        mail.bcc = []
+        TRANSPORT_HEADERS.each do |name|
+            mail.header[name] = nil while mail.header[name]
+        end
+        mail.smtp_envelope_from = from
+        mail
+    end
+
+    # A bounce that is refused (5xx) must not stop the receiving: log it and
+    # go on with the next mail. Temporary errors still end the pass (the
+    # mail is tried again).
+    def self.deliver_bounce(log: nil)
+        yield
+        true
+    rescue *RECIPIENT_ERRORS => e
+        log&.call("Bounce refused: #{e.class}: #{e.message.to_s.lines.first.to_s.strip}")
+        false
+    end
+
     # state: {:pending => [...], :sent => [...], :failed => [...], :attempts => n,
     #         :retry_at => unix time} (recipients.yaml). Yields each pending
     # recipient to the block, which sends the mail; after every recipient the

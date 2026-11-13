@@ -158,6 +158,7 @@ class Script
     end
 
     def run
+        bounce_log = lambda { |message| STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] #{message}" }
         t1 = Thread.new do
             # First thread: check for new mails
             # - if /mails/<message-id> does not exist:
@@ -193,14 +194,16 @@ class Script
                             end
                             unless allowed_senders().include?(from_address.downcase)
                                 STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
-                                deliver_mail do |m2|
-                                    m2.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
-                                    m2.to = ["#{mail.from[0]}"]
-                                    m2.from = [SMTP_FROM]
-                                    m2.cc = []
-                                    m2.bcc = []
-                                    m2.subject = "[Nicht zustellbar: Ungültige Absender-Adresse] #{mail.subject}"
-                                    m2.body = "Sie haben versucht, eine E-Mail an den Verteiler zu schicken,  allerdings ist Ihre Absender-Adresse nicht für den Versand an Verteileradressen freigeschaltet.\r\n\r\nBitte verwenden Sie Ihre schulische E-Mail-Adresse oder schreiben Sie eine E-Mail an #{MAIL_SUPPORT_EMAIL}, um sich für den Versand freischalten zu lassen.\r\n\r\n"
+                                MailForwarding.deliver_bounce(log: bounce_log) do
+                                    deliver_mail do |m2|
+                                        m2.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
+                                        m2.to = ["#{mail.from[0]}"]
+                                        m2.from = [SMTP_FROM]
+                                        m2.cc = []
+                                        m2.bcc = []
+                                        m2.subject = "[Nicht zustellbar: Ungültige Absender-Adresse] #{mail.subject}"
+                                        m2.body = "Sie haben versucht, eine E-Mail an den Verteiler zu schicken,  allerdings ist Ihre Absender-Adresse nicht für den Versand an Verteileradressen freigeschaltet.\r\n\r\nBitte verwenden Sie Ihre schulische E-Mail-Adresse oder schreiben Sie eine E-Mail an #{MAIL_SUPPORT_EMAIL}, um sich für den Versand freischalten zu lassen.\r\n\r\n"
+                                    end
                                 end
                                 imap.copy(mid, 'Bounced')
                             else
@@ -235,11 +238,7 @@ class Script
                                 end
                                 if all_recipients.empty? || (!non_existing_mailing_list_addresses.empty?) || (!relocated_mailing_list_addresses.empty?)
                                     STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to sender #{mail.from[0]}: #{mail.subject}"
-                                    mail.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
-                                    mail.to = ["#{mail.from[0]}"]
-                                    mail.from = [SMTP_FROM]
-                                    mail.cc = []
-                                    mail.bcc = []
+                                    MailForwarding.prepare_bounce(mail, from: SMTP_FROM, reply_to: "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>")
                                     if non_existing_mailing_list_addresses.empty? && relocated_mailing_list_addresses.empty?
                                         mail.subject = "[Nicht zustellbar: Keine Empfänger] #{mail.subject}"
                                     else
@@ -268,7 +267,9 @@ class Script
                                         end
                                         io.string
                                     end
-                                    deliver_with_development_guard!(mail)
+                                    MailForwarding.deliver_bounce(log: bounce_log) do
+                                        deliver_with_development_guard!(mail)
+                                    end
                                     imap.copy(mid, 'Bounced')
                                 end
                             end

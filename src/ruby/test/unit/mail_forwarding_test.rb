@@ -33,6 +33,28 @@ class MailForwardingTest < Minitest::Test
         assert_empty copy.cc.to_a
     end
 
+    # a mail to a list only in Bcc (no To/Cc), as received: bounced to the
+    # sender, sent from our address – also in the SMTP envelope
+    def test_bounce_is_sent_from_our_address
+        raw = "Return-Path: <kim@schueler.example.com>\r\nSender: kim@schueler.example.com\r\n" \
+              "DKIM-Signature: v=1; b=abc\r\nFrom: Kim <kim@schueler.example.com>\r\nSubject: Frage\r\n\r\nHallo"
+        bounce = MailForwarding.prepare_bounce(Mail.read_from_string(raw), from: 'verteiler@example.com', reply_to: 'Support <support@example.com>')
+        assert_equal 'verteiler@example.com', bounce.smtp_envelope_from
+        assert_equal ['verteiler@example.com'], bounce.from
+        assert_equal ['kim@schueler.example.com'], bounce.to
+        assert_equal ['kim@schueler.example.com'], bounce.smtp_envelope_to
+        %w(Return-Path Sender DKIM-Signature).each { |name| assert_nil bounce.header[name], name }
+        assert_nil Mail.read_from_string(bounce.to_s).header['Return-Path']
+    end
+
+    def test_a_refused_bounce_does_not_stop_receiving
+        logged = []
+        assert_equal false, MailForwarding.deliver_bounce(log: ->(m) { logged << m }) { raise Net::SMTPFatalError.new('550-Requested action not taken: mailbox unavailable') }
+        assert_match(/Bounce refused/, logged.first)
+        assert_equal true, MailForwarding.deliver_bounce { :sent }
+        assert_raises(Net::ReadTimeout) { MailForwarding.deliver_bounce { raise Net::ReadTimeout } }
+    end
+
     def test_copy_from_own_domain_keeps_the_sender
         copy = MailForwarding.copy_for(external_mail, 'max@example.com', own_domain: true)
         assert_equal ['eva@example.org'], copy.from

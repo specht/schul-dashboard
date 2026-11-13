@@ -38,7 +38,8 @@ class MailForwardingTest < Minitest::Test
     def test_bounce_is_sent_from_our_address
         raw = "Return-Path: <kim@schueler.example.com>\r\nSender: kim@schueler.example.com\r\n" \
               "DKIM-Signature: v=1; b=abc\r\nFrom: Kim <kim@schueler.example.com>\r\nSubject: Frage\r\n\r\nHallo"
-        bounce = MailForwarding.prepare_bounce(Mail.read_from_string(raw), from: 'verteiler@example.com', reply_to: 'Support <support@example.com>')
+        # SMTP_FROM comes with a display name
+        bounce = MailForwarding.prepare_bounce(Mail.read_from_string(raw), from: 'Dashboard Beispielschule <verteiler@example.com>', reply_to: 'Support <support@example.com>')
         assert_equal 'verteiler@example.com', bounce.smtp_envelope_from
         assert_equal ['verteiler@example.com'], bounce.from
         assert_equal ['kim@schueler.example.com'], bounce.to

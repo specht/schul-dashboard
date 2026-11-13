@@ -90,7 +90,8 @@ module MailForwarding
         TRANSPORT_HEADERS.each do |name|
             mail.header[name] = nil while mail.header[name]
         end
-        mail.smtp_envelope_from = from
+        # only the address: SMTP_FROM has a display name, MAIL FROM must not
+        mail.smtp_envelope_from = Mail::Address.new(from).address
         mail
     end
 

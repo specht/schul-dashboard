@@ -1226,18 +1226,21 @@ function render_groups() {
                 dashboardConfirm(`Liste ${group_letter(gi)} wirklich löschen?`, doit, { confirm: 'Löschen', danger: true });
             }));
         // Hinweise auf Widersprüche zu den Vorgaben der Lehrkraft - nur
-        // anzeigen, nichts blockieren.
+        // anzeigen, nichts blockieren. Nur für Bereiche, die das gewählte
+        // Werkzeug berücksichtigt (ohne gewähltes Werkzeug immer).
+        let tool = current_area_mode();
+        let uses = area => !tool || area_on(tool, area);
         let hints = [];
-        for (let i = 0; i < g.length; i++) {
+        for (let i = 0; i < g.length && uses('spread'); i++) {
             for (let j = i + 1; j < g.length; j++) {
                 let a = g[i], b = g[j];
-                if (pair_exists(forced_pairs, a, b)) {
+                if (uses('pairs') && pair_exists(forced_pairs, a, b)) {
                     hints.push(`${display_name(a)} und ${display_name(b)} sind ein Zwangspaar und sitzen deshalb trotzdem zusammen.`);
                     continue;
                 }
                 let ra = fixed_rules.find(r => r[0] === a && rule_is_exact_seat(r));
                 let rb = fixed_rules.find(r => r[0] === b && rule_is_exact_seat(r));
-                if (ra && rb) {
+                if (uses('fixed') && ra && rb) {
                     let ia = seats.findIndex(s => s[0] === ra[1][0] && s[1] === ra[2][0]);
                     let ib = seats.findIndex(s => s[0] === rb[1][0] && s[1] === rb[2][0]);
                     if (ia >= 0 && ib >= 0 && seats_close(ia, ib, rank))
@@ -2579,6 +2582,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
             rule_areas = data.areas || {};
             render_areas();
+            render_groups();
             render_wishes();
             if (open_mode === 'spread' && open_cycle_data) render_work_header(open_cycle_data);
             rerender_open_plan();

@@ -462,9 +462,21 @@ test('Sitzplan: Widerspruch in den Vorgaben knallrot markiert', async ({ page })
   await expect(page.locator('#sph_seats .place.sph-conflict')).toHaveCount(2);
   await expect(page.locator('#sph_seats .place.sph-conflict').first()).toHaveAttribute('title', /Widerspruch in den Vorgaben/);
   await expect(page.locator('#sph_unresolved_summary .sph-conflict-list')).toContainText('Zwangspaar');
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_groups_list .sph-group-hint')).toContainText('Zwangspaar');
+
+  // pairs not used by this tool: no conflict, no hint under the list
+  const off = page.waitForResponse('**/api/sph_set_rule_area');
+  await page.locator('label[for="sph_area_pairs"]').click();
+  expect((await off).status()).toBe(200);
+  await expect(page.locator('#sph_seats .place.sph-conflict')).toHaveCount(0);
+  await expect(page.locator('#sph_groups_list .sph-group-hint')).toHaveCount(0);
+  const on = page.waitForResponse('**/api/sph_set_rule_area');
+  await page.locator('label[for="sph_area_pairs"]').click();
+  expect((await on).status()).toBe(200);
+  await expect(page.locator('#sph_seats .place.sph-conflict')).toHaveCount(2);
 
   // the forced pair removed: no more conflict
-  await page.locator('#sph_vorgaben > summary').click();
   await page.locator('#sph_forced_list .pair-chip a').first().click();
   await expect(page.locator('#sph_forced_list')).not.toContainText('Elli Mustermann');
   await expect(page.locator('#sph_seats .place.sph-conflict')).toHaveCount(0);

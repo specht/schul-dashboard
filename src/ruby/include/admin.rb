@@ -646,7 +646,8 @@ class Main < Sinatra::Base
             end
 
             Set.new(neo4j_query('MATCH (n:KnownEmailAddress {known: true}) RETURN n.email;').map { |x| x['n.email'] })
-            email_addresses = @@current_email_addresses
+            # the mail provider's list as uploaded by the Postfach-Bot (else the file)
+            email_addresses = mail_address_list[:addresses].to_a
             required_email_addresses = []
             data_for_required_email_address = {}
             @@user_info.each_pair do |email, info|

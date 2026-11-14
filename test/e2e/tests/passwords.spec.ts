@@ -20,6 +20,8 @@ const BOT_TOKEN = 'test-mail-password-reset-bot-token-0123456789';
 const KLASSENLEITUNG = 'torstensonin@beispielschule.de';
 const FIRST_NAMES = ['Anna', 'Ben', 'Cem', 'Dana', 'Emil', 'Fiona'];
 const PAGE = '/passwoerter';
+// the admin handles the requests here (admin menu)
+const ADMIN_PAGE = '/postfaecher';
 
 function students(testInfo: TestInfo) {
   const offset = testInfo.project.name === 'mobile' ? 3 : 0;
@@ -62,7 +64,7 @@ async function bot(baseURL: string | undefined, token = BOT_TOKEN) {
 
 async function botCases(baseURL: string | undefined, mailbox: string) {
   const api = await bot(baseURL);
-  const pending = await api.get('/api/mail_password_reset_bot/pending');
+  const pending = await api.get('/api/mail_account_bot/pending');
   expect(pending.status()).toBe(200);
   const all: { id: string; mailboxes: { mailbox: string; password: string }[] }[] = (await pending.json()).cases;
   return { api, open: all.filter((c) => c.mailboxes.some((m) => m.mailbox === mailbox)) };
@@ -73,7 +75,7 @@ async function botFinishes(baseURL: string | undefined, mailbox: string, ok: boo
   expect(open, `exactly one approved case for ${mailbox}`).toHaveLength(1);
   const password = open[0].mailboxes.find((m) => m.mailbox === mailbox)!.password;
   expect(password).toMatch(/^[A-Za-z0-9-]{8,}$/);
-  const result = await api.post('/api/mail_password_reset_bot/result', { data: { id: open[0].id, ok, message } });
+  const result = await api.post('/api/mail_account_bot/result', { data: { id: open[0].id, ok, message } });
   expect(result.status()).toBe(200);
   expect((await result.json()).result).toBe('ok');
   return password;
@@ -121,7 +123,7 @@ test('Schüler:in beantragt das Zurücksetzen, die Administration gibt frei, die
   const adminContext = await browser.newContext();
   const adminPage = await adminContext.newPage();
   await login(adminPage, ACCOUNTS.admin);
-  await adminPage.goto(PAGE);
+  await adminPage.goto(ADMIN_PAGE);
   const caseRow = adminPage.locator('#mail_cases_open tr.mail-case').filter({ hasText: student.email }).first();
   await expect(caseRow).toHaveAttribute('data-state', 'open');
   await expect(caseRow).toContainText('Klick im Dashboard');
@@ -160,7 +162,8 @@ test('Klassenleitung beantragt; Ablehnen, Fehler des Bots landen bei der Adminis
   const failuresBefore = (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length;
   expect((await (await requestReset(kl, student.email)).json()).result).toBe('requested');
   await step(admin, (await latestCase(admin, student.email))!.id, 'approve');
-  await botFinishes(baseURL, student.email, false, 'Testfehler');
+  // the bot's messages can be long (up to 500 characters, umlauts count twice)
+  await botFinishes(baseURL, student.email, false, 'Testfehler: ' + 'Der Bot hat angehalten, Änderung prüfen ä ö ü '.repeat(12).slice(0, 480));
   await expect.poll(async () => (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length).toBe(failuresBefore + 1);
   latest = (await latestCase(kl, student.email))!;
   expect(latest.state).toBe('failed');
@@ -226,8 +229,8 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   const family = `familie.${testInfo.project.name}@example.org`;
   const noticesBefore = (await mails(parents, PARENT_NOTICE)).length;
   await login(page, ACCOUNTS.admin);
-  await page.goto(PAGE);
-  await expect(page.locator('#mail_reset_bot_state')).toContainText('Bot zuletzt aktiv');
+  await page.goto(ADMIN_PAGE);
+  await expect(page.locator('#mail_reset_bot_state')).toContainText(/Bot (zuletzt aktiv|nicht verbunden|verbunden)/);
 
   await page.locator('#ti_mail_case_mailbox').fill(parents);
   await page.locator('#bu_add_mail_case_mailbox').click();
@@ -235,7 +238,8 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await page.locator('#bu_add_mail_case_mailbox').click();
   await expect(page.locator('#mail_case_mailboxes .mail-case-mailbox')).toHaveCount(2);
   await page.locator('#ti_mail_case_reply_to').fill(family);
-  await page.locator('#ti_mail_case_note').fill('Mail vom Vater');
+  // a real note can be long (500 characters, umlauts take two bytes each)
+  await page.locator('#ti_mail_case_note').fill('Mail vom Vater – ' + 'Größe ä ö ü '.repeat(40).slice(0, 480));
   await page.locator('#bu_create_mail_case').click();
 
   // in the list, waiting for the decision
@@ -269,7 +273,29 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await expect(modal.locator('#ta_reply_body')).toHaveValue(new RegExp(`für das Postfach und das Eltern-Postfach von ${a.name} zurückgesetzt und sende Ihnen die Zugangsdaten im Anhang`));
   await expect(modal.locator('#ta_reply_body')).toHaveValue(/Viele Grüße\n/);
   await expect(modal.locator('#reply_attachment')).toContainText(a.name);
-  await modal.locator('#ta_reply_body').fill(`Sehr geehrter Herr Postfachtest,\n\nanbei die Zugangsdaten.\n\nViele Grüße`);
+  // the attachment can be looked at before sending
+  const [letter, preview] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/mail_password_case_letter')),
+    page.context().waitForEvent('page'),
+    modal.locator('#bu_preview_reply_letter').click(),
+  ]);
+  expect(letter.status()).toBe(200);
+  expect(letter.headers()['content-type']).toContain('application/pdf');
+  await preview.close();
+  // copies: CC and BCC, several separated by commas; a wrong address is refused
+  const cc = [`oma.${testInfo.project.name}@example.org`, `opa.${testInfo.project.name}@example.org`];
+  const bcc = `sekretariat.${testInfo.project.name}@example.org`;
+  await modal.locator('#ti_reply_cc').fill('kein-gueltiger-empfaenger');
+  await modal.locator('#bu_send_mail_case_reply').click();
+  const refused = dashboardDialog(page);
+  await expect(refused).toContainText('Es wurde nichts gesendet');
+  await refused.getByRole('button', { name: 'OK' }).click();
+  await expect(modal).toBeVisible();
+  await modal.locator('#ti_reply_cc').fill(cc.join(', '));
+  await modal.locator('#ti_reply_bcc').fill(bcc);
+  // a real, edited letter text is far longer than the 512 bytes a request may have by default
+  const longer = 'Bitte bewahren Sie den Brief gut auf; bei Fragen wenden Sie sich gern an die Schule. '.repeat(12);
+  await modal.locator('#ta_reply_body').fill(`Sehr geehrter Herr Postfachtest,\n\nanbei die Zugangsdaten.\n\n${longer}\n\nViele Grüße`);
   await modal.locator('#bu_send_mail_case_reply').click();
   await expect(modal).toBeHidden();
   // answered: off the open list, into the history
@@ -277,13 +303,16 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await page.locator('#mail_cases_closed').locator('xpath=ancestor::details').locator('summary').click();
   const closedRow = page.locator('#mail_cases_closed tr.mail-case').filter({ hasText: family }).first();
   await expect(closedRow.locator('.mail-case-replied')).toContainText(family);
+  await expect(closedRow.locator('.mail-case-replied')).toContainText(cc[0]);
 
   await expect.poll(async () => (await mails(family, REPLY_SUBJECT)).length).toBe(1);
   const [summary] = await mails(family, REPLY_SUBJECT);
   const message = await (await fetch(`${MAILPIT_URL}/api/v1/message/${summary.ID}`)).json();
   expect(message.Text).toContain('Sehr geehrter Herr Postfachtest');
   expect(message.ReplyTo.map((x: { Address: string }) => x.Address)).toEqual([ACCOUNTS.admin]);
-  expect(message.Bcc.map((x: { Address: string }) => x.Address)).toEqual([ACCOUNTS.admin]);
+  expect(message.Cc.map((x: { Address: string }) => x.Address)).toEqual(cc);
+  // the admin always gets a copy
+  expect(message.Bcc.map((x: { Address: string }) => x.Address)).toEqual([ACCOUNTS.admin, bcc]);
   expect(message.Attachments).toHaveLength(1);
   expect(message.Attachments[0].ContentType).toBe('application/pdf');
   expect(message.Attachments[0].FileName).toContain(a.name);
@@ -353,10 +382,10 @@ test('Wer darf was: fremde Postfächer, Eltern-Postfächer, Freigabe, Grenzen, B
 
   // the bot interface wants the token
   const noToken = await playwrightRequest.newContext({ baseURL });
-  expect((await noToken.get('/api/mail_password_reset_bot/pending')).status()).toBe(401);
+  expect((await noToken.get('/api/mail_account_bot/pending')).status()).toBe(401);
   const wrongToken = await bot(baseURL, 'x'.repeat(BOT_TOKEN.length));
-  expect((await wrongToken.get('/api/mail_password_reset_bot/pending')).status()).toBe(401);
-  expect((await wrongToken.post('/api/mail_password_reset_bot/result', { data: { id: 'x', ok: true } })).status()).toBe(401);
+  expect((await wrongToken.get('/api/mail_account_bot/pending')).status()).toBe(401);
+  expect((await wrongToken.post('/api/mail_account_bot/result', { data: { id: 'x', ok: true } })).status()).toBe(401);
 });
 
 test('Alte Adressen führen zur Seite Passwörter', async ({ page }) => {
@@ -371,4 +400,50 @@ test('Alte Adressen führen zur Seite Passwörter', async ({ page }) => {
   // what to do when the parents lost their password
   await expect(page.locator('.mail-reset-parents-hint')).toContainText(`eltern.${ACCOUNTS.schueler_oberstufe}`);
   await expect(page.locator('.mail-reset-parents-hint')).toContainText('Klassenleitung');
+});
+
+test('Administration: E-Mail-Brief suchen, Postfach in die Anfrage übernehmen; Passwörter-Seite verweist hierher', async ({ page, context }, testInfo) => {
+  await login(page, ACCOUNTS.admin);
+  // the admin menu leads here; the profile page only links to it
+  await page.goto(PAGE);
+  await expect(page.locator('.mail-admin-link a')).toHaveAttribute('href', /\/postfaecher$/);
+  await expect(page.locator('#mail_cases_open')).toHaveCount(0);
+  await page.goto(ADMIN_PAGE);
+  const search = page.locator('#ti_letter_search');
+  // by first and last name in any order, without accents, or by class
+  await search.fill('mustermann max');
+  const row = page.locator('.letter-result[data-email="max.mustermann@mail.beispielschule.de"]');
+  await expect(row).toBeVisible();
+  await search.fill('');
+  await expect(page.locator('#letter_results')).toBeHidden();
+  await search.fill('max.mustermann@');
+  await expect(row).toBeVisible();
+  // the letter is made as a PDF and opens in a new tab
+  const [response, popup] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/print_email_letters')),
+    context.waitForEvent('page'),
+    row.locator('.bu_open_letter').click(),
+  ]);
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('application/pdf');
+  expect(JSON.parse(response.request().postData() || '{}')).toEqual({ emails: ['max.mustermann@mail.beispielschule.de'] });
+  await popup.close();
+  // the parents' mailbox goes into the new request
+  await row.locator('.bu_case_parents').click();
+  await expect(page.locator('#mail_case_mailboxes')).toContainText('eltern.max.mustermann@mail.beispielschule.de');
+  await search.fill('gibt es nicht xyz');
+  await expect(page.locator('#letter_results')).toContainText('Niemand gefunden');
+  // fully on screen on phones too
+  await search.fill('mustermann max');
+  await row.locator('.bu_case_parents').scrollIntoViewIfNeeded();
+  await expect(row.locator('.bu_case_parents')).toBeInViewport({ ratio: 1 });
+});
+
+test('Administration: Eintrag im Admin-Menü', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'menu once is enough');
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/');
+  const link = page.locator('a.dropdown-item[href="/postfaecher"]');
+  await expect(link).toHaveCount(1);
+  await expect(link).toContainText('Postfach-Anfragen und E-Mail-Briefe');
 });

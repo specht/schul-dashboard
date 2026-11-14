@@ -1,0 +1,10 @@
+{
+  "name": "gyst-mail-account-bot",
+  "private": true,
+  "description": "Resets school mailbox passwords in the IONOS control panel for cases the admin approved on /passwoerter. Runs only on the maintainer's machine, see README.md.",
+  "bin": "bot.js",
+  "dependencies": {
+    "playwright-core": "1.55.1",
+    "ws": "8.18.0"
+  }
+}

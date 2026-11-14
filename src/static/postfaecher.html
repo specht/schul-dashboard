@@ -1,0 +1,598 @@
+#{this_is_a_page_for_logged_in_admins}
+<div class="modal" id="mailCaseReplyModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Antwort senden</h5>
+      </div>
+      <div class="modal-body">
+        <div class='form-group'>
+          <label for='ti_reply_to'>An</label>
+          <input id='ti_reply_to' type='email' class='form-control' autocomplete='off' />
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-6'>
+            <label for='ti_reply_cc'>CC</label>
+            <input id='ti_reply_cc' class='form-control' placeholder='optional, mehrere mit Komma' autocomplete='off' />
+          </div>
+          <div class='form-group col-md-6'>
+            <label for='ti_reply_bcc'>BCC</label>
+            <input id='ti_reply_bcc' class='form-control' placeholder='optional, mehrere mit Komma' autocomplete='off' />
+          </div>
+        </div>
+        <div class='form-group'>
+          <label for='ti_reply_subject'>Betreff</label>
+          <input id='ti_reply_subject' class='form-control' maxlength='200' autocomplete='off' />
+        </div>
+        <div class='form-group'>
+          <label for='ta_reply_body'>Text</label>
+          <textarea id='ta_reply_body' class='form-control' rows='9'></textarea>
+        </div>
+        <p class='text-muted' style='margin-bottom: 0;'><i class='fa fa-paperclip'></i>&nbsp;&nbsp;<span id='reply_attachment'></span>
+        <button id='bu_preview_reply_letter' class='btn btn-xs btn-outline-secondary' style='margin-left: 0.5em;'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ansehen</button><br />
+        Antworten gehen an dich, du bekommst eine Kopie.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Abbrechen</button>
+        <button id='bu_send_mail_case_reply' class="btn btn-success"><i class='fa fa-paper-plane'></i>&nbsp;&nbsp;Senden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class='container' style='padding-top: 30px; padding-bottom: 30px;'>
+    <div class='row'>
+        <div class='col-lg-10 offset-lg-1'>
+            <h2 style='margin-bottom: 20px;'>Postfächer: Anfragen und E-Mail-Briefe</h2>
+            <div class='api_messages' style='display: none;'></div>
+            #{print_mail_account_admin_page()}
+        </div>
+    </div>
+</div>
+
+<style>
+    .mail-reset-password { font-family: monospace; font-size: 110%; }
+    .mail-case-mailbox { display: inline-block; margin: 0 0.3em 0.3em 0; }
+    .mail-case-actions .btn { margin: 0.3em 0.2em 0 0; }
+    .mail-case-step-text { margin-bottom: 0.2em; }
+    .letter-results td { vertical-align: middle; }
+    /* the bot's status: a flat dot with a soft halo, the text beside it */
+    #mail_reset_bot_state { margin-bottom: 1em; }
+    .mail-bot-row { display: flex; align-items: flex-start; gap: 0.75em; padding: 0.65em 0.9em; border-radius: 0.5em;
+        background: #fff; border: 1px solid #e1e4e8; }
+    .mail-bot-dot { flex: none; width: 0.7em; height: 0.7em; margin-top: 0.42em; border-radius: 50%;
+        background: #9aa0a6; box-shadow: 0 0 0 0.22em rgba(154, 160, 166, 0.22); }
+    .mail-bot-dot[data-state="connected"] { background: #1f9d55; box-shadow: 0 0 0 0.22em rgba(31, 157, 85, 0.2);
+        animation: mail-bot-breathe 2.8s ease-in-out infinite; }
+    .mail-bot-dot[data-state="paused"] { background: #d99a06; box-shadow: 0 0 0 0.22em rgba(217, 154, 6, 0.22); }
+    @keyframes mail-bot-breathe {
+        0%, 100% { box-shadow: 0 0 0 0.22em rgba(31, 157, 85, 0.2); }
+        50% { box-shadow: 0 0 0 0.34em rgba(31, 157, 85, 0.1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .mail-bot-dot[data-state="connected"] { animation: none; } }
+    .mail-bot-body { min-width: 0; }
+    .mail-bot-title { font-weight: 500; }
+    .mail-bot-detail { margin-top: 0.15em; color: #5f6368; }
+    body.dark .mail-bot-row { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); }
+    body.dark .mail-bot-detail { color: #b0b5ba; }
+    .letter-results .btn { margin: 0.15em 0.2em 0.15em 0; }
+    @media (max-width: 575px) {
+        .mail-cases td { display: block; border-top: none; }
+        .mail-cases tr td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
+        .mail-cases thead { display: none; }
+        .letter-results thead { display: none; }
+        .letter-results td { display: block; border-top: none; padding: 0.2em 0.75em; }
+        .letter-results td:first-child { border-top: 1px solid rgba(128, 128, 128, 0.3); padding-top: 0.6em; font-weight: bold; }
+        .letter-results td:last-child { padding-bottom: 0.6em; }
+        .mail-creations td { display: block; border-top: none; }
+        .mail-creations tr td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
+        .mail-creations thead { display: none; }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const STATE_LABELS = {
+        open: 'wartet auf Freigabe',
+        approved: 'wird bearbeitet …',
+        done: 'zurückgesetzt',
+        failed: 'hat nicht geklappt',
+        rejected: 'abgelehnt',
+        cancelled: 'nicht zurückgesetzt',
+    };
+    let refresh_timer = null;
+    let case_mailboxes = [];
+    let reply_case_id = null;
+
+    function fmt_ts(ts) {
+        if (!ts) return '';
+        const d = new Date(ts * 1000);
+        const pad = (x) => (x < 10 ? '0' : '') + x;
+        return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // password hidden until asked for (shoulder surfing in class)
+    function password_widget(password) {
+        const wrap = $('<div>').css('margin-top', '0.3em');
+        const code = $('<span>').addClass('mail-reset-password').text(password).hide();
+        const show = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_show_mail_password')
+            .html("<i class='fa fa-eye'></i>&nbsp;&nbsp;Passwort anzeigen");
+        show.on('click', function(e) {
+            $(e.currentTarget).hide();
+            code.show();
+        });
+        wrap.append(show).append(code);
+        return wrap;
+    }
+
+    function state_label(entry) {
+        const label = $('<span>').addClass('mail-reset-state-label').attr('data-state', entry.state)
+            .text(STATE_LABELS[entry.state] || entry.state);
+        if (entry.state === 'approved') label.prepend("<i class='fa fa-cog fa-spin'></i>&nbsp;");
+        if (entry.state === 'done') label.addClass('text-success');
+        if (['failed', 'rejected', 'cancelled'].indexOf(entry.state) >= 0) label.addClass('text-danger');
+        return label;
+    }
+
+    // admin: is the case finished, or what is the next step?
+    function case_closed(entry) {
+        if (entry.state === 'rejected' || entry.state === 'cancelled') return true;
+        // done: finished unless someone is waiting for the E-Mail-Brief
+        if (entry.state === 'done') return !(entry.source === 'mail' || entry.reply_to) || !!entry.ts_reply || !!entry.ts_closed;
+        return false;
+    }
+
+    function case_row(entry, bot) {
+        const tr = $('<tr>').addClass('mail-case').attr('data-id', entry.id).attr('data-state', entry.state);
+        const boxes = $('<td>');
+        for (const item of entry.mailboxes) {
+            const div = $('<div>').addClass('mail-case-mailbox-entry').attr('data-mailbox', item.mailbox);
+            div.append($('<span>').text(item.label)).append($('<br>')).append($('<small>').addClass('text-muted').text(item.mailbox));
+            if (entry.state === 'done' && item.password) div.append(password_widget(item.password));
+            boxes.append(div);
+        }
+        tr.append(boxes);
+        const origin = $('<td>');
+        if (entry.source === 'mail') {
+            origin.append($('<span>').text('E-Mail' + (entry.reply_to ? ' von ' + entry.reply_to : '')));
+        } else {
+            origin.append($('<span>').text('Klick im Dashboard: ' + (entry.requested_by || '')));
+        }
+        origin.append($('<br>')).append($('<small>').addClass('text-muted').text(fmt_ts(entry.ts)));
+        if (entry.note) origin.append($('<div>').addClass('text-muted').text(entry.note));
+        tr.append(origin);
+
+        const step = $('<td>').addClass('mail-case-step');
+        const text = (t) => step.append($('<div>').addClass('mail-case-step-text').text(t));
+        const buttons = $('<div>').addClass('mail-case-actions');
+        const button = (action, label, style) => buttons.append(
+            $('<button>').addClass(`btn btn-sm ${style} bu_mail_case_action`).attr('data-id', entry.id)
+                .attr('data-action', action).text(label)).append(' ');
+        if (entry.state === 'open') {
+            text('1. Prüfen: Soll das Passwort zurückgesetzt werden?');
+            button('approve', 'Zurücksetzen', 'btn-danger');
+            button('reject', 'Ablehnen', 'btn-outline-secondary');
+        } else if (entry.state === 'approved') {
+            const connected = (bot.connected || []).length > 0;
+            text(bot.paused
+                ? '2. Der Bot ist angehalten (siehe oben). Im Kundenbereich des Mail-Anbieters selbst auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:'
+                : bot.activity === 'working'
+                    ? `2. Der Bot arbeitet gerade daran (Rechner ${bot.running}). Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:`
+                    : connected || bot.activity === 'waiting'
+                        ? '2. Der Bot ist verbunden und erledigt das gleich. Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:'
+                        : '2. Wartet auf den Bot – er erledigt freigegebene Anfragen, sobald er läuft. Oder selbst im Kundenbereich des Mail-Anbieters auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:');
+            button('done', 'Erledigt', 'btn-success');
+            button('failed', 'Hat nicht geklappt', 'btn-outline-secondary');
+        } else if (entry.state === 'failed') {
+            text('Hat nicht geklappt' + (entry.message ? ': ' + entry.message : '.'));
+            button('retry', 'Nochmal versuchen', 'btn-outline-danger');
+            button('cancel', 'Aufgeben', 'btn-outline-secondary');
+        } else if (entry.state === 'done' && !case_closed(entry)) {
+            text('3. Antworten: E-Mail-Brief an ' + (entry.reply_to || 'die anfragende Person') + ' schicken.');
+            buttons.append($('<button>').addClass('btn btn-sm btn-success bu_mail_case_reply').attr('data-id', entry.id).text('Antwort senden…')).append(' ');
+            button('close', 'Ohne Antwort abschließen', 'btn-outline-secondary');
+        } else {
+            step.append(state_label(entry));
+            if (entry.ts_done) step.append($('<small>').addClass('text-muted').text(' (' + fmt_ts(entry.ts_done) + ')'));
+            if (entry.message && entry.state !== 'done') step.append($('<div>').addClass('text-muted').text(entry.message));
+            if (entry.ts_reply) {
+                const copies = (entry.reply_cc || []).length ? `, CC: ${entry.reply_cc.join(', ')}` : '';
+                step.append($('<div>').addClass('text-muted mail-case-replied').text('Antwort an ' + entry.reply_sent_to + copies + ' gesendet (' + fmt_ts(entry.ts_reply) + ')'));
+            } else if (entry.ts_closed) {
+                step.append($('<div>').addClass('text-muted').text('ohne Antwort abgeschlossen'));
+            }
+            if (entry.state === 'done' && (entry.source === 'mail' || entry.reply_to)) {
+                buttons.append($('<button>').addClass('btn btn-sm btn-outline-secondary bu_mail_case_reply').attr('data-id', entry.id).text('Erneut antworten…'));
+            }
+        }
+        step.append(buttons);
+        tr.append(step);
+        return tr;
+    }
+
+    // connected, paused (with the button to lift it) or not running
+    // the logout countdown while the bot waits logged in
+    function tick_countdown() {
+        $('.mail-bot-countdown').each(function(_, x) {
+            const left = Math.max(0, parseInt($(x).attr('data-until'), 10) - Math.floor(Date.now() / 1000));
+            const mm = Math.floor(left / 60), ss = left % 60;
+            $(x).text(`${mm}:${ss < 10 ? '0' : ''}${ss}`);
+        });
+    }
+    setInterval(tick_countdown, 1000);
+
+    // connection (dot) and, below it, what the bot is doing
+    function render_bot_state(bot) {
+        const el = $('#mail_reset_bot_state').empty().attr('data-state', '');
+        const connected = (bot.connected || []).length > 0;
+        // one row: the dot, next to it the text; activity and logins below the text
+        const row = (state, title) => {
+            const r = $('<div>').addClass('mail-bot-row');
+            r.append($('<span>').addClass('mail-bot-dot').attr('data-state', state).attr('aria-hidden', 'true'));
+            const body = $('<div>').addClass('mail-bot-body').append($('<div>').addClass('mail-bot-title').text(title));
+            el.append(r.append(body));
+            return body;
+        };
+        let body;
+        if (bot.paused) {
+            el.attr('data-state', 'paused');
+            body = row('paused', `Bot angehalten (${fmt_ts(bot.paused.ts)}, Rechner ${bot.paused.host})`);
+            body.append($('<div>').addClass('mail-bot-detail').text(bot.paused.reason));
+            body.append($('<button>').addClass('btn btn-sm btn-outline-secondary mail-bot-detail').attr('id', 'bu_resume_mail_bot').text('Bot wieder freigeben'));
+        } else if (connected) {
+            el.attr('data-state', 'connected');
+            const c = bot.connected[0];
+            body = row('connected', `Bot verbunden – Rechner ${c.host}, seit ${fmt_ts(c.since).split(' ')[1]} Uhr`);
+        } else if (bot.last_seen) {
+            el.attr('data-state', 'offline');
+            body = row('offline', `Bot nicht verbunden – zuletzt aktiv ${fmt_ts(bot.last_seen)}` + (bot.host ? ` (Rechner ${bot.host})` : ''));
+            body.append($('<div>').addClass('mail-bot-detail').text('Freigegebene Aufträge werden erledigt, sobald er wieder läuft.'));
+        } else {
+            el.attr('data-state', 'never');
+            body = row('offline', 'Der Bot läuft noch nicht');
+            body.append($('<div>').addClass('mail-bot-detail').text('Freigegebene Anfragen bitte selbst zurücksetzen.'));
+        }
+        if (!bot.paused && bot.activity) {
+            const act = $('<div>').addClass('mail-bot-activity mail-bot-detail').attr('data-activity', bot.activity);
+            if (bot.activity === 'working') {
+                act.append($('<i>').addClass('fa fa-cog fa-spin')).append(document.createTextNode(' Arbeitet gerade beim Mail-Anbieter.'));
+            } else {
+                act.append(document.createTextNode('Angemeldet beim Mail-Anbieter'));
+                if (bot.waiting_until) {
+                    act.append(document.createTextNode(' – meldet sich in '));
+                    act.append($('<span>').addClass('mail-bot-countdown').attr('data-until', bot.waiting_until));
+                    act.append(document.createTextNode(` ab (um ${fmt_ts(bot.waiting_until).split(' ')[1]}). Bis dahin werden neue Aufträge sofort erledigt.`));
+                } else {
+                    act.append(document.createTextNode('. Neue Aufträge werden sofort erledigt.'));
+                }
+            }
+            body.append(act);
+            tick_countdown();
+        }
+        if (bot.paused || bot.logins_today) {
+            const logins = $('<small>').addClass('d-block mail-bot-detail').attr('id', 'mail_bot_logins').text(`Anmeldungen bei IONOS heute: ${bot.logins_today} von ${bot.max_logins_per_day} `);
+            if (bot.logins_today >= bot.max_logins_per_day) {
+                logins.append($('<button>').addClass('btn btn-xs btn-outline-secondary').attr('id', 'bu_reset_mail_bot_logins').text('Anmeldezähler zurücksetzen'));
+            }
+            (body || el).append(logins);
+        }
+    }
+
+    function render_cases(data) {
+        if ($('#mail_cases_open').length === 0) return;
+        const open = data.cases.filter((entry) => !case_closed(entry));
+        const closed = data.cases.filter(case_closed);
+        for (const [selector, list, empty] of [
+            ['#mail_cases_open', open, 'Keine offenen Anfragen.'],
+            ['#mail_cases_closed', closed, 'Keine abgeschlossenen Anfragen.'],
+        ]) {
+            const tbody = $(`${selector} tbody`).empty();
+            for (const entry of list) tbody.append(case_row(entry, data.bot || {}));
+            if (list.length === 0) tbody.append($('<tr>').append($('<td>').attr('colspan', 3).addClass('text-muted').text(empty)));
+        }
+        $('#mail_cases_open_count').text(open.length);
+        $('#mail_cases_closed_count').text(closed.length);
+        render_bot_state(data.bot || {});
+    }
+
+
+    function render(data) {
+        render_cases(data);
+        clearTimeout(refresh_timer);
+        const bot = data.bot || {};
+        // always: a bot started after the page was opened shows up on its own
+        refresh_timer = setTimeout(load, data.cases.some((entry) => entry.state === 'open' || entry.state === 'approved') || bot.activity ? 5000 : 10000);
+    }
+
+    function load() {
+        api_call('/api/mail_password_reset_status', {}, function(data) {
+            if (data.success) render(data);
+        }, { no_please_wait: true });
+    }
+
+    // ---- E-Mail-Briefe: search by name, class or address ----
+
+    const STUDENTS = JSON.parse(document.getElementById('letter_students').textContent);
+    const norm = (t) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss');
+    for (const st of STUDENTS) st.haystack = norm(`${st.name} ${st.klasse} ${st.email}`);
+
+    function open_letter(email, button) {
+        button.prop('disabled', true);
+        fetch('/api/print_email_letters', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emails: [email] }),
+        })
+        .then((response) => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.blob();
+        })
+        .then((blob) => window.open(window.URL.createObjectURL(blob), '_blank'))
+        .catch(() => dashboardAlert('Der E-Mail-Brief konnte nicht erstellt werden.', 'Fehler'))
+        .finally(() => button.prop('disabled', false));
+    }
+
+    function add_to_case(mailbox) {
+        if (case_mailboxes.indexOf(mailbox) < 0) case_mailboxes.push(mailbox);
+        render_case_mailboxes();
+        document.getElementById('mail_case_form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function search_letters() {
+        const words = norm($('#ti_letter_search').val().trim()).split(/\s+/).filter((w) => w.length > 0);
+        const tbody = $('#letter_results tbody').empty();
+        $('#letter_results').toggle(words.length > 0);
+        if (words.length === 0) return;
+        const found = STUDENTS.filter((st) => words.every((w) => st.haystack.indexOf(w) >= 0));
+        for (const st of found.slice(0, 30)) {
+            const tr = $('<tr>').addClass('letter-result').attr('data-email', st.email);
+            tr.append($('<td>').text(st.name));
+            tr.append($('<td>').text(st.klasse));
+            tr.append($('<td>').addClass('text-muted').text(st.email));
+            const actions = $('<td>');
+            const letter = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_open_letter').html("<i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail-Brief");
+            letter.on('click', (e) => open_letter(st.email, $(e.currentTarget)));
+            const own = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_case_student').text('Postfach zurücksetzen…');
+            own.on('click', () => add_to_case(st.email));
+            const parents = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_case_parents').text('Eltern-Postfach zurücksetzen…');
+            parents.on('click', () => add_to_case('eltern.' + st.email));
+            tr.append(actions.append(letter).append(own).append(parents));
+            tbody.append(tr);
+        }
+        if (found.length === 0) tbody.append($('<tr>').append($('<td>').attr('colspan', 4).addClass('text-muted').text('Niemand gefunden.')));
+        if (found.length > 30) tbody.append($('<tr>').append($('<td>').attr('colspan', 4).addClass('text-muted').text(`… und ${found.length - 30} weitere – bitte genauer suchen.`)));
+    }
+    $('#ti_letter_search').on('input', search_letters);
+
+    // admin: a request that came in by mail
+    function render_case_mailboxes() {
+        const div = $('#mail_case_mailboxes').empty();
+        for (const mailbox of case_mailboxes) {
+            const chip = $('<span>').addClass('badge badge-secondary mail-case-mailbox').text(mailbox + ' ');
+            const remove = $('<a>').attr('href', '#').addClass('text-white').html("<i class='fa fa-times'></i>");
+            remove.on('click', function(e) {
+                e.preventDefault();
+                case_mailboxes = case_mailboxes.filter((x) => x !== mailbox);
+                render_case_mailboxes();
+            });
+            div.append(chip.append(remove));
+        }
+    }
+    function add_case_mailbox() {
+        const mailbox = $('#ti_mail_case_mailbox').val().trim().toLowerCase();
+        if (mailbox.length === 0) return;
+        if (case_mailboxes.indexOf(mailbox) < 0) case_mailboxes.push(mailbox);
+        $('#ti_mail_case_mailbox').val('');
+        render_case_mailboxes();
+    }
+    $('#bu_add_mail_case_mailbox').on('click', add_case_mailbox);
+    $('#ti_mail_case_mailbox').on('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); add_case_mailbox(); }
+    });
+    $('#bu_create_mail_case').on('click', function() {
+        add_case_mailbox();
+        if (case_mailboxes.length === 0) {
+            dashboardAlert('Bitte mindestens ein Postfach eintragen.', 'Kein Postfach');
+            return;
+        }
+        const payload = {
+            mailboxes: case_mailboxes,
+            reply_to: $('#ti_mail_case_reply_to').val().trim(),
+            note: $('#ti_mail_case_note').val().trim(),
+        };
+        api_call('/api/create_mail_password_case', payload, function(data) {
+            if (!data.success) return;
+            if (data.result === 'pending') {
+                dashboardAlert('Für eines dieser Postfächer gibt es schon eine offene Anfrage.', 'Schon in der Liste');
+                return;
+            }
+            case_mailboxes = [];
+            render_case_mailboxes();
+            $('#ti_mail_case_reply_to').val('');
+            $('#ti_mail_case_note').val('');
+            load();
+        });
+    });
+
+    function case_action(id, action) {
+        api_call('/api/update_mail_password_case', { id: id, action: action }, function(data) {
+            if (data.success) load();
+        });
+    }
+    $('#mail_reset_bot_state').on('click', '#bu_reset_mail_bot_logins', function(e) {
+        dashboardConfirm('Der Bot darf sich danach heute wieder bei IONOS anmelden. Viele Anmeldungen kurz nacheinander können IONOS misstrauisch machen.', function() {
+            api_call('/api/reset_mail_account_bot_logins', {}, function(data) {
+                if (data.success) load();
+            });
+        }, { title: 'Anmeldezähler zurücksetzen', confirm: 'Zurücksetzen' });
+    });
+    $('#mail_reset_bot_state').on('click', '#bu_resume_mail_bot', function(e) {
+        dashboardConfirm('Der Bot arbeitet danach wieder freigegebene Anfragen ab. Hast du dir angesehen, warum er angehalten hat?', function() {
+            api_call('/api/resume_mail_account_bot', {}, function(data) {
+                if (data.success) load();
+            });
+        }, { title: 'Bot wieder freigeben', confirm: 'Freigeben' });
+    });
+    $('.mail-cases').on('click', '.bu_mail_case_action', function(e) {
+        const button = $(e.currentTarget);
+        const id = button.data('id');
+        const action = button.data('action');
+        if (action === 'approve' || action === 'retry') {
+            const mailboxes = button.closest('tr').find('.mail-case-mailbox-entry').map((_, x) => $(x).data('mailbox')).get();
+            dashboardConfirm(`Das Passwort für ${mailboxes.join(', ')} wird auf das ursprüngliche Passwort aus dem E-Mail-Brief zurückgesetzt.`,
+                () => case_action(id, action), { title: 'Passwort zurücksetzen?', confirm: 'Zurücksetzen', danger: true });
+        } else {
+            case_action(id, action);
+        }
+    });
+    $('.mail-cases').on('click', '.bu_mail_case_reply', function(e) {
+        reply_case_id = $(e.currentTarget).data('id');
+        api_call('/api/mail_password_case_reply_draft', { id: reply_case_id }, function(data) {
+            if (!data.success) return;
+            $('#ti_reply_to').val(data.to);
+            $('#ti_reply_cc').val('');
+            $('#ti_reply_bcc').val('');
+            $('#ti_reply_subject').val(data.subject);
+            $('#ta_reply_body').val(data.body);
+            $('#reply_attachment').text(data.attachment);
+            $('#mailCaseReplyModal').modal('show');
+        });
+    });
+    $('#bu_preview_reply_letter').on('click', function(e) {
+        const button = $(e.currentTarget).prop('disabled', true);
+        fetch('/api/mail_password_case_letter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: reply_case_id }),
+        })
+        .then((response) => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.blob();
+        })
+        .then((blob) => window.open(window.URL.createObjectURL(blob), '_blank'))
+        .catch(() => dashboardAlert('Der E-Mail-Brief konnte nicht erstellt werden.', 'Fehler'))
+        .finally(() => button.prop('disabled', false));
+    });
+    $('#bu_send_mail_case_reply').on('click', function() {
+        const payload = {
+            id: reply_case_id,
+            to: $('#ti_reply_to').val().trim(),
+            cc: $('#ti_reply_cc').val().trim(),
+            bcc: $('#ti_reply_bcc').val().trim(),
+            subject: $('#ti_reply_subject').val().trim(),
+            body: $('#ta_reply_body').val(),
+        };
+        if (payload.to.length === 0) {
+            dashboardAlert('Bitte eine Empfängeradresse eintragen.', 'Kein Empfänger');
+            return;
+        }
+        api_call('/api/send_mail_password_case_reply', payload, function(data) {
+            if (!data.success) return;
+            if (data.error === 'invalid_copy_address') {
+                dashboardAlert('Eine Adresse bei CC oder BCC stimmt nicht (höchstens 5 je Feld, mit Komma getrennt). Es wurde nichts gesendet.', 'Adresse prüfen');
+                return;
+            }
+            $('#mailCaseReplyModal').modal('hide');
+            load();
+        });
+    });
+
+    // ---- missing mailboxes: approve creating them ----
+
+    const CREATE_LABELS = { approved: 'wird angelegt …', done: 'angelegt', exists: 'gab es schon', failed: 'hat nicht geklappt', cancelled: 'nicht angelegt' };
+
+    function render_creation(data) {
+        const list = data.list;
+        const state = $('#mail_address_list_state').empty();
+        state.append(document.createTextNode(list.source === 'ionos'
+            ? `Adressliste vom Mail-Anbieter: ${list.count} Adressen, Stand ${fmt_ts(list.ts)}. `
+            : `Adressliste aus der Datei im Datenverzeichnis (${list.count} Adressen) – der Bot hat sie noch nicht abgeglichen. `));
+        if (list.wanted_ts && (!list.ts || list.wanted_ts > list.ts)) {
+            state.append(document.createTextNode('Neuer Abgleich ist angefordert. '));
+        } else {
+            state.append($('<button>').addClass('btn btn-xs btn-outline-secondary').attr('id', 'bu_request_address_list').text('Jetzt abgleichen'));
+        }
+
+        const box = $('#mail_accounts_missing').empty();
+        if (data.missing.length === 0) {
+            box.append($('<p>').addClass('text-muted').text('Keine fehlenden Postfächer.'));
+        } else {
+            const table = $('<table>').addClass('table table-sm mail-missing');
+            table.append($('<thead>').append($('<tr>')
+                .append($('<th>').append($('<input>').attr({ type: 'checkbox', id: 'cb_missing_all' })))
+                .append($('<th>').text('Postfach')).append($('<th>').text('Schüler:in')).append($('<th>').text('Klasse'))));
+            const tbody = $('<tbody>');
+            for (const m of data.missing) {
+                const tr = $('<tr>').addClass('mail-missing-row').attr('data-mailbox', m.mailbox);
+                tr.append($('<td>').append($('<input>').attr({ type: 'checkbox' }).addClass('cb_missing').attr('data-mailbox', m.mailbox)));
+                tr.append($('<td>').text(m.mailbox + (m.kind === 'parents' ? ' (Eltern)' : '')));
+                tr.append($('<td>').text(m.name || ''));
+                tr.append($('<td>').text(m.klasse || ''));
+                tbody.append(tr);
+            }
+            box.append($('<div>').addClass('table-responsive').append(table.append(tbody)));
+            box.append($('<button>').addClass('btn btn-outline-secondary').attr('id', 'bu_approve_creation').prop('disabled', true)
+                .text('Anlegen freigeben (0)'));
+        }
+
+        const tbody = $('#mail_account_creations tbody').empty();
+        for (const c of data.cases) {
+            const tr = $('<tr>').addClass('mail-creation').attr('data-state', c.state).attr('data-mailbox', c.mailbox);
+            tr.append($('<td>').text(c.mailbox));
+            const st = $('<td>').append($('<span>').addClass('mail-creation-state').text(CREATE_LABELS[c.state] || c.state));
+            st.append($('<small>').addClass('text-muted').text(' (' + fmt_ts(c.ts_done || c.ts) + ')'));
+            if (c.message && c.state !== 'done') st.append($('<div>').addClass('text-muted').text(c.message));
+            tr.append(st);
+            const actions = $('<td>');
+            if (c.state === 'failed') {
+                actions.append($('<button>').addClass('btn btn-sm btn-outline-secondary bu_creation_action').attr('data-id', c.id).attr('data-action', 'retry').text('Nochmal versuchen')).append(' ');
+                actions.append($('<button>').addClass('btn btn-sm btn-outline-secondary bu_creation_action').attr('data-id', c.id).attr('data-action', 'cancel').text('Aufgeben'));
+            }
+            tbody.append(tr.append(actions));
+        }
+        $('#mail_account_creations').toggle(data.cases.length > 0);
+        clearTimeout(creation_timer);
+        if (data.cases.some((c) => c.state === 'approved')) creation_timer = setTimeout(load_creation, 10000);
+    }
+
+    let creation_timer = null;
+    function load_creation() {
+        api_call('/api/mail_account_creation_status', {}, function(data) {
+            if (data.success) render_creation(data);
+        }, { no_please_wait: true });
+    }
+    function selected_missing() {
+        return $('.cb_missing:checked').map((_, x) => $(x).data('mailbox')).get();
+    }
+    $('#mail_accounts_missing').on('change', '#cb_missing_all', function(e) {
+        $('.cb_missing').prop('checked', $(e.currentTarget).prop('checked'));
+        $('#mail_accounts_missing .cb_missing').first().trigger('change');
+    });
+    $('#mail_accounts_missing').on('change', '.cb_missing', function() {
+        const n = selected_missing().length;
+        $('#bu_approve_creation').prop('disabled', n === 0).text(`Anlegen freigeben (${n})`);
+    });
+    $('#mail_accounts_missing').on('click', '#bu_approve_creation', function() {
+        const mailboxes = selected_missing();
+        dashboardConfirm(`${mailboxes.length} Postfach/Postfächer werden beim Mail-Anbieter angelegt, jeweils mit dem Passwort aus dem E-Mail-Brief.`, function() {
+            api_call('/api/approve_mail_account_creation', { mailboxes: mailboxes }, function(data) {
+                if (data.success) load_creation();
+            });
+        }, { title: 'Postfächer anlegen?', confirm: 'Anlegen' });
+    });
+    $('#mail_address_list_state').on('click', '#bu_request_address_list', function() {
+        api_call('/api/request_ionos_address_list', {}, function(data) {
+            if (data.success) load_creation();
+        });
+    });
+    $('#mail_account_creations').on('click', '.bu_creation_action', function(e) {
+        const button = $(e.currentTarget);
+        api_call('/api/update_mail_account_creation', { id: button.data('id'), action: button.data('action') }, function(data) {
+            if (data.success) load_creation();
+        });
+    });
+    load_creation();
+
+    load();
+});
+</script>

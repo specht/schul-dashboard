@@ -67,10 +67,10 @@ automation – but it can run without waiting for a person.
 - Admin page: all open and recent requests; "erledigt" / "fehlgeschlagen"
   by hand, so phase 1 already helps before the bot exists (the admin gets a
   mail per new request while no bot is configured).
-- Bot interface, only active when `MAIL_PASSWORD_RESET_BOT_TOKEN` is set:
-  - `GET /api/mail_password_reset_bot/pending` → approved cases, each with
+- Bot interface, only active when `MAIL_ACCOUNT_BOT_TOKEN` is set:
+  - `GET /api/mail_account_bot/pending` → approved cases, each with
     its mailboxes and passwords
-  - `POST /api/mail_password_reset_bot/result {id, ok, message}`
+  - `POST /api/mail_account_bot/result {id, ok, message}`
   - `Authorization: Bearer <token>`, compared in constant time; the bot can
     run anywhere that reaches the dashboard.
 - On `done` after a student's own request: notice to `eltern.<mailbox>`.
@@ -82,8 +82,12 @@ automation – but it can run without waiting for a person.
 
 ## Phase 2 – bot
 
-- Small separate service (Node + Puppeteer, like the existing script):
-  persistent browser profile, TOTP for the login confirmation, sets the
+- **Built (2026-11-13), not yet run against IONOS:** `src/mail-account-bot`
+  (Node + Playwright with the local Chrome; usage and safeguards in its
+  README). The IONOS steps are provisional until recorded with the
+  maintainer (`FLOW_STATUS`); the bot refuses real runs until then. Tests
+  against a fake control panel: `test/e2e/tests/mail-account-bot.spec.ts`.
+- Persistent browser profile, TOTP for the login confirmation, sets the
   password for approved cases, reports the result, a screenshot on failure
   for the admin.
 - Access data only in its own configuration (not in the dashboard, not in
@@ -98,8 +102,9 @@ automation – but it can run without waiting for a person.
     the bot refuses to start; it also checks a hostname named in that file,
     so a copied configuration doesn't run elsewhere.
   - Nobody else starts it – not Jonas, not an agent. Recorded in AGENTS.md.
-  - The dashboard hands each approved case to one bot run only (claim before
-    reset), so two instances can never reset the same mailbox twice.
+  - A lock file keeps a second instance from running. Two runs resetting the
+    same mailbox would be harmless anyway: it is always reset to the same
+    original password, so no claim step in the dashboard.
   - When the machine is off, approved cases simply wait; the admin can still
     reset by hand and mark them done.
 - The control panel flow for "change password" has to be recorded with the
@@ -131,8 +136,68 @@ one careful person at one computer:
   work", notify the admin, and pause the bot (no further logins) until the
   admin resumes it. At most one login attempt per run; a TOTP code is never
   used twice (wait for the next 30-second window).
+- **Exactly this mailbox.** Only addresses matching the configured student
+  pattern; exactly one row with exactly this address, and a mailbox (not a
+  forwarding); the dialog shows exactly this address (checked twice); the
+  password read back from both fields; afterwards an IMAP login with the
+  new password proves it reached the right mailbox. A mailbox that already
+  accepts its original password is not touched in the control panel.
 - **Dry run first.** Record the flow with the maintainer, then run it against
   a test mailbox by hand-triggered single runs before it handles real cases.
 - Keep the IONOS recovery codes from the 2FA setup offline (not with the
   bot), so a lockout can be undone without support.
 
+
+## Phase 3 – one IONOS bot for the whole mailbox process (decided 2026-11-14)
+
+Status 2026-11-14: password resets run in production with the bot (2FA
+login recorded, cleared after watched dry runs). Creating mailboxes and the
+address list upload are built and tested against the fake; creating is
+recorded but not yet cleared (`CREATE_FLOW_STATUS`).
+
+The same bot also creates mailboxes and fetches the IONOS address list, so
+`create-account.js` (and its plain-text passwords) and the hand-made export
+file can go.
+
+- **Scope – vital:** the bot only ever touches two kinds of mailbox, both
+  on the school's `@mail.` subdomain:
+  - a student's own address (dashboard user with role schueler)
+  - the parents' mailbox `eltern.<that student>`
+
+  Teacher mailboxes (main domain, created only by the Schulleitung),
+  function accounts, external accounts on `@mail.` and `ev.<Klasse>` are
+  never touched. This is checked by the dashboard and again by the bot
+  (domain, role, `eltern.` + existing student). The old "required
+  addresses" list on `/email_accounts` also counts teachers – it is not
+  used for bot work.
+- **Address list:** the bot downloads the IONOS export (address, account
+  type, contract) and sends it to the dashboard, instead of a file in the
+  data repo. To be recorded with the maintainer. Never polled: the bot
+  fetches it only
+  - in the same sitting right before creating approved mailboxes (to
+    confirm they are still missing),
+  - when the admin asks for it on the page, and
+  - otherwise at most about once a week, in a sitting that is logged in
+    anyway.
+
+  The dashboard shows how old the list is. The export has no mailbox
+  numbers; the bot learns them from the address list when it needs them.
+- **Missing mailboxes:** the dashboard lists students and parents' mailboxes
+  that are missing in the export. The admin approves them, the bot creates
+  them with the E-Mail-Brief password, proves each one by an IMAP login,
+  and reports back; then the letters are printed as before. The creation
+  page is to be recorded.
+- **Volume:** no artificial daily limit. Like the old script, all approved
+  mailboxes go in one sitting, one after the other at a person's pace. If
+  something gets stuck, the bot stops; after `resume`, the next run fetches
+  the address list first, so nothing is created twice.
+- **Several machines:**
+  - The configuration is in `~/.ssh` (kept by the maintainer) and lists the
+    allowed machine names, e.g. home and laptop.
+  - Pause, counters and the "one run at a time" lock move to the dashboard,
+    so they hold across machines. The admin page shows the pause and lifts
+    it.
+  - The browser profile with the IONOS session stays per machine.
+- **Deleting mailboxes:** later. Scheduling them for deletion already exists
+  on `/email_accounts`, but nothing has ever been deleted; any automation
+  needs its own decision.

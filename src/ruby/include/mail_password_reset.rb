@@ -16,7 +16,8 @@
 #   ts_closed: a done case from a mail that was answered some other way
 #   ts…:    Unix time with fractions, so cases within the same second stay in
 #           order
-#   (:MailPasswordResetBot {key: 'bot', last_seen})   last request of the bot
+#   (:MailAccountBot {key: 'bot', …})   the bot's shared state (pause,
+#           run lock, logins today), see mail_account_bot_state
 #
 # Who may request which mailbox: students their own, Klassenleitung the
 # students' and parents' (eltern.…) mailboxes of their classes, the admin all
@@ -26,7 +27,10 @@
 
 class Main < Sinatra::Base
     MAIL_PASSWORD_RESET_MAX_PER_DAY = 3
-    MAIL_PASSWORD_RESET_BOT_STALE_AFTER = 15 * 60
+    MAIL_ACCOUNT_BOT_STALE_AFTER = 15 * 60
+    # IONOS logins a day for all machines together; the admin can reset the
+    # count on the page when trying things out
+    MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY = 10
     MAIL_PASSWORD_RESET_SHOW_DAYS = 30
     MAIL_PASSWORD_CASE_ACTIVE = %w(open approved)
     MAIL_PASSWORD_CASE_MAX_MAILBOXES = 10
@@ -167,42 +171,71 @@ class Main < Sinatra::Base
                 io.puts "</tbody></table></div>"
             end
             if admin_logged_in?
-                io.puts "<h4 style='margin-top: 1em;'>Anfragen</h4>"
-                io.puts "<div class='card' style='margin-bottom: 1.5em;'><div class='card-body'>"
-                io.puts "<h5 class='card-title'>Neue Anfrage (z. B. per E-Mail)</h5>"
-                io.puts "<div class='form-group'><label for='ti_mail_case_mailbox'>Postfächer</label>"
-                io.puts "<div class='input-group'>"
-                io.puts "<input id='ti_mail_case_mailbox' class='form-control' list='li_mail_reset_mailboxes' placeholder='E-Mail-Adresse (auch eltern.…)' autocomplete='off' />"
-                io.puts "<div class='input-group-append'><button id='bu_add_mail_case_mailbox' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Hinzufügen</button></div>"
-                io.puts "</div><div id='mail_case_mailboxes' style='margin-top: 0.5em;'></div></div>"
-                io.puts "<div class='form-group'><label for='ti_mail_case_reply_to'>Antwort an</label>"
-                io.puts "<input id='ti_mail_case_reply_to' type='email' class='form-control' placeholder='Absender der E-Mail' autocomplete='off' /></div>"
-                io.puts "<div class='form-group'><label for='ti_mail_case_note'>Notiz</label>"
-                io.puts "<input id='ti_mail_case_note' class='form-control' maxlength='500' autocomplete='off' /></div>"
-                io.puts "<button id='bu_create_mail_case' class='btn btn-primary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Zur Liste hinzufügen</button>"
-                io.puts "</div></div>"
-                io.puts "<datalist id='li_mail_reset_mailboxes'>"
-                @@klassen_order.each do |klasse|
-                    (@@schueler_for_klasse[klasse] || []).each do |student|
-                        io.puts "<option value='#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label(student))}</option>"
-                        io.puts "<option value='eltern.#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label('eltern.' + student))}</option>"
-                    end
-                end
-                io.puts "</datalist>"
-                io.puts "<h5>Offene Anfragen (<span id='mail_cases_open_count'>0</span>)</h5>"
-                io.puts "<p id='mail_reset_bot_state' class='text-muted'></p>"
-                io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_open'>"
-                io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Nächster Schritt</th></tr></thead><tbody></tbody></table></div>"
-                io.puts "<details style='margin-top: 1em;'><summary>Abgeschlossen (letzte #{MAIL_PASSWORD_RESET_SHOW_DAYS} Tage): <span id='mail_cases_closed_count'>0</span></summary>"
-                io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_closed'>"
-                io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Ergebnis</th></tr></thead><tbody></tbody></table></div></details>"
+                io.puts "<p class='alert alert-secondary mail-admin-link'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Anfragen bearbeiten und E-Mail-Briefe suchen: <a href='#{WEB_ROOT}/postfaecher'>Postfächer (Administration)</a></p>"
             end
             io.string
         end
     end
 
-    def mail_password_reset_bot_last_seen
-        row = neo4j_query("MATCH (b:MailPasswordResetBot {key: 'bot'}) RETURN b.last_seen AS last_seen;").first
+    # The admin's page (/postfaecher, admin menu): find a student and open the
+    # E-Mail-Brief, enter requests that came in by mail, decide and answer
+    # the requests, see the bot.
+    def print_mail_account_admin_page
+        require_admin!
+        StringIO.open do |io|
+            students = []
+            @@klassen_order.each do |klasse|
+                (@@schueler_for_klasse[klasse] || []).each do |email|
+                    info = @@user_info[email] || {}
+                    students << {:email => email, :name => info[:display_name].to_s, :klasse => tr_klasse(klasse)}
+                end
+            end
+            io.puts "<h4>E-Mail-Brief suchen</h4>"
+            io.puts "<input id='ti_letter_search' class='form-control' type='search' placeholder='Name, Klasse oder E-Mail-Adresse' autocomplete='off' />"
+            io.puts "<div class='table-responsive'><table class='table table-sm letter-results' id='letter_results' style='display: none; margin-top: 0.5em;'>"
+            io.puts "<thead><tr><th>Name</th><th>Klasse</th><th>E-Mail-Adresse</th><th></th></tr></thead><tbody></tbody></table></div>"
+            io.puts "<script type='application/json' id='letter_students'>#{students.to_json.gsub('</', '<\\/')}</script>"
+            io.puts "<h4 style='margin-top: 1.5em;'>Anfragen zum Zurücksetzen</h4>"
+            io.puts "<datalist id='li_mail_reset_mailboxes'>"
+            @@klassen_order.each do |klasse|
+                (@@schueler_for_klasse[klasse] || []).each do |student|
+                    io.puts "<option value='#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label(student))}</option>"
+                    io.puts "<option value='eltern.#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label('eltern.' + student))}</option>"
+                end
+            end
+            io.puts "</datalist>"
+            io.puts "<h5>Offene Anfragen (<span id='mail_cases_open_count'>0</span>)</h5>"
+            io.puts "<div id='mail_reset_bot_state'></div>"
+            io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_open'>"
+            io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Nächster Schritt</th></tr></thead><tbody></tbody></table></div>"
+            io.puts "<div class='card' id='mail_case_form' style='margin-bottom: 1.5em;'><div class='card-body'>"
+            io.puts "<h5 class='card-title'>Neue Anfrage (z. B. per E-Mail)</h5>"
+            io.puts "<div class='form-group'><label for='ti_mail_case_mailbox'>Postfächer</label>"
+            io.puts "<div class='input-group'>"
+            io.puts "<input id='ti_mail_case_mailbox' class='form-control' list='li_mail_reset_mailboxes' placeholder='E-Mail-Adresse (auch eltern.…)' autocomplete='off' />"
+            io.puts "<div class='input-group-append'><button id='bu_add_mail_case_mailbox' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Hinzufügen</button></div>"
+            io.puts "</div><div id='mail_case_mailboxes' style='margin-top: 0.5em;'></div></div>"
+            io.puts "<div class='form-group'><label for='ti_mail_case_reply_to'>Antwort an</label>"
+            io.puts "<input id='ti_mail_case_reply_to' type='email' class='form-control' placeholder='Absender der E-Mail' autocomplete='off' /></div>"
+            io.puts "<div class='form-group'><label for='ti_mail_case_note'>Notiz</label>"
+            io.puts "<input id='ti_mail_case_note' class='form-control' maxlength='500' autocomplete='off' /></div>"
+            io.puts "<button id='bu_create_mail_case' class='btn btn-primary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Zur Liste hinzufügen</button>"
+            io.puts "</div></div>"
+            io.puts "<details style='margin-top: 1em;'><summary>Abgeschlossen (letzte #{MAIL_PASSWORD_RESET_SHOW_DAYS} Tage): <span id='mail_cases_closed_count'>0</span></summary>"
+            io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_closed'>"
+            io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Ergebnis</th></tr></thead><tbody></tbody></table></div></details>"
+                    io.puts "<h4 style='margin-top: 1.5em;'>Fehlende Postfächer</h4>"
+            io.puts "<p class='text-muted'>Nur Postfächer von Schüler:innen und ihre Eltern-Postfächer (eltern.…) – andere Konten legt der Bot nie an.</p>"
+            io.puts "<p id='mail_address_list_state' class='text-muted'></p>"
+            io.puts "<div id='mail_accounts_missing'></div>"
+            io.puts "<div class='table-responsive'><table class='table table-sm mail-creations' id='mail_account_creations'>"
+            io.puts "<thead><tr><th>Postfach</th><th>Stand</th><th></th></tr></thead><tbody></tbody></table></div>"
+            io.string
+        end
+    end
+
+    def mail_account_bot_last_seen
+        row = neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) RETURN b.last_seen AS last_seen;").first
         row ? row['last_seen'] : nil
     end
 
@@ -336,7 +369,8 @@ class Main < Sinatra::Base
         require_admin!
         data = parse_request_data(:required_keys => [:mailboxes], :optional_keys => [:reply_to, :note],
                                   :types => {:mailboxes => Array},
-                                  :max_value_lengths => {:reply_to => 256, :note => 500})
+                                  :max_value_lengths => {:reply_to => 256, :note => 500},
+                                  :max_body_length => 8192)
         mailboxes = data[:mailboxes].map { |x| normalize_mailbox(x) }.reject(&:empty?).uniq
         assert(!mailboxes.empty? && mailboxes.size <= MAIL_PASSWORD_CASE_MAX_MAILBOXES, 'invalid mailboxes')
         mailboxes.each do |mailbox|
@@ -390,6 +424,7 @@ class Main < Sinatra::Base
                 SET c.state = $to, #{extra}
                 RETURN c.id AS id;
             END_OF_QUERY
+            self.class.wake_mail_account_bot if row && to == 'approved'
             respond(:result => row ? 'ok' : 'wrong_state')
         end
     end
@@ -436,6 +471,7 @@ class Main < Sinatra::Base
                     :ts_decided => c[:ts_decided],
                     :ts_reply => c[:ts_reply],
                     :reply_sent_to => c[:reply_sent_to],
+                    :reply_cc => c[:reply_cc],
                     :ts_closed => c[:ts_closed],
                 )
             end
@@ -443,8 +479,10 @@ class Main < Sinatra::Base
         end
         result = {:cases => cases}
         if admin
-            result[:bot_last_seen] = mail_password_reset_bot_last_seen
-            result[:bot_active] = !result[:bot_last_seen].nil? && Time.now.to_i - result[:bot_last_seen] < MAIL_PASSWORD_RESET_BOT_STALE_AFTER
+            result[:bot_last_seen] = mail_account_bot_last_seen
+            result[:bot] = mail_account_bot_status_for_admin
+            recent = !result[:bot_last_seen].nil? && Time.now.to_i - result[:bot_last_seen] < MAIL_ACCOUNT_BOT_STALE_AFTER
+            result[:bot_active] = result[:bot][:paused].nil? && (recent || !result[:bot][:connected].empty?)
         end
         respond(result)
     end
@@ -489,63 +527,306 @@ class Main < Sinatra::Base
         respond(mail_password_case_reply_draft(c))
     end
 
+    MAIL_REPLY_ADDRESS_RE = /\A[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+\z/
+    MAIL_REPLY_MAX_COPIES = 5
+
+    # the E-Mail-Brief(e) a reply carries: [pdf, filename]
+    def mail_password_case_letter(c)
+        students = mail_password_case_students(c)
+        assert(!students.empty?)
+        filename = students.size == 1 ? "E-Mail-Brief #{@@user_info[students.first][:display_name]}.pdf" : 'E-Mail-Briefe.pdf'
+        [Main.print_email_letters(students), filename]
+    end
+
+    # "a@x.de, b@y.de" -> checked list, nil if one is invalid or there are
+    # more than MAIL_REPLY_MAX_COPIES
+    def mail_reply_addresses(text)
+        list = text.to_s.split(/[,;\s]+/).map(&:strip).reject(&:empty?).uniq
+        return nil if list.size > MAIL_REPLY_MAX_COPIES
+        return nil unless list.all? { |x| x =~ MAIL_REPLY_ADDRESS_RE }
+        list
+    end
+
+    # the attachment before sending, to look at
+    post '/api/mail_password_case_letter' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:id], :max_value_lengths => {:id => 64})
+        c = mail_password_case(data[:id])
+        assert(c && c[:state] == 'done', 'case not done')
+        pdf, _ = mail_password_case_letter(c)
+        respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+
     post '/api/send_mail_password_case_reply' do
         require_admin!
-        data = parse_request_data(:required_keys => [:id, :to, :subject, :body],
-                                  :max_value_lengths => {:id => 64, :to => 256, :subject => 200, :body => 10000})
+        data = parse_request_data(:required_keys => [:id, :to, :subject, :body], :optional_keys => [:cc, :bcc],
+                                  :max_value_lengths => {:id => 64, :to => 256, :subject => 200, :body => 10000, :cc => 1500, :bcc => 1500},
+                                  # the default 512 bytes are far too little for a letter text
+                                  :max_body_length => 32 * 1024)
         c = mail_password_case(data[:id])
         assert(c && c[:state] == 'done', 'case not done')
         recipient = data[:to].strip
-        assert(recipient =~ /\A[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+\z/, 'invalid recipient')
-        students = mail_password_case_students(c)
-        assert(!students.empty?)
-        pdf = Main.print_email_letters(students)
-        filename = students.size == 1 ? "E-Mail-Brief #{@@user_info[students.first][:display_name]}.pdf" : 'E-Mail-Briefe.pdf'
-        admin_email = @session_user[:email]
-        subject_text = data[:subject].strip
-        body_text = data[:body]
-        deliver_mail(body_text) do
-            to recipient
-            from SMTP_FROM
-            reply_to admin_email
-            bcc admin_email
-            subject subject_text
-            add_file :content_type => 'application/pdf', :content => pdf, :filename => filename
+        assert(recipient =~ MAIL_REPLY_ADDRESS_RE, 'invalid recipient')
+        cc_list = mail_reply_addresses(data[:cc])
+        extra_bcc = mail_reply_addresses(data[:bcc])
+        if cc_list.nil? || extra_bcc.nil?
+            # a typo in a copy address: say so, send nothing
+            respond(:error => 'invalid_copy_address')
+        else
+            admin_email = @session_user[:email]
+            # the admin always gets a copy
+            bcc_list = ([admin_email] + extra_bcc).uniq
+            pdf, filename = mail_password_case_letter(c)
+            subject_text = data[:subject].strip
+            body_text = data[:body]
+            deliver_mail(body_text) do
+                to recipient
+                cc cc_list unless cc_list.empty?
+                from SMTP_FROM
+                reply_to admin_email
+                bcc bcc_list
+                subject subject_text
+                add_file :content_type => 'application/pdf', :content => pdf, :filename => filename
+            end
+            neo4j_query(<<~END_OF_QUERY, :id => c[:id], :ts => Time.now.to_f, :to => recipient, :cc => cc_list, :bcc => bcc_list - [admin_email])
+                MATCH (c:MailPasswordCase {id: $id})
+                SET c.ts_reply = $ts, c.reply_sent_to = $to, c.reply_cc = $cc, c.reply_bcc = $bcc;
+            END_OF_QUERY
+            respond(:result => 'sent')
         end
-        neo4j_query(<<~END_OF_QUERY, :id => c[:id], :ts => Time.now.to_f, :to => recipient)
-            MATCH (c:MailPasswordCase {id: $id})
-            SET c.ts_reply = $ts, c.reply_sent_to = $to;
-        END_OF_QUERY
-        respond(:result => 'sent')
     end
 
     # ---- interface for the bot (Authorization: Bearer <token>) ----
 
-    def require_mail_password_reset_bot!
+    def require_mail_account_bot!
         # off unless credentials.rb defines a long enough token
-        token = defined?(MAIL_PASSWORD_RESET_BOT_TOKEN) ? MAIL_PASSWORD_RESET_BOT_TOKEN : nil
+        token = defined?(MAIL_ACCOUNT_BOT_TOKEN) ? MAIL_ACCOUNT_BOT_TOKEN : nil
         halt 404 unless token.is_a?(String) && token.size >= 32
         given = request.env['HTTP_AUTHORIZATION'].to_s.sub(/\ABearer /, '')
         halt 401 unless Rack::Utils.secure_compare(given, token)
     end
 
-    # approved cases only: nothing is reset without the admin's decision
-    get '/api/mail_password_reset_bot/pending' do
-        require_mail_password_reset_bot!
-        neo4j_query("MERGE (b:MailPasswordResetBot {key: 'bot'}) SET b.last_seen = $ts;", :ts => Time.now.to_i)
-        rows = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN c.id AS id, c.mailboxes AS mailboxes ORDER BY c.ts;")
-        respond(:cases => rows.map do |row|
-            {:id => row['id'], :mailboxes => row['mailboxes'].map { |mailbox| {:mailbox => mailbox, :password => Main.gen_password_for_email(mailbox)} }}
-        end)
+    MAIL_ACCOUNT_BOT_HOST_RE = /\A[A-Za-z0-9._-]{1,64}\z/
+    # a run holds the lock this long unless it renews or releases it
+    MAIL_ACCOUNT_BOT_LEASE = 10 * 60
+
+    def mail_account_bot_host(value)
+        host = value.to_s
+        assert(host =~ MAIL_ACCOUNT_BOT_HOST_RE, 'bad host')
+        host
     end
 
-    post '/api/mail_password_reset_bot/result' do
-        require_mail_password_reset_bot!
+    # The bot's shared state, the same for every machine it runs on:
+    #   last_seen, host                      last request
+    #   paused_ts, paused_reason, paused_host   set at the first surprise,
+    #                                         lifted only by the admin
+    #   run_host, run_until                  one run at a time (lease)
+    #   logins_date, logins                  IONOS logins today
+    def mail_account_bot_state
+        row = neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) RETURN b;").first
+        row ? row['b'] : {}
+    end
+
+    def mail_account_bot_seen!(host = nil)
+        neo4j_query("MERGE (b:MailAccountBot {key: 'bot'}) SET b.last_seen = $ts" + (host ? ', b.host = $host' : '') + ';',
+                    :ts => Time.now.to_i, :host => host)
+    end
+
+    def self.mail_account_bot_connections
+        (@@ws_clients[:mail_account_bot] || {}).values
+    end
+
+    # a wake-up call for connected bots – never an instruction: the bot
+    # fetches the approved cases itself and checks them
+    def self.wake_mail_account_bot
+        mail_account_bot_connections.each do |info|
+            send = lambda do
+                begin
+                    info[:ws].send({:command => 'wake'}.to_json)
+                rescue StandardError => e
+                    STDERR.puts "mail bot wake failed: #{e}"
+                end
+            end
+            # called from a request thread: hand it to the websocket's event
+            # loop, otherwise it only goes out with the next ping
+            if defined?(EM) && EM.reactor_running?
+                EM.next_tick(&send)
+            else
+                send.call
+            end
+        end
+    end
+
+    def mail_account_bot_status_for_admin
+        b = mail_account_bot_state
+        connections = self.class.mail_account_bot_connections
+        today = Date.today.strftime('%Y-%m-%d')
+        {
+            :last_seen => b[:last_seen],
+            :host => b[:host],
+            :connected => connections.map { |c| {:host => c[:host], :since => c[:since]} },
+            :paused => b[:paused_ts] ? {:ts => b[:paused_ts], :reason => b[:paused_reason], :host => b[:paused_host]} : nil,
+            :running => (b[:run_until] || 0) > Time.now.to_i ? b[:run_host] : nil,
+            :activity => (b[:run_until] || 0) > Time.now.to_i ? (b[:run_activity] || 'working') : nil,
+            :waiting_until => (b[:run_until] || 0) > Time.now.to_i && b[:run_activity] == 'waiting' ? b[:run_waiting_until] : nil,
+            :logins_today => b[:logins_date] == today ? (b[:logins] || 0) : 0,
+            :max_logins_per_day => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY,
+        }
+    end
+
+    # approved cases only: nothing is reset without the admin's decision;
+    # nothing at all while the bot is paused
+    get '/api/mail_account_bot/pending' do
+        require_mail_account_bot!
+        mail_account_bot_seen!
+        b = mail_account_bot_state
+        if b[:paused_ts]
+            respond(:cases => [], :paused => {:ts => b[:paused_ts], :reason => b[:paused_reason]})
+        else
+            rows = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN c.id AS id, c.mailboxes AS mailboxes ORDER BY c.ts;")
+            respond(:cases => rows.map do |row|
+                {:id => row['id'], :mailboxes => row['mailboxes'].map do |mailbox|
+                    student = mail_password_reset_student(mailbox)
+                    {
+                        :mailbox => mailbox,
+                        # what the dashboard knows about it, for the bot's own check
+                        :kind => student.nil? ? nil : (mailbox == student ? 'student' : 'parents'),
+                        :password => Main.gen_password_for_email(mailbox),
+                    }
+                end}
+            end, :paused => nil)
+        end
+    end
+
+    post '/api/mail_account_bot/result' do
+        require_mail_account_bot!
         data = parse_request_data(:required_keys => [:id, :ok], :optional_keys => [:message],
                                   :types => {:ok => Object},
-                                  :max_value_lengths => {:id => 64, :message => 500})
+                                  :max_value_lengths => {:id => 64, :message => 500},
+                                  :max_body_length => 4096)
         assert([true, false].include?(data[:ok]))
         c = finish_mail_password_case!(data[:id], data[:ok], data[:message], true)
         respond(:result => c ? 'ok' : 'not_approved')
+    end
+
+    # the run lock: one machine at a time, renewed while the run lasts
+    # activity: 'working' (at the mail provider right now) or 'waiting'
+    # (logged in, waiting for more jobs until waiting_until)
+    post '/api/mail_account_bot/claim' do
+        require_mail_account_bot!
+        data = parse_request_data(:required_keys => [:host], :optional_keys => [:activity, :waiting_until],
+                                  :types => {:waiting_until => Integer}, :max_value_lengths => {:host => 64, :activity => 16})
+        host = mail_account_bot_host(data[:host])
+        activity = data[:activity] || 'working'
+        assert(%w(working waiting).include?(activity), 'bad activity')
+        mail_account_bot_seen!(host)
+        now = Time.now.to_i
+        row = neo4j_query(<<~END_OF_QUERY, :host => host, :now => now, :until => now + MAIL_ACCOUNT_BOT_LEASE, :activity => activity, :waiting_until => data[:waiting_until]).first
+            MATCH (b:MailAccountBot {key: 'bot'})
+            WHERE b.paused_ts IS NULL AND (b.run_until IS NULL OR b.run_until < $now OR b.run_host = $host)
+            SET b.run_host = $host, b.run_until = $until, b.run_activity = $activity, b.run_waiting_until = $waiting_until
+            RETURN b.run_until AS run_until;
+        END_OF_QUERY
+        if row
+            respond(:result => 'ok', :until => row['run_until'])
+        else
+            b = mail_account_bot_state
+            if b[:paused_ts]
+                respond(:result => 'paused', :reason => b[:paused_reason])
+            else
+                respond(:result => 'busy', :host => b[:run_host])
+            end
+        end
+    end
+
+    post '/api/mail_account_bot/release' do
+        require_mail_account_bot!
+        data = parse_request_data(:required_keys => [:host], :max_value_lengths => {:host => 64})
+        host = mail_account_bot_host(data[:host])
+        neo4j_query(<<~END_OF_QUERY, :host => host)
+            MATCH (b:MailAccountBot {key: 'bot', run_host: $host})
+            REMOVE b.run_host, b.run_until;
+        END_OF_QUERY
+        respond(:result => 'ok')
+    end
+
+    # at the first surprise: paused for every machine until the admin lifts it
+    post '/api/mail_account_bot/pause' do
+        require_mail_account_bot!
+        data = parse_request_data(:required_keys => [:host, :reason], :max_value_lengths => {:host => 64, :reason => 500},
+                                  :max_body_length => 4096)
+        host = mail_account_bot_host(data[:host])
+        row = neo4j_query(<<~END_OF_QUERY, :host => host, :reason => data[:reason], :ts => Time.now.to_i).first
+            MERGE (b:MailAccountBot {key: 'bot'})
+            WITH b WHERE b.paused_ts IS NULL
+            SET b.paused_ts = $ts, b.paused_reason = $reason, b.paused_host = $host
+            RETURN b.paused_ts AS ts;
+        END_OF_QUERY
+        if row
+            notify_admin_about_mail_password_reset('Dashboard: Postfach-Bot angehalten', [
+                "Der Postfach-Bot hat auf dem Rechner #{CGI.escapeHTML(host)} angehalten:",
+                CGI.escapeHTML(data[:reason]),
+                "Bitte nachsehen und ihn auf der Seite „Passwörter“ wieder freigeben.",
+            ])
+        end
+        respond(:result => 'ok')
+    end
+
+    # every IONOS login attempt is counted before it happens, across machines
+    post '/api/mail_account_bot/login_attempt' do
+        require_mail_account_bot!
+        data = parse_request_data(:required_keys => [:host], :max_value_lengths => {:host => 64})
+        host = mail_account_bot_host(data[:host])
+        today = Date.today.strftime('%Y-%m-%d')
+        row = neo4j_query(<<~END_OF_QUERY, :today => today, :max => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY, :host => host).first
+            MERGE (b:MailAccountBot {key: 'bot'})
+            WITH b, CASE WHEN b.logins_date = $today THEN coalesce(b.logins, 0) ELSE 0 END AS logins
+            WITH b, logins WHERE logins < $max AND b.paused_ts IS NULL
+            SET b.logins_date = $today, b.logins = logins + 1, b.host = $host
+            RETURN b.logins AS logins;
+        END_OF_QUERY
+        if row
+            respond(:result => 'ok', :left => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY - row['logins'])
+        else
+            respond(:result => mail_account_bot_state[:paused_ts] ? 'paused' : 'limit')
+        end
+    end
+
+    get '/ws_mail_account_bot' do
+        require_mail_account_bot!
+        halt 400 unless Faye::WebSocket.websocket?(request.env)
+        host = params[:host].to_s
+        halt 400 unless host =~ MAIL_ACCOUNT_BOT_HOST_RE
+        # pings keep the connection open through nginx (60 s read timeout)
+        ws = Faye::WebSocket.new(request.env, nil, :ping => 25)
+        client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
+        ws.on(:open) do |event|
+            @@ws_clients[:mail_account_bot] ||= {}
+            @@ws_clients[:mail_account_bot][client_id] = {:ws => ws, :host => host, :since => Time.now.to_i}
+            mail_account_bot_seen!(host)
+            approved = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN count(c) AS n;").first['n'] +
+                       neo4j_query("MATCH (c:MailAccountCreateCase {state: 'approved'}) RETURN count(c) AS n;").first['n']
+            ws.send({:command => approved > 0 ? 'wake' : 'hello'}.to_json)
+        end
+        ws.on(:close) do |event|
+            (@@ws_clients[:mail_account_bot] || {}).delete(client_id)
+        end
+        ws.rack_response
+    end
+
+    # ---- the admin's view of the bot ----
+
+    post '/api/reset_mail_account_bot_logins' do
+        require_admin!
+        neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) SET b.logins = 0, b.logins_date = $today;", :today => Date.today.strftime('%Y-%m-%d'))
+        self.class.wake_mail_account_bot
+        respond(:result => 'ok')
+    end
+
+    post '/api/resume_mail_account_bot' do
+        require_admin!
+        neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) REMOVE b.paused_ts, b.paused_reason, b.paused_host;")
+        self.class.wake_mail_account_bot
+        respond(:result => 'ok')
     end
 end

@@ -137,6 +137,7 @@ require './include/lehrbuchverein.rb'
 require './include/lesson.rb'
 require './include/login.rb'
 require './include/mail_password_reset.rb'
+require './include/mail_account_creation.rb'
 require './include/message.rb'
 require './include/mittagessen.rb'
 require './include/monitor.rb'
@@ -2596,6 +2597,7 @@ class Main < Sinatra::Base
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>"
                         io.puts "<a class='dropdown-item nav-icon' href='/show_all_login_codes'><div class='icon'><i class='fa fa-key-modern'></i></div><span class='label'>Live-Anmeldungen</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/postfaecher'><div class='icon'><i class='fa fa-inbox'></i></div><span class='label'>Postfach-Anfragen und E-Mail-Briefe</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/email_accounts'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Postfächer</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/inactive_sus'><div class='icon'><i class='fa fa-question-circle-o'></i></div><span class='label'>Inaktive SuS</span></a>"
                         io.puts "<a class='dropdown-item nav-icon' href='/stats'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Statistiken</span></a>"

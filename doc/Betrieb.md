@@ -85,7 +85,10 @@ Teile:
   - Klassenleitungen beantragen es für das Postfach oder das Eltern-Postfach
     der Schüler:innen ihrer Klassen. E-Mails mit solchen Bitten leiten sie an
     die Administration weiter.
-  - Anfragen per E-Mail trägt die Administration selbst ein („Neue Anfrage“:
+  - Die Administration bearbeitet die Anfragen auf der eigenen Seite
+    `/postfaecher` (Admin-Menü „Postfach-Anfragen und E-Mail-Briefe“). Dort
+    sucht sie Schüler:innen nach Name, Klasse oder Adresse, öffnet den
+    E-Mail-Brief und trägt Anfragen per E-Mail selbst ein („Neue Anfrage“:
     betroffene Postfächer, Antwortadresse, Notiz).
   - Jeder offene Fall zeigt den nächsten Schritt: 1. prüfen (Zurücksetzen
     oder Ablehnen), 2. zurücksetzen (Bot oder von Hand im Kundenbereich des
@@ -98,13 +101,22 @@ Teile:
 
 Pro Postfach ist immer nur ein offener Fall möglich und nur wenige Anfragen
 pro Tag. Das Ändern beim Mail-Anbieter übernimmt ein Bot, der nur
-freigegebene Fälle über `GET /api/mail_password_reset_bot/pending` abholt und
-das Ergebnis an `POST /api/mail_password_reset_bot/result` meldet
-(`Authorization: Bearer <MAIL_PASSWORD_RESET_BOT_TOKEN>` aus
+freigegebene Fälle über `GET /api/mail_account_bot/pending` abholt und
+das Ergebnis an `POST /api/mail_account_bot/result` meldet
+(`Authorization: Bearer <MAIL_ACCOUNT_BOT_TOKEN>` aus
 `credentials.rb`; ohne Token ist die Schnittstelle aus). Solange der Bot
 nicht läuft, setzt die Administration freigegebene Fälle von Hand zurück und
 markiert sie auf der Seite als erledigt. Schlägt der Bot fehl, bekommt die
 Administration eine Mail.
+
+Der Bot (`src/mail-account-bot`, siehe dessen README) läuft nur auf den
+Rechnern der Administration, nicht auf dem Server. Hält er an, ist er für
+alle Rechner angehalten, bis die Administration ihn auf der Seite
+„Postfach-Anfragen und E-Mail-Briefe“ wieder freigibt; dort steht auch, ob
+er verbunden ist oder gerade arbeitet. Er hält eine Websocket-Verbindung zu
+`/ws_mail_account_bot`: Ein Reverse-Proxy vor dem Dashboard muss diesen Pfad
+als Websocket durchreichen (wie `/ws_monitor`), sonst fragt der Bot nur alle
+15 Minuten nach.
 
 ## Neue Eingangsdaten
 

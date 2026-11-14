@@ -240,6 +240,33 @@ document.addEventListener('DOMContentLoaded', function() {
         return tr;
     }
 
+    // connected, paused (with the button to lift it) or not running
+    function render_bot_state(bot) {
+        const el = $('#mail_reset_bot_state').empty().attr('data-state', '');
+        if (bot.paused) {
+            el.attr('data-state', 'paused');
+            el.append($('<span>').text(`Bot angehalten (${fmt_ts(bot.paused.ts)}, Rechner ${bot.paused.host}): ${bot.paused.reason} `));
+            el.append($('<button>').addClass('btn btn-sm btn-outline-secondary').attr('id', 'bu_resume_mail_bot').text('Bot wieder freigeben'));
+        } else if ((bot.connected || []).length > 0) {
+            el.attr('data-state', 'connected');
+            const c = bot.connected[0];
+            el.text(`Bot verbunden (Rechner ${c.host}, seit ${fmt_ts(c.since)})` + (bot.running ? ' – arbeitet gerade' : '') + '.');
+        } else if (bot.last_seen) {
+            el.attr('data-state', 'offline');
+            el.text(`Bot nicht verbunden, zuletzt aktiv: ${fmt_ts(bot.last_seen)}` + (bot.host ? ` (Rechner ${bot.host})` : '') + '. Freigegebene Anfragen werden erledigt, sobald er wieder läuft.');
+        } else {
+            el.attr('data-state', 'never');
+            el.text('Der Bot läuft noch nicht – freigegebene Anfragen bitte selbst zurücksetzen.');
+        }
+        if (bot.paused || bot.logins_today) {
+            const logins = $('<small>').addClass('d-block').attr('id', 'mail_bot_logins').text(`Anmeldungen bei IONOS heute: ${bot.logins_today} von ${bot.max_logins_per_day} `);
+            if (bot.logins_today >= bot.max_logins_per_day) {
+                logins.append($('<button>').addClass('btn btn-xs btn-outline-secondary').attr('id', 'bu_reset_mail_bot_logins').text('Anmeldezähler zurücksetzen'));
+            }
+            el.append(logins);
+        }
+    }
+
     function render_cases(data) {
         if ($('#mail_cases_open').length === 0) return;
         const open = data.cases.filter((entry) => !case_closed(entry));
@@ -254,9 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         $('#mail_cases_open_count').text(open.length);
         $('#mail_cases_closed_count').text(closed.length);
-        $('#mail_reset_bot_state').text(data.bot_last_seen
-            ? 'Bot zuletzt aktiv: ' + fmt_ts(data.bot_last_seen)
-            : 'Der Bot läuft noch nicht – freigegebene Anfragen bitte selbst zurücksetzen.');
+        render_bot_state(data.bot || {});
     }
 
     function render(data) {
@@ -352,6 +377,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) load();
         });
     }
+    $('#mail_reset_bot_state').on('click', '#bu_reset_mail_bot_logins', function(e) {
+        dashboardConfirm('Der Bot darf sich danach heute wieder bei IONOS anmelden. Viele Anmeldungen kurz nacheinander können IONOS misstrauisch machen.', function() {
+            api_call('/api/reset_mail_password_reset_bot_logins', {}, function(data) {
+                if (data.success) load();
+            });
+        }, { title: 'Anmeldezähler zurücksetzen', confirm: 'Zurücksetzen' });
+    });
+    $('#mail_reset_bot_state').on('click', '#bu_resume_mail_bot', function(e) {
+        dashboardConfirm('Der Bot arbeitet danach wieder freigegebene Anfragen ab. Hast du dir angesehen, warum er angehalten hat?', function() {
+            api_call('/api/resume_mail_password_reset_bot', {}, function(data) {
+                if (data.success) load();
+            });
+        }, { title: 'Bot wieder freigeben', confirm: 'Freigeben' });
+    });
     $('.mail-cases').on('click', '.bu_mail_case_action', function(e) {
         const button = $(e.currentTarget);
         const id = button.data('id');

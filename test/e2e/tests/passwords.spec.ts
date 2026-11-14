@@ -227,7 +227,7 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   const noticesBefore = (await mails(parents, PARENT_NOTICE)).length;
   await login(page, ACCOUNTS.admin);
   await page.goto(PAGE);
-  await expect(page.locator('#mail_reset_bot_state')).toContainText('Bot zuletzt aktiv');
+  await expect(page.locator('#mail_reset_bot_state')).toContainText(/Bot (zuletzt aktiv|nicht verbunden|verbunden)/);
 
   await page.locator('#ti_mail_case_mailbox').fill(parents);
   await page.locator('#bu_add_mail_case_mailbox').click();

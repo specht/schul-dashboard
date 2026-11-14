@@ -114,6 +114,10 @@ type the login yourself.
 
 ## Commands
 
+The usual way: `./src/scripts/postfach-bot.sh` (from the repository) starts
+the background mode and handles approved jobs until you press Ctrl+C – the
+first Ctrl+C lets a mailbox in progress finish, a second one stops at once.
+
 | Command | What it does |
 |---|---|
 | `node bot.js check [--imap]` | Checks the configuration and shows the current TOTP code (compare it with the app). Checks the dashboard token. With `--imap`, also checks the test mailbox passwords. Doesn't touch IONOS. |

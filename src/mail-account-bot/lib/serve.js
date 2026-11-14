@@ -10,6 +10,7 @@ function serve({ config, runOnce, log, stopSignal = null }) {
     let wake = null;
     let wakeRequested = true;
     let stopped = false;
+    let busy = false;
     let ws = null;
     const wakeUp = () => { wakeRequested = true; if (wake) wake(); };
     let backoff = 5;
@@ -43,12 +44,15 @@ function serve({ config, runOnce, log, stopSignal = null }) {
             }
             if (stopped) break;
             wakeRequested = false;
+            busy = true;
             try {
-                const summary = await runOnce();
+                const summary = await runOnce(() => stopped);
                 if (summary && summary.status === 'stopped') log('Angehalten – weiter erst nach der Freigabe im Dashboard');
             } catch (err) {
                 log(`Fehler: ${err.message}`);
-                await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+                if (!stopped) await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+            } finally {
+                busy = false;
             }
         }
     })();
@@ -56,6 +60,7 @@ function serve({ config, runOnce, log, stopSignal = null }) {
     return {
         loop,
         connected: () => ws && ws.readyState === WebSocket.OPEN,
+        busy: () => busy,
         stop() { stopped = true; if (wake) wake(); if (ws) ws.close(); },
     };
 }

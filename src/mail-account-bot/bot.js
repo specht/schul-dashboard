@@ -119,8 +119,18 @@ async function main() {
     }
     if (command === 'serve') {
         const log = (message) => { state.log(message); console.log(`${new Date().toLocaleTimeString('de-DE')} ${message}`); };
-        await require('./lib/serve').serve({ config, runOnce: () => runOnce(), log }).loop;
-        return;
+        const bg = require('./lib/serve').serve({ config, runOnce: (shouldStop) => runOnce({ shouldStop }), log });
+        let stopping = false;
+        process.on('SIGINT', () => {
+            if (stopping) { log('Sofort beendet'); process.exit(130); }
+            stopping = true;
+            log(bg.busy() ? 'Wird beendet, sobald das laufende Postfach fertig ist (nochmal Strg+C: sofort)' : 'Wird beendet');
+            bg.stop();
+        });
+        await bg.loop;
+        await dashboard.release(config.host).catch(() => {});
+        log('Beendet');
+        process.exit(0);
     }
     throw new Error(`Unbekannter Befehl: ${command}`);
 }

@@ -358,8 +358,13 @@ class IonosSession {
     async exportAddresses() {
         await this.wait({ list: all(urlMatches(RE.overview), visible(S.table)) }, 'Adressliste');
         const link = await this.one(S.exportLink, 'Adressliste: „E-Mail-Adressen exportieren“');
-        const href = (await link.getAttribute('href')) || '';
-        if (href !== `/email/${this.contract}/email-overview/export`) throw new Stop('Export: Verweis in unbekannter Form');
+        // the page adds the list's current filters and sorting to the link;
+        // always the whole list: the base address, without them
+        const base = `/email/${this.contract}/email-overview/export`;
+        const linkBase = (await link.getAttribute('data-base-url')) || '';
+        const linkPath = ((await link.getAttribute('href')) || '').split('?')[0];
+        if (linkBase !== base || linkPath !== base) throw new Stop(`Export: Verweis in unbekannter Form (${linkPath.replace(/\d+/g, '<n>')})`);
+        const href = base;
         await this.pacer.pause(1000, 2500);
         // fetched from within the page: same origin, same session – and in the
         // tests through the fake, never past it

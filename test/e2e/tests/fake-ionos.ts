@@ -121,7 +121,7 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
       `<main id="main-content" role="main">${breadcrumb()}
        <h1 class="page-header__headline">E-Mail-Adressen</h1>
        <a href="/email/${CONTRACT}/email-package-selection" data-testid="button-create-another-mailbox" class="button button--primary">Weitere E-Mail-Adresse anlegen</a>
-       <a href="/email/${CONTRACT}/email-overview/export" data-testid="link-export-emails" data-base-url="/email/${CONTRACT}/email-overview/export" class="link link--action">E-Mail-Adressen exportieren</a>
+       <a href="/email/${CONTRACT}/email-overview/export?search=${encodeURIComponent(search)}&sort=email-asc" data-testid="link-export-emails" data-base-url="/email/${CONTRACT}/email-overview/export" class="link link--action">E-Mail-Adressen exportieren</a>
        <form id="js-table-util-form" role="search" data-testid="form-email-search" method="get" action="/email/${CONTRACT}/email-overview">
          <input id="email-search" name="search" type="text" aria-label="Suchen" data-testid="input-email-search" value="${esc(search)}">
          <a role="button" aria-label="Suchen" data-testid="button-search-submit" href="#" onclick="this.closest('form').submit(); return false;">Suchen</a>
@@ -264,6 +264,8 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
       if (url.pathname === `/email/${CONTRACT}/email-overview`) return page(route, listPage((url.searchParams.get('search') || '').trim()));
       if (url.pathname === `/email/${CONTRACT}/email-overview/export`) {
         fake.exports += 1;
+        // the bot fetches the whole list, never a filtered one
+        if (url.search) return route.fulfill({ status: 200, contentType: 'text/csv; charset=utf-8', body: 'E-Mail-Adresse;Kontotyp;Vertragsnummer\r\nnur@gefiltert.example.org;Mail Basic;1\r\n' });
         return route.fulfill({ status: 200, contentType: 'text/csv; charset=utf-8', body: exportCsv() });
       }
       if (url.pathname === `/email/${CONTRACT}/email-package-selection`) return page(route, selectionPage());

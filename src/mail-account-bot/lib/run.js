@@ -39,6 +39,8 @@ async function run(options) {
     const notify = options.notify || (() => {});
     const print = options.print || ((line) => console.log(line));
     const confirm = options.confirm || (async () => true);
+    // Ctrl+C in background mode: no new work, leave the waiting time early
+    const shouldStop = options.shouldStop || (() => false);
     const log = (message) => { state.log(message); print(message); };
     const summary = { status: 'ok', done: [], failed: [], postponed: [], dryRun: [], created: [], createFailed: [] };
 
@@ -305,8 +307,10 @@ async function run(options) {
         if (going && !testMailbox) going = await processCreation();
         // stay a while with the open session, in case the admin approves more
         const until = Date.now() + config.linger_minutes * 60 * 1000;
-        while (going && session && !dryRun && !testMailbox && Date.now() < until) {
-            await sleep(config.poll_minutes * 60 * 1000);
+        while (going && session && !dryRun && !testMailbox && Date.now() < until && !shouldStop()) {
+            const next = Date.now() + config.poll_minutes * 60 * 1000;
+            while (Date.now() < next && !shouldStop()) await sleep(Math.min(1000, Math.max(1, next - Date.now())));
+            if (shouldStop()) break;
             await dashboard.claim(config.host).catch(() => {});
             const pending = await dashboard.pending();
             if (pending.paused) break;

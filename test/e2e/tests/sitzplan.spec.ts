@@ -35,7 +35,9 @@ async function discardOpenPlan(page: Page) {
 }
 
 async function startNewPlan(page: Page, way: 'cycle' | 'random' | 'manual') {
-  await page.locator('#sph_bu_new').click();
+  // "Von Hand verteilen" sits on top next to the Shuffler, the other two
+  // ways under "Neuer Sitzplan"
+  if (way !== 'manual') await page.locator('#sph_bu_new').click();
   const started = page.waitForResponse('**/api/sph_start_cycle');
   await page.locator(`#sph_bu_start_${way}`).click();
   expect((await started).status()).toBe(200);
@@ -179,13 +181,20 @@ test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Vertei
   await expect(seat(from)).toHaveClass(/selected/);
   await page.locator('#sph_bu_pin').click();
   await expect(seat(from)).toHaveClass(/pinned/);
-  await page.locator('#sph_vorgaben > summary').click();
-  await expect(page.locator('#sph_rules_list')).toContainText('genauer Platz');
   await seat(from).click();
   await expect(page.locator('#sph_bu_pin')).toHaveText(/lösen/);
-  await page.locator('#sph_bu_pin').click();
-  await expect(seat(from)).not.toHaveClass(/pinned/);
+  await page.locator('#sph_bu_deselect').click();
+
+  // the fixed seat stays; a new plan shows it before anything is shuffled
+  await discardOpenPlan(page);
+  await startNewPlan(page, 'cycle');
+  await expect(page.locator('#sph_seats .place.pinned')).toHaveCount(1);
+  await expect(page.locator('#sph_plan_info')).toContainText('Noch kein Plan');
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_rules_list')).toContainText('genauer Platz');
+  await page.locator('#sph_rules_list .rule-chip a').first().click();
   await expect(page.locator('#sph_rules_list')).not.toContainText('genauer Platz');
+  await expect(page.locator('#sph_seats .place.pinned')).toHaveCount(0);
 
   // Verteilung im Raum: a list of the class, kept until it is changed
   await page.locator('#sph_bu_add_group').click();
@@ -210,7 +219,15 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   const RAUM = await setUpRoom(page);
   await openSeatingPlan(page, RAUM);
 
+  // Vorgaben can be set without any plan or wish round
+  await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_pair_a').selectOption({ label: 'Elli Mustermann' });
+  await page.locator('#sph_pair_b').selectOption({ label: 'Mallory Mustermann' });
+  await page.locator('#sph_bu_add_forced').click();
+  await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
+
   // "Von Hand": everyone starts in the list without a seat
+  await expect(page.locator('#sph_room_bar #sph_bu_start_manual')).toBeVisible();
   await startNewPlan(page, 'manual');
   const chips = page.locator('#sph_unplaced .sph-chip');
   await expect(chips).toHaveCount(3);
@@ -220,11 +237,8 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   await expect(page.locator('#sph_seats .place[data-seat-index="0"]')).toContainText('Max');
   await expect(chips).toHaveCount(2);
 
-  // a Vorgabe set now still applies to the next new plan
+  // the Vorgabe from the start page applies here and to the next new plan
   await page.locator('#sph_vorgaben > summary').click();
-  await page.locator('#sph_pair_a').selectOption({ label: 'Elli Mustermann' });
-  await page.locator('#sph_pair_b').selectOption({ label: 'Mallory Mustermann' });
-  await page.locator('#sph_bu_add_forced').click();
   await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
 
   // saving with students still in the list asks first

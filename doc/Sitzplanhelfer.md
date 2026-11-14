@@ -32,11 +32,12 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    einer Wunschrunde, eine Leiste mit dem Raum und der Zahl der Plätze,
    „Tische im Raum ändern“ (wo die Klassenleitung die Tische ändern darf;
    gelb hervorgehoben, wenn Plätze fehlen; „Tische anlegen“, wenn es noch
-   keine gibt) und „Shuffler“. Darunter der aktuell gespeicherte Plan mit
-   den Knöpfen „Neuer Sitzplan“, „Plan ändern“ und „Drucken“, darunter
-   aufklappbar „Frühere Sitzpläne“. Hat der Raum weniger Plätze als die
-   Klasse SuS, lässt sich kein neuer Plan beginnen und der Shuffler nicht
-   öffnen.
+   keine gibt), „Shuffler“ und, solange kein Plan offen ist, „Von Hand
+   verteilen“. Darunter der aktuell gespeicherte Plan mit den Knöpfen
+   „Neuer Sitzplan“, „Plan ändern“ und „Drucken“, die aufklappbaren
+   „Vorgaben“ (auch ohne offenen Plan oder Wunschrunde bearbeitbar) und
+   „Frühere Sitzpläne“. Hat der Raum weniger Plätze als die Klasse SuS,
+   lässt sich kein neuer Plan beginnen und der Shuffler nicht öffnen.
 2. **Neuer Sitzplan** fragt, wie der Plan entstehen soll:
    - **Mit Wünschen der Klasse**: legt eine Umfrage an und startet einen
      Timer (einstellbar 1–60 Tage, Standard 4). Die SuS sehen sie ganz
@@ -49,9 +50,11 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
      dahin abgegebenen Wünsche bleiben erhalten.
    - **Zufällig**: ohne Umfrage, der Plan wird sofort gewürfelt. Vorgaben
      gelten trotzdem.
-   - **Von Hand**: alle SuS stehen zunächst unter „Noch ohne Platz“; ein
-     Klick auf einen Namen und dann auf einen Platz setzt die Person dort
-     hin.
+
+   Der dritte Weg, **Von Hand verteilen**, steht oben neben dem Shuffler:
+   ohne Wünsche und ohne Würfeln stehen alle SuS zunächst unter „Noch ohne
+   Platz“; ein Klick auf einen Namen und dann auf einen Platz setzt die
+   Person dort hin.
 3. **Arbeitsansicht** (alle drei Wege und „Plan ändern“): Bei einer
    Wunschrunde zeigt eine Schrittleiste „Wünsche sammeln – Plan bauen –
    Speichern“. Die Klassenleitung sieht die Wünsche live, inkl.
@@ -82,16 +85,19 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
      mehrere SuS betreffen.
    - **Verteilung im Raum**: Listen von SuS (Liste A, B, …). Wer auf
      derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch,
-     nicht direkt davor oder dahinter und nicht schräg daneben. Wünsche
-     innerhalb einer Liste zählen nicht (🔒), „Muss zusammen“ geht vor.
-     Die Listen gehören zur Klasse und sind nur für die Klassenleitung
-     sichtbar.
+     nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt
+     auch ganz ohne Wünsche (etwa mit „Zufällig“); gibt es Wünsche,
+     zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht
+     vor. Die Listen gehören zur Klasse und sind nur für die
+     Klassenleitung sichtbar.
 
    Vorgaben gelten, bis die Klassenleitung sie ändert: Jeder neue Plan
    und „Plan ändern“ übernehmen den zuletzt eingestellten Stand für
    dieselbe Klasse+Raum, auch wenn der Plan, in dem sie geändert wurden,
-   verworfen wird. Bewusst je Klasse+Raum, da die Koordinaten fester
-   Plätze raumspezifisch sind.
+   verworfen wird. Ohne offenen Plan ändert man sie direkt auf der
+   Startseite. Bewusst je Klasse+Raum, da die Koordinaten fester Plätze
+   raumspezifisch sind. Ist noch nicht gewürfelt, zeigt der Plan die
+   festen Plätze (📌), damit man sieht, wer wo festgehalten ist.
 6. **Speichern** schließt eine laufende Wunschrunde automatisch und macht
    den Plan zum aktuellen Sitzplan. Bleiben SuS ohne Platz, fragt die
    Seite vorher nach. Danach zeigt die Startansicht den neuen Plan.

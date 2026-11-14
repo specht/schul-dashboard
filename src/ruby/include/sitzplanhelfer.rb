@@ -324,6 +324,7 @@ class Main < Sinatra::Base
                 :can_start_cycle => can_start_cycle, :klassenleiter_names => klassenleiter_names,
                 :open_cycle => open_cycle, :wishes => wishes, :last_cycle => last_cycle,
                 :previous_cycle => previous_cycle, :priority_cycle => priority_cycle,
+                :current_rules => sph_current_rules(klasse, raum).transform_values { |v| JSON.parse(v) rescue [] },
                 :seating_groups => sph_load_seating_groups(klasse))
     end
 
@@ -509,11 +510,51 @@ class Main < Sinatra::Base
         }
     end
 
+    # Ziel einer Änderung an den Vorgaben: der offene Plan (cycle_id) oder,
+    # ohne offenen Plan, direkt die geltenden Vorgaben von Klasse+Raum - so
+    # lassen sich Vorgaben auch ohne Wunschrunde oder neuen Plan pflegen.
+    # Liefert das Ziel und die Vorgaben (JSON-Texte) wie in einem Zyklus.
+    def sph_rules_target!(data)
+        if data[:cycle_id]
+            sc = sph_load_cycle_for_edit!(data[:cycle_id])
+            rules = {:forced_pairs => sc[:forced_pairs] || '[]', :forbidden_pairs => sc[:forbidden_pairs] || '[]',
+                     :fixed_rules => sc[:fixed_rules] || '[]'}
+            return [{:cycle_id => sc[:id]}, rules]
+        end
+        klasse = data[:klasse]
+        raum = data[:raum]
+        assert(klasse.is_a?(String) && raum.is_a?(String), 'Klasse und Raum fehlen.')
+        require_sph_access!(klasse)
+        assert(sitzplan_allowed_rooms(klasse).include?(raum), 'Dieser Raum gehört nicht zur Klasse.')
+        [{:klasse => klasse, :raum => raum}, sph_current_rules(klasse, raum)]
+    end
+
+    SPH_RULE_PROPS = [:forced_pairs, :forbidden_pairs, :fixed_rules]
+
+    def sph_write_rule!(target, rules, prop, value)
+        assert(SPH_RULE_PROPS.include?(prop), 'Unbekannte Vorgabe.')
+        if target[:cycle_id]
+            neo4j_query(<<~END_OF_QUERY, :id => target[:cycle_id], :value => value.to_json)
+                MATCH (sc:SeatingCycle {id: $id})
+                SET sc.#{prop} = $value;
+            END_OF_QUERY
+            sph_remember_rules!(target[:cycle_id])
+        else
+            rules = rules.merge(prop => value.to_json)
+            neo4j_query(<<~END_OF_QUERY, :key => "#{target[:klasse]}/#{target[:raum]}", :fp => rules[:forced_pairs], :fb => rules[:forbidden_pairs], :fr => rules[:fixed_rules])
+                MERGE (r:SeatingRules {key: $key})
+                SET r.forced_pairs = $fp
+                SET r.forbidden_pairs = $fb
+                SET r.fixed_rules = $fr;
+            END_OF_QUERY
+        end
+    end
+
     post '/api/sph_set_pair' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email_a, :email_b, :kind])
+        data = parse_request_data(:required_keys => [:email_a, :email_b, :kind], :optional_keys => [:cycle_id, :klasse, :raum])
         assert(['forced', 'forbidden'].include?(data[:kind]), 'Unbekannte Paar-Art.')
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        target, sc = sph_rules_target!(data)
         prop = data[:kind] == 'forced' ? :forced_pairs : :forbidden_pairs
         other_prop = data[:kind] == 'forced' ? :forbidden_pairs : :forced_pairs
         wanted_pair = [data[:email_a], data[:email_b]].sort
@@ -541,35 +582,27 @@ class Main < Sinatra::Base
         end
         pairs = JSON.parse(sc[prop] || '[]')
         pairs << [data[:email_a], data[:email_b]] unless pairs.any? { |p| p.sort == wanted_pair }
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => pairs.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.#{prop} = $value;
-        END_OF_QUERY
-        sph_remember_rules!(data[:cycle_id])
+        sph_write_rule!(target, sc, prop, pairs)
         respond(:ok => true, :pairs => pairs)
     end
 
     post '/api/sph_remove_pair' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email_a, :email_b, :kind])
+        data = parse_request_data(:required_keys => [:email_a, :email_b, :kind], :optional_keys => [:cycle_id, :klasse, :raum])
         assert(['forced', 'forbidden'].include?(data[:kind]), 'Unbekannte Paar-Art.')
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        target, sc = sph_rules_target!(data)
         prop = data[:kind] == 'forced' ? :forced_pairs : :forbidden_pairs
         pairs = JSON.parse(sc[prop] || '[]')
         pairs.reject! { |p| p.sort == [data[:email_a], data[:email_b]].sort }
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => pairs.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.#{prop} = $value;
-        END_OF_QUERY
-        sph_remember_rules!(data[:cycle_id])
+        sph_write_rule!(target, sc, prop, pairs)
         respond(:ok => true, :pairs => pairs)
     end
 
     post '/api/sph_set_fixed_rule' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email, :x_min, :x_max, :y_min, :y_max],
+        data = parse_request_data(:required_keys => [:email, :x_min, :x_max, :y_min, :y_max], :optional_keys => [:cycle_id, :klasse, :raum],
                                   :types => {:x_min => Integer, :x_max => Integer, :y_min => Integer, :y_max => Integer})
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        target, sc = sph_rules_target!(data)
         rules = JSON.parse(sc[:fixed_rules] || '[]')
         # Ein exakter Platz (x_min == x_max und y_min == y_max, siehe
         # sitzplanhelfer.html/#sph_rule_seatmap) ist physisch nur einer Person
@@ -596,25 +629,17 @@ class Main < Sinatra::Base
         end
         rules.reject! { |r| r[0] == data[:email] }
         rules << [data[:email], [data[:x_min], data[:x_max]], [data[:y_min], data[:y_max]]]
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => rules.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.fixed_rules = $value;
-        END_OF_QUERY
-        sph_remember_rules!(data[:cycle_id])
+        sph_write_rule!(target, sc, :fixed_rules, rules)
         respond(:ok => true, :rules => rules)
     end
 
     post '/api/sph_remove_fixed_rule' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email])
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        data = parse_request_data(:required_keys => [:email], :optional_keys => [:cycle_id, :klasse, :raum])
+        target, sc = sph_rules_target!(data)
         rules = JSON.parse(sc[:fixed_rules] || '[]')
         rules.reject! { |r| r[0] == data[:email] }
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => rules.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.fixed_rules = $value;
-        END_OF_QUERY
-        sph_remember_rules!(data[:cycle_id])
+        sph_write_rule!(target, sc, :fixed_rules, rules)
         respond(:ok => true, :rules => rules)
     end
 

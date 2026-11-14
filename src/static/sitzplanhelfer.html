@@ -129,7 +129,7 @@ table.sph-wishes td, table.sph-wishes th {
 #sph_seats .place.empty {
     background-color: transparent;
     box-shadow: none;
-    border: 2px dashed #ccc;
+    border: 3px dashed #ccc;
 }
 #sph_seats.editable .place:not(.empty) {
     cursor: grab;
@@ -323,6 +323,8 @@ details.sph-help > summary {
 .sph-chips {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
     gap: 0.35em;
     margin-bottom: 0.5em;
     min-height: 2em;
@@ -330,15 +332,25 @@ details.sph-help > summary {
 .sph-chip {
     border-radius: 1em;
 }
+/* Schwebt am unteren Rand, solange jemand ausgewählt ist: So verschiebt sie
+   nichts auf der Seite, und auf dem Handy ist sie immer im Blick. */
 .sph-selection {
+    position: fixed;
+    left: 50%;
+    bottom: 3.2em;
+    transform: translateX(-50%);
+    z-index: 1040;
+    width: max-content;
+    max-width: calc(100% - 2em);
     display: flex;
     flex-wrap: wrap;
     gap: 0.4em;
     align-items: center;
-    padding: 0.4em 0.8em;
-    border-radius: 0.4em;
+    padding: 0.5em 0.9em;
+    border-radius: 0.5em;
+    border: 1px solid #b9d3f0;
     background-color: #e6f0fb;
-    margin-bottom: 0.5em;
+    box-shadow: 0 0.2em 0.8em rgba(0, 0, 0, 0.25);
 }
 #sph_seats .place.selected {
     border-color: #2f7fd6;
@@ -618,9 +630,16 @@ function esc(s) {
 // Pixel pro Rasterfeld für Plan und Sitzkarte. Nicht kleiner als 64, sonst
 // passen Foto und Name nicht mehr auf den Platz - auf schmalen Bildschirmen
 // lässt sich der Raum dann seitlich verschieben (.sph-seat-scroll).
+// Einmal je Plan berechnet (und bei Größenänderung des Fensters neu), damit
+// die Plätze beim Setzen nicht ihre Größe ändern, etwa wenn die Seite kürzer
+// wird und dabei der Scrollbalken verschwindet.
+var fixed_seat_scale = null;
 function seat_scale(w) {
-    let container_width = Math.min($('.sph-container').width() || 900, 900);
-    return Math.max(64, Math.min(90, container_width / w));
+    if (fixed_seat_scale === null) {
+        let container_width = Math.min($('.sph-container').width() || 900, 900);
+        fixed_seat_scale = Math.max(64, Math.min(90, container_width / w));
+    }
+    return fixed_seat_scale;
 }
 
 // Graue Figur, solange das Foto lädt oder wenn es keins gibt.
@@ -1254,6 +1273,7 @@ function load_state(after) {
             // Jeder neue Plan beginnt mit zugeklappten Vorgaben (die Zahl steht
             // in der Überschrift).
             $('#sph_vorgaben').prop('open', false);
+            unplaced_min_height = 0;
             if (oc.seats) {
                 current_placement = complete_placement(oc.seats);
                 plan_cycle_id = open_cycle_id;
@@ -1867,6 +1887,9 @@ function unplaced_emails() {
 
 // "Noch ohne Platz": Namen zum Anklicken, danach einen freien Platz anklicken
 // (wie früher auf der Seite "Verteilen").
+// Größte Höhe der Liste „Noch ohne Platz“ in diesem Plan (siehe render_unplaced).
+var unplaced_min_height = 0;
+
 function render_unplaced() {
     let box = $('#sph_unplaced').empty();
     let rest = unplaced_emails();
@@ -1882,8 +1905,15 @@ function render_unplaced() {
             }));
     }
     if (rest.length === 0) box.append($('<span>').addClass('sph-legend').text('Alle haben einen Platz.'));
+    // Die Liste wird beim Setzen kürzer; ihre Höhe bleibt, damit der Plan
+    // darunter nicht nach oben rutscht.
+    box.css('min-height', '');
+    unplaced_min_height = Math.max(unplaced_min_height, box.outerHeight());
+    box.css('min-height', `${unplaced_min_height}px`);
 }
 
+// Die Leiste schwebt am unteren Rand (siehe .sph-selection), damit der Plan
+// beim Anklicken nicht springt.
 function render_selection_bar() {
     let bar = $('#sph_selection_bar');
     if (!selected_email) {
@@ -2246,6 +2276,18 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#sph_bu_deselect').click(function () {
         selected_email = null;
         render_placement(true);
+    });
+
+    // Die schwebende Auswahl-Leiste gehört an den Bildschirmrand, nicht in den
+    // Kasten der Seite (dessen Unschärfe-Filter würde sie dort festhalten).
+    $('#sph_selection_bar').appendTo('body');
+    let resize_timer = null;
+    window.addEventListener('resize', function () {
+        clearTimeout(resize_timer);
+        resize_timer = setTimeout(function () {
+            fixed_seat_scale = null;
+            if (open_cycle_id || Object.keys(current_placement).length > 0) show_current_plan();
+        }, 200);
     });
 
     load_state();

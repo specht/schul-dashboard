@@ -237,10 +237,20 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   const chips = page.locator('#sph_unplaced .sph-chip');
   await expect(chips).toHaveCount(3);
   await expect(page.locator('#sph_seats .place:not(.empty)')).toHaveCount(0);
+  // nothing moves or changes size while a student is put on a seat
+  // (position on the page, not in the window: clicking may scroll)
+  const box = () => page.evaluate(() => {
+    const room = document.querySelector('#sph_seats')!.getBoundingClientRect();
+    const seat0 = document.querySelector('#sph_seats .place[data-seat-index="0"]')!.getBoundingClientRect();
+    return [Math.round(room.top + window.scrollY), Math.round(seat0.width), Math.round(seat0.height)];
+  });
+  const before = await box();
   await chips.filter({ hasText: 'Max' }).click();
+  expect(await box()).toEqual(before);
   await page.locator('#sph_seats .place[data-seat-index="0"]').click();
   await expect(page.locator('#sph_seats .place[data-seat-index="0"]')).toContainText('Max');
   await expect(chips).toHaveCount(2);
+  expect(await box()).toEqual(before);
 
   // the Vorgabe from the start page applies here and to the next new plan
   await page.locator('#sph_vorgaben > summary').click();

@@ -53,8 +53,9 @@ class Main < Sinatra::Base
         mailbox == student ? 'student' : 'parents'
     end
 
+    # being created, or created / found existing since the list was fetched
     def mail_account_active_creations
-        Set.new(neo4j_query("MATCH (c:MailAccountCreateCase) WHERE c.state IN ['approved', 'failed'] RETURN c.mailbox AS mailbox;").map { |x| x['mailbox'] })
+        Set.new(neo4j_query("MATCH (c:MailAccountCreateCase) WHERE c.state IN ['approved', 'failed', 'done', 'exists'] RETURN c.mailbox AS mailbox;").map { |x| x['mailbox'] })
     end
 
     # missing student / parents mailboxes, without the ones being created
@@ -198,6 +199,14 @@ class Main < Sinatra::Base
             SET c.state = $state, c.ts_done = $ts, c.message = $message
             RETURN c.mailbox AS mailbox;
         END_OF_QUERY
+        if row && data[:ok]
+            # it exists now: into the stored list until the next export
+            neo4j_query(<<~END_OF_QUERY, :mailbox => row['mailbox'])
+                MATCH (l:IonosAddressList {key: 'current'})
+                WHERE l.addresses IS NOT NULL AND NOT $mailbox IN l.addresses
+                SET l.addresses = l.addresses + [$mailbox], l.types = l.types + ['Mail Basic'];
+            END_OF_QUERY
+        end
         if row && !data[:ok]
             notify_admin_about_mail_password_reset('Dashboard: Postfach konnte nicht angelegt werden', [
                 "Das Postfach #{CGI.escapeHTML(row['mailbox'])} konnte nicht angelegt werden.",

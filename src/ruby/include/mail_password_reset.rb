@@ -192,7 +192,7 @@ class Main < Sinatra::Base
             end
             io.puts "<h4>E-Mail-Brief suchen</h4>"
             io.puts "<input id='ti_letter_search' class='form-control' type='search' placeholder='Name, Klasse oder E-Mail-Adresse' autocomplete='off' />"
-            io.puts "<div class='table-responsive'><table class='table table-sm letter-results' id='letter_results' style='display: none; margin-top: 0.5em;'>"
+            io.puts "<div class='table-responsive' style='display: none; margin-top: 0.5em;'><table class='table table-sm letter-results' id='letter_results'>"
             io.puts "<thead><tr><th>Name</th><th>Klasse</th><th>E-Mail-Adresse</th><th></th></tr></thead><tbody></tbody></table></div>"
             io.puts "<script type='application/json' id='letter_students'>#{students.to_json.gsub('</', '<\\/')}</script>"
             io.puts "<h4 style='margin-top: 1.5em;'>Anfragen zum Zurücksetzen</h4>"
@@ -228,7 +228,7 @@ class Main < Sinatra::Base
             io.puts "<p class='text-muted'>Nur Postfächer von Schüler:innen und ihre Eltern-Postfächer (eltern.…) – andere Konten legt der Bot nie an.</p>"
             io.puts "<p id='mail_address_list_state' class='text-muted'></p>"
             io.puts "<div id='mail_accounts_missing'></div>"
-            io.puts "<div class='table-responsive'><table class='table table-sm mail-creations' id='mail_account_creations'>"
+            io.puts "<div class='table-responsive' style='display: none;'><table class='table table-sm mail-creations' id='mail_account_creations'>"
             io.puts "<thead><tr><th>Postfach</th><th>Stand</th><th></th></tr></thead><tbody></tbody></table></div>"
             io.string
         end

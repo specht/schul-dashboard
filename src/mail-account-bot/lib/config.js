@@ -25,8 +25,10 @@ const DEFAULTS = {
     fallback_poll_minutes: 15,
     // a question in the terminal before every sitting
     confirm: true,
-    // after a reset: check the new password by IMAP after these delays
+    // IMAP proof after a change: 'sample' (the first mailbox of a sitting),
+    // 'all' or 'none' – a first try right away, retries after these delays
     // (IONOS: "takes effect within a few minutes")
+    verify: 'sample',
     verify_delays_s: [60, 120, 240],
     // human pace; 0 only in tests
     pace: 1,
@@ -102,6 +104,7 @@ function validateConfig(raw, { hostname = os.hostname(), recordingOnly = false }
     within('poll_minutes', 2, 30);
     within('timeout_ms', 10000, 120000);
     within('totp_min_remaining_s', 5, 20);
+    if (!['sample', 'all', 'none'].includes(config.verify)) throw new Error('Konfiguration: verify muss sample, all oder none sein');
     if (!Array.isArray(config.verify_delays_s) || config.verify_delays_s.length < 1 || config.verify_delays_s.length > 5 ||
         !config.verify_delays_s.every((d) => Number.isInteger(d) && d >= 30 && d <= 600)) {
         throw new Error('Konfiguration: verify_delays_s: 1–5 Wartezeiten zwischen 30 und 600 s');

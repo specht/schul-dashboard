@@ -69,7 +69,9 @@ test('Fehlende Postfächer: nur Schüler- und Eltern-Postfächer, abgeglichen mi
 test('Fehlende Postfächer: freigeben auf der Seite, der Bot legt an und meldet zurück', async ({ page, baseURL }) => {
   const a = await admin(baseURL);
   const b = await bot(baseURL);
-  const missing = (await status(a)).missing;
+  const before = await status(a);
+  const after_count = before.list.count;
+  const missing = before.missing;
   const student = missing.find((m: any) => m.kind === 'student');
   const parents = missing.find((m: any) => m.kind === 'parents' && m.mailbox !== `eltern.${student.mailbox}`);
   expect(student && parents).toBeTruthy();
@@ -101,6 +103,10 @@ test('Fehlende Postfächer: freigeben auf der Seite, der Bot legt an und meldet 
   expect((await (await b.post('/api/mail_account_bot/create_result', { data: { id: done.id, ok: true, message: 'angelegt' } })).json()).result).toBe('ok');
   expect((await (await b.post('/api/mail_account_bot/create_result', { data: { id: failed.id, ok: false, message: 'Testfehler' } })).json()).result).toBe('ok');
   await expect.poll(() => mails('Postfach konnte nicht angelegt werden')).toBe(failuresBefore + 1);
+  // created: in the stored list right away, no longer offered as missing
+  const afterCreate = await status(a);
+  expect(afterCreate.missing.map((m: any) => m.mailbox)).not.toContain(student.mailbox);
+  expect(afterCreate.list.count).toBe(after_count + 1);
   await page.reload();
   await expect(page.locator(`.mail-creation[data-mailbox="${student.mailbox}"]`).first()).toHaveAttribute('data-state', 'done');
   // newest first (a repeated run on the same test stack leaves older entries)

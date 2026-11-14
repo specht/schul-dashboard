@@ -42,7 +42,7 @@
 
 <div class='container' style='padding-top: 30px; padding-bottom: 30px;'>
     <div class='row'>
-        <div class='col-lg-10 offset-lg-1'>
+        <div class='col-lg-10 offset-lg-1 pf'>
             <h2 style='margin-bottom: 20px;'>Postfächer: Anfragen und E-Mail-Briefe</h2>
             <div class='api_messages' style='display: none;'></div>
             #{print_mail_account_admin_page()}
@@ -56,6 +56,17 @@
     .mail-case-actions .btn { margin: 0.3em 0.2em 0 0; }
     .mail-case-step-text { margin-bottom: 0.2em; }
     .letter-results td { vertical-align: middle; }
+    /* sections as white boxes with a thin border, tables without grey */
+    .pf .table-responsive { background: #fff; border: 1px solid #e1e4e8; border-radius: 0.5em; padding: 0.15em 0.75em; margin-bottom: 1em; }
+    .pf .table { margin-bottom: 0; background: transparent; }
+    .pf .table th, .pf .table td { background: transparent; }
+    .pf .table thead th { border-top: none; border-bottom: 1px solid #e1e4e8; font-weight: 500; color: #5f6368; }
+    .pf .table td { border-top: 1px solid #eef0f2; }
+    .pf .table tbody tr:first-child td { border-top: none; }
+    body.dark .pf .table-responsive { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); }
+    body.dark .pf .table thead th { border-bottom-color: rgba(255, 255, 255, 0.14); color: #b0b5ba; }
+    body.dark .pf .table td { border-top-color: rgba(255, 255, 255, 0.08); }
+
     /* the bot's status: a flat dot with a soft halo, the text beside it */
     #mail_reset_bot_state { margin-bottom: 1em; }
     .mail-bot-row { display: flex; align-items: flex-start; gap: 0.75em; padding: 0.65em 0.9em; border-radius: 0.5em;
@@ -87,6 +98,12 @@
         .mail-creations td { display: block; border-top: none; }
         .mail-creations tr td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
         .mail-creations thead { display: none; }
+        /* stacked rows: a line only between entries, not between their cells */
+        .pf .letter-results td, .pf .mail-cases td, .pf .mail-creations td { border-top: none; }
+        .pf .letter-results tr + tr td:first-child, .pf .mail-cases tr + tr td:first-child,
+        .pf .mail-creations tr + tr td:first-child { border-top: 1px solid #eef0f2; }
+        body.dark .pf .letter-results tr + tr td:first-child, body.dark .pf .mail-cases tr + tr td:first-child,
+        body.dark .pf .mail-creations tr + tr td:first-child { border-top-color: rgba(255, 255, 255, 0.08); }
     }
 </style>
 
@@ -341,7 +358,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function search_letters() {
         const words = norm($('#ti_letter_search').val().trim()).split(/\s+/).filter((w) => w.length > 0);
         const tbody = $('#letter_results tbody').empty();
-        $('#letter_results').toggle(words.length > 0);
+        // the white box only with results
+        $('#letter_results').show().closest('.table-responsive').toggle(words.length > 0);
         if (words.length === 0) return;
         const found = STUDENTS.filter((st) => words.every((w) => st.haystack.indexOf(w) >= 0));
         for (const st of found.slice(0, 30)) {
@@ -550,7 +568,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             tbody.append(tr.append(actions));
         }
-        $('#mail_account_creations').toggle(data.cases.length > 0);
+        $('#mail_account_creations').closest('.table-responsive').toggle(data.cases.length > 0);
         clearTimeout(creation_timer);
         if (data.cases.some((c) => c.state === 'approved')) creation_timer = setTimeout(load_creation, 10000);
     }

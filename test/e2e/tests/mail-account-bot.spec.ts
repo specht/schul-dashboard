@@ -498,9 +498,12 @@ test('Bot legt an: Adressliste zuerst, dann genau das freigegebene Postfach als 
   const dashboard = fakeDashboard([], { create: [createJob(NEW), createJob(NEW_PARENTS, 'n2', 'parents', PASSWORD_2)] });
   const { summary } = await runBot(browser, fake, [], { dashboard });
   expect(summary.status, summary.reason).toBe('ok');
-  expect(fake.exports).toBe(1);
-  expect(dashboard.uploads).toHaveLength(1);
+  // the list before and – with the new mailboxes – after the work
+  expect(fake.exports).toBe(2);
+  expect(dashboard.uploads).toHaveLength(2);
   expect(dashboard.uploads[0].map((r) => r.address)).toContain(ANNA);
+  expect(dashboard.uploads[0].map((r) => r.address)).not.toContain(NEW);
+  expect(dashboard.uploads[1].map((r) => r.address)).toEqual(expect.arrayContaining([NEW, NEW_PARENTS]));
   expect(fake.created).toEqual([
     { address: NEW, password: PASSWORD, extras: [], forward: '' },
     { address: NEW_PARENTS, password: PASSWORD_2, extras: [], forward: '' },
@@ -598,7 +601,7 @@ test('Bot legt an: echte Postfächer, seit das Anlegen bestätigt ist', async ({
     openContext: async () => { const c = await browser.newContext(); await fake.install(c); return c; },
   });
   expect(summary.status, summary.reason).toBe('ok');
-  expect(dashboard.uploads).toHaveLength(1);
+  expect(dashboard.uploads).toHaveLength(2);
   expect(fake.created.map((c) => c.address)).toEqual([NEW]);
   expect(dashboard.createResults.map((r) => [r.id, r.ok])).toEqual([['n1', true]]);
 });
@@ -625,4 +628,22 @@ test('Bot wartet angemeldet: ein Weckruf holt neue Fälle sofort, ohne neue Anme
   expect(dashboard.activities).toContain('waiting');
   expect(dashboard.activities.lastIndexOf('working')).toBeGreaterThan(dashboard.activities.indexOf('waiting'));
   expect(dashboard.runHost).toBeNull();
+});
+
+test('Bot prüft per IMAP: Stichprobe (das erste Postfach), alle oder keins – sofort, nicht erst nach einer Minute', async ({ browser }) => {
+  for (const [verify, expected] of [['sample', [NEW]], ['all', [NEW, NEW_PARENTS]], ['none', []]] as const) {
+    const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+    const dashboard = fakeDashboard([], { create: [createJob(NEW), createJob(NEW_PARENTS, 'n2', 'parents', PASSWORD_2)] });
+    const checked: string[] = [];
+    const imap = async (user: string, password: string) => { checked.push(user); return fake.passwords.get(user) === password; };
+    // long delays: the first try must work right away
+    const config = botConfig({ verify, verify_delays_s: [600], pace: 1 });
+    const started = Date.now();
+    const { summary } = await runBot(browser, fake, [], { dashboard, config: Object.assign(config, { pace: 0 }), imap });
+    expect(summary.status, `${verify}: ${summary.reason}`).toBe('ok');
+    expect(checked, verify).toEqual(expected);
+    expect(Date.now() - started).toBeLessThan(20000);
+    expect(dashboard.createResults.map((r) => r.ok)).toEqual([true, true]);
+    expect(dashboard.createResults[1].message).toContain(verify === 'all' ? 'geprüft' : 'von IONOS bestätigt');
+  }
 });

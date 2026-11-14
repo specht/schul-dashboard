@@ -72,15 +72,17 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   await login(page, ACCOUNTS.admin);
   const RAUM = await setUpRoom(page);
 
-  // class page: one button for the seating plan, the Shuffler stays as it is;
-  // editor and manual placing live on the seating plan page now
+  // class page: one button for the seating plan; Shuffler, editor and manual
+  // placing live on the seating plan page now
   await page.goto(`/directory/${KLASSE}`);
   await expect(page.locator(`a[href="/sitzplanhelfer/${KLASSE}/${RAUM}"]`)).toHaveText(`Sitzplan Raum ${RAUM}`);
-  await expect(page.locator(`a[href="/sitzplan/${KLASSE}/${RAUM}"]`)).toHaveText(`Shuffler Raum ${RAUM}`);
-  await expect(page.locator('#additional_teacher_content a[href^="/sitzplanverteilen/"], #additional_teacher_content a[href^="/sitzplaneditor/"]')).toHaveCount(0);
+  await expect(page.locator('#additional_teacher_content a[href^="/sitzplan/"], #additional_teacher_content a[href^="/sitzplanverteilen/"], #additional_teacher_content a[href^="/sitzplaneditor/"]')).toHaveCount(0);
 
   await openSeatingPlan(page, RAUM);
   await expect(page.locator('#sph_link_editor')).toBeVisible();
+  // the Shuffler itself stays as it is, it is opened from here
+  await expect(page.locator('#sph_link_shuffler')).toHaveAttribute('href', `/sitzplan/${KLASSE}/${RAUM}`);
+  await expect(page.locator('#sph_link_shuffler')).not.toHaveClass(/disabled/);
   await startNewPlan(page, 'cycle');
 
   // Max wishes to sit next to Mallory

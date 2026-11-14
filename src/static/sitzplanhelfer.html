@@ -390,6 +390,7 @@ body.dark .sph-group {
             <button class="btn btn-primary" id="sph_bu_new"><i class="fa fa-plus"></i>&nbsp;&nbsp;Neuer Sitzplan</button>
             <button class="btn btn-outline-primary" id="sph_bu_edit_saved">Plan ändern</button>
             <a class="btn btn-outline-secondary" id="sph_link_print" href="#" target="_blank"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</a>
+            <a class="btn btn-outline-secondary" id="sph_link_shuffler" href="#" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</a>
         </div>
         <div id="sph_new_choice" class="sph-section" style="display: none;">
             <h4>Wie soll der neue Plan entstehen?</h4>
@@ -1242,6 +1243,9 @@ function render_start_header(data) {
     $('#sph_bu_edit_saved, #sph_link_print').toggle(!!last_cycle);
     let too_small = sus.length > seats.length;
     $('#sph_bu_new').toggle(!!data.can_start_cycle).prop('disabled', too_small);
+    // Der Shuffler braucht wie jeder neue Plan einen Platz für alle.
+    $('#sph_link_shuffler').toggleClass('disabled', too_small)
+        .attr('aria-disabled', too_small ? 'true' : null).attr('tabindex', too_small ? '-1' : null);
     if (too_small) {
         // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen
         // fällt auf, dass gar nicht alle in den Raum passen.
@@ -2024,6 +2028,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     $('#sph_label').text(`${klasse} – Raum ${raum}`);
     $('#sph_link_print').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?print=1`);
+    $('#sph_link_shuffler').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
 
     $('#sph_bu_new').click(function () {
         set_status('');

@@ -165,11 +165,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 let can_edit_room = editor_rooms.indexOf(raum) >= 0 && !half_positions;
                 let buttons = [];
                 // Den Sitzplan macht die Klassenleitung auf der Sitzplan-Seite
-                // (dort auch „Tische im Raum ändern“); die übrigen Lehrkräfte
-                // sehen den gespeicherten Plan. Der Shuffler bleibt, wie er ist.
+                // (dort auch der Shuffler und „Tische im Raum ändern“); die
+                // übrigen Lehrkräfte sehen den gespeicherten Plan.
                 if (is_klassenleitung) {
                     if (layout || can_edit_room) buttons.push(['Sitzplan', '/sitzplanhelfer', 'btn-primary']);
-                    if (layout) buttons.push(['Shuffler', '/sitzplan', 'btn-outline-primary', too_small]);
                 } else if (layout) {
                     buttons.push(['Sitzplan', '/sitzplananzeige', 'btn-outline-primary']);
                 }

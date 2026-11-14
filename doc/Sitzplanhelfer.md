@@ -10,10 +10,11 @@ der Klasse zufällig mischt (mit optionalen statischen Regeln, siehe
 
 ## Einstieg
 
-Auf der Klassenseite steht im Abschnitt „Sitzplan“ je Klassenraum für
-die Klassenleitung „Sitzplan Raum …“ (diese Seite) und „Shuffler
-Raum …“, für die übrigen Lehrkräfte der Klasse „Sitzplan Raum …“ (die
-Ansicht ohne Wünsche, siehe unten). Getrennt davon steht im Abschnitt
+Auf der Klassenseite steht im Abschnitt „Sitzplan“ je Klassenraum ein
+Knopf „Sitzplan Raum …“: für die Klassenleitung diese Seite, für die
+übrigen Lehrkräfte der Klasse die Ansicht ohne Wünsche (siehe unten).
+Den unveränderten Shuffler öffnet die Klassenleitung über den Knopf
+„Shuffler“ auf dieser Seite. Getrennt davon steht im Abschnitt
 „Gruppenbildung“ für alle Lehrkräfte der Klasse „Gruppen bilden“, ein
 eigenes Werkzeug ohne Bezug zum Sitzplan. Die früheren Knöpfe „Editor“,
 „Helfer“ und „Verteilen“ gibt es nicht mehr: Die Tische ändert man über
@@ -28,10 +29,11 @@ Die Seite hat zwei Ansichten. Lange Erklärungen sind zugeklappt
 Die Seite spricht die Lehrkraft mit „Sie“ an.
 
 1. **Startansicht**: zeigt den aktuell gespeicherten Plan mit den
-   Knöpfen „Neuer Sitzplan“, „Plan ändern“ und „Drucken“. Darunter liegen
-   aufklappbar „Frühere Sitzpläne“ und, wo die Klassenleitung die Tische
+   Knöpfen „Neuer Sitzplan“, „Plan ändern“, „Drucken“ und „Shuffler“.
+   Darunter liegen aufklappbar „Frühere Sitzpläne“ und, wo die Klassenleitung die Tische
    ändern darf, der Link „Tische im Raum ändern“. Hat der Raum weniger
-   Plätze als die Klasse SuS, lässt sich kein neuer Plan beginnen.
+   Plätze als die Klasse SuS, lässt sich kein neuer Plan beginnen und
+   der Shuffler nicht öffnen.
 2. **Neuer Sitzplan** fragt, wie der Plan entstehen soll:
    - **Mit Wünschen der Klasse**: legt eine Umfrage an und startet einen
      Timer (einstellbar 1–60 Tage, Standard 4). Die SuS sehen sie ganz
@@ -275,4 +277,4 @@ Einträge weiterhin im Seitenquelltext.
 | `src/static/sitzplaneditor.html` | Editor |
 | `src/static/sitzplanverteilen.html` | leitet die alte Adresse von „Verteilen“ auf die Sitzplan-Seite weiter |
 | `src/ruby/main.rb` | `require`-Zeilen, Wochenstunden pro Klasse und Raum |
-| `src/static/directory.html` | für den Klassenraum „Sitzplan“ und „Shuffler“ unter der Rubrik „Sitzplan“, getrennt davon „Gruppen bilden“ unter „Gruppenbildung“ (Klassenraum: Raum mit mindestens 20 Wochenstunden der Klasse, sonst der mit den meisten; jede Stunde zählt einmal, auch bei Teilung) |
+| `src/static/directory.html` | für den Klassenraum „Sitzplan“ unter der Rubrik „Sitzplan“, getrennt davon „Gruppen bilden“ unter „Gruppenbildung“ (Klassenraum: Raum mit mindestens 20 Wochenstunden der Klasse, sonst der mit den meisten; jede Stunde zählt einmal, auch bei Teilung) |

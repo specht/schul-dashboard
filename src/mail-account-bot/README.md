@@ -63,9 +63,20 @@ can get it locked.
   page "Passwörter" shows the reason. It also shows a desktop
   notification. No machine runs again until the admin lifts the pause on
   that page.
+- **Creating mailboxes: Mail Basic, nothing else.** Before creating, the bot
+  fetches the provider's address list (the export) and sends it to the
+  dashboard; whatever is in it already is never created. It creates only
+  student and `eltern.…` mailboxes the admin approved: only the "Mail Basic"
+  card (never Mail Business, Exchange or a forwarding), exactly the
+  approved address on exactly its domain (offered exactly once), no paid
+  or extra option ticked (Virenschutz, Archivierung, KI), no forwarding
+  target. Afterwards the page must show exactly this address, and an IMAP
+  login with the letter's password must work.
 - **Unrecorded flow, no real runs.** The IONOS steps in `lib/ionos.js` have a
   `FLOW_STATUS`. `provisional` means no real run is possible. `recorded`
   allows dry runs and the test mailbox only. `verified` allows real cases.
+  `CREATE_FLOW_STATUS` is the same for creating mailboxes (the export is
+  read-only and always allowed).
 
 The tests (`test/e2e/tests/mail-account-bot.spec.ts`, fake IONOS in
 `fake-ionos.ts`) check each of these against a fake control panel; the

@@ -65,10 +65,22 @@ type Case = { id: string | null; mailboxes: { mailbox: string; kind?: string | n
 
 // the dashboard's bot interface, with the shared state (pause, run lock,
 // logins of all machines) as in mail_password_reset.rb
-function fakeDashboard(cases: Case[], { maxLogins = 3 } = {}) {
+type Create = { id: string; mailbox: string; kind: string | null; password: string };
+
+function fakeDashboard(cases: Case[], { maxLogins = 3, create = [] as Create[], listWanted = false } = {}) {
   const reports: { id: string; ok: boolean; message: string }[] = [];
   const d = {
     reports,
+    create,
+    listWanted,
+    uploads: [] as { address: string; type: string }[][],
+    createResults: [] as { id: string; ok: boolean; message: string }[],
+    async creation() {
+      const open = d.create.filter((c) => !d.createResults.some((r) => r.id === c.id));
+      return { create: d.paused ? [] : open, address_list: { ts: null, wanted: !d.paused && (d.listWanted || open.length > 0) }, paused: !!d.paused };
+    },
+    async uploadAddressList(rows: { address: string; type: string }[]) { d.uploads.push(rows); d.listWanted = false; return { result: 'ok' }; },
+    async createResult(id: string, ok: boolean, message: string) { d.createResults.push({ id, ok, message }); return { result: 'ok' }; },
     paused: null as null | { reason: string; host: string },
     runHost: null as null | string,
     logins: 0,
@@ -469,4 +481,120 @@ test('Bot: Aufnahme speichert Aufbau, aber keine Eingaben und keine Adressen', a
     expect(text, secret).not.toContain(secret);
   }
   expect((fs.statSync(file).mode & 0o777).toString(8)).toBe('600');
+});
+
+// ---- creating mailboxes ----
+
+const NEW = `neu.bot@${DOMAIN}`;
+const NEW_PARENTS = `eltern.neu.bot@${DOMAIN}`;
+const createJob = (mailbox: string, id = 'n1', kind: string | null = kindOf(mailbox), password = PASSWORD): Create => ({ id, mailbox, kind, password });
+
+test('Bot legt an: Adressliste zuerst, dann genau das freigegebene Postfach als Mail Basic, ohne Extras, geprüft', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  const dashboard = fakeDashboard([], { create: [createJob(NEW), createJob(NEW_PARENTS, 'n2', 'parents', PASSWORD_2)] });
+  const { summary } = await runBot(browser, fake, [], { dashboard });
+  expect(summary.status, summary.reason).toBe('ok');
+  expect(fake.exports).toBe(1);
+  expect(dashboard.uploads).toHaveLength(1);
+  expect(dashboard.uploads[0].map((r) => r.address)).toContain(ANNA);
+  expect(fake.created).toEqual([
+    { address: NEW, password: PASSWORD, extras: [], forward: '' },
+    { address: NEW_PARENTS, password: PASSWORD_2, extras: [], forward: '' },
+  ]);
+  expect(dashboard.createResults.map((r) => [r.id, r.ok])).toEqual([['n1', true], ['n2', true]]);
+  expect(fake.resets).toHaveLength(0);
+  expect(fake.deletes).toHaveLength(0);
+});
+
+test('Bot legt an: was es laut frischer Adressliste schon gibt, wird nicht angelegt', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  const dashboard = fakeDashboard([], { create: [createJob(ANNA, 'n1'), createJob(NEW, 'n2')] });
+  const { summary } = await runBot(browser, fake, [], { dashboard });
+  expect(summary.status, summary.reason).toBe('ok');
+  expect(fake.created.map((c) => c.address)).toEqual([NEW]);
+  // the dashboard marks the existing one itself when the list arrives
+  expect(dashboard.createResults.map((r) => r.id)).toEqual(['n2']);
+});
+
+test('Bot legt an: Probelauf legt nichts an und lädt nichts hoch; nur die Adressliste geht auch', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  const dashboard = fakeDashboard([], { create: [createJob(NEW)] });
+  const dry = await runBot(browser, fake, [], { dashboard, dryRun: true });
+  expect(dry.summary.status, dry.summary.reason).toBe('ok');
+  expect(dry.summary.dryRun).toEqual(['n1']);
+  expect(fake.created).toHaveLength(0);
+  expect(dashboard.uploads).toHaveLength(0);
+  expect(dashboard.createResults).toHaveLength(0);
+  // nothing to create, the list is wanted: export and upload only
+  const listOnly = fakeDashboard([], { listWanted: true });
+  const res = await runBot(browser, fake, [], { dashboard: listOnly });
+  expect(res.summary.status).toBe('ok');
+  expect(listOnly.uploads).toHaveLength(1);
+  expect(fake.created).toHaveLength(0);
+});
+
+test('Bot legt an: Lehrkraft, falsche Art, falsche Domain – abgelehnt, nichts angelegt', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  const dashboard = fakeDashboard([], { create: [
+    createJob(TEACHER, 't'), createJob(NEW, 'k', 'parents'), createJob(`neu@andere-schule.example.org`, 'd', 'student'), createJob(NEW, 'p', 'student', 'kurz'),
+  ] });
+  const { summary } = await runBot(browser, fake, [], { dashboard });
+  expect(summary.status).toBe('ok');
+  // the address list may be fetched (read-only), nothing is created
+  expect(fake.created).toHaveLength(0);
+  expect(dashboard.createResults.map((r) => [r.id, r.ok])).toEqual([['t', false], ['k', false], ['d', false], ['p', false]]);
+});
+
+const CREATE_STOPS: [string, FakeVariant, RegExp][] = [
+  ['Mail Business statt Mail Basic', { businessFirst: true }, /heißt nicht „Mail Basic“/],
+  ['Karte heißt anders', { basicHeadline: 'Mail Basic Plus' }, /heißt nicht „Mail Basic“/],
+  ['Domain fehlt', { domains: [] }, /nicht genau einmal angeboten/],
+  ['Domain doppelt', { domains: ['mail.beispielschule.de', 'mail.beispielschule.de'] }, /nicht genau einmal angeboten/],
+  ['Virenschutz vorausgewählt', { extraPrechecked: 'virusProtection' }, /Zusatzoption ist angehakt/],
+  ['Archivierung vorausgewählt', { extraPrechecked: 'orderMailArchiving' }, /Zusatzoption ist angehakt/],
+  ['KI vorausgewählt', { extraPrechecked: 'ai-checkbox' }, /Zusatzoption ist angehakt/],
+  ['Weiterleitung eingetragen', { forwardPrefilled: true }, /Weiterleitungsziel/],
+  ['IONOS: Adresse gibt es schon', { createExistsError: true }, /Fehler beim Anlegen/],
+  ['Export mit anderen Spalten', { exportHeader: 'Adresse;Typ' }, /unbekannte Spalten/],
+  ['Export viel zu kurz', { exportRows: 0 }, /kann nicht stimmen/],
+];
+
+for (const [name, variant, reason] of CREATE_STOPS) {
+  test(`Bot hält beim Anlegen an: ${name}`, async ({ browser }) => {
+    const fake = fakeIonos(MAILBOXES, variant, { loggedIn: true });
+    const dashboard = fakeDashboard([], { create: [createJob(NEW), createJob(NEW_PARENTS, 'n2')] });
+    const { summary } = await runBot(browser, fake, [], { dashboard });
+    expect(summary.status).toBe('stopped');
+    expect(summary.reason).toMatch(reason);
+    expect(fake.created).toHaveLength(0);
+    expect(dashboard.paused).toMatchObject({ reason: expect.stringMatching(reason) });
+    // the second one was not touched
+    expect(dashboard.createResults.map((r) => r.id)).not.toContain('n2');
+  });
+}
+
+test('Bot hält an: nach dem Anlegen zeigt IONOS ein anderes Postfach', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES, { createdShows: BEN }, { loggedIn: true });
+  const dashboard = fakeDashboard([], { create: [createJob(NEW), createJob(NEW_PARENTS, 'n2')] });
+  const { summary } = await runBot(browser, fake, [], { dashboard });
+  expect(summary.status).toBe('stopped');
+  expect(summary.reason).toMatch(/anderes Postfach/);
+  expect(fake.created.map((c) => c.address)).toEqual([NEW]);
+  expect(dashboard.createResults.map((r) => r.id)).not.toContain('n2');
+});
+
+test('Bot legt an: echte Postfächer erst, wenn das Anlegen bestätigt ist', async ({ browser }) => {
+  expect(ionos.CREATE_FLOW_STATUS).toBe('recorded');
+  const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  const dashboard = fakeDashboard([], { create: [createJob(NEW)] });
+  const summary = await run({
+    config: botConfig(), state: tmpState(), dashboard, print: () => {},
+    imapLoginWorks: async (u: string, p: string) => fake.passwords.get(u) === p,
+    openContext: async () => { const c = await browser.newContext(); await fake.install(c); return c; },
+  });
+  expect(summary.status).toBe('ok');
+  // the list is fetched (read-only), nothing is created
+  expect(dashboard.uploads).toHaveLength(1);
+  expect(fake.created).toHaveLength(0);
+  expect(dashboard.createResults).toHaveLength(0);
 });

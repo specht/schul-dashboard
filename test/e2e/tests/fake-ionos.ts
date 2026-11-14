@@ -23,6 +23,16 @@ export type FakeVariant = {
   noSuccessMessage?: boolean;
   errorOnSubmit?: boolean;
   popupOnList?: boolean;
+  // address list export and creating mailboxes
+  exportHeader?: string; // other columns
+  exportRows?: number; // fewer rows than real
+  businessFirst?: boolean; // Mail Business card where Mail Basic was
+  basicHeadline?: string; // the Basic card is called something else
+  domains?: string[]; // offered domains (default: the school's student domain once)
+  extraPrechecked?: 'virusProtection' | 'orderMailArchiving' | 'ai-checkbox';
+  forwardPrefilled?: boolean;
+  createExistsError?: boolean; // IONOS: the address exists already
+  createdShows?: string; // the details page after saving shows another address
 };
 
 export type FakeIonos = {
@@ -30,6 +40,8 @@ export type FakeIonos = {
   passwords: Map<string, string>;
   resets: { address: string; password: string }[];
   deletes: string[];
+  created: { address: string; password: string; extras: string[]; forward: string }[];
+  exports: number;
   logins: { username?: string; password?: boolean; otp?: boolean }[];
   pagesServed: string[];
   install(context: BrowserContext): Promise<void>;
@@ -72,6 +84,8 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
     passwords: new Map(mailboxes.map((m) => [m.address, `alt-${m.address.length}-geaendert`])),
     resets: [],
     deletes: [],
+    created: [],
+    exports: 0,
     logins: [],
     pagesServed: [],
     async install(context: BrowserContext) {
@@ -79,6 +93,7 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
     },
   };
   let flash: string | null = null;
+  let createdFlash: string | null = null;
   const page = (route: Route, body: string, status = 200) =>
     route.fulfill({ status, contentType: 'text/html; charset=utf-8', body });
 
@@ -105,6 +120,8 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
       'IONOS - E-Mail-Adressen',
       `<main id="main-content" role="main">${breadcrumb()}
        <h1 class="page-header__headline">E-Mail-Adressen</h1>
+       <a href="/email/${CONTRACT}/email-package-selection" data-testid="button-create-another-mailbox" class="button button--primary">Weitere E-Mail-Adresse anlegen</a>
+       <a href="/email/${CONTRACT}/email-overview/export" data-testid="link-export-emails" data-base-url="/email/${CONTRACT}/email-overview/export" class="link link--action">E-Mail-Adressen exportieren</a>
        <form id="js-table-util-form" role="search" data-testid="form-email-search" method="get" action="/email/${CONTRACT}/email-overview">
          <input id="email-search" name="search" type="text" aria-label="Suchen" data-testid="input-email-search" value="${esc(search)}">
          <a role="button" aria-label="Suchen" data-testid="button-search-submit" href="#" onclick="this.closest('form').submit(); return false;">Suchen</a>
@@ -149,6 +166,51 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
        ${success ? '<div data-testid="pageMessage-EMAIL_PASSWORD_SUCCESS" class="message message--success"><h4>Ihr E-Mail-Passwort wurde geändert</h4></div>' : ''}
        <h2>Postfach einrichten</h2></main>`,
     );
+  }
+
+  const STUDENT_DOMAIN = 'mail.beispielschule.de';
+  const all = () => [...mailboxes.map((m) => m.address), ...fake.created.map((c) => c.address)];
+
+  function exportCsv() {
+    const header = variant.exportHeader || 'E-Mail-Adresse;Kontotyp;Vertragsnummer';
+    const fillerCount = variant.exportRows !== undefined ? variant.exportRows : 120;
+    const rows = [...all().map((a) => `${a};Mail Basic;${CONTRACT}`),
+      ...Array.from({ length: fillerCount }, (_, i) => `fueller${i}@andere-domain.example.org;Mail Basic;${CONTRACT}`)];
+    return '\uFEFF' + [header, ...rows].join('\r\n') + '\r\n';
+  }
+
+  function selectionPage() {
+    const card = (testid: string, headline: string, form: string) =>
+      `<div data-testid="${testid}" class="grid-col"><h3 class="card__preheadline">…</h3><h3 class="card__headline">${esc(headline)}</h3>
+       <form data-testid="${form}" method="post" action="/email/${CONTRACT}/email-package-selection/${form}"><button type="submit" class="button">Anlegen</button></form></div>`;
+    const basic = variant.businessFirst
+      ? card('card-col-mail-basic', 'Mail Business | 50 GB', 'form-create-basic')
+      : card('card-col-mail-basic', variant.basicHeadline || 'Mail Basic', 'form-create-basic');
+    return html('IONOS - Neue E-Mail-Adresse anlegen: Wählen Sie den Typ aus',
+      `<main id="main-content" role="main">${breadcrumb()}<h1 class="page-header__headline">Neue E-Mail-Adresse anlegen: Wählen Sie den Typ aus</h1>
+       <div data-testid="email-package-card-grid">${basic}${card('card-col-mail-business', 'Mail Business | 50 GB', 'form-create-business')}
+       <div data-testid="card-col-ms-exchange"><h3 class="card__headline">Microsoft® Exchange</h3></div>
+       ${card('card-col-forwards', 'E-Mail-Weiterleitung', 'form-create-forward')}</div></main>`);
+  }
+
+  function createPage(error = '') {
+    const domains = variant.domains || [STUDENT_DOMAIN];
+    const options = ['gymnasium.example.org', ...domains].map((d) => `<option value="${esc(d)}">@${esc(d)}</option>`).join('');
+    const box = (id: string, name: string, label: string) =>
+      `<input id="${id}" name="${name}" type="checkbox" class="input-checkbox" ${variant.extraPrechecked === id ? 'checked' : ''}><label for="${id}">${esc(label)}</label>`;
+    return html('IONOS - Neue E-Mail-Adresse anlegen: Mail Basic',
+      `<main id="main-content" role="main">${breadcrumb()}<h1 class="page-header__headline">Neue E-Mail-Adresse anlegen: Mail Basic</h1>
+       ${error ? `<div data-testid="pageMessage-EMAIL_CREATE_ERROR" class="message message--error">${esc(error)}</div>` : ''}
+       <form method="post" action="/email/${CONTRACT}/create-basic-email" novalidate>
+         <label for="localPart">E-Mail</label><input id="localPart" name="localPart" type="text" data-testid="input-local-part" class="input-text">
+         <select id="domain-select" name="domain" aria-label="Verfügbare Domain auswählen">${options}</select>
+         <label for="password">Passwort</label><input id="password" name="password" type="password" class="input-text oao-pwi-input">
+         <input id="forwardTarget" name="forwardTarget" type="text" value="${variant.forwardPrefilled ? 'jemand@example.org' : ''}" ${variant.forwardPrefilled ? '' : 'hidden'}>
+         <section id="js-security-section">${box('virusProtection', 'virusProtection', 'Virenschutz - 2,50 €/Monat')}${box('orderMailArchiving', 'orderMailArchiving', 'E-Mail-Archivierung kaufen — 2,50 €/Monat')}</section>
+         <section id="js-ai-section">${box('ai-checkbox', 'webMailAIActive', 'Aktivieren')}</section>
+         <a href="/email/${CONTRACT}/email-overview" data-testid="btn-cancel" class="button">Abbrechen</a>
+         <button id="btn-submit" type="submit" data-testid="btn-save" class="button button--primary">Speichern</button>
+       </form></main>`);
   }
 
   async function handle(route: Route) {
@@ -200,7 +262,35 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
       if (url.pathname === '/home/products') return page(route, html('IONOS - Produktübersicht', '<h1>Produkte</h1><a href="https://mein.ionos.de/email/">E-Mail</a>'));
       if (url.pathname === '/email/') return page(route, redirect(`https://mein.ionos.de/email/${CONTRACT}/email-overview`));
       if (url.pathname === `/email/${CONTRACT}/email-overview`) return page(route, listPage((url.searchParams.get('search') || '').trim()));
+      if (url.pathname === `/email/${CONTRACT}/email-overview/export`) {
+        fake.exports += 1;
+        return route.fulfill({ status: 200, contentType: 'text/csv; charset=utf-8', body: exportCsv() });
+      }
+      if (url.pathname === `/email/${CONTRACT}/email-package-selection`) return page(route, selectionPage());
+      if (url.pathname.startsWith(`/email/${CONTRACT}/email-package-selection/`)) {
+        const which = url.pathname.split('/').pop();
+        if (which !== 'form-create-basic') return page(route, html('Falsches Paket', `<h1>${esc(which || '')}</h1>`));
+        return page(route, redirect(`https://mein.ionos.de/email/${CONTRACT}/create-basic-email`));
+      }
+      if (url.pathname === `/email/${CONTRACT}/create-basic-email`) {
+        if (request.method() === 'GET') return page(route, createPage());
+        const address = `${form.get('localPart')}@${form.get('domain')}`.toLowerCase();
+        if (variant.createExistsError || all().includes(address)) return page(route, createPage('Diese E-Mail-Adresse ist bereits vergeben.'));
+        const extras = ['virusProtection', 'orderMailArchiving', 'webMailAIActive'].filter((x) => form.get(x));
+        fake.created.push({ address, password: form.get('password') || '', extras, forward: form.get('forwardTarget') || '' });
+        fake.passwords.set(address, form.get('password') || '');
+        const id = String(60000000000 + fake.created.length);
+        ids.set(variant.createdShows || address, id);
+        createdFlash = id;
+        return page(route, redirect(`https://mein.ionos.de/email/${CONTRACT}/MAILBOX/${id}/details`));
+      }
       const m = /^\/email\/\d+\/mailbox\/(\d+)\/(edit-password|details|delete)$/i.exec(url.pathname);
+      if (m && createdFlash === m[1] && m[2] === 'details') {
+        createdFlash = null;
+        return page(route, html('IONOS - E-Mail-Details', `<main id="main-content" role="main">${breadcrumb()}
+          <h1 class="page-header__headline">${esc(byId(m[1])!)}</h1>
+          <div role="status" class="message message--success"><h3>Sie können Ihre neue E-Mail-Adresse jetzt verwenden</h3></div></main>`));
+      }
       if (m && byId(m[1])) {
         const [, id, what] = m;
         if (what === 'delete') { fake.deletes.push(byId(id)!); return page(route, html('Löschen', '<h1>Löschen</h1>')); }

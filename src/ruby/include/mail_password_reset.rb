@@ -224,7 +224,13 @@ class Main < Sinatra::Base
             io.puts "<details style='margin-top: 1em;'><summary>Abgeschlossen (letzte #{MAIL_PASSWORD_RESET_SHOW_DAYS} Tage): <span id='mail_cases_closed_count'>0</span></summary>"
             io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_closed'>"
             io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Ergebnis</th></tr></thead><tbody></tbody></table></div></details>"
-                    io.string
+                    io.puts "<h4 style='margin-top: 1.5em;'>Fehlende Postfächer</h4>"
+            io.puts "<p class='text-muted'>Nur Postfächer von Schüler:innen und ihre Eltern-Postfächer (eltern.…) – andere Konten legt der Bot nie an.</p>"
+            io.puts "<p id='mail_address_list_state' class='text-muted'></p>"
+            io.puts "<div id='mail_accounts_missing'></div>"
+            io.puts "<div class='table-responsive'><table class='table table-sm mail-creations' id='mail_account_creations'>"
+            io.puts "<thead><tr><th>Postfach</th><th>Stand</th><th></th></tr></thead><tbody></tbody></table></div>"
+            io.string
         end
     end
 
@@ -791,7 +797,8 @@ class Main < Sinatra::Base
             @@ws_clients[:mail_account_bot] ||= {}
             @@ws_clients[:mail_account_bot][client_id] = {:ws => ws, :host => host, :since => Time.now.to_i}
             mail_account_bot_seen!(host)
-            approved = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN count(c) AS n;").first['n']
+            approved = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN count(c) AS n;").first['n'] +
+                       neo4j_query("MATCH (c:MailAccountCreateCase {state: 'approved'}) RETURN count(c) AS n;").first['n']
             ws.send({:command => approved > 0 ? 'wake' : 'hello'}.to_json)
         end
         ws.on(:close) do |event|

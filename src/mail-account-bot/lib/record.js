@@ -86,8 +86,7 @@ async function record({ context, state, testMailbox, print = console.log }) {
     const page = context.pages()[0] || await context.newPage();
     await page.goto('https://login.ionos.de/');
     print(`Aufnahme läuft: ${file}`);
-    print('Bitte von Hand anmelden, zur Adressliste gehen und für das Test-Postfach „Passwort ändern“ einmal abbrechen und einmal wirklich ändern,');
-    print('dann das Browserfenster schließen.');
+    print('Bitte von Hand anmelden und die gewünschten Schritte durchklicken, dann das Browserfenster schließen.');
     await new Promise((resolve) => context.on('close', resolve));
     print(`Aufnahme beendet: ${file}`);
     return file;

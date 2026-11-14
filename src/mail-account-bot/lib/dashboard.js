@@ -22,6 +22,16 @@ function dashboardClient({ url, token, fetchImpl = fetch }) {
         release: (host) => post('release', { host }),
         pause: (host, reason) => post('pause', { host, reason: String(reason).slice(0, 500) }),
         loginAttempt: (host) => post('login_attempt', { host }),
+        // creating mailboxes: {create: [{id, mailbox, kind, password}], address_list: {ts, wanted}, paused}
+        async creation() {
+            const response = await fetchImpl(`${url}/api/mail_account_bot/creation`, { headers });
+            if (response.status !== 200) throw new Error(`Dashboard antwortet mit ${response.status}`);
+            const data = await response.json();
+            if (!Array.isArray(data.create)) throw new Error('Dashboard: unerwartete Antwort');
+            return data;
+        },
+        uploadAddressList: (rows) => post('address_list', { addresses: rows.map((r) => r.address), types: rows.map((r) => r.type) }),
+        createResult: (id, ok, message) => post('create_result', { id, ok, message: String(message).slice(0, 500) }),
         async report(id, ok, message) {
             const response = await fetchImpl(`${url}/api/mail_account_bot/result`, {
                 method: 'POST', headers, body: JSON.stringify({ id, ok, message: String(message).slice(0, 500) }),

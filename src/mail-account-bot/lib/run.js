@@ -25,6 +25,12 @@ function caseProblem(c, config) {
     return null;
 }
 
+// the same check for a mailbox to create
+function createProblem(c, config) {
+    if (!c || typeof c.id !== 'string') return 'Unvollständiger Auftrag vom Dashboard';
+    return caseProblem({ id: c.id, mailboxes: [{ mailbox: c.mailbox, kind: c.kind, password: c.password }] }, config);
+}
+
 // options: config, state, dashboard, imapLoginWorks(user, password),
 // openContext() -> BrowserContext, confirm(lines) -> bool, dryRun,
 // testMailbox, testing, notify(text), print(line)
@@ -34,7 +40,7 @@ async function run(options) {
     const print = options.print || ((line) => console.log(line));
     const confirm = options.confirm || (async () => true);
     const log = (message) => { state.log(message); print(message); };
-    const summary = { status: 'ok', done: [], failed: [], postponed: [], dryRun: [] };
+    const summary = { status: 'ok', done: [], failed: [], postponed: [], dryRun: [], created: [], createFailed: [] };
 
     if (!testing) {
         if (ionos.FLOW_STATUS === 'provisional') throw new Error('Der Ablauf auf der IONOS-Seite ist noch nicht mit dem Maintainer aufgenommen (lib/ionos.js, FLOW_STATUS). Erst `bot.js record`.');
@@ -79,6 +85,26 @@ async function run(options) {
         const guard = watchNavigation(context, page, ionos.HOSTS);
         session = new ionos.IonosSession({ page, config, state, dashboard, pacer, guard, log: (m) => log(m) });
         await session.openMailboxList();
+    };
+
+    // at the first surprise: screenshot, pause on the dashboard, tell the admin
+    const halt = async (stop, failCurrent) => {
+        let screenshot = null;
+        if (page) {
+            screenshot = path.join(state.screenshotsDir, `${new Date().toISOString().replace(/[:.]/g, '-')}.png`);
+            await page.screenshot({ path: screenshot, fullPage: true }).catch(() => { screenshot = null; });
+        }
+        state.recordStop(stop.message, { screenshot });
+        summary.status = 'stopped';
+        summary.reason = stop.message;
+        log(`ANGEHALTEN: ${stop.message}${screenshot ? ` (Bildschirmfoto: ${screenshot})` : ''}`);
+        try {
+            await dashboard.pause(config.host, stop.message);
+        } catch (err) {
+            log(`Dashboard nicht erreichbar, Anhalten nicht gemeldet: ${err.message}`);
+        }
+        if (failCurrent) await failCurrent(`Der Bot hat angehalten: ${stop.message}`);
+        notify(`Postfach-Bot angehalten: ${stop.message}`);
     };
 
     const verify = async (c) => {
@@ -170,27 +196,92 @@ async function run(options) {
         }
 
         if (stop) {
-            let screenshot = null;
-            if (page) {
-                screenshot = path.join(state.screenshotsDir, `${new Date().toISOString().replace(/[:.]/g, '-')}.png`);
-                await page.screenshot({ path: screenshot, fullPage: true }).catch(() => { screenshot = null; });
-            }
-            state.recordStop(stop.message, { screenshot });
-            summary.status = 'stopped';
-            summary.reason = stop.message;
-            log(`ANGEHALTEN: ${stop.message}${screenshot ? ` (Bildschirmfoto: ${screenshot})` : ''}`);
-            try {
-                await dashboard.pause(config.host, stop.message);
-            } catch (err) {
-                log(`Dashboard nicht erreichbar, Anhalten nicht gemeldet: ${err.message}`);
-            }
-            if (stoppedCase && !handled.has(stoppedCase.id)) {
-                await report(stoppedCase, false, `Der Bot hat angehalten: ${stop.message}. Bitte von Hand zurücksetzen.`);
-            }
-            notify(`Postfach-Bot angehalten: ${stop.message}`);
+            await halt(stop, stoppedCase && !handled.has(stoppedCase.id)
+                ? (text) => report(stoppedCase, false, `${text}. Bitte von Hand zurücksetzen.`) : null);
             return false;
         }
         return true;
+    };
+
+    // creating mailboxes: the address list first (fresh from the provider),
+    // then only what is still missing; returns false if the bot stopped
+    const reportCreate = async (c, ok, message) => {
+        handled.add(`create:${c.id}`);
+        (ok ? summary.created : summary.createFailed).push({ id: c.id, mailbox: c.mailbox, message });
+        log(`${ok ? 'Angelegt' : 'Nicht angelegt'}: ${c.mailbox} – ${message}`);
+        if (dryRun) return;
+        try {
+            await dashboard.createResult(c.id, ok, message);
+        } catch (err) {
+            summary.unreported = (summary.unreported || 0) + 1;
+            log(`Dashboard nicht erreichbar, Ergebnis nicht gemeldet: ${err.message}`);
+        }
+    };
+    let exported = false;
+    const processCreation = async () => {
+        const work = await dashboard.creation();
+        if (work.paused) return false;
+        const cases = [];
+        for (const c of work.create.filter((x) => !handled.has(`create:${x.id}`))) {
+            const problem = createProblem(c, config);
+            if (problem) { await reportCreate(c, false, problem); continue; }
+            cases.push(c);
+        }
+        const mayCreate = dryRun || testing || ionos.CREATE_FLOW_STATUS === 'verified';
+        if (cases.length > 0 && !mayCreate) {
+            log(`${cases.length} Postfach/Postfächer zum Anlegen freigegeben – das Anlegen ist noch nicht bestätigt, erst \`run --dry-run\``);
+        }
+        // the address list at most once per run
+        const listWanted = work.address_list.wanted && !exported;
+        if (!listWanted && (cases.length === 0 || !mayCreate)) return true;
+        const toCreate = mayCreate ? cases : [];
+        if (toCreate.length > 0 && !(await confirm([`${dryRun ? 'Probelauf (nichts wird angelegt)' : 'Bei IONOS anlegen'}: ${toCreate.length} Postfach/Postfächer`, ...toCreate.map((c) => c.mailbox)]))) {
+            log('Nicht bestätigt – die Postfächer bleiben freigegeben');
+            for (const c of toCreate) handled.add(`create:${c.id}`);
+            summary.status = 'not_confirmed';
+            return false;
+        }
+        let current = null;
+        const created = [];
+        try {
+            if (session) await session.openMailboxList(); else await openSession();
+            const rows = await session.exportAddresses();
+            exported = true;
+            if (!dryRun) await dashboard.uploadAddressList(rows);
+            summary.addressList = rows.length;
+            const existing = new Set(rows.map((r) => r.address));
+            for (const c of toCreate) {
+                current = c;
+                // the fresh list has it already: the dashboard marked it when the list arrived
+                if (existing.has(c.mailbox)) { handled.add(`create:${c.id}`); log(`Gibt es schon: ${c.mailbox}`); continue; }
+                await session.createMailbox(c.mailbox, c.password, { dryRun });
+                if (dryRun) { handled.add(`create:${c.id}`); summary.dryRun.push(c.id); continue; }
+                created.push(c);
+                await dashboard.claim(config.host).catch(() => {});
+            }
+            current = null;
+        } catch (err) {
+            if (err instanceof Postpone) { log(err.message); return true; }
+            const stop = err instanceof Stop ? err : new Stop(`Unerwarteter Fehler: ${err.message}`);
+            for (const c of created) await verifyCreated(c);
+            await halt(stop, current ? (text) => reportCreate(current, false, `${text}. Bitte von Hand prüfen.`) : null);
+            return false;
+        }
+        let ok = true;
+        for (const c of created) ok = (await verifyCreated(c)) && ok;
+        if (!ok) {
+            await halt(new Stop('Ein neues Postfach nimmt sein Passwort nicht an'), null);
+            return false;
+        }
+        return true;
+    };
+    // a new mailbox must accept its password (IMAP)
+    const verifyCreated = async (c) => {
+        const works = await verify({ toReset: [{ mailbox: c.mailbox, password: c.password }] }) === null;
+        await reportCreate(c, works, works
+            ? 'Bei IONOS angelegt, Anmeldung mit dem Passwort aus dem E-Mail-Brief geprüft.'
+            : 'IONOS hat das Anlegen bestätigt, aber die Anmeldung mit dem Passwort klappt nicht. Bitte von Hand prüfen.');
+        return works;
     };
 
     try {
@@ -211,6 +302,7 @@ async function run(options) {
         }
         log(`${cases.length} freigegebene(r) Fall/Fälle${dryRun ? ' (Probelauf, nichts wird geändert)' : ''}`);
         let going = await processCases(cases);
+        if (going && !testMailbox) going = await processCreation();
         // stay a while with the open session, in case the admin approves more
         const until = Date.now() + config.linger_minutes * 60 * 1000;
         while (going && session && !dryRun && !testMailbox && Date.now() < until) {
@@ -219,9 +311,11 @@ async function run(options) {
             const pending = await dashboard.pending();
             if (pending.paused) break;
             cases = pending.cases.filter((c) => !handled.has(c.id));
-            if (cases.length === 0) continue;
-            log(`${cases.length} weitere(r) Fall/Fälle`);
-            going = await processCases(cases);
+            if (cases.length > 0) {
+                log(`${cases.length} weitere(r) Fall/Fälle`);
+                going = await processCases(cases);
+            }
+            if (going) going = await processCreation();
         }
         return summary;
     } finally {
@@ -231,4 +325,4 @@ async function run(options) {
     }
 }
 
-module.exports = { run, caseProblem };
+module.exports = { run, caseProblem, createProblem };

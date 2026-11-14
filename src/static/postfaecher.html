@@ -65,6 +65,9 @@
         .letter-results td { display: block; border-top: none; padding: 0.2em 0.75em; }
         .letter-results td:first-child { border-top: 1px solid rgba(128, 128, 128, 0.3); padding-top: 0.6em; font-weight: bold; }
         .letter-results td:last-child { padding-bottom: 0.6em; }
+        .mail-creations td { display: block; border-top: none; }
+        .mail-creations tr td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
+        .mail-creations thead { display: none; }
     }
 </style>
 
@@ -436,6 +439,102 @@ document.addEventListener('DOMContentLoaded', function() {
             load();
         });
     });
+
+    // ---- missing mailboxes: approve creating them ----
+
+    const CREATE_LABELS = { approved: 'wird angelegt …', done: 'angelegt', exists: 'gab es schon', failed: 'hat nicht geklappt', cancelled: 'nicht angelegt' };
+
+    function render_creation(data) {
+        const list = data.list;
+        const state = $('#mail_address_list_state').empty();
+        state.append(document.createTextNode(list.source === 'ionos'
+            ? `Adressliste vom Mail-Anbieter: ${list.count} Adressen, Stand ${fmt_ts(list.ts)}. `
+            : `Adressliste aus der Datei im Datenverzeichnis (${list.count} Adressen) – der Bot hat sie noch nicht abgeglichen. `));
+        if (list.wanted_ts && (!list.ts || list.wanted_ts > list.ts)) {
+            state.append(document.createTextNode('Neuer Abgleich ist angefordert. '));
+        } else {
+            state.append($('<button>').addClass('btn btn-xs btn-outline-secondary').attr('id', 'bu_request_address_list').text('Jetzt abgleichen'));
+        }
+
+        const box = $('#mail_accounts_missing').empty();
+        if (data.missing.length === 0) {
+            box.append($('<p>').addClass('text-muted').text('Keine fehlenden Postfächer.'));
+        } else {
+            const table = $('<table>').addClass('table table-sm mail-missing');
+            table.append($('<thead>').append($('<tr>')
+                .append($('<th>').append($('<input>').attr({ type: 'checkbox', id: 'cb_missing_all' })))
+                .append($('<th>').text('Postfach')).append($('<th>').text('Schüler:in')).append($('<th>').text('Klasse'))));
+            const tbody = $('<tbody>');
+            for (const m of data.missing) {
+                const tr = $('<tr>').addClass('mail-missing-row').attr('data-mailbox', m.mailbox);
+                tr.append($('<td>').append($('<input>').attr({ type: 'checkbox' }).addClass('cb_missing').attr('data-mailbox', m.mailbox)));
+                tr.append($('<td>').text(m.mailbox + (m.kind === 'parents' ? ' (Eltern)' : '')));
+                tr.append($('<td>').text(m.name || ''));
+                tr.append($('<td>').text(m.klasse || ''));
+                tbody.append(tr);
+            }
+            box.append($('<div>').addClass('table-responsive').append(table.append(tbody)));
+            box.append($('<button>').addClass('btn btn-outline-secondary').attr('id', 'bu_approve_creation').prop('disabled', true)
+                .text('Anlegen freigeben (0)'));
+        }
+
+        const tbody = $('#mail_account_creations tbody').empty();
+        for (const c of data.cases) {
+            const tr = $('<tr>').addClass('mail-creation').attr('data-state', c.state).attr('data-mailbox', c.mailbox);
+            tr.append($('<td>').text(c.mailbox));
+            const st = $('<td>').append($('<span>').addClass('mail-creation-state').text(CREATE_LABELS[c.state] || c.state));
+            st.append($('<small>').addClass('text-muted').text(' (' + fmt_ts(c.ts_done || c.ts) + ')'));
+            if (c.message && c.state !== 'done') st.append($('<div>').addClass('text-muted').text(c.message));
+            tr.append(st);
+            const actions = $('<td>');
+            if (c.state === 'failed') {
+                actions.append($('<button>').addClass('btn btn-sm btn-outline-secondary bu_creation_action').attr('data-id', c.id).attr('data-action', 'retry').text('Nochmal versuchen')).append(' ');
+                actions.append($('<button>').addClass('btn btn-sm btn-outline-secondary bu_creation_action').attr('data-id', c.id).attr('data-action', 'cancel').text('Aufgeben'));
+            }
+            tbody.append(tr.append(actions));
+        }
+        $('#mail_account_creations').toggle(data.cases.length > 0);
+        clearTimeout(creation_timer);
+        if (data.cases.some((c) => c.state === 'approved')) creation_timer = setTimeout(load_creation, 10000);
+    }
+
+    let creation_timer = null;
+    function load_creation() {
+        api_call('/api/mail_account_creation_status', {}, function(data) {
+            if (data.success) render_creation(data);
+        }, { no_please_wait: true });
+    }
+    function selected_missing() {
+        return $('.cb_missing:checked').map((_, x) => $(x).data('mailbox')).get();
+    }
+    $('#mail_accounts_missing').on('change', '#cb_missing_all', function(e) {
+        $('.cb_missing').prop('checked', $(e.currentTarget).prop('checked'));
+        $('#mail_accounts_missing .cb_missing').first().trigger('change');
+    });
+    $('#mail_accounts_missing').on('change', '.cb_missing', function() {
+        const n = selected_missing().length;
+        $('#bu_approve_creation').prop('disabled', n === 0).text(`Anlegen freigeben (${n})`);
+    });
+    $('#mail_accounts_missing').on('click', '#bu_approve_creation', function() {
+        const mailboxes = selected_missing();
+        dashboardConfirm(`${mailboxes.length} Postfach/Postfächer werden beim Mail-Anbieter angelegt, jeweils mit dem Passwort aus dem E-Mail-Brief.`, function() {
+            api_call('/api/approve_mail_account_creation', { mailboxes: mailboxes }, function(data) {
+                if (data.success) load_creation();
+            });
+        }, { title: 'Postfächer anlegen?', confirm: 'Anlegen' });
+    });
+    $('#mail_address_list_state').on('click', '#bu_request_address_list', function() {
+        api_call('/api/request_ionos_address_list', {}, function(data) {
+            if (data.success) load_creation();
+        });
+    });
+    $('#mail_account_creations').on('click', '.bu_creation_action', function(e) {
+        const button = $(e.currentTarget);
+        api_call('/api/update_mail_account_creation', { id: button.data('id'), action: button.data('action') }, function(data) {
+            if (data.success) load_creation();
+        });
+    });
+    load_creation();
 
     load();
 });

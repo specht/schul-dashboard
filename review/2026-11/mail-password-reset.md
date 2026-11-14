@@ -150,6 +150,11 @@ one careful person at one computer:
 
 ## Phase 3 – one IONOS bot for the whole mailbox process (decided 2026-11-14)
 
+Status 2026-11-14: password resets run in production with the bot (2FA
+login recorded, cleared after watched dry runs). Creating mailboxes and the
+address list upload are built and tested against the fake; creating is
+recorded but not yet cleared (`CREATE_FLOW_STATUS`).
+
 The same bot also creates mailboxes and fetches the IONOS address list, so
 `create-account.js` (and its plain-text passwords) and the hand-made export
 file can go.

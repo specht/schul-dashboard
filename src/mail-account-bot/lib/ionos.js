@@ -30,14 +30,18 @@
 //                  the test mailbox only
 //   'verified'     a dry run and a reset of the test mailbox went through
 //                  with the maintainer watching: real cases
-// Every change to this file (IONOS changed its pages) sets it back to
-// 'recorded' until the maintainer watched a dry run again.
+// Every change to a flow in this file (IONOS changed its pages) sets its
+// status back to 'recorded' until the maintainer watched a dry run again.
+// CREATE_FLOW_STATUS is the same for creating mailboxes.
 const { Stop, CaseProblem, Postpone, emailsIn, waitForState, sleep } = require('./guard');
 const { totpAt } = require('./totp');
 
 // verified 2026-11-14: dry runs and a reset of the test mailbox, a dry run on
 // a real case with the 2FA login – watched by the maintainer
 const FLOW_STATUS = 'verified';
+// creating mailboxes (and the export): recorded 2026-11-14, not yet watched –
+// real mailboxes only once it is 'verified'; the export is read-only
+const CREATE_FLOW_STATUS = 'recorded';
 
 const HOSTS = ['login.ionos.de', 'mein.ionos.de'];
 
@@ -65,13 +69,29 @@ const S = {
     submit: 'main#main-content form button[type="submit"].submit-btn',
     cancel: 'main#main-content form a.button',
     success: '[data-testid="pageMessage-EMAIL_PASSWORD_SUCCESS"]',
+    // address list export and creating a mailbox (recorded 2026-11-14)
+    exportLink: 'a[data-testid="link-export-emails"]',
+    createLink: 'a[data-testid="button-create-another-mailbox"]',
+    basicCard: '[data-testid="card-col-mail-basic"]',
+    basicForm: 'form[data-testid="form-create-basic"]',
+    localPart: 'input#localPart[name="localPart"]',
+    domainSelect: 'select#domain-select[name="domain"]',
+    newPassword: 'input#password[type="password"]',
+    paidOrExtra: 'input#virusProtection, input#orderMailArchiving, input#ai-checkbox',
+    createSubmit: 'button#btn-submit[data-testid="btn-save"]',
+    createCancel: 'a[data-testid="btn-cancel"]',
+    createdMessage: '[role="status"].message--success',
     pageMessage: '[data-testid^="pageMessage-"]',
 };
 
 const RE = {
     overview: /^https:\/\/mein\.ionos\.de\/email\/(\d+)\/email-overview(?:[?#].*)?$/,
     mailboxLink: /^\/email\/(\d+)\/mailbox\/(\d+)\/details$/i,
+    created: /^https:\/\/mein\.ionos\.de\/email\/(\d+)\/mailbox\/(\d+)\/details$/i,
 };
+
+const EXPORT_HEADER = ['E-Mail-Adresse', 'Kontotyp', 'Vertragsnummer'];
+const EXPORT_MIN_ROWS = 100;
 
 const visible = (selector) => async (page) => page.locator(selector).first().isVisible();
 const onHost = (host) => (page) => new URL(page.url()).hostname === host;
@@ -333,6 +353,120 @@ class IonosSession {
         await this.openList();
     }
 
+    // The address list as the provider exports it (a download link on the list
+    // page, fetched in this logged-in session). Returns [{address, type}].
+    async exportAddresses() {
+        await this.wait({ list: all(urlMatches(RE.overview), visible(S.table)) }, 'Adressliste');
+        const link = await this.one(S.exportLink, 'Adressliste: „E-Mail-Adressen exportieren“');
+        const href = (await link.getAttribute('href')) || '';
+        if (href !== `/email/${this.contract}/email-overview/export`) throw new Stop('Export: Verweis in unbekannter Form');
+        await this.pacer.pause(1000, 2500);
+        // fetched from within the page: same origin, same session – and in the
+        // tests through the fake, never past it
+        const response = await this.page.evaluate(async (url) => {
+            const r = await fetch(url, { credentials: 'same-origin' });
+            return { status: r.status, text: await r.text() };
+        }, href);
+        this.guard.check();
+        if (response.status !== 200) throw new Stop(`Export: IONOS antwortet mit ${response.status}`);
+        const text = response.text.replace(/^\uFEFF/, '');
+        const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '');
+        const header = (lines.shift() || '').split(';').map((x) => x.trim().replace(/^"|"$/g, ''));
+        if (header.join(';') !== EXPORT_HEADER.join(';')) throw new Stop('Export: unbekannte Spalten');
+        const rows = lines.map((line) => {
+            const [address, type] = line.split(';').map((x) => x.trim().replace(/^"|"$/g, ''));
+            return { address: (address || '').toLowerCase(), type: type || '' };
+        });
+        if (rows.length < EXPORT_MIN_ROWS) throw new Stop(`Export: nur ${rows.length} Adressen – das kann nicht stimmen`);
+        if (!rows.every((r) => /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(r.address) || /^\*@[a-z0-9.-]+$/.test(r.address))) {
+            throw new Stop('Export: Zeilen ohne erkennbare Adresse');
+        }
+        this.log(`Adressliste exportiert: ${rows.length} Adressen`);
+        return rows;
+    }
+
+    // A new Mail Basic mailbox – nothing else: not Mail Business, not
+    // Exchange, not a forwarding; no paid or extra options; exactly the
+    // approved address on exactly its domain.
+    async createMailbox(mailbox, password, { dryRun = false } = {}) {
+        if (!/^[A-Za-z0-9-]{8,64}$/.test(password)) throw new CaseProblem('Ungeeignetes Passwort vom Dashboard');
+        const [localPart, domain] = mailbox.split('@');
+        if (!localPart || !domain) throw new CaseProblem('Ungültige Adresse');
+        this.log(`${dryRun ? 'Probelauf Anlegen' : 'Anlegen'}: ${mailbox}`);
+        const page = this.page;
+        await this.wait({ list: all(urlMatches(RE.overview), visible(S.table)) }, 'Adressliste');
+
+        // 1. "Weitere E-Mail-Adresse anlegen"
+        const create = await this.one(S.createLink, 'Adressliste: „Weitere E-Mail-Adresse anlegen“');
+        if ((await create.getAttribute('href')) !== `/email/${this.contract}/email-package-selection`) throw new Stop('Anlegen: Verweis in unbekannter Form');
+        await this.click(create);
+        await this.wait({ selection: (p) => p.url() === `https://mein.ionos.de/email/${this.contract}/email-package-selection` }, 'Anlegen: Auswahl des Typs');
+
+        // 2. the Mail Basic card only
+        const card = await this.one(S.basicCard, 'Typ-Auswahl: Karte „Mail Basic“');
+        const headline = (await card.locator('.card__headline').first().innerText().catch(() => '')).trim();
+        if (headline !== 'Mail Basic') throw new Stop('Typ-Auswahl: die Karte heißt nicht „Mail Basic“');
+        const form = await this.one(S.basicForm, 'Typ-Auswahl: Formular „Mail Basic“', card);
+        const button = await this.one('button[type="submit"]', 'Typ-Auswahl: „Anlegen“ bei Mail Basic', form);
+        await this.click(button);
+        await this.wait({ form: all((p) => p.url() === `https://mein.ionos.de/email/${this.contract}/create-basic-email`, visible(S.localPart)) }, 'Anlegen: Formular');
+        const h1 = (await (await this.one(S.headline, 'Anlegen: Überschrift')).innerText()).trim();
+        if (h1 !== 'Neue E-Mail-Adresse anlegen: Mail Basic') throw new Stop('Anlegen: Formular ist nicht „Mail Basic“');
+
+        // 3. address, domain, password
+        const local = await this.one(S.localPart, 'Anlegen: Feld für die Adresse');
+        await this.type(local, localPart);
+        const select = await this.one(S.domainSelect, 'Anlegen: Domain-Auswahl');
+        const options = await select.locator('option').evaluateAll((els) => els.map((o) => ({ value: o.value, text: o.textContent.trim() })));
+        const matching = options.filter((o) => o.value.replace(/^@/, '') === domain || o.text.replace(/^@/, '') === domain);
+        if (matching.length !== 1) throw new Stop(`Anlegen: die Domain ${domain} wird nicht genau einmal angeboten`);
+        await this.pacer.pause(500, 1200);
+        await select.selectOption(matching[0].value);
+        const pw = await this.one(S.newPassword, 'Anlegen: Passwortfeld');
+        await this.pacer.pause(500, 1200);
+        await this.type(pw, password);
+
+        // 4. nothing paid or extra, no forwarding
+        const checkAll = async () => {
+            const extras = page.locator(S.paidOrExtra);
+            if ((await extras.count()) !== 3) throw new Stop('Anlegen: Zusatzoptionen in unbekannter Form');
+            if ((await page.locator('main#main-content input[type="checkbox"]:checked').count()) > 0) throw new Stop('Anlegen: eine Zusatzoption ist angehakt – es wird nichts gespeichert');
+            const forwards = await page.locator('main#main-content input').evaluateAll((els) => els.filter((e) => /forward/i.test(e.name + e.id) && e.value).length);
+            if (forwards > 0) throw new Stop('Anlegen: ein Weiterleitungsziel ist eingetragen – es wird nichts gespeichert');
+            if ((await local.inputValue()) !== localPart) throw new Stop('Anlegen: die Adresse kam nicht richtig an');
+            if ((await select.inputValue()) !== matching[0].value) throw new Stop('Anlegen: falsche Domain ausgewählt');
+            if ((await pw.inputValue()) !== password) throw new Stop('Anlegen: das Passwort kam nicht richtig an');
+        };
+        await checkAll();
+        const submit = await this.one(S.createSubmit, 'Anlegen: „Speichern“');
+        if ((await submit.innerText()).trim() !== 'Speichern') throw new Stop('Anlegen: Schaltfläche heißt anders');
+        const cancel = await this.one(S.createCancel, 'Anlegen: „Abbrechen“');
+        await this.pacer.pause(800, 2000);
+        await checkAll();
+        this.guard.check();
+
+        if (dryRun) {
+            await this.click(cancel);
+            await this.wait({ list: all(urlMatches(RE.overview), visible(S.table)) }, 'Abbrechen');
+            this.log(`Probelauf ok, nichts angelegt: ${mailbox}`);
+            return;
+        }
+
+        // 5. saved: the details page of exactly this new mailbox
+        await this.click(submit);
+        const reached = await this.wait({
+            created: async (p) => RE.created.test(p.url()) && (await p.locator(S.createdMessage).first().isVisible()),
+            error: async (p) => p.url().endsWith('/create-basic-email') && (await p.locator(`${S.loginError}, ${S.pageMessage}`).first().isVisible()),
+        }, 'Bestätigung nach „Speichern“');
+        if (reached !== 'created') throw new Stop(`IONOS meldet einen Fehler beim Anlegen von ${mailbox}`);
+        const shown = (await (await this.one(S.headline, 'Postfach-Details: Überschrift')).innerText()).trim().toLowerCase();
+        if (shown !== mailbox) throw new Stop(`Nach dem Anlegen zeigt IONOS ein anderes Postfach als ${mailbox}`);
+        if (!/neue e-mail-adresse/i.test(await page.locator(S.createdMessage).first().innerText())) throw new Stop('Bestätigung in unbekannter Form');
+        this.log(`IONOS bestätigt das neue Postfach: ${mailbox}`);
+        await this.pacer.pause(1500, 3000);
+        await this.openList();
+    }
+
     // back to the list via the breadcrumb, as recorded
     async openList() {
         const crumb = this.page.locator('a[data-testid="link--bc-overview"]');
@@ -342,4 +476,4 @@ class IonosSession {
     }
 }
 
-module.exports = { FLOW_STATUS, HOSTS, URLS, IonosSession };
+module.exports = { FLOW_STATUS, CREATE_FLOW_STATUS, HOSTS, URLS, IonosSession };

@@ -366,6 +366,17 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
   await list.locator('select').selectOption({ label: 'Elli Mustermann' });
   await expect(list).toContainText('Elli Mustermann');
   await expect(page.locator('#sph_area_spread')).toBeHidden();
+  // on the start page each area has one switch per tool, right at the area
+  await expect(page.locator('#sph_start_area_spread_spread')).toBeChecked();
+  await expect(page.locator('#sph_start_area_wishes_spread')).toBeChecked();
+  const start_switched = page.waitForResponse('**/api/sph_set_rule_area');
+  await page.locator('label[for="sph_start_area_wishes_fixed"]').click();
+  expect((await start_switched).status()).toBe(200);
+  await expect(page.locator('#sph_start_area_wishes_fixed')).not.toBeChecked();
+  await expect(page.locator('#sph_wish_area_fixed')).not.toBeChecked();
+  await expect(page.locator('#sph_start_area_spread_fixed')).toBeChecked();
+  await page.locator('label[for="sph_start_area_wishes_fixed"]').click();
+  await expect(page.locator('#sph_start_area_wishes_fixed')).toBeChecked();
 
   // "Im Raum verteilen": Verteilung im Raum switched off for this tool
   await startNewPlan(page, 'spread');

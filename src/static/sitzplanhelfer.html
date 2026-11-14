@@ -123,6 +123,11 @@ table.sph-wishes td, table.sph-wishes th {
     font-size: 0.75em;
     font-weight: normal;
 }
+.sph-area-start {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.2em 1em;
+}
 .sph-wish-areas {
     display: flex;
     flex-wrap: wrap;
@@ -570,12 +575,22 @@ body.dark .sph-group {
         <details class="sph-section sph-panel" id="sph_vorgaben">
             <summary><h4>Vorgaben <span id="sph_vorgaben_count" class="sph-count"></span></h4></summary>
             <p class="sph-legend">Ihre Eingaben gelten für alle Werkzeuge, bis Sie sie ändern; Wünsche treten hinter ihnen zurück. Ein ausgeschalteter Bereich bleibt gespeichert und fließt nur in diesem Werkzeug nicht in den Plan ein.</p>
-            <p class="sph-legend" id="sph_areas_hint">Ob ein Bereich berücksichtigt wird, stellen Sie im jeweiligen Werkzeug ein, zum Beispiel in „Im Raum verteilen“ oder in der Wunschrunde: am Schalter neben der Überschrift.</p>
+
 
             <h5 class="sph-area-head">Paare
                 <span class="sph-area-switch custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="sph_area_pairs" data-area="pairs">
                     <label class="custom-control-label" for="sph_area_pairs">berücksichtigen</label>
+                </span>
+                <span class="sph-area-start">
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_start_area_spread_pairs" data-area="pairs" data-mode="spread">
+                        <label class="custom-control-label" for="sph_start_area_spread_pairs">bei „Im Raum verteilen“</label>
+                    </span>
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_start_area_wishes_pairs" data-area="pairs" data-mode="wishes">
+                        <label class="custom-control-label" for="sph_start_area_wishes_pairs">bei der Wunschrunde</label>
+                    </span>
                 </span>
             </h5>
             <div class="form-inline">
@@ -592,6 +607,16 @@ body.dark .sph-group {
                 <span class="sph-area-switch custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="sph_area_fixed" data-area="fixed">
                     <label class="custom-control-label" for="sph_area_fixed">berücksichtigen</label>
+                </span>
+                <span class="sph-area-start">
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_start_area_spread_fixed" data-area="fixed" data-mode="spread">
+                        <label class="custom-control-label" for="sph_start_area_spread_fixed">bei „Im Raum verteilen“</label>
+                    </span>
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_start_area_wishes_fixed" data-area="fixed" data-mode="wishes">
+                        <label class="custom-control-label" for="sph_start_area_wishes_fixed">bei der Wunschrunde</label>
+                    </span>
                 </span>
             </h5>
             <div class="form-inline">
@@ -612,6 +637,16 @@ body.dark .sph-group {
                 <span class="sph-area-switch custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="sph_area_spread" data-area="spread">
                     <label class="custom-control-label" for="sph_area_spread">berücksichtigen</label>
+                </span>
+                <span class="sph-area-start">
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_start_area_spread_spread" data-area="spread" data-mode="spread">
+                        <label class="custom-control-label" for="sph_start_area_spread_spread">bei „Im Raum verteilen“</label>
+                    </span>
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_start_area_wishes_spread" data-area="spread" data-mode="wishes">
+                        <label class="custom-control-label" for="sph_start_area_wishes_spread">bei der Wunschrunde</label>
+                    </span>
                 </span>
             </h5>
             <p class="sph-legend">Wer auf derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch, nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt auch ganz ohne Wünsche, mit „Im Raum verteilen“ oben. Gibt es Wünsche, zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht vor. Die Listen sehen nur Sie.</p>
@@ -960,8 +995,12 @@ const SPH_AREAS = ['pairs', 'fixed', 'spread'];
 // Werkzeug des offenen Plans; ohne offenen Plan gibt es keine.
 function render_areas() {
     let mode = current_area_mode();
-    $('#sph_areas_hint').toggle(!mode);
+    $('.sph-area-start').toggle(!mode);
     for (let area of SPH_AREAS) {
+        // Startseite: je Werkzeug ein Schalter direkt am Bereich
+        for (let tool of ['spread', 'wishes']) {
+            $(`#sph_start_area_${tool}_${area}`).prop('checked', area_on(tool, area));
+        }
         let box = $(`#sph_area_${area}`);
         box.closest('.sph-area-switch').toggle(!!mode);
         let on = !mode || area_on(mode, area);

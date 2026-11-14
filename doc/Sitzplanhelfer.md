@@ -104,7 +104,9 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
      Klassenleitung sichtbar.
 
    Die Eingaben gelten für alle Werkzeuge. Ob ein Bereich berücksichtigt
-   wird, stellt man im jeweiligen Werkzeug ein: Bei offenem Plan steht an
+   wird, stellt man direkt am Bereich ein: Auf der Startseite stehen an
+   jeder Überschrift zwei Schalter, „bei „Im Raum verteilen““ und „bei der
+   Wunschrunde“. Bei offenem Plan steht an
    jeder Überschrift (Paare, Feste Plätze, Verteilung im Raum) ein Schalter
    „berücksichtigen / nicht berücksichtigen“. Er gilt für das Werkzeug des
    offenen Plans, etwa „Im Raum verteilen“ oder die Wunschrunde, und wird

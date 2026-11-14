@@ -152,6 +152,33 @@ p {
 .dropdown-item {
     cursor: pointer;
 }
+#bu_print_shuffle {
+    display: none;
+}
+/* Ausdruck nach dem Auslosen: nur Überschrift, Tafel und Plätze, quer auf
+   eine Seite (Maße in beforeprint, siehe fix_scale). */
+@page {
+    size: landscape;
+    margin: 1cm;
+}
+@media print {
+    .keys, nav, .foot, a.github, .info, #advent_calendar, .grain_overlay {
+        display: none !important;
+    }
+    body {
+        width: auto;
+        height: auto;
+        overflow: visible;
+        background: #fff !important;
+    }
+    .place, .teacher {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    .place, #seats, #seats .place img, #seats .place .label {
+        transition: none !important;
+    }
+}
 </style>
 <script>
 
@@ -328,15 +355,17 @@ function shuffle_plan() {
     place_sus();
 }
 
-function fix_scale() {
-    let width = document.documentElement.clientWidth;
-    let height = document.documentElement.clientHeight;
+// Ohne Angaben passend zum Fenster, beim Drucken für eine Seite A4 quer.
+function fix_scale(page_width, page_height) {
+    let width = page_width || document.documentElement.clientWidth;
+    let height = page_height || document.documentElement.clientHeight;
+    let full_height = height;
     if (width * HEIGHT < height * WIDTH)
         height = width * HEIGHT / WIDTH;
     $('#seats').css('height', `${height * 0.85 - 10}px`);
     scale = (height * 0.85 - 10) / HEIGHT;
     $('#seats').css('width', `${(height * 0.85 - 10) * WIDTH / HEIGHT}px`);
-    $('#seats').css('top', `${(document.documentElement.clientHeight - (height * 0.85 - 10)) / 3}px`);
+    $('#seats').css('top', `${(full_height - (height * 0.85 - 10)) / 3}px`);
     console.log(height - (height * 0.85 - 10));
     place_sus(true);
 }
@@ -406,6 +435,22 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('resize', function(e) {
             fix_scale();
         });
+        // Ist die Musik zu Ende, nimmt der Shuffler keine Tasten mehr an: Der
+        // Plan steht, jetzt lässt er sich drucken (nach der letzten Bewegung).
+        // Ohne Musik gibt es kein Ende - dann ab dem ersten Auslosen.
+        let shuffled = false;
+        let show_print = function() {
+            setTimeout(function() { $('#bu_print_shuffle').show(); }, 1100);
+        };
+        $('#audio').on('ended', show_print);
+        $('#audio').on('error', function() { if (shuffled) show_print(); });
+        $('#bu_print_shuffle').click(function(e) {
+            $('#bu_print_shuffle').blur();
+            window.print();
+        });
+        // A4 quer mit 1 cm Rand: etwa 1040 × 720 Pixel.
+        window.addEventListener('beforeprint', function() { fix_scale(1040, 700); });
+        window.addEventListener('afterprint', function() { fix_scale(); });
         document.addEventListener('keydown', function(e) {
             let audio = $('#audio')[0];
 
@@ -422,6 +467,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 shuffle_plan();
                 audio.play();
+                shuffled = true;
+                if (audio.error) show_print();
             }
             if (e.code === 'KeyA') {
                 place_sus();
@@ -478,6 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="btn btn-sm btn-secondary" type="button" id="maleFemaleButton">
         <i class='fa fa-female'></i><i class='fa fa-male'></i> <span id='maleFemaleButtonLabel'></span>
     </button>
+    <button class="btn btn-sm btn-success" type="button" id="bu_print_shuffle"><i class='fa fa-print'></i>&nbsp;&nbsp;Drucken</button>
     <div style="display: inline-block; position: relative; top: 0.15em;">
         <span class="key" data-key="Space">Leer</span>
         <span class="key" data-key="KeyA">A</span>

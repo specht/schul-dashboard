@@ -271,3 +271,33 @@ test('Gruppenbildung: eigener Abschnitt, Gruppen für die Klasse mischen', async
     await expect(page.locator('#zg_groups')).toContainText(name);
   }
 });
+
+test('Shuffler: nach dem Auslosen den Plan drucken', async ({ page }) => {
+  // No music in the example data: play() does nothing, the music file is a
+  // stand-in, and the print dialog is only counted.
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+    (window as any).__printed = 0;
+    window.print = () => { (window as any).__printed++; };
+  });
+  await page.route('**/api/get_music/**', (route) => route.fulfill({ status: 200, contentType: 'audio/mpeg', body: '' }));
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await page.goto(`/sitzplan/${KLASSE}/${RAUM}`);
+  await expect(page.locator('#seats .place')).toHaveCount(3);
+  await expect(page.locator('#bu_print_shuffle')).toBeHidden();
+
+  // shuffle; when the music is over, the plan stands still and can be printed
+  await page.keyboard.press('Space');
+  await expect(page.locator('#bu_print_shuffle')).toBeHidden();
+  await page.locator('#audio').evaluate((audio) => audio.dispatchEvent(new Event('ended')));
+  await expect(page.locator('#bu_print_shuffle')).toBeVisible();
+  await page.locator('#bu_print_shuffle').click();
+  expect(await page.evaluate(() => (window as any).__printed)).toBe(1);
+
+  // on paper only the plan, without buttons
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('.keys')).toBeHidden();
+  await expect(page.locator('#seats .place').first()).toBeVisible();
+  await expect(page.locator('h1')).toContainText(KLASSE);
+});

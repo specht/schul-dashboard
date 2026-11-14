@@ -56,32 +56,25 @@
     .mail-case-actions .btn { margin: 0.3em 0.2em 0 0; }
     .mail-case-step-text { margin-bottom: 0.2em; }
     .letter-results td { vertical-align: middle; }
-    /* the bot's status: a dot with a soft shine, the text beside it */
+    /* the bot's status: a flat dot with a soft halo, the text beside it */
     #mail_reset_bot_state { margin-bottom: 1em; }
-    .mail-bot-row { display: flex; align-items: flex-start; gap: 0.7em; padding: 0.7em 0.9em; border-radius: 0.6em;
-        background: rgba(128, 128, 128, 0.07); border: 1px solid rgba(128, 128, 128, 0.15); }
-    .mail-bot-dot { flex: none; width: 0.8em; height: 0.8em; margin-top: 0.38em; border-radius: 50%; position: relative;
-        background: radial-gradient(circle at 34% 30%, #f2f2f2 0%, #b4b4b4 38%, #8a8a8a 100%);
-        box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06); }
-    .mail-bot-dot[data-state="connected"] {
-        background: radial-gradient(circle at 34% 30%, #e6ffec 0%, #5fd67c 32%, #2aa34a 70%, #1d7a36 100%);
-        box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.2), 0 0 6px rgba(52, 199, 89, 0.55); }
-    .mail-bot-dot[data-state="connected"]::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.5); animation: mail-bot-pulse 2.6s ease-out infinite; }
-    .mail-bot-dot[data-state="paused"] {
-        background: radial-gradient(circle at 34% 30%, #fff6dc 0%, #f5c242 38%, #c98f0c 100%);
-        box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.2), 0 0 5px rgba(245, 180, 40, 0.45); }
-    @keyframes mail-bot-pulse {
-        0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.45); }
-        70% { box-shadow: 0 0 0 0.6em rgba(52, 199, 89, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+    .mail-bot-row { display: flex; align-items: flex-start; gap: 0.75em; padding: 0.65em 0.9em; border-radius: 0.5em;
+        background: #fff; border: 1px solid #e1e4e8; }
+    .mail-bot-dot { flex: none; width: 0.7em; height: 0.7em; margin-top: 0.42em; border-radius: 50%;
+        background: #9aa0a6; box-shadow: 0 0 0 0.22em rgba(154, 160, 166, 0.22); }
+    .mail-bot-dot[data-state="connected"] { background: #1f9d55; box-shadow: 0 0 0 0.22em rgba(31, 157, 85, 0.2);
+        animation: mail-bot-breathe 2.8s ease-in-out infinite; }
+    .mail-bot-dot[data-state="paused"] { background: #d99a06; box-shadow: 0 0 0 0.22em rgba(217, 154, 6, 0.22); }
+    @keyframes mail-bot-breathe {
+        0%, 100% { box-shadow: 0 0 0 0.22em rgba(31, 157, 85, 0.2); }
+        50% { box-shadow: 0 0 0 0.34em rgba(31, 157, 85, 0.1); }
     }
-    @media (prefers-reduced-motion: reduce) { .mail-bot-dot[data-state="connected"]::after { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .mail-bot-dot[data-state="connected"] { animation: none; } }
     .mail-bot-body { min-width: 0; }
     .mail-bot-title { font-weight: 500; }
-    .mail-bot-detail { margin-top: 0.2em; color: #6c757d; }
-    body.dark .mail-bot-row { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.12); }
-    body.dark .mail-bot-detail { color: #adb5bd; }
+    .mail-bot-detail { margin-top: 0.15em; color: #5f6368; }
+    body.dark .mail-bot-row { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); }
+    body.dark .mail-bot-detail { color: #b0b5ba; }
     .letter-results .btn { margin: 0.15em 0.2em 0.15em 0; }
     @media (max-width: 575px) {
         .mail-cases td { display: block; border-top: none; }

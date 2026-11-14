@@ -52,7 +52,7 @@
     <div id="spe_half" class="alert alert-warning" style="display: none;">
         In diesem Raum stehen Plätze auf halben Positionen. Der Editor kann sie nicht darstellen,
         deshalb lässt sich diese Bestuhlung hier nicht bearbeiten. Bitte wenden Sie sich an die Administration.
-        Shuffler, Helfer und Verteilen funktionieren für diesen Raum wie gewohnt.
+        Sitzplan und Shuffler funktionieren für diesen Raum wie gewohnt.
         <div style="margin-top: 0.8em;"><a class="btn btn-outline-secondary" id="spe_half_back_link"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></div>
     </div>
 
@@ -83,7 +83,7 @@
 
     <div class="spe-actions">
         <button class="btn btn-success" id="spe_save"><i class="fa fa-check"></i>&nbsp;&nbsp;Bestuhlung speichern</button>
-        <a class="btn btn-outline-secondary" id="spe_back_link"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a>
+        <a class="btn btn-outline-secondary" id="spe_back_link"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zum Sitzplan</a>
         <span id="spe_status" class="text-muted"></span>
     </div>
 
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
             $('#spe_save').prop('disabled', false);
             if (data.success) {
                 saved_signature = JSON.stringify(data.seats);
-                set_status('Gespeichert. Shuffler, Helfer und Verteilen verwenden ab sofort diese Bestuhlung.');
+                set_status('Gespeichert. Sitzplan und Shuffler verwenden ab sofort diese Bestuhlung.');
             } else if (data.error && data.error !== 'unknown_error') {
                 set_status(data.error);
             }
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
             set_status('Keine Änderungen zum Speichern.');
         } else if (saved_signature !== '' && spe_saved_plans > 0) {
             var text = $('<p>').text('Für Raum ' + raum + ' gibt es schon Sitzordnungen, die auf der bisherigen Bestuhlung beruhen. Wenn Sie Tische hinzufügen, entfernen oder verschieben, werden die Plätze neu durchnummeriert. Diese Sitzordnungen passen dann nicht mehr: Schülerinnen und Schüler säßen auf anderen oder nicht mehr vorhandenen Plätzen.').prop('outerHTML') +
-                $('<p>').text('Verteilen Sie die Klasse nach dem Speichern bitte neu, mit dem Helfer oder mit „Verteilen“.').prop('outerHTML');
+                $('<p>').text('Erstellen Sie nach dem Speichern bitte einen neuen Sitzplan.').prop('outerHTML');
             showTemplateModal('Bestuhlung wirklich ändern?', text,
                 "<i class='fa fa-check'></i>&nbsp;&nbsp;Speichern", 'btn-success',
                 'Abbrechen', 'btn-secondary', do_save);
@@ -323,7 +323,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     $('#spe_subtitle').text('Raum ' + raum + ' · Klasse ' + klasse);
-    $('#spe_back_link, #spe_half_back_link').attr('href', '/directory/' + encodeURIComponent(klasse));
+    $('#spe_back_link').attr('href', '/sitzplanhelfer/' + encodeURIComponent(klasse) + '/' + encodeURIComponent(raum));
+    $('#spe_half_back_link').attr('href', '/directory/' + encodeURIComponent(klasse));
     var half = (seats_dict[raum] || []).some(function (s) { return s[0] % 1 !== 0 || s[1] % 1 !== 0; });
     if (half) {
         $('#spe_main').hide();

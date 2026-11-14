@@ -1,37 +1,87 @@
+import type { Locator, Page } from '@playwright/test';
 import { test, expect, login, ACCOUNTS, dashboardDialog } from './fixtures';
 
 // Example data: Clarke is class teacher of 5a (Max, Elli, Mallory).
 const KLASSE = '5a';
 
-test('Sitzplanhelfer: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async ({ page, newUserPage }) => {
-  await login(page, ACCOUNTS.admin);
-
-  // the class page knows which rooms belong to the class (homeroom or
-  // rooms from the timetable)
+// The class page links the seating plan of the homeroom; the room comes from
+// that link. Two rows with two desks of two seats each (the seat editor has
+// its own UI).
+async function setUpRoom(page: Page) {
   await page.goto(`/directory/${KLASSE}`);
-  const editorLink = page.locator(`a[href^="/sitzplaneditor/${KLASSE}/"]`).first();
-  const RAUM = decodeURIComponent((await editorLink.getAttribute('href'))!.split('/').pop()!);
-
-  // setup: two rows with two desks of two seats each (the seat editor has
-  // its own UI)
+  const link = page.locator(`a[href^="/sitzplanhelfer/${KLASSE}/"]`).first();
+  const raum = decodeURIComponent((await link.getAttribute('href'))!.split('/').pop()!);
   const seats = [0, 1, 3, 4].flatMap((x) => [0, 2].map((y) => [x, y]));
   const room = await page.request.post('/api/sitzplaneditor_save', {
-    data: { klasse: KLASSE, raum: RAUM, seats: JSON.stringify(seats) },
+    data: { klasse: KLASSE, raum, seats: JSON.stringify(seats) },
   });
   expect(room.status()).toBe(200);
+  return raum;
+}
 
-  // class teacher starts a wish round
-  await page.goto(`/sitzplanhelfer/${KLASSE}/${RAUM}`);
+// Opens the seating plan page and throws away a new plan left over from an
+// earlier run on the same test stack.
+async function openSeatingPlan(page: Page, raum: string) {
+  await page.goto(`/sitzplanhelfer/${KLASSE}/${raum}`);
   const discard = page.locator('#sph_bu_discard_cycle');
-  if (await discard.isVisible()) {
-    // left over from an earlier run on the same test stack
-    await discard.click();
-    await dashboardDialog(page).getByRole('button', { name: 'Verwerfen' }).click();
-    await expect(page.locator('#sph_bu_start_cycle')).toBeVisible();
-  }
+  await expect(page.locator('#sph_bu_new:visible, #sph_bu_discard_cycle:visible')).toHaveCount(1);
+  if (await discard.isVisible()) await discardOpenPlan(page);
+}
+
+async function discardOpenPlan(page: Page) {
+  await page.locator('#sph_bu_discard_cycle').click();
+  await dashboardDialog(page).getByRole('button', { name: 'Verwerfen' }).click();
+  await expect(page.locator('#sph_bu_new')).toBeVisible();
+}
+
+async function startNewPlan(page: Page, way: 'cycle' | 'random' | 'manual') {
+  await page.locator('#sph_bu_new').click();
   const started = page.waitForResponse('**/api/sph_start_cycle');
-  await page.locator('#sph_bu_start_cycle').click();
+  await page.locator(`#sph_bu_start_${way}`).click();
   expect((await started).status()).toBe(200);
+  await expect(page.locator('#sph_bu_discard_cycle')).toBeVisible();
+}
+
+async function savePlan(page: Page) {
+  const saved = page.waitForResponse('**/api/sph_save_cycle');
+  await page.locator('#sph_bu_save').click();
+  expect((await saved).status()).toBe(200);
+  await expect(page.locator('#sph_status')).toContainText('gespeichert');
+  await expect(page.locator('#sph_bu_new')).toBeVisible();
+}
+
+// Every name element lies completely inside its seat card and shows all of
+// its text (nothing cut off by the card or by the name box itself).
+async function expectNamesReadable(cards: Locator) {
+  const count = await cards.count();
+  for (let i = 0; i < count; i++) {
+    const card = cards.nth(i);
+    await expect(card.locator('.sph-card-photo')).toBeVisible();
+    const fits = await card.evaluate((el) => {
+      const name = el.querySelector('.sph-card-name') as HTMLElement;
+      const c = el.getBoundingClientRect();
+      const n = name.getBoundingClientRect();
+      return name.scrollWidth <= name.clientWidth + 1 && name.scrollHeight <= name.clientHeight + 1 &&
+        n.left >= c.left - 1 && n.right <= c.right + 1 && n.top >= c.top - 1 && n.bottom <= c.bottom + 1;
+    });
+    expect(fits, `name ${i + 1} fits into its seat`).toBe(true);
+  }
+}
+
+test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async ({ page, newUserPage }) => {
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+
+  // class page: one button for the seating plan, the Shuffler stays as it is;
+  // editor and manual placing live on the seating plan page now
+  await page.goto(`/directory/${KLASSE}`);
+  await expect(page.locator(`a[href="/sitzplanhelfer/${KLASSE}/${RAUM}"]`)).toHaveText(`Sitzplan Raum ${RAUM}`);
+  await expect(page.locator(`a[href="/sitzplan/${KLASSE}/${RAUM}"]`)).toHaveText(`Shuffler Raum ${RAUM}`);
+  await expect(page.locator('#additional_teacher_content a[href^="/sitzplanverteilen/"], #additional_teacher_content a[href^="/sitzplaneditor/"]')).toHaveCount(0);
+
+  await openSeatingPlan(page, RAUM);
+  await expect(page.locator('#sph_link_editor')).toBeVisible();
+  await startNewPlan(page, 'cycle');
 
   // Max wishes to sit next to Mallory
   const student = await newUserPage();
@@ -63,14 +113,156 @@ test('Sitzplanhelfer: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern',
   await page.locator('#sph_bu_generate').click();
   await expect(page.locator('#sph_seats')).toContainText('Max');
   await expect(page.locator('#sph_seats')).toContainText('Mallory');
-  const saved = page.waitForResponse('**/api/sph_save_cycle');
-  await page.locator('#sph_bu_save').click();
-  expect((await saved).status()).toBe(200);
+  await savePlan(page);
+  // back on the start view with the saved plan
+  await expect(page.locator('#sph_seats')).toContainText('Mallory');
 
-  // the student view shows the saved plan
+  // students do not see the seating plan themselves
   await student.goto(`/sitzplananzeige/${KLASSE}/${RAUM}`);
-  // (on phones the collapsed navbar also contains "Max Mustermann")
+  await expect(student).not.toHaveURL(/sitzplananzeige/);
+  const denied = await student.request.post('/api/sph_get_public_plan', { data: { klasse: KLASSE, raum: RAUM } });
+  expect(denied.status()).not.toBe(200);
+  expect(await denied.text()).not.toContain('Mallory');
+
+  // teachers do, without wishes
+  await page.goto(`/sitzplananzeige/${KLASSE}/${RAUM}`);
   for (const name of ['Max', 'Elli', 'Mallory']) {
-    await expect(student.getByText(name).filter({ visible: true }).first()).toBeVisible();
+    await expect(page.locator('#spa_seats')).toContainText(name);
+  }
+});
+
+test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Verteilung im Raum', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await openSeatingPlan(page, RAUM);
+
+  // "Zufällig": no poll, the plan is there right away
+  await startNewPlan(page, 'random');
+  const cards = page.locator('#sph_seats .place:not(.empty)');
+  await expect(cards).toHaveCount(3);
+  await expect(page.locator('#sph_seats')).toContainText(/Mallory\s*Mustermann/);
+  await expectNamesReadable(cards);
+
+  // long names are made smaller or wrapped, never cut off
+  await page.evaluate(() => {
+    const w = window as any;
+    w.sus[0].first_name = 'Anna-Lena-Marie';
+    w.sus[0].last_name = 'Schmidt-Kowalski-Papadopoulos';
+    w.render_placement(true);
+  });
+  await expect(page.locator('#sph_seats')).toContainText('Schmidt-Kowalski-Papadopoulos');
+  await expectNamesReadable(cards);
+
+  // drag a student onto a free seat, then take the move back
+  const source = cards.first();
+  const from = await source.getAttribute('data-seat-index');
+  const name = (await source.locator('.sph-card-name').textContent())!;
+  const free = page.locator('#sph_seats .place.empty').first();
+  const to = await free.getAttribute('data-seat-index');
+  await free.scrollIntoViewIfNeeded();
+  const a = (await source.boundingBox())!;
+  const b = (await free.boundingBox())!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 5 });
+  await page.mouse.up();
+  const seat = (index: string | null) => page.locator(`#sph_seats .place[data-seat-index="${index}"]`);
+  await expect(seat(to)).toHaveText(name);
+  await expect(seat(from)).toHaveClass(/empty/);
+  await page.locator('#sph_bu_undo').click();
+  await expect(seat(from)).toHaveText(name);
+
+  // a click selects a student; the seat can be fixed right in the plan
+  await seat(from).click();
+  await expect(page.locator('#sph_selection_bar')).toContainText('ist ausgewählt');
+  await expect(seat(from)).toHaveClass(/selected/);
+  await page.locator('#sph_bu_pin').click();
+  await expect(seat(from)).toHaveClass(/pinned/);
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_rules_list')).toContainText('genauer Platz');
+  await seat(from).click();
+  await expect(page.locator('#sph_bu_pin')).toHaveText(/lösen/);
+  await page.locator('#sph_bu_pin').click();
+  await expect(seat(from)).not.toHaveClass(/pinned/);
+  await expect(page.locator('#sph_rules_list')).not.toContainText('genauer Platz');
+
+  // Verteilung im Raum: a list of the class, kept until it is changed
+  await page.locator('#sph_bu_add_group').click();
+  const list = page.locator('#sph_groups_list .sph-group').first();
+  await expect(list).toContainText('Liste A');
+  await list.locator('select').selectOption({ label: 'Max Mustermann' });
+  await expect(list).toContainText('Max Mustermann');
+  await list.locator('select').selectOption({ label: 'Elli Mustermann' });
+  await expect(list).toContainText('Elli Mustermann');
+  await page.reload();
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_groups_list .sph-group').first()).toContainText('Elli Mustermann');
+  await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
+  await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
+  await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
+
+  await discardOpenPlan(page);
+});
+
+test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await openSeatingPlan(page, RAUM);
+
+  // "Von Hand": everyone starts in the list without a seat
+  await startNewPlan(page, 'manual');
+  const chips = page.locator('#sph_unplaced .sph-chip');
+  await expect(chips).toHaveCount(3);
+  await expect(page.locator('#sph_seats .place:not(.empty)')).toHaveCount(0);
+  await chips.filter({ hasText: 'Max' }).click();
+  await page.locator('#sph_seats .place[data-seat-index="0"]').click();
+  await expect(page.locator('#sph_seats .place[data-seat-index="0"]')).toContainText('Max');
+  await expect(chips).toHaveCount(2);
+
+  // a Vorgabe set now still applies to the next new plan
+  await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_pair_a').selectOption({ label: 'Elli Mustermann' });
+  await page.locator('#sph_pair_b').selectOption({ label: 'Mallory Mustermann' });
+  await page.locator('#sph_bu_add_forced').click();
+  await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
+
+  // saving with students still in the list asks first
+  await page.locator('#sph_bu_save').click();
+  const dialog = dashboardDialog(page);
+  await expect(dialog).toContainText('2 Personen haben noch keinen Platz');
+  const saved = page.waitForResponse('**/api/sph_save_cycle');
+  await dialog.getByRole('button', { name: 'Trotzdem speichern' }).click();
+  expect((await saved).status()).toBe(200);
+  await expect(page.locator('#sph_status')).toContainText('gespeichert');
+
+  // "Plan ändern" starts from the saved plan
+  await page.locator('#sph_bu_edit_saved').click();
+  await expect(page.locator('#sph_bu_discard_cycle')).toBeVisible();
+  await expect(page.locator('#sph_seats .place[data-seat-index="0"]')).toContainText('Max');
+  await discardOpenPlan(page);
+
+  // the next new plan takes over the Vorgaben without asking
+  await startNewPlan(page, 'random');
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
+  // leave no Vorgaben behind for the other tests
+  await page.locator('#sph_forced_list .pair-chip a').first().click();
+  await expect(page.locator('#sph_forced_list')).not.toContainText('Elli Mustermann');
+  await savePlan(page);
+
+  // earlier plans are listed, folded away
+  await page.locator('#sph_history_section > summary').click();
+  await expect(page.locator('#sph_history_body tr').first()).toContainText('aktuell');
+});
+
+test('Zufallsgruppen: Gruppen für die Klasse mischen', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto(`/directory/${KLASSE}`);
+  await page.locator(`a[href="/zufallsgruppen/${KLASSE}"]`).click();
+  await expect(page.locator('#zg_bu_mix')).toBeVisible();
+  await page.locator('#zg_bu_mix').click();
+  await expect(page.locator('#zg_groups')).toContainText('Gruppe 1');
+  for (const name of ['Max', 'Elli', 'Mallory']) {
+    await expect(page.locator('#zg_groups')).toContainText(name);
   }
 });

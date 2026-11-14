@@ -1,98 +1,143 @@
 # Sitzplanhelfer
 
-Der Sitzplanhelfer ist ein wunschbasierter Sitzplan-Assistent, der neben
-dem bestehenden Sitzplan-Shuffler (`src/static/sitzplan.html`) steht.
-Während der Shuffler rein zufällig mischt (mit optionalen statischen
-Regeln, siehe „Sitzdaten“ unten), fließen beim Sitzplanhelfer
-echte Sitzwünsche der SuS ein, und die Lehrkraft behält volle Kontrolle
-über Zwangsvorgaben und das Endergebnis.
+Der Sitzplanhelfer ist die Sitzplan-Seite der Klassenleitung
+(`/sitzplanhelfer/<klasse>/<raum>`). Dort entsteht jeder Sitzplan der
+Klasse: mit Sitzwünschen der SuS, zufällig oder von Hand. Die Lehrkraft
+behält volle Kontrolle über Vorgaben und das Endergebnis. Daneben steht
+unverändert der Sitzplan-Shuffler (`src/static/sitzplan.html`), der vor
+der Klasse zufällig mischt (mit optionalen statischen Regeln, siehe
+„Sitzdaten“ unten) und nichts speichert.
+
+## Einstieg
+
+Auf der Klassenseite steht im Abschnitt „Sitzplan und Gruppen“ je
+Klassenraum für die Klassenleitung „Sitzplan Raum …“ (diese Seite) und
+„Shuffler Raum …“, für die übrigen Lehrkräfte der Klasse „Sitzplan
+Raum …“ (die Ansicht ohne Wünsche, siehe unten). Dazu kommt für alle
+Lehrkräfte der Klasse „Zufallsgruppen“. Die früheren Knöpfe „Editor“,
+„Helfer“ und „Verteilen“ gibt es nicht mehr: Die Tische ändert man über
+„Tische im Raum ändern“ auf der Sitzplan-Seite, von Hand verteilt man über
+„Neuer Sitzplan → Von Hand“ oder „Plan ändern“. Die alte Adresse
+`/sitzplanverteilen/…` leitet auf die Sitzplan-Seite weiter.
 
 ## Ablauf für Lehrkräfte
 
-1. **Wunschrunde starten** (`/sitzplanhelfer/<klasse>/<raum>`): legt eine
-   neue Umfrage an und startet einen Timer (einstellbar 1–60 Tage,
-   Standard 4). Das darf **nur die Klassenleitung** der Klasse (oder
-   Admin) – sonst könnte jede Fachlehrkraft spontan eine Umfrage an die
-   ganze Klasse auslösen. Hat der Raum weniger Plätze als die Klasse
-   SuS, lässt sich keine Runde starten (statt erst beim Erzeugen
-   festzustellen, dass nicht alle hineinpassen).
-2. Die SuS sehen die Umfrage ganz normal über `print_current_polls()`
-   (keine eigene Seite nötig) und wählen bis zu drei gleichberechtigte
-   Wunschpartner sowie optional eine Person, neben der sie nicht sitzen
-   möchten.
-   Solange die Runde läuft, zeigt der Sitzplanhelfer die Restlaufzeit
-   (Tage, Stunden, Minuten) und wie viele SuS schon geantwortet haben
-   (neue Antworten erscheinen alle 30 Sekunden ohne Neuladen);
-   wer noch nicht geantwortet hat, steht mit „noch keine Antwort“ in
-   der Wunschliste. **„Wunschrunde jetzt beenden“** schließt die
-   Umfrage vorzeitig (nach Rückfrage) – die bis dahin abgegebenen
-   Wünsche bleiben erhalten und werden ganz normal weiterverwendet.
-3. **Wünsche verwalten**: Die Klassenleitung sieht die eingehenden
-   Wünsche live, inkl. 🤝-Symbol
-   für wechselseitige Wünsche. Wünsche zählen automatisch, eine
-   Bestätigung ist nicht nötig. Über einen Schalter lässt sich jeder
-   einzelne Wunsch **deaktivieren** und wieder aktivieren – er bleibt
-   dabei gespeichert, zählt aber nicht für die Planung. Ist bereits ein
-   Plan zu sehen, zeigt er die Auswirkung sofort an.
-4. Zusätzlich können **Zwangspaare** (muss/darf nicht zusammensitzen)
-   und **feste Plätze** gesetzt werden – diese haben immer Vorrang vor
-   Schülerwünschen. Ein Paar kann nie gleichzeitig Zwang und Verbot
-   sein. Feste Plätze gibt es in zwei Varianten: eine grobe
-   Bereichsvorgabe (vorne = die ersten zwei Reihen, hinten, links,
-   rechts) über die Auswahl, oder
-   ein **genauer Platz** per Klick auf die Sitzkarte unter „Feste
-   Plätze“ – die Karte zeigt dieselben Koordinaten wie der generierte
-   Plan/der Shuffler (`seats_dict[raum]`) und passt sich damit
-   automatisch an die tatsächliche Bestuhlung des Raums an. Ein
-   exakter Platz kann immer nur einer Person zugewiesen sein (Konflikt
-   wird abgelehnt), eine grobe Bereichsvorgabe darf mehrere SuS
-   gleichzeitig betreffen.
-5. **Übernahme vom letzten Plan**: Beim Start einer neuen Wunschrunde
-   für dieselbe Klasse+Raum bietet eine Checkbox an, Zwangspaare,
-   Verbote und feste Plätze vom zuletzt gespeicherten Plan zu
-   übernehmen (voreingestellt an, wenn ein Plan existiert) – erspart
-   das erneute Eintippen bei wiederkehrenden Wunschrunden. Bewusst nur
-   für dieselbe Klasse+Raum-Kombination, da die Koordinaten fester
+Die Seite hat zwei Ansichten. Lange Erklärungen sind zugeklappt
+(„Wie funktioniert das?“), ebenso „Vorgaben“ und „Frühere Sitzpläne“.
+Die Seite spricht die Lehrkraft mit „Sie“ an.
+
+1. **Startansicht**: zeigt den aktuell gespeicherten Plan mit den
+   Knöpfen „Neuer Sitzplan“, „Plan ändern“ und „Drucken“. Darunter liegen
+   aufklappbar „Frühere Sitzpläne“ und, wo die Klassenleitung die Tische
+   ändern darf, der Link „Tische im Raum ändern“. Hat der Raum weniger
+   Plätze als die Klasse SuS, lässt sich kein neuer Plan beginnen.
+2. **Neuer Sitzplan** fragt, wie der Plan entstehen soll:
+   - **Mit Wünschen der Klasse**: legt eine Umfrage an und startet einen
+     Timer (einstellbar 1–60 Tage, Standard 4). Die SuS sehen sie ganz
+     normal über `print_current_polls()` und wählen bis zu drei
+     gleichberechtigte Wunschpartner sowie optional eine Person, neben der
+     sie nicht sitzen möchten. Solange die Runde läuft, zeigt die Seite die
+     Restlaufzeit und wie viele SuS schon geantwortet haben (neue Antworten
+     erscheinen alle 30 Sekunden ohne Neuladen). „Wunschrunde jetzt
+     beenden“ schließt die Umfrage vorzeitig (nach Rückfrage); die bis
+     dahin abgegebenen Wünsche bleiben erhalten.
+   - **Zufällig**: ohne Umfrage, der Plan wird sofort gewürfelt. Vorgaben
+     gelten trotzdem.
+   - **Von Hand**: alle SuS stehen zunächst unter „Noch ohne Platz“; ein
+     Klick auf einen Namen und dann auf einen Platz setzt die Person dort
+     hin.
+3. **Arbeitsansicht** (alle drei Wege und „Plan ändern“): Bei einer
+   Wunschrunde zeigt eine Schrittleiste „Wünsche sammeln – Plan bauen –
+   Speichern“. Die Klassenleitung sieht die Wünsche live, inkl.
+   🤝-Symbol für wechselseitige Wünsche. Wünsche zählen automatisch; über
+   einen Schalter lässt sich jeder einzelne Wunsch **deaktivieren** und
+   wieder aktivieren. „Plan würfeln“ bzw. „Neu würfeln“ lässt den
+   Algorithmus (client-seitig, siehe unten) mehrere Versuche rechnen und
+   zeigt die Trefferquote an.
+4. **Von Hand nachbessern**: Jede Person lässt sich per Ziehen auf einen
+   anderen Platz setzen (tauscht mit der Person dort oder verschiebt auf
+   einen freien Platz), oder man klickt sie an und dann den Zielplatz.
+   Eine angeklickte Person lässt sich außerdem „Vom Platz nehmen“ oder mit
+   „📌 Platz festhalten“ fest auf ihren jetzigen Platz setzen. Markierungen
+   und Trefferquote werden sofort neu berechnet. Umgesetzt mit
+   Pointer-Events, funktioniert also auch per Finger oder Stift. Jeder Zug
+   lässt sich mit „Rückgängig“ zurücknehmen, auch mehrfach. Wurde von Hand
+   geändert, fragt „Neu würfeln“ vorher nach. Grün ist, wer einen
+   Wunschpartner neben sich hat, rötlich, bei wem etwas nicht erfüllt ist
+   (Grund in der Liste darunter); rot hat Vorrang.
+5. **Vorgaben** (aufklappbar, die Zahl steht in der Überschrift) haben
+   immer Vorrang vor Schülerwünschen:
+   - **Paare**: „müssen zusammensitzen“ und „dürfen nicht
+     zusammensitzen“. Ein Paar kann nie gleichzeitig beides sein.
+   - **Feste Plätze**: eine grobe Bereichsvorgabe (vorne = die ersten
+     zwei Reihen, hinten, links, rechts) über die Auswahl, oder ein
+     **genauer Platz** mit „📌 Platz festhalten“ im Plan. Ein genauer
+     Platz kann immer nur einer Person gehören, eine Bereichsvorgabe darf
+     mehrere SuS betreffen.
+   - **Verteilung im Raum**: Listen von SuS (Liste A, B, …). Wer auf
+     derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch,
+     nicht direkt davor oder dahinter und nicht schräg daneben. Wünsche
+     innerhalb einer Liste zählen nicht (🔒), „Muss zusammen“ geht vor.
+     Die Listen gehören zur Klasse und sind nur für die Klassenleitung
+     sichtbar.
+
+   Vorgaben gelten, bis die Klassenleitung sie ändert: Jeder neue Plan
+   und „Plan ändern“ übernehmen den zuletzt eingestellten Stand für
+   dieselbe Klasse+Raum, auch wenn der Plan, in dem sie geändert wurden,
+   verworfen wird. Bewusst je Klasse+Raum, da die Koordinaten fester
    Plätze raumspezifisch sind.
-6. **Sitzplan erzeugen** lässt einen Algorithmus (client-seitig, siehe
-   unten) mehrere Versuche rechnen und zeigt die Trefferquote
-   transparent an. „Neu würfeln“ rechnet erneut.
-7. **Von Hand nachbessern**: Im erzeugten Plan lässt sich jede Person
-   per Ziehen auf einen anderen Platz setzen (tauscht mit der Person
-   dort oder verschiebt auf einen freien Platz). Markierungen und
-   Trefferquote werden danach sofort neu berechnet – verletzt die
-   Änderung eine feste Platzvorgabe oder einen Wunsch, ist das
-   sichtbar, wird aber nicht verhindert. Umgesetzt mit Pointer-Events,
-   funktioniert also auch per Finger oder Stift. Jeder Zug lässt sich
-   über „Letzten Zug rückgängig“ zurücknehmen, auch mehrfach. Wurde von
-   Hand geändert, fragt „Neu würfeln“ vorher nach. Im Plan ist grün, wer
-   einen Wunschpartner neben sich hat, rötlich, bei wem etwas nicht
-   erfüllt ist (Grund in der Liste darunter) – rot hat Vorrang.
-8. **Speichern** schließt die Wunschrunde automatisch (falls noch nicht
-   geschehen) und macht den Plan zum aktuellen, für SuS sichtbaren
-   Sitzplan. Er bleibt danach auf der Seite sichtbar.
-9. **Gespeicherte Sitzpläne**: jeder gespeicherte Plan bleibt in einer
-   Historie erhalten – einzeln für SuS anzeigbar (auch ältere, nicht
-   nur der aktuellste), löschbar (z. B. bei Versehen; nicht, solange er
-   gerade bearbeitet wird) und über
-   „Bearbeiten“ erneut editierbar. Beim Bearbeiten wird die gespeicherte
-   Sitzordnung geladen und lässt sich per Ziehen anpassen oder neu
-   würfeln – ohne neue Umfrage, auf Basis der bereits erhobenen Wünsche.
-10. **Drucken**: Die SuS-Ansicht hat einen „Drucken“-Knopf, im
-   Sitzplanhelfer öffnet „Sitzplan drucken“ sie direkt mit Druckdialog
-   (`?print=1`). Gedruckt wird nur Überschrift, Tafel und Sitzplätze,
-   auf eine A4-Seite quer skaliert, ohne Dashboard-Menü und
-   Hintergrund.
+6. **Speichern** schließt eine laufende Wunschrunde automatisch und macht
+   den Plan zum aktuellen Sitzplan. Bleiben SuS ohne Platz, fragt die
+   Seite vorher nach. Danach zeigt die Startansicht den neuen Plan.
+   **Verwerfen** (mit Rückfrage) wirft nur den offenen Plan weg; der
+   gespeicherte Plan und die Vorgaben bleiben.
+7. **Plan ändern** öffnet den gespeicherten Plan in der Arbeitsansicht,
+   ohne neue Umfrage und auf Basis der bereits erhobenen Wünsche.
+   Gespeichert wird er als neuer aktueller Plan, der bisherige bleibt
+   unter „Frühere Sitzpläne“.
+8. **Frühere Sitzpläne**: Jeder gespeicherte Plan bleibt erhalten, ist
+   einzeln anzeigbar und löschbar (z. B. bei Versehen; nicht, solange er
+   gerade geändert wird).
+9. **Drucken** öffnet die Ansicht ohne Wünsche direkt mit Druckdialog
+   (`?print=1`). Gedruckt werden nur Überschrift, Tafel und Plätze, auf
+   eine A4-Seite quer skaliert, ohne Dashboard-Menü und Hintergrund.
+
+Jeder Platz zeigt wie im Shuffler oben das Foto (aus der Nextcloud) und
+darunter den ganzen Namen, Vor- und Nachname je in einer Zeile. Passt ein
+Name nicht, wird erst die Schrift kleiner, dann das Foto; abgeschnitten
+wird nichts. Ist ein Raum für den Bildschirm zu breit, lässt er sich
+seitlich verschieben, damit die Namen lesbar bleiben.
+
+## Zufallsgruppen
+
+`/zufallsgruppen/<klasse>` mischt für eine Gruppenarbeit Gruppen einer
+wählbaren Größe (geht es nicht auf, werden einige Gruppen größer oder
+kleiner), wahlweise mit Jungen und Mädchen gemischt oder getrennt. Fehlende
+SuS lassen sich antippen und werden dann nicht eingeteilt. Es gibt eine
+Ansicht für den Beamer. Die Seite können alle Lehrkräfte der Klasse
+nutzen; die zuletzt gemischten Gruppen sieht nur, wer gemischt hat. Die
+Klassenleitung kann zusätzlich die Listen für die Verteilung im Raum und
+die Zwangspaare berücksichtigen lassen; anderen Lehrkräften werden diese
+gar nicht erst übertragen.
 
 ## Datenmodell (Neo4j)
 
-- **`SeatingCycle`**: ein Durchlauf pro Klasse+Raum. Enthält
-  `poll_id`/`poll_run_id` (verweist auf die zugehörige, ganz normale
-  Umfrage), `forced_pairs`/`forbidden_pairs`/`fixed_rules` (JSON), und
+- **`SeatingCycle`**: ein Durchlauf pro Klasse+Raum. Enthält `mode`
+  (`random`/`manual` für Pläne ohne Umfrage, fehlt bei Wunschrunden),
+  bei Wunschrunden `poll_id`/`poll_run_id` (verweist auf die zugehörige,
+  ganz normale Umfrage), `forced_pairs`/`forbidden_pairs`/`fixed_rules`
+  (JSON), und
   nach dem Speichern zusätzlich `seats` (E-Mail → Sitzplatz-Index),
   `unresolved` (nicht erfüllte Vorgaben mit Begründung),
   `satisfied_emails` und `saved_at`. Pro Klasse+Raum ist immer nur
   **ein** Zyklus gleichzeitig offen (`saved_at IS NULL`).
+- **`SeatingRules`** (`key` = `<klasse>/<raum>`): die geltenden
+  Vorgaben, nach jeder Änderung aus dem offenen Zyklus übernommen. Neue
+  Pläne starten von hier (fehlt der Knoten, vom zuletzt gespeicherten
+  Plan).
+- **`SeatingGroups`** (`klasse`): die Listen für die Verteilung im Raum.
+- **`RandomGroups`** (`key` = `<E-Mail>/<klasse>`): die zuletzt
+  gemischten Zufallsgruppen einer Lehrkraft.
 - **`SeatWish`**: nur die Lehrkraft-Entscheidung pro Wunsch
   (`want1_status`/`want2_status`/`want3_status`/`avoid1_status`,
   Status `pending` = aktiv oder `rejected` = deaktiviert). Die eigentlichen Wunschdaten
@@ -109,15 +154,18 @@ jeder anderen Umfrage im Dashboard.
 Den Sitzplan einer Klasse macht ihre Klassenleitung, und zwar für den
 Klassenraum.
 
-- **Helfer, Shuffler, Editor, Verteilen**: nur die Klassenleitung der
+- **Sitzplan-Seite, Shuffler, Editor**: nur die Klassenleitung der
   eigenen Klasse oder Admin (`sph_can_manage?`,
   `require_sitzplan_klassenleitung!`), auf den Seiten und in allen
   Endpunkten. Den Editor bekommt die Klassenleitung nur für den
   Klassenraum, Admins auch für Fachräume.
 - **Ansehen**: Die übrigen Lehrkräfte der Klasse sehen im Klassenbereich
-  „Sitzplan ansehen“, also die SuS-Ansicht (`sph_can_view?`).
-- Die öffentliche SuS-Ansicht (`sitzplananzeige.html`) zeigt nur Namen
-  und Plätze, nie Wünsche/Paare/Regeln ("Lehrergeheimnis").
+  „Sitzplan Raum …“, die Ansicht ohne Wünsche (`sitzplananzeige.html`,
+  `sph_can_view?`). Sie zeigt nur Namen, Fotos und Plätze, nie
+  Wünsche, Vorgaben oder Listen.
+- **SuS** sehen den Sitzplan im Dashboard nicht, weder die Seite noch den
+  Endpunkt `sph_get_public_plan`.
+- **Zufallsgruppen**: alle Lehrkräfte der Klasse (`zg_can_use?`).
 
 ## Algorithmus (client-seitig, `sitzplanhelfer.html`)
 
@@ -145,12 +193,14 @@ Klassenraum.
    solche Vorgaben bekamen alle Bevorzugten ihren Wunsch. Wer seinen
    Wunsch letztes Mal bekam, tritt etwas zurück (Fairness über mehrere
    Runden hinweg). In der Wunschtabelle und im erzeugten Plan
-   kennzeichnet 👑 die Bevorzugten. Maßstab ist immer der
-   zuletzt gespeicherte, für SuS sichtbare Plan vor dieser Runde; wird
-   ein gespeicherter Plan nachträglich bearbeitet, dessen Vorgänger
-   (sonst würde der Plan mit sich selbst verglichen). Dasselbe gilt für
-   die Rotation vorne/hinten. Wer in dieser Runde bevorzugt wird, zeigt
-   der Sitzplanhelfer offen als Namensliste über den Wünschen an.
+   kennzeichnet 👑 die Bevorzugten. Maßstab ist der zuletzt gespeicherte
+   Plan mit Wünschen vor dieser Runde; zufällig oder von Hand gesetzte
+   Pläne dazwischen zählen dafür nicht, weil sie keine Wünsche hatten.
+   Wird ein gespeicherter Plan nachträglich geändert, gilt dessen
+   Vorgänger (sonst würde der Plan mit sich selbst verglichen). Für die
+   Rotation vorne/hinten zählt der zuletzt gespeicherte Plan jeder Art.
+   Wer in dieser Runde bevorzugt wird, zeigt die Seite offen als
+   Namensliste über den Wünschen an.
 4. Das Ganze läuft 10-mal unabhängig mit neuem Zufall, das beste
    Ergebnis wird übernommen.
 
@@ -168,16 +218,14 @@ Der Sitzplanhelfer setzt voraus, dass für den Raum eine Bestuhlung
 hinterlegt ist. Fehlt sie, erscheint ein entsprechender Hinweis statt
 eines Plans.
 
-## Sitz-Editor und manuelles Verteilen
+## Sitz-Editor
 
-- **Sitzplan-Editor** (`/sitzplaneditor/<klasse>/<raum>`): Plätze per
-  Klick setzen und entfernen, nebeneinanderliegende Plätze werden Tische;
-  Modus „Längs“ für U-Formen (Blickrichtung als dritter Wert eines
-  Platzes). Darf nur die Klassenleitung im eigenen Klassenraum, Fachräume
-  nur Admins, weil die Bestuhlung für alle Klassen im Raum gilt.
-- **Verteilen** (`/sitzplanverteilen/<klasse>/<raum>`): Namen per Klick
-  auf Plätze setzen. Gespeichert als `SeatingCycle` wie beim
-  Sitzplanhelfer, erscheint also in dessen Historie und in der SuS-Ansicht.
+**Sitzplan-Editor** (`/sitzplaneditor/<klasse>/<raum>`, auf der
+Sitzplan-Seite „Tische im Raum ändern“): Plätze per Klick setzen und
+entfernen, nebeneinanderliegende Plätze werden Tische; Modus „Längs“ für
+U-Formen (Blickrichtung als dritter Wert eines Platzes). Darf nur die
+Klassenleitung im eigenen Klassenraum, Fachräume nur Admins, weil die
+Bestuhlung für alle Klassen im Raum gilt.
 
 ## Sitzdaten
 
@@ -217,11 +265,13 @@ Einträge weiterhin im Seitenquelltext.
 | Datei | Zweck |
 |---|---|
 | `src/ruby/include/sitzplanhelfer.rb` | alle API-Endpunkte + Berechtigungs-Helper |
-| `src/static/sitzplanhelfer.html` | Lehrkraft-Oberfläche inkl. Algorithmus |
-| `src/static/sitzplananzeige.html` | wunschfreie SuS-Ansicht (auch für ältere, gespeicherte Pläne per `?cycle=`) |
+| `src/static/sitzplanhelfer.html` | Sitzplan-Seite der Klassenleitung inkl. Algorithmus |
+| `src/static/sitzplananzeige.html` | Ansicht ohne Wünsche für die Lehrkräfte der Klasse, auch zum Drucken (auch für ältere, gespeicherte Pläne per `?cycle=`) |
+| `src/ruby/include/zufallsgruppen.rb`, `src/static/zufallsgruppen.html` | Zufallsgruppen |
 | `src/ruby/include/sitzplan_daten.rb` | Sitzdaten lesen und schreiben, siehe oben |
 | `src/ruby/migrate-sitzplan.rb` | einmalige Umwandlung der alten Dateien |
-| `src/ruby/include/sitzplaneditor.rb` | Endpunkte von Editor und Verteilen, Klassenraum-Ermittlung |
-| `src/static/sitzplaneditor.html`, `sitzplanverteilen.html` | Editor und Verteilen |
+| `src/ruby/include/sitzplaneditor.rb` | Endpunkt des Editors, Klassenraum-Ermittlung |
+| `src/static/sitzplaneditor.html` | Editor |
+| `src/static/sitzplanverteilen.html` | leitet die alte Adresse von „Verteilen“ auf die Sitzplan-Seite weiter |
 | `src/ruby/main.rb` | `require`-Zeilen, Wochenstunden pro Klasse und Raum |
-| `src/static/directory.html` | für den Klassenraum Editor, Shuffler, Helfer, Verteilen unter der Rubrik „Sitzplan“ (Klassenraum: Raum mit mindestens 20 Wochenstunden der Klasse, sonst der mit den meisten; jede Stunde zählt einmal, auch bei Teilung) |
+| `src/static/directory.html` | für den Klassenraum „Sitzplan“ und „Shuffler“, dazu „Zufallsgruppen“, unter der Rubrik „Sitzplan und Gruppen“ (Klassenraum: Raum mit mindestens 20 Wochenstunden der Klasse, sonst der mit den meisten; jede Stunde zählt einmal, auch bei Teilung) |

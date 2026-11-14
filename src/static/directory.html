@@ -155,30 +155,39 @@ document.addEventListener('DOMContentLoaded', function() {
             // Der Sitzplan einer Klasse gehört zu ihrem Klassenraum. Fach- und
             // Teilungsräume erscheinen hier nicht, auch wenn sie eine Bestuhlung haben.
             let rooms = new Set(klassenraeume);
-            let first_room = true;
+            let zg_allowed = '#{zg_can_use?(klasse)}' === 'true';
+            let rows = [];
             for (let raum of [...rooms].sort()) {
                 let layout = sp_seats[raum];
                 let too_small = layout && n > layout.length;
-                let buttons = [];
                 // Plätze auf halben Positionen kann der Editor nicht darstellen
                 let half_positions = layout && layout.some(s => s[0] % 1 !== 0 || s[1] % 1 !== 0);
-                if (editor_rooms.indexOf(raum) >= 0 && !half_positions)
-                    buttons.push(['Editor', '/sitzplaneditor', 'btn-outline-secondary']);
-                // Den Sitzplan macht die Klassenleitung; die übrigen Lehrkräfte
-                // können den gespeicherten Plan nur ansehen.
-                if (layout && is_klassenleitung) {
-                    buttons.push(['Shuffler', '/sitzplan', 'btn-primary', too_small]);
-                    buttons.push(['Helfer', '/sitzplanhelfer', 'btn-outline-primary', too_small]);
-                    buttons.push(['Verteilen', '/sitzplanverteilen', 'btn-outline-primary']);
+                let can_edit_room = editor_rooms.indexOf(raum) >= 0 && !half_positions;
+                let buttons = [];
+                // Den Sitzplan macht die Klassenleitung auf der Sitzplan-Seite
+                // (dort auch „Tische im Raum ändern“); die übrigen Lehrkräfte
+                // sehen den gespeicherten Plan. Der Shuffler bleibt, wie er ist.
+                if (is_klassenleitung) {
+                    if (layout || can_edit_room) buttons.push(['Sitzplan', '/sitzplanhelfer', 'btn-primary']);
+                    if (layout) buttons.push(['Shuffler', '/sitzplan', 'btn-outline-primary', too_small]);
                 } else if (layout) {
-                    buttons.push(['Sitzplan ansehen', '/sitzplananzeige', 'btn-outline-primary']);
+                    buttons.push(['Sitzplan', '/sitzplananzeige', 'btn-outline-primary']);
                 }
-                if (buttons.length === 0) continue;
-                if (first_room) {
-                    $(`<hr>`).appendTo('#additional_teacher_content');
-                    $(`<h3>`).text('Sitzplan').appendTo('#additional_teacher_content');
-                    first_room = false;
-                }
+                let hint = null;
+                if (!layout && is_klassenleitung)
+                    hint = can_edit_room ? 'Für diesen Raum sind noch keine Tische angelegt. Das geht auf der Sitzplan-Seite.'
+                                         : 'Für diesen Raum sind noch keine Tische angelegt.';
+                else if (too_small && is_klassenleitung)
+                    hint = `Zu wenige Plätze: Raum ${raum} hat ${layout.length} Plätze, die Klasse ${n} Schülerinnen und Schüler. ` +
+                        (can_edit_room ? 'Weitere Plätze legen Sie auf der Sitzplan-Seite unter „Tische im Raum ändern“ an.' : 'Die Tische dieses Raums kann nur die Administration ändern.');
+                if (buttons.length === 0 && !hint) continue;
+                rows.push([raum, buttons, hint]);
+            }
+            if (rows.length > 0 || zg_allowed) {
+                $(`<hr>`).appendTo('#additional_teacher_content');
+                $(`<h3>`).text(zg_allowed ? 'Sitzplan und Gruppen' : 'Sitzplan').appendTo('#additional_teacher_content');
+            }
+            for (let [raum, buttons, hint] of rows) {
                 let group = $(`<div>`).css('margin', '0 0 0.5em 0');
                 for (let [label, path, cls, disabled] of buttons) {
                     let a = $(`<a>`).text(`${label} Raum ${raum}`).addClass(`btn ${cls}`).css('margin', '0 0.3em 0.3em 0');
@@ -188,12 +197,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         a.attr('href', `${path}/#{klasse}/${raum}`);
                     a.appendTo(group);
                 }
-                if (!layout)
-                    $(`<span>`).addClass('text-muted').css('margin-left', '0.3em').text('Für diesen Raum ist noch keine Bestuhlung angelegt.').appendTo(group);
-                else if (too_small && is_klassenleitung)
-                    $(`<div>`).addClass('text-muted').text(`Zu wenige Plätze: Raum ${raum} hat ${layout.length} Plätze, die Klasse ${n} Schülerinnen und Schüler. Shuffler und Helfer brauchen für alle einen Platz. ` +
-                        (editor_rooms.indexOf(raum) >= 0 ? 'Legen Sie im Editor weitere Plätze an.' : 'Die Bestuhlung dieses Raums kann nur die Administration ändern.')).appendTo(group);
+                if (hint) $(`<div>`).addClass('text-muted').text(hint).appendTo(group);
                 group.appendTo('#additional_teacher_content');
+            }
+            // Zufallsgruppen für Gruppenarbeiten: unabhängig vom Raum, für
+            // alle Lehrkräfte der Klasse.
+            if (zg_allowed) {
+                $(`<div>`).css('margin', '0 0 0.5em 0').append(
+                    $(`<a>`).text('Zufallsgruppen').addClass('btn btn-outline-primary')
+                        .css('margin', '0 0.3em 0.3em 0')
+                        .attr('href', `/zufallsgruppen/${encodeURIComponent('#{klasse}')}`)
+                ).appendTo('#additional_teacher_content');
             }
         }
         $('.bu-toggle-dashboard-amt').on('click', function(e) {

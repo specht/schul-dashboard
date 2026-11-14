@@ -152,6 +152,7 @@ require './include/school_wifi.rb'
 require './include/sitzplan_daten.rb'
 require './include/sitzplaneditor.rb'
 require './include/sitzplanhelfer.rb'
+require './include/zufallsgruppen.rb'
 require './include/sms.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
@@ -347,8 +348,11 @@ class SetupDatabase
         'Projekttage/nr',
         'PublicEventPerson/tag',
         'PublicEventTrack/track',
+        'RandomGroups/key',
         'SchulTablet/code',
         'SeatingCycle/id',
+        'SeatingGroups/klasse',
+        'SeatingRules/key',
         'SecondLoginCode/tag',
         'SelfTestDay/datum',
         'Session/sid',

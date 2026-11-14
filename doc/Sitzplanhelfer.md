@@ -14,7 +14,7 @@ Auf der Klassenseite steht im Abschnitt „Sitzplan“ je Klassenraum ein
 Knopf „Sitzplan Raum …“: für die Klassenleitung diese Seite, für die
 übrigen Lehrkräfte der Klasse die Ansicht ohne Wünsche (siehe unten).
 Den unveränderten Shuffler öffnet die Klassenleitung über den Knopf
-„Shuffler“ auf dieser Seite. Getrennt davon steht im Abschnitt
+„Shuffler“ oben auf dieser Seite. Getrennt davon steht im Abschnitt
 „Gruppenbildung“ für alle Lehrkräfte der Klasse „Gruppen bilden“, ein
 eigenes Werkzeug ohne Bezug zum Sitzplan. Die früheren Knöpfe „Editor“,
 „Helfer“ und „Verteilen“ gibt es nicht mehr: Die Tische ändert man über
@@ -28,14 +28,15 @@ Die Seite hat zwei Ansichten. Lange Erklärungen sind zugeklappt
 („Wie funktioniert das?“), ebenso „Vorgaben“ und „Frühere Sitzpläne“.
 Die Seite spricht die Lehrkraft mit „Sie“ an.
 
-1. **Startansicht**: Ganz oben steht als erster Schritt der Raum mit
-   der Zahl der Plätze und, wo die Klassenleitung die Tische ändern darf,
-   „Tische im Raum ändern“ (gelb hervorgehoben, wenn Plätze fehlen;
-   „Tische anlegen“, wenn es noch keine gibt). Darunter der aktuell
-   gespeicherte Plan mit den Knöpfen „Neuer Sitzplan“, „Plan ändern“,
-   „Drucken“ und „Shuffler“, darunter aufklappbar „Frühere Sitzpläne“.
-   Hat der Raum weniger Plätze als die Klasse SuS, lässt sich kein neuer
-   Plan beginnen und der Shuffler nicht öffnen.
+1. **Startansicht**: Ganz oben steht in jeder Ansicht, auch während
+   einer Wunschrunde, eine Leiste mit dem Raum und der Zahl der Plätze,
+   „Tische im Raum ändern“ (wo die Klassenleitung die Tische ändern darf;
+   gelb hervorgehoben, wenn Plätze fehlen; „Tische anlegen“, wenn es noch
+   keine gibt) und „Shuffler“. Darunter der aktuell gespeicherte Plan mit
+   den Knöpfen „Neuer Sitzplan“, „Plan ändern“ und „Drucken“, darunter
+   aufklappbar „Frühere Sitzpläne“. Hat der Raum weniger Plätze als die
+   Klasse SuS, lässt sich kein neuer Plan beginnen und der Shuffler nicht
+   öffnen.
 2. **Neuer Sitzplan** fragt, wie der Plan entstehen soll:
    - **Mit Wünschen der Klasse**: legt eine Umfrage an und startet einen
      Timer (einstellbar 1–60 Tage, Standard 4). Die SuS sehen sie ganz

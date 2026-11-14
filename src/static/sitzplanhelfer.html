@@ -406,11 +406,12 @@ body.dark .sph-group {
     <p><a class="btn btn-outline-secondary" id="sph_back_link" href="#"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></p>
     <p id="sph_status" class="sph-status" role="status"></p>
 
-    <!-- Der erste Schritt: die Tische im Raum. Steht oben, auch wenn man ihn
-         nicht jedes Mal braucht. -->
+    <!-- Ganz oben, in jeder Ansicht: die Tische im Raum (der erste Schritt,
+         auch wenn man ihn nicht jedes Mal braucht) und der Shuffler. -->
     <div id="sph_room_bar" class="sph-room-bar" style="display: none;">
         <span><i class="fa fa-th"></i>&nbsp;&nbsp;<span id="sph_room_info"></span></span>
         <a class="btn btn-sm btn-outline-secondary" id="sph_link_editor" href="#">Tische im Raum ändern</a>
+        <a class="btn btn-sm btn-outline-secondary" id="sph_link_shuffler" href="#" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</a>
     </div>
 
     <!-- Startansicht: der gespeicherte Plan, wie ihn die Lehrkräfte der Klasse sehen -->
@@ -420,7 +421,6 @@ body.dark .sph-group {
             <button class="btn btn-primary" id="sph_bu_new"><i class="fa fa-plus"></i>&nbsp;&nbsp;Neuer Sitzplan</button>
             <button class="btn btn-outline-primary" id="sph_bu_edit_saved">Plan ändern</button>
             <a class="btn btn-outline-secondary" id="sph_link_print" href="#" target="_blank"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</a>
-            <a class="btn btn-outline-secondary" id="sph_link_shuffler" href="#" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</a>
         </div>
         <div id="sph_new_choice" class="sph-section" style="display: none;">
             <h4>Wie soll der neue Plan entstehen?</h4>
@@ -1210,7 +1210,7 @@ function load_state(after) {
         forbidden_pairs = oc ? (oc.forbidden_pairs || []) : [];
         fixed_rules = oc ? (oc.fixed_rules || []) : [];
         $('#sph_view_start').toggle(!oc);
-        if (oc) $('#sph_room_bar').hide();
+        render_room_bar();
         $('#sph_view_work, #sph_save_row').toggle(!!oc);
         $('#sph_new_choice').hide();
         if (oc) render_work_header(oc);
@@ -1271,13 +1271,18 @@ function render_start_header(data) {
         $('#sph_start_info').text('Für diese Klasse und diesen Raum ist noch kein Sitzplan gespeichert.');
     }
     $('#sph_bu_edit_saved, #sph_link_print').toggle(!!last_cycle);
+    // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen fällt
+    // auf, dass gar nicht alle in den Raum passen.
+    $('#sph_bu_new').toggle(!!data.can_start_cycle).prop('disabled', sus.length > seats.length);
+}
+
+// Leiste ganz oben, in beiden Ansichten: Raum mit Platzzahl, „Tische im Raum
+// ändern“ und der Shuffler.
+function render_room_bar() {
     let too_small = sus.length > seats.length;
-    $('#sph_bu_new').toggle(!!data.can_start_cycle).prop('disabled', too_small);
     // Der Shuffler braucht wie jeder neue Plan einen Platz für alle.
     $('#sph_link_shuffler').toggleClass('disabled', too_small)
         .attr('aria-disabled', too_small ? 'true' : null).attr('tabindex', too_small ? '-1' : null);
-    // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen fällt
-    // auf, dass gar nicht alle in den Raum passen.
     $('#sph_room_info').text(too_small
         ? `Raum ${raum} hat nur ${seats.length} Plätze, die Klasse aber ${sus.length} SuS. ` +
           (sph_editor_allowed ? 'Legen Sie zuerst weitere Plätze an.' : 'Weitere Plätze kann nur die Administration anlegen.')
@@ -2057,6 +2062,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ? `Für Raum ${raum} sind noch keine Tische angelegt. Legen Sie sie zuerst an.`
             : `Für Raum ${raum} sind noch keine Tische angelegt. Das kann nur die Administration.`);
         $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#sph_link_shuffler').remove();
         $('#sph_room_bar').addClass('sph-room-warn').show();
         return;
     }

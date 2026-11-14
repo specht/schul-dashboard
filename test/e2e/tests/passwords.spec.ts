@@ -162,7 +162,8 @@ test('Klassenleitung beantragt; Ablehnen, Fehler des Bots landen bei der Adminis
   const failuresBefore = (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length;
   expect((await (await requestReset(kl, student.email)).json()).result).toBe('requested');
   await step(admin, (await latestCase(admin, student.email))!.id, 'approve');
-  await botFinishes(baseURL, student.email, false, 'Testfehler');
+  // the bot's messages can be long (up to 500 characters, umlauts count twice)
+  await botFinishes(baseURL, student.email, false, 'Testfehler: ' + 'Der Bot hat angehalten, Änderung prüfen ä ö ü '.repeat(12).slice(0, 480));
   await expect.poll(async () => (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length).toBe(failuresBefore + 1);
   latest = (await latestCase(kl, student.email))!;
   expect(latest.state).toBe('failed');
@@ -237,7 +238,8 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await page.locator('#bu_add_mail_case_mailbox').click();
   await expect(page.locator('#mail_case_mailboxes .mail-case-mailbox')).toHaveCount(2);
   await page.locator('#ti_mail_case_reply_to').fill(family);
-  await page.locator('#ti_mail_case_note').fill('Mail vom Vater');
+  // a real note can be long (500 characters, umlauts take two bytes each)
+  await page.locator('#ti_mail_case_note').fill('Mail vom Vater – ' + 'Größe ä ö ü '.repeat(40).slice(0, 480));
   await page.locator('#bu_create_mail_case').click();
 
   // in the list, waiting for the decision
@@ -271,7 +273,9 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await expect(modal.locator('#ta_reply_body')).toHaveValue(new RegExp(`für das Postfach und das Eltern-Postfach von ${a.name} zurückgesetzt und sende Ihnen die Zugangsdaten im Anhang`));
   await expect(modal.locator('#ta_reply_body')).toHaveValue(/Viele Grüße\n/);
   await expect(modal.locator('#reply_attachment')).toContainText(a.name);
-  await modal.locator('#ta_reply_body').fill(`Sehr geehrter Herr Postfachtest,\n\nanbei die Zugangsdaten.\n\nViele Grüße`);
+  // a real, edited letter text is far longer than the 512 bytes a request may have by default
+  const longer = 'Bitte bewahren Sie den Brief gut auf; bei Fragen wenden Sie sich gern an die Schule. '.repeat(12);
+  await modal.locator('#ta_reply_body').fill(`Sehr geehrter Herr Postfachtest,\n\nanbei die Zugangsdaten.\n\n${longer}\n\nViele Grüße`);
   await modal.locator('#bu_send_mail_case_reply').click();
   await expect(modal).toBeHidden();
   // answered: off the open list, into the history

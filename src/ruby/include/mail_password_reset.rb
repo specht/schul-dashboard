@@ -363,7 +363,8 @@ class Main < Sinatra::Base
         require_admin!
         data = parse_request_data(:required_keys => [:mailboxes], :optional_keys => [:reply_to, :note],
                                   :types => {:mailboxes => Array},
-                                  :max_value_lengths => {:reply_to => 256, :note => 500})
+                                  :max_value_lengths => {:reply_to => 256, :note => 500},
+                                  :max_body_length => 8192)
         mailboxes = data[:mailboxes].map { |x| normalize_mailbox(x) }.reject(&:empty?).uniq
         assert(!mailboxes.empty? && mailboxes.size <= MAIL_PASSWORD_CASE_MAX_MAILBOXES, 'invalid mailboxes')
         mailboxes.each do |mailbox|
@@ -522,7 +523,9 @@ class Main < Sinatra::Base
     post '/api/send_mail_password_case_reply' do
         require_admin!
         data = parse_request_data(:required_keys => [:id, :to, :subject, :body],
-                                  :max_value_lengths => {:id => 64, :to => 256, :subject => 200, :body => 10000})
+                                  :max_value_lengths => {:id => 64, :to => 256, :subject => 200, :body => 10000},
+                                  # the default 512 bytes are far too little for a letter text
+                                  :max_body_length => 32 * 1024)
         c = mail_password_case(data[:id])
         assert(c && c[:state] == 'done', 'case not done')
         recipient = data[:to].strip
@@ -653,7 +656,8 @@ class Main < Sinatra::Base
         require_mail_account_bot!
         data = parse_request_data(:required_keys => [:id, :ok], :optional_keys => [:message],
                                   :types => {:ok => Object},
-                                  :max_value_lengths => {:id => 64, :message => 500})
+                                  :max_value_lengths => {:id => 64, :message => 500},
+                                  :max_body_length => 4096)
         assert([true, false].include?(data[:ok]))
         c = finish_mail_password_case!(data[:id], data[:ok], data[:message], true)
         respond(:result => c ? 'ok' : 'not_approved')
@@ -698,7 +702,8 @@ class Main < Sinatra::Base
     # at the first surprise: paused for every machine until the admin lifts it
     post '/api/mail_account_bot/pause' do
         require_mail_account_bot!
-        data = parse_request_data(:required_keys => [:host, :reason], :max_value_lengths => {:host => 64, :reason => 500})
+        data = parse_request_data(:required_keys => [:host, :reason], :max_value_lengths => {:host => 64, :reason => 500},
+                                  :max_body_length => 4096)
         host = mail_account_bot_host(data[:host])
         row = neo4j_query(<<~END_OF_QUERY, :host => host, :reason => data[:reason], :ts => Time.now.to_i).first
             MERGE (b:MailAccountBot {key: 'bot'})

@@ -78,13 +78,15 @@ test('Bot-Zustand: höchstens zehn IONOS-Anmeldungen am Tag für alle Rechner, d
 test('Bot angehalten: keine Fälle, keine Sperre, Mail an die Administration, Freigabe auf der Seite', async ({ page, baseURL }) => {
   const api = await bot(baseURL);
   const before = await mails('Postfach-Bot angehalten');
-  await post(api, '/api/mail_account_bot/pause', { host: 'rechner-a', reason: 'Testgrund: Captcha' });
+  // a long reason (as long as the bot sends them, umlauts count twice)
+  const reason = 'Testgrund: Captcha – ' + 'Sicherheitsabfrage für Anmeldung ä ö ü '.repeat(15).slice(0, 470);
+  await post(api, '/api/mail_account_bot/pause', { host: 'rechner-a', reason });
   // a second pause keeps the first reason and sends no second mail
   await post(api, '/api/mail_account_bot/pause', { host: 'rechner-b', reason: 'zweiter Grund' });
   await expect.poll(() => mails('Postfach-Bot angehalten')).toBe(before + 1);
   const pending = await (await api.get('/api/mail_account_bot/pending')).json();
   expect(pending.cases).toEqual([]);
-  expect(pending.paused).toMatchObject({ reason: 'Testgrund: Captcha' });
+  expect(pending.paused).toMatchObject({ reason });
   expect(await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a' })).toMatchObject({ result: 'paused' });
   expect((await post(api, '/api/mail_account_bot/login_attempt', { host: 'rechner-a' })).result).toBe('paused');
 

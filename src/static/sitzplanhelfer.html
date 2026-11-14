@@ -123,20 +123,7 @@ table.sph-wishes td, table.sph-wishes th {
     font-size: 0.75em;
     font-weight: normal;
 }
-.sph-area-start {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 0.2em 1em;
-}
-.sph-wish-areas {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4em 1.2em;
-}
-.sph-wish-areas .sph-area-switch {
-    font-size: 1em;
-}
+
 .sph-area-switch .custom-control-label {
     cursor: pointer;
 }
@@ -510,20 +497,6 @@ body.dark .sph-group {
                 <p class="sph-legend">Die SuS geben im Dashboard bis zu drei Wunschpartner an. Danach erzeugen Sie den Plan; Ihre Vorgaben (unten) gelten dabei weiter.</p>
                 <p><label for="sph_duration_days">Dauer der Umfrage:</label>
                     <input type="number" id="sph_duration_days" class="form-control sph-days" min="1" max="60" value="4"> Tage</p>
-                <p class="sph-wish-areas"><strong>Berücksichtigen:</strong>
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_wish_area_pairs" data-area="pairs" data-mode="wishes">
-                        <label class="custom-control-label" for="sph_wish_area_pairs">Paare</label>
-                    </span>
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_wish_area_fixed" data-area="fixed" data-mode="wishes">
-                        <label class="custom-control-label" for="sph_wish_area_fixed">Feste Plätze</label>
-                    </span>
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_wish_area_spread" data-area="spread" data-mode="wishes">
-                        <label class="custom-control-label" for="sph_wish_area_spread">Verteilung im Raum</label>
-                    </span>
-                </p>
                 <button class="btn btn-primary" id="sph_bu_start_cycle">Wunschrunde starten</button>
             </div>
         </div>
@@ -582,16 +555,6 @@ body.dark .sph-group {
                     <input type="checkbox" class="custom-control-input" id="sph_area_pairs" data-area="pairs">
                     <label class="custom-control-label" for="sph_area_pairs">berücksichtigen</label>
                 </span>
-                <span class="sph-area-start">
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_start_area_spread_pairs" data-area="pairs" data-mode="spread">
-                        <label class="custom-control-label" for="sph_start_area_spread_pairs">bei „Im Raum verteilen“</label>
-                    </span>
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_start_area_wishes_pairs" data-area="pairs" data-mode="wishes">
-                        <label class="custom-control-label" for="sph_start_area_wishes_pairs">bei der Wunschrunde</label>
-                    </span>
-                </span>
             </h5>
             <div class="form-inline">
                 <select class="form-control" id="sph_pair_a"></select>
@@ -607,16 +570,6 @@ body.dark .sph-group {
                 <span class="sph-area-switch custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="sph_area_fixed" data-area="fixed">
                     <label class="custom-control-label" for="sph_area_fixed">berücksichtigen</label>
-                </span>
-                <span class="sph-area-start">
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_start_area_spread_fixed" data-area="fixed" data-mode="spread">
-                        <label class="custom-control-label" for="sph_start_area_spread_fixed">bei „Im Raum verteilen“</label>
-                    </span>
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_start_area_wishes_fixed" data-area="fixed" data-mode="wishes">
-                        <label class="custom-control-label" for="sph_start_area_wishes_fixed">bei der Wunschrunde</label>
-                    </span>
                 </span>
             </h5>
             <div class="form-inline">
@@ -637,16 +590,6 @@ body.dark .sph-group {
                 <span class="sph-area-switch custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="sph_area_spread" data-area="spread">
                     <label class="custom-control-label" for="sph_area_spread">berücksichtigen</label>
-                </span>
-                <span class="sph-area-start">
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_start_area_spread_spread" data-area="spread" data-mode="spread">
-                        <label class="custom-control-label" for="sph_start_area_spread_spread">bei „Im Raum verteilen“</label>
-                    </span>
-                    <span class="sph-area-switch custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="sph_start_area_wishes_spread" data-area="spread" data-mode="wishes">
-                        <label class="custom-control-label" for="sph_start_area_wishes_spread">bei der Wunschrunde</label>
-                    </span>
                 </span>
             </h5>
             <p class="sph-legend">Wer auf derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch, nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt auch ganz ohne Wünsche, mit „Im Raum verteilen“ oben. Gibt es Wünsche, zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht vor. Die Listen sehen nur Sie.</p>
@@ -964,7 +907,7 @@ function render_rules() {
 // Werkzeug, nach dem sich die Schalter richten: das des offenen Plans (bei
 // „Plan ändern“ das, mit dem er entstanden ist); ohne offenen Plan keins.
 function current_area_mode() {
-    if (!open_cycle_id) return null;
+    if (!open_cycle_id) return $('#sph_new_choice').is(':visible') ? 'wishes' : null;
     return open_mode === 'edit' ? base_mode : open_mode;
 }
 
@@ -991,24 +934,18 @@ function with_active_rules(fn) {
 
 const SPH_AREAS = ['pairs', 'fixed', 'spread'];
 
-// Schalter „berücksichtigen“ an den Bereichen der Vorgaben. Sie gelten für das
-// Werkzeug des offenen Plans; ohne offenen Plan gibt es keine.
+// Schalter „berücksichtigen“ an den Bereichen der Vorgaben, einer je Bereich.
+// Er gilt für das gewählte Werkzeug: das des offenen Plans oder die
+// Wunschrunde, solange ihr Kasten offen ist; sonst gibt es keinen.
 function render_areas() {
     let mode = current_area_mode();
-    $('.sph-area-start').toggle(!mode);
     for (let area of SPH_AREAS) {
-        // Startseite: je Werkzeug ein Schalter direkt am Bereich
-        for (let tool of ['spread', 'wishes']) {
-            $(`#sph_start_area_${tool}_${area}`).prop('checked', area_on(tool, area));
-        }
         let box = $(`#sph_area_${area}`);
         box.closest('.sph-area-switch').toggle(!!mode);
         let on = !mode || area_on(mode, area);
         box.prop('checked', on);
         box.siblings('label').text(on ? 'berücksichtigen' : 'nicht berücksichtigen');
         box.closest('h5').toggleClass('sph-area-off', !on);
-        // im Kasten der Wunschrunde: immer deren Einstellung
-        $(`#sph_wish_area_${area}`).prop('checked', area_on('wishes', area));
     }
 }
 
@@ -1534,6 +1471,7 @@ function render_room_bar() {
     $('#sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes').removeClass('btn-primary').addClass('btn-outline-primary').attr('aria-pressed', 'false');
     if (active) $(active).removeClass('btn-outline-primary').addClass('btn-primary').attr('aria-pressed', 'true');
     if (open_cycle_id) $('#sph_new_choice').hide();
+    render_areas();
 }
 
 // Kopf der Arbeitsansicht: woher der Plan kommt und was als Nächstes zu tun ist.
@@ -2398,9 +2336,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (open_mode === 'wishes') return;
         if (!open_cycle_id) {
             $('#sph_new_choice').toggle();
+            render_areas();
             return;
         }
-        replace_open_plan('Wunschrunde', 'Verwerfen und Wunschrunde vorbereiten', function () { $('#sph_new_choice').show(); });
+        replace_open_plan('Wunschrunde', 'Verwerfen und Wunschrunde vorbereiten', function () { $('#sph_new_choice').show(); render_areas(); });
     });
     // Im Raum verteilen: ohne Umfrage sofort nach den Vorgaben gewürfelt.
     $('#sph_bu_start_spread').click(function () {
@@ -2556,7 +2495,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Kasten der Seite (dessen Unschärfe-Filter würde sie dort festhalten).
     $('#sph_selection_bar').appendTo('body');
     $('.sph-area-switch input').on('change', function (e) {
-        let mode = $(e.currentTarget).data('mode') || current_area_mode();
+        let mode = current_area_mode();
         if (!mode) return;
         let area = $(e.currentTarget).data('area');
         let active = $(e.currentTarget).is(':checked');

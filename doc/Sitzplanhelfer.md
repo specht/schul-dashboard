@@ -17,9 +17,8 @@ Den unveränderten Shuffler öffnet die Klassenleitung über den Knopf
 „Shuffler“ oben auf dieser Seite. Getrennt davon steht im Abschnitt
 „Gruppenbildung“ für alle Lehrkräfte der Klasse „Gruppen bilden“, ein
 eigenes Werkzeug ohne Bezug zum Sitzplan. Die früheren Knöpfe „Editor“,
-„Helfer“ und „Verteilen“ gibt es nicht mehr: Die Tische ändert man über
-„Tische im Raum ändern“ auf der Sitzplan-Seite, von Hand verteilt man über
-„Neuer Sitzplan → Von Hand“ oder „Plan ändern“. Die alte Adresse
+„Helfer“ und „Verteilen“ gibt es dort nicht mehr: Sie stehen als
+Werkzeuge oben auf der Sitzplan-Seite (siehe unten). Die alte Adresse
 `/sitzplanverteilen/…` leitet auf die Sitzplan-Seite weiter.
 
 ## Ablauf für Lehrkräfte
@@ -28,17 +27,22 @@ Die Seite hat zwei Ansichten. Lange Erklärungen sind zugeklappt
 („Wie funktioniert das?“), ebenso „Vorgaben“ und „Frühere Sitzpläne“.
 Die Seite spricht die Lehrkraft mit „Sie“ an.
 
-1. **Startansicht**: Ganz oben steht in jeder Ansicht, auch während
-   einer Wunschrunde, eine Leiste mit dem Raum und der Zahl der Plätze,
-   „Tische im Raum ändern“ (wo die Klassenleitung die Tische ändern darf;
-   gelb hervorgehoben, wenn Plätze fehlen; „Tische anlegen“, wenn es noch
-   keine gibt), „Shuffler“ und „Von Hand verteilen“ (ist schon ein Plan
-   offen, fragt die Seite, ob er dafür verworfen werden soll). Darunter der aktuell gespeicherte Plan mit den Knöpfen
-   „Neuer Sitzplan“, „Plan ändern“ und „Drucken“, die aufklappbaren
-   „Vorgaben“ (auch ohne offenen Plan oder Wunschrunde bearbeitbar) und
-   „Frühere Sitzpläne“. Hat der Raum weniger Plätze als die Klasse SuS,
-   lässt sich kein neuer Plan beginnen und der Shuffler nicht öffnen.
-2. **Neuer Sitzplan** fragt, wie der Plan entstehen soll:
+1. **Werkzeuge**: Ganz oben steht in jeder Ansicht, auch während einer
+   Wunschrunde, eine Leiste mit dem Raum und der Zahl der Plätze (gelb,
+   wenn Plätze fehlen) und vier gleichrangigen Werkzeugen:
+   „Tische im Raum“ (der Editor, wo die Klassenleitung die Tische ändern
+   darf; „Tische anlegen“, wenn es noch keine gibt), „Shuffler“, „Von
+   Hand verteilen“ und „Sitzplanhelfer“. Das Werkzeug, mit dem der offene
+   Plan entsteht, ist hervorgehoben; ist schon ein Plan offen und man
+   wählt ein anderes, fragt die Seite, ob er dafür verworfen werden soll.
+   Hat der Raum weniger Plätze als die Klasse SuS, lässt sich kein neuer
+   Plan beginnen und der Shuffler nicht öffnen.
+
+   **Startansicht** darunter: der aktuell gespeicherte Plan mit „Plan
+   ändern“ und „Drucken“, die aufklappbaren „Vorgaben“ (auch ohne offenen
+   Plan oder Wunschrunde bearbeitbar) und ganz unten „Frühere Sitzpläne“.
+2. **Sitzplanhelfer** öffnet direkt unter den Werkzeugen die Frage, wie
+   der Plan entstehen soll:
    - **Mit Wünschen der Klasse**: legt eine Umfrage an und startet einen
      Timer (einstellbar 1–60 Tage, Standard 4). Die SuS sehen sie ganz
      normal über `print_current_polls()` und wählen bis zu drei
@@ -51,10 +55,10 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    - **Zufällig**: ohne Umfrage, der Plan wird sofort gewürfelt. Vorgaben
      gelten trotzdem.
 
-   Der dritte Weg, **Von Hand verteilen**, steht oben neben dem Shuffler:
-   ohne Wünsche und ohne Würfeln stehen alle SuS zunächst unter „Noch ohne
-   Platz“; ein Klick auf einen Namen und dann auf einen Platz setzt die
-   Person dort hin.
+   Der dritte Weg ist das Werkzeug **Von Hand verteilen**: ohne Wünsche
+   und ohne Würfeln stehen alle SuS zunächst unter „Noch ohne Platz“; ein
+   Klick auf einen Namen und dann auf einen Platz setzt die Person dort
+   hin.
 3. **Arbeitsansicht** (alle drei Wege und „Plan ändern“): Bei einer
    Wunschrunde zeigt eine Schrittleiste „Wünsche sammeln – Plan bauen –
    Speichern“. Die Klassenleitung sieht die Wünsche live, inkl.

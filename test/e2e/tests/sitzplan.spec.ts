@@ -24,20 +24,23 @@ async function setUpRoom(page: Page) {
 async function openSeatingPlan(page: Page, raum: string) {
   await page.goto(`/sitzplanhelfer/${KLASSE}/${raum}`);
   const discard = page.locator('#sph_bu_discard_cycle');
-  await expect(page.locator('#sph_bu_new:visible, #sph_bu_discard_cycle:visible')).toHaveCount(1);
+  await expect(page.locator('#sph_view_start:visible, #sph_view_work:visible')).toHaveCount(1);
   if (await discard.isVisible()) await discardOpenPlan(page);
 }
 
 async function discardOpenPlan(page: Page) {
   await page.locator('#sph_bu_discard_cycle').click();
   await dashboardDialog(page).getByRole('button', { name: 'Verwerfen' }).click();
-  await expect(page.locator('#sph_bu_new')).toBeVisible();
+  await expect(page.locator('#sph_view_start')).toBeVisible();
 }
 
 async function startNewPlan(page: Page, way: 'cycle' | 'random' | 'manual') {
-  // "Von Hand verteilen" sits on top next to the Shuffler, the other two
-  // ways under "Neuer Sitzplan"
-  if (way !== 'manual') await page.locator('#sph_bu_new').click();
+  // the tools on top: "Von Hand verteilen" starts right away, the
+  // Sitzplanhelfer first asks: with wishes or random
+  if (way !== 'manual') {
+    await page.locator('#sph_room_bar #sph_bu_helper').click();
+    await expect(page.locator('#sph_room_bar #sph_new_choice')).toBeVisible();
+  }
   const started = page.waitForResponse('**/api/sph_start_cycle');
   await page.locator(`#sph_bu_start_${way}`).click();
   expect((await started).status()).toBe(200);
@@ -49,7 +52,7 @@ async function savePlan(page: Page) {
   await page.locator('#sph_bu_save').click();
   expect((await saved).status()).toBe(200);
   await expect(page.locator('#sph_status')).toContainText('gespeichert');
-  await expect(page.locator('#sph_bu_new')).toBeVisible();
+  await expect(page.locator('#sph_view_start')).toBeVisible();
 }
 
 // Every name element lies completely inside its seat card and shows all of
@@ -90,6 +93,7 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   // round runs; starting over by hand asks first
   await expect(page.locator('#sph_room_bar #sph_link_editor')).toBeVisible();
   await expect(page.locator('#sph_room_bar #sph_link_shuffler')).toBeVisible();
+  await expect(page.locator('#sph_room_bar #sph_bu_helper')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#sph_room_bar #sph_bu_start_manual').click();
   await expect(dashboardDialog(page)).toContainText('schon eine Wunschrunde offen');
   await dashboardDialog(page).getByRole('button', { name: 'Abbrechen' }).click();

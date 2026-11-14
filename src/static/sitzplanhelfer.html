@@ -211,15 +211,25 @@ table.sph-wishes td, table.sph-wishes th {
     margin-top: 1.5em;
 }
 .sph-room-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5em 1em;
-    align-items: center;
-    padding: 0.5em 0.9em;
+    padding: 0.6em 0.9em;
     margin-bottom: 1em;
     border: 1px solid #d6dbd7;
     border-radius: 0.5em;
     background-color: rgba(255, 255, 255, 0.6);
+}
+.sph-room-line {
+    margin-bottom: 0.5em;
+}
+.sph-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+}
+.sph-room-bar #sph_new_choice {
+    margin: 1em 0 0.2em 0;
+}
+.sph-room-warn .sph-room-line {
+    font-weight: bold;
 }
 .sph-room-bar.sph-room-warn {
     border-color: #e0b84a;
@@ -421,22 +431,15 @@ body.dark .sph-group {
     <!-- Ganz oben, in jeder Ansicht: die Tische im Raum (der erste Schritt,
          auch wenn man ihn nicht jedes Mal braucht) und der Shuffler. -->
     <div id="sph_room_bar" class="sph-room-bar" style="display: none;">
-        <span><i class="fa fa-th"></i>&nbsp;&nbsp;<span id="sph_room_info"></span></span>
-        <a class="btn btn-sm btn-outline-secondary" id="sph_link_editor" href="#">Tische im Raum ändern</a>
-        <a class="btn btn-sm btn-outline-secondary" id="sph_link_shuffler" href="#" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</a>
-        <button class="btn btn-sm btn-outline-secondary" id="sph_bu_start_manual" title="Ohne Wünsche und ohne Würfeln: Sie setzen jede Person selbst auf ihren Platz."><i class="fa fa-hand-pointer-o"></i>&nbsp;&nbsp;Von Hand verteilen</button>
-    </div>
-
-    <!-- Startansicht: der gespeicherte Plan, wie ihn die Lehrkräfte der Klasse sehen -->
-    <div id="sph_view_start" style="display: none;">
-        <p id="sph_start_info" class="sph-legend"></p>
-        <div class="sph-actions">
-            <button class="btn btn-primary" id="sph_bu_new"><i class="fa fa-plus"></i>&nbsp;&nbsp;Neuer Sitzplan</button>
-            <button class="btn btn-outline-primary" id="sph_bu_edit_saved">Plan ändern</button>
-            <a class="btn btn-outline-secondary" id="sph_link_print" href="#" target="_blank"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</a>
+        <div class="sph-room-line"><i class="fa fa-th"></i>&nbsp;&nbsp;<span id="sph_room_info"></span></div>
+        <div class="sph-tools">
+            <a class="btn btn-outline-primary" id="sph_link_editor" href="#"><i class="fa fa-th"></i>&nbsp;&nbsp;Tische im Raum</a>
+            <a class="btn btn-outline-primary" id="sph_link_shuffler" href="#" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</a>
+            <button class="btn btn-outline-primary" id="sph_bu_start_manual" title="Ohne Wünsche und ohne Würfeln: Sie setzen jede Person selbst auf ihren Platz."><i class="fa fa-hand-pointer-o"></i>&nbsp;&nbsp;Von Hand verteilen</button>
+            <button class="btn btn-outline-primary" id="sph_bu_helper" title="Neuer Plan mit Wünschen der Klasse oder zufällig gewürfelt, jeweils mit Ihren Vorgaben."><i class="fa fa-magic"></i>&nbsp;&nbsp;Sitzplanhelfer</button>
         </div>
         <div id="sph_new_choice" class="sph-section" style="display: none;">
-            <h4>Wie soll der neue Plan entstehen?</h4>
+            <h4>Sitzplanhelfer: Wie soll der neue Plan entstehen?</h4>
             <div class="sph-choices">
                 <div class="sph-choice">
                     <h5>Mit Wünschen der Klasse</h5>
@@ -452,6 +455,15 @@ body.dark .sph-group {
                 </div>
             </div>
             <p class="sph-legend" id="sph_choice_info">Ihre Vorgaben (unten) gelten für beide Wege. Selbst setzen können Sie die Plätze oben mit „Von Hand verteilen“.</p>
+        </div>
+    </div>
+
+    <!-- Startansicht: der gespeicherte Plan, wie ihn die Lehrkräfte der Klasse sehen -->
+    <div id="sph_view_start" style="display: none;">
+        <p id="sph_start_info" class="sph-legend"></p>
+        <div class="sph-actions">
+            <button class="btn btn-outline-primary" id="sph_bu_edit_saved">Plan ändern</button>
+            <a class="btn btn-outline-secondary" id="sph_link_print" href="#" target="_blank"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</a>
         </div>
     </div>
 
@@ -1237,9 +1249,9 @@ function load_state(after) {
         fixed_rules = rules.fixed_rules || [];
         can_start_cycle = !!data.can_start_cycle;
         // Die Vorgaben gibt es in beiden Ansichten: auf der Startseite unter
-        // „Neuer Sitzplan“, beim offenen Plan unter den Wünschen.
+        // den Knöpfen zum aktuellen Plan, beim offenen Plan unter den Wünschen.
         if (oc) $('#sph_vorgaben').insertAfter('#sph_wishes_section');
-        else $('#sph_vorgaben').insertAfter('#sph_new_choice');
+        else $('#sph_vorgaben').appendTo('#sph_view_start');
         $('#sph_view_start').toggle(!oc);
         render_room_bar();
         $('#sph_view_work, #sph_save_row').toggle(!!oc);
@@ -1305,7 +1317,7 @@ function render_start_header(data) {
     $('#sph_bu_edit_saved, #sph_link_print').toggle(!!last_cycle);
     // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen fällt
     // auf, dass gar nicht alle in den Raum passen.
-    $('#sph_bu_new').toggle(!!data.can_start_cycle).prop('disabled', sus.length > seats.length);
+    // (die Werkzeuge oben stellt render_room_bar ein)
 }
 
 // Leiste ganz oben, in beiden Ansichten: Raum mit Platzzahl, „Tische im Raum
@@ -1321,8 +1333,13 @@ function render_room_bar() {
         : `Raum ${raum}: ${seats.length} Plätze für ${sus.length} SuS`);
     $('#sph_room_bar').toggleClass('sph-room-warn', too_small).show();
     // Immer sichtbar; ist schon ein Plan offen, fragt der Klick nach (siehe unten).
-    $('#sph_bu_start_manual').toggle(can_start_cycle).prop('disabled', too_small);
-    $('#sph_link_editor').toggleClass('btn-warning', too_small).toggleClass('btn-outline-secondary', !too_small);
+    $('#sph_bu_start_manual, #sph_bu_helper').toggle(can_start_cycle).prop('disabled', too_small);
+    $('#sph_link_editor').toggleClass('btn-warning', too_small).toggleClass('btn-outline-primary', !too_small);
+    // Das Werkzeug, mit dem der offene Plan entsteht, ist hervorgehoben.
+    let active = {manual: '#sph_bu_start_manual', wishes: '#sph_bu_helper', random: '#sph_bu_helper'}[open_mode];
+    $('#sph_bu_start_manual, #sph_bu_helper').removeClass('btn-primary').addClass('btn-outline-primary').attr('aria-pressed', 'false');
+    if (active) $(active).removeClass('btn-outline-primary').addClass('btn-primary').attr('aria-pressed', 'true');
+    if (open_cycle_id) $('#sph_new_choice').hide();
 }
 
 // Kopf der Arbeitsansicht: woher der Plan kommt und was als Nächstes zu tun ist.
@@ -2121,8 +2138,8 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#sph_room_info').text(sph_editor_allowed
             ? `Für Raum ${raum} sind noch keine Tische angelegt. Legen Sie sie zuerst an.`
             : `Für Raum ${raum} sind noch keine Tische angelegt. Das kann nur die Administration.`);
-        $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-secondary').addClass('btn-primary');
-        $('#sph_link_shuffler').remove();
+        $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-primary').addClass('btn-primary');
+        $('#sph_link_shuffler, #sph_bu_start_manual, #sph_bu_helper, #sph_new_choice').remove();
         $('#sph_room_bar').addClass('sph-room-warn').show();
         return;
     }
@@ -2130,9 +2147,21 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#sph_link_print').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?print=1`);
     $('#sph_link_shuffler').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
 
-    $('#sph_bu_new').click(function () {
+    // Der Sitzplanhelfer öffnet seine Auswahl direkt unter den Werkzeugen.
+    $('#sph_bu_helper').click(function () {
         set_status('');
-        $('#sph_new_choice').toggle();
+        if (!open_cycle_id) {
+            $('#sph_new_choice').toggle();
+            return;
+        }
+        // Mit dem Helfer entsteht der offene Plan schon: nichts zu tun.
+        if (open_mode === 'wishes' || open_mode === 'random') return;
+        dashboardConfirm('Es ist schon ein Plan offen. Wollen Sie stattdessen mit dem Sitzplanhelfer neu beginnen, wird er verworfen. Ihre Vorgaben bleiben erhalten.', function () {
+            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+                load_state(function () { $('#sph_new_choice').show(); });
+            });
+        }, { title: 'Sitzplanhelfer', confirm: 'Verwerfen und neu beginnen', danger: true });
     });
     $('#sph_bu_start_cycle').click(function () {
         let duration_days = parseInt($('#sph_duration_days').val(), 10);
@@ -2148,6 +2177,7 @@ document.addEventListener('DOMContentLoaded', function () {
             start_new_plan('manual');
             return;
         }
+        if (open_mode === 'manual') return;
         // Es kann immer nur ein neuer Plan offen sein. Im offenen Plan lässt
         // sich schon von Hand umsetzen; ganz von vorn geht es nur, wenn er
         // verworfen wird.

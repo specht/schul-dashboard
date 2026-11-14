@@ -98,9 +98,9 @@ Teile:
 
 Pro Postfach ist immer nur ein offener Fall möglich und nur wenige Anfragen
 pro Tag. Das Ändern beim Mail-Anbieter übernimmt ein Bot, der nur
-freigegebene Fälle über `GET /api/mail_password_reset_bot/pending` abholt und
-das Ergebnis an `POST /api/mail_password_reset_bot/result` meldet
-(`Authorization: Bearer <MAIL_PASSWORD_RESET_BOT_TOKEN>` aus
+freigegebene Fälle über `GET /api/mail_account_bot/pending` abholt und
+das Ergebnis an `POST /api/mail_account_bot/result` meldet
+(`Authorization: Bearer <MAIL_ACCOUNT_BOT_TOKEN>` aus
 `credentials.rb`; ohne Token ist die Schnittstelle aus). Solange der Bot
 nicht läuft, setzt die Administration freigegebene Fälle von Hand zurück und
 markiert sie auf der Seite als erledigt. Schlägt der Bot fehl, bekommt die

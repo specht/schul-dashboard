@@ -1,4 +1,4 @@
-# Mailbox password bot
+# Mail account bot (Postfach-Bot)
 
 Resets school mailboxes (students' and parents' `eltern.…` mailboxes) to
 their original password in the IONOS control panel – only for cases the
@@ -12,7 +12,7 @@ can get it locked.
 
 ## Safeguards
 
-- **No configuration, no bot.** `~/.ssh/gyst-mail-password-bot/config.json`
+- **No configuration, no bot.** `~/.ssh/gyst-mail-account-bot/config.json`
   (directory 700, file 600, owned by the user) names the machines it may
   run on (`hosts`, e.g. home and laptop); anywhere else the bot refuses to
   start. Limits in it can only be lowered.
@@ -24,13 +24,14 @@ can get it locked.
   most 10 for all machines together; the admin can reset the count on the
   page "Passwörter" when trying things out) and the run lock (one machine at a
   time) live on the dashboard, so they hold whichever machine runs.
-- **Few logins.** One browser profile (`~/.local/state/gyst-mail-password-bot/profile`),
+- **Few logins.** One browser profile (`~/.local/state/gyst-mail-account-bot/profile`),
   the session is reused while IONOS keeps it. At most one login attempt
   per run; a TOTP time step is never used twice.
 - **Nothing to do, no IONOS.** If a mailbox already accepts its original
   password (IMAP check), the control panel isn't opened at all.
-- **The maintainer says yes.** Before every sitting the bot asks on the
-  desktop (zenity) with the list of mailboxes; no answer, no action.
+- **The maintainer says yes.** Before every sitting the bot asks in the
+  terminal with the list of mailboxes; no answer, no action – also in
+  background mode (`serve`), which therefore runs in a terminal.
 - **One sitting, human pace.** All approved cases one after another, with
   pauses and typing like a person; then the bot stays 20 minutes with the
   same session in case more get approved.
@@ -66,19 +67,19 @@ can get it locked.
   `FLOW_STATUS`. `provisional` means no real run is possible. `recorded`
   allows dry runs and the test mailbox only. `verified` allows real cases.
 
-The tests (`test/e2e/tests/mail-password-bot.spec.ts`, fake IONOS in
+The tests (`test/e2e/tests/mail-account-bot.spec.ts`, fake IONOS in
 `fake-ionos.ts`) check each of these against a fake control panel; the
 bot's browser never reaches the real IONOS there. The dashboard's side
 (shared state, websocket, background mode) is in
-`mail-password-bot-dashboard.spec.ts`.
+`mail-account-bot-dashboard.spec.ts`.
 
 ## Setup (maintainer's machine)
 
 ```sh
-cd src/mail-password-bot && npm ci
-mkdir -p -m 700 ~/.ssh/gyst-mail-password-bot
-touch ~/.ssh/gyst-mail-password-bot/config.json
-chmod 600 ~/.ssh/gyst-mail-password-bot/config.json
+cd src/mail-account-bot && npm ci
+mkdir -p -m 700 ~/.ssh/gyst-mail-account-bot
+touch ~/.ssh/gyst-mail-account-bot/config.json
+chmod 600 ~/.ssh/gyst-mail-account-bot/config.json
 ```
 
 `config.json` (values here are placeholders):
@@ -87,7 +88,7 @@ chmod 600 ~/.ssh/gyst-mail-password-bot/config.json
 {
   "hosts": ["<output of `hostname` at home>", "<… on the laptop>"],
   "dashboard_url": "https://<dashboard host>",
-  "dashboard_token": "<MAIL_PASSWORD_RESET_BOT_TOKEN from the server's credentials.rb>",
+  "dashboard_token": "<MAIL_ACCOUNT_BOT_TOKEN from the server's credentials.rb>",
   "ionos_login": "<IONOS customer number or login>",
   "ionos_password": "<IONOS password>",
   "totp_secret": "<base32 secret or the otpauth:// URI from the QR code>",
@@ -105,14 +106,14 @@ type the login yourself.
 | Command | What it does |
 |---|---|
 | `node bot.js check [--imap]` | Checks the configuration and shows the current TOTP code (compare it with the app). Checks the dashboard token. With `--imap`, also checks the test mailbox passwords. Doesn't touch IONOS. |
-| `node bot.js record` | Opens the bot's browser. You log in and click through by hand, and the page structure is written to `~/.local/state/gyst-mail-password-bot/recordings/` without input values or addresses. |
+| `node bot.js record` | Opens the bot's browser. You log in and click through by hand, and the page structure is written to `~/.local/state/gyst-mail-account-bot/recordings/` without input values or addresses. |
 | `node bot.js run --dry-run` | Goes up to the filled-in dialog, then "Abbrechen". Nothing is changed or reported. |
 | `node bot.js run --test-mailbox` | Resets the test mailbox. The two passwords take turns. |
-| `node bot.js run` | Handles the approved cases once (with the desktop question). |
+| `node bot.js run` | Handles the approved cases once (with the question in the terminal). |
 | `node bot.js serve` | Runs in the background: connected to the dashboard by a websocket, it starts a run when the admin approves a case (and every 15 minutes in case the connection died). The page "Passwörter" shows whether it is connected. |
 | `node bot.js status` | Shows whether the bot is paused (on the dashboard) and the last stop on this machine with its screenshot. The pause is lifted on the page "Passwörter". |
 
-Logs and screenshots stay in `~/.local/state/gyst-mail-password-bot/` and
+Logs and screenshots stay in `~/.local/state/gyst-mail-account-bot/` and
 can contain addresses – don't share them.
 
 ## Getting to `verified`
@@ -127,7 +128,7 @@ can contain addresses – don't share them.
 3. Adapt `lib/ionos.js` and `fake-ionos.ts` to the recording; status `recorded`.
 4. `run --dry-run --test-mailbox`, then `run --test-mailbox`, watched.
    If both go through, set the status to `verified`.
-5. Set `MAIL_PASSWORD_RESET_BOT_TOKEN` on the server (credentials.rb,
+5. Set `MAIL_ACCOUNT_BOT_TOKEN` on the server (credentials.rb,
    restart ruby) and put it into `config.json`.
 
 If IONOS changes its pages later, the bot stops at the first difference.

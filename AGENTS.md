@@ -93,7 +93,7 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   data into a fresh 5.26 store; the old one goes to `data/neo4j.previous`).
   Dumps and `load-dump.rb` work across both versions (neo4j_bolt 0.5.1).
 
-- **Mailbox password bot** (`src/mail-password-bot`, plan in
+- **Mail account bot (Postfach-Bot)** (`src/mail-account-bot`, plan in
   `review/2026-11/mail-password-reset.md`): runs only on the maintainer's
   machine, with his IONOS session. Nobody else starts it (agents never run
   `bot.js` outside the test container) or logs in to the IONOS control panel

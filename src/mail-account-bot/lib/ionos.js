@@ -9,20 +9,20 @@
 //                               table #table-emails, one row per address,
 //                               tr[data-testid="tr-<address>"]; search field
 //                               plus search button (reloads the page)
-//   row menu (…)                button-context-menu-trigger; the item
-//                               link-mailbox-change-password goes to
-//                               /email/<contract>/mailbox/<id>/edit-password.
-//                               "Löschen" (link-mailbox-delete) is in the
-//                               same menu – never clicked, checked against.
+//   row menu (…)                its item "Passwort ändern" goes to
+//                               /email/<contract>/mailbox/<id>/edit-password;
+//                               the bot goes there directly with the id from
+//                               the row and never opens the menu ("Löschen"
+//                               is in it, right next to it).
 //   edit-password page          breadcrumb shows the address
 //                               (link-bc-current-email), one password field
 //                               (#password), "Passwort ändern" / "Abbrechen"
 //   after saving                /email/<contract>/mailbox/<id>/details with
 //                               pageMessage-EMAIL_PASSWORD_SUCCESS
 //
-// The mailbox id from the row is carried through: the menu link, the page
-// URL, the breadcrumb, the cancel link and the page after saving must all
-// name the same mailbox – and the page must show exactly this address.
+// The mailbox id from the row is carried through: the page URL, the
+// breadcrumb, the cancel link and the page after saving must all name the
+// same mailbox – and the page must show exactly this address.
 //
 // FLOW_STATUS
 //   'provisional'  not recorded yet – the bot refuses every real run
@@ -58,8 +58,6 @@ const S = {
     searchSubmit: '[data-testid="button-search-submit"]',
     row: 'table#table-emails tr[data-testid^="tr-"]',
     rowMailboxLink: 'a[data-testid="link-email-mailbox"]',
-    rowMenu: '[data-testid="button-context-menu-trigger"]',
-    menuChangePassword: 'a[role="menuitem"][data-testid="link-mailbox-change-password"]',
     headline: 'h1.page-header__headline',
     breadcrumbAddress: 'a[data-testid="link-bc-current-email"]',
     main: 'main#main-content',
@@ -177,6 +175,13 @@ class IonosSession {
             failed: loginFailed, captcha,
             loggedInWithoutOtp: onHost('mein.ionos.de'),
         }, 'Anmeldung: zweiter Faktor');
+        if (!this.config.ionos_2fa) {
+            // not set up yet (configuration): logged in right after the password, as recorded
+            if (reached === 'otp') throw new Stop('IONOS fragt nach einem Code, aber die Konfiguration sagt ionos_2fa: false');
+            if (reached !== 'loggedInWithoutOtp') throw stopFor(reached, 'das Passwort');
+            this.log('Angemeldet (ohne zweiten Faktor)');
+            return;
+        }
         if (reached === 'loggedInWithoutOtp') throw new Stop('IONOS hat nicht nach dem zweiten Faktor gefragt – das passt nicht zum erwarteten Ablauf');
         if (reached !== 'otp') throw stopFor(reached, 'das Passwort');
 
@@ -276,18 +281,12 @@ class IonosSession {
         if (!/^[A-Za-z0-9-]{8,64}$/.test(password)) throw new CaseProblem('Ungeeignetes Passwort vom Dashboard');
         this.log(`${dryRun ? 'Probelauf' : 'Zurücksetzen'}: ${mailbox}`);
         const page = this.page;
-        const { row, id } = await this.findRow(mailbox);
+        const { id } = await this.findRow(mailbox);
 
-        await this.click(await this.one(S.rowMenu, 'Adressliste: Menü der Zeile', row));
-        await this.wait({ menu: async () => row.locator(S.menuChangePassword).first().isVisible() }, 'Menü „Passwort ändern“');
-        const item = await this.one(S.menuChangePassword, 'Menü: „Passwort ändern“', row);
-        const href = ((await item.getAttribute('href')) || '').toLowerCase();
-        const testid = (await item.getAttribute('data-testid')) || '';
-        // never the neighbouring "Löschen": the item must lead to this mailbox's edit-password
-        if (href !== this.mailboxPath(id, 'edit-password') || /delete/i.test(href + testid)) throw new Stop('Menü: „Passwort ändern“ führt nicht zur erwarteten Seite');
-        if ((await item.getAttribute('data-tooltip')) !== 'Passwort ändern') throw new Stop('Menü: Eintrag heißt nicht „Passwort ändern“');
-        await this.click(item);
-
+        // straight to this mailbox's "Passwort ändern" page with the number from
+        // its row – the row menu (with "Löschen" right next to it) stays closed
+        await this.pacer.pause(800, 2000);
+        await this.page.goto(`https://mein.ionos.de${this.mailboxPath(id, 'edit-password')}`);
         await this.wait({ edit: all(visible(S.password), visible(S.breadcrumbAddress), (p) => p.url().endsWith('/edit-password')) }, 'Seite „Passwort ändern“');
         await this.checkEditPage(mailbox, id);
         const input = await this.one(`${S.main} input[type="password"]`, '„Passwort ändern“: genau ein Passwortfeld');

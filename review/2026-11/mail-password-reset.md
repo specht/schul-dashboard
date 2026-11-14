@@ -67,10 +67,10 @@ automation – but it can run without waiting for a person.
 - Admin page: all open and recent requests; "erledigt" / "fehlgeschlagen"
   by hand, so phase 1 already helps before the bot exists (the admin gets a
   mail per new request while no bot is configured).
-- Bot interface, only active when `MAIL_PASSWORD_RESET_BOT_TOKEN` is set:
-  - `GET /api/mail_password_reset_bot/pending` → approved cases, each with
+- Bot interface, only active when `MAIL_ACCOUNT_BOT_TOKEN` is set:
+  - `GET /api/mail_account_bot/pending` → approved cases, each with
     its mailboxes and passwords
-  - `POST /api/mail_password_reset_bot/result {id, ok, message}`
+  - `POST /api/mail_account_bot/result {id, ok, message}`
   - `Authorization: Bearer <token>`, compared in constant time; the bot can
     run anywhere that reaches the dashboard.
 - On `done` after a student's own request: notice to `eltern.<mailbox>`.
@@ -82,11 +82,11 @@ automation – but it can run without waiting for a person.
 
 ## Phase 2 – bot
 
-- **Built (2026-11-13), not yet run against IONOS:** `src/mail-password-bot`
+- **Built (2026-11-13), not yet run against IONOS:** `src/mail-account-bot`
   (Node + Playwright with the local Chrome; usage and safeguards in its
   README). The IONOS steps are provisional until recorded with the
   maintainer (`FLOW_STATUS`); the bot refuses real runs until then. Tests
-  against a fake control panel: `test/e2e/tests/mail-password-bot.spec.ts`.
+  against a fake control panel: `test/e2e/tests/mail-account-bot.spec.ts`.
 - Persistent browser profile, TOTP for the login confirmation, sets the
   password for approved cases, reports the result, a screenshot on failure
   for the admin.
@@ -167,7 +167,16 @@ file can go.
   used for bot work.
 - **Address list:** the bot downloads the IONOS export (address, account
   type, contract) and sends it to the dashboard, instead of a file in the
-  data repo. To be recorded with the maintainer.
+  data repo. To be recorded with the maintainer. Never polled: the bot
+  fetches it only
+  - in the same sitting right before creating approved mailboxes (to
+    confirm they are still missing),
+  - when the admin asks for it on the page, and
+  - otherwise at most about once a week, in a sitting that is logged in
+    anyway.
+
+  The dashboard shows how old the list is. The export has no mailbox
+  numbers; the bot learns them from the address list when it needs them.
 - **Missing mailboxes:** the dashboard lists students and parents' mailboxes
   that are missing in the export. The admin approves them, the bot creates
   them with the E-Mail-Brief password, proves each one by an IMAP login,

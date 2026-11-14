@@ -15,7 +15,7 @@ function serve({ config, runOnce, log, stopSignal = null }) {
     let backoff = 5;
     const connect = () => {
         if (stopped) return;
-        const url = `${config.dashboard_url.replace(/^http/, 'ws')}/ws_mail_password_reset_bot?host=${encodeURIComponent(config.host)}`;
+        const url = `${config.dashboard_url.replace(/^http/, 'ws')}/ws_mail_account_bot?host=${encodeURIComponent(config.host)}`;
         ws = new WebSocket(url, { headers: { Authorization: `Bearer ${config.dashboard_token}` } });
         ws.on('open', () => { backoff = 5; log('Mit dem Dashboard verbunden'); });
         ws.on('message', (data) => {

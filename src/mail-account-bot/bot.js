@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Mailbox password bot – runs only on the maintainer's machines (README.md).
+// Mail account bot (Postfach-Bot) – runs only on the maintainer's machines (README.md).
 //
 //   node bot.js check [--imap]         configuration, TOTP code to compare with the app, dashboard token
 //   node bot.js record                 open the bot's browser; you log in and click through, the structure is recorded
@@ -18,15 +18,18 @@ const { dashboardClient } = require('./lib/dashboard');
 const ionos = require('./lib/ionos');
 
 function notify(text) {
-    execFile('notify-send', ['--urgency=critical', 'Passwort-Bot', text], () => {});
+    execFile('notify-send', ['--urgency=critical', 'Postfach-Bot', text], () => {});
 }
 
-// a desktop question; without a desktop (or zenity) the answer is no
-function confirmOnDesktop(lines) {
-    return new Promise((resolve) => {
-        execFile('zenity', ['--question', '--title=Passwort-Bot', '--width=480', '--ok-label=Ausführen', '--cancel-label=Abbrechen',
-            `--text=${lines.join('\n')}`], { timeout: 15 * 60 * 1000 }, (err) => resolve(!err));
-    });
+// the question in the terminal; without a terminal the answer is no
+async function confirmInTerminal(lines) {
+    if (!process.stdin.isTTY) return false;
+    const readline = require('readline');
+    console.log(lines.map((line, i) => (i === 0 ? line : `  ${line}`)).join('\n'));
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await new Promise((resolve) => rl.question('Ausführen? [j/N] ', resolve));
+    rl.close();
+    return /^j/i.test(answer.trim());
 }
 
 async function openContext(config, state) {
@@ -64,8 +67,13 @@ async function main() {
         console.log(`Konfiguration: ${CONFIG_FILE} – in Ordnung`);
         console.log(`Rechner: ${config.host} (erlaubt: ${config.hosts.join(', ')}), Zustand: ${STATE_DIR}`);
         console.log(`IONOS-Ablauf: ${ionos.FLOW_STATUS}`);
-        const t = totpAt(config.totp);
-        console.log(`TOTP jetzt: ${t.code} (noch ${t.remaining} s) – stimmt das mit der Authenticator-App überein?`);
+        if (config.ionos_2fa) {
+            const t = totpAt(config.totp);
+            console.log(`TOTP jetzt: ${t.code} (noch ${t.remaining} s) – stimmt das mit der Authenticator-App überein?`);
+        } else {
+            console.log('IONOS-Anmeldung ohne zweiten Faktor (ionos_2fa: false) – nur bis 2FA eingerichtet ist');
+        }
+        if (config.dashboard_is_local) console.log('Dashboard: lokale Entwicklungsinstanz – nur --test-mailbox');
         const pending = await dashboard.pending();
         console.log(`Dashboard: Token gilt, ${pending.cases.length} freigegebene(r) Fall/Fälle${pending.paused ? `, ANGEHALTEN: ${pending.paused.reason}` : ''}`);
         if (config.test_mailbox && flags.includes('--imap')) {
@@ -89,7 +97,7 @@ async function main() {
     }
     const runOnce = (opts = {}) => require('./lib/run').run({
         config, state, dashboard, imapLoginWorks: imap, notify,
-        confirm: config.confirm ? confirmOnDesktop : undefined,
+        confirm: config.confirm ? confirmInTerminal : undefined,
         openContext: () => openContext(config, state), ...opts,
     });
     if (command === 'run') {

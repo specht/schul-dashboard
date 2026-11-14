@@ -1,8 +1,8 @@
 'use strict';
 // One run of the bot: take the run lock on the dashboard (one machine at a
 // time), fetch the approved cases, check them, skip mailboxes whose password
-// already is the original one (IMAP), ask the maintainer once (desktop
-// question), reset the others in one sitting in the control panel, prove each
+// already is the original one (IMAP), ask the maintainer once (in the
+// terminal), reset the others in one sitting in the control panel, prove each
 // reset by IMAP, report back. Then stay a while (same session) in case the
 // admin approves more. At the first surprise: stop and pause the bot on the
 // dashboard – for every machine, until the admin lifts it there.
@@ -41,6 +41,7 @@ async function run(options) {
         if (ionos.FLOW_STATUS === 'recorded' && !dryRun && !testMailbox) throw new Error('Der Ablauf ist aufgenommen, aber noch nicht bestätigt: nur --dry-run oder --test-mailbox.');
     }
     if (testMailbox && !config.test_mailbox) throw new Error('Kein test_mailbox in der Konfiguration');
+    if (config.dashboard_is_local && !testMailbox) throw new Error('Mit der lokalen Entwicklungsinstanz als Dashboard nur --test-mailbox (sie enthält eine Kopie echter Fälle).');
 
     const claim = await dashboard.claim(config.host);
     if (claim.result === 'paused') {
@@ -68,7 +69,7 @@ async function run(options) {
             // keep going (and stopping, if that's what happens): the log has it
             summary.unreported = (summary.unreported || 0) + 1;
             log(`Dashboard nicht erreichbar, Ergebnis nicht gemeldet: ${err.message}`);
-            notify('Passwort-Bot: Ergebnis konnte nicht ans Dashboard gemeldet werden – siehe Log');
+            notify('Postfach-Bot: Ergebnis konnte nicht ans Dashboard gemeldet werden – siehe Log');
         }
     };
 
@@ -83,9 +84,12 @@ async function run(options) {
     const verify = async (c) => {
         for (const m of c.toReset) {
             let works = false;
-            for (const delay of config.verify_delays_s) {
+            const total = config.verify_delays_s.reduce((a, b) => a + b, 0);
+            log(`Prüfe das neue Passwort von ${m.mailbox} per IMAP – IONOS braucht dafür ein paar Minuten (höchstens ${Math.round(total / 60)} min)`);
+            for (const [i, delay] of config.verify_delays_s.entries()) {
                 await sleep(delay * 1000 * config.pace);
                 works = await imapLoginWorks(m.mailbox, m.password).catch(() => false);
+                log(`  Versuch ${i + 1}: ${works ? 'Anmeldung klappt' : 'noch nicht'}`);
                 if (works) break;
             }
             if (!works) return m.mailbox;
@@ -183,7 +187,7 @@ async function run(options) {
             if (stoppedCase && !handled.has(stoppedCase.id)) {
                 await report(stoppedCase, false, `Der Bot hat angehalten: ${stop.message}. Bitte von Hand zurücksetzen.`);
             }
-            notify(`Passwort-Bot angehalten: ${stop.message}`);
+            notify(`Postfach-Bot angehalten: ${stop.message}`);
             return false;
         }
         return true;

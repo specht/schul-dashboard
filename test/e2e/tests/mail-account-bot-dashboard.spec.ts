@@ -35,29 +35,29 @@ async function mails(subject: string) {
 async function resume(baseURL: string | undefined) {
   const admin = await playwrightRequest.newContext({ baseURL });
   await apiLogin(admin, ACCOUNTS.admin);
-  expect((await admin.post('/api/resume_mail_password_reset_bot', { data: {} })).status()).toBe(200);
+  expect((await admin.post('/api/resume_mail_account_bot', { data: {} })).status()).toBe(200);
 }
 
 test('Bot-Zustand: nur ein Rechner zur Zeit, die Sperre wird freigegeben', async ({ baseURL }) => {
   const api = await bot(baseURL);
-  await post(api, '/api/mail_password_reset_bot/release', { host: 'rechner-a' });
-  await post(api, '/api/mail_password_reset_bot/release', { host: 'rechner-b' });
-  expect((await post(api, '/api/mail_password_reset_bot/claim', { host: 'rechner-a' })).result).toBe('ok');
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-a' });
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-b' });
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a' })).result).toBe('ok');
   // the same machine may renew
-  expect((await post(api, '/api/mail_password_reset_bot/claim', { host: 'rechner-a' })).result).toBe('ok');
-  expect(await post(api, '/api/mail_password_reset_bot/claim', { host: 'rechner-b' })).toMatchObject({ result: 'busy', host: 'rechner-a' });
-  await post(api, '/api/mail_password_reset_bot/release', { host: 'rechner-b' }); // not the holder: no effect
-  expect((await post(api, '/api/mail_password_reset_bot/claim', { host: 'rechner-b' })).result).toBe('busy');
-  await post(api, '/api/mail_password_reset_bot/release', { host: 'rechner-a' });
-  expect((await post(api, '/api/mail_password_reset_bot/claim', { host: 'rechner-b' })).result).toBe('ok');
-  await post(api, '/api/mail_password_reset_bot/release', { host: 'rechner-b' });
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a' })).result).toBe('ok');
+  expect(await post(api, '/api/mail_account_bot/claim', { host: 'rechner-b' })).toMatchObject({ result: 'busy', host: 'rechner-a' });
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-b' }); // not the holder: no effect
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-b' })).result).toBe('busy');
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-a' });
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-b' })).result).toBe('ok');
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-b' });
   // host names are checked
-  expect((await api.post('/api/mail_password_reset_bot/claim', { data: { host: '../x y' } })).status()).not.toBe(200);
+  expect((await api.post('/api/mail_account_bot/claim', { data: { host: '../x y' } })).status()).not.toBe(200);
 });
 
 test('Bot-Zustand: höchstens zehn IONOS-Anmeldungen am Tag für alle Rechner, die Administration setzt den Zähler zurück', async ({ page, baseURL }) => {
   const api = await bot(baseURL);
-  const attempt = async (i: number) => (await post(api, '/api/mail_password_reset_bot/login_attempt', { host: i % 2 ? 'rechner-a' : 'rechner-b' })).result;
+  const attempt = async (i: number) => (await post(api, '/api/mail_account_bot/login_attempt', { host: i % 2 ? 'rechner-a' : 'rechner-b' })).result;
   const results: string[] = [];
   for (let i = 0; i < 12; i++) results.push(await attempt(i));
   // earlier runs today may have used some already
@@ -77,16 +77,16 @@ test('Bot-Zustand: höchstens zehn IONOS-Anmeldungen am Tag für alle Rechner, d
 
 test('Bot angehalten: keine Fälle, keine Sperre, Mail an die Administration, Freigabe auf der Seite', async ({ page, baseURL }) => {
   const api = await bot(baseURL);
-  const before = await mails('Passwort-Bot angehalten');
-  await post(api, '/api/mail_password_reset_bot/pause', { host: 'rechner-a', reason: 'Testgrund: Captcha' });
+  const before = await mails('Postfach-Bot angehalten');
+  await post(api, '/api/mail_account_bot/pause', { host: 'rechner-a', reason: 'Testgrund: Captcha' });
   // a second pause keeps the first reason and sends no second mail
-  await post(api, '/api/mail_password_reset_bot/pause', { host: 'rechner-b', reason: 'zweiter Grund' });
-  await expect.poll(() => mails('Passwort-Bot angehalten')).toBe(before + 1);
-  const pending = await (await api.get('/api/mail_password_reset_bot/pending')).json();
+  await post(api, '/api/mail_account_bot/pause', { host: 'rechner-b', reason: 'zweiter Grund' });
+  await expect.poll(() => mails('Postfach-Bot angehalten')).toBe(before + 1);
+  const pending = await (await api.get('/api/mail_account_bot/pending')).json();
   expect(pending.cases).toEqual([]);
   expect(pending.paused).toMatchObject({ reason: 'Testgrund: Captcha' });
-  expect(await post(api, '/api/mail_password_reset_bot/claim', { host: 'rechner-a' })).toMatchObject({ result: 'paused' });
-  expect((await post(api, '/api/mail_password_reset_bot/login_attempt', { host: 'rechner-a' })).result).toBe('paused');
+  expect(await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a' })).toMatchObject({ result: 'paused' });
+  expect((await post(api, '/api/mail_account_bot/login_attempt', { host: 'rechner-a' })).result).toBe('paused');
 
   await login(page, ACCOUNTS.admin);
   await page.goto('/passwoerter');
@@ -97,16 +97,16 @@ test('Bot angehalten: keine Fälle, keine Sperre, Mail an die Administration, Fr
   await page.locator('#bu_resume_mail_bot').click();
   await dashboardDialog(page).getByRole('button', { name: 'Freigeben' }).click();
   await expect(state).not.toHaveAttribute('data-state', 'paused');
-  expect((await (await api.get('/api/mail_password_reset_bot/pending')).json()).paused).toBeNull();
-  expect((await post(api, '/api/mail_password_reset_bot/claim', { host: 'rechner-a' })).result).toBe('ok');
-  await post(api, '/api/mail_password_reset_bot/release', { host: 'rechner-a' });
+  expect((await (await api.get('/api/mail_account_bot/pending')).json()).paused).toBeNull();
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a' })).result).toBe('ok');
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-a' });
 });
 
 test('Bot-Websocket: nur mit Token, Weckruf bei Freigabe, Status auf der Seite', async ({ page, baseURL }) => {
   const wsBase = baseURL!.replace(/^http/, 'ws');
   // without the token: refused
   const refused = await new Promise<number>((resolve) => {
-    const ws = new WebSocket(`${wsBase}/ws_mail_password_reset_bot?host=rechner-a`);
+    const ws = new WebSocket(`${wsBase}/ws_mail_account_bot?host=rechner-a`);
     ws.on('unexpected-response', (_req, res) => resolve(res.statusCode || 0));
     ws.on('open', () => { ws.close(); resolve(101); });
     ws.on('error', () => resolve(-1));
@@ -114,7 +114,7 @@ test('Bot-Websocket: nur mit Token, Weckruf bei Freigabe, Status auf der Seite',
   expect(refused).toBe(401);
 
   const messages: string[] = [];
-  const ws = new WebSocket(`${wsBase}/ws_mail_password_reset_bot?host=rechner-ws`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+  const ws = new WebSocket(`${wsBase}/ws_mail_account_bot?host=rechner-ws`, { headers: { Authorization: `Bearer ${TOKEN}` } });
   ws.on('message', (data) => messages.push(JSON.parse(String(data)).command));
   await new Promise<void>((resolve, reject) => { ws.on('open', () => resolve()); ws.on('error', reject); });
   await expect.poll(() => messages.length).toBeGreaterThan(0);
@@ -137,7 +137,7 @@ test('Bot-Websocket: nur mit Token, Weckruf bei Freigabe, Status auf der Seite',
   await expect.poll(() => messages.filter((m) => m === 'wake').length).toBe(wakesBefore + 1);
   // the case tells the bot what kind of mailbox it is
   const api = await bot(baseURL);
-  const pending = (await (await api.get('/api/mail_password_reset_bot/pending')).json()).cases;
+  const pending = (await (await api.get('/api/mail_account_bot/pending')).json()).cases;
   const ours = pending.find((c: any) => c.id === id);
   expect(ours.mailboxes).toEqual([{ mailbox, kind: 'student', password: expect.stringMatching(/^[A-Za-z0-9-]{8,}$/) }]);
   // clean up: the admin marks it done by hand
@@ -149,7 +149,7 @@ test('Bot-Websocket: nur mit Token, Weckruf bei Freigabe, Status auf der Seite',
 });
 
 test('Bot im Hintergrund: läuft an, wenn die Administration freigibt', async ({ baseURL }) => {
-  const { serve } = require('/mail-password-bot/lib/serve.js');
+  const { serve } = require('/mail-account-bot/lib/serve.js');
   let runs = 0;
   const config = { dashboard_url: baseURL, dashboard_token: TOKEN, host: 'rechner-serve', fallback_poll_minutes: 60 };
   const bg = serve({ config, runOnce: async () => { runs += 1; return { status: 'ok' }; }, log: () => {} });

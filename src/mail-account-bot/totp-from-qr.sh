@@ -10,7 +10,7 @@
 set -eu
 [ $# -eq 1 ] || { echo "Aufruf: $0 <Foto>"; exit 1; }
 command -v zbarimg >/dev/null || { echo "zbarimg fehlt: sudo apt install zbar-tools"; exit 1; }
-dir="$HOME/.ssh/gyst-mail-password-bot"
+dir="$HOME/.ssh/gyst-mail-account-bot"
 file="$dir/config.json"
 umask 077
 mkdir -p "$dir"

@@ -6,14 +6,14 @@ import os from 'os';
 import path from 'path';
 import { fakeIonos, FakeIonos, FakeMailbox, FakeVariant } from './fake-ionos';
 
-// The mailbox password bot (src/mail-password-bot, mounted at
-// /mail-password-bot by ./test.sh) against a fake IONOS control panel. What
+// The mailbox password bot (src/mail-account-bot, mounted at
+// /mail-account-bot by ./test.sh) against a fake IONOS control panel. What
 // matters most: it changes exactly the mailbox of the case and nothing else,
 // and it stops (and stays stopped) at the first page that doesn't look as
 // recorded, without trying again – a locked IONOS account would lock the
 // school out of all mailboxes.
 
-const BOT = '/mail-password-bot/lib';
+const BOT = '/mail-account-bot/lib';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { run, caseProblem } = require(`${BOT}/run.js`);
 const { validateConfig } = require(`${BOT}/config.js`);
@@ -97,7 +97,7 @@ function fakeDashboard(cases: Case[], { maxLogins = 3 } = {}) {
 }
 
 function tmpState() {
-  return new State(fs.mkdtempSync(path.join(os.tmpdir(), 'mail-password-bot-')));
+  return new State(fs.mkdtempSync(path.join(os.tmpdir(), 'mail-account-bot-')));
 }
 
 async function runBot(browser: Browser, fake: FakeIonos, cases: Case[], opts: Record<string, unknown> = {}) {
@@ -207,12 +207,12 @@ test('Bot: Weiterleitung oder fehlende Adresse – nur dieser Fall scheitert', a
 // and the next run doesn't even open the browser
 const STOPS: [string, FakeVariant, RegExp, boolean][] = [
   ['Seite „Passwort ändern“ zeigt eine andere Adresse', { dialogShows: BEN }, /zeigt nicht genau/, true],
-  ['Menüeintrag führt zu einem anderen Postfach', { menuTargets: BEN }, /nicht zur erwarteten Seite/, true],
+  ['Zeile verweist auf ein anderes Postfach', { rowLinksTo: BEN }, /zeigt nicht genau/, true],
   ['Adresse doppelt in der Liste', { duplicate: ANNA }, /mehrfach/, true],
   ['Liste in unbekanntem Format', { rowsWithoutTestIds: true }, /bekannten Format/, true],
   ['Fehlermeldung beim Ändern', { errorOnSubmit: true }, /Fehler/, true],
   ['keine Bestätigung nach dem Ändern', { noSuccessMessage: true }, /Bestätigung/, true],
-  ['neues Fenster aus der Liste', { popupOnTasks: true }, /neues Fenster/, true],
+  ['neues Fenster aus der Liste', { popupOnList: true }, /neues Fenster/, true],
   ['Captcha bei der Anmeldung', { captchaAfterUsername: true }, /Sicherheitsabfrage/, false],
   ['Passwort abgelehnt', { rejectPassword: true }, /lehnt das Passwort ab/, false],
   ['kein zweiter Faktor gefragt', { noOtpStep: true }, /zweiten Faktor/, false],
@@ -330,6 +330,36 @@ test('Bot: Konfiguration nur für diesen Rechner, ohne Lücken', async () => {
   expect(() => validateConfig({ ...base, test_mailbox: TEACHER, test_mailbox_passwords: [PASSWORD, PASSWORD_2] }, { hostname: 'testrechner' })).toThrow(/test_mailbox/);
   expect(() => validateConfig({ ...base, test_mailbox: ANNA, test_mailbox_passwords: [PASSWORD, PASSWORD] }, { hostname: 'testrechner' })).toThrow(/zwei verschiedene/);
   expect(validateConfig(base, { hostname: 'testrechner' }).pace).toBe(1);
+});
+
+test('Bot: Anmeldung ohne zweiten Faktor nur ausdrücklich (ionos_2fa: false)', async ({ browser }) => {
+  // set up without 2FA: logs in right after the password
+  const fake = fakeIonos(MAILBOXES, { noOtpStep: true });
+  const config = botConfig({ ionos_2fa: false });
+  const { summary } = await runBot(browser, fake, [one(ANNA)], { config });
+  expect(summary.status, summary.reason).toBe('ok');
+  expect(fake.resets).toEqual([{ address: ANNA, password: PASSWORD }]);
+  // but if IONOS asks for a code after all: stop
+  const asks = fakeIonos(MAILBOXES);
+  const stopped = await runBot(browser, asks, [one(ANNA)], { config: botConfig({ ionos_2fa: false }) });
+  expect(stopped.summary.status).toBe('stopped');
+  expect(stopped.summary.reason).toMatch(/fragt nach einem Code/);
+  expect(asks.resets).toHaveLength(0);
+  // without 2FA no TOTP secret is needed; with it, it is
+  const { totp_secret, ...noSecret } = { host: 'testrechner', dashboard_url: 'https://d.test.invalid', dashboard_token: 't'.repeat(40),
+    ionos_login: 'x', ionos_password: 'y', totp_secret: TEST_OTP_SECRET, allowed_mailboxes: `^[a-z.]+@${DOMAIN}$` };
+  expect(validateConfig({ ...noSecret, ionos_2fa: false }, { hostname: 'testrechner' }).totp).toBeUndefined();
+  expect(() => validateConfig(noSecret, { hostname: 'testrechner' })).toThrow(/totp_secret fehlt/);
+});
+
+test('Bot: lokale Entwicklungsinstanz als Dashboard nur für das Test-Postfach', async ({ browser }) => {
+  const config = botConfig({ dashboard_is_local: true });
+  const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  await expect(runBot(browser, fake, [one(ANNA)], { config })).rejects.toThrow(/nur --test-mailbox/);
+  expect(fake.resets).toHaveLength(0);
+  const base = { host: 'testrechner', dashboard_token: 't'.repeat(40), ionos_login: 'x', ionos_password: 'y', ionos_2fa: false, allowed_mailboxes: `^[a-z.]+@${DOMAIN}$` };
+  expect(validateConfig({ ...base, dashboard_url: 'http://localhost:8025' }, { hostname: 'testrechner' }).dashboard_is_local).toBe(true);
+  expect(() => validateConfig({ ...base, dashboard_url: 'http://dashboard.example.org' }, { hostname: 'testrechner' })).toThrow(/https/);
 });
 
 test('Bot: TOTP nach RFC 6238 und otpauth-URI', async () => {

@@ -16,8 +16,8 @@
 #   ts_closed: a done case from a mail that was answered some other way
 #   ts…:    Unix time with fractions, so cases within the same second stay in
 #           order
-#   (:MailPasswordResetBot {key: 'bot', …})   the bot's shared state (pause,
-#           run lock, logins today), see mail_bot_state
+#   (:MailAccountBot {key: 'bot', …})   the bot's shared state (pause,
+#           run lock, logins today), see mail_account_bot_state
 #
 # Who may request which mailbox: students their own, Klassenleitung the
 # students' and parents' (eltern.…) mailboxes of their classes, the admin all
@@ -27,10 +27,10 @@
 
 class Main < Sinatra::Base
     MAIL_PASSWORD_RESET_MAX_PER_DAY = 3
-    MAIL_PASSWORD_RESET_BOT_STALE_AFTER = 15 * 60
+    MAIL_ACCOUNT_BOT_STALE_AFTER = 15 * 60
     # IONOS logins a day for all machines together; the admin can reset the
     # count on the page when trying things out
-    MAIL_BOT_MAX_LOGINS_PER_DAY = 10
+    MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY = 10
     MAIL_PASSWORD_RESET_SHOW_DAYS = 30
     MAIL_PASSWORD_CASE_ACTIVE = %w(open approved)
     MAIL_PASSWORD_CASE_MAX_MAILBOXES = 10
@@ -205,8 +205,8 @@ class Main < Sinatra::Base
         end
     end
 
-    def mail_password_reset_bot_last_seen
-        row = neo4j_query("MATCH (b:MailPasswordResetBot {key: 'bot'}) RETURN b.last_seen AS last_seen;").first
+    def mail_account_bot_last_seen
+        row = neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) RETURN b.last_seen AS last_seen;").first
         row ? row['last_seen'] : nil
     end
 
@@ -394,7 +394,7 @@ class Main < Sinatra::Base
                 SET c.state = $to, #{extra}
                 RETURN c.id AS id;
             END_OF_QUERY
-            self.class.wake_mail_password_reset_bot if row && to == 'approved'
+            self.class.wake_mail_account_bot if row && to == 'approved'
             respond(:result => row ? 'ok' : 'wrong_state')
         end
     end
@@ -448,9 +448,9 @@ class Main < Sinatra::Base
         end
         result = {:cases => cases}
         if admin
-            result[:bot_last_seen] = mail_password_reset_bot_last_seen
-            result[:bot] = mail_bot_status_for_admin
-            recent = !result[:bot_last_seen].nil? && Time.now.to_i - result[:bot_last_seen] < MAIL_PASSWORD_RESET_BOT_STALE_AFTER
+            result[:bot_last_seen] = mail_account_bot_last_seen
+            result[:bot] = mail_account_bot_status_for_admin
+            recent = !result[:bot_last_seen].nil? && Time.now.to_i - result[:bot_last_seen] < MAIL_ACCOUNT_BOT_STALE_AFTER
             result[:bot_active] = result[:bot][:paused].nil? && (recent || !result[:bot][:connected].empty?)
         end
         respond(result)
@@ -528,21 +528,21 @@ class Main < Sinatra::Base
 
     # ---- interface for the bot (Authorization: Bearer <token>) ----
 
-    def require_mail_password_reset_bot!
+    def require_mail_account_bot!
         # off unless credentials.rb defines a long enough token
-        token = defined?(MAIL_PASSWORD_RESET_BOT_TOKEN) ? MAIL_PASSWORD_RESET_BOT_TOKEN : nil
+        token = defined?(MAIL_ACCOUNT_BOT_TOKEN) ? MAIL_ACCOUNT_BOT_TOKEN : nil
         halt 404 unless token.is_a?(String) && token.size >= 32
         given = request.env['HTTP_AUTHORIZATION'].to_s.sub(/\ABearer /, '')
         halt 401 unless Rack::Utils.secure_compare(given, token)
     end
 
-    MAIL_BOT_HOST_RE = /\A[A-Za-z0-9._-]{1,64}\z/
+    MAIL_ACCOUNT_BOT_HOST_RE = /\A[A-Za-z0-9._-]{1,64}\z/
     # a run holds the lock this long unless it renews or releases it
-    MAIL_BOT_LEASE = 10 * 60
+    MAIL_ACCOUNT_BOT_LEASE = 10 * 60
 
-    def mail_bot_host(value)
+    def mail_account_bot_host(value)
         host = value.to_s
-        assert(host =~ MAIL_BOT_HOST_RE, 'bad host')
+        assert(host =~ MAIL_ACCOUNT_BOT_HOST_RE, 'bad host')
         host
     end
 
@@ -552,24 +552,24 @@ class Main < Sinatra::Base
     #                                         lifted only by the admin
     #   run_host, run_until                  one run at a time (lease)
     #   logins_date, logins                  IONOS logins today
-    def mail_bot_state
-        row = neo4j_query("MATCH (b:MailPasswordResetBot {key: 'bot'}) RETURN b;").first
+    def mail_account_bot_state
+        row = neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) RETURN b;").first
         row ? row['b'] : {}
     end
 
-    def mail_bot_seen!(host = nil)
-        neo4j_query("MERGE (b:MailPasswordResetBot {key: 'bot'}) SET b.last_seen = $ts" + (host ? ', b.host = $host' : '') + ';',
+    def mail_account_bot_seen!(host = nil)
+        neo4j_query("MERGE (b:MailAccountBot {key: 'bot'}) SET b.last_seen = $ts" + (host ? ', b.host = $host' : '') + ';',
                     :ts => Time.now.to_i, :host => host)
     end
 
-    def self.mail_bot_connections
-        (@@ws_clients[:mail_bot] || {}).values
+    def self.mail_account_bot_connections
+        (@@ws_clients[:mail_account_bot] || {}).values
     end
 
     # a wake-up call for connected bots – never an instruction: the bot
     # fetches the approved cases itself and checks them
-    def self.wake_mail_password_reset_bot
-        mail_bot_connections.each do |info|
+    def self.wake_mail_account_bot
+        mail_account_bot_connections.each do |info|
             send = lambda do
                 begin
                     info[:ws].send({:command => 'wake'}.to_json)
@@ -587,9 +587,9 @@ class Main < Sinatra::Base
         end
     end
 
-    def mail_bot_status_for_admin
-        b = mail_bot_state
-        connections = self.class.mail_bot_connections
+    def mail_account_bot_status_for_admin
+        b = mail_account_bot_state
+        connections = self.class.mail_account_bot_connections
         today = Date.today.strftime('%Y-%m-%d')
         {
             :last_seen => b[:last_seen],
@@ -598,16 +598,16 @@ class Main < Sinatra::Base
             :paused => b[:paused_ts] ? {:ts => b[:paused_ts], :reason => b[:paused_reason], :host => b[:paused_host]} : nil,
             :running => (b[:run_until] || 0) > Time.now.to_i ? b[:run_host] : nil,
             :logins_today => b[:logins_date] == today ? (b[:logins] || 0) : 0,
-            :max_logins_per_day => MAIL_BOT_MAX_LOGINS_PER_DAY,
+            :max_logins_per_day => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY,
         }
     end
 
     # approved cases only: nothing is reset without the admin's decision;
     # nothing at all while the bot is paused
-    get '/api/mail_password_reset_bot/pending' do
-        require_mail_password_reset_bot!
-        mail_bot_seen!
-        b = mail_bot_state
+    get '/api/mail_account_bot/pending' do
+        require_mail_account_bot!
+        mail_account_bot_seen!
+        b = mail_account_bot_state
         if b[:paused_ts]
             respond(:cases => [], :paused => {:ts => b[:paused_ts], :reason => b[:paused_reason]})
         else
@@ -626,8 +626,8 @@ class Main < Sinatra::Base
         end
     end
 
-    post '/api/mail_password_reset_bot/result' do
-        require_mail_password_reset_bot!
+    post '/api/mail_account_bot/result' do
+        require_mail_account_bot!
         data = parse_request_data(:required_keys => [:id, :ok], :optional_keys => [:message],
                                   :types => {:ok => Object},
                                   :max_value_lengths => {:id => 64, :message => 500})
@@ -637,14 +637,14 @@ class Main < Sinatra::Base
     end
 
     # the run lock: one machine at a time, renewed while the run lasts
-    post '/api/mail_password_reset_bot/claim' do
-        require_mail_password_reset_bot!
+    post '/api/mail_account_bot/claim' do
+        require_mail_account_bot!
         data = parse_request_data(:required_keys => [:host], :max_value_lengths => {:host => 64})
-        host = mail_bot_host(data[:host])
-        mail_bot_seen!(host)
+        host = mail_account_bot_host(data[:host])
+        mail_account_bot_seen!(host)
         now = Time.now.to_i
-        row = neo4j_query(<<~END_OF_QUERY, :host => host, :now => now, :until => now + MAIL_BOT_LEASE).first
-            MATCH (b:MailPasswordResetBot {key: 'bot'})
+        row = neo4j_query(<<~END_OF_QUERY, :host => host, :now => now, :until => now + MAIL_ACCOUNT_BOT_LEASE).first
+            MATCH (b:MailAccountBot {key: 'bot'})
             WHERE b.paused_ts IS NULL AND (b.run_until IS NULL OR b.run_until < $now OR b.run_host = $host)
             SET b.run_host = $host, b.run_until = $until
             RETURN b.run_until AS run_until;
@@ -652,7 +652,7 @@ class Main < Sinatra::Base
         if row
             respond(:result => 'ok', :until => row['run_until'])
         else
-            b = mail_bot_state
+            b = mail_account_bot_state
             if b[:paused_ts]
                 respond(:result => 'paused', :reason => b[:paused_reason])
             else
@@ -661,31 +661,31 @@ class Main < Sinatra::Base
         end
     end
 
-    post '/api/mail_password_reset_bot/release' do
-        require_mail_password_reset_bot!
+    post '/api/mail_account_bot/release' do
+        require_mail_account_bot!
         data = parse_request_data(:required_keys => [:host], :max_value_lengths => {:host => 64})
-        host = mail_bot_host(data[:host])
+        host = mail_account_bot_host(data[:host])
         neo4j_query(<<~END_OF_QUERY, :host => host)
-            MATCH (b:MailPasswordResetBot {key: 'bot', run_host: $host})
+            MATCH (b:MailAccountBot {key: 'bot', run_host: $host})
             REMOVE b.run_host, b.run_until;
         END_OF_QUERY
         respond(:result => 'ok')
     end
 
     # at the first surprise: paused for every machine until the admin lifts it
-    post '/api/mail_password_reset_bot/pause' do
-        require_mail_password_reset_bot!
+    post '/api/mail_account_bot/pause' do
+        require_mail_account_bot!
         data = parse_request_data(:required_keys => [:host, :reason], :max_value_lengths => {:host => 64, :reason => 500})
-        host = mail_bot_host(data[:host])
+        host = mail_account_bot_host(data[:host])
         row = neo4j_query(<<~END_OF_QUERY, :host => host, :reason => data[:reason], :ts => Time.now.to_i).first
-            MERGE (b:MailPasswordResetBot {key: 'bot'})
+            MERGE (b:MailAccountBot {key: 'bot'})
             WITH b WHERE b.paused_ts IS NULL
             SET b.paused_ts = $ts, b.paused_reason = $reason, b.paused_host = $host
             RETURN b.paused_ts AS ts;
         END_OF_QUERY
         if row
-            notify_admin_about_mail_password_reset('Dashboard: Passwort-Bot angehalten', [
-                "Der Passwort-Bot hat auf dem Rechner #{CGI.escapeHTML(host)} angehalten:",
+            notify_admin_about_mail_password_reset('Dashboard: Postfach-Bot angehalten', [
+                "Der Postfach-Bot hat auf dem Rechner #{CGI.escapeHTML(host)} angehalten:",
                 CGI.escapeHTML(data[:reason]),
                 "Bitte nachsehen und ihn auf der Seite „Passwörter“ wieder freigeben.",
             ])
@@ -694,59 +694,59 @@ class Main < Sinatra::Base
     end
 
     # every IONOS login attempt is counted before it happens, across machines
-    post '/api/mail_password_reset_bot/login_attempt' do
-        require_mail_password_reset_bot!
+    post '/api/mail_account_bot/login_attempt' do
+        require_mail_account_bot!
         data = parse_request_data(:required_keys => [:host], :max_value_lengths => {:host => 64})
-        host = mail_bot_host(data[:host])
+        host = mail_account_bot_host(data[:host])
         today = Date.today.strftime('%Y-%m-%d')
-        row = neo4j_query(<<~END_OF_QUERY, :today => today, :max => MAIL_BOT_MAX_LOGINS_PER_DAY, :host => host).first
-            MERGE (b:MailPasswordResetBot {key: 'bot'})
+        row = neo4j_query(<<~END_OF_QUERY, :today => today, :max => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY, :host => host).first
+            MERGE (b:MailAccountBot {key: 'bot'})
             WITH b, CASE WHEN b.logins_date = $today THEN coalesce(b.logins, 0) ELSE 0 END AS logins
             WITH b, logins WHERE logins < $max AND b.paused_ts IS NULL
             SET b.logins_date = $today, b.logins = logins + 1, b.host = $host
             RETURN b.logins AS logins;
         END_OF_QUERY
         if row
-            respond(:result => 'ok', :left => MAIL_BOT_MAX_LOGINS_PER_DAY - row['logins'])
+            respond(:result => 'ok', :left => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY - row['logins'])
         else
-            respond(:result => mail_bot_state[:paused_ts] ? 'paused' : 'limit')
+            respond(:result => mail_account_bot_state[:paused_ts] ? 'paused' : 'limit')
         end
     end
 
-    get '/ws_mail_password_reset_bot' do
-        require_mail_password_reset_bot!
+    get '/ws_mail_account_bot' do
+        require_mail_account_bot!
         halt 400 unless Faye::WebSocket.websocket?(request.env)
         host = params[:host].to_s
-        halt 400 unless host =~ MAIL_BOT_HOST_RE
+        halt 400 unless host =~ MAIL_ACCOUNT_BOT_HOST_RE
         # pings keep the connection open through nginx (60 s read timeout)
         ws = Faye::WebSocket.new(request.env, nil, :ping => 25)
         client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
         ws.on(:open) do |event|
-            @@ws_clients[:mail_bot] ||= {}
-            @@ws_clients[:mail_bot][client_id] = {:ws => ws, :host => host, :since => Time.now.to_i}
-            mail_bot_seen!(host)
+            @@ws_clients[:mail_account_bot] ||= {}
+            @@ws_clients[:mail_account_bot][client_id] = {:ws => ws, :host => host, :since => Time.now.to_i}
+            mail_account_bot_seen!(host)
             approved = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN count(c) AS n;").first['n']
             ws.send({:command => approved > 0 ? 'wake' : 'hello'}.to_json)
         end
         ws.on(:close) do |event|
-            (@@ws_clients[:mail_bot] || {}).delete(client_id)
+            (@@ws_clients[:mail_account_bot] || {}).delete(client_id)
         end
         ws.rack_response
     end
 
     # ---- the admin's view of the bot ----
 
-    post '/api/reset_mail_password_reset_bot_logins' do
+    post '/api/reset_mail_account_bot_logins' do
         require_admin!
-        neo4j_query("MATCH (b:MailPasswordResetBot {key: 'bot'}) SET b.logins = 0, b.logins_date = $today;", :today => Date.today.strftime('%Y-%m-%d'))
-        self.class.wake_mail_password_reset_bot
+        neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) SET b.logins = 0, b.logins_date = $today;", :today => Date.today.strftime('%Y-%m-%d'))
+        self.class.wake_mail_account_bot
         respond(:result => 'ok')
     end
 
-    post '/api/resume_mail_password_reset_bot' do
+    post '/api/resume_mail_account_bot' do
         require_admin!
-        neo4j_query("MATCH (b:MailPasswordResetBot {key: 'bot'}) REMOVE b.paused_ts, b.paused_reason, b.paused_host;")
-        self.class.wake_mail_password_reset_bot
+        neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) REMOVE b.paused_ts, b.paused_reason, b.paused_host;")
+        self.class.wake_mail_account_bot
         respond(:result => 'ok')
     end
 end

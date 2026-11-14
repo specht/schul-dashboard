@@ -9,9 +9,9 @@ const path = require('path');
 const { parseTotpSecret } = require('./totp');
 
 // in ~/.ssh, which the maintainer keeps (backed up) – the TOTP secret must not get lost
-const CONFIG_DIR = path.join(os.homedir(), '.ssh', 'gyst-mail-password-bot');
+const CONFIG_DIR = path.join(os.homedir(), '.ssh', 'gyst-mail-account-bot');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
-const STATE_DIR = path.join(os.homedir(), '.local', 'state', 'gyst-mail-password-bot');
+const STATE_DIR = path.join(os.homedir(), '.local', 'state', 'gyst-mail-account-bot');
 
 const DEFAULTS = {
     imap_host: 'imap.ionos.de',
@@ -23,7 +23,7 @@ const DEFAULTS = {
     poll_minutes: 3,
     // background mode: besides the websocket wake-up, ask this often
     fallback_poll_minutes: 15,
-    // a desktop question before every sitting (zenity)
+    // a question in the terminal before every sitting
     confirm: true,
     // after a reset: check the new password by IMAP after these delays
     // (IONOS: "takes effect within a few minutes")
@@ -35,7 +35,7 @@ const DEFAULTS = {
     chrome_channel: 'chrome',
 };
 
-const REQUIRED = ['dashboard_url', 'dashboard_token', 'ionos_login', 'ionos_password', 'totp_secret', 'allowed_mailboxes'];
+const REQUIRED = ['dashboard_url', 'dashboard_token', 'ionos_login', 'ionos_password', 'allowed_mailboxes'];
 
 function checkFileIsPrivate(file, what) {
     const st = fs.statSync(file);
@@ -65,14 +65,23 @@ function validateConfig(raw, { hostname = os.hostname(), recordingOnly = false }
         if (config[key] === undefined || config[key] === null || config[key] === '') throw new Error(`Konfiguration: ${key} fehlt`);
     }
     checkHost(config, hostname);
-    if (!/^https:\/\/[^/]+$/.test(config.dashboard_url)) throw new Error('Konfiguration: dashboard_url muss https://host sein (ohne / am Ende)');
+    // the local dev instance only for test runs (it holds a copy of real cases)
+    config.dashboard_is_local = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(config.dashboard_url);
+    if (!config.dashboard_is_local && !/^https:\/\/[^/]+$/.test(config.dashboard_url)) throw new Error('Konfiguration: dashboard_url muss https://host sein (ohne / am Ende) oder die lokale Entwicklungsinstanz');
     if (String(config.dashboard_token).length < 32) throw new Error('Konfiguration: dashboard_token ist zu kurz');
     const pattern = String(config.allowed_mailboxes);
     if (!pattern.startsWith('^') || !pattern.endsWith('$') || !pattern.includes('@')) {
         throw new Error('Konfiguration: allowed_mailboxes muss ein verankerter Ausdruck mit Domain sein (^…@…$)');
     }
     config.allowed_mailboxes_re = new RegExp(pattern);
-    config.totp = parseTotpSecret(config.totp_secret);
+    // the IONOS login with a second factor – false only while it isn't set up
+    // yet; then the bot stops if IONOS asks for a code after all
+    if (config.ionos_2fa === undefined) config.ionos_2fa = true;
+    if (typeof config.ionos_2fa !== 'boolean') throw new Error('Konfiguration: ionos_2fa muss true oder false sein');
+    if (config.ionos_2fa) {
+        if (!config.totp_secret) throw new Error('Konfiguration: totp_secret fehlt');
+        config.totp = parseTotpSecret(config.totp_secret);
+    }
     if (config.test_mailbox !== undefined) {
         if (!config.allowed_mailboxes_re.test(config.test_mailbox)) throw new Error('Konfiguration: test_mailbox passt nicht zu allowed_mailboxes');
         const passwords = config.test_mailbox_passwords;

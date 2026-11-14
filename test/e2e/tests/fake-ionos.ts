@@ -4,7 +4,7 @@ import { totp, TEST_OTP_SECRET } from './fixtures';
 // A stand-in for the IONOS login and control panel, served through
 // context.route() – the bot's browser never reaches the real IONOS (every
 // other host is aborted). Its structure follows the recording with the
-// maintainer (2026-11-14, see src/mail-password-bot/lib/ionos.js): ids,
+// maintainer (2026-11-14, see src/mail-account-bot/lib/ionos.js): ids,
 // data-testids, URLs and the order of the pages. Variants make the pages
 // differ the way a changed or suspicious IONOS page might.
 
@@ -17,12 +17,12 @@ export type FakeVariant = {
   noOtpStep?: boolean;
   redirectAfterLogin?: string; // full URL
   dialogShows?: string; // the edit-password page shows another address
-  menuTargets?: string; // the "Passwort ändern" item leads to this address's page
+  rowLinksTo?: string; // the row's mailbox link (and menu) lead to this address's number
   duplicate?: string; // this address twice in the list
   rowsWithoutTestIds?: boolean; // changed layout
   noSuccessMessage?: boolean;
   errorOnSubmit?: boolean;
-  popupOnTasks?: boolean;
+  popupOnList?: boolean;
 };
 
 export type FakeIonos = {
@@ -88,10 +88,10 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
     const tid = variant.rowsWithoutTestIds ? 'data-qa' : 'data-testid';
     const trs = rows.map((r) => {
       const id = ids.get(r.address)!;
-      const target = variant.menuTargets ? ids.get(variant.menuTargets)! : id;
+      const target = variant.rowLinksTo ? ids.get(variant.rowLinksTo)! : id;
       const link = r.kind === 'forward'
         ? `<a href="/email/${CONTRACT}/FORWARD/${id}/details" data-testid="link-email-forward" class="link">${esc(r.address)}</a>`
-        : `<a aria-label="Mail Basic ${esc(r.address)}" href="/email/${CONTRACT}/MAILBOX/${id}/details" data-testid="link-email-mailbox" class="link tooltip">${esc(r.address)}</a>`;
+        : `<a aria-label="Mail Basic ${esc(r.address)}" href="/email/${CONTRACT}/MAILBOX/${target}/details" data-testid="link-email-mailbox" class="link tooltip">${esc(r.address)}</a>`;
       return `<tr ${tid}="tr-${esc(r.address)}" class="table__row table__row--has-flyout">
         <td>${r.kind === 'forward' ? 'Weiterleitung' : 'Mail Basic'}</td><td>${link}</td>
         <td><div class="context-menu"><span role="button" aria-label="Einstellungen" data-testid="button-context-menu-trigger" class="context-menu__trigger">…</span>
@@ -112,9 +112,9 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
        <table id="table-emails" data-testid="table-emails" class="table"><tr class="table__header"><th>TYP</th><th>E-MAIL-ADRESSE</th><th>AKTIONEN</th></tr>${trs.join('')}</table>
        </main>
        <script>
+         ${variant.popupOnList ? "setTimeout(() => window.open('https://mein.ionos.de/werbung', '_blank'), 300);" : ''}
          for (const t of document.querySelectorAll('[data-testid=button-context-menu-trigger]')) {
            t.addEventListener('click', () => {
-             ${variant.popupOnTasks ? "window.open('https://mein.ionos.de/werbung', '_blank');" : ''}
              for (const m of document.querySelectorAll('.context-menu__list')) m.hidden = true;
              t.parentNode.querySelector('.context-menu__list').hidden = false;
            });

@@ -62,7 +62,7 @@ async function bot(baseURL: string | undefined, token = BOT_TOKEN) {
 
 async function botCases(baseURL: string | undefined, mailbox: string) {
   const api = await bot(baseURL);
-  const pending = await api.get('/api/mail_password_reset_bot/pending');
+  const pending = await api.get('/api/mail_account_bot/pending');
   expect(pending.status()).toBe(200);
   const all: { id: string; mailboxes: { mailbox: string; password: string }[] }[] = (await pending.json()).cases;
   return { api, open: all.filter((c) => c.mailboxes.some((m) => m.mailbox === mailbox)) };
@@ -73,7 +73,7 @@ async function botFinishes(baseURL: string | undefined, mailbox: string, ok: boo
   expect(open, `exactly one approved case for ${mailbox}`).toHaveLength(1);
   const password = open[0].mailboxes.find((m) => m.mailbox === mailbox)!.password;
   expect(password).toMatch(/^[A-Za-z0-9-]{8,}$/);
-  const result = await api.post('/api/mail_password_reset_bot/result', { data: { id: open[0].id, ok, message } });
+  const result = await api.post('/api/mail_account_bot/result', { data: { id: open[0].id, ok, message } });
   expect(result.status()).toBe(200);
   expect((await result.json()).result).toBe('ok');
   return password;
@@ -353,10 +353,10 @@ test('Wer darf was: fremde Postfächer, Eltern-Postfächer, Freigabe, Grenzen, B
 
   // the bot interface wants the token
   const noToken = await playwrightRequest.newContext({ baseURL });
-  expect((await noToken.get('/api/mail_password_reset_bot/pending')).status()).toBe(401);
+  expect((await noToken.get('/api/mail_account_bot/pending')).status()).toBe(401);
   const wrongToken = await bot(baseURL, 'x'.repeat(BOT_TOKEN.length));
-  expect((await wrongToken.get('/api/mail_password_reset_bot/pending')).status()).toBe(401);
-  expect((await wrongToken.post('/api/mail_password_reset_bot/result', { data: { id: 'x', ok: true } })).status()).toBe(401);
+  expect((await wrongToken.get('/api/mail_account_bot/pending')).status()).toBe(401);
+  expect((await wrongToken.post('/api/mail_account_bot/result', { data: { id: 'x', ok: true } })).status()).toBe(401);
 });
 
 test('Alte Adressen führen zur Seite Passwörter', async ({ page }) => {

@@ -379,14 +379,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     $('#mail_reset_bot_state').on('click', '#bu_reset_mail_bot_logins', function(e) {
         dashboardConfirm('Der Bot darf sich danach heute wieder bei IONOS anmelden. Viele Anmeldungen kurz nacheinander können IONOS misstrauisch machen.', function() {
-            api_call('/api/reset_mail_password_reset_bot_logins', {}, function(data) {
+            api_call('/api/reset_mail_account_bot_logins', {}, function(data) {
                 if (data.success) load();
             });
         }, { title: 'Anmeldezähler zurücksetzen', confirm: 'Zurücksetzen' });
     });
     $('#mail_reset_bot_state').on('click', '#bu_resume_mail_bot', function(e) {
         dashboardConfirm('Der Bot arbeitet danach wieder freigegebene Anfragen ab. Hast du dir angesehen, warum er angehalten hat?', function() {
-            api_call('/api/resume_mail_password_reset_bot', {}, function(data) {
+            api_call('/api/resume_mail_account_bot', {}, function(data) {
                 if (data.success) load();
             });
         }, { title: 'Bot wieder freigeben', confirm: 'Freigeben' });

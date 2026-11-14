@@ -82,9 +82,6 @@ body.dark .spa-card-name {
     color: #666;
     margin-top: 2em;
 }
-#spa_bu_print {
-    display: none;
-}
 /* Ausdruck: nur Überschrift, Tafel und Plätze, ohne Dashboard-Menü,
    Hintergrundbild und Schatten (die werden oft gar nicht oder grau gedruckt). */
 @page {
@@ -140,7 +137,6 @@ body.dark .spa-card-name {
     <h1>Sitzplan <span id="spa_label"></span></h1>
     <div class='api_messages'></div>
     <p id="spa_saved_at" class="text-muted"></p>
-    <button class="btn btn-light spa-no-print" id="spa_bu_print"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</button>
     <span class="spa-tafel">Tafel</span>
     <div class="spa-seat-scroll"><div id="spa_seats"></div></div>
     <p class="spa-empty-hint" id="spa_empty_hint" style="display: none;">Für diese Klasse/diesen Raum wurde noch kein Sitzplan gespeichert.</p>
@@ -187,7 +183,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         places = data.places;
         render_seats(false);
-        $('#spa_bu_print').show().on('click', function () { window.print(); });
         // Für den Ausdruck auf eine Querformat-Seite zugeschnitten zeichnen,
         // danach wieder in Bildschirmgröße.
         window.addEventListener('beforeprint', function () { render_seats(true); });

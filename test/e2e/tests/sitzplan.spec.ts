@@ -16,6 +16,14 @@ async function setUpRoom(page: Page) {
     data: { klasse: KLASSE, raum, seats: JSON.stringify(seats) },
   });
   expect(room.status()).toBe(200);
+  // start clean even after an aborted earlier run: no lists, all areas used
+  const lists = await page.request.post('/api/sph_save_seating_groups', { data: { klasse: KLASSE, groups: '[]' } });
+  expect(lists.status()).toBe(200);
+  for (const mode of ['manual', 'spread', 'wishes'])
+    for (const area of ['pairs', 'fixed', 'spread']) {
+      const reset = await page.request.post('/api/sph_set_rule_area', { data: { klasse: KLASSE, raum, mode, area, active: 'yes' } });
+      expect(reset.status()).toBe(200);
+    }
   return raum;
 }
 
@@ -147,6 +155,8 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   for (const name of ['Max', 'Elli', 'Mallory']) {
     await expect(page.locator('#spa_seats')).toContainText(name);
   }
+  // printing is a button of its own on the seating plan page, not here
+  await expect(page.locator('.spa-container button')).toHaveCount(0);
 });
 
 test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Verteilung im Raum', async ({ page }) => {
@@ -212,9 +222,9 @@ test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Vertei
   const list = page.locator('#sph_groups_list .sph-group').first();
   await expect(list).toContainText('Liste A');
   await list.locator('select').selectOption({ label: 'Max Mustermann' });
-  await expect(list).toContainText('Max Mustermann');
+  await expect(list.locator('.pair-chip', { hasText: 'Max Mustermann' })).toBeVisible();
   await list.locator('select').selectOption({ label: 'Elli Mustermann' });
-  await expect(list).toContainText('Elli Mustermann');
+  await expect(list.locator('.pair-chip', { hasText: 'Elli Mustermann' })).toBeVisible();
   await page.reload();
   await page.locator('#sph_vorgaben > summary').click();
   await expect(page.locator('#sph_groups_list .sph-group').first()).toContainText('Elli Mustermann');
@@ -305,9 +315,9 @@ test('Sitzplan: im Raum verteilen, Verstoß nach dem Umsetzen rot markiert', asy
   await page.locator('#sph_bu_add_group').click();
   const list = page.locator('#sph_groups_list .sph-group').first();
   await list.locator('select').selectOption({ label: 'Max Mustermann' });
-  await expect(list).toContainText('Max Mustermann');
+  await expect(list.locator('.pair-chip', { hasText: 'Max Mustermann' })).toBeVisible();
   await list.locator('select').selectOption({ label: 'Elli Mustermann' });
-  await expect(list).toContainText('Elli Mustermann');
+  await expect(list.locator('.pair-chip', { hasText: 'Elli Mustermann' })).toBeVisible();
 
   await startNewPlan(page, 'spread');
   await expect(page.locator('#sph_room_bar #sph_bu_start_spread')).toHaveAttribute('aria-pressed', 'true');
@@ -362,9 +372,9 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
   await page.locator('#sph_bu_add_group').click();
   const list = page.locator('#sph_groups_list .sph-group').first();
   await list.locator('select').selectOption({ label: 'Max Mustermann' });
-  await expect(list).toContainText('Max Mustermann');
+  await expect(list.locator('.pair-chip', { hasText: 'Max Mustermann' })).toBeVisible();
   await list.locator('select').selectOption({ label: 'Elli Mustermann' });
-  await expect(list).toContainText('Elli Mustermann');
+  await expect(list.locator('.pair-chip', { hasText: 'Elli Mustermann' })).toBeVisible();
   await expect(page.locator('#sph_area_spread')).toBeHidden();
 
   // "Im Raum verteilen": Verteilung im Raum switched off for this tool

@@ -1105,8 +1105,18 @@ function group_letter(i) {
 }
 
 function save_groups(groups) {
+    // Bis die Antwort da ist, lässt sich an den Listen nichts ändern: Sonst
+    // ginge eine zweite, schnelle Änderung vom alten Stand aus und überschriebe
+    // die erste.
+    $('#sph_groups_list').find('select, button, a').prop('disabled', true).css('pointer-events', 'none');
+    $('#sph_bu_add_group').prop('disabled', true);
     api_call('/api/sph_save_seating_groups', {klasse: klasse, groups: JSON.stringify(groups)}, function (data) {
-        if (data.success === false) { dashboardAlert(data.error || 'Die Listen konnten nicht gespeichert werden.'); return; }
+        $('#sph_bu_add_group').prop('disabled', false);
+        if (data.success === false) {
+            render_groups();
+            dashboardAlert(data.error || 'Die Listen konnten nicht gespeichert werden.');
+            return;
+        }
         seating_groups = data.groups;
         render_groups();
         render_wishes();

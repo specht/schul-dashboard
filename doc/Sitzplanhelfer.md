@@ -137,7 +137,8 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    gerade geändert wird).
 9. **Drucken** öffnet die Ansicht ohne Wünsche direkt mit Druckdialog
    (`?print=1`). Gedruckt werden nur Überschrift, Tafel und Plätze, auf
-   eine A4-Seite quer skaliert, ohne Dashboard-Menü und Hintergrund.
+   eine A4-Seite quer skaliert, ohne Dashboard-Menü und Hintergrund. Die
+   Ansicht „Für Schüler anzeigen“ selbst hat keinen eigenen Druckknopf.
 
 Jeder Platz zeigt wie im Shuffler oben das Foto (aus der Nextcloud) und
 darunter den ganzen Namen, Vor- und Nachname je in einer Zeile. Passt ein

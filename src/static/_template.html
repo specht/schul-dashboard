@@ -397,6 +397,49 @@
             }
         }
 
+        // Limited places: shows how many places are left for each answer and
+        // locks answers that are full. Places taken by this person's stored
+        // response stay theirs; a place is only booked when the response is sent.
+        function update_poll_places_labels(only_item_index) {
+            if (!poll_run_data.places)
+                return;
+            let limits = poll_run_data.places.limits || {};
+            let taken = poll_run_data.places.taken_by_others || {};
+            for (let item_index in limits) {
+                if (typeof (only_item_index) !== 'undefined' && `${item_index}` !== `${only_item_index}`)
+                    continue;
+                let widget = poll_run_data.widgets[item_index];
+                if (!widget)
+                    continue;
+                let stored = (poll_run_data.stored_response || {})[item_index];
+                if (typeof (stored) === 'undefined' || stored === null)
+                    stored = [];
+                if (!Array.isArray(stored))
+                    stored = [stored];
+                jQuery.each(widget.find('p'), function (_, el) {
+                    let p = $(el);
+                    let answer_index = `${p.data('answer-index')}`;
+                    let limit = limits[item_index][answer_index];
+                    p.find('.poll-places-label').remove();
+                    p.removeClass('poll-answer-full').css('opacity', '').css('cursor', '');
+                    if (typeof (limit) === 'undefined')
+                        return;
+                    let mine = stored.indexOf(parseInt(answer_index)) >= 0;
+                    let others = (taken[item_index] || {})[answer_index] || 0;
+                    let free = limit - others - (mine ? 1 : 0);
+                    let label = $('<span>').addClass('poll-places-label text-muted').css('font-size', '85%');
+                    if (!mine && others >= limit) {
+                        p.addClass('poll-answer-full').css('opacity', '0.5').css('cursor', 'not-allowed');
+                        p.removeClass('selected');
+                        label.text(' – ausgebucht');
+                    } else {
+                        label.text(` – ${mine ? 'gebucht, ' : ''}noch ${Math.max(free, 0)} von ${limit} ${limit === 1 ? 'Platz' : 'Plätzen'} frei`);
+                    }
+                    p.append(label);
+                });
+            }
+        }
+
         function launch_poll(prid, external_code) {
             if (typeof (external_code) === 'undefined')
                 external_code = null;
@@ -414,6 +457,11 @@
                         poll_run_data.organizer = data.organizer;
                         poll_run_data.total_participants = data.total_participants;
                         poll_run_data.stored_response = data.stored_response;
+                        poll_run_data.places = data.places || null;
+                        if (poll_run_data.places)
+                            $('#pollResponseModal .poll-run-limited-places').show();
+                        else
+                            $('#pollResponseModal .poll-run-limited-places').hide();
                         if (poll_run_data.poll_run.anonymous) {
                             $('.poll-run-anonymous').show();
                             $('.poll-run-non-anonymous').hide();
@@ -463,13 +511,16 @@
                                             p.addClass('selected');
                                     }
                                     p.click(function (e) {
-                                        let p = $(e.target);
-                                        let parent = $(e.target.closest('.poll_radio_buttons'));
+                                        let p = $(e.currentTarget);
+                                        let parent = $(e.currentTarget.closest('.poll_radio_buttons'));
                                         let item_index = parent.data('item-index');
                                         let item = poll_run_data.poll_run.items[item_index];
                                         let answer_index = p.data('answer-index');
                                         let type = parent.data('poll_item_type');
                                         let p_was_selected = p.hasClass('selected');
+                                        // no free place left: can't be chosen (but can be deselected)
+                                        if (p.hasClass('poll-answer-full') && !p_was_selected)
+                                            return;
                                         if (type === 'radio') {
                                             parent.find('p').removeClass('selected');
                                         }
@@ -493,6 +544,7 @@
                                     bc.append(p);
                                 }
                                 div.append(bc);
+                                update_poll_places_labels(item_index);
                             } else if (item.type === 'textarea') {
                                 let textarea = $('<textarea>').addClass('form-control').data('item-index', item_index).css('margin-bottom', '15px');
                                 textarea.val((poll_run_data.stored_response || {})[item_index] || '');
@@ -623,6 +675,11 @@
                         anonym.<br /> <span class='poll-run-organizer'></span> wird #{schueler_logged_in? ? 'deine' :
                         'Ihre'} Antworten sehen können und auch die Tatsache, dass die Antworten von
                         #{schueler_logged_in? ? 'dir' : 'Ihnen'} stammen.
+                    </div>
+                    <div class='alert alert-info poll-run-limited-places' style='display: none;'>
+                        <strong>Begrenzte Plätze:</strong> Die Plätze werden in der Reihenfolge der Anmeldung
+                        vergeben. Ein Platz ist erst gebucht, wenn #{schueler_logged_in? ? 'du auf »Senden« klickst' :
+                        'Sie auf »Senden« klicken'}. Ausgebuchte Möglichkeiten lassen sich nicht mehr wählen.
                     </div>
                     <div class='row'>
                         <div class='col-md-12 poll-items'></div>
@@ -927,9 +984,16 @@
                         if (typeof (data.error) !== 'undefined') {
                             $('#pollResponseModal .poll_submit_error_message').text(': ' + data.error);
                             $('#pollResponseModal .poll_submit_error').fadeIn();
+                            if (data.places) {
+                                // someone else was faster: show the current places
+                                poll_run_data.places = data.places;
+                                update_poll_places_labels();
+                                collect_poll_run_data();
+                            }
                         } else {
                             $('#pollResponseModal .poll_submit_success').fadeIn();
                             poll_run_data.stored_response = poll_run_data.response;
+                            update_poll_places_labels();
                             collect_poll_run_data();
                         }
                     } else {

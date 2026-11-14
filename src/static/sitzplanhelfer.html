@@ -2425,10 +2425,10 @@ function render_history(cycles) {
     let rows = '';
     cycles.forEach((c, i) => {
         let date_str = new Date(c.saved_at * 1000).toLocaleString('de-DE');
-        if (c.updated_at) date_str += `<br><small class="text-muted">geändert am ${new Date(c.updated_at * 1000).toLocaleString('de-DE')}</small>`;
         let current_badge = i === 0 ? ' <span class="badge badge-success">aktuell</span>' : '';
         let editing = c.id === reopened_id;
         if (editing) current_badge += ' <span class="badge badge-warning">wird bearbeitet</span>';
+        if (c.updated_at) current_badge += `<br><small class="text-muted">geändert am ${new Date(c.updated_at * 1000).toLocaleString('de-DE')}</small>`;
         let edit_button = can_start_cycle && !editing
             ? ` <button class="btn btn-sm btn-outline-primary bu-edit-cycle" data-id="${esc(c.id)}">Bearbeiten</button>` : '';
         let delete_button = editing ? '' : `<button class="btn btn-sm btn-outline-danger bu-delete-cycle" data-id="${esc(c.id)}">Löschen</button>`;
@@ -2488,9 +2488,11 @@ function reopen_saved_plan(cycle_id) {
     set_status('');
     api_call('/api/sph_reopen_saved_cycle', {cycle_id: cycle_id}, function (data) {
         if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zum Bearbeiten geöffnet werden.'); return; }
+        // nach oben: dort stehen die Werkzeuge und der Hinweis, welcher Plan
+        // gerade bearbeitet wird
         load_state(function () {
-            let work = document.getElementById('sph_view_work');
-            if (work) work.scrollIntoView({block: 'start'});
+            let top = document.getElementById('sph_label');
+            if (top) top.closest('h1').scrollIntoView({block: 'start'});
         });
     });
 }

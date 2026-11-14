@@ -5,6 +5,7 @@
 //   node bot.js check [--imap]         configuration, TOTP code to compare with the app, dashboard token
 //   node bot.js record                 open the bot's browser; you log in and click through, the structure is recorded
 //   node bot.js run --dry-run          everything up to the form, then "Abbrechen" – nothing is changed
+//                                      (Chrome runs invisibly; add --show to watch it)
 //   node bot.js run --test-mailbox     reset the test mailbox (two passwords take turns)
 //   node bot.js run                    approved cases from the dashboard, once
 //   node bot.js serve                  in the background: woken by the dashboard (websocket), asks every 15 minutes too
@@ -32,14 +33,23 @@ async function confirmInTerminal(lines) {
     return /^j/i.test(answer.trim());
 }
 
-async function openContext(config, state) {
+// The same Chrome and profile as when you log in yourself. In the background
+// (default) without a window, so nothing takes the focus; --show to watch.
+// Invisible Chrome calls itself "HeadlessChrome" – it sends the normal
+// identifier of this Chrome version instead, as on your own logins.
+function chromeUserAgent() {
+    const version = require('child_process').execFileSync('google-chrome', ['--version'], { encoding: 'utf8' });
+    const major = (/(\d+)\./.exec(version) || [])[1];
+    if (!major) throw new Error('Chrome-Version nicht erkannt');
+    return `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36`;
+}
+
+async function openContext(config, state, { show = false } = {}) {
     const { chromium } = require('playwright-core');
-    return chromium.launchPersistentContext(state.profileDir, {
-        channel: config.chrome_channel,
-        headless: false,
-        viewport: null,
-        locale: 'de-DE',
-    });
+    const options = { channel: config.chrome_channel, locale: 'de-DE' };
+    if (show) Object.assign(options, { headless: false, viewport: null });
+    else Object.assign(options, { headless: true, viewport: { width: 1280, height: 900 }, userAgent: chromeUserAgent() });
+    return chromium.launchPersistentContext(state.profileDir, options);
 }
 
 async function main() {
@@ -55,7 +65,8 @@ async function main() {
         const { record } = require('./lib/record');
         state.lock();
         try {
-            const context = await openContext(config, state);
+            // recording: you click yourself, so always with a window
+            const context = await openContext(config, state, { show: true });
             await record({ context, state, testMailbox: config.test_mailbox });
         } finally { state.unlock(); }
         return;
@@ -98,7 +109,7 @@ async function main() {
     const runOnce = (opts = {}) => require('./lib/run').run({
         config, state, dashboard, imapLoginWorks: imap, notify,
         confirm: config.confirm ? confirmInTerminal : undefined,
-        openContext: () => openContext(config, state), ...opts,
+        openContext: () => openContext(config, state, { show: flags.includes('--show') }), ...opts,
     });
     if (command === 'run') {
         const summary = await runOnce({ dryRun: flags.includes('--dry-run'), testMailbox: flags.includes('--test-mailbox') });

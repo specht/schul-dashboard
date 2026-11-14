@@ -3,8 +3,8 @@
 // on 2026-11-14 (bot.js record):
 //
 //   login.ionos.de              user name (#username), "Weiter", password
-//                               (#password), "Weiter", [second factor], then
-//                               mein.ionos.de
+//                               (#password), "Weiter", code (/totp,
+//                               #passcode), "Weiter", then mein.ionos.de
 //   mein.ionos.de/email/        leads to /email/<contract>/email-overview:
 //                               table #table-emails, one row per address,
 //                               tr[data-testid="tr-<address>"]; search field
@@ -35,7 +35,9 @@
 const { Stop, CaseProblem, Postpone, emailsIn, waitForState, sleep } = require('./guard');
 const { totpAt } = require('./totp');
 
-const FLOW_STATUS = 'recorded';
+// verified 2026-11-14: dry runs and a reset of the test mailbox, a dry run on
+// a real case with the 2FA login – watched by the maintainer
+const FLOW_STATUS = 'verified';
 
 const HOSTS = ['login.ionos.de', 'mein.ionos.de'];
 
@@ -47,9 +49,8 @@ const S = {
     consent: '#confirmSelection[data-testid="confirm-selection"]',
     username: 'input#username',
     password: 'input#password[type="password"]',
-    // the second factor was not part of the recording (IONOS didn't ask) –
-    // usual forms of a code field
-    otp: 'input[autocomplete="one-time-code"], input#otp, input[name="otp"], input[name="totp"], input[name="code"]',
+    // second factor (recorded 2026-11-14): login.ionos.de/totp, "Login bestätigen"
+    otp: 'input#passcode[name="passcode"][autocomplete="one-time-code"]',
     loginNext: 'button#button--with-loader[type="submit"]',
     loginError: '[role="alert"], .notification--error, .message--error, .form-error',
     captcha: 'iframe[src*="captcha" i], [class*="captcha" i], [id*="captcha" i]',
@@ -171,7 +172,7 @@ class IonosSession {
         await this.pacer.pause(500, 1500);
         await this.click(await this.one(S.loginNext, 'Anmeldung: „Weiter“'));
         reached = await this.wait({
-            otp: all(onHost('login.ionos.de'), visible(S.otp), none(loginFailed, captcha)),
+            otp: all(onHost('login.ionos.de'), (p) => new URL(p.url()).pathname === '/totp', visible(S.otp), none(loginFailed, captcha)),
             failed: loginFailed, captcha,
             loggedInWithoutOtp: onHost('mein.ionos.de'),
         }, 'Anmeldung: zweiter Faktor');

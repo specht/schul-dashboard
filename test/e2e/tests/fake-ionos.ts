@@ -50,14 +50,14 @@ const breadcrumb = (address?: string, id?: string) =>
 
 function loginForm(action: string, field: string, label: string, opts: { error?: string; consent?: boolean } = {}) {
   const type = field === 'password' ? 'password' : field === 'username' ? 'email' : 'text';
-  const extra = field === 'otp' ? 'autocomplete="one-time-code"' : field === 'username' ? 'name="identifier" autocomplete="username"' : 'name="password" autocomplete="current-password"';
+  const extra = field === 'passcode' ? 'name="passcode" autocomplete="one-time-code"' : field === 'username' ? 'name="identifier" autocomplete="username"' : 'name="password" autocomplete="current-password"';
   return html(
     'Login – Zugang zu Ihrem Kundenkonto',
     `${opts.consent ? '<div id="consent"><button id="confirmSelection" data-testid="confirm-selection" onclick="this.parentNode.remove()">Ablehnen</button></div>' : ''}
      <h1>Anmelden</h1>${opts.error ? `<div role="alert">${esc(opts.error)}</div>` : ''}
      <form method="post" action="${action}" novalidate>
        <label for="${field}">${esc(label)}</label>
-       <input id="${field}" ${field === 'otp' ? 'name="otp"' : ''} type="${type}" ${extra} class="input-text">
+       <input id="${field}" type="${type}" ${extra} class="input-text">
        <button id="button--with-loader" type="submit" class="button button--primary">Weiter</button>
      </form>`,
   );
@@ -168,22 +168,26 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
         if (variant.captchaAfterUsername) {
           return page(route, html('Sicherheitsprüfung', '<h1>Sicherheitsprüfung</h1><div class="captcha-box">Bitte bestätigen Sie, dass Sie kein Roboter sind.</div>'));
         }
-        return page(route, loginForm('/otp', 'password', 'Passwort'));
+        return page(route, loginForm('/totp-check', 'password', 'Passwort'));
       }
-      if (url.pathname === '/otp') {
+      if (url.pathname === '/totp-check') {
         current().password = true;
-        if (variant.rejectPassword) return page(route, loginForm('/otp', 'password', 'Passwort', { error: 'Benutzername oder Passwort ist falsch.' }));
+        if (variant.rejectPassword) return page(route, loginForm('/totp-check', 'password', 'Passwort', { error: 'Benutzername oder Passwort ist falsch.' }));
         if (variant.noOtpStep) {
           fake.loggedIn = true;
           return page(route, redirect('https://mein.ionos.de/home/products'));
         }
-        return page(route, loginForm('/done', 'otp', 'Sicherheitscode aus der App'));
+        // like IONOS: on to /totp, "Login bestätigen"
+        return page(route, redirect('https://login.ionos.de/totp'));
+      }
+      if (url.pathname === '/totp' && request.method() === 'GET') {
+        return page(route, loginForm('/done', 'passcode', 'Code'));
       }
       if (url.pathname === '/done') {
-        const code = form.get('otp') || '';
+        const code = form.get('passcode') || '';
         const now = Date.now();
         if (![now - 30_000, now, now + 30_000].some((t) => totp(TEST_OTP_SECRET, t) === code)) {
-          return page(route, loginForm('/done', 'otp', 'Sicherheitscode aus der App', { error: 'Der Code ist ungültig.' }));
+          return page(route, loginForm('/done', 'passcode', 'Code', { error: 'Der Code ist ungültig.' }));
         }
         current().otp = true;
         fake.loggedIn = true;

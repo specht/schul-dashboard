@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
     }
 
-    function case_row(entry, bot_active) {
+    function case_row(entry, bot) {
         const tr = $('<tr>').addClass('mail-case').attr('data-id', entry.id).attr('data-state', entry.state);
         const boxes = $('<td>');
         for (const item of entry.mailboxes) {
@@ -140,9 +140,14 @@ document.addEventListener('DOMContentLoaded', function() {
             button('approve', 'Zurücksetzen', 'btn-danger');
             button('reject', 'Ablehnen', 'btn-outline-secondary');
         } else if (entry.state === 'approved') {
-            text(bot_active
-                ? '2. Der Bot setzt das Passwort gerade zurück. Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:'
-                : '2. Im Kundenbereich des Mail-Anbieters auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:');
+            const connected = (bot.connected || []).length > 0;
+            text(bot.paused
+                ? '2. Der Bot ist angehalten (siehe oben). Im Kundenbereich des Mail-Anbieters selbst auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:'
+                : bot.running
+                    ? `2. Der Bot arbeitet gerade daran (Rechner ${bot.running}). Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:`
+                    : connected
+                        ? '2. Der Bot ist verbunden und erledigt das gleich. Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:'
+                        : '2. Wartet auf den Bot – er erledigt freigegebene Anfragen, sobald er läuft. Oder selbst im Kundenbereich des Mail-Anbieters auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:');
             button('done', 'Erledigt', 'btn-success');
             button('failed', 'Hat nicht geklappt', 'btn-outline-secondary');
         } else if (entry.state === 'failed') {
@@ -178,10 +183,13 @@ document.addEventListener('DOMContentLoaded', function() {
             el.attr('data-state', 'paused');
             el.append($('<span>').text(`Bot angehalten (${fmt_ts(bot.paused.ts)}, Rechner ${bot.paused.host}): ${bot.paused.reason} `));
             el.append($('<button>').addClass('btn btn-sm btn-outline-secondary').attr('id', 'bu_resume_mail_bot').text('Bot wieder freigeben'));
+        } else if (bot.running) {
+            el.attr('data-state', 'running');
+            el.append($('<i>').addClass('fa fa-cog fa-spin')).append(document.createTextNode(` Bot arbeitet gerade (Rechner ${bot.running}).`));
         } else if ((bot.connected || []).length > 0) {
             el.attr('data-state', 'connected');
             const c = bot.connected[0];
-            el.text(`Bot verbunden (Rechner ${c.host}, seit ${fmt_ts(c.since)})` + (bot.running ? ' – arbeitet gerade' : '') + '.');
+            el.text(`Bot verbunden (Rechner ${c.host}, seit ${fmt_ts(c.since)}) – erledigt freigegebene Anfragen sofort.`);
         } else if (bot.last_seen) {
             el.attr('data-state', 'offline');
             el.text(`Bot nicht verbunden, zuletzt aktiv: ${fmt_ts(bot.last_seen)}` + (bot.host ? ` (Rechner ${bot.host})` : '') + '. Freigegebene Anfragen werden erledigt, sobald er wieder läuft.');
@@ -207,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ['#mail_cases_closed', closed, 'Keine abgeschlossenen Anfragen.'],
         ]) {
             const tbody = $(`${selector} tbody`).empty();
-            for (const entry of list) tbody.append(case_row(entry, data.bot_active));
+            for (const entry of list) tbody.append(case_row(entry, data.bot || {}));
             if (list.length === 0) tbody.append($('<tr>').append($('<td>').attr('colspan', 3).addClass('text-muted').text(empty)));
         }
         $('#mail_cases_open_count').text(open.length);

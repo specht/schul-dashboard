@@ -302,12 +302,15 @@ test('Bot: ohne Bestätigung am Rechner geschieht nichts', async ({ browser }) =
 });
 
 test('Bot: echte Fälle erst, wenn der IONOS-Ablauf bestätigt ist', async ({ browser }) => {
-  // recorded with the maintainer, not yet watched: dry runs and the test mailbox only
-  expect(ionos.FLOW_STATUS).toBe('recorded');
-  await expect(run({
-    config: botConfig(), state: tmpState(), dashboard: fakeDashboard([]), imapLoginWorks: async () => false,
+  // watched by the maintainer on 2026-11-14; any change to lib/ionos.js sets it back to 'recorded'
+  expect(ionos.FLOW_STATUS).toBe('verified');
+  const dashboard = fakeDashboard([]);
+  const summary = await run({
+    config: botConfig(), state: tmpState(), dashboard, imapLoginWorks: async () => false,
     openContext: async () => browser.newContext(), print: () => {},
-  })).rejects.toThrow(/noch nicht bestätigt/);
+  });
+  expect(summary.status).toBe('ok');
+  expect(dashboard.claims).toEqual(['testrechner']);
 });
 
 test('Bot: Konfiguration nur für diesen Rechner, ohne Lücken', async () => {
@@ -439,7 +442,8 @@ test('Bot: Aufnahme speichert Aufbau, aber keine Eingaben und keine Adressen', a
   await page.click('#button--with-loader');
   await page.fill('#password', 'passwort-geheim');
   await page.click('#button--with-loader');
-  await page.fill('#otp', totpAt(parseTotpSecret(TEST_OTP_SECRET)).code);
+  await page.waitForURL('https://login.ionos.de/totp');
+  await page.fill('#passcode', totpAt(parseTotpSecret(TEST_OTP_SECRET)).code);
   await page.click('#button--with-loader');
   await page.waitForURL('https://mein.ionos.de/home/products');
   await page.goto('https://mein.ionos.de/email/');

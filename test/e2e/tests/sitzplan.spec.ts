@@ -399,9 +399,20 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
   await page.locator('label[for="sph_area_spread"]').click();
   await expect(page.locator('#sph_area_spread')).not.toBeChecked();
   await discardOpenPlan(page);
-  await startNewPlan(page, 'cycle');
+
+  // the Wunschrunde: its switches are already in its box before the start
+  await page.locator('#sph_bu_wishes').click();
+  await expect(page.locator('#sph_wish_area_spread')).toBeChecked();
+  const wish_switched = page.waitForResponse('**/api/sph_set_rule_area');
+  await page.locator('label[for="sph_wish_area_pairs"]').click();
+  expect((await wish_switched).status()).toBe(200);
+  await expect(page.locator('#sph_wish_area_pairs')).not.toBeChecked();
+  const started = page.waitForResponse('**/api/sph_start_cycle');
+  await page.locator('#sph_bu_start_cycle').click();
+  expect((await started).status()).toBe(200);
   await page.locator('#sph_vorgaben > summary').click();
   await expect(page.locator('#sph_area_spread')).toBeChecked();
+  await expect(page.locator('#sph_area_pairs')).not.toBeChecked();
   await expect(page.locator('#sph_groups_list .sph-group').first()).toContainText('Elli Mustermann');
 
   // leave nothing behind for the other tests
@@ -409,10 +420,12 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
   await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
   await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
   await discardOpenPlan(page);
-  const reset = await page.request.post('/api/sph_set_rule_area', {
-    data: { klasse: KLASSE, raum: RAUM, mode: 'spread', area: 'spread', active: 'yes' },
-  });
-  expect(reset.status()).toBe(200);
+  for (const [mode, area] of [['spread', 'spread'], ['wishes', 'pairs']]) {
+    const reset = await page.request.post('/api/sph_set_rule_area', {
+      data: { klasse: KLASSE, raum: RAUM, mode, area, active: 'yes' },
+    });
+    expect(reset.status()).toBe(200);
+  }
 });
 
 test('Gruppenbildung: eigener Abschnitt, Gruppen für die Klasse mischen', async ({ page }) => {

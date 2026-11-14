@@ -108,7 +108,8 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    jeder Überschrift (Paare, Feste Plätze, Verteilung im Raum) ein Schalter
    „berücksichtigen / nicht berücksichtigen“. Er gilt für das Werkzeug des
    offenen Plans, etwa „Im Raum verteilen“ oder die Wunschrunde, und wird
-   je Werkzeug gespeichert. Ein ausgeschalteter Bereich bleibt erhalten,
+   je Werkzeug gespeichert. Für die Wunschrunde stehen dieselben drei
+   Schalter schon im Kasten vor dem Start. Ein ausgeschalteter Bereich bleibt erhalten,
    wirkt in diesem Werkzeug aber weder beim Würfeln noch bei den roten
    Markierungen. „Plan ändern“ richtet sich nach dem Werkzeug, mit dem der
    Plan entstanden ist. Gespeichert wird das in `SeatingRules.areas`,

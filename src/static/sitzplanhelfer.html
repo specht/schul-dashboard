@@ -123,6 +123,15 @@ table.sph-wishes td, table.sph-wishes th {
     font-size: 0.75em;
     font-weight: normal;
 }
+.sph-wish-areas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em 1.2em;
+}
+.sph-wish-areas .sph-area-switch {
+    font-size: 1em;
+}
 .sph-area-switch .custom-control-label {
     cursor: pointer;
 }
@@ -496,6 +505,20 @@ body.dark .sph-group {
                 <p class="sph-legend">Die SuS geben im Dashboard bis zu drei Wunschpartner an. Danach erzeugen Sie den Plan; Ihre Vorgaben (unten) gelten dabei weiter.</p>
                 <p><label for="sph_duration_days">Dauer der Umfrage:</label>
                     <input type="number" id="sph_duration_days" class="form-control sph-days" min="1" max="60" value="4"> Tage</p>
+                <p class="sph-wish-areas"><strong>Berücksichtigen:</strong>
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_wish_area_pairs" data-area="pairs" data-mode="wishes">
+                        <label class="custom-control-label" for="sph_wish_area_pairs">Paare</label>
+                    </span>
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_wish_area_fixed" data-area="fixed" data-mode="wishes">
+                        <label class="custom-control-label" for="sph_wish_area_fixed">Feste Plätze</label>
+                    </span>
+                    <span class="sph-area-switch custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="sph_wish_area_spread" data-area="spread" data-mode="wishes">
+                        <label class="custom-control-label" for="sph_wish_area_spread">Verteilung im Raum</label>
+                    </span>
+                </p>
                 <button class="btn btn-primary" id="sph_bu_start_cycle">Wunschrunde starten</button>
             </div>
         </div>
@@ -945,6 +968,8 @@ function render_areas() {
         box.prop('checked', on);
         box.siblings('label').text(on ? 'berücksichtigen' : 'nicht berücksichtigen');
         box.closest('h5').toggleClass('sph-area-off', !on);
+        // im Kasten der Wunschrunde: immer deren Einstellung
+        $(`#sph_wish_area_${area}`).prop('checked', area_on('wishes', area));
     }
 }
 
@@ -2492,7 +2517,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Kasten der Seite (dessen Unschärfe-Filter würde sie dort festhalten).
     $('#sph_selection_bar').appendTo('body');
     $('.sph-area-switch input').on('change', function (e) {
-        let mode = current_area_mode();
+        let mode = $(e.currentTarget).data('mode') || current_area_mode();
         if (!mode) return;
         let area = $(e.currentTarget).data('area');
         let active = $(e.currentTarget).is(':checked');

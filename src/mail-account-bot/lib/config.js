@@ -16,17 +16,16 @@ const STATE_DIR = path.join(os.homedir(), '.local', 'state', 'gyst-mail-account-
 const DEFAULTS = {
     imap_host: 'imap.ionos.de',
     imap_port: 993,
-    // this machine's own limit; the dashboard counts all machines together
-    // (10 a day, the admin can reset that count on the page)
-    max_logins_per_day: 5,
     linger_minutes: 20,
     poll_minutes: 3,
     // background mode: besides the websocket wake-up, ask this often
     fallback_poll_minutes: 15,
     // a question in the terminal before every sitting
     confirm: true,
-    // after a reset: check the new password by IMAP after these delays
+    // IMAP proof after a change: 'sample' (the first mailbox of a sitting),
+    // 'all' or 'none' – a first try right away, retries after these delays
     // (IONOS: "takes effect within a few minutes")
+    verify: 'sample',
     verify_delays_s: [60, 120, 240],
     // human pace; 0 only in tests
     pace: 1,
@@ -95,13 +94,13 @@ function validateConfig(raw, { hostname = os.hostname(), recordingOnly = false }
     const within = (key, min, max) => {
         if (!(Number.isInteger(config[key]) && config[key] >= min && config[key] <= max)) throw new Error(`Konfiguration: ${key} muss zwischen ${min} und ${max} liegen`);
     };
-    within('max_logins_per_day', 1, 10);
     within('fallback_poll_minutes', 5, 60);
     if (typeof config.confirm !== 'boolean') throw new Error('Konfiguration: confirm muss true oder false sein');
     within('linger_minutes', 0, 60);
     within('poll_minutes', 2, 30);
     within('timeout_ms', 10000, 120000);
     within('totp_min_remaining_s', 5, 20);
+    if (!['sample', 'all', 'none'].includes(config.verify)) throw new Error('Konfiguration: verify muss sample, all oder none sein');
     if (!Array.isArray(config.verify_delays_s) || config.verify_delays_s.length < 1 || config.verify_delays_s.length > 5 ||
         !config.verify_delays_s.every((d) => Number.isInteger(d) && d >= 30 && d <= 600)) {
         throw new Error('Konfiguration: verify_delays_s: 1–5 Wartezeiten zwischen 30 und 600 s');

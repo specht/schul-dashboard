@@ -88,7 +88,16 @@ async function run(options) {
         page = context.pages()[0] || await context.newPage();
         const guard = watchNavigation(context, page, ionos.HOSTS);
         session = new ionos.IonosSession({ page, config, state, dashboard, pacer, guard, log: (m) => log(m) });
-        await session.openMailboxList();
+        try {
+            await session.openMailboxList();
+        } catch (err) {
+            // not logged in after all: no session to keep (a stop keeps the page for the screenshot)
+            if (err instanceof Postpone) {
+                await context.close().catch(() => {});
+                context = session = page = null;
+            }
+            throw err;
+        }
     };
 
     // at the first surprise: screenshot, pause on the dashboard, tell the admin
@@ -111,20 +120,35 @@ async function run(options) {
         notify(`Postfach-Bot angehalten: ${stop.message}`);
     };
 
-    const verify = async (c) => {
-        for (const m of c.toReset) {
-            let works = false;
-            const total = config.verify_delays_s.reduce((a, b) => a + b, 0);
-            log(`Prüfe das neue Passwort von ${m.mailbox} per IMAP – IONOS braucht dafür ein paar Minuten (höchstens ${Math.round(total / 60)} min)`);
-            for (const [i, delay] of config.verify_delays_s.entries()) {
-                await sleep(delay * 1000 * config.pace);
-                works = await imapLoginWorks(m.mailbox, m.password).catch(() => false);
-                log(`  Versuch ${i + 1}: ${works ? 'Anmeldung klappt' : 'noch nicht'}`);
-                if (works) break;
+    // IMAP proof for several mailboxes at once: a first try right away, the
+    // ones that don't work yet again after each of verify_delays_s.
+    // Returns the mailboxes that never worked.
+    const verifyMany = async (items) => {
+        if (items.length === 0) return [];
+        const total = config.verify_delays_s.reduce((a, b) => a + b, 0);
+        log(`Prüfe per IMAP: ${items.map((m) => m.mailbox).join(', ')} (falls IONOS noch nicht so weit ist: höchstens ${Math.round(total / 60)} min)`);
+        let open = items;
+        for (const [i, delay] of [0, ...config.verify_delays_s].entries()) {
+            if (delay) await sleep(delay * 1000 * config.pace);
+            const results = [];
+            for (let k = 0; k < open.length; k += 4) {
+                const chunk = open.slice(k, k + 4);
+                results.push(...await Promise.all(chunk.map((m) => imapLoginWorks(m.mailbox, m.password).catch(() => false))));
             }
-            if (!works) return m.mailbox;
+            open = open.filter((_, k) => !results[k]);
+            log(`  Versuch ${i + 1}: ${open.length === 0 ? 'Anmeldung klappt' : `noch nicht: ${open.length}`}`);
+            if (open.length === 0) break;
         }
-        return null;
+        return open.map((m) => m.mailbox);
+    };
+    // which of the changed mailboxes get the IMAP proof: 'sample' (the first
+    // of the sitting), 'all' or 'none'; the others count on IONOS's confirmation
+    let sampled = false;
+    const pickForVerify = (items) => {
+        if (config.verify === 'all') return items;
+        if (config.verify === 'none' || sampled || items.length === 0) return [];
+        sampled = true;
+        return items.slice(0, 1);
     };
 
     // one batch of cases; returns false if the bot stopped
@@ -189,13 +213,18 @@ async function run(options) {
         }
 
         // resets IONOS confirmed: prove them (IMAP doesn't touch the control panel)
+        const checked = pickForVerify(toVerify.flatMap((c) => c.toReset));
+        const failedNow = new Set(await verifyMany(checked));
+        const checkedSet = new Set(checked.map((m) => m.mailbox));
         for (const c of toVerify) {
-            const failed = await verify(c);
+            const failed = c.toReset.find((m) => failedNow.has(m.mailbox));
             if (failed) {
-                await report(c, false, `IONOS hat die Änderung bestätigt, aber ${failed} nimmt das neue Passwort nicht an. Bitte von Hand prüfen.`);
-                stop = stop || new Stop(`Nach dem Zurücksetzen nimmt ${failed} das neue Passwort nicht an`);
+                await report(c, false, `IONOS hat die Änderung bestätigt, aber ${failed.mailbox} nimmt das neue Passwort nicht an. Bitte von Hand prüfen.`);
+                stop = stop || new Stop(`Nach dem Zurücksetzen nimmt ${failed.mailbox} das neue Passwort nicht an`);
             } else {
-                await report(c, true, 'Bei IONOS zurückgesetzt, Anmeldung mit dem ursprünglichen Passwort geprüft.');
+                await report(c, true, c.toReset.some((m) => checkedSet.has(m.mailbox))
+                    ? 'Bei IONOS zurückgesetzt, Anmeldung mit dem ursprünglichen Passwort geprüft.'
+                    : 'Bei IONOS zurückgesetzt (von IONOS bestätigt).');
             }
         }
 
@@ -270,25 +299,49 @@ async function run(options) {
         } catch (err) {
             if (err instanceof Postpone) { log(err.message); return true; }
             const stop = err instanceof Stop ? err : new Stop(`Unerwarteter Fehler: ${err.message}`);
-            for (const c of created) await verifyCreated(c);
+            await verifyCreated(created);
             await halt(stop, current ? (text) => reportCreate(current, false, `${text}. Bitte von Hand prüfen.`) : null);
             return false;
         }
-        let ok = true;
-        for (const c of created) ok = (await verifyCreated(c)) && ok;
+        const ok = await verifyCreated(created);
         if (!ok) {
             await halt(new Stop('Ein neues Postfach nimmt sein Passwort nicht an'), null);
             return false;
         }
+        // the provider's list after the work, so the dashboard compares with what is really there
+        if (created.length > 0) {
+            try {
+                const after = await session.exportAddresses();
+                const missingNow = created.filter((c) => !after.some((r) => r.address === c.mailbox));
+                if (missingNow.length > 0) {
+                    await halt(new Stop(`Nach dem Anlegen fehlt ${missingNow[0].mailbox} in der Adressliste`), null);
+                    return false;
+                }
+                await dashboard.uploadAddressList(after);
+                log('Aktuelle Adressliste ans Dashboard geschickt');
+            } catch (err) {
+                if (err instanceof Stop) { await halt(err, null); return false; }
+                log(`Aktuelle Adressliste nicht geschickt: ${err.message}`);
+            }
+        }
         return true;
     };
-    // a new mailbox must accept its password (IMAP)
-    const verifyCreated = async (c) => {
-        const works = await verify({ toReset: [{ mailbox: c.mailbox, password: c.password }] }) === null;
-        await reportCreate(c, works, works
-            ? 'Bei IONOS angelegt, Anmeldung mit dem Passwort aus dem E-Mail-Brief geprüft.'
-            : 'IONOS hat das Anlegen bestätigt, aber die Anmeldung mit dem Passwort klappt nicht. Bitte von Hand prüfen.');
-        return works;
+    // new mailboxes: the chosen ones must accept their password (IMAP);
+    // returns false if one doesn't
+    const verifyCreated = async (created) => {
+        const checked = pickForVerify(created.map((c) => ({ mailbox: c.mailbox, password: c.password })));
+        const failed = new Set(await verifyMany(checked));
+        const checkedSet = new Set(checked.map((m) => m.mailbox));
+        for (const c of created) {
+            if (failed.has(c.mailbox)) {
+                await reportCreate(c, false, 'IONOS hat das Anlegen bestätigt, aber die Anmeldung mit dem Passwort klappt nicht. Bitte von Hand prüfen.');
+            } else {
+                await reportCreate(c, true, checkedSet.has(c.mailbox)
+                    ? 'Bei IONOS angelegt, Anmeldung mit dem Passwort aus dem E-Mail-Brief geprüft.'
+                    : 'Bei IONOS angelegt (von IONOS bestätigt).');
+            }
+        }
+        return failed.size === 0;
     };
 
     try {
@@ -307,7 +360,8 @@ async function run(options) {
             }
             cases = pending.cases;
         }
-        log(`${cases.length} freigegebene(r) Fall/Fälle${dryRun ? ' (Probelauf, nichts wird geändert)' : ''}`);
+        // in the background (woken or every few minutes) only when there is something
+        if (cases.length > 0 || !options.waitForWork) log(`${cases.length} freigegebene(r) Fall/Fälle${dryRun ? ' (Probelauf, nichts wird geändert)' : ''}`);
         let going = await processCases(cases);
         if (going && !testMailbox) going = await processCreation();
         // stay a while with the open session, in case the admin approves more

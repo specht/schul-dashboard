@@ -17,13 +17,15 @@ function dashboardClient({ url, token, fetchImpl = fetch }) {
             if (!Array.isArray(data.cases)) throw new Error('Dashboard: unerwartete Antwort');
             return { cases: data.cases, paused: data.paused || null };
         },
-        // shared by every machine: run lock, pause, IONOS logins of the day
+        // shared by every machine: run lock, pause, IONOS logins of the day (counted)
         // activity: 'working' | 'waiting' (logged in, waiting until waitingUntil)
         claim: (host, activity = 'working', waitingUntil = null) =>
             post('claim', waitingUntil ? { host, activity, waiting_until: waitingUntil } : { host, activity }),
         release: (host) => post('release', { host }),
         pause: (host, reason) => post('pause', { host, reason: String(reason).slice(0, 500) }),
         loginAttempt: (host) => post('login_attempt', { host }),
+        // log lines for the admin's page: [{ts, text}]
+        log: (host, lines) => post('log', { host, lines }),
         // creating mailboxes: {create: [{id, mailbox, kind, password}], address_list: {ts, wanted}, paused}
         async creation() {
             const response = await fetchImpl(`${url}/api/mail_account_bot/creation`, { headers });

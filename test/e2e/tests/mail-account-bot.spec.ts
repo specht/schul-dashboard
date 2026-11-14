@@ -67,7 +67,7 @@ type Case = { id: string | null; mailboxes: { mailbox: string; kind?: string | n
 // logins of all machines) as in mail_password_reset.rb
 type Create = { id: string; mailbox: string; kind: string | null; password: string };
 
-function fakeDashboard(cases: Case[], { maxLogins = 3, create = [] as Create[], listWanted = false } = {}) {
+function fakeDashboard(cases: Case[], { create = [] as Create[], listWanted = false } = {}) {
   const reports: { id: string; ok: boolean; message: string }[] = [];
   const d = {
     reports,
@@ -100,12 +100,15 @@ function fakeDashboard(cases: Case[], { maxLogins = 3, create = [] as Create[], 
     },
     async release(host: string) { if (d.runHost === host) d.runHost = null; return { result: 'ok' }; },
     async pause(host: string, reason: string) { if (!d.paused) d.paused = { reason, host }; return { result: 'ok' }; },
+    // paused meanwhile (by another machine), seen only at the login
+    refuseLogin: false,
     async loginAttempt() {
-      if (d.paused) return { result: 'paused' };
-      if (d.logins >= maxLogins) return { result: 'limit' };
+      if (d.paused || d.refuseLogin) return { result: 'paused' };
       d.logins += 1;
       return { result: 'ok' };
     },
+    logLines: [] as { ts: number; text: string }[],
+    async log(host: string, lines: { ts: number; text: string }[]) { d.logLines.push(...lines); return { result: 'ok' }; },
   };
   return d;
 }
@@ -266,26 +269,69 @@ test('Bot: neues Passwort klappt danach nicht – angehalten', async ({ browser 
   expect(dashboard.paused).not.toBeNull();
 });
 
-test('Bot: Anmeldungen begrenzt – auf dem Dashboard für alle Rechner, hier zusätzlich pro Rechner', async ({ browser }) => {
-  // the dashboard has no login left today: nothing is attempted, the case waits
+test('Bot: kein Limit für Anmeldungen – jede wird gezählt, angemeldet so oft wie nötig', async ({ browser }) => {
   const fake = fakeIonos(MAILBOXES);
-  const dashboard = fakeDashboard([one(ANNA, 'a')], { maxLogins: 0 });
-  const first = await runBot(browser, fake, [one(ANNA, 'a')], { dashboard });
-  expect(first.summary.status).toBe('ok');
-  expect(first.summary.postponed).toEqual(['a']);
+  let logins = 0;
+  for (let i = 0; i < 3; i++) {
+    fake.loggedIn = false;
+    // far beyond the old limits (5 on this machine, 10 on the dashboard)
+    const state = tmpState();
+    state.write('counters.json', { ...state.counters(), logins: 50 });
+    const dashboard = fakeDashboard([one(ANNA, `a${i}`)]);
+    dashboard.logins = 50;
+    const { summary } = await runBot(browser, fake, [], { state, dashboard, imap: async () => false, config: botConfig({ verify: 'none' }) });
+    expect(summary.done.map((d: any) => d.id)).toEqual([`a${i}`]);
+    expect(dashboard.logins).toBe(51);
+    expect(state.counters().logins).toBe(51);
+    logins += 1;
+  }
+  expect(attempts(fake)).toBe(logins);
+});
+
+test('Bot: inzwischen angehalten – keine Anmeldung, und er behauptet nicht, angemeldet zu warten', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES);
+  const dashboard = fakeDashboard([one(ANNA, 'a')]);
+  dashboard.refuseLogin = true;
+  const lines: string[] = [];
+  const state = tmpState();
+  state.onLog((m: string) => lines.push(m));
+  const { summary } = await runBot(browser, fake, [one(ANNA, 'a')], {
+    dashboard, state, config: botConfig({ linger_minutes: 5 }), waitForWork: async () => {}, shouldStop: () => true,
+  });
+  expect(summary.postponed).toEqual(['a']);
   expect(attempts(fake)).toBe(0);
   expect(dashboard.reports).toHaveLength(0);
-  expect(dashboard.paused).toBeNull();
-  // this machine's own limit
+  expect(dashboard.activities).not.toContain('waiting');
+  expect(lines.some((l) => /angemeldet und wartet/.test(l))).toBe(false);
+  expect(lines.some((l) => /meldet sich bei IONOS ab/.test(l))).toBe(false);
+});
+
+test('Bot: das Log geht auch ans Dashboard – in Reihenfolge, bei Ausfall später nochmal', async () => {
+  const { RemoteLog } = require(`${BOT}/remote-log.js`);
+  const sent: { ts: number; text: string }[][] = [];
+  let down = true;
+  const remote = new RemoteLog(async (lines: { ts: number; text: string }[]) => {
+    if (down) throw new Error('nicht erreichbar');
+    sent.push(lines);
+  }, { delayMs: 1 });
   const state = tmpState();
-  const config = botConfig({ max_logins_per_day: 1 });
-  const ok = await runBot(browser, fake, [one(ANNA, 'a'), one(BEN, 'b')], { state, config });
-  expect(ok.summary.done.map((d: any) => d.id)).toEqual(['a', 'b']);
-  expect(attempts(fake)).toBe(1);
-  fake.loggedIn = false;
-  const second = await runBot(browser, fake, [one(ANNA_PARENTS, 'p')], { state, config });
-  expect(second.summary.postponed).toEqual(['p']);
-  expect(attempts(fake)).toBe(1);
+  state.onLog((m: string) => remote.push(m));
+  state.onLog(() => { throw new Error('ein kaputter Zuhörer stört nicht'); });
+  state.log('eins');
+  state.log('zwei');
+  await remote.flush();
+  expect(sent).toHaveLength(0);
+  down = false;
+  state.log('drei');
+  await remote.close(2000);
+  expect(remote.failures).toBe(0);
+  expect(sent.flat().map((l) => l.text)).toEqual(['eins', 'zwei', 'drei']);
+  expect(fs.readFileSync(state.logFile, 'utf8')).toMatch(/eins\n.*zwei\n.*drei\n/s);
+  // at most maxQueue lines wait; the newest stay
+  const small = new RemoteLog(async () => { throw new Error('down'); }, { delayMs: 100000, maxQueue: 3 });
+  for (const t of ['1', '2', '3', '4', '5']) small.push(t);
+  expect(small.queue.map((l: any) => l.text)).toEqual(['3', '4', '5']);
+  clearTimeout(small.timer);
 });
 
 test('Bot: ein Rechner zur Zeit, angehalten heißt angehalten', async ({ browser }) => {
@@ -498,9 +544,12 @@ test('Bot legt an: Adressliste zuerst, dann genau das freigegebene Postfach als 
   const dashboard = fakeDashboard([], { create: [createJob(NEW), createJob(NEW_PARENTS, 'n2', 'parents', PASSWORD_2)] });
   const { summary } = await runBot(browser, fake, [], { dashboard });
   expect(summary.status, summary.reason).toBe('ok');
-  expect(fake.exports).toBe(1);
-  expect(dashboard.uploads).toHaveLength(1);
+  // the list before and – with the new mailboxes – after the work
+  expect(fake.exports).toBe(2);
+  expect(dashboard.uploads).toHaveLength(2);
   expect(dashboard.uploads[0].map((r) => r.address)).toContain(ANNA);
+  expect(dashboard.uploads[0].map((r) => r.address)).not.toContain(NEW);
+  expect(dashboard.uploads[1].map((r) => r.address)).toEqual(expect.arrayContaining([NEW, NEW_PARENTS]));
   expect(fake.created).toEqual([
     { address: NEW, password: PASSWORD, extras: [], forward: '' },
     { address: NEW_PARENTS, password: PASSWORD_2, extras: [], forward: '' },
@@ -587,8 +636,9 @@ test('Bot hält an: nach dem Anlegen zeigt IONOS ein anderes Postfach', async ({
   expect(dashboard.createResults.map((r) => r.id)).not.toContain('n2');
 });
 
-test('Bot legt an: echte Postfächer erst, wenn das Anlegen bestätigt ist', async ({ browser }) => {
-  expect(ionos.CREATE_FLOW_STATUS).toBe('recorded');
+test('Bot legt an: echte Postfächer, seit das Anlegen bestätigt ist', async ({ browser }) => {
+  // watched by the maintainer on 2026-11-14; any change to the creation steps sets it back to 'recorded'
+  expect(ionos.CREATE_FLOW_STATUS).toBe('verified');
   const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
   const dashboard = fakeDashboard([], { create: [createJob(NEW)] });
   const summary = await run({
@@ -596,11 +646,10 @@ test('Bot legt an: echte Postfächer erst, wenn das Anlegen bestätigt ist', asy
     imapLoginWorks: async (u: string, p: string) => fake.passwords.get(u) === p,
     openContext: async () => { const c = await browser.newContext(); await fake.install(c); return c; },
   });
-  expect(summary.status).toBe('ok');
-  // the list is fetched (read-only), nothing is created
-  expect(dashboard.uploads).toHaveLength(1);
-  expect(fake.created).toHaveLength(0);
-  expect(dashboard.createResults).toHaveLength(0);
+  expect(summary.status, summary.reason).toBe('ok');
+  expect(dashboard.uploads).toHaveLength(2);
+  expect(fake.created.map((c) => c.address)).toEqual([NEW]);
+  expect(dashboard.createResults.map((r) => [r.id, r.ok])).toEqual([['n1', true]]);
 });
 
 test('Bot wartet angemeldet: ein Weckruf holt neue Fälle sofort, ohne neue Anmeldung', async ({ browser }) => {
@@ -625,4 +674,22 @@ test('Bot wartet angemeldet: ein Weckruf holt neue Fälle sofort, ohne neue Anme
   expect(dashboard.activities).toContain('waiting');
   expect(dashboard.activities.lastIndexOf('working')).toBeGreaterThan(dashboard.activities.indexOf('waiting'));
   expect(dashboard.runHost).toBeNull();
+});
+
+test('Bot prüft per IMAP: Stichprobe (das erste Postfach), alle oder keins – sofort, nicht erst nach einer Minute', async ({ browser }) => {
+  for (const [verify, expected] of [['sample', [NEW]], ['all', [NEW, NEW_PARENTS]], ['none', []]] as const) {
+    const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+    const dashboard = fakeDashboard([], { create: [createJob(NEW), createJob(NEW_PARENTS, 'n2', 'parents', PASSWORD_2)] });
+    const checked: string[] = [];
+    const imap = async (user: string, password: string) => { checked.push(user); return fake.passwords.get(user) === password; };
+    // long delays: the first try must work right away
+    const config = botConfig({ verify, verify_delays_s: [600], pace: 1 });
+    const started = Date.now();
+    const { summary } = await runBot(browser, fake, [], { dashboard, config: Object.assign(config, { pace: 0 }), imap });
+    expect(summary.status, `${verify}: ${summary.reason}`).toBe('ok');
+    expect(checked, verify).toEqual(expected);
+    expect(Date.now() - started).toBeLessThan(20000);
+    expect(dashboard.createResults.map((r) => r.ok)).toEqual([true, true]);
+    expect(dashboard.createResults[1].message).toContain(verify === 'all' ? 'geprüft' : 'von IONOS bestätigt');
+  }
 });

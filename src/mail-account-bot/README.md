@@ -20,13 +20,16 @@ can get it locked.
   which kind (student / parents) and the password come from the production
   dashboard. The IONOS login, its 2FA secret and the dashboard token stay
   in the configuration on these machines.
-- **Shared state on the dashboard.** Pause, the IONOS logins of the day (at
-  most 10 for all machines together; the admin can reset the count on the
-  page "Passwörter" when trying things out) and the run lock (one machine at a
-  time) live on the dashboard, so they hold whichever machine runs.
+- **Shared state on the dashboard.** Pause, the IONOS logins of the day
+  (counted and shown on `/postfaecher`, no limit – decided 2026-11-14) and
+  the run lock (one machine at a time) live on the dashboard, so they hold
+  whichever machine runs. The bot's log lines go there too: the admin sees
+  on `/postfaecher` what it is doing (kept 14 days; the local log in
+  `~/.local/state/gyst-mail-account-bot/logs` has everything).
 - **Few logins.** One browser profile (`~/.local/state/gyst-mail-account-bot/profile`),
   the session is reused while IONOS keeps it. At most one login attempt
-  per run; a TOTP time step is never used twice.
+  per run, only when there is work; a TOTP time step is never used twice;
+  a refused login stops and pauses the bot.
 - **Nothing to do, no IONOS.** If a mailbox already accepts its original
   password (IMAP check), the control panel isn't opened at all.
 - **The maintainer says yes.** Before every sitting the bot asks in the

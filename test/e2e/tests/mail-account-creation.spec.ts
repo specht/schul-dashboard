@@ -1,5 +1,6 @@
 import { test, expect, login, ACCOUNTS, apiLogin, dashboardDialog } from './fixtures';
 import { request as playwrightRequest, APIRequestContext } from '@playwright/test';
+import WebSocket from 'ws';
 
 // Missing mailboxes (src/ruby/include/mail_account_creation.rb): the bot
 // uploads the mail provider's address list, the dashboard lists missing
@@ -69,7 +70,9 @@ test('Fehlende Postfächer: nur Schüler- und Eltern-Postfächer, abgeglichen mi
 test('Fehlende Postfächer: freigeben auf der Seite, der Bot legt an und meldet zurück', async ({ page, baseURL }) => {
   const a = await admin(baseURL);
   const b = await bot(baseURL);
-  const missing = (await status(a)).missing;
+  const before = await status(a);
+  const after_count = before.list.count;
+  const missing = before.missing;
   const student = missing.find((m: any) => m.kind === 'student');
   const parents = missing.find((m: any) => m.kind === 'parents' && m.mailbox !== `eltern.${student.mailbox}`);
   expect(student && parents).toBeTruthy();
@@ -101,6 +104,10 @@ test('Fehlende Postfächer: freigeben auf der Seite, der Bot legt an und meldet 
   expect((await (await b.post('/api/mail_account_bot/create_result', { data: { id: done.id, ok: true, message: 'angelegt' } })).json()).result).toBe('ok');
   expect((await (await b.post('/api/mail_account_bot/create_result', { data: { id: failed.id, ok: false, message: 'Testfehler' } })).json()).result).toBe('ok');
   await expect.poll(() => mails('Postfach konnte nicht angelegt werden')).toBe(failuresBefore + 1);
+  // created: in the stored list right away, no longer offered as missing
+  const afterCreate = await status(a);
+  expect(afterCreate.missing.map((m: any) => m.mailbox)).not.toContain(student.mailbox);
+  expect(afterCreate.list.count).toBe(after_count + 1);
   await page.reload();
   await expect(page.locator(`.mail-creation[data-mailbox="${student.mailbox}"]`).first()).toHaveAttribute('data-state', 'done');
   // newest first (a repeated run on the same test stack leaves older entries)
@@ -136,4 +143,18 @@ test('Fehlende Postfächer: nichts anderes freigeben, Abgleich anfordern', async
   await page.locator('#bu_request_address_list').click();
   await expect(page.locator('#mail_address_list_state')).toContainText('angefordert');
   expect((await work(b)).address_list.wanted).toBe(true);
+  // a bot that connects now is woken right away
+  const ws = new WebSocket(`${baseURL!.replace(/^http/, 'ws')}/ws_mail_account_bot?host=rechner-a`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+  const first = await new Promise<string>((resolve, reject) => {
+    ws.on('message', (data) => resolve(JSON.parse(String(data)).command));
+    ws.on('error', reject);
+  });
+  ws.close();
+  expect(first).toBe('wake');
+  // the bot sends the list: the page shows it without a reload
+  const max = ACCOUNTS.schueler;
+  expect((await upload(b, [max, `eltern.${max}`, ...filler(101)])).status()).toBe(200);
+  await expect(page.locator('#mail_address_list_state')).not.toContainText('angefordert', { timeout: 20000 });
+  await expect(page.locator('#mail_address_list_state')).toContainText('103 Adressen');
+  expect((await work(b)).address_list.wanted).toBe(false);
 });

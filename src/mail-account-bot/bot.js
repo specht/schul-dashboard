@@ -16,6 +16,7 @@ const { State } = require('./lib/state');
 const { totpAt } = require('./lib/totp');
 const { imapLoginWorks } = require('./lib/imap');
 const { dashboardClient } = require('./lib/dashboard');
+const { RemoteLog } = require('./lib/remote-log');
 const ionos = require('./lib/ionos');
 
 function notify(text) {
@@ -73,6 +74,9 @@ async function main() {
     }
     const imap = (user, password) => imapLoginWorks({ host: config.imap_host, port: config.imap_port }, user, password);
     const dashboard = dashboardClient({ url: config.dashboard_url, token: config.dashboard_token });
+    // what the bot does, also on the admin's page (not for check/status)
+    const remoteLog = new RemoteLog((lines) => dashboard.log(config.host, lines));
+    if (command === 'run' || command === 'serve') state.onLog((message) => remoteLog.push(message));
 
     if (command === 'check') {
         console.log(`Konfiguration: ${CONFIG_FILE} – in Ordnung`);
@@ -115,6 +119,7 @@ async function main() {
         const summary = await runOnce({ dryRun: flags.includes('--dry-run'), testMailbox: flags.includes('--test-mailbox') });
         console.log(JSON.stringify({ status: summary.status, done: summary.done.length, failed: summary.failed.length, postponed: summary.postponed.length, dryRun: summary.dryRun.length }));
         process.exitCode = summary.status === 'ok' ? 0 : 2;
+        await remoteLog.close();
         return;
     }
     if (command === 'serve') {
@@ -122,7 +127,7 @@ async function main() {
         const bg = require('./lib/serve').serve({ config, runOnce: (shouldStop, waitForWork) => runOnce({ shouldStop, waitForWork }), log });
         let stopping = false;
         process.on('SIGINT', () => {
-            if (stopping) { log('Sofort beendet'); process.exit(130); }
+            if (stopping) { log('Sofort beendet'); remoteLog.close(1000).finally(() => process.exit(130)); return; }
             stopping = true;
             log(bg.busy() ? 'Wird beendet, sobald das laufende Postfach fertig ist (nochmal Strg+C: sofort)' : 'Wird beendet');
             bg.stop();
@@ -130,6 +135,7 @@ async function main() {
         await bg.loop;
         await dashboard.release(config.host).catch(() => {});
         log('Beendet');
+        await remoteLog.close();
         process.exit(0);
     }
     throw new Error(`Unbekannter Befehl: ${command}`);

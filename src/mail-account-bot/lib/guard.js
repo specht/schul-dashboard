@@ -8,7 +8,7 @@
 //                the maintainer looked at it and runs `bot.js resume`.
 //   CaseProblem  only this case fails (e.g. the mailbox is not in the list);
 //                the page itself looked as expected.
-//   Postpone     a daily limit is reached; cases stay approved for later.
+//   Postpone     not now (the bot was paused meanwhile); cases stay approved.
 
 class Stop extends Error {
     constructor(message, details = {}) { super(message); this.name = 'Stop'; this.details = details; }

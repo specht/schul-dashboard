@@ -22,6 +22,7 @@ class State {
         this.screenshotsDir = path.join(dir, 'screenshots');
         this.recordingsDir = path.join(dir, 'recordings');
         this.logFile = path.join(dir, 'logs', `${today(now)}.log`);
+        this.logListeners = [];
     }
 
     file(name) { return path.join(this.dir, name); }
@@ -36,10 +37,10 @@ class State {
         fs.renameSync(tmp, this.file(name));
     }
 
-    // The pause, the run lock across machines and the logins of all machines
-    // live on the dashboard. Here: this machine's own logins today (a second
-    // limit), the last TOTP time step, a lock against a second instance on
-    // this machine, the last stop (for the screenshot).
+    // The pause and the run lock across machines live on the dashboard. Here:
+    // this machine's logins today (counted, for `status`), the last TOTP time
+    // step, a lock against a second instance on this machine, the last stop
+    // (for the screenshot).
     lastStop() { return this.read('last-stop.json', null); }
     recordStop(reason, details = {}) { this.write('last-stop.json', { ts: this.now().toISOString(), reason, ...details }); }
 
@@ -47,8 +48,6 @@ class State {
         const c = this.read('counters.json', null);
         return c && c.date === today(this.now) ? c : { date: today(this.now), logins: 0, resets: 0 };
     }
-
-    loginsLeft(max) { return Math.max(0, max - this.counters().logins); }
 
     count(what) {
         const c = this.counters();
@@ -76,9 +75,15 @@ class State {
 
     unlock() { fs.rmSync(this.file('lock'), { force: true }); }
 
+    // every line also goes to the listeners (the dashboard, see remote-log.js)
+    onLog(listener) { this.logListeners.push(listener); }
+
     log(message) {
         const line = `${this.now().toISOString()} ${message}\n`;
         fs.appendFileSync(this.logFile, line, { mode: 0o600 });
+        for (const listener of this.logListeners) {
+            try { listener(String(message)); } catch (err) { /* the log file has it */ }
+        }
     }
 }
 

@@ -113,7 +113,9 @@ Der Bot (`src/mail-account-bot`, siehe dessen README) läuft nur auf den
 Rechnern der Administration, nicht auf dem Server. Hält er an, ist er für
 alle Rechner angehalten, bis die Administration ihn auf der Seite
 „Postfach-Anfragen und E-Mail-Briefe“ wieder freigibt; dort steht auch, ob
-er verbunden ist oder gerade arbeitet. Er hält eine Websocket-Verbindung zu
+er verbunden ist, was er zuletzt getan hat, und darunter sein Protokoll (die
+letzten 14 Tage, Knoten `MailAccountBotLog`). Seine Anmeldungen bei IONOS
+werden gezählt, aber nicht begrenzt. Er hält eine Websocket-Verbindung zu
 `/ws_mail_account_bot`: Ein Reverse-Proxy vor dem Dashboard muss diesen Pfad
 als Websocket durchreichen (wie `/ws_monitor`), sonst fragt der Bot nur alle
 15 Minuten nach.

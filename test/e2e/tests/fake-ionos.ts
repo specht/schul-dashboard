@@ -120,7 +120,7 @@ export function fakeIonos(mailboxes: FakeMailbox[], variant: FakeVariant = {}, {
       'IONOS - E-Mail-Adressen',
       `<main id="main-content" role="main">${breadcrumb()}
        <h1 class="page-header__headline">E-Mail-Adressen</h1>
-       <a href="/email/${CONTRACT}/email-package-selection" data-testid="button-create-another-mailbox" class="button button--primary">Weitere E-Mail-Adresse anlegen</a>
+       <a href="https://mein.ionos.de/email/${CONTRACT}/email-package-selection?origin=overview" data-testid="button-create-another-mailbox" class="button button--primary">Weitere E-Mail-Adresse anlegen</a>
        <a href="/email/${CONTRACT}/email-overview/export?search=${encodeURIComponent(search)}&sort=email-asc" data-testid="link-export-emails" data-base-url="/email/${CONTRACT}/email-overview/export" class="link link--action">E-Mail-Adressen exportieren</a>
        <form id="js-table-util-form" role="search" data-testid="form-email-search" method="get" action="/email/${CONTRACT}/email-overview">
          <input id="email-search" name="search" type="text" aria-label="Suchen" data-testid="input-email-search" value="${esc(search)}">

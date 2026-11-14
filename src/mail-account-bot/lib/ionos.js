@@ -93,6 +93,18 @@ const RE = {
 const EXPORT_HEADER = ['E-Mail-Adresse', 'Kontotyp', 'Vertragsnummer'];
 const EXPORT_MIN_ROWS = 100;
 
+// the path of a link on mein.ionos.de, whether written relative or absolute,
+// without parameters; null for any other host
+function linkPath(href) {
+    try {
+        const u = new URL(href || '', 'https://mein.ionos.de/');
+        return u.protocol === 'https:' && u.hostname === 'mein.ionos.de' ? u.pathname : null;
+    } catch (err) {
+        return null;
+    }
+}
+const masked = (path) => String(path).replace(/\d+/g, '<n>');
+
 const visible = (selector) => async (page) => page.locator(selector).first().isVisible();
 const onHost = (host) => (page) => new URL(page.url()).hostname === host;
 const urlMatches = (re) => (page) => re.test(page.url());
@@ -361,9 +373,9 @@ class IonosSession {
         // the page adds the list's current filters and sorting to the link;
         // always the whole list: the base address, without them
         const base = `/email/${this.contract}/email-overview/export`;
-        const linkBase = (await link.getAttribute('data-base-url')) || '';
-        const linkPath = ((await link.getAttribute('href')) || '').split('?')[0];
-        if (linkBase !== base || linkPath !== base) throw new Stop(`Export: Verweis in unbekannter Form (${linkPath.replace(/\d+/g, '<n>')})`);
+        const hrefPath = linkPath(await link.getAttribute('href'));
+        const basePath = linkPath(await link.getAttribute('data-base-url'));
+        if (basePath !== base || hrefPath !== base) throw new Stop(`Export: Verweis in unbekannter Form (${masked(hrefPath)})`);
         const href = base;
         await this.pacer.pause(1000, 2500);
         // fetched from within the page: same origin, same session – and in the
@@ -403,9 +415,10 @@ class IonosSession {
 
         // 1. "Weitere E-Mail-Adresse anlegen"
         const create = await this.one(S.createLink, 'Adressliste: „Weitere E-Mail-Adresse anlegen“');
-        if ((await create.getAttribute('href')) !== `/email/${this.contract}/email-package-selection`) throw new Stop('Anlegen: Verweis in unbekannter Form');
+        const createPath = linkPath(await create.getAttribute('href'));
+        if (createPath !== `/email/${this.contract}/email-package-selection`) throw new Stop(`Anlegen: Verweis in unbekannter Form (${masked(createPath)})`);
         await this.click(create);
-        await this.wait({ selection: (p) => p.url() === `https://mein.ionos.de/email/${this.contract}/email-package-selection` }, 'Anlegen: Auswahl des Typs');
+        await this.wait({ selection: (p) => linkPath(p.url()) === `/email/${this.contract}/email-package-selection` }, 'Anlegen: Auswahl des Typs');
 
         // 2. the Mail Basic card only
         const card = await this.one(S.basicCard, 'Typ-Auswahl: Karte „Mail Basic“');
@@ -414,7 +427,7 @@ class IonosSession {
         const form = await this.one(S.basicForm, 'Typ-Auswahl: Formular „Mail Basic“', card);
         const button = await this.one('button[type="submit"]', 'Typ-Auswahl: „Anlegen“ bei Mail Basic', form);
         await this.click(button);
-        await this.wait({ form: all((p) => p.url() === `https://mein.ionos.de/email/${this.contract}/create-basic-email`, visible(S.localPart)) }, 'Anlegen: Formular');
+        await this.wait({ form: all((p) => linkPath(p.url()) === `/email/${this.contract}/create-basic-email`, visible(S.localPart)) }, 'Anlegen: Formular');
         const h1 = (await (await this.one(S.headline, 'Anlegen: Überschrift')).innerText()).trim();
         if (h1 !== 'Neue E-Mail-Adresse anlegen: Mail Basic') throw new Stop('Anlegen: Formular ist nicht „Mail Basic“');
 
@@ -460,8 +473,8 @@ class IonosSession {
         // 5. saved: the details page of exactly this new mailbox
         await this.click(submit);
         const reached = await this.wait({
-            created: async (p) => RE.created.test(p.url()) && (await p.locator(S.createdMessage).first().isVisible()),
-            error: async (p) => p.url().endsWith('/create-basic-email') && (await p.locator(`${S.loginError}, ${S.pageMessage}`).first().isVisible()),
+            created: async (p) => RE.created.test(`https://mein.ionos.de${linkPath(p.url())}`) && (await p.locator(S.createdMessage).first().isVisible()),
+            error: async (p) => linkPath(p.url()) === `/email/${this.contract}/create-basic-email` && (await p.locator(`${S.loginError}, ${S.pageMessage}`).first().isVisible()),
         }, 'Bestätigung nach „Speichern“');
         if (reached !== 'created') throw new Stop(`IONOS meldet einen Fehler beim Anlegen von ${mailbox}`);
         const shown = (await (await this.one(S.headline, 'Postfach-Details: Überschrift')).innerText()).trim().toLowerCase();

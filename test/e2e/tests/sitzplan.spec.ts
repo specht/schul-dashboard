@@ -255,10 +255,14 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   await expect(page.locator('#sph_history_body tr').first()).toContainText('aktuell');
 });
 
-test('Zufallsgruppen: Gruppen für die Klasse mischen', async ({ page }) => {
+test('Gruppenbildung: eigener Abschnitt, Gruppen für die Klasse mischen', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.goto(`/directory/${KLASSE}`);
-  await page.locator(`a[href="/zufallsgruppen/${KLASSE}"]`).click();
+  // a tool of its own, apart from the seating plan
+  await expect(page.locator('#additional_teacher_content h3', { hasText: 'Gruppenbildung' })).toBeVisible();
+  await expect(page.locator('#additional_teacher_content h3', { hasText: 'Sitzplan und' })).toHaveCount(0);
+  await page.locator(`a[href="/zufallsgruppen/${KLASSE}"]`).filter({ hasText: 'Gruppen bilden' }).click();
+  await expect(page.locator('h1')).toContainText('Gruppenbildung');
   await expect(page.locator('#zg_bu_mix')).toBeVisible();
   await page.locator('#zg_bu_mix').click();
   await expect(page.locator('#zg_groups')).toContainText('Gruppe 1');

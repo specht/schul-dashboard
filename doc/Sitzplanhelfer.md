@@ -10,11 +10,12 @@ der Klasse zufällig mischt (mit optionalen statischen Regeln, siehe
 
 ## Einstieg
 
-Auf der Klassenseite steht im Abschnitt „Sitzplan und Gruppen“ je
-Klassenraum für die Klassenleitung „Sitzplan Raum …“ (diese Seite) und
-„Shuffler Raum …“, für die übrigen Lehrkräfte der Klasse „Sitzplan
-Raum …“ (die Ansicht ohne Wünsche, siehe unten). Dazu kommt für alle
-Lehrkräfte der Klasse „Zufallsgruppen“. Die früheren Knöpfe „Editor“,
+Auf der Klassenseite steht im Abschnitt „Sitzplan“ je Klassenraum für
+die Klassenleitung „Sitzplan Raum …“ (diese Seite) und „Shuffler
+Raum …“, für die übrigen Lehrkräfte der Klasse „Sitzplan Raum …“ (die
+Ansicht ohne Wünsche, siehe unten). Getrennt davon steht im Abschnitt
+„Gruppenbildung“ für alle Lehrkräfte der Klasse „Gruppen bilden“, ein
+eigenes Werkzeug ohne Bezug zum Sitzplan. Die früheren Knöpfe „Editor“,
 „Helfer“ und „Verteilen“ gibt es nicht mehr: Die Tische ändert man über
 „Tische im Raum ändern“ auf der Sitzplan-Seite, von Hand verteilt man über
 „Neuer Sitzplan → Von Hand“ oder „Plan ändern“. Die alte Adresse
@@ -108,7 +109,7 @@ Name nicht, wird erst die Schrift kleiner, dann das Foto; abgeschnitten
 wird nichts. Ist ein Raum für den Bildschirm zu breit, lässt er sich
 seitlich verschieben, damit die Namen lesbar bleiben.
 
-## Zufallsgruppen
+## Gruppenbildung
 
 `/zufallsgruppen/<klasse>` mischt für eine Gruppenarbeit Gruppen einer
 wählbaren Größe (geht es nicht auf, werden einige Gruppen größer oder
@@ -165,7 +166,7 @@ Klassenraum.
   Wünsche, Vorgaben oder Listen.
 - **SuS** sehen den Sitzplan im Dashboard nicht, weder die Seite noch den
   Endpunkt `sph_get_public_plan`.
-- **Zufallsgruppen**: alle Lehrkräfte der Klasse (`zg_can_use?`).
+- **Gruppenbildung**: alle Lehrkräfte der Klasse (`zg_can_use?`).
 
 ## Algorithmus (client-seitig, `sitzplanhelfer.html`)
 
@@ -267,11 +268,11 @@ Einträge weiterhin im Seitenquelltext.
 | `src/ruby/include/sitzplanhelfer.rb` | alle API-Endpunkte + Berechtigungs-Helper |
 | `src/static/sitzplanhelfer.html` | Sitzplan-Seite der Klassenleitung inkl. Algorithmus |
 | `src/static/sitzplananzeige.html` | Ansicht ohne Wünsche für die Lehrkräfte der Klasse, auch zum Drucken (auch für ältere, gespeicherte Pläne per `?cycle=`) |
-| `src/ruby/include/zufallsgruppen.rb`, `src/static/zufallsgruppen.html` | Zufallsgruppen |
+| `src/ruby/include/zufallsgruppen.rb`, `src/static/zufallsgruppen.html` | Gruppenbildung |
 | `src/ruby/include/sitzplan_daten.rb` | Sitzdaten lesen und schreiben, siehe oben |
 | `src/ruby/migrate-sitzplan.rb` | einmalige Umwandlung der alten Dateien |
 | `src/ruby/include/sitzplaneditor.rb` | Endpunkt des Editors, Klassenraum-Ermittlung |
 | `src/static/sitzplaneditor.html` | Editor |
 | `src/static/sitzplanverteilen.html` | leitet die alte Adresse von „Verteilen“ auf die Sitzplan-Seite weiter |
 | `src/ruby/main.rb` | `require`-Zeilen, Wochenstunden pro Klasse und Raum |
-| `src/static/directory.html` | für den Klassenraum „Sitzplan“ und „Shuffler“, dazu „Zufallsgruppen“, unter der Rubrik „Sitzplan und Gruppen“ (Klassenraum: Raum mit mindestens 20 Wochenstunden der Klasse, sonst der mit den meisten; jede Stunde zählt einmal, auch bei Teilung) |
+| `src/static/directory.html` | für den Klassenraum „Sitzplan“ und „Shuffler“ unter der Rubrik „Sitzplan“, getrennt davon „Gruppen bilden“ unter „Gruppenbildung“ (Klassenraum: Raum mit mindestens 20 Wochenstunden der Klasse, sonst der mit den meisten; jede Stunde zählt einmal, auch bei Teilung) |

@@ -141,7 +141,7 @@
     </div>
 
     <div class="zg-section">
-        <button class="btn btn-lg btn-primary" id="zg_bu_mix"><i class="fa fa-random"></i>&nbsp;&nbsp;Gruppen mischen</button>
+        <button class="btn btn-lg btn-primary" id="zg_bu_mix" disabled><i class="fa fa-random"></i>&nbsp;&nbsp;Gruppen mischen</button>
         <button class="btn btn-lg btn-outline-secondary" id="zg_bu_beamer" style="display: none;"><i class="fa fa-desktop"></i>&nbsp;&nbsp;Beamer-Ansicht</button>
         <p id="zg_result_info" class="zg-legend" style="margin-top: 0.8em; margin-bottom: 0.3em;"></p>
         <div id="zg_warnings"></div>
@@ -490,6 +490,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         sus = data.sus;
+        // Erst jetzt kennt die Seite die Klasse; vorher gäbe Mischen leere Gruppen.
+        $('#zg_bu_mix').prop('disabled', false);
         is_klassenleitung = !!data.is_klassenleitung;
         distribution = data.distribution;
         if (is_klassenleitung) {

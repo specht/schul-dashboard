@@ -436,25 +436,17 @@ body.dark .sph-group {
             <a class="btn btn-outline-primary" id="sph_link_editor" href="#"><i class="fa fa-th"></i>&nbsp;&nbsp;Tische im Raum</a>
             <a class="btn btn-outline-primary" id="sph_link_shuffler" href="#" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</a>
             <button class="btn btn-outline-primary" id="sph_bu_start_manual" title="Ohne Wünsche und ohne Würfeln: Sie setzen jede Person selbst auf ihren Platz."><i class="fa fa-hand-pointer-o"></i>&nbsp;&nbsp;Von Hand verteilen</button>
-            <button class="btn btn-outline-primary" id="sph_bu_helper" title="Neuer Plan mit Wünschen der Klasse oder zufällig gewürfelt, jeweils mit Ihren Vorgaben."><i class="fa fa-magic"></i>&nbsp;&nbsp;Sitzplanhelfer</button>
+            <button class="btn btn-outline-primary" id="sph_bu_start_spread" title="Ohne Umfrage und ohne Wünsche: Der Plan wird sofort nach Ihren Vorgaben im Raum verteilt. Danach können Sie von Hand umsetzen."><i class="fa fa-th-large"></i>&nbsp;&nbsp;Im Raum verteilen</button>
+            <button class="btn btn-outline-primary" id="sph_bu_wishes" title="Umfrage an die Klasse: Die SuS geben bis zu drei Wunschpartner an, danach erzeugen Sie den Plan."><i class="fa fa-comments"></i>&nbsp;&nbsp;Wunschrunde</button>
         </div>
         <div id="sph_new_choice" class="sph-section" style="display: none;">
-            <h4>Sitzplanhelfer: Wie soll der neue Plan entstehen?</h4>
-            <div class="sph-choices">
-                <div class="sph-choice">
-                    <h5>Mit Wünschen der Klasse</h5>
-                    <p class="sph-legend">Die SuS geben im Dashboard bis zu drei Wunschpartner an. Danach erzeugen Sie den Plan.</p>
-                    <p><label for="sph_duration_days">Dauer der Umfrage:</label>
-                        <input type="number" id="sph_duration_days" class="form-control sph-days" min="1" max="60" value="4"> Tage</p>
-                    <button class="btn btn-primary" id="sph_bu_start_cycle">Wunschrunde starten</button>
-                </div>
-                <div class="sph-choice">
-                    <h5>Zufällig</h5>
-                    <p class="sph-legend">Ohne Umfrage, der Plan wird sofort gewürfelt. Ihre Vorgaben gelten trotzdem.</p>
-                    <button class="btn btn-primary" id="sph_bu_start_random">Zufällig würfeln</button>
-                </div>
+            <div class="sph-choice">
+                <h5>Wunschrunde: Umfrage an die Klasse</h5>
+                <p class="sph-legend">Die SuS geben im Dashboard bis zu drei Wunschpartner an. Danach erzeugen Sie den Plan; Ihre Vorgaben (unten) gelten dabei weiter.</p>
+                <p><label for="sph_duration_days">Dauer der Umfrage:</label>
+                    <input type="number" id="sph_duration_days" class="form-control sph-days" min="1" max="60" value="4"> Tage</p>
+                <button class="btn btn-primary" id="sph_bu_start_cycle">Wunschrunde starten</button>
             </div>
-            <p class="sph-legend" id="sph_choice_info">Ihre Vorgaben (unten) gelten für beide Wege. Selbst setzen können Sie die Plätze oben mit „Von Hand verteilen“.</p>
         </div>
     </div>
 
@@ -531,7 +523,7 @@ body.dark .sph-group {
             <p class="sph-legend">Einen genauen Platz legen Sie im Plan fest: Person anklicken, dann „📌 Platz festhalten“. Feste Plätze sind im Plan mit 📌 markiert.</p>
 
             <h5>Verteilung im Raum</h5>
-            <p class="sph-legend">Wer auf derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch, nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt auch ganz ohne Wünsche, zum Beispiel mit „Zufällig“. Gibt es Wünsche, zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht vor. Die Listen sehen nur Sie.</p>
+            <p class="sph-legend">Wer auf derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch, nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt auch ganz ohne Wünsche, mit „Im Raum verteilen“ oben. Gibt es Wünsche, zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht vor. Die Listen sehen nur Sie.</p>
             <div id="sph_groups_list"></div>
             <button class="btn btn-sm btn-outline-primary" id="sph_bu_add_group"><i class="fa fa-plus"></i>&nbsp;&nbsp;Neue Liste</button>
         </details>
@@ -1208,7 +1200,7 @@ function refresh_wishes(done) {
     }, {no_please_wait: true});
 }
 
-// Wie entsteht der gerade offene Plan? 'wishes', 'random', 'manual' oder
+// Wie entsteht der gerade offene Plan? 'wishes', 'spread', 'manual', 'random' oder
 // 'edit' (per "Plan ändern" geöffnet), siehe sph_start_cycle/sph_get_state.
 var open_mode = null;
 // Gehören zum offenen Plan Wünsche (Wunschrunde oder Änderung eines Plans
@@ -1297,7 +1289,7 @@ function load_state(after) {
         render_groups();
         render_rules();
         render_wishes();
-        if (open_mode === 'random' && plan_cycle_id !== open_cycle_id) {
+        if ((open_mode === 'spread' || open_mode === 'random') && plan_cycle_id !== open_cycle_id) {
             compute_plan(sus.map(s => s.email));
         } else {
             show_current_plan();
@@ -1333,11 +1325,11 @@ function render_room_bar() {
         : `Raum ${raum}: ${seats.length} Plätze für ${sus.length} SuS`);
     $('#sph_room_bar').toggleClass('sph-room-warn', too_small).show();
     // Immer sichtbar; ist schon ein Plan offen, fragt der Klick nach (siehe unten).
-    $('#sph_bu_start_manual, #sph_bu_helper').toggle(can_start_cycle).prop('disabled', too_small);
+    $('#sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes').toggle(can_start_cycle).prop('disabled', too_small);
     $('#sph_link_editor').toggleClass('btn-warning', too_small).toggleClass('btn-outline-primary', !too_small);
     // Das Werkzeug, mit dem der offene Plan entsteht, ist hervorgehoben.
-    let active = {manual: '#sph_bu_start_manual', wishes: '#sph_bu_helper', random: '#sph_bu_helper'}[open_mode];
-    $('#sph_bu_start_manual, #sph_bu_helper').removeClass('btn-primary').addClass('btn-outline-primary').attr('aria-pressed', 'false');
+    let active = {manual: '#sph_bu_start_manual', spread: '#sph_bu_start_spread', wishes: '#sph_bu_wishes'}[open_mode];
+    $('#sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes').removeClass('btn-primary').addClass('btn-outline-primary').attr('aria-pressed', 'false');
     if (active) $(active).removeClass('btn-outline-primary').addClass('btn-primary').attr('aria-pressed', 'true');
     if (open_cycle_id) $('#sph_new_choice').hide();
 }
@@ -1357,6 +1349,12 @@ function render_work_header(oc) {
     if (open_mode === 'edit') {
         let d = new Date(oc.reopened_from * 1000);
         $('#sph_cycle_info').text(`Sie ändern den Sitzplan vom ${d.toLocaleDateString('de-DE')}. Beim Speichern wird er zum aktuellen Plan, der bisherige bleibt unter „Frühere Sitzpläne“.`);
+    } else if (open_mode === 'spread') {
+        let n = (seating_groups || []).filter(g => g.length >= 2).length;
+        $('#sph_cycle_info').text('Neuer Sitzplan, ohne Umfrage nach Ihren Vorgaben im Raum verteilt. ' +
+            (n > 0
+                ? `Berücksichtigt: ${n} Verteilungsliste${n === 1 ? '' : 'n'}, Paare und feste Plätze. Setzen Sie einzelne Personen von Hand um (Namen anklicken, dann den Platz). Wer danach direkt bei jemandem von derselben Liste sitzt, wird rot markiert.`
+                : 'Es gibt noch keine Verteilungsliste. Legen Sie sie unter „Vorgaben → Verteilung im Raum“ an und würfeln Sie dann neu.'));
     } else if (open_mode === 'random') {
         $('#sph_cycle_info').text('Neuer Sitzplan, zufällig gewürfelt. Ihre Vorgaben sind berücksichtigt.');
     } else if (open_mode === 'manual') {
@@ -2139,7 +2137,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ? `Für Raum ${raum} sind noch keine Tische angelegt. Legen Sie sie zuerst an.`
             : `Für Raum ${raum} sind noch keine Tische angelegt. Das kann nur die Administration.`);
         $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-primary').addClass('btn-primary');
-        $('#sph_link_shuffler, #sph_bu_start_manual, #sph_bu_helper, #sph_new_choice').remove();
+        $('#sph_link_shuffler, #sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes, #sph_new_choice').remove();
         $('#sph_room_bar').addClass('sph-room-warn').show();
         return;
     }
@@ -2147,21 +2145,35 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#sph_link_print').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?print=1`);
     $('#sph_link_shuffler').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
 
-    // Der Sitzplanhelfer öffnet seine Auswahl direkt unter den Werkzeugen.
-    $('#sph_bu_helper').click(function () {
+    // Ist schon ein Plan offen, fragen die Werkzeuge, ob er für den neuen Weg
+    // verworfen werden soll; then() läuft danach (oder sofort ohne offenen Plan).
+    function replace_open_plan(title, confirm_label, then) {
+        if (!open_cycle_id) { then(); return; }
+        let was = open_mode === 'wishes' ? 'eine Wunschrunde' : 'ein neuer Plan';
+        dashboardConfirm(`Es ist schon ${was} offen. Wollen Sie stattdessen neu beginnen, wird der offene Plan verworfen` +
+            (open_mode === 'wishes' ? ', die Umfrage verschwindet bei den SuS, und die Wünsche gehen verloren.' : '.') +
+            ' Ihre Vorgaben bleiben erhalten.', function () {
+            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+                load_state(then);
+            });
+        }, { title: title, confirm: confirm_label, danger: true });
+    }
+    // Die Wunschrunde fragt direkt unter den Werkzeugen nach der Dauer.
+    $('#sph_bu_wishes').click(function () {
         set_status('');
+        if (open_mode === 'wishes') return;
         if (!open_cycle_id) {
             $('#sph_new_choice').toggle();
             return;
         }
-        // Mit dem Helfer entsteht der offene Plan schon: nichts zu tun.
-        if (open_mode === 'wishes' || open_mode === 'random') return;
-        dashboardConfirm('Es ist schon ein Plan offen. Wollen Sie stattdessen mit dem Sitzplanhelfer neu beginnen, wird er verworfen. Ihre Vorgaben bleiben erhalten.', function () {
-            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
-                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
-                load_state(function () { $('#sph_new_choice').show(); });
-            });
-        }, { title: 'Sitzplanhelfer', confirm: 'Verwerfen und neu beginnen', danger: true });
+        replace_open_plan('Wunschrunde', 'Verwerfen und Wunschrunde vorbereiten', function () { $('#sph_new_choice').show(); });
+    });
+    // Im Raum verteilen: ohne Umfrage sofort nach den Vorgaben gewürfelt.
+    $('#sph_bu_start_spread').click(function () {
+        set_status('');
+        if (open_mode === 'spread') return;
+        replace_open_plan('Im Raum verteilen', 'Verwerfen und neu verteilen', function () { start_new_plan('spread'); });
     });
     $('#sph_bu_start_cycle').click(function () {
         let duration_days = parseInt($('#sph_duration_days').val(), 10);
@@ -2171,7 +2183,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         start_new_plan('wishes', {duration_days: duration_days});
     });
-    $('#sph_bu_start_random').click(function () { start_new_plan('random'); });
     $('#sph_bu_start_manual').click(function () {
         if (!open_cycle_id) {
             start_new_plan('manual');

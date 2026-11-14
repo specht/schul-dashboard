@@ -34,11 +34,11 @@ async function discardOpenPlan(page: Page) {
   await expect(page.locator('#sph_view_start')).toBeVisible();
 }
 
-async function startNewPlan(page: Page, way: 'cycle' | 'random' | 'manual') {
-  // the tools on top: "Von Hand verteilen" starts right away, the
-  // Sitzplanhelfer first asks: with wishes or random
-  if (way !== 'manual') {
-    await page.locator('#sph_room_bar #sph_bu_helper').click();
+async function startNewPlan(page: Page, way: 'cycle' | 'spread' | 'manual') {
+  // the tools on top: "Von Hand verteilen" and "Im Raum verteilen" start
+  // right away, the Wunschrunde first asks for the duration below them
+  if (way === 'cycle') {
+    await page.locator('#sph_room_bar #sph_bu_wishes').click();
     await expect(page.locator('#sph_room_bar #sph_new_choice')).toBeVisible();
   }
   const started = page.waitForResponse('**/api/sph_start_cycle');
@@ -93,7 +93,7 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   // round runs; starting over by hand asks first
   await expect(page.locator('#sph_room_bar #sph_link_editor')).toBeVisible();
   await expect(page.locator('#sph_room_bar #sph_link_shuffler')).toBeVisible();
-  await expect(page.locator('#sph_room_bar #sph_bu_helper')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#sph_room_bar #sph_bu_wishes')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#sph_room_bar #sph_bu_start_manual').click();
   await expect(dashboardDialog(page)).toContainText('schon eine Wunschrunde offen');
   await dashboardDialog(page).getByRole('button', { name: 'Abbrechen' }).click();
@@ -152,8 +152,8 @@ test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Vertei
   const RAUM = await setUpRoom(page);
   await openSeatingPlan(page, RAUM);
 
-  // "Zufällig": no poll, the plan is there right away
-  await startNewPlan(page, 'random');
+  // "Im Raum verteilen": no poll, the plan is there right away
+  await startNewPlan(page, 'spread');
   const cards = page.locator('#sph_seats .place:not(.empty)');
   await expect(cards).toHaveCount(3);
   await expect(page.locator('#sph_seats')).toContainText(/Mallory\s*Mustermann/);
@@ -276,7 +276,7 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   await discardOpenPlan(page);
 
   // the next new plan takes over the Vorgaben without asking
-  await startNewPlan(page, 'random');
+  await startNewPlan(page, 'spread');
   await page.locator('#sph_vorgaben > summary').click();
   await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
   // leave no Vorgaben behind for the other tests
@@ -287,6 +287,54 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   // earlier plans are listed, folded away
   await page.locator('#sph_history_section > summary').click();
   await expect(page.locator('#sph_history_body tr').first()).toContainText('aktuell');
+});
+
+test('Sitzplan: im Raum verteilen, Verstoß nach dem Umsetzen rot markiert', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await openSeatingPlan(page, RAUM);
+
+  // five tools on top, side by side
+  for (const id of ['sph_link_editor', 'sph_link_shuffler', 'sph_bu_start_manual', 'sph_bu_start_spread', 'sph_bu_wishes'])
+    await expect(page.locator(`#sph_room_bar .sph-tools #${id}`)).toBeVisible();
+
+  // a list on the start page, without any plan or wish round
+  await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_bu_add_group').click();
+  const list = page.locator('#sph_groups_list .sph-group').first();
+  await list.locator('select').selectOption({ label: 'Max Mustermann' });
+  await expect(list).toContainText('Max Mustermann');
+  await list.locator('select').selectOption({ label: 'Elli Mustermann' });
+  await expect(list).toContainText('Elli Mustermann');
+
+  await startNewPlan(page, 'spread');
+  await expect(page.locator('#sph_room_bar #sph_bu_start_spread')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#sph_cycle_info')).toContainText('1 Verteilungsliste');
+  const cards = page.locator('#sph_seats .place:not(.empty)');
+  await expect(cards).toHaveCount(3);
+  await expect(page.locator('#sph_seats .place.unresolved')).toHaveCount(0);
+
+  // put Elli right next to Max by hand: both are marked red
+  const [elli_seat, next_to_max] = await page.evaluate(() => {
+    const w = window as any;
+    const email = (name: string) => w.sus.find((s: any) => s.display_name === name).email;
+    const max = w.seats[w.current_placement[email('Max Mustermann')]];
+    const next = w.seats.findIndex((st: number[]) => st[1] === max[1] && Math.abs(st[0] - max[0]) === 1);
+    return [w.current_placement[email('Elli Mustermann')], next];
+  });
+  await page.locator(`#sph_seats .place[data-seat-index="${elli_seat}"]`).click();
+  await page.locator(`#sph_seats .place[data-seat-index="${next_to_max}"]`).click();
+  await expect(page.locator(`#sph_seats .place[data-seat-index="${next_to_max}"]`)).toContainText('Elli');
+  await expect(page.locator('#sph_seats .place.unresolved')).toHaveCount(2);
+  await expect(page.locator(`#sph_seats .place[data-seat-index="${next_to_max}"]`)).toHaveAttribute('title', /gleiche Liste/);
+  await expect(page.locator('#sph_unresolved_summary')).toContainText('Verteilung im Raum');
+
+  // leave no list behind for the other tests
+  await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
+  await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
+  await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
+  await discardOpenPlan(page);
 });
 
 test('Gruppenbildung: eigener Abschnitt, Gruppen für die Klasse mischen', async ({ page }) => {

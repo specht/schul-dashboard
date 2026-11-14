@@ -88,11 +88,12 @@ class Main < Sinatra::Base
         (@@klassenleiter[klasse] || []).map { |sh| @@user_info[@@shorthands[sh]] }.compact.map { |u| u[:display_name_official] }
     end
 
-    # Ein neuer Sitzplan entsteht auf einem von drei Wegen (mode):
-    # 'wishes' startet eine Wunschrunde (Umfrage an die Klasse), 'random' und
-    # 'manual' legen nur einen offenen Zyklus ohne Umfrage an - gewürfelt bzw.
-    # von Hand gesetzt wird im Browser.
-    SPH_MODES = %w(wishes random manual)
+    # Ein neuer Sitzplan entsteht auf einem dieser Wege (mode): 'wishes'
+    # startet eine Wunschrunde (Umfrage an die Klasse); 'spread' (nach den
+    # Vorgaben im Raum verteilt), 'manual' (von Hand) und 'random' (früher
+    # „Zufällig würfeln“, für noch offene Pläne) legen nur einen offenen Zyklus
+    # ohne Umfrage an - gewürfelt bzw. gesetzt wird im Browser.
+    SPH_MODES = %w(wishes spread manual random)
 
     post '/api/sph_start_cycle' do
         require_teacher!
@@ -291,7 +292,7 @@ class Main < Sinatra::Base
                 :end_date => pr && pr[:end_date],
                 :end_time => pr && pr[:end_time],
                 :wishes_open => !!wishes_open,
-                # 'wishes', 'random', 'manual' (siehe sph_start_cycle) oder
+                # 'wishes', 'spread', 'manual', 'random' (siehe sph_start_cycle) oder
                 # 'edit' für einen per "Plan ändern" geöffneten Plan
                 :mode => reopened_from ? 'edit' : (sc[:mode] || 'wishes'),
                 :reopened_from => reopened_from,

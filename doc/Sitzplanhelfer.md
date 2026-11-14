@@ -29,10 +29,11 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
 
 1. **Werkzeuge**: Ganz oben steht in jeder Ansicht, auch während einer
    Wunschrunde, eine Leiste mit dem Raum und der Zahl der Plätze (gelb,
-   wenn Plätze fehlen) und vier gleichrangigen Werkzeugen:
+   wenn Plätze fehlen) und fünf gleichrangigen Werkzeugen:
    „Tische im Raum“ (der Editor, wo die Klassenleitung die Tische ändern
-   darf; „Tische anlegen“, wenn es noch keine gibt), „Shuffler“, „Von
-   Hand verteilen“ und „Sitzplanhelfer“. Das Werkzeug, mit dem der offene
+   darf; „Tische anlegen“, wenn es noch keine gibt), „Shuffler“ (lost
+   zufällig aus, speichert nichts), „Von Hand verteilen“, „Im Raum
+   verteilen“ und „Wunschrunde“. Das Werkzeug, mit dem der offene
    Plan entsteht, ist hervorgehoben; ist schon ein Plan offen und man
    wählt ein anderes, fragt die Seite, ob er dafür verworfen werden soll.
    Hat der Raum weniger Plätze als die Klasse SuS, lässt sich kein neuer
@@ -41,25 +42,30 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    **Startansicht** darunter: der aktuell gespeicherte Plan mit „Plan
    ändern“ und „Drucken“, die aufklappbaren „Vorgaben“ (auch ohne offenen
    Plan oder Wunschrunde bearbeitbar) und ganz unten „Frühere Sitzpläne“.
-2. **Sitzplanhelfer** öffnet direkt unter den Werkzeugen die Frage, wie
-   der Plan entstehen soll:
-   - **Mit Wünschen der Klasse**: legt eine Umfrage an und startet einen
-     Timer (einstellbar 1–60 Tage, Standard 4). Die SuS sehen sie ganz
-     normal über `print_current_polls()` und wählen bis zu drei
-     gleichberechtigte Wunschpartner sowie optional eine Person, neben der
-     sie nicht sitzen möchten. Solange die Runde läuft, zeigt die Seite die
-     Restlaufzeit und wie viele SuS schon geantwortet haben (neue Antworten
-     erscheinen alle 30 Sekunden ohne Neuladen). „Wunschrunde jetzt
-     beenden“ schließt die Umfrage vorzeitig (nach Rückfrage); die bis
-     dahin abgegebenen Wünsche bleiben erhalten.
-   - **Zufällig**: ohne Umfrage, der Plan wird sofort gewürfelt. Vorgaben
-     gelten trotzdem.
+2. Drei Werkzeuge beginnen einen neuen Plan:
+   - **Von Hand verteilen**: ohne Wünsche und ohne Würfeln stehen alle SuS
+     zunächst unter „Noch ohne Platz“; ein Klick auf einen Namen und dann
+     auf einen Platz setzt die Person dort hin.
+   - **Im Raum verteilen**: ohne Umfrage wird der Plan sofort nach den
+     Vorgaben gewürfelt, vor allem nach den Listen für die Verteilung im
+     Raum. Danach kann man von Hand umsetzen; wer dann direkt bei jemandem
+     von derselben Liste sitzt, wird rot markiert. Gibt es noch keine
+     Liste, weist die Seite darauf hin.
+   - **Wunschrunde** (Umfrage an die Klasse) fragt direkt unter den
+     Werkzeugen nach der Dauer (1–60 Tage, Standard 4) und legt dann eine
+     Umfrage an. Die SuS sehen sie ganz normal über
+     `print_current_polls()` und wählen bis zu drei gleichberechtigte
+     Wunschpartner sowie optional eine Person, neben der sie nicht sitzen
+     möchten. Solange die Runde läuft, zeigt die Seite die Restlaufzeit und
+     wie viele SuS schon geantwortet haben (neue Antworten erscheinen alle
+     30 Sekunden ohne Neuladen). „Wunschrunde jetzt beenden“ schließt die
+     Umfrage vorzeitig (nach Rückfrage); die bis dahin abgegebenen Wünsche
+     bleiben erhalten.
 
-   Der dritte Weg ist das Werkzeug **Von Hand verteilen**: ohne Wünsche
-   und ohne Würfeln stehen alle SuS zunächst unter „Noch ohne Platz“; ein
-   Klick auf einen Namen und dann auf einen Platz setzt die Person dort
-   hin.
-3. **Arbeitsansicht** (alle drei Wege und „Plan ändern“): Bei einer
+   Noch offene Pläne aus der früheren Auswahl „Zufällig würfeln“
+   (`mode` `random`) funktionieren weiter, es gibt dafür nur keinen
+   eigenen Startknopf mehr.
+3. **Arbeitsansicht** (alle Wege und „Plan ändern“): Bei einer
    Wunschrunde zeigt eine Schrittleiste „Wünsche sammeln – Plan bauen –
    Speichern“. Die Klassenleitung sieht die Wünsche live, inkl.
    🤝-Symbol für wechselseitige Wünsche. Wünsche zählen automatisch; über
@@ -90,7 +96,7 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    - **Verteilung im Raum**: Listen von SuS (Liste A, B, …). Wer auf
      derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch,
      nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt
-     auch ganz ohne Wünsche (etwa mit „Zufällig“); gibt es Wünsche,
+     auch ganz ohne Wünsche (mit „Im Raum verteilen“); gibt es Wünsche,
      zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht
      vor. Die Listen gehören zur Klasse und sind nur für die
      Klassenleitung sichtbar.
@@ -139,7 +145,8 @@ gar nicht erst übertragen.
 ## Datenmodell (Neo4j)
 
 - **`SeatingCycle`**: ein Durchlauf pro Klasse+Raum. Enthält `mode`
-  (`random`/`manual` für Pläne ohne Umfrage, fehlt bei Wunschrunden),
+  (`spread`/`manual`/`random` für Pläne ohne Umfrage, fehlt bei
+  Wunschrunden),
   bei Wunschrunden `poll_id`/`poll_run_id` (verweist auf die zugehörige,
   ganz normale Umfrage), `forced_pairs`/`forbidden_pairs`/`fixed_rules`
   (JSON), und

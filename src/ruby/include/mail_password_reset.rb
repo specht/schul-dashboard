@@ -205,7 +205,7 @@ class Main < Sinatra::Base
             end
             io.puts "</datalist>"
             io.puts "<h5>Offene Anfragen (<span id='mail_cases_open_count'>0</span>)</h5>"
-            io.puts "<p id='mail_reset_bot_state' class='text-muted'></p>"
+            io.puts "<div id='mail_reset_bot_state'></div>"
             io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_open'>"
             io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Nächster Schritt</th></tr></thead><tbody></tbody></table></div>"
             io.puts "<div class='card' id='mail_case_form' style='margin-bottom: 1.5em;'><div class='card-body'>"

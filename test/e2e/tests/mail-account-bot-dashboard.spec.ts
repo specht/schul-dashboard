@@ -76,7 +76,7 @@ test('Bot-Zustand: verbunden und tätig getrennt – arbeitet oder wartet angeme
   await page.reload();
   await expect(state.locator('.mail-bot-activity')).toHaveCount(0);
   // not connected: a grey dot
-  await expect(state.locator('.mail-bot-dot')).toHaveAttribute('data-on', 'no');
+  await expect(state.locator('.mail-bot-dot')).toHaveAttribute('data-state', 'offline');
   expect((await api.post('/api/mail_account_bot/claim', { data: { host: 'rechner-a', activity: 'schlafen' } })).ok()).toBe(false);
 });
 
@@ -152,7 +152,7 @@ test('Bot-Websocket: nur mit Token, Weckruf bei Freigabe, Status auf der Seite',
   const state = page.locator('#mail_reset_bot_state');
   await expect(state).toHaveAttribute('data-state', 'connected');
   await expect(state).toContainText('rechner-ws');
-  await expect(state.locator('.mail-bot-dot')).toHaveAttribute('data-on', 'yes');
+  await expect(state.locator('.mail-bot-dot')).toHaveAttribute('data-state', 'connected');
 
   // the admin approves a case: the bot is woken (and fetches the cases itself)
   const admin = await playwrightRequest.newContext({ baseURL });

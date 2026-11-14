@@ -130,8 +130,10 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   await expect(page.locator('#sph_seats')).toContainText('Max');
   await expect(page.locator('#sph_seats')).toContainText('Mallory');
   await savePlan(page);
-  // back on the start view with the saved plan
+  // back on the start view with the saved plan, to show and to print
   await expect(page.locator('#sph_seats')).toContainText('Mallory');
+  await expect(page.locator('#sph_link_show')).toHaveAttribute('href', `/sitzplananzeige/${KLASSE}/${RAUM}`);
+  await expect(page.locator('#sph_link_print')).toHaveAttribute('href', `/sitzplananzeige/${KLASSE}/${RAUM}?print=1`);
 
   // students do not see the seating plan themselves
   await student.goto(`/sitzplananzeige/${KLASSE}/${RAUM}`);
@@ -313,6 +315,10 @@ test('Sitzplan: im Raum verteilen, Verstoß nach dem Umsetzen rot markiert', asy
   const cards = page.locator('#sph_seats .place:not(.empty)');
   await expect(cards).toHaveCount(3);
   await expect(page.locator('#sph_seats .place.unresolved')).toHaveCount(0);
+  // in this tool the students of a list show its colour and letter
+  await expect(page.locator('#sph_seats .place .sph-list-tag')).toHaveCount(2);
+  await expect(page.locator('#sph_seats .place .sph-list-tag').first()).toHaveText('A');
+  await expect(page.locator('#sph_unresolved_summary .sph-list-legend')).toContainText('Liste A');
 
   // put Elli right next to Max by hand: both are marked red
   const [elli_seat, next_to_max] = await page.evaluate(() => {
@@ -329,8 +335,69 @@ test('Sitzplan: im Raum verteilen, Verstoß nach dem Umsetzen rot markiert', asy
   await expect(page.locator(`#sph_seats .place[data-seat-index="${next_to_max}"]`)).toHaveAttribute('title', /gleiche Liste/);
   await expect(page.locator('#sph_unresolved_summary')).toContainText('Verteilung im Raum');
 
+  // only in this tool: a plan by hand shows no list colours
+  await page.locator('#sph_bu_start_manual').click();
+  await dashboardDialog(page).getByRole('button', { name: /Verwerfen/ }).click();
+  await expect(page.locator('#sph_room_bar #sph_bu_start_manual')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#sph_unplaced .sph-chip').filter({ hasText: 'Max' }).click();
+  await page.locator('#sph_seats .place[data-seat-index="0"]').click();
+  await expect(page.locator('#sph_seats .place[data-seat-index="0"]')).toContainText('Max');
+  await expect(page.locator('#sph_seats .sph-list-tag')).toHaveCount(0);
+
   // leave no list behind for the other tests
   await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
+  await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
+  await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
+  await discardOpenPlan(page);
+});
+
+test('Sitzplan: Vorgaben je Werkzeug ein- und ausschalten', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await openSeatingPlan(page, RAUM);
+
+  // a list, and the Verteilung im Raum switched off for "Im Raum verteilen" only
+  await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_bu_add_group').click();
+  const list = page.locator('#sph_groups_list .sph-group').first();
+  await list.locator('select').selectOption({ label: 'Max Mustermann' });
+  await expect(list).toContainText('Max Mustermann');
+  await list.locator('select').selectOption({ label: 'Elli Mustermann' });
+  await expect(list).toContainText('Elli Mustermann');
+  const switched = page.waitForResponse('**/api/sph_set_rule_area');
+  await page.locator('#sph_area_spread_spread').uncheck();
+  expect((await switched).status()).toBe(200);
+  await expect(page.locator('#sph_area_wishes_spread')).toBeChecked();
+
+  // the list is kept, but this tool does not use it: no colours, no red marks
+  await startNewPlan(page, 'spread');
+  await expect(page.locator('#sph_cycle_info')).toContainText('ausgeschaltet');
+  await expect(page.locator('#sph_seats .sph-list-tag')).toHaveCount(0);
+  const [elli_seat, next_to_max] = await page.evaluate(() => {
+    const w = window as any;
+    const email = (name: string) => w.sus.find((s: any) => s.display_name === name).email;
+    const max = w.seats[w.current_placement[email('Max Mustermann')]];
+    const next = w.seats.findIndex((st: number[]) => st[1] === max[1] && Math.abs(st[0] - max[0]) === 1);
+    return [w.current_placement[email('Elli Mustermann')], next];
+  });
+  await page.locator(`#sph_seats .place[data-seat-index="${elli_seat}"]`).click();
+  await page.locator(`#sph_seats .place[data-seat-index="${next_to_max}"]`).click();
+  await expect(page.locator(`#sph_seats .place[data-seat-index="${next_to_max}"]`)).toContainText('Elli');
+  await expect(page.locator('#sph_seats .place.unresolved')).toHaveCount(0);
+
+  // switched on again right here: colours and red marks are back
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('.sph-areas-table th[data-mode="spread"]')).toHaveClass(/sph-area-current/);
+  await page.locator('#sph_area_spread_spread').check();
+  await expect(page.locator('#sph_seats .sph-list-tag')).toHaveCount(2);
+  await expect(page.locator('#sph_seats .place.unresolved')).toHaveCount(2);
+
+  // the setting is kept
+  await page.reload();
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_area_spread_spread')).toBeChecked();
+
   await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
   await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
   await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);

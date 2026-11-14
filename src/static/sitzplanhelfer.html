@@ -99,6 +99,51 @@ table.sph-wishes td, table.sph-wishes th {
 .sph-card-name span {
     display: block;
 }
+/* „Im Raum verteilen“: jede Verteilungsliste in einer eigenen Farbe. */
+.sph-list-tag {
+    position: absolute;
+    bottom: 1px;
+    right: 2px;
+    min-width: 1.4em;
+    padding: 0 0.3em;
+    border-radius: 0.6em;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.4em;
+    text-align: center;
+    color: #fff;
+}
+.sph-areas-table th, .sph-areas-table td {
+    text-align: center;
+    vertical-align: middle;
+}
+.sph-areas-table th:first-child, .sph-areas-table td:first-child {
+    text-align: left;
+}
+.sph-areas-table .sph-area-current {
+    background-color: rgba(47, 111, 176, 0.12);
+}
+.sph-list-key {
+    display: inline-block;
+    margin-right: 0.8em;
+    white-space: nowrap;
+}
+.sph-list-key .sph-list-tag {
+    position: static;
+    display: inline-block;
+    margin-right: 0.3em;
+}
+.sph-list-c0 { --sph-list: #2f6fb0; --sph-list-tint: rgba(47, 111, 176, 0.16); }
+.sph-list-c1 { --sph-list: #c2610c; --sph-list-tint: rgba(194, 97, 12, 0.16); }
+.sph-list-c2 { --sph-list: #7b4fb3; --sph-list-tint: rgba(123, 79, 179, 0.16); }
+.sph-list-c3 { --sph-list: #1f8a7a; --sph-list-tint: rgba(31, 138, 122, 0.16); }
+.sph-list-c4 { --sph-list: #b8417a; --sph-list-tint: rgba(184, 65, 122, 0.16); }
+.sph-list-c5 { --sph-list: #6b7f1a; --sph-list-tint: rgba(107, 127, 26, 0.18); }
+.sph-list-tag { background-color: var(--sph-list); }
+#sph_seats .place.sph-listed:not(.unresolved) {
+    background-color: var(--sph-list-tint);
+    border-color: var(--sph-list);
+}
 #sph_seats .place.crown::after {
     content: '👑';
     position: absolute;
@@ -455,6 +500,7 @@ body.dark .sph-group {
         <p id="sph_start_info" class="sph-legend"></p>
         <div class="sph-actions">
             <button class="btn btn-outline-primary" id="sph_bu_edit_saved">Plan ändern</button>
+            <a class="btn btn-outline-secondary" id="sph_link_show" href="#" target="_blank" title="Der Plan ohne Wünsche und Vorgaben, zum Zeigen vor der Klasse (z. B. am Beamer)."><i class="fa fa-desktop"></i>&nbsp;&nbsp;Für Schüler anzeigen</a>
             <a class="btn btn-outline-secondary" id="sph_link_print" href="#" target="_blank"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</a>
         </div>
     </div>
@@ -494,7 +540,13 @@ body.dark .sph-group {
 
         <details class="sph-section sph-panel" id="sph_vorgaben">
             <summary><h4>Vorgaben <span id="sph_vorgaben_count" class="sph-count"></span></h4></summary>
-            <p class="sph-legend">Vorgaben gelten für jeden neuen Plan, mit oder ohne Wünsche, bis Sie sie ändern. Wünsche treten hinter ihnen zurück.</p>
+            <p class="sph-legend">Vorgaben gelten, bis Sie sie ändern; Wünsche treten hinter ihnen zurück. Welche Vorgaben ein Werkzeug nutzt, schalten Sie hier ein und aus. Ausgeschaltete Vorgaben bleiben gespeichert.</p>
+            <div class="table-responsive">
+            <table class="table table-sm sph-areas-table">
+                <thead><tr><th></th><th data-mode="manual">Von Hand verteilen</th><th data-mode="spread">Im Raum verteilen</th><th data-mode="wishes">Wunschrunde</th></tr></thead>
+                <tbody id="sph_areas_body"></tbody>
+            </table>
+            </div>
 
             <h5>Paare</h5>
             <div class="form-inline">
@@ -835,6 +887,67 @@ function render_rules() {
 
 // Wie viele Vorgaben gelten gerade? Steht in der Überschrift des
 // zugeklappten Kastens, damit man sie nicht übersieht.
+// Werkzeug, nach dem sich die Schalter richten: das des offenen Plans (bei
+// „Plan ändern“ das, mit dem er entstanden ist); ohne offenen Plan keins.
+function current_area_mode() {
+    if (!open_cycle_id) return null;
+    return open_mode === 'edit' ? base_mode : open_mode;
+}
+
+function area_on(mode, area) {
+    return !(rule_areas[mode] && rule_areas[mode][area] === false);
+}
+
+// Führt fn so aus, als gäbe es nur die für das aktuelle Werkzeug
+// eingeschalteten Vorgaben. Gespeichert und angezeigt (im Kasten „Vorgaben“)
+// bleiben immer alle.
+function with_active_rules(fn) {
+    let mode = current_area_mode();
+    if (!mode) return fn();
+    let saved = [forced_pairs, forbidden_pairs, fixed_rules, seating_groups];
+    if (!area_on(mode, 'pairs')) { forced_pairs = []; forbidden_pairs = []; }
+    if (!area_on(mode, 'fixed')) fixed_rules = [];
+    if (!area_on(mode, 'spread')) seating_groups = [];
+    try {
+        return fn();
+    } finally {
+        [forced_pairs, forbidden_pairs, fixed_rules, seating_groups] = saved;
+    }
+}
+
+const SPH_AREA_ROWS = [['pairs', 'Paare'], ['fixed', 'Feste Plätze'], ['spread', 'Verteilung im Raum']];
+const SPH_AREA_TOOLS = ['manual', 'spread', 'wishes'];
+
+function render_areas() {
+    let current = current_area_mode();
+    $('.sph-areas-table th[data-mode]').each(function () {
+        $(this).toggleClass('sph-area-current', $(this).data('mode') === current);
+    });
+    let body = $('#sph_areas_body').empty();
+    for (let [area, label] of SPH_AREA_ROWS) {
+        let row = $('<tr>').append($('<td>').text(label));
+        for (let mode of SPH_AREA_TOOLS) {
+            let tool = $(`.sph-areas-table th[data-mode="${mode}"]`).text();
+            let box = $('<input type="checkbox">').attr('id', `sph_area_${mode}_${area}`)
+                .attr('aria-label', `${label} bei „${tool}“`)
+                .prop('checked', area_on(mode, area))
+                .on('change', function (e) {
+                    let active = $(e.currentTarget).is(':checked');
+                    api_call('/api/sph_set_rule_area', {klasse: klasse, raum: raum, mode: mode, area: area, active: active ? 'yes' : 'no'}, function (data) {
+                        if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+                        rule_areas = data.areas || {};
+                        render_areas();
+                        render_wishes();
+                        if (open_mode === 'spread' && open_cycle_data) render_work_header(open_cycle_data);
+                        rerender_open_plan();
+                    });
+                });
+            row.append($('<td>').toggleClass('sph-area-current', mode === current).append(box));
+        }
+        body.append(row);
+    }
+}
+
 // Wohin gehen Änderungen an den Vorgaben? In den offenen Plan oder, ohne
 // offenen Plan, direkt in die geltenden Vorgaben von Klasse und Raum.
 function rules_target() {
@@ -975,6 +1088,17 @@ function seat_distance(idx_a, idx_b) {
     return Math.hypot(a[0] - b[0], a[1] - b[1]);
 }
 
+// Farbe je Verteilungsliste (sechs Farben, danach wieder von vorn) - nur
+// bei „Im Raum verteilen“ im Plan zu sehen.
+function list_color_class(i) {
+    return `sph-list-c${i % 6}`;
+}
+
+// Erste Liste mit mindestens zwei Personen, auf der email steht (oder -1).
+function list_index_of(email) {
+    return seating_groups.findIndex(g => g.length >= 2 && g.includes(email));
+}
+
 function group_letter(i) {
     return i < 26 ? String.fromCharCode(65 + i) : `${i + 1}`;
 }
@@ -1065,6 +1189,10 @@ function crown(email) {
 }
 
 function render_wishes() {
+    return with_active_rules(render_wishes_raw);
+}
+
+function render_wishes_raw() {
     if (!open_cycle_id || !open_has_wishes) {
         $('#sph_wishes_section').hide();
         return;
@@ -1211,6 +1339,12 @@ var open_has_wishes = false;
 var selected_email = null;
 // Darf diese Person einen neuen Plan beginnen (Klassenleitung, Admin)?
 var can_start_cycle = false;
+// Welche Bereiche der Vorgaben nutzt welches Werkzeug? {mode: {pairs, fixed,
+// spread}}, fehlende Einträge sind eingeschaltet (siehe sph_rule_areas).
+var rule_areas = {};
+// Werkzeug des offenen Plans, auch wenn er per „Plan ändern“ geöffnet wurde.
+var base_mode = null;
+var open_cycle_data = null;
 
 function set_status(text) {
     $('#sph_status').text(text || '');
@@ -1240,6 +1374,9 @@ function load_state(after) {
         forbidden_pairs = rules.forbidden_pairs || [];
         fixed_rules = rules.fixed_rules || [];
         can_start_cycle = !!data.can_start_cycle;
+        rule_areas = data.rule_areas || {};
+        base_mode = oc ? (oc.base_mode || null) : null;
+        open_cycle_data = oc || null;
         // Die Vorgaben gibt es in beiden Ansichten: auf der Startseite unter
         // den Knöpfen zum aktuellen Plan, beim offenen Plan unter den Wünschen.
         if (oc) $('#sph_vorgaben').insertAfter('#sph_wishes_section');
@@ -1288,6 +1425,7 @@ function load_state(after) {
         render_pairs();
         render_groups();
         render_rules();
+        render_areas();
         render_wishes();
         if ((open_mode === 'spread' || open_mode === 'random') && plan_cycle_id !== open_cycle_id) {
             compute_plan(sus.map(s => s.email));
@@ -1306,7 +1444,7 @@ function render_start_header(data) {
     } else {
         $('#sph_start_info').text('Für diese Klasse und diesen Raum ist noch kein Sitzplan gespeichert.');
     }
-    $('#sph_bu_edit_saved, #sph_link_print').toggle(!!last_cycle);
+    $('#sph_bu_edit_saved, #sph_link_show, #sph_link_print').toggle(!!last_cycle);
     // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen fällt
     // auf, dass gar nicht alle in den Raum passen.
     // (die Werkzeuge oben stellt render_room_bar ein)
@@ -1352,7 +1490,9 @@ function render_work_header(oc) {
     } else if (open_mode === 'spread') {
         let n = (seating_groups || []).filter(g => g.length >= 2).length;
         $('#sph_cycle_info').text('Neuer Sitzplan, ohne Umfrage nach Ihren Vorgaben im Raum verteilt. ' +
-            (n > 0
+            (!area_on('spread', 'spread')
+                ? 'Die Verteilung im Raum ist für dieses Werkzeug ausgeschaltet (unter „Vorgaben“).'
+                : n > 0
                 ? `Berücksichtigt: ${n} Verteilungsliste${n === 1 ? '' : 'n'}, Paare und feste Plätze. Setzen Sie einzelne Personen von Hand um (Namen anklicken, dann den Platz). Wer danach direkt bei jemandem von derselben Liste sitzt, wird rot markiert.`
                 : 'Es gibt noch keine Verteilungsliste. Legen Sie sie unter „Vorgaben → Verteilung im Raum“ an und würfeln Sie dann neu.'));
     } else if (open_mode === 'random') {
@@ -1421,6 +1561,10 @@ function complete_placement(saved) {
 // Stand (falls schon einer da ist), sonst den zuletzt gespeicherten Plan zum
 // Ansehen - damit nach dem Speichern nichts verschwindet.
 function show_current_plan() {
+    return with_active_rules(show_current_plan_raw);
+}
+
+function show_current_plan_raw() {
     if (open_cycle_id) {
         if (plan_cycle_id === open_cycle_id) {
             evaluate_placement();
@@ -1700,6 +1844,10 @@ function generate_plan() {
 }
 
 function compute_plan(emails) {
+    return with_active_rules(() => compute_plan_raw(emails));
+}
+
+function compute_plan_raw(emails) {
     // Mehrere unabhängige Zufalls-Durchläufe, besten Score behalten - ein
     // einzelner Durchlauf kann in einem mittelmäßigen lokalen Optimum
     // hängenbleiben, gerade bei vielen SuS mit überlappenden Wünschen.
@@ -1722,6 +1870,10 @@ function compute_plan(emails) {
 // (De-)Aktivieren eines Wunsches aufgerufen, damit Farben und Quote immer zum
 // sichtbaren Plan passen.
 function evaluate_placement() {
+    return with_active_rules(evaluate_placement_raw);
+}
+
+function evaluate_placement_raw() {
     let placement = current_placement;
     let emails = sus.map(s => s.email).filter(e => placement[e] !== undefined);
     let failures = [];
@@ -1794,6 +1946,10 @@ function evaluate_placement() {
 // lassen sich ziehen oder anklicken und auf einen anderen Platz setzen;
 // false = gespeicherter Plan nur zum Ansehen.
 function render_placement(editable, preview) {
+    return with_active_rules(() => render_placement_raw(editable, preview));
+}
+
+function render_placement_raw(editable, preview) {
     let [w, h] = room_width_height();
     let container = $('#sph_seats');
     $('#sph_plan_area').show();
@@ -1844,6 +2000,12 @@ function render_placement(editable, preview) {
             if (editable && email === selected_email) div.addClass('selected');
             if (titles.length > 0) div.attr('title', titles.join('; '));
             fill_student_card(div, email, scale * 0.9);
+            // Nur bei „Im Raum verteilen“: jede Liste in ihrer Farbe.
+            let li = open_mode === 'spread' && editable ? list_index_of(email) : -1;
+            if (li >= 0) {
+                div.addClass('sph-listed').addClass(list_color_class(li));
+                div.append($('<span>').addClass('sph-list-tag').text(group_letter(li)));
+            }
         }
         container.append(div);
     });
@@ -1860,6 +2022,11 @@ function render_placement(editable, preview) {
             ? '<span class="sph-color-key" style="border-color: #2e7d32; background-color: #e8f5e9;"></span>Wunschpartner sitzt daneben&nbsp;&nbsp;&nbsp;'
             : '') +
         '<span class="sph-color-key" style="border-color: #c62828; background-color: #fdecea;"></span>etwas ist nicht erfüllt (Grund unten)</p>';
+    if (editable && open_mode === 'spread') {
+        let keys = seating_groups.map((g, i) => [g, i]).filter(([g]) => g.length >= 2)
+            .map(([g, i]) => `<span class="sph-list-key ${list_color_class(i)}"><span class="sph-list-tag">${group_letter(i)}</span>Liste ${group_letter(i)}</span>`);
+        if (keys.length > 0) rate_html += `<p class="sph-legend sph-list-legend">${keys.join('')}</p>`;
+    }
     if ((editable || preview) && group_pairs().length > 0) {
         rate_html += group_issues.length > 0
             ? `<p class="sph-unresolved-list"><strong>Verteilung im Raum:</strong> ${group_issues.length / 2} Paar(e) sitzen direkt beieinander (siehe unten).</p>`
@@ -1937,7 +2104,8 @@ function render_selection_bar() {
     }
     let placed = current_placement[selected_email] !== undefined;
     $('#sph_selection_text').text(`${display_name(selected_email)} ist ausgewählt. Klicken Sie jetzt den Zielplatz an.`);
-    $('#sph_bu_pin').toggle(placed).text(exact_rule_for(selected_email) ? '📌 Festen Platz lösen' : '📌 Platz festhalten');
+    let fixed_on = !current_area_mode() || area_on(current_area_mode(), 'fixed');
+    $('#sph_bu_pin').toggle(placed && fixed_on).text(exact_rule_for(selected_email) ? '📌 Festen Platz lösen' : '📌 Platz festhalten');
     $('#sph_bu_unplace').toggle(placed);
     bar.show();
 }
@@ -2143,6 +2311,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     $('#sph_label').text(`${klasse} – Raum ${raum}`);
     $('#sph_link_print').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?print=1`);
+    $('#sph_link_show').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
     $('#sph_link_shuffler').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
 
     // Ist schon ein Plan offen, fragen die Werkzeuge, ob er für den neuen Weg

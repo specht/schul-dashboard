@@ -40,7 +40,8 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    Plan beginnen und der Shuffler nicht öffnen.
 
    **Startansicht** darunter: der aktuell gespeicherte Plan mit „Plan
-   ändern“ und „Drucken“, die aufklappbaren „Vorgaben“ (auch ohne offenen
+   ändern“, „Für Schüler anzeigen“ (die Ansicht ohne Wünsche, etwa für den
+   Beamer) und „Drucken“, die aufklappbaren „Vorgaben“ (auch ohne offenen
    Plan oder Wunschrunde bearbeitbar) und ganz unten „Frühere Sitzpläne“.
 2. Drei Werkzeuge beginnen einen neuen Plan:
    - **Von Hand verteilen**: ohne Wünsche und ohne Würfeln stehen alle SuS
@@ -48,9 +49,10 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
      auf einen Platz setzt die Person dort hin.
    - **Im Raum verteilen**: ohne Umfrage wird der Plan sofort nach den
      Vorgaben gewürfelt, vor allem nach den Listen für die Verteilung im
-     Raum. Danach kann man von Hand umsetzen; wer dann direkt bei jemandem
-     von derselben Liste sitzt, wird rot markiert. Gibt es noch keine
-     Liste, weist die Seite darauf hin.
+     Raum. Jede Liste hat dabei im Plan eine eigene Farbe und ihren
+     Buchstaben (nur in diesem Werkzeug). Danach kann man von Hand
+     umsetzen; wer dann direkt bei jemandem von derselben Liste sitzt, wird
+     rot markiert. Gibt es noch keine Liste, weist die Seite darauf hin.
    - **Wunschrunde** (Umfrage an die Klasse) fragt direkt unter den
      Werkzeugen nach der Dauer (1–60 Tage, Standard 4) und legt dann eine
      Umfrage an. Die SuS sehen sie ganz normal über
@@ -100,6 +102,15 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
      zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht
      vor. Die Listen gehören zur Klasse und sind nur für die
      Klassenleitung sichtbar.
+
+   Welche Bereiche ein Werkzeug nutzt, steht in einer Tabelle oben im
+   Kasten: je Bereich (Paare, feste Plätze, Verteilung im Raum) und
+   Werkzeug („Von Hand verteilen“, „Im Raum verteilen“, „Wunschrunde“) ein
+   Schalter. Ausgeschaltete Vorgaben bleiben gespeichert, wirken aber für
+   dieses Werkzeug weder beim Würfeln noch bei den roten Markierungen; die
+   Spalte des offenen Plans ist hervorgehoben. „Plan ändern“ richtet sich
+   nach dem Werkzeug, mit dem der Plan entstanden ist. Gespeichert wird das
+   in `SeatingRules.areas`, fehlende Einträge sind eingeschaltet.
 
    Vorgaben gelten, bis die Klassenleitung sie ändert: Jeder neue Plan
    und „Plan ändern“ übernehmen den zuletzt eingestellten Stand für

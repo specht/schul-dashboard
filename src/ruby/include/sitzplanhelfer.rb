@@ -295,6 +295,9 @@ class Main < Sinatra::Base
                 # 'wishes', 'spread', 'manual', 'random' (siehe sph_start_cycle) oder
                 # 'edit' für einen per "Plan ändern" geöffneten Plan
                 :mode => reopened_from ? 'edit' : (sc[:mode] || 'wishes'),
+                # Mit welchem Werkzeug der Plan entstanden ist (auch bei 'edit'):
+                # danach richten sich die eingeschalteten Bereiche der Vorgaben.
+                :base_mode => sph_base_mode(sc),
                 :reopened_from => reopened_from,
                 :seats => reopened_seats ? JSON.parse(reopened_seats) : nil,
                 :forced_pairs => JSON.parse(sc[:forced_pairs] || '[]'),
@@ -326,6 +329,7 @@ class Main < Sinatra::Base
                 :open_cycle => open_cycle, :wishes => wishes, :last_cycle => last_cycle,
                 :previous_cycle => previous_cycle, :priority_cycle => priority_cycle,
                 :current_rules => sph_current_rules(klasse, raum).transform_values { |v| JSON.parse(v) rescue [] },
+                :rule_areas => sph_rule_areas(klasse, raum),
                 :seating_groups => sph_load_seating_groups(klasse))
     end
 
@@ -494,7 +498,8 @@ class Main < Sinatra::Base
             RETURN r;
         END_OF_QUERY
         source = rows.empty? ? nil : rows.first['r']
-        if source.nil?
+        # Der Knoten kann auch nur die Schalter je Werkzeug enthalten (areas).
+        if source.nil? || source[:forced_pairs].nil?
             last_rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum)
                 MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
                 WHERE sc.saved_at IS NOT NULL
@@ -549,6 +554,47 @@ class Main < Sinatra::Base
                 SET r.fixed_rules = $fr;
             END_OF_QUERY
         end
+    end
+
+    # Mit welchem Werkzeug ist ein Plan entstanden? Ältere Pläne haben kein
+    # mode: mit Umfrage war es eine Wunschrunde, sonst von Hand („Verteilen“).
+    def sph_base_mode(sc)
+        sc[:mode] || (sc[:poll_run_id] ? 'wishes' : 'manual')
+    end
+
+    # Welche Bereiche der Vorgaben nutzt welches Werkzeug? Die Vorgaben selbst
+    # gelten für alle; je Werkzeug lassen sich Paare, feste Plätze und die
+    # Verteilung im Raum ein- und ausschalten, ohne sie zu löschen. Fehlt ein
+    # Eintrag, ist der Bereich eingeschaltet.
+    SPH_AREA_MODES = %w(manual spread wishes random)
+    SPH_AREAS = %w(pairs fixed spread)
+
+    def sph_rule_areas(klasse, raum)
+        rows = neo4j_query(<<~END_OF_QUERY, :key => "#{klasse}/#{raum}")
+            MATCH (r:SeatingRules {key: $key})
+            RETURN r.areas AS areas;
+        END_OF_QUERY
+        areas = rows.empty? ? nil : (JSON.parse(rows.first['areas'] || '{}') rescue nil)
+        areas.is_a?(Hash) ? areas : {}
+    end
+
+    post '/api/sph_set_rule_area' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:klasse, :raum, :mode, :area, :active])
+        klasse = data[:klasse]
+        raum = data[:raum]
+        require_sph_access!(klasse)
+        assert(sitzplan_allowed_rooms(klasse).include?(raum), 'Dieser Raum gehört nicht zur Klasse.')
+        assert(SPH_AREA_MODES.include?(data[:mode]) && SPH_AREAS.include?(data[:area]) && %w(yes no).include?(data[:active]),
+               'Ungültige Einstellung.')
+        areas = sph_rule_areas(klasse, raum)
+        areas[data[:mode]] = {} unless areas[data[:mode]].is_a?(Hash)
+        areas[data[:mode]][data[:area]] = data[:active] == 'yes'
+        neo4j_query(<<~END_OF_QUERY, :key => "#{klasse}/#{raum}", :areas => areas.to_json)
+            MERGE (r:SeatingRules {key: $key})
+            SET r.areas = $areas;
+        END_OF_QUERY
+        respond(:ok => true, :areas => areas)
     end
 
     post '/api/sph_set_pair' do
@@ -795,6 +841,7 @@ class Main < Sinatra::Base
         # Die geltenden Vorgaben, nicht die vom Zeitpunkt des Originals.
         rules = sph_current_rules(sc[:klasse], sc[:raum])
         params = rules.merge({
+            :base_mode => sph_base_mode(sc),
             :id => new_id, :klasse => sc[:klasse], :raum => sc[:raum],
             :poll_id => sc[:poll_id], :poll_run_id => sc[:poll_run_id],
             :timestamp => timestamp,
@@ -805,7 +852,7 @@ class Main < Sinatra::Base
             MATCH (old:SeatingCycle {id: $source_id})
             CREATE (nc:SeatingCycle {id: $id, klasse: $klasse, raum: $raum, poll_id: $poll_id, poll_run_id: $poll_run_id,
                                       created_at: $timestamp, forced_pairs: $forced_pairs, forbidden_pairs: $forbidden_pairs,
-                                      fixed_rules: $fixed_rules})
+                                      fixed_rules: $fixed_rules, mode: $base_mode})
             CREATE (nc)-[:STARTED_BY]->(a)
             CREATE (nc)-[:REOPENED_FROM]->(old);
         END_OF_QUERY

@@ -187,6 +187,13 @@ file can go.
   them with the E-Mail-Brief password, proves each one by an IMAP login,
   and reports back; then the letters are printed as before. The creation
   page is to be recorded.
+- **Logins:** no daily limit either (2026-11-14: the limit of 10 blocked an
+  address list the admin asked for, while trying things out). Logins are
+  counted and shown; the protection is one session kept, logging in only
+  when there is work, and stopping at the first refused login.
+- **Bot log on the page** (2026-11-14): the bot sends its log lines to the
+  dashboard (`POST /api/mail_account_bot/log`, kept 14 days), `/postfaecher`
+  shows the last one as "Zuletzt …" and the whole log below the status.
 - **Volume:** no artificial daily limit. Like the old script, all approved
   mailboxes go in one sitting, one after the other at a person's pace. If
   something gets stuck, the bot stops; after `resume`, the next run fetches

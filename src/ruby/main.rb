@@ -383,6 +383,7 @@ class SetupDatabase
         'SecondFactor/ts_expire',
         'SecondLoginCode/code',
         'Mail/ts_sent',
+        'MailAccountBotLog/ts',
         'News/date',
         'NextcloudLoginCode/code',
         'Pk5/betreuende_lehrkraft',

@@ -167,13 +167,9 @@ class IonosSession {
     }
 
     async login() {
-        if (this.state.loginsLeft(this.config.max_logins_per_day) < 1) {
-            throw new Postpone(`Heute schon ${this.config.max_logins_per_day} Anmeldungen bei IONOS von diesem Rechner – der Rest wartet bis morgen`);
-        }
-        // counted before the first keystroke (an attempt is an attempt), here
-        // and on the dashboard for all machines together
+        // announced before the first keystroke (an attempt is an attempt):
+        // counted here and on the dashboard, refused while the bot is paused
         const allowed = await this.dashboard.loginAttempt(this.config.host);
-        if (allowed.result === 'limit') throw new Postpone('Heute keine Anmeldung bei IONOS mehr übrig (alle Rechner zusammen) – der Rest wartet bis morgen oder bis der Zähler auf der Seite „Passwörter“ zurückgesetzt wird');
         if (allowed.result !== 'ok') throw new Postpone('Der Bot ist inzwischen angehalten');
         this.state.count('logins');
         this.log('Anmeldung bei IONOS');

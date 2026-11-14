@@ -86,6 +86,21 @@
     .mail-bot-detail { margin-top: 0.15em; color: #5f6368; }
     body.dark .mail-bot-row { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); }
     body.dark .mail-bot-detail { color: #b0b5ba; }
+    .mail-bot-now { margin-top: 0.15em; }
+    /* the bot's log: newest at the bottom, scrolls by itself while you are at the end */
+    #mail_bot_log_box { margin: -0.5em 0 1em 0; }
+    #mail_bot_log_box summary { color: #5f6368; cursor: pointer; padding: 0.2em 0; }
+    #mail_bot_log { max-height: 20em; overflow-y: auto; background: #fff; border: 1px solid #e1e4e8; border-radius: 0.5em;
+        padding: 0.4em 0.75em; font-size: 90%; margin-top: 0.3em; }
+    .mail-bot-log-line { display: flex; gap: 0.75em; padding: 0.08em 0; }
+    .mail-bot-log-line time { flex: none; color: #5f6368; font-variant-numeric: tabular-nums; }
+    .mail-bot-log-line span { min-width: 0; overflow-wrap: anywhere; }
+    .mail-bot-log-line[data-kind="stop"] span { font-weight: 600; color: #8a5a00; }
+    .mail-bot-log-day { color: #5f6368; font-weight: 500; margin-top: 0.4em; }
+    .mail-bot-log-day:first-child { margin-top: 0; }
+    body.dark #mail_bot_log { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); }
+    body.dark #mail_bot_log_box summary, body.dark .mail-bot-log-line time, body.dark .mail-bot-log-day { color: #b0b5ba; }
+    body.dark .mail-bot-log-line[data-kind="stop"] span { color: #f0b429; }
     .letter-results .btn { margin: 0.15em 0.2em 0.15em 0; }
     @media (max-width: 575px) {
         .mail-cases td { display: block; border-top: none; }
@@ -286,14 +301,58 @@ document.addEventListener('DOMContentLoaded', function() {
             body.append(act);
             tick_countdown();
         }
-        if (bot.paused || bot.logins_today) {
-            const logins = $('<small>').addClass('d-block mail-bot-detail').attr('id', 'mail_bot_logins').text(`Anmeldungen bei IONOS heute: ${bot.logins_today} von ${bot.max_logins_per_day} `);
-            if (bot.logins_today >= bot.max_logins_per_day) {
-                logins.append($('<button>').addClass('btn btn-xs btn-outline-secondary').attr('id', 'bu_reset_mail_bot_logins').text('Anmeldezähler zurücksetzen'));
-            }
-            (body || el).append(logins);
+        // what the bot did last: its newest log line, while it is at work or connected
+        const last = bot_log_lines[bot_log_lines.length - 1];
+        if (last && (bot.paused || bot.activity || connected)) {
+            body.append($('<div>').addClass('mail-bot-now mail-bot-detail').attr('id', 'mail_bot_now')
+                .text(`Zuletzt (${fmt_day(last.ts) === fmt_day(Date.now() / 1000) ? fmt_time(last.ts) : fmt_ts(last.ts)}): ${last.text}`));
+        }
+        if (bot.logins_today) {
+            (body || el).append($('<small>').addClass('d-block mail-bot-detail').attr('id', 'mail_bot_logins').text(`Anmeldungen bei IONOS heute: ${bot.logins_today}`));
         }
     }
+
+    // ---- the bot's log (the dashboard keeps two weeks of it) ----
+    let bot_log_lines = [];
+    let bot_log_since = 0;
+    function fmt_time(ts) {
+        const d = new Date(ts * 1000);
+        const pad = (x) => (x < 10 ? '0' : '') + x;
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+    function fmt_day(ts) {
+        return fmt_ts(ts).split(' ')[0];
+    }
+    // returns true if there were new lines
+    function add_bot_log(lines) {
+        if (!lines || lines.length === 0) {
+            if (bot_log_lines.length === 0 && $('#mail_bot_log').is(':empty')) $('#mail_bot_log').append($('<div>').addClass('text-muted').attr('id', 'mail_bot_log_empty').text('Noch keine Einträge.'));
+            return false;
+        }
+        const box = $('#mail_bot_log');
+        $('#mail_bot_log_empty').remove();
+        const at_end = box[0].scrollHeight - box[0].scrollTop - box[0].clientHeight < 30;
+        for (const line of lines) {
+            const prev = bot_log_lines[bot_log_lines.length - 1];
+            if (!prev || fmt_day(prev.ts) !== fmt_day(line.ts)) box.append($('<div>').addClass('mail-bot-log-day').text(fmt_day(line.ts)));
+            const kind = /^ANGEHALTEN|^Nicht (angelegt|erledigt)|^Fehler/.test(line.text) ? 'stop' : '';
+            box.append($('<div>').addClass('mail-bot-log-line').attr('data-kind', kind).attr('title', `Rechner ${line.host}`)
+                .append($('<time>').text(fmt_time(line.ts))).append($('<span>').text(line.text)));
+            bot_log_lines.push(line);
+            bot_log_since = Math.max(bot_log_since, line.ts);
+        }
+        // the page keeps the last few hundred
+        while (bot_log_lines.length > 600) {
+            bot_log_lines.shift();
+            box.children().first().remove();
+        }
+        if (at_end) box.scrollTop(box[0].scrollHeight);
+        return true;
+    }
+    $('#mail_bot_log_box').on('toggle', function() {
+        const box = $('#mail_bot_log');
+        if (box.length) box.scrollTop(box[0].scrollHeight);
+    });
 
     function render_cases(data) {
         if ($('#mail_cases_open').length === 0) return;
@@ -314,6 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     function render(data) {
+        // the bot did something: the missing mailboxes may have changed too
+        if (add_bot_log(data.bot_log) && log_loaded_once) load_creation();
+        log_loaded_once = true;
         render_cases(data);
         clearTimeout(refresh_timer);
         const bot = data.bot || {};
@@ -321,8 +383,9 @@ document.addEventListener('DOMContentLoaded', function() {
         refresh_timer = setTimeout(load, data.cases.some((entry) => entry.state === 'open' || entry.state === 'approved') || bot.activity ? 5000 : 10000);
     }
 
+    let log_loaded_once = false;
     function load() {
-        api_call('/api/mail_password_reset_status', {}, function(data) {
+        api_call('/api/mail_password_reset_status', { log_since: bot_log_since }, function(data) {
             if (data.success) render(data);
         }, { no_please_wait: true });
     }
@@ -437,13 +500,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) load();
         });
     }
-    $('#mail_reset_bot_state').on('click', '#bu_reset_mail_bot_logins', function(e) {
-        dashboardConfirm('Der Bot darf sich danach heute wieder bei IONOS anmelden. Viele Anmeldungen kurz nacheinander können IONOS misstrauisch machen.', function() {
-            api_call('/api/reset_mail_account_bot_logins', {}, function(data) {
-                if (data.success) load();
-            });
-        }, { title: 'Anmeldezähler zurücksetzen', confirm: 'Zurücksetzen' });
-    });
     $('#mail_reset_bot_state').on('click', '#bu_resume_mail_bot', function(e) {
         dashboardConfirm('Der Bot arbeitet danach wieder freigegebene Anfragen ab. Hast du dir angesehen, warum er angehalten hat?', function() {
             api_call('/api/resume_mail_account_bot', {}, function(data) {
@@ -525,8 +581,9 @@ document.addEventListener('DOMContentLoaded', function() {
         state.append(document.createTextNode(list.source === 'ionos'
             ? `Adressliste vom Mail-Anbieter: ${list.count} Adressen, Stand ${fmt_ts(list.ts)}. `
             : `Adressliste aus der Datei im Datenverzeichnis (${list.count} Adressen) – der Bot hat sie noch nicht abgeglichen. `));
-        if (list.wanted_ts && (!list.ts || list.wanted_ts > list.ts)) {
-            state.append(document.createTextNode('Neuer Abgleich ist angefordert. '));
+        const wanted = list.wanted_ts && (!list.ts || list.wanted_ts > list.ts);
+        if (wanted) {
+            state.append(document.createTextNode('Neuer Abgleich ist angefordert – der Bot holt die Liste, sobald er läuft. '));
         } else {
             state.append($('<button>').addClass('btn btn-xs btn-outline-secondary').attr('id', 'bu_request_address_list').text('Jetzt abgleichen'));
         }
@@ -570,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         $('#mail_account_creations').closest('.table-responsive').toggle(data.cases.length > 0);
         clearTimeout(creation_timer);
-        if (data.cases.some((c) => c.state === 'approved')) creation_timer = setTimeout(load_creation, 10000);
+        if (wanted || data.cases.some((c) => c.state === 'approved')) creation_timer = setTimeout(load_creation, 10000);
     }
 
     let creation_timer = null;

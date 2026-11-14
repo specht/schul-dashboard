@@ -18,6 +18,8 @@
 #           order
 #   (:MailAccountBot {key: 'bot', …})   the bot's shared state (pause,
 #           run lock, logins today), see mail_account_bot_state
+#   (:MailAccountBotLog {ts, host, text})   the bot's log lines, kept
+#           MAIL_ACCOUNT_BOT_LOG_DAYS days, shown on /postfaecher
 #
 # Who may request which mailbox: students their own, Klassenleitung the
 # students' and parents' (eltern.…) mailboxes of their classes, the admin all
@@ -28,9 +30,8 @@
 class Main < Sinatra::Base
     MAIL_PASSWORD_RESET_MAX_PER_DAY = 3
     MAIL_ACCOUNT_BOT_STALE_AFTER = 15 * 60
-    # IONOS logins a day for all machines together; the admin can reset the
-    # count on the page when trying things out
-    MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY = 10
+    MAIL_ACCOUNT_BOT_LOG_DAYS = 14
+    MAIL_ACCOUNT_BOT_LOG_SHOW = 300
     MAIL_PASSWORD_RESET_SHOW_DAYS = 30
     MAIL_PASSWORD_CASE_ACTIVE = %w(open approved)
     MAIL_PASSWORD_CASE_MAX_MAILBOXES = 10
@@ -206,6 +207,7 @@ class Main < Sinatra::Base
             io.puts "</datalist>"
             io.puts "<h5>Offene Anfragen (<span id='mail_cases_open_count'>0</span>)</h5>"
             io.puts "<div id='mail_reset_bot_state'></div>"
+            io.puts "<details id='mail_bot_log_box'><summary>Bot-Protokoll</summary><div id='mail_bot_log'></div></details>"
             io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_open'>"
             io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Nächster Schritt</th></tr></thead><tbody></tbody></table></div>"
             io.puts "<div class='card' id='mail_case_form' style='margin-bottom: 1.5em;'><div class='card-body'>"
@@ -435,6 +437,7 @@ class Main < Sinatra::Base
     # whose latest case is done.
     post '/api/mail_password_reset_status' do
         require_user!
+        data = parse_request_data(:optional_keys => [:log_since], :types => {:log_since => Numeric})
         rows = neo4j_query(<<~END_OF_QUERY, :since => Time.now.to_f - MAIL_PASSWORD_RESET_SHOW_DAYS * 24 * 3600, :active => MAIL_PASSWORD_CASE_ACTIVE).map { |x| x['c'] }
             MATCH (c:MailPasswordCase)
             WHERE c.ts >= $since OR c.state IN $active OR c.state = 'failed'
@@ -483,6 +486,7 @@ class Main < Sinatra::Base
             result[:bot] = mail_account_bot_status_for_admin
             recent = !result[:bot_last_seen].nil? && Time.now.to_i - result[:bot_last_seen] < MAIL_ACCOUNT_BOT_STALE_AFTER
             result[:bot_active] = result[:bot][:paused].nil? && (recent || !result[:bot][:connected].empty?)
+            result[:bot_log] = mail_account_bot_log(data[:log_since] || 0)
         end
         respond(result)
     end
@@ -670,8 +674,16 @@ class Main < Sinatra::Base
             :activity => (b[:run_until] || 0) > Time.now.to_i ? (b[:run_activity] || 'working') : nil,
             :waiting_until => (b[:run_until] || 0) > Time.now.to_i && b[:run_activity] == 'waiting' ? b[:run_waiting_until] : nil,
             :logins_today => b[:logins_date] == today ? (b[:logins] || 0) : 0,
-            :max_logins_per_day => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY,
         }
+    end
+
+    # the newest log lines after `since` (all of the last ones without), oldest first
+    def mail_account_bot_log(since)
+        rows = neo4j_query(<<~END_OF_QUERY, :since => since.to_f, :n => MAIL_ACCOUNT_BOT_LOG_SHOW)
+            MATCH (l:MailAccountBotLog) WHERE l.ts > $since
+            RETURN l.ts AS ts, l.host AS host, l.text AS text ORDER BY l.ts DESC LIMIT $n;
+        END_OF_QUERY
+        rows.reverse.map { |x| {:ts => x['ts'], :host => x['host'], :text => x['text']} }
     end
 
     # approved cases only: nothing is reset without the admin's decision;
@@ -772,24 +784,45 @@ class Main < Sinatra::Base
         respond(:result => 'ok')
     end
 
-    # every IONOS login attempt is counted before it happens, across machines
+    # every IONOS login attempt is announced before it happens: counted (for
+    # the page, no limit) and refused while the bot is paused
     post '/api/mail_account_bot/login_attempt' do
         require_mail_account_bot!
         data = parse_request_data(:required_keys => [:host], :max_value_lengths => {:host => 64})
         host = mail_account_bot_host(data[:host])
         today = Date.today.strftime('%Y-%m-%d')
-        row = neo4j_query(<<~END_OF_QUERY, :today => today, :max => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY, :host => host).first
+        row = neo4j_query(<<~END_OF_QUERY, :today => today, :host => host).first
             MERGE (b:MailAccountBot {key: 'bot'})
             WITH b, CASE WHEN b.logins_date = $today THEN coalesce(b.logins, 0) ELSE 0 END AS logins
-            WITH b, logins WHERE logins < $max AND b.paused_ts IS NULL
+            WITH b, logins WHERE b.paused_ts IS NULL
             SET b.logins_date = $today, b.logins = logins + 1, b.host = $host
             RETURN b.logins AS logins;
         END_OF_QUERY
-        if row
-            respond(:result => 'ok', :left => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY - row['logins'])
-        else
-            respond(:result => mail_account_bot_state[:paused_ts] ? 'paused' : 'limit')
+        respond(:result => row ? 'ok' : 'paused')
+    end
+
+    # the bot's log lines (what it is doing), for the admin's page
+    post '/api/mail_account_bot/log' do
+        require_mail_account_bot!
+        data = parse_request_data(:required_keys => [:host, :lines], :types => {:lines => Array},
+                                  :max_value_lengths => {:host => 64}, :max_body_length => 64 * 1024)
+        host = mail_account_bot_host(data[:host])
+        assert(data[:lines].size <= 100, 'too many lines')
+        now = Time.now.to_f
+        lines = data[:lines].each_with_index.map do |line, i|
+            assert(line.is_a?(Hash), 'bad line')
+            ts = line['ts'] || line[:ts]
+            text = (line['text'] || line[:text]).to_s
+            assert(ts.is_a?(Numeric) && text.size > 0, 'bad line')
+            # the bot's clock, but not in the future (keeps the order of the page)
+            {:ts => [ts.to_f, now].min + i * 0.000001, :text => text[0, 500]}
         end
+        neo4j_query(<<~END_OF_QUERY, :host => host, :lines => lines)
+            UNWIND $lines AS line
+            CREATE (:MailAccountBotLog {ts: line.ts, host: $host, text: line.text});
+        END_OF_QUERY
+        neo4j_query("MATCH (l:MailAccountBotLog) WHERE l.ts < $ts DETACH DELETE l;", :ts => now - MAIL_ACCOUNT_BOT_LOG_DAYS * 24 * 3600)
+        respond(:result => 'ok')
     end
 
     get '/ws_mail_account_bot' do
@@ -804,9 +837,10 @@ class Main < Sinatra::Base
             @@ws_clients[:mail_account_bot] ||= {}
             @@ws_clients[:mail_account_bot][client_id] = {:ws => ws, :host => host, :since => Time.now.to_i}
             mail_account_bot_seen!(host)
-            approved = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN count(c) AS n;").first['n'] +
-                       neo4j_query("MATCH (c:MailAccountCreateCase {state: 'approved'}) RETURN count(c) AS n;").first['n']
-            ws.send({:command => approved > 0 ? 'wake' : 'hello'}.to_json)
+            # work waiting: approved resets or mailboxes, or the address list is wanted
+            work = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN count(c) AS n;").first['n'] > 0 ||
+                   mail_account_bot_creation_work[:address_list][:wanted]
+            ws.send({:command => work ? 'wake' : 'hello'}.to_json)
         end
         ws.on(:close) do |event|
             (@@ws_clients[:mail_account_bot] || {}).delete(client_id)
@@ -815,13 +849,6 @@ class Main < Sinatra::Base
     end
 
     # ---- the admin's view of the bot ----
-
-    post '/api/reset_mail_account_bot_logins' do
-        require_admin!
-        neo4j_query("MATCH (b:MailAccountBot {key: 'bot'}) SET b.logins = 0, b.logins_date = $today;", :today => Date.today.strftime('%Y-%m-%d'))
-        self.class.wake_mail_account_bot
-        respond(:result => 'ok')
-    end
 
     post '/api/resume_mail_account_bot' do
         require_admin!

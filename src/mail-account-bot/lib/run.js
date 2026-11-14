@@ -88,7 +88,16 @@ async function run(options) {
         page = context.pages()[0] || await context.newPage();
         const guard = watchNavigation(context, page, ionos.HOSTS);
         session = new ionos.IonosSession({ page, config, state, dashboard, pacer, guard, log: (m) => log(m) });
-        await session.openMailboxList();
+        try {
+            await session.openMailboxList();
+        } catch (err) {
+            // not logged in after all: no session to keep (a stop keeps the page for the screenshot)
+            if (err instanceof Postpone) {
+                await context.close().catch(() => {});
+                context = session = page = null;
+            }
+            throw err;
+        }
     };
 
     // at the first surprise: screenshot, pause on the dashboard, tell the admin
@@ -351,7 +360,8 @@ async function run(options) {
             }
             cases = pending.cases;
         }
-        log(`${cases.length} freigegebene(r) Fall/Fälle${dryRun ? ' (Probelauf, nichts wird geändert)' : ''}`);
+        // in the background (woken or every few minutes) only when there is something
+        if (cases.length > 0 || !options.waitForWork) log(`${cases.length} freigegebene(r) Fall/Fälle${dryRun ? ' (Probelauf, nichts wird geändert)' : ''}`);
         let going = await processCases(cases);
         if (going && !testMailbox) going = await processCreation();
         // stay a while with the open session, in case the admin approves more

@@ -16,9 +16,6 @@ const STATE_DIR = path.join(os.homedir(), '.local', 'state', 'gyst-mail-account-
 const DEFAULTS = {
     imap_host: 'imap.ionos.de',
     imap_port: 993,
-    // this machine's own limit; the dashboard counts all machines together
-    // (10 a day, the admin can reset that count on the page)
-    max_logins_per_day: 5,
     linger_minutes: 20,
     poll_minutes: 3,
     // background mode: besides the websocket wake-up, ask this often
@@ -97,7 +94,6 @@ function validateConfig(raw, { hostname = os.hostname(), recordingOnly = false }
     const within = (key, min, max) => {
         if (!(Number.isInteger(config[key]) && config[key] >= min && config[key] <= max)) throw new Error(`Konfiguration: ${key} muss zwischen ${min} und ${max} liegen`);
     };
-    within('max_logins_per_day', 1, 10);
     within('fallback_poll_minutes', 5, 60);
     if (typeof config.confirm !== 'boolean') throw new Error('Konfiguration: confirm muss true oder false sein');
     within('linger_minutes', 0, 60);

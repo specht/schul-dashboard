@@ -80,24 +80,58 @@ test('Bot-Zustand: verbunden und tätig getrennt – arbeitet oder wartet angeme
   expect((await api.post('/api/mail_account_bot/claim', { data: { host: 'rechner-a', activity: 'schlafen' } })).ok()).toBe(false);
 });
 
-test('Bot-Zustand: höchstens zehn IONOS-Anmeldungen am Tag für alle Rechner, die Administration setzt den Zähler zurück', async ({ page, baseURL }) => {
+test('Bot-Zustand: IONOS-Anmeldungen werden gezählt, ohne Limit', async ({ page, baseURL }) => {
   const api = await bot(baseURL);
   const attempt = async (i: number) => (await post(api, '/api/mail_account_bot/login_attempt', { host: i % 2 ? 'rechner-a' : 'rechner-b' })).result;
   const results: string[] = [];
   for (let i = 0; i < 12; i++) results.push(await attempt(i));
-  // earlier runs today may have used some already
-  const oks = results.filter((r) => r === 'ok').length;
-  expect(oks).toBeLessThanOrEqual(10);
-  expect(results.slice(-2)).toEqual(['limit', 'limit']);
-  expect(results.indexOf('limit')).toBe(oks);
+  // more than the old limit of ten, all allowed
+  expect(results).toEqual(Array(12).fill('ok'));
 
   await login(page, ACCOUNTS.admin);
   await page.goto('/postfaecher');
-  await expect(page.locator('#mail_bot_logins')).toContainText('10 von 10');
-  await page.locator('#bu_reset_mail_bot_logins').click();
-  await dashboardDialog(page).getByRole('button', { name: 'Zurücksetzen' }).click();
+  await expect(page.locator('#mail_bot_logins')).toHaveText(/^Anmeldungen bei IONOS heute: \d+$/);
   await expect(page.locator('#bu_reset_mail_bot_logins')).toHaveCount(0);
-  expect(await attempt(0)).toBe('ok');
+});
+
+test('Bot-Protokoll: der Bot schickt seine Zeilen, die Seite zeigt sie und was er zuletzt tat', async ({ page, baseURL }) => {
+  const api = await bot(baseURL);
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-a' });
+  const now = Date.now() / 1000;
+  const marker = `Probe ${Math.random().toString(36).slice(2, 8)}`;
+  await post(api, '/api/mail_account_bot/log', { host: 'rechner-a', lines: [
+    { ts: now - 2, text: `${marker}: Anmeldung bei IONOS` },
+    { ts: now - 1, text: `${marker}: Adressliste ist offen` },
+  ] });
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a', activity: 'working' })).result).toBe('ok');
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/postfaecher');
+  await expect(page.locator('#mail_bot_now')).toContainText(`${marker}: Adressliste ist offen`);
+  await page.locator('#mail_bot_log_box summary').click();
+  const lines = page.locator('#mail_bot_log .mail-bot-log-line');
+  await expect(lines.filter({ hasText: marker })).toHaveText([/Anmeldung bei IONOS/, /Adressliste ist offen/]);
+  // new lines arrive without a reload
+  await post(api, '/api/mail_account_bot/log', { host: 'rechner-a', lines: [{ ts: Date.now() / 1000, text: `ANGEHALTEN: ${marker}` }] });
+  await expect(lines.filter({ hasText: `ANGEHALTEN: ${marker}` })).toHaveAttribute('data-kind', 'stop', { timeout: 15000 });
+  await expect(page.locator('#mail_bot_now')).toContainText(`ANGEHALTEN: ${marker}`);
+  // and only once each
+  await page.waitForTimeout(6000);
+  await expect(lines.filter({ hasText: marker })).toHaveCount(3);
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-a' });
+
+  // only the bot may write, only sensible lines; text is shown as text
+  const anon = await playwrightRequest.newContext({ baseURL });
+  expect((await anon.post('/api/mail_account_bot/log', { data: { host: 'rechner-a', lines: [{ ts: now, text: 'x' }] } })).status()).toBe(401);
+  expect((await api.post('/api/mail_account_bot/log', { data: { host: 'rechner-a', lines: [{ ts: 'gestern', text: 'x' }] } })).ok()).toBe(false);
+  expect((await api.post('/api/mail_account_bot/log', { data: { host: 'rechner-a', lines: Array(101).fill({ ts: now, text: 'x' }) } })).ok()).toBe(false);
+  await post(api, '/api/mail_account_bot/log', { host: 'rechner-a', lines: [{ ts: Date.now() / 1000, text: `<b id="injected">${marker}</b>` }] });
+  await expect(lines.filter({ hasText: `<b id="injected">${marker}</b>` })).toHaveCount(1, { timeout: 15000 });
+  await expect(page.locator('#injected')).toHaveCount(0);
+  // a student sees nothing of it
+  const student = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(student, ACCOUNTS.schueler);
+  const status = await (await student.post('/api/mail_password_reset_status', { data: {} })).json();
+  expect(status.bot_log).toBeUndefined();
 });
 
 test('Bot angehalten: keine Fälle, keine Sperre, Mail an die Administration, Freigabe auf der Seite', async ({ page, baseURL }) => {
@@ -182,9 +216,12 @@ test('Bot im Hintergrund: läuft an, wenn die Administration freigibt', async ({
   const config = { dashboard_url: baseURL, dashboard_token: TOKEN, host: 'rechner-serve', fallback_poll_minutes: 60 };
   const bg = serve({ config, runOnce: async () => { runs += 1; return { status: 'ok' }; }, log: () => {} });
   try {
-    // one run right at the start, then only when woken
-    await expect.poll(() => runs).toBe(1);
+    // one run right at the start, then only when woken (on connecting too,
+    // if the address list is wanted – the test stack never got one)
+    await expect.poll(() => runs).toBeGreaterThanOrEqual(1);
     await expect.poll(() => bg.connected()).toBe(true);
+    await new Promise((r) => setTimeout(r, 1000));
+    const base = runs;
     const admin = await playwrightRequest.newContext({ baseURL });
     await apiLogin(admin, ACCOUNTS.admin);
     const mailbox = 'eltern.max.mustermann@mail.beispielschule.de';
@@ -193,9 +230,9 @@ test('Bot im Hintergrund: läuft an, wenn die Administration freigibt', async ({
       .find((c: any) => c.state === 'open' && c.mailboxes.some((m: any) => m.mailbox === mailbox)).id;
     // only the approval wakes the bot, not the new open case
     await new Promise((r) => setTimeout(r, 1000));
-    expect(runs).toBe(1);
+    expect(runs).toBe(base);
     expect((await (await admin.post('/api/update_mail_password_case', { data: { id, action: 'approve' } })).json()).result).toBe('ok');
-    await expect.poll(() => runs).toBe(2);
+    await expect.poll(() => runs).toBe(base + 1);
     await admin.post('/api/update_mail_password_case', { data: { id, action: 'done' } });
   } finally {
     bg.stop();

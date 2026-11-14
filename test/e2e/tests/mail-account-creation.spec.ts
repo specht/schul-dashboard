@@ -1,5 +1,6 @@
 import { test, expect, login, ACCOUNTS, apiLogin, dashboardDialog } from './fixtures';
 import { request as playwrightRequest, APIRequestContext } from '@playwright/test';
+import WebSocket from 'ws';
 
 // Missing mailboxes (src/ruby/include/mail_account_creation.rb): the bot
 // uploads the mail provider's address list, the dashboard lists missing
@@ -142,4 +143,18 @@ test('Fehlende Postfächer: nichts anderes freigeben, Abgleich anfordern', async
   await page.locator('#bu_request_address_list').click();
   await expect(page.locator('#mail_address_list_state')).toContainText('angefordert');
   expect((await work(b)).address_list.wanted).toBe(true);
+  // a bot that connects now is woken right away
+  const ws = new WebSocket(`${baseURL!.replace(/^http/, 'ws')}/ws_mail_account_bot?host=rechner-a`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+  const first = await new Promise<string>((resolve, reject) => {
+    ws.on('message', (data) => resolve(JSON.parse(String(data)).command));
+    ws.on('error', reject);
+  });
+  ws.close();
+  expect(first).toBe('wake');
+  // the bot sends the list: the page shows it without a reload
+  const max = ACCOUNTS.schueler;
+  expect((await upload(b, [max, `eltern.${max}`, ...filler(101)])).status()).toBe(200);
+  await expect(page.locator('#mail_address_list_state')).not.toContainText('angefordert', { timeout: 20000 });
+  await expect(page.locator('#mail_address_list_state')).toContainText('103 Adressen');
+  expect((await work(b)).address_list.wanted).toBe(false);
 });

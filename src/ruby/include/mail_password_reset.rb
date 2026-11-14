@@ -667,6 +667,8 @@ class Main < Sinatra::Base
             :connected => connections.map { |c| {:host => c[:host], :since => c[:since]} },
             :paused => b[:paused_ts] ? {:ts => b[:paused_ts], :reason => b[:paused_reason], :host => b[:paused_host]} : nil,
             :running => (b[:run_until] || 0) > Time.now.to_i ? b[:run_host] : nil,
+            :activity => (b[:run_until] || 0) > Time.now.to_i ? (b[:run_activity] || 'working') : nil,
+            :waiting_until => (b[:run_until] || 0) > Time.now.to_i && b[:run_activity] == 'waiting' ? b[:run_waiting_until] : nil,
             :logins_today => b[:logins_date] == today ? (b[:logins] || 0) : 0,
             :max_logins_per_day => MAIL_ACCOUNT_BOT_MAX_LOGINS_PER_DAY,
         }
@@ -708,16 +710,21 @@ class Main < Sinatra::Base
     end
 
     # the run lock: one machine at a time, renewed while the run lasts
+    # activity: 'working' (at the mail provider right now) or 'waiting'
+    # (logged in, waiting for more jobs until waiting_until)
     post '/api/mail_account_bot/claim' do
         require_mail_account_bot!
-        data = parse_request_data(:required_keys => [:host], :max_value_lengths => {:host => 64})
+        data = parse_request_data(:required_keys => [:host], :optional_keys => [:activity, :waiting_until],
+                                  :types => {:waiting_until => Integer}, :max_value_lengths => {:host => 64, :activity => 16})
         host = mail_account_bot_host(data[:host])
+        activity = data[:activity] || 'working'
+        assert(%w(working waiting).include?(activity), 'bad activity')
         mail_account_bot_seen!(host)
         now = Time.now.to_i
-        row = neo4j_query(<<~END_OF_QUERY, :host => host, :now => now, :until => now + MAIL_ACCOUNT_BOT_LEASE).first
+        row = neo4j_query(<<~END_OF_QUERY, :host => host, :now => now, :until => now + MAIL_ACCOUNT_BOT_LEASE, :activity => activity, :waiting_until => data[:waiting_until]).first
             MATCH (b:MailAccountBot {key: 'bot'})
             WHERE b.paused_ts IS NULL AND (b.run_until IS NULL OR b.run_until < $now OR b.run_host = $host)
-            SET b.run_host = $host, b.run_until = $until
+            SET b.run_host = $host, b.run_until = $until, b.run_activity = $activity, b.run_waiting_until = $waiting_until
             RETURN b.run_until AS run_until;
         END_OF_QUERY
         if row

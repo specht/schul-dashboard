@@ -55,6 +55,31 @@ test('Bot-Zustand: nur ein Rechner zur Zeit, die Sperre wird freigegeben', async
   expect((await api.post('/api/mail_account_bot/claim', { data: { host: '../x y' } })).status()).not.toBe(200);
 });
 
+test('Bot-Zustand: verbunden und tätig getrennt – arbeitet oder wartet angemeldet', async ({ page, baseURL }) => {
+  const api = await bot(baseURL);
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-a' });
+  const until = Math.round(Date.now() / 1000) + 600;
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a', activity: 'waiting', waiting_until: until })).result).toBe('ok');
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/postfaecher');
+  const state = page.locator('#mail_reset_bot_state');
+  await expect(state.locator('.mail-bot-activity')).toHaveAttribute('data-activity', 'waiting');
+  // a live countdown to the logout
+  await expect(state.locator('.mail-bot-activity')).toContainText('meldet sich in');
+  await expect(state.locator('.mail-bot-countdown')).toHaveText(/^(9|10):\d\d$/);
+  const first = await state.locator('.mail-bot-countdown').textContent();
+  await expect.poll(() => state.locator('.mail-bot-countdown').textContent(), { timeout: 5000 }).not.toBe(first);
+  expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a', activity: 'working' })).result).toBe('ok');
+  await page.reload();
+  await expect(state.locator('.mail-bot-activity')).toHaveAttribute('data-activity', 'working');
+  await post(api, '/api/mail_account_bot/release', { host: 'rechner-a' });
+  await page.reload();
+  await expect(state.locator('.mail-bot-activity')).toHaveCount(0);
+  // not connected: a grey dot
+  await expect(state.locator('.mail-bot-dot')).toHaveAttribute('data-on', 'no');
+  expect((await api.post('/api/mail_account_bot/claim', { data: { host: 'rechner-a', activity: 'schlafen' } })).ok()).toBe(false);
+});
+
 test('Bot-Zustand: höchstens zehn IONOS-Anmeldungen am Tag für alle Rechner, die Administration setzt den Zähler zurück', async ({ page, baseURL }) => {
   const api = await bot(baseURL);
   const attempt = async (i: number) => (await post(api, '/api/mail_account_bot/login_attempt', { host: i % 2 ? 'rechner-a' : 'rechner-b' })).result;
@@ -127,6 +152,7 @@ test('Bot-Websocket: nur mit Token, Weckruf bei Freigabe, Status auf der Seite',
   const state = page.locator('#mail_reset_bot_state');
   await expect(state).toHaveAttribute('data-state', 'connected');
   await expect(state).toContainText('rechner-ws');
+  await expect(state.locator('.mail-bot-dot')).toHaveAttribute('data-on', 'yes');
 
   // the admin approves a case: the bot is woken (and fetches the cases itself)
   const admin = await playwrightRequest.newContext({ baseURL });

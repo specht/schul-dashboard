@@ -12,7 +12,18 @@ function serve({ config, runOnce, log, stopSignal = null }) {
     let stopped = false;
     let busy = false;
     let ws = null;
-    const wakeUp = () => { wakeRequested = true; if (wake) wake(); };
+    let wakeInRun = null;
+    const wakeUp = () => {
+        wakeRequested = true;
+        if (wake) wake();
+        // a run waiting logged in takes the work right away
+        if (wakeInRun) wakeInRun();
+    };
+    const waitForWork = (ms) => new Promise((resolve) => {
+        const done = () => { clearTimeout(timer); wakeInRun = null; wakeRequested = false; resolve(); };
+        const timer = setTimeout(done, ms);
+        wakeInRun = done;
+    });
     let backoff = 5;
     const connect = () => {
         if (stopped) return;
@@ -46,7 +57,7 @@ function serve({ config, runOnce, log, stopSignal = null }) {
             wakeRequested = false;
             busy = true;
             try {
-                const summary = await runOnce(() => stopped);
+                const summary = await runOnce(() => stopped, waitForWork);
                 if (summary && summary.status === 'stopped') log('Angehalten – weiter erst nach der Freigabe im Dashboard');
             } catch (err) {
                 log(`Fehler: ${err.message}`);
@@ -61,7 +72,7 @@ function serve({ config, runOnce, log, stopSignal = null }) {
         loop,
         connected: () => ws && ws.readyState === WebSocket.OPEN,
         busy: () => busy,
-        stop() { stopped = true; if (wake) wake(); if (ws) ws.close(); },
+        stop() { stopped = true; if (wake) wake(); if (wakeInRun) wakeInRun(); if (ws) ws.close(); },
     };
 }
 

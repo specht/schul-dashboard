@@ -18,7 +18,9 @@ function dashboardClient({ url, token, fetchImpl = fetch }) {
             return { cases: data.cases, paused: data.paused || null };
         },
         // shared by every machine: run lock, pause, IONOS logins of the day
-        claim: (host) => post('claim', { host }),
+        // activity: 'working' | 'waiting' (logged in, waiting until waitingUntil)
+        claim: (host, activity = 'working', waitingUntil = null) =>
+            post('claim', waitingUntil ? { host, activity, waiting_until: waitingUntil } : { host, activity }),
         release: (host) => post('release', { host }),
         pause: (host, reason) => post('pause', { host, reason: String(reason).slice(0, 500) }),
         loginAttempt: (host) => post('login_attempt', { host }),

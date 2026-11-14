@@ -41,6 +41,8 @@ async function run(options) {
     const confirm = options.confirm || (async () => true);
     // Ctrl+C in background mode: no new work, leave the waiting time early
     const shouldStop = options.shouldStop || (() => false);
+    // background mode: resolves early when the dashboard wakes the bot
+    const waitForWork = options.waitForWork || ((ms) => sleep(ms));
     const log = (message) => { state.log(message); print(message); };
     const summary = { status: 'ok', done: [], failed: [], postponed: [], dryRun: [], created: [], createFailed: [] };
 
@@ -249,7 +251,10 @@ async function run(options) {
             if (session) await session.openMailboxList(); else await openSession();
             const rows = await session.exportAddresses();
             exported = true;
-            if (!dryRun) await dashboard.uploadAddressList(rows);
+            if (!dryRun) {
+                await dashboard.uploadAddressList(rows);
+                log('Adressliste ans Dashboard geschickt');
+            }
             summary.addressList = rows.length;
             const existing = new Set(rows.map((r) => r.address));
             for (const c of toCreate) {
@@ -307,11 +312,15 @@ async function run(options) {
         if (going && !testMailbox) going = await processCreation();
         // stay a while with the open session, in case the admin approves more
         const until = Date.now() + config.linger_minutes * 60 * 1000;
+        if (going && session && !dryRun && !testMailbox && config.linger_minutes > 0) {
+            log(`Bleibt bis ${new Date(until).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} angemeldet und wartet auf weitere Aufträge`);
+        }
         while (going && session && !dryRun && !testMailbox && Date.now() < until && !shouldStop()) {
-            const next = Date.now() + config.poll_minutes * 60 * 1000;
-            while (Date.now() < next && !shouldStop()) await sleep(Math.min(1000, Math.max(1, next - Date.now())));
-            if (shouldStop()) break;
-            await dashboard.claim(config.host).catch(() => {});
+            await dashboard.claim(config.host, 'waiting', Math.round(until / 1000)).catch(() => {});
+            const next = Math.min(until, Date.now() + config.poll_minutes * 60 * 1000);
+            await waitForWork(Math.max(1, next - Date.now()));
+            if (shouldStop() || Date.now() >= until) break;
+            await dashboard.claim(config.host, 'working').catch(() => {});
             const pending = await dashboard.pending();
             if (pending.paused) break;
             cases = pending.cases.filter((c) => !handled.has(c.id));
@@ -321,6 +330,7 @@ async function run(options) {
             }
             if (going) going = await processCreation();
         }
+        if (session && !dryRun && !testMailbox && config.linger_minutes > 0) log('Wartezeit vorbei, meldet sich bei IONOS ab');
         return summary;
     } finally {
         if (context) await context.close().catch(() => {});

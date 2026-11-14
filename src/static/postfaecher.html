@@ -56,6 +56,9 @@
     .mail-case-actions .btn { margin: 0.3em 0.2em 0 0; }
     .mail-case-step-text { margin-bottom: 0.2em; }
     .letter-results td { vertical-align: middle; }
+    .mail-bot-dot { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 50%; background: #9e9e9e; vertical-align: baseline; }
+    .mail-bot-dot[data-on="yes"] { background: #2e9d4a; }
+    .mail-bot-activity { margin-top: 0.2em; }
     .letter-results .btn { margin: 0.15em 0.2em 0.15em 0; }
     @media (max-width: 575px) {
         .mail-cases td { display: block; border-top: none; }
@@ -157,9 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const connected = (bot.connected || []).length > 0;
             text(bot.paused
                 ? '2. Der Bot ist angehalten (siehe oben). Im Kundenbereich des Mail-Anbieters selbst auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:'
-                : bot.running
+                : bot.activity === 'working'
                     ? `2. Der Bot arbeitet gerade daran (Rechner ${bot.running}). Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:`
-                    : connected
+                    : connected || bot.activity === 'waiting'
                         ? '2. Der Bot ist verbunden und erledigt das gleich. Falls du es selbst im Kundenbereich des Mail-Anbieters erledigst:'
                         : '2. Wartet auf den Bot – er erledigt freigegebene Anfragen, sobald er läuft. Oder selbst im Kundenbereich des Mail-Anbieters auf das Passwort aus dem E-Mail-Brief zurücksetzen, dann:');
             button('done', 'Erledigt', 'btn-success');
@@ -192,25 +195,51 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // connected, paused (with the button to lift it) or not running
+    // the logout countdown while the bot waits logged in
+    function tick_countdown() {
+        $('.mail-bot-countdown').each(function(_, x) {
+            const left = Math.max(0, parseInt($(x).attr('data-until'), 10) - Math.floor(Date.now() / 1000));
+            const mm = Math.floor(left / 60), ss = left % 60;
+            $(x).text(`${mm}:${ss < 10 ? '0' : ''}${ss}`);
+        });
+    }
+    setInterval(tick_countdown, 1000);
+
+    // connection (dot) and, below it, what the bot is doing
     function render_bot_state(bot) {
         const el = $('#mail_reset_bot_state').empty().attr('data-state', '');
+        const connected = (bot.connected || []).length > 0;
+        const dot = (on) => $('<span>').addClass('mail-bot-dot').attr('data-on', on ? 'yes' : 'no');
         if (bot.paused) {
             el.attr('data-state', 'paused');
             el.append($('<span>').text(`Bot angehalten (${fmt_ts(bot.paused.ts)}, Rechner ${bot.paused.host}): ${bot.paused.reason} `));
             el.append($('<button>').addClass('btn btn-sm btn-outline-secondary').attr('id', 'bu_resume_mail_bot').text('Bot wieder freigeben'));
-        } else if (bot.running) {
-            el.attr('data-state', 'running');
-            el.append($('<i>').addClass('fa fa-cog fa-spin')).append(document.createTextNode(` Bot arbeitet gerade (Rechner ${bot.running}).`));
-        } else if ((bot.connected || []).length > 0) {
+        } else if (connected) {
             el.attr('data-state', 'connected');
             const c = bot.connected[0];
-            el.text(`Bot verbunden (Rechner ${c.host}, seit ${fmt_ts(c.since)}) – erledigt freigegebene Anfragen sofort.`);
+            el.append(dot(true)).append(document.createTextNode(` Bot verbunden (Rechner ${c.host}, seit ${fmt_ts(c.since)}).`));
         } else if (bot.last_seen) {
             el.attr('data-state', 'offline');
-            el.text(`Bot nicht verbunden, zuletzt aktiv: ${fmt_ts(bot.last_seen)}` + (bot.host ? ` (Rechner ${bot.host})` : '') + '. Freigegebene Anfragen werden erledigt, sobald er wieder läuft.');
+            el.append(dot(false)).append(document.createTextNode(` Bot nicht verbunden, zuletzt aktiv: ${fmt_ts(bot.last_seen)}` + (bot.host ? ` (Rechner ${bot.host})` : '') + '. Freigegebene Aufträge werden erledigt, sobald er wieder läuft.'));
         } else {
             el.attr('data-state', 'never');
             el.text('Der Bot läuft noch nicht – freigegebene Anfragen bitte selbst zurücksetzen.');
+        }
+        if (!bot.paused && bot.activity) {
+            const act = $('<div>').addClass('mail-bot-activity').attr('data-activity', bot.activity);
+            if (bot.activity === 'working') {
+                act.append($('<i>').addClass('fa fa-cog fa-spin')).append(document.createTextNode(' Arbeitet gerade beim Mail-Anbieter.'));
+            } else {
+                act.append(document.createTextNode('Angemeldet beim Mail-Anbieter'));
+                if (bot.waiting_until) {
+                    act.append(document.createTextNode(' – meldet sich in '));
+                    act.append($('<span>').addClass('mail-bot-countdown').attr('data-until', bot.waiting_until));
+                    act.append(document.createTextNode(` ab (um ${fmt_ts(bot.waiting_until).split(' ')[1]})`));
+                }
+                act.append(document.createTextNode('. Bis dahin werden neue Aufträge sofort erledigt.'));
+            }
+            el.append(act);
+            tick_countdown();
         }
         if (bot.paused || bot.logins_today) {
             const logins = $('<small>').addClass('d-block').attr('id', 'mail_bot_logins').text(`Anmeldungen bei IONOS heute: ${bot.logins_today} von ${bot.max_logins_per_day} `);
@@ -242,7 +271,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function render(data) {
         render_cases(data);
         clearTimeout(refresh_timer);
-        if (data.cases.some((entry) => entry.state === 'open' || entry.state === 'approved')) {
+        const bot = data.bot || {};
+        // keep the status current while there is something to watch
+        if (data.cases.some((entry) => entry.state === 'open' || entry.state === 'approved') || bot.activity || (bot.connected || []).length > 0) {
             refresh_timer = setTimeout(load, 10000);
         }
     }

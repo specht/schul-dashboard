@@ -119,7 +119,7 @@ async function main() {
     }
     if (command === 'serve') {
         const log = (message) => { state.log(message); console.log(`${new Date().toLocaleTimeString('de-DE')} ${message}`); };
-        const bg = require('./lib/serve').serve({ config, runOnce: (shouldStop) => runOnce({ shouldStop }), log });
+        const bg = require('./lib/serve').serve({ config, runOnce: (shouldStop, waitForWork) => runOnce({ shouldStop, waitForWork }), log });
         let stopping = false;
         process.on('SIGINT', () => {
             if (stopping) { log('Sofort beendet'); process.exit(130); }

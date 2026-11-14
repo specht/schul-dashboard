@@ -89,8 +89,10 @@ function fakeDashboard(cases: Case[], { maxLogins = 3, create = [] as Create[], 
       return { cases: d.paused ? [] : cases.filter((c) => !reports.some((r) => r.id === c.id)), paused: d.paused };
     },
     async report(id: string, ok: boolean, message: string) { reports.push({ id, ok, message }); return 'ok'; },
-    async claim(host: string) {
+    activities: [] as string[],
+    async claim(host: string, activity = 'working') {
       d.claims.push(host);
+      d.activities.push(activity);
       if (d.paused) return { result: 'paused', reason: d.paused.reason };
       if (d.runHost && d.runHost !== host) return { result: 'busy', host: d.runHost };
       d.runHost = host;
@@ -131,6 +133,8 @@ async function runBot(browser: Browser, fake: FakeIonos, cases: Case[], opts: Re
     print: () => {},
     dryRun: !!opts.dryRun,
     confirm: (opts.confirm as any) || (async () => true),
+    waitForWork: opts.waitForWork as any,
+    shouldStop: opts.shouldStop as any,
   });
   return { summary, state, dashboard, contexts };
 }
@@ -597,4 +601,28 @@ test('Bot legt an: echte Postfächer erst, wenn das Anlegen bestätigt ist', asy
   expect(dashboard.uploads).toHaveLength(1);
   expect(fake.created).toHaveLength(0);
   expect(dashboard.createResults).toHaveLength(0);
+});
+
+test('Bot wartet angemeldet: ein Weckruf holt neue Fälle sofort, ohne neue Anmeldung', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES);
+  const cases: Case[] = [one(ANNA)];
+  const dashboard = fakeDashboard(cases);
+  let waits = 0;
+  let stop = false;
+  // the dashboard wakes the bot while it waits: a new case came in
+  const waitForWork = async () => {
+    waits += 1;
+    if (waits === 1) cases.push(one(BEN, 'case-2'));
+    else stop = true;
+  };
+  const { summary } = await runBot(browser, fake, cases, {
+    dashboard, config: botConfig({ linger_minutes: 5 }), waitForWork, shouldStop: () => stop,
+  });
+  expect(summary.status, summary.reason).toBe('ok');
+  expect(fake.resets.map((r) => r.address)).toEqual([ANNA, BEN]);
+  expect(attempts(fake)).toBe(1);
+  // it told the dashboard when it was waiting and when it worked again
+  expect(dashboard.activities).toContain('waiting');
+  expect(dashboard.activities.lastIndexOf('working')).toBeGreaterThan(dashboard.activities.indexOf('waiting'));
+  expect(dashboard.runHost).toBeNull();
 });

@@ -118,6 +118,27 @@
                         </div>
                     </div>
                 </div>
+                <div class='row' id='div_poll_run_limited_places' style='display: none;'>
+                    <div class='col-md-12'>
+                        <div class="form-group">
+                            <button id='bu_poll_run_limited_places' class='form-control btn-outline-secondary'
+                                style='height: auto; white-space: normal; text-align: left;'><i
+                                    class='fa fa-square-o'></i>&nbsp;&nbsp;Begrenzte Plätze: Höchstzahl je
+                                Antwortmöglichkeit festlegen und die Reihenfolge der Anmeldungen erfassen</button>
+                        </div>
+                        <div class='limited_places_config' style='display: none;'>
+                            <div class='alert alert-info'>
+                                Tragen Sie ein, wie viele Personen eine Antwortmöglichkeit höchstens wählen können
+                                (leer = unbegrenzt). Ist eine Möglichkeit voll, kann sie niemand mehr wählen. In der
+                                Auswertung stehen die Namen in der Reihenfolge der Buchung. Ob die Plätze begrenzt
+                                sind, lässt sich nach dem Speichern nicht mehr ändern, die Platzzahlen schon.
+                            </div>
+                            <p class='limited_places_hint text-danger' style='display: none;'>Bitte tragen Sie bei
+                                mindestens einer Antwortmöglichkeit eine Platzzahl ein.</p>
+                            <div class='limited-places-items-here'></div>
+                        </div>
+                    </div>
+                </div>
                 <div class='row'>
                     <div class='col-md-2'>
                         <div class="form-group">
@@ -327,8 +348,112 @@
     }
 
     function can_send_run() {
-        return (net_recipients_list.length > 0) && (current_poll_run.anonymous !== null);
+        return (net_recipients_list.length > 0) && (current_poll_run.anonymous !== null) && limited_places_complete();
         // TODO: Don't send if end time < start time
+    }
+
+    // limited places ("begrenzte Plätze"): only for runs with names
+    function limited_places_complete() {
+        if (!current_poll_run.limited_places)
+            return true;
+        return Object.keys(current_poll_run.place_limits || {}).length > 0;
+    }
+
+    function current_poll_run_items() {
+        try {
+            if (old_prid !== null) {
+                for (let pr of stored_poll_runs)
+                    if (pr.prid === old_prid)
+                        return JSON.parse(pr.info.items || '[]');
+            }
+            return JSON.parse(current_poll_run_poll.poll.items || '[]');
+        } catch (err) {
+            return [];
+        }
+    }
+
+    function set_place_limit(item_index, answer_index, n) {
+        // rebuild in index order, so that unchanged limits always give the same JSON
+        let limits = current_poll_run.place_limits || {};
+        if (n === null) {
+            if (limits[item_index]) {
+                delete limits[item_index][answer_index];
+                if (Object.keys(limits[item_index]).length === 0)
+                    delete limits[item_index];
+            }
+        } else {
+            limits[item_index] = limits[item_index] || {};
+            limits[item_index][answer_index] = n;
+        }
+        let sorted = {};
+        for (let i of Object.keys(limits).sort((a, b) => parseInt(a) - parseInt(b))) {
+            sorted[i] = {};
+            for (let a of Object.keys(limits[i]).sort((a, b) => parseInt(a) - parseInt(b)))
+                sorted[i][a] = limits[i][a];
+        }
+        current_poll_run.place_limits = sorted;
+    }
+
+    function update_limited_places_ui() {
+        let row = $('#div_poll_run_limited_places');
+        if (current_poll_run.anonymous !== false) {
+            current_poll_run.limited_places = false;
+            row.hide();
+            return;
+        }
+        row.show();
+        let button = $('#bu_poll_run_limited_places');
+        button.prop('disabled', old_prid !== null);
+        if (current_poll_run.limited_places) {
+            button.removeClass('btn-outline-secondary').addClass('btn-primary');
+            button.find('.fa').removeClass('fa-square-o').addClass('fa-check-square-o');
+        } else {
+            button.addClass('btn-outline-secondary').removeClass('btn-primary');
+            button.find('.fa').removeClass('fa-check-square-o').addClass('fa-square-o');
+        }
+        let config = $('#pollRunModal .limited_places_config');
+        let div = $('#pollRunModal .limited-places-items-here');
+        div.empty();
+        if (!current_poll_run.limited_places) {
+            config.hide();
+            return;
+        }
+        config.show();
+        let items = current_poll_run_items();
+        let found = false;
+        for (let item_index in items) {
+            let item = items[item_index];
+            if (item.type !== 'radio' && item.type !== 'checkbox')
+                continue;
+            found = true;
+            div.append($('<p>').css('margin-bottom', '0.5em').append($('<strong>').text(item.title || '(ohne Titel)')));
+            let table = $('<table>').addClass('table table-sm narrow limited-places-table');
+            for (let answer_index in item.answers) {
+                let limit = ((current_poll_run.place_limits || {})[item_index] || {})[answer_index];
+                let ti = $('<input>').attr('type', 'number').attr('min', '0').attr('placeholder', 'unbegrenzt')
+                    .addClass('form-control form-control-sm ti_place_limit')
+                    .attr('data-item-index', item_index).attr('data-answer-index', answer_index)
+                    .val(typeof (limit) === 'undefined' ? '' : `${limit}`);
+                ti.on('change keyup', function (e) {
+                    let input = $(e.currentTarget);
+                    let n = parseInt(input.val().trim());
+                    if (isNaN(n) || n < 0)
+                        n = null;
+                    if (e.type === 'change')
+                        input.val(n === null ? '' : `${n}`);
+                    set_place_limit(input.attr('data-item-index'), input.attr('data-answer-index'), n);
+                    update_run_buttons();
+                });
+                let row = $('<tr>');
+                row.append($('<td>').text(item.answers[answer_index]));
+                row.append($('<td>').css('width', '9em').append(ti));
+                row.append($('<td>').css('width', '4em').addClass('text-muted').text('Plätze'));
+                table.append(row);
+            }
+            div.append(table);
+        }
+        if (!found)
+            div.append($('<p>').addClass('text-danger').text('Diese Umfrage enthält keine Auswahlfragen. Begrenzte Plätze gibt es nur bei »Auswahl« und »Mehrfachauswahl«.'));
     }
 
     function pending_changes() {
@@ -438,9 +563,12 @@
             visible: current_poll_run.visible,
             recipients: net_recipients_list
         };
+        if (current_poll_run.limited_places)
+            submit_data.place_limits = JSON.stringify(current_poll_run.place_limits || {});
         console.log(submit_data)
         old_recipients_list = [...net_recipients_list];
         if (old_prid === null) {
+            submit_data.limited_places = current_poll_run.limited_places ? 'true' : 'false';
             api_call('/api/save_poll_run', submit_data, function (data) {
                 if (data.success) {
                     $('#bu_poll_run_anonymous').prop('disabled', true);
@@ -455,6 +583,7 @@
                     update_net_recipients_list();
                     update_run_buttons();
                     update_stored_polls();
+                    update_limited_places_ui();
                 }
             });
         } else {
@@ -530,6 +659,10 @@
             $('.anonymous_hint').show();
         else
             $('.anonymous_hint').hide();
+        if (limited_places_complete())
+            $('#pollRunModal .limited_places_hint').hide();
+        else
+            $('#pollRunModal .limited_places_hint').show();
     }
 
     function update_net_recipients_list() {
@@ -798,7 +931,7 @@
                     run_div.append($('<p>').text(`Durchführung mit ${poll_run.recipients.length} Teilnehmern am ${m_start.format('ddd, D.M.Y')}`));
                     run_div.append($('<div>').html(`Status:&nbsp;&nbsp;<i class='fa fa-${icon} text-${color}'></i>&nbsp;&nbsp;${label}`));
                     run_div.append($('<div>').html(`${m_start.format('ddd, D.M.Y, HH:mm')} Uhr (${duration_parts.join(', ')})`));
-                    run_div.append($('<div>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'})`));
+                    run_div.append($('<div>').html(`${poll_run.recipients.length} Teilnehmer (${poll_run.info.anonymous ? 'anonym' : 'personengebunden'}${poll_run.info.limited_places ? ', begrenzte Plätze' : ''})`));
                     bu_poll_run_show_results.click(function (e) {
                         e.stopPropagation();
                         let pid = $(e.target).closest('.poll-run-div').data('pid');
@@ -1093,6 +1226,8 @@
     function new_poll_run(pid) {
         current_poll_run = { pid: pid };
         current_poll_run.anonymous = null;
+        current_poll_run.limited_places = false;
+        current_poll_run.place_limits = {};
         current_poll_run_poll = null;
         for (let poll of stored_polls) {
             if (poll.pid === pid)
@@ -1132,6 +1267,7 @@
         old_recipients_list = [];
         $('#ti_recipients').val('');
         stored_poll_run_json = JSON.stringify(current_poll_run);
+        update_limited_places_ui();
         update_run_buttons();
         update_current_poll_run();
     }
@@ -1164,7 +1300,9 @@
             start_time: current_poll_run.info.start_time,
             end_date: current_poll_run.info.end_date,
             end_time: current_poll_run.info.end_time,
-            visible: current_poll_run.info.visible
+            visible: current_poll_run.info.visible,
+            limited_places: current_poll_run.info.limited_places || false,
+            place_limits: JSON.parse(current_poll_run.info.place_limits || '{}')
         };
         $('#ti_poll_run_poll_title').val(current_poll_run_poll.poll.title);
         $('#ti_run_start_date').val(current_poll_run.start_date);
@@ -1208,6 +1346,7 @@
         old_recipients_list = [...net_recipients_list];
         $('#ti_recipients').val('');
         stored_poll_run_json = JSON.stringify(current_poll_run);
+        update_limited_places_ui();
         update_run_buttons();
         update_current_poll_run();
     }
@@ -1493,12 +1632,19 @@
             current_poll_run.anonymous = true;
             $('#bu_poll_run_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
             $('#bu_poll_run_non_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary');
+            update_limited_places_ui();
             update_run_buttons();
         });
         $('#bu_poll_run_non_anonymous').click(function (e) {
             current_poll_run.anonymous = false;
             $('#bu_poll_run_non_anonymous').removeClass('btn-outline-secondary').addClass('btn-primary');
             $('#bu_poll_run_anonymous').addClass('btn-outline-secondary').removeClass('btn-primary');
+            update_limited_places_ui();
+            update_run_buttons();
+        });
+        $('#bu_poll_run_limited_places').click(function (e) {
+            current_poll_run.limited_places = !current_poll_run.limited_places;
+            update_limited_places_ui();
             update_run_buttons();
         });
         //     if ('#{!!DEVELOPMENT}' === 'true')

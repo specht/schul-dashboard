@@ -1,6 +1,101 @@
 require 'tempfile'
 
 class Main < Sinatra::Base
+    # Limited places ("begrenzte Plätze", e.g. workshops on a study day):
+    # optional for runs that are not anonymous. The run stores how many
+    # participants may choose an answer (place_limits: {"item": {"answer": n}},
+    # answers without a number are unlimited). Every response remembers when
+    # each choice was booked (booked_at, same shape, ISO time), so the results
+    # list participants in booking order. Checking and booking happen under
+    # one lock, so two people can't take the last place at the same time.
+    @@poll_places_mutex = Mutex.new
+
+    def poll_run_place_limits(poll_run)
+        return {} unless poll_run[:limited_places]
+        limits = poll_run[:place_limits]
+        limits = JSON.parse(limits) if limits.is_a?(String)
+        limits || {}
+    end
+
+    # validates limits sent by the organizer against the run's questions
+    def parse_place_limits(text, items)
+        limits = JSON.parse(text || '{}')
+        assert(limits.is_a?(Hash))
+        result = {}
+        limits.each_pair do |item_index, answers|
+            assert(item_index =~ /\A\d+\z/)
+            item = items[item_index.to_i]
+            assert(item && ['radio', 'checkbox'].include?(item['type']))
+            assert(answers.is_a?(Hash))
+            answers.each_pair do |answer_index, n|
+                assert(answer_index =~ /\A\d+\z/ && answer_index.to_i < (item['answers'] || []).size)
+                assert(n.is_a?(Integer) && n >= 0 && n <= 100000)
+                result[item_index] ||= {}
+                result[item_index][answer_index] = n
+            end
+        end
+        result
+    end
+
+    # chosen answer indices of a response for one question (radio: one, checkbox: several)
+    def poll_response_choices(response, item_index)
+        value = (response || {})[item_index.to_s]
+        return value.compact if value.is_a?(Array)
+        value.nil? ? [] : [value]
+    end
+
+    # how many responses chose each limited answer, without the response of
+    # except_node_id (the person asking, so their own booking doesn't block them)
+    def poll_run_places_taken(poll_run, except_node_id = nil)
+        limits = poll_run_place_limits(poll_run)
+        taken = {}
+        rows = neo4j_query(<<~END_OF_QUERY, :prid => poll_run[:id])
+            MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: $prid})
+            RETURN ID(u) AS unid, prs.response;
+        END_OF_QUERY
+        rows.each do |row|
+            next if row['unid'] == except_node_id
+            response = JSON.parse(row['prs.response'])
+            limits.each_pair do |item_index, answer_limits|
+                poll_response_choices(response, item_index).each do |answer_index|
+                    key = answer_index.to_s
+                    next unless answer_limits.include?(key)
+                    taken[item_index] ||= {}
+                    taken[item_index][key] = (taken[item_index][key] || 0) + 1
+                end
+            end
+        end
+        taken
+    end
+
+    # node id of the person answering (logged in or via external link)
+    def poll_responder_node_id(prid, external_code)
+        if external_code && !external_code.strip.empty?
+            rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
+                MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)
+                WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(p.deleted, false) = false AND COALESCE(pr.deleted, false) = false AND COALESCE(rt.deleted, false) = false
+                RETURN ID(u) AS unid, pr.id, u.email;
+            END_OF_QUERY
+            row = rows.find do |row|
+                row_code = Digest::SHA2.hexdigest(EXTERNAL_USER_EVENT_SCRAMBLER + row['pr.id'] + row['u.email']).to_i(16).to_s(36)[0, 8]
+                external_code == row_code
+            end
+            assert(!row.nil?)
+            row['unid']
+        else
+            neo4j_query_expect_one(<<~END_OF_QUERY, :email => @session_user[:email])['unid']
+                MATCH (u:User {email: $email})
+                RETURN ID(u) AS unid;
+            END_OF_QUERY
+        end
+    end
+
+    def poll_run_places_info(poll_run, except_node_id)
+        return nil unless poll_run[:limited_places]
+        {:limits => poll_run_place_limits(poll_run),
+         :taken_by_others => poll_run_places_taken(poll_run, except_node_id)}
+    end
+
     def get_poll_run(prid, external_code = nil)
         result = {}
         if external_code && !external_code.empty?
@@ -71,9 +166,13 @@ class Main < Sinatra::Base
             end
         end
         stored_response ||= {}
+        places = nil
+        if poll_run[:limited_places]
+            places = poll_run_places_info(poll_run, poll_responder_node_id(prid, external_code))
+        end
         respond(:poll => poll, :poll_run => poll_run, :stored_response => stored_response,
                 :organizer => (@@user_info[organizer_email] || {})[:display_name_official],
-                :total_participants => total_participants)
+                :total_participants => total_participants, :places => places)
     end
     
     post '/api/stop_poll_run' do
@@ -116,7 +215,9 @@ class Main < Sinatra::Base
                 assert((response[item_index.to_s] || []).size <= item['max_checks'])
             end
         end
-        if good
+        if good && poll_run[:limited_places]
+            submit_poll_run_with_limited_places(poll_run, response, data[:response], external_code)
+        elsif good
             if external_code && !external_code.empty?
                 rows = neo4j_query(<<~END_OF_QUERY, :prid => prid)
                     MATCH (u)-[rt:IS_PARTICIPANT]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)
@@ -146,7 +247,63 @@ class Main < Sinatra::Base
             respond(:submitted => true)
         end
     end
-    
+
+    # Only books answers that still have a free place. Answers the person
+    # already had keep their place and their booking time, even if the
+    # organizer lowered the limit in the meantime.
+    def submit_poll_run_with_limited_places(poll_run, response, response_json, external_code)
+        prid = poll_run[:id]
+        node_id = poll_responder_node_id(prid, external_code)
+        limits = poll_run_place_limits(poll_run)
+        full = []
+        @@poll_places_mutex.synchronize do
+            previous = neo4j_query(<<~END_OF_QUERY, :prid => prid, :unid => node_id).first
+                MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: $prid})
+                WHERE ID(u) = $unid
+                RETURN prs.response, prs.booked_at;
+            END_OF_QUERY
+            previous_response = previous ? JSON.parse(previous['prs.response']) : {}
+            previous_booked_at = (previous && previous['prs.booked_at']) ? JSON.parse(previous['prs.booked_at']) : {}
+            taken = poll_run_places_taken(poll_run, node_id)
+            now = Time.now.strftime('%Y-%m-%dT%H:%M:%S.%L')
+            booked_at = {}
+            poll_run[:items].each.with_index do |item, item_index|
+                next unless ['radio', 'checkbox'].include?(item['type'])
+                key = item_index.to_s
+                old_choices = poll_response_choices(previous_response, item_index)
+                poll_response_choices(response, item_index).each do |answer_index|
+                    assert(answer_index.is_a?(Integer) && answer_index >= 0 && answer_index < item['answers'].size)
+                    a = answer_index.to_s
+                    kept = old_choices.include?(answer_index)
+                    limit = (limits[key] || {})[a]
+                    if !kept && limit && ((taken[key] || {})[a] || 0) >= limit
+                        full << item['answers'][answer_index]
+                    end
+                    booked_at[key] ||= {}
+                    booked_at[key][a] = (kept && (previous_booked_at[key] || {})[a]) || now
+                end
+            end
+            if full.empty?
+                neo4j_query(<<~END_OF_QUERY, :prid => prid, :unid => node_id, :response => response_json, :booked_at => booked_at.to_json)
+                    MATCH (u)
+                    WHERE ID(u) = $unid
+                    WITH u
+                    MATCH (pr:PollRun {id: $prid})
+                    MERGE (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr)
+                    SET prs.response = $response
+                    SET prs.booked_at = $booked_at;
+                END_OF_QUERY
+            end
+        end
+        if full.empty?
+            respond(:submitted => true)
+        else
+            names = full.map { |x| "„#{x}“" }.join(', ')
+            respond(:error => "#{names} #{full.size == 1 ? 'ist' : 'sind'} inzwischen ausgebucht – bitte eine andere Möglichkeit wählen.",
+                    :places => poll_run_places_info(poll_run, node_id))
+        end
+    end
+
     post '/api/hide_poll_run' do
         require_user!
         data = parse_request_data(:required_keys => [:prid])
@@ -190,10 +347,10 @@ class Main < Sinatra::Base
         poll_run[:items] = JSON.parse(poll_run[:items])
         poll_run[:participant_count] = temp['participant_count']
         poll_run[:participants] = participants
-        responses = neo4j_query(<<~END_OF_QUERY, {:prid => prid}).map { |x| {:response => JSON.parse(x['prs.response']), :email => x['u.email']} }
+        responses = neo4j_query(<<~END_OF_QUERY, {:prid => prid}).map { |x| {:response => JSON.parse(x['prs.response']), :email => x['u.email'], :booked_at => JSON.parse(x['prs.booked_at'] || '{}')} }
             MATCH (u)<-[:RESPONSE_BY]-(prs:PollResponse)-[:RESPONSE_TO]->(pr:PollRun {id: $prid})-[:RUNS]->(p:Poll)
             WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser)
-            RETURN u.email, prs.response;
+            RETURN u.email, prs.response, prs.booked_at;
         END_OF_QUERY
         responses.sort! { |a, b| participants[a] <=> participants[b] }
         return poll, poll_run, responses
@@ -218,6 +375,10 @@ class Main < Sinatra::Base
                     io.puts "Es fehlen Antworten von: <em>#{missing_responses_from.map { |x| h.(x) }.join(', ')}</em>."
                 end
                 io.puts "</div>"
+                if poll_run[:limited_places]
+                    io.puts "<div class='alert alert-warning'>Die Plätze waren begrenzt. Bei jeder Antwortmöglichkeit stehen die Namen in der Reihenfolge der Buchung (mit Zeitpunkt).</div>"
+                end
+                place_limits = poll_run_place_limits(poll_run)
                 poll_run[:items].each_with_index do |item, item_index|
                     item = item.transform_keys(&:to_sym)
                     if item[:type] == 'paragraph'
@@ -262,14 +423,39 @@ class Main < Sinatra::Base
                         sum = 1 if sum == 0
                         io.puts "<table class='table'>"
                         io.puts "<tbody>"
-                        (0...item[:answers].size).each do |answer_index| 
+                        (0...item[:answers].size).each do |answer_index|
                             v = histogram[answer_index]
-                            io.puts "<tr class='pb-0'><td>#{h.(item[:answers][answer_index])}</td><td style='text-align: right;'>#{v == 0 ? '&ndash;' : v}</td></tr>"
+                            limit = (place_limits[item_index.to_s] || {})[answer_index.to_s]
+                            count_label = v == 0 ? '&ndash;' : v.to_s
+                            if limit
+                                count_label = "#{v}&nbsp;/&nbsp;#{limit}&nbsp;Plätze"
+                                count_label += " <span class='badge badge-danger'>ausgebucht</span>" if v >= limit
+                            end
+                            io.puts "<tr class='pb-0'><td>#{h.(item[:answers][answer_index])}</td><td style='text-align: right;'>#{count_label}</td></tr>"
                             io.puts "<tr class='noborder pdf-space-below'><td colspan='2'>"
                             io.puts "<div class='progress'>"
                             io.puts "<div class='progress-bar progress-bar-striped bg-info' role='progressbar' style='width: #{(v * 100.0 / sum).round}%' aria-valuenow='50' aria-valuemin='0' aria-valuemax='100'><span>#{(v * 100.0 / sum).round}%</span></div>"
                             io.puts "</div>"
-                            unless poll_run[:anonymous]
+                            if poll_run[:limited_places] && !poll_run[:anonymous]
+                                # booking order: earliest first, answers without a time (booked before
+                                # the response recorded one) last
+                                bookings = responses.select do |entry|
+                                    poll_response_choices(entry[:response], item_index).include?(answer_index)
+                                end.map do |entry|
+                                    [(entry[:booked_at][item_index.to_s] || {})[answer_index.to_s], entry[:email]]
+                                end.sort_by { |t, email| [t ? 0 : 1, t || '', poll_run[:participants][email].to_s] }
+                                if bookings.empty?
+                                    io.puts "<em>&ndash;</em>"
+                                else
+                                    io.puts "<ol class='poll-booking-order' style='margin-bottom: 0; padding-left: 0; list-style: none;'>"
+                                    bookings.each.with_index do |(t, email), i|
+                                        time_label = t ? " <span class='text-muted'>(#{DateTime.parse(t).strftime('%d.%m., %H:%M:%S')} Uhr)</span>" : ''
+                                        over = (limit && i >= limit) ? " <span class='badge badge-warning'>über dem Limit</span>" : ''
+                                        io.puts "<li>#{i + 1}. #{h.(poll_run[:participants][email])}#{time_label}#{over}</li>"
+                                    end
+                                    io.puts "</ol>"
+                                end
+                            elsif !poll_run[:anonymous]
                                 if participants_for_answer[answer_index]
                                     io.puts "<em>#{(participants_for_answer[answer_index] || []).map { |x| h.(poll_run[:participants][x]) }.join(', ')}</em>"
                                 else
@@ -551,6 +737,20 @@ class Main < Sinatra::Base
                     end
                     sheet.write_string(index + 1, x, label.nil? ? '' : label)
                 end
+                if poll_run[:limited_places] && item['type'] != 'textarea'
+                    # booking time of each chosen answer, in the same order as the answers
+                    x += 1
+                    sheet.write_string(0, x, "#{item['title']} – gebucht am", format_header)
+                    participant_order.each.with_index do |email, index|
+                        entry = responses.find { |r| r[:email] == email }
+                        next unless entry
+                        times = poll_response_choices(entry[:response], item_index).map do |answer_index|
+                            t = (entry[:booked_at][item_index.to_s] || {})[answer_index.to_s]
+                            t ? DateTime.parse(t).strftime('%d.%m.%Y %H:%M:%S') : '–'
+                        end
+                        sheet.write_string(index + 1, x, times.join(' / '))
+                    end
+                end
             end
             workbook.close
             result = File.read(file.path)
@@ -640,17 +840,32 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:pid, :anonymous,
                                                      :start_date, :start_time,
                                                      :end_date, :end_time, :visible, :recipients],
+                                  :optional_keys => [:limited_places, :place_limits],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024)
         unless data[:visible] == "no" && !user_with_role_logged_in?(:developer)
             id = RandomTag.generate(12)
             timestamp = Time.now.to_i
             assert(['true', 'false'].include?(data[:anonymous]))
-            poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :pid => data[:pid], :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time], :visible => data[:visible])['pr']
+            assert([nil, 'true', 'false'].include?(data[:limited_places]))
+            limited_places = data[:limited_places] == 'true'
+            place_limits = nil
+            if limited_places
+                # limited places need names: only for runs that are not anonymous
+                assert(data[:anonymous] == 'false')
+                items = JSON.parse(neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :pid => data[:pid])['p.items'])
+                    MATCH (p:Poll {id: $pid})-[:ORGANIZED_BY]->(a:User {email: $session_email})
+                    RETURN p.items;
+                END_OF_QUERY
+                place_limits = parse_place_limits(data[:place_limits], items).to_json
+            end
+            poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :pid => data[:pid], :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time], :visible => data[:visible], :limited_places => limited_places, :place_limits => place_limits)['pr']
                 MATCH (p:Poll {id: $pid})-[:ORGANIZED_BY]->(a:User {email: $session_email})
                 CREATE (pr:PollRun {id: $id, anonymous: $anonymous, start_date: $start_date, start_time: $start_time, end_date: $end_date, end_time: $end_time, visible: $visible})
                 SET pr.created = $timestamp
                 SET pr.updated = $timestamp
+                SET pr.limited_places = $limited_places
+                SET pr.place_limits = $place_limits
                 SET pr.items = p.items
                 CREATE (pr)-[:RUNS]->(p)
                 RETURN pr;
@@ -695,6 +910,7 @@ class Main < Sinatra::Base
         require_user_with_role!(:can_create_polls)
         data = parse_request_data(:required_keys => [:prid, :anonymous, :start_date, :start_time,
                                                      :end_date, :end_time, :recipients],
+                                  :optional_keys => [:place_limits],
                                   :types => {:recipients => Array},
                                   :max_body_length => 1024 * 1024)
 
@@ -702,6 +918,20 @@ class Main < Sinatra::Base
         STDERR.puts "Updating poll run #{id}"
         timestamp = Time.now.to_i
         assert(['true', 'false'].include?(data[:anonymous]))
+        if data[:place_limits]
+            # whether places are limited is fixed when the run is created (like
+            # anonymity); the numbers can still be changed
+            existing = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => id)
+                MATCH (pr:PollRun {id: $id})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User {email: $session_email})
+                RETURN pr.items, COALESCE(pr.limited_places, false) AS limited_places;
+            END_OF_QUERY
+            assert(existing['limited_places'] == true)
+            place_limits = parse_place_limits(data[:place_limits], JSON.parse(existing['pr.items'])).to_json
+            neo4j_query(<<~END_OF_QUERY, :id => id, :place_limits => place_limits)
+                MATCH (pr:PollRun {id: $id})
+                SET pr.place_limits = $place_limits;
+            END_OF_QUERY
+        end
         poll_run = neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => id, :anonymous => (data[:anonymous] == 'true'), :start_date => data[:start_date], :start_time => data[:start_time], :end_date => data[:end_date], :end_time => data[:end_time], :recipients => data[:recipients])['pr']
             MATCH (pr:PollRun {id: $id})-[:RUNS]->(p:Poll)-[:ORGANIZED_BY]->(a:User {email: $session_email})
             WHERE pr.anonymous = $anonymous

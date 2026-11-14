@@ -103,14 +103,16 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
      vor. Die Listen gehören zur Klasse und sind nur für die
      Klassenleitung sichtbar.
 
-   Welche Bereiche ein Werkzeug nutzt, steht in einer Tabelle oben im
-   Kasten: je Bereich (Paare, feste Plätze, Verteilung im Raum) und
-   Werkzeug („Von Hand verteilen“, „Im Raum verteilen“, „Wunschrunde“) ein
-   Schalter. Ausgeschaltete Vorgaben bleiben gespeichert, wirken aber für
-   dieses Werkzeug weder beim Würfeln noch bei den roten Markierungen; die
-   Spalte des offenen Plans ist hervorgehoben. „Plan ändern“ richtet sich
-   nach dem Werkzeug, mit dem der Plan entstanden ist. Gespeichert wird das
-   in `SeatingRules.areas`, fehlende Einträge sind eingeschaltet.
+   Die Eingaben gelten für alle Werkzeuge. Ob ein Bereich berücksichtigt
+   wird, stellt man im jeweiligen Werkzeug ein: Bei offenem Plan steht an
+   jeder Überschrift (Paare, Feste Plätze, Verteilung im Raum) ein Schalter
+   „berücksichtigen / nicht berücksichtigen“. Er gilt für das Werkzeug des
+   offenen Plans, etwa „Im Raum verteilen“ oder die Wunschrunde, und wird
+   je Werkzeug gespeichert. Ein ausgeschalteter Bereich bleibt erhalten,
+   wirkt in diesem Werkzeug aber weder beim Würfeln noch bei den roten
+   Markierungen. „Plan ändern“ richtet sich nach dem Werkzeug, mit dem der
+   Plan entstanden ist. Gespeichert wird das in `SeatingRules.areas`,
+   fehlende Einträge sind eingeschaltet.
 
    Vorgaben gelten, bis die Klassenleitung sie ändert: Jeder neue Plan
    und „Plan ändern“ übernehmen den zuletzt eingestellten Stand für

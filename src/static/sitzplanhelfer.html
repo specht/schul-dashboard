@@ -113,15 +113,21 @@ table.sph-wishes td, table.sph-wishes th {
     text-align: center;
     color: #fff;
 }
-.sph-areas-table th, .sph-areas-table td {
-    text-align: center;
-    vertical-align: middle;
+.sph-area-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em 1.2em;
 }
-.sph-areas-table th:first-child, .sph-areas-table td:first-child {
-    text-align: left;
+.sph-area-switch {
+    font-size: 0.75em;
+    font-weight: normal;
 }
-.sph-areas-table .sph-area-current {
-    background-color: rgba(47, 111, 176, 0.12);
+.sph-area-switch .custom-control-label {
+    cursor: pointer;
+}
+h5.sph-area-off {
+    color: #999;
 }
 .sph-list-key {
     display: inline-block;
@@ -540,15 +546,15 @@ body.dark .sph-group {
 
         <details class="sph-section sph-panel" id="sph_vorgaben">
             <summary><h4>Vorgaben <span id="sph_vorgaben_count" class="sph-count"></span></h4></summary>
-            <p class="sph-legend">Vorgaben gelten, bis Sie sie ändern; Wünsche treten hinter ihnen zurück. Welche Vorgaben ein Werkzeug nutzt, schalten Sie hier ein und aus. Ausgeschaltete Vorgaben bleiben gespeichert.</p>
-            <div class="table-responsive">
-            <table class="table table-sm sph-areas-table">
-                <thead><tr><th></th><th data-mode="manual">Von Hand verteilen</th><th data-mode="spread">Im Raum verteilen</th><th data-mode="wishes">Wunschrunde</th></tr></thead>
-                <tbody id="sph_areas_body"></tbody>
-            </table>
-            </div>
+            <p class="sph-legend">Ihre Eingaben gelten für alle Werkzeuge, bis Sie sie ändern; Wünsche treten hinter ihnen zurück. Ein ausgeschalteter Bereich bleibt gespeichert und fließt nur in diesem Werkzeug nicht in den Plan ein.</p>
+            <p class="sph-legend" id="sph_areas_hint">Ob ein Bereich berücksichtigt wird, stellen Sie im jeweiligen Werkzeug ein, zum Beispiel in „Im Raum verteilen“ oder in der Wunschrunde: am Schalter neben der Überschrift.</p>
 
-            <h5>Paare</h5>
+            <h5 class="sph-area-head">Paare
+                <span class="sph-area-switch custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="sph_area_pairs" data-area="pairs">
+                    <label class="custom-control-label" for="sph_area_pairs">berücksichtigen</label>
+                </span>
+            </h5>
             <div class="form-inline">
                 <select class="form-control" id="sph_pair_a"></select>
                 <span>&nbsp;und&nbsp;</span>
@@ -559,7 +565,12 @@ body.dark .sph-group {
             <div class="sph-pair-list" id="sph_forced_list"><strong>Muss zusammen:</strong> <span class="none-hint">keine</span></div>
             <div class="sph-pair-list" id="sph_forbidden_list"><strong>Darf nicht zusammen:</strong> <span class="none-hint">keine</span></div>
 
-            <h5>Feste Plätze</h5>
+            <h5 class="sph-area-head">Feste Plätze
+                <span class="sph-area-switch custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="sph_area_fixed" data-area="fixed">
+                    <label class="custom-control-label" for="sph_area_fixed">berücksichtigen</label>
+                </span>
+            </h5>
             <div class="form-inline">
                 <select class="form-control" id="sph_rule_sus"></select>
                 <select class="form-control" id="sph_rule_area" style="margin-left: 0.5em;">
@@ -574,7 +585,12 @@ body.dark .sph-group {
             <div class="sph-rule-list" id="sph_rules_list"><span class="none-hint">keine festen Plätze</span></div>
             <p class="sph-legend">Einen genauen Platz legen Sie im Plan fest: Person anklicken, dann „📌 Platz festhalten“. Feste Plätze sind im Plan mit 📌 markiert.</p>
 
-            <h5>Verteilung im Raum</h5>
+            <h5 class="sph-area-head">Verteilung im Raum
+                <span class="sph-area-switch custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="sph_area_spread" data-area="spread">
+                    <label class="custom-control-label" for="sph_area_spread">berücksichtigen</label>
+                </span>
+            </h5>
             <p class="sph-legend">Wer auf derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch, nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt auch ganz ohne Wünsche, mit „Im Raum verteilen“ oben. Gibt es Wünsche, zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht vor. Die Listen sehen nur Sie.</p>
             <div id="sph_groups_list"></div>
             <button class="btn btn-sm btn-outline-primary" id="sph_bu_add_group"><i class="fa fa-plus"></i>&nbsp;&nbsp;Neue Liste</button>
@@ -915,36 +931,20 @@ function with_active_rules(fn) {
     }
 }
 
-const SPH_AREA_ROWS = [['pairs', 'Paare'], ['fixed', 'Feste Plätze'], ['spread', 'Verteilung im Raum']];
-const SPH_AREA_TOOLS = ['manual', 'spread', 'wishes'];
+const SPH_AREAS = ['pairs', 'fixed', 'spread'];
 
+// Schalter „berücksichtigen“ an den Bereichen der Vorgaben. Sie gelten für das
+// Werkzeug des offenen Plans; ohne offenen Plan gibt es keine.
 function render_areas() {
-    let current = current_area_mode();
-    $('.sph-areas-table th[data-mode]').each(function () {
-        $(this).toggleClass('sph-area-current', $(this).data('mode') === current);
-    });
-    let body = $('#sph_areas_body').empty();
-    for (let [area, label] of SPH_AREA_ROWS) {
-        let row = $('<tr>').append($('<td>').text(label));
-        for (let mode of SPH_AREA_TOOLS) {
-            let tool = $(`.sph-areas-table th[data-mode="${mode}"]`).text();
-            let box = $('<input type="checkbox">').attr('id', `sph_area_${mode}_${area}`)
-                .attr('aria-label', `${label} bei „${tool}“`)
-                .prop('checked', area_on(mode, area))
-                .on('change', function (e) {
-                    let active = $(e.currentTarget).is(':checked');
-                    api_call('/api/sph_set_rule_area', {klasse: klasse, raum: raum, mode: mode, area: area, active: active ? 'yes' : 'no'}, function (data) {
-                        if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
-                        rule_areas = data.areas || {};
-                        render_areas();
-                        render_wishes();
-                        if (open_mode === 'spread' && open_cycle_data) render_work_header(open_cycle_data);
-                        rerender_open_plan();
-                    });
-                });
-            row.append($('<td>').toggleClass('sph-area-current', mode === current).append(box));
-        }
-        body.append(row);
+    let mode = current_area_mode();
+    $('#sph_areas_hint').toggle(!mode);
+    for (let area of SPH_AREAS) {
+        let box = $(`#sph_area_${area}`);
+        box.closest('.sph-area-switch').toggle(!!mode);
+        let on = !mode || area_on(mode, area);
+        box.prop('checked', on);
+        box.siblings('label').text(on ? 'berücksichtigen' : 'nicht berücksichtigen');
+        box.closest('h5').toggleClass('sph-area-off', !on);
     }
 }
 
@@ -1491,7 +1491,7 @@ function render_work_header(oc) {
         let n = (seating_groups || []).filter(g => g.length >= 2).length;
         $('#sph_cycle_info').text('Neuer Sitzplan, ohne Umfrage nach Ihren Vorgaben im Raum verteilt. ' +
             (!area_on('spread', 'spread')
-                ? 'Die Verteilung im Raum ist für dieses Werkzeug ausgeschaltet (unter „Vorgaben“).'
+                ? 'Die Verteilung im Raum wird bei diesem Werkzeug nicht berücksichtigt (Schalter unter „Vorgaben“).'
                 : n > 0
                 ? `Berücksichtigt: ${n} Verteilungsliste${n === 1 ? '' : 'n'}, Paare und feste Plätze. Setzen Sie einzelne Personen von Hand um (Namen anklicken, dann den Platz). Wer danach direkt bei jemandem von derselben Liste sitzt, wird rot markiert.`
                 : 'Es gibt noch keine Verteilungsliste. Legen Sie sie unter „Vorgaben → Verteilung im Raum“ an und würfeln Sie dann neu.'));
@@ -2491,6 +2491,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // Die schwebende Auswahl-Leiste gehört an den Bildschirmrand, nicht in den
     // Kasten der Seite (dessen Unschärfe-Filter würde sie dort festhalten).
     $('#sph_selection_bar').appendTo('body');
+    $('.sph-area-switch input').on('change', function (e) {
+        let mode = current_area_mode();
+        if (!mode) return;
+        let area = $(e.currentTarget).data('area');
+        let active = $(e.currentTarget).is(':checked');
+        api_call('/api/sph_set_rule_area', {klasse: klasse, raum: raum, mode: mode, area: area, active: active ? 'yes' : 'no'}, function (data) {
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            rule_areas = data.areas || {};
+            render_areas();
+            render_wishes();
+            if (open_mode === 'spread' && open_cycle_data) render_work_header(open_cycle_data);
+            rerender_open_plan();
+        });
+    });
     let resize_timer = null;
     window.addEventListener('resize', function () {
         clearTimeout(resize_timer);

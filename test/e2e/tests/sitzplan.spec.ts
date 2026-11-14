@@ -352,12 +352,12 @@ test('Sitzplan: im Raum verteilen, Verstoß nach dem Umsetzen rot markiert', asy
   await discardOpenPlan(page);
 });
 
-test('Sitzplan: Vorgaben je Werkzeug ein- und ausschalten', async ({ page }) => {
+test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   const RAUM = await setUpRoom(page);
   await openSeatingPlan(page, RAUM);
 
-  // a list, and the Verteilung im Raum switched off for "Im Raum verteilen" only
+  // the entries are made once, for all tools; without a plan there is no switch
   await page.locator('#sph_vorgaben > summary').click();
   await page.locator('#sph_bu_add_group').click();
   const list = page.locator('#sph_groups_list .sph-group').first();
@@ -365,14 +365,17 @@ test('Sitzplan: Vorgaben je Werkzeug ein- und ausschalten', async ({ page }) => 
   await expect(list).toContainText('Max Mustermann');
   await list.locator('select').selectOption({ label: 'Elli Mustermann' });
   await expect(list).toContainText('Elli Mustermann');
-  const switched = page.waitForResponse('**/api/sph_set_rule_area');
-  await page.locator('#sph_area_spread_spread').uncheck();
-  expect((await switched).status()).toBe(200);
-  await expect(page.locator('#sph_area_wishes_spread')).toBeChecked();
+  await expect(page.locator('#sph_area_spread')).toBeHidden();
 
-  // the list is kept, but this tool does not use it: no colours, no red marks
+  // "Im Raum verteilen": Verteilung im Raum switched off for this tool
   await startNewPlan(page, 'spread');
-  await expect(page.locator('#sph_cycle_info')).toContainText('ausgeschaltet');
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_area_spread')).toBeChecked();
+  const switched = page.waitForResponse('**/api/sph_set_rule_area');
+  await page.locator('label[for="sph_area_spread"]').click();
+  expect((await switched).status()).toBe(200);
+  await expect(page.locator('label[for="sph_area_spread"]')).toHaveText('nicht berücksichtigen');
+  await expect(page.locator('#sph_cycle_info')).toContainText('nicht berücksichtigt');
   await expect(page.locator('#sph_seats .sph-list-tag')).toHaveCount(0);
   const [elli_seat, next_to_max] = await page.evaluate(() => {
     const w = window as any;
@@ -387,21 +390,29 @@ test('Sitzplan: Vorgaben je Werkzeug ein- und ausschalten', async ({ page }) => 
   await expect(page.locator('#sph_seats .place.unresolved')).toHaveCount(0);
 
   // switched on again right here: colours and red marks are back
-  await page.locator('#sph_vorgaben > summary').click();
-  await expect(page.locator('.sph-areas-table th[data-mode="spread"]')).toHaveClass(/sph-area-current/);
-  await page.locator('#sph_area_spread_spread').check();
+  await page.locator('label[for="sph_area_spread"]').click();
   await expect(page.locator('#sph_seats .sph-list-tag')).toHaveCount(2);
   await expect(page.locator('#sph_seats .place.unresolved')).toHaveCount(2);
 
-  // the setting is kept
-  await page.reload();
+  // off again for this tool; the Wunschrunde keeps its own switch, and the
+  // list is still there
+  await page.locator('label[for="sph_area_spread"]').click();
+  await expect(page.locator('#sph_area_spread')).not.toBeChecked();
+  await discardOpenPlan(page);
+  await startNewPlan(page, 'cycle');
   await page.locator('#sph_vorgaben > summary').click();
-  await expect(page.locator('#sph_area_spread_spread')).toBeChecked();
+  await expect(page.locator('#sph_area_spread')).toBeChecked();
+  await expect(page.locator('#sph_groups_list .sph-group').first()).toContainText('Elli Mustermann');
 
+  // leave nothing behind for the other tests
   await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
   await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
   await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
   await discardOpenPlan(page);
+  const reset = await page.request.post('/api/sph_set_rule_area', {
+    data: { klasse: KLASSE, raum: RAUM, mode: 'spread', area: 'spread', active: 'yes' },
+  });
+  expect(reset.status()).toBe(200);
 });
 
 test('Gruppenbildung: eigener Abschnitt, Gruppen für die Klasse mischen', async ({ page }) => {

@@ -86,9 +86,14 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   await expect(page.locator('#sph_link_shuffler')).toHaveAttribute('href', `/sitzplan/${KLASSE}/${RAUM}`);
   await expect(page.locator('#sph_link_shuffler')).not.toHaveClass(/disabled/);
   await startNewPlan(page, 'cycle');
-  // tables and Shuffler stay on top while the wish round runs
+  // tables, Shuffler and "Von Hand verteilen" stay on top while the wish
+  // round runs; starting over by hand asks first
   await expect(page.locator('#sph_room_bar #sph_link_editor')).toBeVisible();
   await expect(page.locator('#sph_room_bar #sph_link_shuffler')).toBeVisible();
+  await page.locator('#sph_room_bar #sph_bu_start_manual').click();
+  await expect(dashboardDialog(page)).toContainText('schon eine Wunschrunde offen');
+  await dashboardDialog(page).getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(page.locator('#sph_bu_close_wishes')).toBeVisible();
 
   // Max wishes to sit next to Mallory
   const student = await newUserPage();

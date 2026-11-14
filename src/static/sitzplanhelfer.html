@@ -1300,8 +1300,8 @@ function render_room_bar() {
           (sph_editor_allowed ? 'Legen Sie zuerst weitere Plätze an.' : 'Weitere Plätze kann nur die Administration anlegen.')
         : `Raum ${raum}: ${seats.length} Plätze für ${sus.length} SuS`);
     $('#sph_room_bar').toggleClass('sph-room-warn', too_small).show();
-    // Von Hand verteilen beginnt einen neuen Plan - also nur, solange keiner offen ist.
-    $('#sph_bu_start_manual').toggle(can_start_cycle && !open_cycle_id).prop('disabled', too_small);
+    // Immer sichtbar; ist schon ein Plan offen, fragt der Klick nach (siehe unten).
+    $('#sph_bu_start_manual').toggle(can_start_cycle).prop('disabled', too_small);
     $('#sph_link_editor').toggleClass('btn-warning', too_small).toggleClass('btn-outline-secondary', !too_small);
 }
 
@@ -2113,7 +2113,25 @@ document.addEventListener('DOMContentLoaded', function () {
         start_new_plan('wishes', {duration_days: duration_days});
     });
     $('#sph_bu_start_random').click(function () { start_new_plan('random'); });
-    $('#sph_bu_start_manual').click(function () { start_new_plan('manual'); });
+    $('#sph_bu_start_manual').click(function () {
+        if (!open_cycle_id) {
+            start_new_plan('manual');
+            return;
+        }
+        // Es kann immer nur ein neuer Plan offen sein. Im offenen Plan lässt
+        // sich schon von Hand umsetzen; ganz von vorn geht es nur, wenn er
+        // verworfen wird.
+        let was = open_mode === 'wishes' ? 'eine Wunschrunde' : 'ein neuer Plan';
+        dashboardConfirm(`Es ist schon ${was} offen. Darin können Sie direkt von Hand umsetzen: Person anklicken, dann den Platz. ` +
+            'Wollen Sie stattdessen ganz von vorn von Hand verteilen, wird der offene Plan verworfen' +
+            (open_mode === 'wishes' ? ', die Umfrage verschwindet bei den SuS, und die Wünsche gehen verloren.' : '.') +
+            ' Ihre Vorgaben bleiben erhalten.', function () {
+            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+                start_new_plan('manual');
+            });
+        }, { title: 'Von Hand verteilen', confirm: 'Verwerfen und von Hand verteilen', danger: true });
+    });
     $('#sph_bu_edit_saved').click(function () {
         set_status('');
         api_call('/api/sph_reopen_saved_cycle', {cycle_id: last_cycle.id}, function (data) {

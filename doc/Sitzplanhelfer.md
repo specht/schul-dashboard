@@ -32,8 +32,8 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    einer Wunschrunde, eine Leiste mit dem Raum und der Zahl der Plätze,
    „Tische im Raum ändern“ (wo die Klassenleitung die Tische ändern darf;
    gelb hervorgehoben, wenn Plätze fehlen; „Tische anlegen“, wenn es noch
-   keine gibt), „Shuffler“ und, solange kein Plan offen ist, „Von Hand
-   verteilen“. Darunter der aktuell gespeicherte Plan mit den Knöpfen
+   keine gibt), „Shuffler“ und „Von Hand verteilen“ (ist schon ein Plan
+   offen, fragt die Seite, ob er dafür verworfen werden soll). Darunter der aktuell gespeicherte Plan mit den Knöpfen
    „Neuer Sitzplan“, „Plan ändern“ und „Drucken“, die aufklappbaren
    „Vorgaben“ (auch ohne offenen Plan oder Wunschrunde bearbeitbar) und
    „Frühere Sitzpläne“. Hat der Raum weniger Plätze als die Klasse SuS,

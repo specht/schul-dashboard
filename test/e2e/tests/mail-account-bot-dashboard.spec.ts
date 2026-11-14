@@ -67,7 +67,7 @@ test('Bot-Zustand: höchstens zehn IONOS-Anmeldungen am Tag für alle Rechner, d
   expect(results.indexOf('limit')).toBe(oks);
 
   await login(page, ACCOUNTS.admin);
-  await page.goto('/passwoerter');
+  await page.goto('/postfaecher');
   await expect(page.locator('#mail_bot_logins')).toContainText('10 von 10');
   await page.locator('#bu_reset_mail_bot_logins').click();
   await dashboardDialog(page).getByRole('button', { name: 'Zurücksetzen' }).click();
@@ -89,7 +89,7 @@ test('Bot angehalten: keine Fälle, keine Sperre, Mail an die Administration, Fr
   expect((await post(api, '/api/mail_account_bot/login_attempt', { host: 'rechner-a' })).result).toBe('paused');
 
   await login(page, ACCOUNTS.admin);
-  await page.goto('/passwoerter');
+  await page.goto('/postfaecher');
   const state = page.locator('#mail_reset_bot_state');
   await expect(state).toHaveAttribute('data-state', 'paused');
   await expect(state).toContainText('Testgrund: Captcha');
@@ -121,7 +121,7 @@ test('Bot-Websocket: nur mit Token, Weckruf bei Freigabe, Status auf der Seite',
   expect(['hello', 'wake']).toContain(messages[0]);
 
   await login(page, ACCOUNTS.admin);
-  await page.goto('/passwoerter');
+  await page.goto('/postfaecher');
   const state = page.locator('#mail_reset_bot_state');
   await expect(state).toHaveAttribute('data-state', 'connected');
   await expect(state).toContainText('rechner-ws');

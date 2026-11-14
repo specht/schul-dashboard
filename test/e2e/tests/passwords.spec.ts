@@ -20,6 +20,8 @@ const BOT_TOKEN = 'test-mail-password-reset-bot-token-0123456789';
 const KLASSENLEITUNG = 'torstensonin@beispielschule.de';
 const FIRST_NAMES = ['Anna', 'Ben', 'Cem', 'Dana', 'Emil', 'Fiona'];
 const PAGE = '/passwoerter';
+// the admin handles the requests here (admin menu)
+const ADMIN_PAGE = '/postfaecher';
 
 function students(testInfo: TestInfo) {
   const offset = testInfo.project.name === 'mobile' ? 3 : 0;
@@ -121,7 +123,7 @@ test('Schüler:in beantragt das Zurücksetzen, die Administration gibt frei, die
   const adminContext = await browser.newContext();
   const adminPage = await adminContext.newPage();
   await login(adminPage, ACCOUNTS.admin);
-  await adminPage.goto(PAGE);
+  await adminPage.goto(ADMIN_PAGE);
   const caseRow = adminPage.locator('#mail_cases_open tr.mail-case').filter({ hasText: student.email }).first();
   await expect(caseRow).toHaveAttribute('data-state', 'open');
   await expect(caseRow).toContainText('Klick im Dashboard');
@@ -226,7 +228,7 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   const family = `familie.${testInfo.project.name}@example.org`;
   const noticesBefore = (await mails(parents, PARENT_NOTICE)).length;
   await login(page, ACCOUNTS.admin);
-  await page.goto(PAGE);
+  await page.goto(ADMIN_PAGE);
   await expect(page.locator('#mail_reset_bot_state')).toContainText(/Bot (zuletzt aktiv|nicht verbunden|verbunden)/);
 
   await page.locator('#ti_mail_case_mailbox').fill(parents);
@@ -371,4 +373,50 @@ test('Alte Adressen führen zur Seite Passwörter', async ({ page }) => {
   // what to do when the parents lost their password
   await expect(page.locator('.mail-reset-parents-hint')).toContainText(`eltern.${ACCOUNTS.schueler_oberstufe}`);
   await expect(page.locator('.mail-reset-parents-hint')).toContainText('Klassenleitung');
+});
+
+test('Administration: E-Mail-Brief suchen, Postfach in die Anfrage übernehmen; Passwörter-Seite verweist hierher', async ({ page, context }, testInfo) => {
+  await login(page, ACCOUNTS.admin);
+  // the admin menu leads here; the profile page only links to it
+  await page.goto(PAGE);
+  await expect(page.locator('.mail-admin-link a')).toHaveAttribute('href', /\/postfaecher$/);
+  await expect(page.locator('#mail_cases_open')).toHaveCount(0);
+  await page.goto(ADMIN_PAGE);
+  const search = page.locator('#ti_letter_search');
+  // by first and last name in any order, without accents, or by class
+  await search.fill('mustermann max');
+  const row = page.locator('.letter-result[data-email="max.mustermann@mail.beispielschule.de"]');
+  await expect(row).toBeVisible();
+  await search.fill('');
+  await expect(page.locator('#letter_results')).toBeHidden();
+  await search.fill('max.mustermann@');
+  await expect(row).toBeVisible();
+  // the letter is made as a PDF and opens in a new tab
+  const [response, popup] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/print_email_letters')),
+    context.waitForEvent('page'),
+    row.locator('.bu_open_letter').click(),
+  ]);
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('application/pdf');
+  expect(JSON.parse(response.request().postData() || '{}')).toEqual({ emails: ['max.mustermann@mail.beispielschule.de'] });
+  await popup.close();
+  // the parents' mailbox goes into the new request
+  await row.locator('.bu_case_parents').click();
+  await expect(page.locator('#mail_case_mailboxes')).toContainText('eltern.max.mustermann@mail.beispielschule.de');
+  await search.fill('gibt es nicht xyz');
+  await expect(page.locator('#letter_results')).toContainText('Niemand gefunden');
+  // fully on screen on phones too
+  await search.fill('mustermann max');
+  await row.locator('.bu_case_parents').scrollIntoViewIfNeeded();
+  await expect(row.locator('.bu_case_parents')).toBeInViewport({ ratio: 1 });
+});
+
+test('Administration: Eintrag im Admin-Menü', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'menu once is enough');
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/');
+  const link = page.locator('a.dropdown-item[href="/postfaecher"]');
+  await expect(link).toHaveCount(1);
+  await expect(link).toContainText('Postfach-Anfragen und E-Mail-Briefe');
 });

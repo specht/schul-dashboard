@@ -171,37 +171,60 @@ class Main < Sinatra::Base
                 io.puts "</tbody></table></div>"
             end
             if admin_logged_in?
-                io.puts "<h4 style='margin-top: 1em;'>Anfragen</h4>"
-                io.puts "<div class='card' style='margin-bottom: 1.5em;'><div class='card-body'>"
-                io.puts "<h5 class='card-title'>Neue Anfrage (z. B. per E-Mail)</h5>"
-                io.puts "<div class='form-group'><label for='ti_mail_case_mailbox'>Postfächer</label>"
-                io.puts "<div class='input-group'>"
-                io.puts "<input id='ti_mail_case_mailbox' class='form-control' list='li_mail_reset_mailboxes' placeholder='E-Mail-Adresse (auch eltern.…)' autocomplete='off' />"
-                io.puts "<div class='input-group-append'><button id='bu_add_mail_case_mailbox' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Hinzufügen</button></div>"
-                io.puts "</div><div id='mail_case_mailboxes' style='margin-top: 0.5em;'></div></div>"
-                io.puts "<div class='form-group'><label for='ti_mail_case_reply_to'>Antwort an</label>"
-                io.puts "<input id='ti_mail_case_reply_to' type='email' class='form-control' placeholder='Absender der E-Mail' autocomplete='off' /></div>"
-                io.puts "<div class='form-group'><label for='ti_mail_case_note'>Notiz</label>"
-                io.puts "<input id='ti_mail_case_note' class='form-control' maxlength='500' autocomplete='off' /></div>"
-                io.puts "<button id='bu_create_mail_case' class='btn btn-primary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Zur Liste hinzufügen</button>"
-                io.puts "</div></div>"
-                io.puts "<datalist id='li_mail_reset_mailboxes'>"
-                @@klassen_order.each do |klasse|
-                    (@@schueler_for_klasse[klasse] || []).each do |student|
-                        io.puts "<option value='#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label(student))}</option>"
-                        io.puts "<option value='eltern.#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label('eltern.' + student))}</option>"
-                    end
-                end
-                io.puts "</datalist>"
-                io.puts "<h5>Offene Anfragen (<span id='mail_cases_open_count'>0</span>)</h5>"
-                io.puts "<p id='mail_reset_bot_state' class='text-muted'></p>"
-                io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_open'>"
-                io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Nächster Schritt</th></tr></thead><tbody></tbody></table></div>"
-                io.puts "<details style='margin-top: 1em;'><summary>Abgeschlossen (letzte #{MAIL_PASSWORD_RESET_SHOW_DAYS} Tage): <span id='mail_cases_closed_count'>0</span></summary>"
-                io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_closed'>"
-                io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Ergebnis</th></tr></thead><tbody></tbody></table></div></details>"
+                io.puts "<p class='alert alert-secondary mail-admin-link'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Anfragen bearbeiten und E-Mail-Briefe suchen: <a href='#{WEB_ROOT}/postfaecher'>Postfächer (Administration)</a></p>"
             end
             io.string
+        end
+    end
+
+    # The admin's page (/postfaecher, admin menu): find a student and open the
+    # E-Mail-Brief, enter requests that came in by mail, decide and answer
+    # the requests, see the bot.
+    def print_mail_account_admin_page
+        require_admin!
+        StringIO.open do |io|
+            students = []
+            @@klassen_order.each do |klasse|
+                (@@schueler_for_klasse[klasse] || []).each do |email|
+                    info = @@user_info[email] || {}
+                    students << {:email => email, :name => info[:display_name].to_s, :klasse => tr_klasse(klasse)}
+                end
+            end
+            io.puts "<h4>E-Mail-Brief suchen</h4>"
+            io.puts "<input id='ti_letter_search' class='form-control' type='search' placeholder='Name, Klasse oder E-Mail-Adresse' autocomplete='off' />"
+            io.puts "<div class='table-responsive'><table class='table table-sm letter-results' id='letter_results' style='display: none; margin-top: 0.5em;'>"
+            io.puts "<thead><tr><th>Name</th><th>Klasse</th><th>E-Mail-Adresse</th><th></th></tr></thead><tbody></tbody></table></div>"
+            io.puts "<script type='application/json' id='letter_students'>#{students.to_json.gsub('</', '<\\/')}</script>"
+            io.puts "<h4 style='margin-top: 1.5em;'>Anfragen zum Zurücksetzen</h4>"
+            io.puts "<datalist id='li_mail_reset_mailboxes'>"
+            @@klassen_order.each do |klasse|
+                (@@schueler_for_klasse[klasse] || []).each do |student|
+                    io.puts "<option value='#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label(student))}</option>"
+                    io.puts "<option value='eltern.#{CGI.escapeHTML(student)}'>#{CGI.escapeHTML(mail_password_reset_label('eltern.' + student))}</option>"
+                end
+            end
+            io.puts "</datalist>"
+            io.puts "<h5>Offene Anfragen (<span id='mail_cases_open_count'>0</span>)</h5>"
+            io.puts "<p id='mail_reset_bot_state' class='text-muted'></p>"
+            io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_open'>"
+            io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Nächster Schritt</th></tr></thead><tbody></tbody></table></div>"
+            io.puts "<div class='card' id='mail_case_form' style='margin-bottom: 1.5em;'><div class='card-body'>"
+            io.puts "<h5 class='card-title'>Neue Anfrage (z. B. per E-Mail)</h5>"
+            io.puts "<div class='form-group'><label for='ti_mail_case_mailbox'>Postfächer</label>"
+            io.puts "<div class='input-group'>"
+            io.puts "<input id='ti_mail_case_mailbox' class='form-control' list='li_mail_reset_mailboxes' placeholder='E-Mail-Adresse (auch eltern.…)' autocomplete='off' />"
+            io.puts "<div class='input-group-append'><button id='bu_add_mail_case_mailbox' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Hinzufügen</button></div>"
+            io.puts "</div><div id='mail_case_mailboxes' style='margin-top: 0.5em;'></div></div>"
+            io.puts "<div class='form-group'><label for='ti_mail_case_reply_to'>Antwort an</label>"
+            io.puts "<input id='ti_mail_case_reply_to' type='email' class='form-control' placeholder='Absender der E-Mail' autocomplete='off' /></div>"
+            io.puts "<div class='form-group'><label for='ti_mail_case_note'>Notiz</label>"
+            io.puts "<input id='ti_mail_case_note' class='form-control' maxlength='500' autocomplete='off' /></div>"
+            io.puts "<button id='bu_create_mail_case' class='btn btn-primary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Zur Liste hinzufügen</button>"
+            io.puts "</div></div>"
+            io.puts "<details style='margin-top: 1em;'><summary>Abgeschlossen (letzte #{MAIL_PASSWORD_RESET_SHOW_DAYS} Tage): <span id='mail_cases_closed_count'>0</span></summary>"
+            io.puts "<div class='table-responsive'><table class='table table-sm mail-cases' id='mail_cases_closed'>"
+            io.puts "<thead><tr><th>Postfächer</th><th>Anfrage</th><th>Ergebnis</th></tr></thead><tbody></tbody></table></div></details>"
+                    io.string
         end
     end
 

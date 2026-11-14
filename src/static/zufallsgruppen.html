@@ -1,0 +1,538 @@
+#{redirect_on_error { require_zg_access!(zg_path_klasse) }}
+<style>
+.zg-container {
+    max-width: 1100px;
+    margin: 1.5em auto;
+    padding: 1.5em;
+    /* Gleiche "Card"-Optik wie der Sitzplanhelfer, damit Text auf dem
+       Hintergrundbild lesbar bleibt. */
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 0.5em;
+    box-shadow: 0 0.2em 0.6em rgba(0,0,0,0.15);
+}
+.zg-section {
+    margin-bottom: 1.5em;
+}
+.zg-legend {
+    font-size: 0.9em;
+    color: #666;
+}
+.zg-settings .zg-row {
+    margin-bottom: 0.6em;
+}
+.zg-settings .zg-label {
+    display: inline-block;
+    min-width: 12em;
+    font-weight: bold;
+}
+.zg-settings label.zg-choice {
+    margin-right: 1em;
+    font-weight: normal;
+    cursor: pointer;
+}
+.zg-chip {
+    display: inline-block;
+    border-radius: 1em;
+    padding: 0.2em 0.8em;
+    margin: 0.2em;
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    cursor: pointer;
+    user-select: none;
+}
+.zg-chip.absent {
+    background: #f4f4f4;
+    border-color: #ddd;
+    color: #aaa;
+    text-decoration: line-through;
+}
+.zg-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13em, 1fr));
+    gap: 0.8em;
+}
+.zg-group {
+    border: 1px solid #ddd;
+    border-radius: 0.5em;
+    background-color: #fff;
+    padding: 0.6em 0.8em;
+    box-shadow: 0 0.1em 0.3em rgba(0,0,0,0.1);
+}
+.zg-group h5 {
+    margin: 0 0 0.4em 0;
+    font-weight: bold;
+}
+.zg-group .zg-name {
+    padding: 0.1em 0;
+}
+.zg-group.shuffling .zg-name {
+    color: #999;
+}
+.zg-warning {
+    color: #8a6d00;
+    font-size: 0.9em;
+}
+/* Beamer-Ansicht: nur die Gruppen, keine Einstellungen. */
+#zg_beamer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background-color: #fff;
+    padding: 2vh 2vw;
+    overflow: auto;
+}
+#zg_beamer .zg-groups {
+    grid-template-columns: repeat(var(--zg-cols, 3), 1fr);
+    gap: 1.5vh 1.5vw;
+}
+#zg_beamer .zg-group {
+    font-size: var(--zg-font, 3vh);
+    padding: 1vh 1.2vw;
+}
+#zg_beamer .zg-group h5 {
+    font-size: 1em;
+    color: #2f7fd6;
+}
+#zg_beamer .zg-beamer-buttons {
+    position: fixed;
+    right: 1.5vw;
+    bottom: 1.5vh;
+    opacity: 0.35;
+}
+#zg_beamer .zg-beamer-buttons:hover {
+    opacity: 1;
+}
+</style>
+<div class="zg-container">
+    <h1>Gruppenbildung <span id="zg_label"></span></h1>
+    <p><a class="btn btn-outline-secondary" id="zg_back_link" href="#"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></p>
+
+    <div class="zg-section zg-settings">
+        <div class="zg-row">
+            <span class="zg-label">Gruppengröße</span>
+            <input type="number" id="zg_size" class="form-control" style="width: 5em; display: inline-block;" min="2" max="15" value="4">
+        </div>
+        <div class="zg-row">
+            <span class="zg-label">Wenn es nicht aufgeht</span>
+            <label class="zg-choice"><input type="radio" name="zg_rest" value="bigger" checked> einige Gruppen größer</label>
+            <label class="zg-choice"><input type="radio" name="zg_rest" value="smaller"> einige Gruppen kleiner</label>
+        </div>
+        <div class="zg-row">
+            <span class="zg-label">Jungen und Mädchen</span>
+            <label class="zg-choice"><input type="radio" name="zg_gender" value="egal" checked> egal</label>
+            <label class="zg-choice"><input type="radio" name="zg_gender" value="gemischt"> gemischt</label>
+            <label class="zg-choice"><input type="radio" name="zg_gender" value="getrennt"> getrennt</label>
+        </div>
+        <div class="zg-row" id="zg_distribution_row" style="display: none;">
+            <span class="zg-label">Verteilung im Raum</span>
+            <label class="zg-choice"><input type="checkbox" id="zg_distribution"> auch hier berücksichtigen</label>
+            <div class="zg-legend" id="zg_distribution_info"></div>
+        </div>
+    </div>
+
+    <div class="zg-section">
+        <h4>Wer ist da?</h4>
+        <p class="zg-legend">Fehlende antippen, dann werden sie nicht eingeteilt. Nochmal antippen holt sie zurück.
+            <a href="#" id="zg_all_present">Alle da</a></p>
+        <div id="zg_presence"></div>
+        <p id="zg_preview" style="margin-top: 0.5em;"></p>
+    </div>
+
+    <div class="zg-section">
+        <button class="btn btn-lg btn-primary" id="zg_bu_mix" disabled><i class="fa fa-random"></i>&nbsp;&nbsp;Gruppen mischen</button>
+        <button class="btn btn-lg btn-outline-secondary" id="zg_bu_beamer" style="display: none;"><i class="fa fa-desktop"></i>&nbsp;&nbsp;Beamer-Ansicht</button>
+        <p id="zg_result_info" class="zg-legend" style="margin-top: 0.8em; margin-bottom: 0.3em;"></p>
+        <div id="zg_warnings"></div>
+    </div>
+
+    <div class="zg-groups" id="zg_groups"></div>
+</div>
+
+<div id="zg_beamer">
+    <div class="zg-groups" id="zg_beamer_groups"></div>
+    <div class="zg-beamer-buttons">
+        <button class="btn btn-outline-secondary" id="zg_bu_beamer_mix"><i class="fa fa-random"></i>&nbsp;&nbsp;Neu mischen</button>
+        <button class="btn btn-outline-secondary" id="zg_bu_beamer_close"><i class="fa fa-times"></i>&nbsp;&nbsp;Schließen</button>
+    </div>
+</div>
+
+<script>
+var klasse = '';
+var sus = [];
+var absent = new Set();
+var is_klassenleitung = false;
+// Nur für die Klassenleitung gefüllt (siehe zg_get_state).
+var distribution = null;
+var current_groups = [];
+
+function display_name(email) {
+    let s = sus.find(x => x.email === email);
+    return s ? s.display_name : email;
+}
+
+function gender_of(email) {
+    let s = sus.find(x => x.email === email);
+    return s ? s.geschlecht : null;
+}
+
+function shuffle_array(arr) {
+    arr = arr.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function settings() {
+    let size = parseInt($('#zg_size').val(), 10);
+    if (!(size >= 2)) size = 2;
+    if (size > 15) size = 15;
+    return {
+        size: size,
+        rest: $('input[name=zg_rest]:checked').val(),
+        gender: $('input[name=zg_gender]:checked').val(),
+        distribution: is_klassenleitung && $('#zg_distribution').is(':checked'),
+    };
+}
+
+function present_emails() {
+    return sus.map(s => s.email).filter(e => !absent.has(e));
+}
+
+// Gruppengrößen für n Personen: "größer" macht nie eine Gruppe kleiner als
+// gewünscht (26 in Vierern: 5, 5, 4, 4, 4, 4), "kleiner" nie eine größer
+// (26 in Vierern: 4, 4, 4, 4, 4, 3, 3).
+function sizes_for(n, k, rest) {
+    if (n <= 0) return [];
+    let g = rest === 'smaller' ? Math.ceil(n / k) : Math.max(1, Math.floor(n / k));
+    let base = Math.floor(n / g), extra = n % g;
+    let sizes = [];
+    for (let i = 0; i < g; i++) sizes.push(base + (i < extra ? 1 : 0));
+    return sizes;
+}
+
+// Bei "getrennt" werden Jungen und Mädchen je für sich eingeteilt. Wer ohne
+// Angabe ist, kommt zur größeren der beiden Seiten.
+function gender_pools(emails) {
+    let m = emails.filter(e => gender_of(e) === 'm');
+    let w = emails.filter(e => gender_of(e) === 'w');
+    let o = emails.filter(e => gender_of(e) !== 'm' && gender_of(e) !== 'w');
+    if (m.length >= w.length) m = m.concat(o); else w = w.concat(o);
+    return [m, w].filter(p => p.length > 0);
+}
+
+function planned_sizes(emails, s) {
+    if (s.gender === 'getrennt') {
+        return gender_pools(emails).map(p => sizes_for(p.length, s.size, s.rest)).flat();
+    }
+    return sizes_for(emails.length, s.size, s.rest);
+}
+
+function update_preview() {
+    let emails = present_emails();
+    let s = settings();
+    let sizes = planned_sizes(emails, s);
+    let counts = {};
+    for (let x of sizes) counts[x] = (counts[x] || 0) + 1;
+    let parts = Object.keys(counts).sort((a, b) => b - a).map(x => `${counts[x]} × ${x}`);
+    $('#zg_preview').text(`${emails.length} von ${sus.length} da → ${sizes.length} Gruppe${sizes.length === 1 ? '' : 'n'}` +
+        (parts.length ? ` (${parts.join(', ')})` : ''));
+    $('#zg_bu_mix').prop('disabled', emails.length === 0);
+}
+
+function render_presence() {
+    let el = $('#zg_presence').empty();
+    for (let s of sus) {
+        let chip = $('<span>').addClass('zg-chip').toggleClass('absent', absent.has(s.email)).text(s.display_name);
+        chip.on('click', function () {
+            if (absent.has(s.email)) absent.delete(s.email); else absent.add(s.email);
+            render_presence();
+        });
+        el.append(chip);
+    }
+    update_preview();
+}
+
+// Paare für die Option "Verteilung im Raum": Wer auf derselben Liste steht,
+// kommt nicht in dieselbe Gruppe; Zwangspaare bleiben zusammen und gehen vor.
+function constraint_pairs(emails) {
+    let present = new Set(emails);
+    let forced = [], separate = [];
+    if (!distribution) return {forced, separate};
+    let is_forced = (a, b) => distribution.forced_pairs.some(p => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a));
+    for (let p of distribution.forced_pairs) {
+        if (present.has(p[0]) && present.has(p[1])) forced.push(p);
+    }
+    let seen = new Set();
+    for (let list of distribution.lists) {
+        let l = list.filter(e => present.has(e));
+        for (let i = 0; i < l.length; i++) {
+            for (let j = i + 1; j < l.length; j++) {
+                let key = [l[i], l[j]].sort().join('|');
+                if (seen.has(key) || is_forced(l[i], l[j])) continue;
+                seen.add(key);
+                separate.push([l[i], l[j]]);
+            }
+        }
+    }
+    return {forced, separate};
+}
+
+// Bewertet eine Einteilung (kleiner ist besser). group_of: email -> Index.
+function make_cost(emails, sizes, s, pairs) {
+    let m_total = emails.filter(e => gender_of(e) === 'm').length;
+    let w_total = emails.filter(e => gender_of(e) === 'w').length;
+    let n = emails.length;
+    return function (group_of) {
+        let cost = 0;
+        if (s.distribution) {
+            for (let [a, b] of pairs.separate) if (group_of[a] === group_of[b]) cost += 1000;
+            for (let [a, b] of pairs.forced) if (group_of[a] !== group_of[b]) cost += 1000;
+        }
+        if (s.gender !== 'egal') {
+            let m = sizes.map(() => 0), w = sizes.map(() => 0);
+            for (let e of emails) {
+                if (gender_of(e) === 'm') m[group_of[e]]++;
+                else if (gender_of(e) === 'w') w[group_of[e]]++;
+            }
+            for (let g = 0; g < sizes.length; g++) {
+                if (s.gender === 'getrennt') {
+                    cost += 100 * Math.min(m[g], w[g]);
+                } else {
+                    cost += 10 * Math.abs(m[g] - m_total * sizes[g] / n);
+                    cost += 10 * Math.abs(w[g] - w_total * sizes[g] / n);
+                }
+            }
+        }
+        return cost;
+    };
+}
+
+// Erste Einteilung: bei "getrennt" je Seite für sich, bei "gemischt"
+// abwechselnd verteilt, sonst rein zufällig.
+function initial_groups(emails, s) {
+    if (s.gender === 'getrennt') {
+        let groups = [];
+        for (let pool of gender_pools(emails)) {
+            let shuffled = shuffle_array(pool);
+            for (let size of sizes_for(pool.length, s.size, s.rest)) groups.push(shuffled.splice(0, size));
+        }
+        return groups;
+    }
+    let sizes = sizes_for(emails.length, s.size, s.rest);
+    let order;
+    if (s.gender === 'gemischt') {
+        // Jede Person bekommt ihren Rang innerhalb ihres Geschlechts als
+        // Anteil (0..1); sortiert ergibt das eine gleichmäßig abwechselnde Folge.
+        let by_gender = {};
+        for (let e of shuffle_array(emails)) {
+            let g = gender_of(e) || '?';
+            (by_gender[g] = by_gender[g] || []).push(e);
+        }
+        let keyed = [];
+        for (let g in by_gender) {
+            by_gender[g].forEach((e, i) => keyed.push([(i + Math.random()) / by_gender[g].length, e]));
+        }
+        order = keyed.sort((a, b) => a[0] - b[0]).map(x => x[1]);
+    } else {
+        order = shuffle_array(emails);
+    }
+    // Reihum austeilen, damit jede Gruppe aus allen Teilen der Folge bekommt.
+    let groups = sizes.map(() => []);
+    let g = 0;
+    for (let e of order) {
+        while (groups[g].length >= sizes[g]) g = (g + 1) % sizes.length;
+        groups[g].push(e);
+        g = (g + 1) % sizes.length;
+    }
+    return groups;
+}
+
+function mix_groups() {
+    let emails = present_emails();
+    let s = settings();
+    let pairs = constraint_pairs(emails);
+    let best = null, best_cost = Infinity;
+    for (let attempt = 0; attempt < 8; attempt++) {
+        let groups = initial_groups(emails, s);
+        let sizes = groups.map(g => g.length);
+        let cost_of = make_cost(emails, sizes, s, pairs);
+        let group_of = {};
+        groups.forEach((g, i) => g.forEach(e => { group_of[e] = i; }));
+        let cost = cost_of(group_of);
+        // Tauschen nur, solange etwas zu verbessern ist; Gruppengrößen
+        // bleiben dabei erhalten.
+        for (let iter = 0; iter < 3000 && cost > 0 && groups.length > 1; iter++) {
+            let a = emails[Math.floor(Math.random() * emails.length)];
+            let b = emails[Math.floor(Math.random() * emails.length)];
+            if (group_of[a] === group_of[b]) continue;
+            [group_of[a], group_of[b]] = [group_of[b], group_of[a]];
+            let c = cost_of(group_of);
+            if (c <= cost) cost = c;
+            else [group_of[a], group_of[b]] = [group_of[b], group_of[a]];
+        }
+        if (cost < best_cost) {
+            best_cost = cost;
+            best = groups.map(() => []);
+            for (let e of emails) best[group_of[e]].push(e);
+        }
+        if (best_cost === 0) break;
+    }
+    // Innerhalb einer Gruppe alphabetisch - leichter zu finden.
+    best = (best || []).map(g => g.sort((x, y) => display_name(x).localeCompare(display_name(y), 'de')));
+    return {groups: best, pairs: pairs, settings: s};
+}
+
+function group_cards(groups) {
+    return groups.map((g, i) => {
+        let card = $('<div>').addClass('zg-group');
+        card.append($('<h5>').text(`Gruppe ${i + 1}`));
+        for (let e of g) card.append($('<div>').addClass('zg-name').text(display_name(e)));
+        return card;
+    });
+}
+
+function render_groups(groups) {
+    $('#zg_groups').empty().append(group_cards(groups));
+    $('#zg_bu_beamer').toggle(groups.length > 0);
+    if ($('#zg_beamer').is(':visible')) render_beamer();
+}
+
+// Hinweise nur in der normalen Ansicht, nie im Beamer.
+function render_warnings(result) {
+    let el = $('#zg_warnings').empty();
+    if (!result || !result.settings.distribution) return;
+    let group_of = {};
+    result.groups.forEach((g, i) => g.forEach(e => { group_of[e] = i; }));
+    let bad_sep = result.pairs.separate.filter(([a, b]) => group_of[a] === group_of[b]).length;
+    let bad_forced = result.pairs.forced.filter(([a, b]) => group_of[a] !== group_of[b]).length;
+    if (bad_sep > 0) el.append($('<p>').addClass('zg-warning').text(`Hinweis: ${bad_sep} Paar(e) von derselben Verteilungsliste sind in einer Gruppe – mit diesen Einstellungen ging es nicht anders.`));
+    if (bad_forced > 0) el.append($('<p>').addClass('zg-warning').text(`Hinweis: ${bad_forced} Zwangspaar(e) sind getrennt – mit diesen Einstellungen ging es nicht anders.`));
+}
+
+// Kurzes Durchwirbeln der Namen, dann das Ergebnis.
+function animate_and_show(result) {
+    let present = present_emails();
+    let targets = $('#zg_beamer').is(':visible') ? ['#zg_groups', '#zg_beamer_groups'] : ['#zg_groups'];
+    for (let t of targets) $(t).empty().append(group_cards(result.groups).map(c => c.addClass('shuffling')));
+    let started = Date.now();
+    let timer = setInterval(function () {
+        $('.zg-group.shuffling .zg-name').each(function () {
+            $(this).text(display_name(present[Math.floor(Math.random() * present.length)]));
+        });
+        if (Date.now() - started > 900) {
+            clearInterval(timer);
+            render_groups(result.groups);
+        }
+    }, 70);
+}
+
+function do_mix() {
+    let result = mix_groups();
+    current_groups = result.groups;
+    animate_and_show(result);
+    render_warnings(result);
+    $('#zg_result_info').text(`Gemischt am ${new Date().toLocaleString('de-DE')}. Nur Sie sehen diese Gruppen, wenn Sie die Seite wieder öffnen.`);
+    api_call('/api/zg_save_last', {klasse: klasse, groups: JSON.stringify(result.groups), settings: JSON.stringify(result.settings)}, function (data) {
+        if (data.success === false) $('#zg_result_info').text('Die Gruppen konnten nicht gespeichert werden.');
+    });
+}
+
+// Spalten und Schriftgröße so wählen, dass alle Gruppen auf eine
+// Beamer-Seite passen.
+function render_beamer() {
+    let n = Math.max(1, current_groups.length);
+    let max_members = Math.max(1, ...current_groups.map(g => g.length));
+    let ratio = window.innerWidth / Math.max(1, window.innerHeight);
+    let cols = Math.max(1, Math.min(n, Math.round(Math.sqrt(n * ratio * 1.2))));
+    let rows = Math.ceil(n / cols);
+    // Je Karte: Überschrift + Namen à ca. 1,5 Zeilenhöhen, dazu Innenabstand.
+    let font = Math.min(5, 88 / (rows * ((max_members + 1) * 1.5 + 1.4)));
+    // Der längste Name soll in eine Zeile seiner Spalte passen (ca. 0,6 em je Zeichen).
+    let longest = Math.max(8, ...current_groups.flat().map(e => display_name(e).length));
+    let col_px = window.innerWidth * 0.94 / cols - 40;
+    let font_by_width = (col_px / (longest * 0.6)) / window.innerHeight * 100;
+    font = Math.min(font, font_by_width);
+    $('#zg_beamer').css('--zg-cols', cols).css('--zg-font', `${font.toFixed(2)}vh`);
+    $('#zg_beamer_groups').empty().append(group_cards(current_groups));
+}
+
+function open_beamer() {
+    $('#zg_beamer').show();
+    render_beamer();
+    let el = document.getElementById('zg_beamer');
+    if (el.requestFullscreen) el.requestFullscreen().catch(function () {});
+}
+
+function close_beamer() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
+    $('#zg_beamer').hide();
+}
+
+function apply_settings(s) {
+    if (!s) return;
+    if (s.size) $('#zg_size').val(s.size);
+    if (s.rest) $(`input[name=zg_rest][value=${s.rest}]`).prop('checked', true);
+    if (s.gender) $(`input[name=zg_gender][value=${s.gender}]`).prop('checked', true);
+    if (is_klassenleitung && typeof s.distribution === 'boolean') $('#zg_distribution').prop('checked', s.distribution);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    klasse = decodeURIComponent(window.location.pathname.replace('/zufallsgruppen/', '').split('/')[0]);
+    $('#zg_label').text(klasse);
+    $('#zg_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
+    api_call('/api/zg_get_state', {klasse: klasse}, function (data) {
+        if (data.success === false || !data.sus) {
+            $('#zg_preview').text('Die Klasse konnte nicht geladen werden. Bitte die Seite neu laden.');
+            return;
+        }
+        sus = data.sus;
+        // Erst jetzt kennt die Seite die Klasse; vorher gäbe Mischen leere Gruppen.
+        $('#zg_bu_mix').prop('disabled', false);
+        is_klassenleitung = !!data.is_klassenleitung;
+        distribution = data.distribution;
+        if (is_klassenleitung) {
+            let n_lists = (distribution.lists || []).filter(l => l.length >= 2).length;
+            let n_forced = (distribution.forced_pairs || []).length;
+            $('#zg_distribution_row').show();
+            $('#zg_distribution').prop('checked', n_lists + n_forced > 0);
+            $('#zg_distribution_info').text(n_lists + n_forced > 0
+                ? `Wer im Sitzplanhelfer auf derselben Verteilungsliste steht (${n_lists} Liste${n_lists === 1 ? '' : 'n'}), kommt nicht in dieselbe Gruppe; Zwangspaare (${n_forced}) bleiben zusammen. Nur für die Klassenleitung sichtbar, im Beamer erscheint davon nichts.`
+                : 'Im Sitzplanhelfer sind keine Verteilungslisten oder Zwangspaare angelegt. Nur für die Klassenleitung sichtbar.');
+        }
+        if (data.last) {
+            apply_settings(data.last.settings);
+            let known = new Set(sus.map(s => s.email));
+            current_groups = (data.last.groups || []).map(g => g.filter(e => known.has(e))).filter(g => g.length > 0);
+            if (current_groups.length > 0) {
+                render_groups(current_groups);
+                $('#zg_result_info').text(`Zuletzt gemischt am ${new Date(data.last.ts * 1000).toLocaleString('de-DE')}. Nur Sie sehen diese Gruppen.`);
+            }
+        }
+        render_presence();
+    });
+    $('#zg_size').on('input change', update_preview);
+    $('input[name=zg_rest], input[name=zg_gender]').on('change', update_preview);
+    $('#zg_all_present').click(function (e) {
+        e.preventDefault();
+        absent.clear();
+        render_presence();
+    });
+    $('#zg_bu_mix').click(do_mix);
+    $('#zg_bu_beamer').click(open_beamer);
+    $('#zg_bu_beamer_mix').click(do_mix);
+    $('#zg_bu_beamer_close').click(close_beamer);
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape' && $('#zg_beamer').is(':visible')) close_beamer();
+    });
+    document.addEventListener('fullscreenchange', function () {
+        if (!document.fullscreenElement && $('#zg_beamer').is(':visible')) $('#zg_beamer').hide();
+    });
+    $(window).on('resize', function () {
+        if ($('#zg_beamer').is(':visible')) render_beamer();
+    });
+});
+</script>

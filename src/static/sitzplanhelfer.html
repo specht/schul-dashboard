@@ -48,27 +48,136 @@ table.sph-wishes td, table.sph-wishes th {
     cursor: pointer;
     color: #c62828;
 }
-#sph_seats, #sph_rule_seatmap {
+#sph_seats {
     position: relative;
     margin: 1em auto 2em auto;
     width: 100px;
     height: 100px;
 }
-#sph_seats .place, #sph_rule_seatmap .place {
+/* Breite Räume lassen sich auf schmalen Bildschirmen seitlich verschieben,
+   statt die Plätze so klein zu machen, dass Namen nicht mehr lesbar sind. */
+.sph-seat-scroll {
+    overflow-x: auto;
+}
+#sph_seats .place {
     position: absolute;
-    width: 5vh;
-    height: 5vh;
     box-shadow: 0 0 0.7vh rgba(0,0,0,0.5);
     background-color: #fff;
-    border-radius: 1vh;
+    border-radius: 8px;
     overflow: hidden;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
     font-size: 1.3vh;
     border: 3px solid transparent;
+    padding: 2px;
     transition: left 0.4s ease-out, top 0.4s ease-out;
+}
+/* Sitzkarte wie im Shuffler: Foto im Quadrat, darunter der ganze Name.
+   Nicht auf #sph_seats beschränkt, damit die gezogene Karte gleich aussieht. */
+.sph-card-photo {
+    flex: none;
+    border-radius: 12%;
+    background-color: #e4e9e5;
+    background-size: cover;
+    background-position: center;
+}
+.sph-card-name {
+    width: 100%;
+    margin-top: 3px;
+    line-height: 1.1;
+    font-weight: bold;
+    color: #222;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+.sph-card-name.sph-break-anywhere {
+    overflow-wrap: anywhere;
+}
+.sph-card-name span {
+    display: block;
+}
+/* „Im Raum verteilen“: jede Verteilungsliste in einer eigenen Farbe. */
+.sph-list-tag {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    min-width: 1.4em;
+    padding: 0 0.3em;
+    border-radius: 0.6em;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.4em;
+    text-align: center;
+    color: #fff;
+}
+.sph-area-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em 1.2em;
+}
+.sph-area-switch {
+    font-size: 0.75em;
+    font-weight: normal;
+}
+
+.sph-area-switch .custom-control-label {
+    cursor: pointer;
+}
+h5.sph-area-off {
+    color: #999;
+}
+.sph-list-key {
+    display: inline-block;
+    margin-right: 0.8em;
+    white-space: nowrap;
+}
+.sph-list-key .sph-list-tag {
+    position: static;
+    display: inline-block;
+    margin-right: 0.3em;
+}
+.sph-list-c0 { --sph-list: #2f6fb0; --sph-list-tint: rgba(47, 111, 176, 0.16); }
+.sph-list-c1 { --sph-list: #c2610c; --sph-list-tint: rgba(194, 97, 12, 0.16); }
+.sph-list-c2 { --sph-list: #7b4fb3; --sph-list-tint: rgba(123, 79, 179, 0.16); }
+.sph-list-c3 { --sph-list: #1f8a7a; --sph-list-tint: rgba(31, 138, 122, 0.16); }
+.sph-list-c4 { --sph-list: #b8417a; --sph-list-tint: rgba(184, 65, 122, 0.16); }
+.sph-list-c5 { --sph-list: #6b7f1a; --sph-list-tint: rgba(107, 127, 26, 0.18); }
+.sph-list-tag { background-color: var(--sph-list); }
+#sph_seats .place.sph-listed:not(.unresolved) {
+    background-color: var(--sph-list-tint);
+    border-color: var(--sph-list);
+}
+/* Widerspruch in den Vorgaben selbst (z. B. Zwangspaar auf derselben
+   Verteilungsliste): knallrot, vor allen anderen Farben. */
+#sph_seats .place.sph-conflict,
+#sph_seats .place.sph-conflict.sph-listed {
+    border-color: #ff0000;
+    background-color: #ffd0d0;
+    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.55);
+}
+#sph_seats .place.sph-conflict::before {
+    content: '⚠';
+    position: absolute;
+    top: 0;
+    left: 3px;
+    color: #ff0000;
+    font-size: 14px;
+    font-weight: bold;
+}
+.sph-conflict-list {
+    color: #e00000;
+    font-weight: bold;
+}
+#sph_seats .place.crown::after {
+    content: '👑';
+    position: absolute;
+    top: 0;
+    right: 2px;
+    font-size: 13px;
 }
 #sph_seats .place.satisfied {
     border-color: #2e7d32;
@@ -93,7 +202,7 @@ table.sph-wishes td, table.sph-wishes th {
 #sph_seats .place.empty {
     background-color: transparent;
     box-shadow: none;
-    border: 2px dashed #ccc;
+    border: 3px dashed #ccc;
 }
 #sph_seats.editable .place:not(.empty) {
     cursor: grab;
@@ -113,47 +222,42 @@ table.sph-wishes td, table.sph-wishes th {
     z-index: 1000;
     pointer-events: none;
     background-color: #fff;
-    border: 2px solid #2f7fd6;
-    border-radius: 1vh;
+    border: 3px solid #2f7fd6;
+    border-radius: 8px;
     box-shadow: 0 0.3em 0.8em rgba(0,0,0,0.35);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
     padding: 2px;
-    word-break: break-word;
-}
-#sph_seats .place .sph-name, #sph_rule_seatmap .place .sph-name {
-    padding: 2px;
-    word-break: break-word;
-}
-#sph_rule_seatmap {
-    margin-top: 0.5em;
-}
-#sph_rule_seatmap .place {
-    cursor: pointer;
-    background-color: #f4f4f4;
-    color: #bbb;
-    font-size: 1.6vh;
-}
-#sph_rule_seatmap .place::before {
-    content: '+';
-}
-#sph_rule_seatmap .place:hover {
-    border-color: #999;
-    background-color: #ececec;
-}
-#sph_rule_seatmap .place.taken {
-    background-color: #dceeff;
-    border-color: #2f7fd6;
-    color: inherit;
-}
-#sph_rule_seatmap .place.taken::before {
-    content: '';
+    overflow: hidden;
 }
 .sph-legend {
     font-size: 0.9em;
     color: #666;
+}
+.sph-group {
+    border: 1px solid #ddd;
+    border-radius: 0.4em;
+    padding: 0.4em 0.6em;
+    margin-bottom: 0.5em;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+.sph-group .sph-group-title {
+    font-weight: bold;
+    margin-right: 0.5em;
+}
+.sph-group select {
+    display: inline-block;
+    width: auto;
+    max-width: 16em;
+    margin: 0.2em;
+}
+.sph-group .sph-group-hint {
+    font-size: 0.9em;
+    color: #8a6d00;
+    margin-top: 0.2em;
 }
 .sph-tafel {
     display: block;
@@ -168,109 +272,428 @@ table.sph-wishes td, table.sph-wishes th {
     border-radius: 0.3em;
     box-shadow: 0 0.2em 0.4em rgba(0,0,0,0.3);
 }
+.sph-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    align-items: center;
+    margin: 0.8em 0;
+}
+.sph-save-row {
+    justify-content: flex-end;
+    margin-top: 1.5em;
+}
+.sph-room-bar {
+    padding: 0.6em 0.9em;
+    margin-bottom: 1em;
+    border: 1px solid #d6dbd7;
+    border-radius: 0.5em;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+.sph-room-line {
+    margin-bottom: 0.5em;
+}
+.sph-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+}
+.sph-room-bar #sph_shuffler_box h6 {
+    margin-top: 0.8em;
+    font-weight: bold;
+}
+.sph-room-bar #sph_shuffler_box,
+.sph-room-bar #sph_new_choice {
+    margin: 1em 0 0.2em 0;
+}
+.sph-room-warn .sph-room-line {
+    font-weight: bold;
+}
+.sph-room-bar.sph-room-warn {
+    border-color: #e0b84a;
+    background-color: #fff6dc;
+}
+body.dark .sph-room-bar {
+    border-color: #444b46;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+body.dark .sph-room-bar.sph-room-warn {
+    border-color: #8a6d1e;
+    background-color: #3a3014;
+}
+.sph-status:empty {
+    display: none;
+}
+.sph-status {
+    color: #2e7d32;
+    font-weight: bold;
+}
+.sph-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14em, 1fr));
+    gap: 0.8em;
+    margin-bottom: 0.5em;
+}
+.sph-choice {
+    border: 1px solid #d6dbd7;
+    border-radius: 0.5em;
+    padding: 0.8em 1em;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+.sph-choice h5 {
+    font-weight: bold;
+}
+.sph-days {
+    width: 5em;
+    display: inline-block;
+}
+.sph-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3em;
+}
+.sph-steps span {
+    padding: 0.15em 0.7em;
+    border-radius: 0.3em;
+    background-color: #eceeec;
+    color: #666;
+    font-size: 0.9em;
+}
+.sph-steps span.on {
+    background-color: #2f5d46;
+    color: #fff;
+}
+.sph-steps span.done {
+    color: #2e7d32;
+}
+details.sph-panel {
+    border: 1px solid #d6dbd7;
+    border-radius: 0.5em;
+    padding: 0.4em 1em;
+}
+details.sph-panel > summary {
+    cursor: pointer;
+    list-style: none;
+}
+details.sph-panel > summary::-webkit-details-marker {
+    display: none;
+}
+details.sph-panel > summary h4 {
+    display: inline-block;
+    margin: 0.3em 0;
+}
+details.sph-panel > summary::before {
+    content: '▸';
+    display: inline-block;
+    width: 1.1em;
+    color: #888;
+}
+details.sph-panel[open] > summary::before {
+    content: '▾';
+}
+details.sph-panel h5 {
+    margin-top: 1em;
+    font-weight: bold;
+}
+.sph-count {
+    font-size: 0.75em;
+    color: #777;
+    font-weight: normal;
+}
+details.sph-help {
+    font-size: 0.9em;
+    margin-bottom: 0.6em;
+}
+details.sph-help > summary {
+    cursor: pointer;
+    color: #2f6fb0;
+}
+.sph-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: 0.35em;
+    margin-bottom: 0.5em;
+    min-height: 2em;
+}
+.sph-chip {
+    border-radius: 1em;
+}
+/* Schwebt am unteren Rand, solange jemand ausgewählt ist: So verschiebt sie
+   nichts auf der Seite, und auf dem Handy ist sie immer im Blick. */
+.sph-selection {
+    position: fixed;
+    left: 50%;
+    bottom: 3.2em;
+    transform: translateX(-50%);
+    z-index: 1040;
+    width: max-content;
+    max-width: calc(100% - 2em);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    align-items: center;
+    padding: 0.5em 0.9em;
+    border-radius: 0.5em;
+    border: 1px solid #b9d3f0;
+    background-color: #e6f0fb;
+    box-shadow: 0 0.2em 0.8em rgba(0, 0, 0, 0.25);
+}
+#sph_seats .place.selected {
+    border-color: #2f7fd6;
+    box-shadow: 0 0 0 3px rgba(47, 127, 214, 0.35);
+}
+#sph_seats .place.pinned::before {
+    content: '📌';
+    position: absolute;
+    top: 0;
+    left: 2px;
+    font-size: 12px;
+}
+#sph_seats.editable .place.empty {
+    cursor: pointer;
+}
+body.dark .sph-container {
+    background-color: rgba(30, 33, 31, 0.9);
+    color: #e4e8e5;
+}
+body.dark .sph-legend, body.dark .sph-count {
+    color: #aab3ad;
+}
+body.dark .sph-choice, body.dark details.sph-panel {
+    border-color: #444b46;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+body.dark .sph-steps span {
+    background-color: #353a37;
+    color: #bbb;
+}
+body.dark .sph-steps span.on {
+    background-color: #5fa37f;
+    color: #10140f;
+}
+body.dark .sph-selection {
+    background-color: #20354d;
+}
+body.dark #sph_seats .place {
+    background-color: #2a2f2c;
+}
+body.dark #sph_seats .place.empty {
+    background-color: transparent;
+    border-color: #555;
+}
+body.dark #sph_seats .place.satisfied {
+    background-color: #1f3a24;
+}
+body.dark #sph_seats .place.unresolved {
+    background-color: #45211f;
+}
+body.dark .sph-card-name {
+    color: #eee;
+}
+body.dark .sph-pair-list span.pair-chip, body.dark .sph-rule-list span.rule-chip {
+    background: #3a3f3c;
+}
+body.dark .sph-group {
+    border-color: #444b46;
+    background-color: rgba(255, 255, 255, 0.04);
+}
 </style>
 <div class="sph-container">
-    <h1>Sitzplanhelfer <span id='sph_label'></span></h1>
-    <p class="text-muted">Wunschbasierte Sitzordnung – neben dem <a href="#" id="sph_link_shuffler">Sitzplan-Shuffler</a>.</p>
+    <h1>Sitzplan <span id='sph_label'></span></h1>
+    <div class='api_messages'></div>
     <p><a class="btn btn-outline-secondary" id="sph_back_link" href="#"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></p>
+    <p id="sph_status" class="sph-status" role="status"></p>
 
-    <div class="sph-section" id="sph_cycle_controls">
-        <span id="sph_duration_group" style="display: inline-block;">
-            <label for="sph_duration_days" style="margin-right: 0.3em;">Umfragedauer:</label>
-            <input type="number" id="sph_duration_days" class="form-control" style="width: 5em; display: inline-block;" min="1" max="60" value="4">
-            <span style="margin-right: 0.5em;">Tage</span>
-        </span>
-        <span id="sph_carry_over_group" style="display: none; margin-right: 0.5em;">
-            <label style="font-weight: normal;">
-                <input type="checkbox" id="sph_carry_over" checked>
-                Zwangspaare/Verbote/feste Plätze vom letzten Sitzplan übernehmen
-            </label>
-        </span>
-        <button class="btn btn-success" id="sph_bu_start_cycle">Neue Wunschrunde starten</button>
-        <button class="btn btn-outline-secondary" id="sph_bu_close_wishes" style="display: none;">Wunschrunde schließen</button>
-        <button class="btn btn-outline-danger" id="sph_bu_discard_cycle" style="display: none;">Wunschrunde verwerfen (neu beginnen)</button>
-        <span id="sph_cycle_info" class="sph-legend"></span>
-    </div>
-
-    <div class="sph-section" id="sph_priority_section" style="display: none;">
-        <h4>👑 Bevorzugt in dieser Runde</h4>
-        <p class="sph-legend" id="sph_priority_info"></p>
-        <p id="sph_priority_names" style="margin-bottom: 0;"></p>
-    </div>
-
-    <div class="sph-section" id="sph_wishes_section" style="display: none;">
-        <h4>Wünsche der Schüler:innen</h4>
-        <p class="sph-legend">Alle Wünsche fließen automatisch in die Planung ein. Mit dem Schalter neben einem Wunsch kannst du ihn <strong>deaktivieren</strong> – er bleibt gespeichert, zählt aber für die Planung nicht mehr; ein weiterer Klick aktiviert ihn wieder. Ist schon ein Plan zu sehen, zeigt er die Auswirkung sofort; „Neu würfeln“ sucht dann einen Plan, der die geänderten Wünsche berücksichtigt.
-        🤝 = wechselseitiger Wunsch (beide wollen sich gegenseitig) – diese werden bei der Planung bevorzugt erfüllt.
-        🚫 = die gewünschte Person möchte auf keinen Fall neben dieser Person sitzen – der Wunsch zählt nicht, solange ihr „Nicht neben“ aktiv ist.
-        👑 = bevorzugt: hatte im letzten Sitzplan keinen ihrer Wunschpartner als Tischnachbarn und bekommt diesmal sicher einen, sofern kein „Nicht neben“ und keine Vorgabe der Lehrkraft dagegen spricht.
-        Die bis zu drei Wunschpartner sind gleichberechtigt (keine Rangfolge) – da an jedem Tisch nur 2 Personen sitzen, reicht es für „erfüllt", wenn <strong>einer</strong> davon tatsächlich der Tischnachbar wird.</p>
-        <div class="table-responsive">
-        <table class="table table-sm sph-wishes">
-            <thead>
-                <tr><th>Name</th><th>Wunschpartner</th><th></th><th>Wunschpartner</th><th></th><th>Wunschpartner</th><th></th><th>Nicht neben</th><th></th></tr>
-            </thead>
-            <tbody id="sph_wishes_body"></tbody>
-        </table>
+    <!-- Ganz oben, in jeder Ansicht: die Tische im Raum (der erste Schritt,
+         auch wenn man ihn nicht jedes Mal braucht) und der Shuffler. -->
+    <div id="sph_room_bar" class="sph-room-bar" style="display: none;">
+        <div class="sph-room-line"><i class="fa fa-th"></i>&nbsp;&nbsp;<span id="sph_room_info"></span></div>
+        <div class="sph-tools">
+            <a class="btn btn-outline-primary" id="sph_link_editor" href="#"><i class="fa fa-th"></i>&nbsp;&nbsp;Tische im Raum</a>
+            <button class="btn btn-outline-primary" id="sph_link_shuffler" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts. Vorher zeigt die Seite seine Regeln."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</button>
+            <button class="btn btn-outline-primary" id="sph_bu_start_manual" title="Ohne Wünsche und ohne Würfeln: Sie setzen jede Person selbst auf ihren Platz."><i class="fa fa-hand-pointer-o"></i>&nbsp;&nbsp;Von Hand verteilen</button>
+            <button class="btn btn-outline-primary" id="sph_bu_start_spread" title="Ohne Umfrage und ohne Wünsche: Der Plan wird sofort nach Ihren Vorgaben im Raum verteilt. Danach können Sie von Hand umsetzen."><i class="fa fa-th-large"></i>&nbsp;&nbsp;Im Raum verteilen</button>
+            <button class="btn btn-outline-primary" id="sph_bu_wishes" title="Umfrage an die Klasse: Die SuS geben bis zu drei Wunschpartner an, danach erzeugen Sie den Plan."><i class="fa fa-comments"></i>&nbsp;&nbsp;Wunschrunde</button>
+        </div>
+        <div id="sph_new_choice" class="sph-section" style="display: none;">
+            <div class="sph-choice">
+                <h5>Wunschrunde: Umfrage an die Klasse</h5>
+                <p class="sph-legend">Die SuS geben im Dashboard bis zu drei Wunschpartner an. Danach erzeugen Sie den Plan; Ihre Vorgaben (unten) gelten dabei weiter.</p>
+                <p><label for="sph_duration_days">Dauer der Umfrage:</label>
+                    <input type="number" id="sph_duration_days" class="form-control sph-days" min="1" max="60" value="4"> Tage</p>
+                <button class="btn btn-primary" id="sph_bu_start_cycle">Wunschrunde starten</button>
+            </div>
+        </div>
+        <!-- Zwischenseite vor dem Shuffler: seine eigenen Regeln (rules/bff),
+             getrennt von den Vorgaben der übrigen Werkzeuge -->
+        <div id="sph_shuffler_box" class="sph-section" style="display: none;">
+            <div class="sph-choice">
+                <h5>Regeln für den Shuffler</h5>
+                <p class="sph-legend">Diese Regeln gelten nur für den Shuffler, der vor der Klasse zufällig auslost und nichts speichert. Ihre Vorgaben für die anderen Werkzeuge bleiben davon unberührt.</p>
+                <h6>Bereiche</h6>
+                <div class="form-inline">
+                    <select class="form-control" id="sph_sh_rule_sus"></select>
+                    <select class="form-control" id="sph_sh_rule_area" style="margin-left: 0.5em;">
+                        <option value="front">vorne (erste zwei Reihen)</option>
+                        <option value="back">hinten</option>
+                        <option value="left">links</option>
+                        <option value="right">rechts</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary sph-sh-edit" id="sph_sh_bu_add_rule" style="margin-left: 0.5em;">Bereich festlegen</button>
+                </div>
+                <div class="sph-rule-list" id="sph_sh_rules_list"><span class="none-hint">keine</span></div>
+                <h6>Paare</h6>
+                <div class="form-inline">
+                    <select class="form-control" id="sph_sh_pair_a"></select>
+                    <span>&nbsp;und&nbsp;</span>
+                    <select class="form-control" id="sph_sh_pair_b"></select>
+                    <select class="form-control" id="sph_sh_pair_freq" style="margin-left: 0.5em;">
+                        <option value="1">jedes Mal</option>
+                        <option value="2">jedes 2. Mal</option>
+                        <option value="3">jedes 3. Mal</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-success sph-sh-edit" id="sph_sh_bu_add_pair" style="margin-left: 0.5em;">sitzen zusammen</button>
+                </div>
+                <div class="sph-pair-list" id="sph_sh_pairs_list"><span class="none-hint">keine</span></div>
+                <p style="margin-top: 1em; margin-bottom: 0;"><a class="btn btn-primary" id="sph_sh_start" href="#"><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler starten</a></p>
+            </div>
         </div>
     </div>
 
-    <div class="sph-section" id="sph_pairs_section">
-        <h4>Zwangspaare (Lehrkraft)</h4>
-        <div class="form-inline">
-            <select class="form-control" id="sph_pair_a"></select>
-            <span>&nbsp;und&nbsp;</span>
-            <select class="form-control" id="sph_pair_b"></select>
-            <button class="btn btn-sm btn-success" id="sph_bu_add_forced" style="margin-left: 0.5em;">müssen zusammensitzen</button>
-            <button class="btn btn-sm btn-danger" id="sph_bu_add_forbidden" style="margin-left: 0.5em;">dürfen nicht zusammensitzen</button>
+    <!-- Startansicht: der gespeicherte Plan, wie ihn die Lehrkräfte der Klasse sehen -->
+    <div id="sph_view_start" style="display: none;">
+        <p id="sph_start_info" class="sph-legend"></p>
+        <div class="sph-actions">
+            <button class="btn btn-outline-primary" id="sph_bu_edit_saved">Plan ändern</button>
+            <a class="btn btn-outline-secondary" id="sph_link_show" href="#" target="_blank" title="Der Plan ohne Wünsche und Vorgaben, zum Zeigen vor der Klasse (z. B. am Beamer)."><i class="fa fa-desktop"></i>&nbsp;&nbsp;Für Schüler anzeigen</a>
+            <a class="btn btn-outline-secondary" id="sph_link_print" href="#" target="_blank"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</a>
         </div>
-        <div class="sph-pair-list" id="sph_forced_list"><strong>Muss zusammen:</strong> <span class="none-hint">keine</span></div>
-        <div class="sph-pair-list" id="sph_forbidden_list"><strong>Darf nicht zusammen:</strong> <span class="none-hint">keine</span></div>
     </div>
 
-    <div class="sph-section" id="sph_rules_section">
-        <h4>Feste Plätze</h4>
-        <div class="form-inline">
-            <select class="form-control" id="sph_rule_sus"></select>
-            <select class="form-control" id="sph_rule_area" style="margin-left: 0.5em;">
-                <option value="front">vorne (erste zwei Reihen)</option>
-                <option value="back">hinten</option>
-                <option value="left">links</option>
-                <option value="right">rechts</option>
-                <option value="any">überall (keine Einschränkung mehr)</option>
-            </select>
-            <button class="btn btn-sm btn-primary" id="sph_bu_add_rule" style="margin-left: 0.5em;">grober Bereich festlegen</button>
+    <!-- Arbeitsansicht: neuer oder geänderter Plan, noch nicht gespeichert -->
+    <div id="sph_view_work" style="display: none;">
+        <div id="sph_steps" class="sph-steps"></div>
+        <p id="sph_cycle_info" class="sph-legend"></p>
+        <div class="sph-actions" id="sph_close_wishes_row">
+            <button class="btn btn-outline-secondary" id="sph_bu_close_wishes">Wunschrunde jetzt beenden</button>
         </div>
-        <div class="sph-rule-list" id="sph_rules_list"><span class="none-hint">keine festen Plätze</span></div>
-        <p class="sph-legend">Für einen <strong>genauen Platz</strong>: oben Person auswählen, dann unten auf der Karte auf einen freien Platz klicken. Nochmal klicken auf einen bereits vergebenen Platz entfernt die Vorgabe wieder.</p>
-        <span class="sph-tafel" style="margin-top: 0;">Tafel</span>
-        <div id="sph_rule_seatmap"></div>
+
+        <div class="sph-section" id="sph_priority_section" style="display: none;">
+            <h4>👑 Vorrang in dieser Runde</h4>
+            <p class="sph-legend" id="sph_priority_info"></p>
+            <p id="sph_priority_names" style="margin-bottom: 0;"></p>
+        </div>
+
+        <div class="sph-section" id="sph_wishes_section" style="display: none;">
+            <h4>Wünsche der Schülerinnen und Schüler</h4>
+            <p class="sph-legend">🤝 wechselseitig · 🚫 zählt nicht wegen „Nicht neben“ · 🔒 zählt nicht wegen gleicher Verteilungsliste · 👑 Vorrang</p>
+            <details class="sph-help">
+                <summary>Wie funktioniert das?</summary>
+                <p>Alle Wünsche fließen automatisch in die Planung ein. Mit dem Schalter neben einem Wunsch können Sie ihn deaktivieren: Er bleibt gespeichert, zählt aber nicht mehr. Ein weiterer Klick aktiviert ihn wieder. Ist schon ein Plan zu sehen, zeigt er die Auswirkung sofort; „Neu würfeln“ sucht dann einen passenden Plan.</p>
+                <p>Die bis zu drei Wunschpartner sind gleichberechtigt. Ein Wunsch gilt als erfüllt, wenn einer davon Tischnachbar wird. Wechselseitige Wünsche (🤝) werden bevorzugt erfüllt.</p>
+                <p>👑 Vorrang hat, wer im letzten Plan mit Wünschen keinen Wunschpartner als Tischnachbarn hatte. Diese SuS bekommen diesmal sicher einen, sofern kein „Nicht neben“ und keine Ihrer Vorgaben dagegen spricht.</p>
+            </details>
+            <div class="table-responsive">
+            <table class="table table-sm sph-wishes">
+                <thead>
+                    <tr><th>Name</th><th>Wunschpartner</th><th></th><th>Wunschpartner</th><th></th><th>Wunschpartner</th><th></th><th>Nicht neben</th><th></th></tr>
+                </thead>
+                <tbody id="sph_wishes_body"></tbody>
+            </table>
+            </div>
+        </div>
+
+        <details class="sph-section sph-panel" id="sph_vorgaben">
+            <summary><h4>Vorgaben <span id="sph_vorgaben_count" class="sph-count"></span></h4></summary>
+            <p class="sph-legend">Ihre Eingaben gelten für alle Werkzeuge, bis Sie sie ändern; Wünsche treten hinter ihnen zurück. Ein ausgeschalteter Bereich bleibt gespeichert und fließt nur in diesem Werkzeug nicht in den Plan ein.</p>
+
+
+            <h5 class="sph-area-head">Paare
+                <span class="sph-area-switch custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="sph_area_pairs" data-area="pairs">
+                    <label class="custom-control-label" for="sph_area_pairs">berücksichtigen</label>
+                </span>
+            </h5>
+            <div class="form-inline">
+                <select class="form-control" id="sph_pair_a"></select>
+                <span>&nbsp;und&nbsp;</span>
+                <select class="form-control" id="sph_pair_b"></select>
+                <button class="btn btn-sm btn-outline-success" id="sph_bu_add_forced" style="margin-left: 0.5em;">müssen zusammensitzen</button>
+                <button class="btn btn-sm btn-outline-danger" id="sph_bu_add_forbidden" style="margin-left: 0.5em;">dürfen nicht zusammensitzen</button>
+            </div>
+            <div class="sph-pair-list" id="sph_forced_list"><strong>Muss zusammen:</strong> <span class="none-hint">keine</span></div>
+            <div class="sph-pair-list" id="sph_forbidden_list"><strong>Darf nicht zusammen:</strong> <span class="none-hint">keine</span></div>
+
+            <h5 class="sph-area-head">Feste Plätze
+                <span class="sph-area-switch custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="sph_area_fixed" data-area="fixed">
+                    <label class="custom-control-label" for="sph_area_fixed">berücksichtigen</label>
+                </span>
+            </h5>
+            <div class="form-inline">
+                <select class="form-control" id="sph_rule_sus"></select>
+                <select class="form-control" id="sph_rule_area" style="margin-left: 0.5em;">
+                    <option value="front">vorne (erste zwei Reihen)</option>
+                    <option value="back">hinten</option>
+                    <option value="left">links</option>
+                    <option value="right">rechts</option>
+                    <option value="any">überall (keine Einschränkung mehr)</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary" id="sph_bu_add_rule" style="margin-left: 0.5em;">Bereich festlegen</button>
+            </div>
+            <div class="sph-rule-list" id="sph_rules_list"><span class="none-hint">keine festen Plätze</span></div>
+            <p class="sph-legend">Einen genauen Platz legen Sie im Plan fest: Person anklicken, dann „📌 Platz festhalten“. Feste Plätze sind im Plan mit 📌 markiert.</p>
+
+            <h5 class="sph-area-head">Verteilung im Raum
+                <span class="sph-area-switch custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="sph_area_spread" data-area="spread">
+                    <label class="custom-control-label" for="sph_area_spread">berücksichtigen</label>
+                </span>
+            </h5>
+            <p class="sph-legend">Wer auf derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch, nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt auch ganz ohne Wünsche, mit „Im Raum verteilen“ oben. Gibt es Wünsche, zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht vor. Die Listen sehen nur Sie.</p>
+            <div id="sph_groups_list"></div>
+            <button class="btn btn-sm btn-outline-primary" id="sph_bu_add_group"><i class="fa fa-plus"></i>&nbsp;&nbsp;Neue Liste</button>
+        </details>
+
+        <div id="sph_unplaced_box" style="display: none;">
+            <h5>Noch ohne Platz</h5>
+            <div id="sph_unplaced" class="sph-chips"></div>
+        </div>
+        <div class="sph-actions">
+            <button class="btn btn-outline-primary" id="sph_bu_generate"><i class="fa fa-random"></i>&nbsp;&nbsp;Plan würfeln</button>
+            <button class="btn btn-outline-secondary" id="sph_bu_undo"><i class="fa fa-undo"></i>&nbsp;&nbsp;Rückgängig</button>
+        </div>
+        <div id="sph_selection_bar" class="sph-selection" style="display: none;">
+            <span id="sph_selection_text"></span>
+            <button class="btn btn-sm btn-outline-primary" id="sph_bu_pin">📌 Platz festhalten</button>
+            <button class="btn btn-sm btn-outline-secondary" id="sph_bu_unplace">Vom Platz nehmen</button>
+            <button class="btn btn-sm btn-link" id="sph_bu_deselect">Auswahl aufheben</button>
+        </div>
     </div>
 
-    <div class="sph-section" id="sph_generate_section">
-        <button class="btn btn-lg btn-primary" id="sph_bu_generate">Sitzplan erzeugen</button>
-        <button class="btn btn-lg btn-outline-secondary" id="sph_bu_undo" style="display: none;"><i class="fa fa-undo"></i>&nbsp;&nbsp;Letzten Zug rückgängig</button>
-        <button class="btn btn-lg btn-success" id="sph_bu_save" style="display: none;">Sitzplan speichern</button>
-        <button class="btn btn-lg btn-primary" id="sph_bu_edit_saved" style="display: none;">Diesen Sitzplan bearbeiten</button>
-        <a class="btn btn-lg btn-outline-secondary" id="sph_link_public_view" href="#" target="_blank">Sitzplan für SuS anzeigen (ohne Wünsche)</a>
-        <a class="btn btn-lg btn-outline-secondary" id="sph_link_print" href="#" target="_blank"><i class="fa fa-print"></i>&nbsp;&nbsp;Sitzplan drucken</a>
-        <p id="sph_plan_info" class="sph-legend" style="margin-top: 0.8em; margin-bottom: 0;"></p>
-        <span id="sph_unresolved_summary" style="display: block; margin-top: 0.5em;"></span>
+    <div id="sph_plan_area">
+        <p id="sph_plan_info" class="sph-legend"></p>
+        <span class="sph-tafel">Tafel</span>
+        <div class="sph-seat-scroll"><div id="sph_seats"></div></div>
+        <div id="sph_unresolved_summary"></div>
     </div>
 
-    <span class="sph-tafel">Tafel</span>
-    <div id="sph_seats"></div>
+    <div class="sph-actions sph-save-row" id="sph_save_row" style="display: none;">
+        <button class="btn btn-outline-danger" id="sph_bu_discard_cycle">Verwerfen</button>
+        <button class="btn btn-success" id="sph_bu_save"><i class="fa fa-check"></i>&nbsp;&nbsp;Speichern</button>
+    </div>
 
-    <div class="sph-section" id="sph_history_section">
-        <h4>Gespeicherte Sitzpläne</h4>
-        <p class="sph-legend">Alle bisher gespeicherten Sitzpläne für diese Klasse/diesen Raum, neueste zuerst. Der oberste ist der, den SuS aktuell unter „Sitzplan anzeigen" sehen, wenn kein bestimmter Plan verlinkt wird. Ältere Pläne bleiben einzeln abrufbar; versehentlich gespeicherte können gelöscht werden.</p>
+    <details class="sph-section sph-panel" id="sph_history_section">
+        <summary><h4>Frühere Sitzpläne <span id="sph_history_count" class="sph-count"></span></h4></summary>
         <div class="table-responsive">
         <table class="table table-sm">
-            <thead><tr><th>Gespeichert am</th><th>Zusammenfassung</th><th></th><th></th><th></th></tr></thead>
-            <tbody id="sph_history_body"><tr><td colspan="5" class="none-hint">Noch kein Sitzplan gespeichert.</td></tr></tbody>
+            <thead><tr><th>Gespeichert am</th><th>Zusammenfassung</th><th></th><th></th></tr></thead>
+            <tbody id="sph_history_body"><tr><td colspan="4" class="none-hint">Noch kein Sitzplan gespeichert.</td></tr></tbody>
         </table>
         </div>
-    </div>
+    </details>
 </div>
 
 <script>
@@ -284,6 +707,8 @@ var wishes = {};
 var forced_pairs = [];
 var forbidden_pairs = [];
 var fixed_rules = [];
+// Verteilungslisten der Klasse (Listen von E-Mails), unabhängig von der Wunschrunde.
+var seating_groups = [];
 var last_seats = {};
 // Wer hatte letzte Runde einen aktiven (nicht abgelehnten) Wunsch, der NICHT
 // erfüllt wurde - nicht weil die Lehrkraft ihn abgelehnt hat, sondern weil
@@ -312,6 +737,9 @@ var manual_changes = false;
 var move_history = [];
 // Zuletzt gespeicherter Plan - wird angezeigt, solange keine Runde offen ist.
 var last_cycle = null;
+// Darf die Klassenleitung hier die Tische ändern (eigener Klassenraum, keine
+// halben Positionen)? Dann gibt es den Link „Tische im Raum ändern“.
+var sph_editor_allowed = #{(sitzplan_editor_rooms(sitzplan_path_params[0]).include?(sitzplan_path_params[1]) && !SitzplanDaten.half_positions?(SitzplanDaten.room(sitzplan_path_params[1]))).to_json};
 
 // Bestuhlung aller Räume, geteilt mit dem Sitzplan-Shuffler (siehe sitzplan_daten.rb).
 // Fehlt der Raum, erscheint unten ein erklärender Hinweis.
@@ -332,6 +760,70 @@ function esc(s) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// Pixel pro Rasterfeld für Plan und Sitzkarte. Nicht kleiner als 64, sonst
+// passen Foto und Name nicht mehr auf den Platz - auf schmalen Bildschirmen
+// lässt sich der Raum dann seitlich verschieben (.sph-seat-scroll).
+// Einmal je Plan berechnet (und bei Größenänderung des Fensters neu), damit
+// die Plätze beim Setzen nicht ihre Größe ändern, etwa wenn die Seite kürzer
+// wird und dabei der Scrollbalken verschwindet.
+var fixed_seat_scale = null;
+function seat_scale(w) {
+    if (fixed_seat_scale === null) {
+        let container_width = Math.min($('.sph-container').width() || 900, 900);
+        fixed_seat_scale = Math.max(64, Math.min(90, container_width / w));
+    }
+    return fixed_seat_scale;
+}
+
+// Graue Figur, solange das Foto lädt oder wenn es keins gibt.
+const SPH_SILHOUETTE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><circle cx='10' cy='7.6' r='4' fill='%23a3aea7'/><ellipse cx='10' cy='19.5' rx='7.5' ry='6.5' fill='%23a3aea7'/></svg>";
+
+// Füllt einen Platz mit Foto (wie im Shuffler) und dem ganzen Namen darunter,
+// Vorname und Nachname je in einer Zeile. size = Kantenlänge des Platzes.
+function fill_student_card(div, email, size) {
+    let s = sus.find(x => x.email === email) || {};
+    let photo_size = Math.round(size * 0.42);
+    let photo = $('<div>').addClass('sph-card-photo').css({width: `${photo_size}px`, height: `${photo_size}px`});
+    let images = [`url("${SPH_SILHOUETTE}")`];
+    if (s.nc_login) images.unshift(`url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(s.nc_login)}/128)`);
+    photo.css('background-image', images.join(', '));
+    let name = $('<div>').addClass('sph-card-name')
+        .css('font-size', `${Math.max(8, Math.min(14, size * 0.155))}px`);
+    if (s.first_name || s.last_name) {
+        name.append($('<span>').text(s.first_name || ''))
+            .append(document.createTextNode(' '))
+            .append($('<span>').text(s.last_name || ''));
+    } else {
+        name.text(display_name(email));
+    }
+    div.append(photo).append(name);
+}
+
+// Namen nie abschneiden: Passt einer nicht auf seinen Platz, wird erst die
+// Schrift kleiner, dann das Foto, und erst ganz zuletzt bricht ein Wort um.
+// Braucht das fertige Layout, also nach dem Einfügen in die Seite aufrufen.
+function fit_card_names(container) {
+    container.find('.place').each(function () {
+        let card = this;
+        let name = card.querySelector('.sph-card-name');
+        if (!name) return;
+        let photo = card.querySelector('.sph-card-photo');
+        let overflows = () => name.scrollWidth > name.clientWidth + 1 || card.scrollHeight > card.clientHeight + 1;
+        let fs = parseFloat(name.style.fontSize);
+        while (overflows() && fs > 7) {
+            fs -= 0.5;
+            name.style.fontSize = `${fs}px`;
+        }
+        let ps = photo ? parseFloat(photo.style.width) : 0;
+        let min_ps = card.clientWidth * 0.3;
+        while (overflows() && photo && ps > min_ps) {
+            ps -= 2;
+            photo.style.width = photo.style.height = `${ps}px`;
+        }
+        if (overflows()) name.classList.add('sph-break-anywhere');
+    });
+}
+
 function room_width_height() {
     let w = 1, h = 1;
     for (let s of seats) {
@@ -346,7 +838,7 @@ function pair_exists(list, a, b) {
 }
 
 // Sind zwei Personen bereits über exakte feste Plätze (siehe
-// render_rule_seatmap) zu Tischnachbarn gemacht worden? Für die
+// toggle_pin) zu Tischnachbarn gemacht worden? Für die
 // Widerspruchsprüfung gegen Verbotspaare, in beide Richtungen nutzbar.
 function pinned_as_neighbors(email_a, email_b) {
     let ra = fixed_rules.find(r => r[0] === email_a && rule_is_exact_seat(r));
@@ -412,13 +904,17 @@ function render_pairs() {
     }
     render_list('#sph_forced_list', forced_pairs, 'forced');
     render_list('#sph_forbidden_list', forbidden_pairs, 'forbidden');
+    update_vorgaben_count();
+    // Zwangspaare heben Paare auf Verteilungslisten auf - Hinweise dort aktuell halten.
+    render_groups();
     $('.bu-remove-pair').off('click').on('click', function (e) {
         let a = $(this).data('a'), b = $(this).data('b'), kind = $(this).data('kind');
-        api_call('/api/sph_remove_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: kind}, function (data) {
+        api_call('/api/sph_remove_pair', {...rules_target(), email_a: a, email_b: b, kind: kind}, function (data) {
             if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
             forced_pairs = kind === 'forced' ? data.pairs : forced_pairs;
             forbidden_pairs = kind === 'forbidden' ? data.pairs : forbidden_pairs;
             render_pairs();
+            rerender_open_plan();
         });
     });
 }
@@ -445,6 +941,7 @@ function describe_rule(r) {
 }
 
 function render_rules() {
+    update_vorgaben_count();
     if (fixed_rules.length === 0) {
         $('#sph_rules_list').html('<span class="none-hint">keine festen Plätze</span>');
         return;
@@ -456,68 +953,178 @@ function render_rules() {
     $('#sph_rules_list').html(html);
     $('.bu-remove-rule').off('click').on('click', function (e) {
         let email = $(this).data('email');
-        api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: email}, function (data) {
+        api_call('/api/sph_remove_fixed_rule', {...rules_target(), email: email}, function (data) {
             if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
             fixed_rules = data.rules;
             render_rules();
-            render_rule_seatmap();
+            rerender_open_plan();
         });
     });
 }
 
-// Klickbare Karte mit allen Plätzen des Raums (gleiches Koordinatensystem wie
-// Shuffler und generierter Plan, seats_dict[raum]) - Klick auf einen freien
-// Platz weist ihn der oben ausgewählten Person exakt zu; Klick auf einen
-// bereits vergebenen Platz entfernt die Vorgabe wieder.
-function render_rule_seatmap() {
-    let container = $('#sph_rule_seatmap');
-    if (!open_cycle_id) {
-        container.empty().css('width', '').css('height', '');
-        return;
+// Wie viele Vorgaben gelten gerade? Steht in der Überschrift des
+// zugeklappten Kastens, damit man sie nicht übersieht.
+// Werkzeug, nach dem sich die Schalter richten: das des offenen Plans (bei
+// „Plan ändern“ das, mit dem er entstanden ist); ohne offenen Plan keins.
+function current_area_mode() {
+    if (!open_cycle_id) return $('#sph_new_choice').is(':visible') ? 'wishes' : null;
+    return open_mode === 'edit' ? base_mode : open_mode;
+}
+
+function area_on(mode, area) {
+    return !(rule_areas[mode] && rule_areas[mode][area] === false);
+}
+
+// Führt fn so aus, als gäbe es nur die für das aktuelle Werkzeug
+// eingeschalteten Vorgaben. Gespeichert und angezeigt (im Kasten „Vorgaben“)
+// bleiben immer alle.
+function with_active_rules(fn) {
+    let mode = current_area_mode();
+    if (!mode) return fn();
+    let saved = [forced_pairs, forbidden_pairs, fixed_rules, seating_groups];
+    if (!area_on(mode, 'pairs')) { forced_pairs = []; forbidden_pairs = []; }
+    if (!area_on(mode, 'fixed')) fixed_rules = [];
+    if (!area_on(mode, 'spread')) seating_groups = [];
+    try {
+        return fn();
+    } finally {
+        [forced_pairs, forbidden_pairs, fixed_rules, seating_groups] = saved;
     }
-    let [w, h] = room_width_height();
-    container.empty();
-    let container_width = Math.min($('.sph-container').width() || 900, 900);
-    let scale = Math.min(90, container_width / w);
-    container.css('height', `${h * scale}px`).css('width', `${w * scale}px`);
-    for (let i = 0; i < seats.length; i++) {
-        let seat = seats[i];
-        let rule = fixed_rules.find(r => rule_is_exact_seat(r) && r[1][0] === seat[0] && r[2][0] === seat[1]);
-        let div = $('<div>').addClass('place').css('left', `${seat[0] * scale}px`).css('top', `${seat[1] * scale}px`)
-            .css('width', `${scale * 0.9}px`).css('height', `${scale * 0.9}px`).data('seat-index', i);
-        if (rule) {
-            div.addClass('taken').attr('title', `${display_name(rule[0])} - klicken zum Entfernen`);
-            div.append($('<div>').addClass('sph-name').text(display_name(rule[0])));
-        } else {
-            div.attr('title', 'Klicken, um die oben ausgewählte Person hier fest zu platzieren');
-        }
-        container.append(div);
+}
+
+const SPH_AREAS = ['pairs', 'fixed', 'spread'];
+
+// Schalter „berücksichtigen“ an den Bereichen der Vorgaben, einer je Bereich.
+// Er gilt für das gewählte Werkzeug: das des offenen Plans oder die
+// Wunschrunde, solange ihr Kasten offen ist; sonst gibt es keinen.
+function render_areas() {
+    let mode = current_area_mode();
+    for (let area of SPH_AREAS) {
+        let box = $(`#sph_area_${area}`);
+        box.closest('.sph-area-switch').toggle(!!mode);
+        let on = !mode || area_on(mode, area);
+        box.prop('checked', on);
+        box.siblings('label').text(on ? 'berücksichtigen' : 'nicht berücksichtigen');
+        box.closest('h5').toggleClass('sph-area-off', !on);
     }
-    $('#sph_rule_seatmap .place').off('click').on('click', function () {
-        let seat = seats[$(this).data('seat-index')];
-        let existing = fixed_rules.find(r => rule_is_exact_seat(r) && r[1][0] === seat[0] && r[2][0] === seat[1]);
-        if (existing) {
-            api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: existing[0]}, function (data) {
-                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
-                fixed_rules = data.rules;
-                render_rules();
-                render_rule_seatmap();
-            });
+}
+
+// Regeln des Shufflers (siehe sitzplan_shuffler_rules in sitzplaneditor.rb):
+// {rules: [{email, x: [min, max], y: [min, max]}], bff: [{a, b, freq}]}.
+var shuffler_rules = {rules: [], bff: []};
+
+function load_shuffler_rules(done) {
+    api_call('/api/sitzplan_shuffler_rules', {klasse: klasse, raum: raum}, function (data) {
+        if (data.success === false) { dashboardAlert(data.error || 'Die Regeln des Shufflers konnten nicht geladen werden.'); return; }
+        shuffler_rules = {rules: data.rules || [], bff: data.bff || []};
+        render_shuffler_rules();
+        if (done) done();
+    });
+}
+
+function save_shuffler_rules(rules, bff) {
+    $('.sph-sh-edit, #sph_shuffler_box .sph-rule-list a, #sph_shuffler_box .sph-pair-list a').prop('disabled', true).css('pointer-events', 'none');
+    api_call('/api/sitzplan_shuffler_rules_save', {klasse: klasse, raum: raum, rules: JSON.stringify(rules), bff: JSON.stringify(bff)}, function (data) {
+        $('.sph-sh-edit').prop('disabled', false).css('pointer-events', '');
+        if (data.success === false) {
+            render_shuffler_rules();
+            dashboardAlert(data.error || 'Die Regeln des Shufflers konnten nicht gespeichert werden.');
             return;
         }
-        let email = $('#sph_rule_sus').val();
-        if (!email) return;
-        let neighbor_rule = fixed_rules.find(r => rule_is_exact_seat(r) && r[0] !== email && r[2][0] === seat[1] && Math.abs(r[1][0] - seat[0]) === 1);
-        if (neighbor_rule && pair_exists(forbidden_pairs, email, neighbor_rule[0])) {
-            dashboardAlert(`${display_name(email)} und ${display_name(neighbor_rule[0])} sind als "dürfen nicht zusammensitzen" markiert - bitte das zuerst entfernen, bevor du sie auf Nachbarplätze setzt.`);
-            return;
-        }
-        api_call('/api/sph_set_fixed_rule', {cycle_id: open_cycle_id, email: email, x_min: seat[0], x_max: seat[0], y_min: seat[1], y_max: seat[1]}, function (data) {
-            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+        shuffler_rules = {rules: data.rules || [], bff: data.bff || []};
+        render_shuffler_rules();
+    });
+}
+
+// „vorne“ usw., wenn der Bereich zu einem der Standardbereiche passt.
+function shuffler_area_label(r) {
+    let labels = {front: 'vorne', back: 'hinten', left: 'links', right: 'rechts'};
+    for (let area in labels) {
+        let [xr, yr] = area_for_rule(area);
+        if (xr[0] === r.x[0] && xr[1] === r.x[1] && yr[0] === r.y[0] && yr[1] === r.y[1]) return labels[area];
+    }
+    return 'eigener Bereich';
+}
+
+function render_shuffler_rules() {
+    let opts = sus.map(s => `<option value="${esc(s.email)}">${esc(s.display_name)}</option>`).join('');
+    for (let id of ['#sph_sh_rule_sus', '#sph_sh_pair_a', '#sph_sh_pair_b']) {
+        let keep = $(id).val();
+        $(id).html(opts);
+        if (keep) $(id).val(keep);
+    }
+    let rl = $('#sph_sh_rules_list').empty();
+    if (shuffler_rules.rules.length === 0) rl.append($('<span>').addClass('none-hint').text('keine'));
+    shuffler_rules.rules.forEach((r, i) => {
+        rl.append($('<span>').addClass('rule-chip').text(`${display_name(r.email)} (${shuffler_area_label(r)})`)
+            .append($('<a>').html('&times;').attr('title', 'Regel entfernen').on('click', function () {
+                save_shuffler_rules(shuffler_rules.rules.filter((x, j) => j !== i), shuffler_rules.bff);
+            })));
+    });
+    let pl = $('#sph_sh_pairs_list').empty();
+    if (shuffler_rules.bff.length === 0) pl.append($('<span>').addClass('none-hint').text('keine'));
+    shuffler_rules.bff.forEach((p, i) => {
+        let how = p.freq === 1 ? 'jedes Mal' : `jedes ${p.freq}. Mal`;
+        pl.append($('<span>').addClass('pair-chip').text(`${display_name(p.a)} + ${display_name(p.b)} (${how})`)
+            .append($('<a>').html('&times;').attr('title', 'Paar entfernen').on('click', function () {
+                save_shuffler_rules(shuffler_rules.rules, shuffler_rules.bff.filter((x, j) => j !== i));
+            })));
+    });
+}
+
+// Wohin gehen Änderungen an den Vorgaben? In den offenen Plan oder, ohne
+// offenen Plan, direkt in die geltenden Vorgaben von Klasse und Raum.
+function rules_target() {
+    return open_cycle_id ? {cycle_id: open_cycle_id} : {klasse: klasse, raum: raum};
+}
+
+function update_vorgaben_count() {
+    let n = forced_pairs.length + forbidden_pairs.length + fixed_rules.length + seating_groups.filter(g => g.length >= 2).length;
+    $('#sph_vorgaben_count').text(n > 0 ? `(${n})` : '(keine)');
+}
+
+// Den bearbeitbaren Plan nach einer geänderten Vorgabe neu bewerten, ohne
+// neu zu würfeln.
+function rerender_open_plan() {
+    if (open_cycle_id && plan_cycle_id === open_cycle_id) {
+        evaluate_placement();
+        render_placement(true);
+    } else if (open_cycle_id) {
+        show_current_plan();
+    }
+}
+
+function exact_rule_for(email) {
+    return fixed_rules.find(r => r[0] === email && rule_is_exact_seat(r));
+}
+
+// Genauer Platz direkt im Plan: hält die Person auf dem Platz fest, auf dem
+// sie gerade sitzt (beim nächsten Würfeln bleibt sie dort), oder löst das
+// wieder. Ersetzt die frühere zweite Sitzkarte.
+function toggle_pin(email) {
+    let rule = exact_rule_for(email);
+    if (rule) {
+        api_call('/api/sph_remove_fixed_rule', {...rules_target(), email: email}, function (data) {
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
             fixed_rules = data.rules;
             render_rules();
-            render_rule_seatmap();
+            rerender_open_plan();
         });
+        return;
+    }
+    let idx = current_placement[email];
+    if (idx === undefined) return;
+    let seat = seats[idx];
+    let neighbor_rule = fixed_rules.find(r => rule_is_exact_seat(r) && r[0] !== email && r[2][0] === seat[1] && Math.abs(r[1][0] - seat[0]) === 1);
+    if (neighbor_rule && pair_exists(forbidden_pairs, email, neighbor_rule[0])) {
+        dashboardAlert(`${display_name(email)} und ${display_name(neighbor_rule[0])} sind als „dürfen nicht zusammensitzen“ markiert. Bitte entfernen Sie das zuerst, bevor Sie beide auf Nachbarplätzen festhalten.`);
+        return;
+    }
+    api_call('/api/sph_set_fixed_rule', {...rules_target(), email: email, x_min: seat[0], x_max: seat[0], y_min: seat[1], y_max: seat[1]}, function (data) {
+        if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+        fixed_rules = data.rules;
+        render_rules();
+        rerender_open_plan();
     });
 }
 
@@ -549,6 +1156,206 @@ function vetoed_by(target_b, email_a) {
     return !!wb && wb.avoid1 === email_a && wb.avoid1_status !== 'rejected';
 }
 
+// --- Verteilung im Raum -----------------------------------------------------
+// Zwei SuS stehen auf derselben Liste und werden deshalb im Raum verteilt -
+// außer sie sind ein Zwangspaar: Die Vorgabe der Lehrkraft geht immer vor.
+function same_group(a, b) {
+    if (a === b) return false;
+    if (pair_exists(forced_pairs, a, b)) return false;
+    return seating_groups.some(g => g.includes(a) && g.includes(b));
+}
+
+// Ein Wunsch zählt nicht, wenn die gewünschte Person ihn per "Nicht neben"
+// ausschließt oder beide auf derselben Verteilungsliste stehen.
+function wish_blocked(target_b, email_a) {
+    return vetoed_by(target_b, email_a) || same_group(target_b, email_a);
+}
+
+// Alle Paare, die im Raum verteilt werden (ohne Zwangspaare, ohne Doppelte).
+function group_pairs() {
+    let seen = new Set();
+    let pairs = [];
+    for (let g of seating_groups) {
+        for (let i = 0; i < g.length; i++) {
+            for (let j = i + 1; j < g.length; j++) {
+                let key = [g[i], g[j]].sort().join('|');
+                if (seen.has(key) || !same_group(g[i], g[j])) continue;
+                seen.add(key);
+                pairs.push([g[i], g[j]]);
+            }
+        }
+    }
+    return pairs;
+}
+
+// Reihen über die tatsächlich vorhandenen Plätze zählen: Hat das Raster
+// zwischen zwei Reihen eine Lücke, ist die nächste Reihe trotzdem "direkt
+// dahinter".
+function row_ranks() {
+    let rows = [...new Set(seats.map(s => s[1]))].sort((a, b) => a - b);
+    let rank = {};
+    rows.forEach((y, i) => { rank[y] = i; });
+    return rank;
+}
+
+// Sitzen zwei Plätze direkt beieinander - gleicher Tisch, direkt davor oder
+// dahinter oder schräg daneben? Über einen Gang hinweg (Lücke im Raster)
+// zählt es nicht als direkt.
+function seats_close(idx_a, idx_b, rank) {
+    if (idx_a === undefined || idx_b === undefined || idx_a === idx_b) return false;
+    let a = seats[idx_a], b = seats[idx_b];
+    return Math.abs(a[0] - b[0]) <= 1 && Math.abs(rank[a[1]] - rank[b[1]]) <= 1;
+}
+
+function seat_distance(idx_a, idx_b) {
+    let a = seats[idx_a], b = seats[idx_b];
+    return Math.hypot(a[0] - b[0], a[1] - b[1]);
+}
+
+// Farbe je Verteilungsliste (sechs Farben, danach wieder von vorn) - nur
+// bei „Im Raum verteilen“ im Plan zu sehen.
+function list_color_class(i) {
+    return `sph-list-c${i % 6}`;
+}
+
+// Widersprüche in den Vorgaben selbst, nur mit den für das Werkzeug
+// eingeschalteten Bereichen: Ein Zwangspaar steht auf derselben
+// Verteilungsliste (sitzt deshalb trotzdem zusammen), oder zwei von derselben
+// Liste haben feste Plätze direkt beieinander. [{email, reason}]
+function vorgaben_conflicts() {
+    let conflicts = [];
+    let rank = row_ranks();
+    let seen = new Set();
+    for (let g of seating_groups) {
+        if (g.length < 2) continue;
+        for (let i = 0; i < g.length; i++) {
+            for (let j = i + 1; j < g.length; j++) {
+                let a = g[i], b = g[j];
+                let key = [a, b].sort().join('|');
+                if (seen.has(key)) continue;
+                seen.add(key);
+                let reason = null;
+                if (pair_exists(forced_pairs, a, b)) {
+                    reason = 'Zwangspaar, aber auf derselben Verteilungsliste';
+                } else {
+                    let ra = exact_rule_for(a), rb = exact_rule_for(b);
+                    if (ra && rb) {
+                        let ia = seats.findIndex(s => s[0] === ra[1][0] && s[1] === ra[2][0]);
+                        let ib = seats.findIndex(s => s[0] === rb[1][0] && s[1] === rb[2][0]);
+                        if (ia >= 0 && ib >= 0 && seats_close(ia, ib, rank)) reason = 'feste Plätze direkt beieinander, aber auf derselben Verteilungsliste';
+                    }
+                }
+                if (reason) {
+                    conflicts.push({email: a, reason: `Widerspruch in den Vorgaben mit ${display_name(b)}: ${reason}`,
+                                    summary: `${display_name(a)} und ${display_name(b)}: ${reason}`});
+                    conflicts.push({email: b, reason: `Widerspruch in den Vorgaben mit ${display_name(a)}: ${reason}`});
+                }
+            }
+        }
+    }
+    return conflicts;
+}
+
+// Erste Liste mit mindestens zwei Personen, auf der email steht (oder -1).
+function list_index_of(email) {
+    return seating_groups.findIndex(g => g.length >= 2 && g.includes(email));
+}
+
+function group_letter(i) {
+    return i < 26 ? String.fromCharCode(65 + i) : `${i + 1}`;
+}
+
+function save_groups(groups) {
+    // Bis die Antwort da ist, lässt sich an den Listen nichts ändern: Sonst
+    // ginge eine zweite, schnelle Änderung vom alten Stand aus und überschriebe
+    // die erste.
+    $('#sph_groups_list').find('select, button, a').prop('disabled', true).css('pointer-events', 'none');
+    $('#sph_bu_add_group').prop('disabled', true);
+    api_call('/api/sph_save_seating_groups', {klasse: klasse, groups: JSON.stringify(groups)}, function (data) {
+        $('#sph_bu_add_group').prop('disabled', false);
+        if (data.success === false) {
+            render_groups();
+            dashboardAlert(data.error || 'Die Listen konnten nicht gespeichert werden.');
+            return;
+        }
+        seating_groups = data.groups;
+        render_groups();
+        render_wishes();
+        // Wirkung sofort am angezeigten Plan sichtbar machen (ohne neu zu würfeln).
+        if (open_cycle_id && plan_cycle_id === open_cycle_id && Object.keys(current_placement).length > 0) {
+            evaluate_placement();
+            render_placement(true);
+        }
+    });
+}
+
+function render_groups() {
+    let el = $('#sph_groups_list').empty();
+    if (seating_groups.length === 0) {
+        el.append($('<p>').addClass('none-hint').text('Noch keine Listen.'));
+    }
+    update_vorgaben_count();
+    let rank = row_ranks();
+    seating_groups.forEach((g, gi) => {
+        let box = $('<div>').addClass('sph-group');
+        box.append($('<span>').addClass('sph-group-title').text(`Liste ${group_letter(gi)}`));
+        for (let email of g) {
+            let chip = $('<span>').addClass('pair-chip').text(display_name(email));
+            chip.append($('<a>').html('&times;').attr('title', 'Von der Liste nehmen').on('click', function () {
+                let groups = seating_groups.map(x => x.slice());
+                groups[gi] = groups[gi].filter(e => e !== email);
+                save_groups(groups);
+            }));
+            box.append($('<span>').addClass('sph-pair-list').append(chip));
+        }
+        let select = $('<select>').addClass('form-control form-control-sm');
+        select.append($('<option>').val('').text('+ Person hinzufügen …'));
+        for (let s of sus) {
+            if (!g.includes(s.email)) select.append($('<option>').val(s.email).text(s.display_name));
+        }
+        select.on('change', function () {
+            let email = $(this).val();
+            if (!email) return;
+            let groups = seating_groups.map(x => x.slice());
+            groups[gi].push(email);
+            save_groups(groups);
+        });
+        box.append(select);
+        box.append($('<button>').addClass('btn btn-sm btn-outline-danger').css('margin-left', '0.3em')
+            .text('Liste löschen').on('click', function () {
+                let doit = function () { save_groups(seating_groups.filter((x, i) => i !== gi)); };
+                if (g.length === 0) { doit(); return; }
+                dashboardConfirm(`Liste ${group_letter(gi)} wirklich löschen?`, doit, { confirm: 'Löschen', danger: true });
+            }));
+        // Hinweise auf Widersprüche zu den Vorgaben der Lehrkraft - nur
+        // anzeigen, nichts blockieren. Nur für Bereiche, die das gewählte
+        // Werkzeug berücksichtigt (ohne gewähltes Werkzeug immer).
+        let tool = current_area_mode();
+        let uses = area => !tool || area_on(tool, area);
+        let hints = [];
+        for (let i = 0; i < g.length && uses('spread'); i++) {
+            for (let j = i + 1; j < g.length; j++) {
+                let a = g[i], b = g[j];
+                if (uses('pairs') && pair_exists(forced_pairs, a, b)) {
+                    hints.push(`${display_name(a)} und ${display_name(b)} sind ein Zwangspaar und sitzen deshalb trotzdem zusammen.`);
+                    continue;
+                }
+                let ra = fixed_rules.find(r => r[0] === a && rule_is_exact_seat(r));
+                let rb = fixed_rules.find(r => r[0] === b && rule_is_exact_seat(r));
+                if (uses('fixed') && ra && rb) {
+                    let ia = seats.findIndex(s => s[0] === ra[1][0] && s[1] === ra[2][0]);
+                    let ib = seats.findIndex(s => s[0] === rb[1][0] && s[1] === rb[2][0]);
+                    if (ia >= 0 && ib >= 0 && seats_close(ia, ib, rank))
+                        hints.push(`${display_name(a)} und ${display_name(b)} haben feste Plätze direkt beieinander.`);
+                }
+            }
+        }
+        if (g.length === 1) hints.push('Eine Liste wirkt erst ab zwei Personen.');
+        for (let h of hints) box.append($('<div>').addClass('sph-group-hint').text('Hinweis: ' + h));
+        el.append(box);
+    });
+}
+
 // Krone hinter dem Namen: Diese Person ging im Vorgängerplan leer aus und hat
 // diesmal Vorrang (siehe UNLUCKY_BONUS).
 function crown(email) {
@@ -557,7 +1364,11 @@ function crown(email) {
 }
 
 function render_wishes() {
-    if (!open_cycle_id) {
+    return with_active_rules(render_wishes_raw);
+}
+
+function render_wishes_raw() {
+    if (!open_cycle_id || !open_has_wishes) {
         $('#sph_wishes_section').hide();
         return;
     }
@@ -581,6 +1392,7 @@ function render_wishes() {
             if (field !== 'avoid1') {
                 if (wishes_mutual_any(s.email, w[field])) name += " <span title='Wechselseitiger Wunsch'>🤝</span>";
                 if (vetoed_by(w[field], s.email)) name += ` <span title='${esc(display_name(w[field]))} möchte nicht neben ${esc(s.display_name)} sitzen - dieser Wunsch zählt nicht'>🚫</span>`;
+                if (same_group(w[field], s.email)) name += " <span title='Beide stehen auf derselben Verteilungsliste - dieser Wunsch zählt nicht'>🔒</span>";
             }
             let title = inactive ? 'Wunsch ist deaktiviert und zählt nicht für die Planung - klicken zum Aktivieren'
                                  : 'Wunsch ist aktiv - klicken zum Deaktivieren';
@@ -691,133 +1503,207 @@ function refresh_wishes(done) {
     }, {no_please_wait: true});
 }
 
-function load_state() {
+// Wie entsteht der gerade offene Plan? 'wishes', 'spread', 'manual', 'random' oder
+// 'edit' (per "Plan ändern" geöffnet), siehe sph_start_cycle/sph_get_state.
+var open_mode = null;
+// Gehören zum offenen Plan Wünsche (Wunschrunde oder Änderung eines Plans
+// aus einer Wunschrunde)? Nur dann gibt es Wunschtabelle und Vorrang.
+var open_has_wishes = false;
+// Angeklickte Person (für "dann Zielplatz anklicken" und die Leiste mit
+// "Platz festhalten"/"Vom Platz nehmen").
+var selected_email = null;
+// Darf diese Person einen neuen Plan beginnen (Klassenleitung, Admin)?
+var can_start_cycle = false;
+// Welche Bereiche der Vorgaben nutzt welches Werkzeug? {mode: {pairs, fixed,
+// spread}}, fehlende Einträge sind eingeschaltet (siehe sph_rule_areas).
+var rule_areas = {};
+// Werkzeug des offenen Plans, auch wenn er per „Plan ändern“ geöffnet wurde.
+var base_mode = null;
+var open_cycle_data = null;
+
+function set_status(text) {
+    $('#sph_status').text(text || '');
+}
+
+function load_state(after) {
     api_call('/api/sph_get_state', {klasse: klasse, raum: raum}, function (data) {
         if (data.success === false) {
-            $('#sph_cycle_info').text('Der Stand konnte nicht geladen werden. Bitte die Seite neu laden.');
+            set_status('');
+            $('#sph_start_info, #sph_cycle_info').text('Der Stand konnte nicht geladen werden. Bitte laden Sie die Seite neu.');
             return;
         }
         stop_countdown();
         sus = data.sus;
         wishes = data.wishes || {};
-        refresh_dropdowns();
-        if (data.open_cycle) {
-            open_cycle_id = data.open_cycle.id;
-            forced_pairs = data.open_cycle.forced_pairs || [];
-            forbidden_pairs = data.open_cycle.forbidden_pairs || [];
-            fixed_rules = data.open_cycle.fixed_rules || [];
-            $('#sph_bu_start_cycle').hide();
-            $('#sph_duration_group').hide();
-            $('#sph_carry_over_group').hide();
-            $('#sph_bu_discard_cycle').show();
-            // Eine per "Bearbeiten" geöffnete Kopie ist KEINE laufende
-            // Wunschrunde - dort wäre "Wunschrunde verwerfen" irreführend, weil
-            // weder Wünsche noch der ursprüngliche Plan verloren gehen.
-            is_reopened_edit = !!data.open_cycle.reopened_from;
-            if (is_reopened_edit) {
-                let d = new Date(data.open_cycle.reopened_from * 1000);
-                $('#sph_bu_close_wishes').hide();
-                $('#sph_bu_discard_cycle').text('Bearbeitung verwerfen');
-                $('#sph_cycle_info').text(`Du bearbeitest den gespeicherten Sitzplan vom ${d.toLocaleString('de-DE')}. Die Wünsche stammen aus der zugehörigen, bereits abgeschlossenen Wunschrunde – es läuft keine neue Umfrage. Zum Starten einer neuen Wunschrunde diese Bearbeitung zuerst speichern oder verwerfen.`);
-            } else if (data.open_cycle.wishes_open) {
-                $('#sph_bu_close_wishes').show().prop('disabled', false).text('Wunschrunde jetzt beenden');
-                $('#sph_bu_discard_cycle').text('Wunschrunde verwerfen (neu beginnen)');
-                start_countdown(data.open_cycle);
-            } else {
-                // Umfrage-Zeitfenster ist vorbei (oder wurde vorzeitig beendet) -
-                // der Zyklus selbst bleibt aber offen zum Bearbeiten/Erzeugen/
-                // Speichern, nur "nochmal beenden" ergibt keinen Sinn mehr.
-                let end = new Date(`${data.open_cycle.end_date}T${data.open_cycle.end_time}:00`);
-                $('#sph_bu_close_wishes').hide();
-                $('#sph_bu_discard_cycle').text('Wunschrunde verwerfen (neu beginnen)');
-                $('#sph_cycle_info').text(`Wunschrunde beendet am ${end.toLocaleDateString('de-DE')} um ${data.open_cycle.end_time} Uhr – ${answered_count()} von ${sus.length} SuS haben geantwortet. Mit diesen Wünschen kannst du jetzt den Plan erzeugen. Zum Starten einer neuen Wunschrunde zuerst speichern oder verwerfen.`);
-            }
-        } else {
-            open_cycle_id = null;
-            forced_pairs = []; forbidden_pairs = []; fixed_rules = [];
-            $('#sph_bu_close_wishes').hide();
-            $('#sph_bu_discard_cycle').hide();
-            $('#sph_duration_group').show();
-            $('#sph_carry_over_group').toggle(!!(data.last_cycle));
-            if (data.can_start_cycle && sus.length > seats.length) {
-                // Sonst geben die SuS tagelang Wünsche ab, und erst beim
-                // Erzeugen fällt auf, dass gar nicht alle in den Raum passen.
-                $('#sph_bu_start_cycle').show().prop('disabled', true)
-                    .attr('title', 'Der Raum hat zu wenige Plätze für die Klasse.');
-                $('#sph_duration_group, #sph_carry_over_group').hide();
-                $('#sph_cycle_info').text(`Keine Wunschrunde offen. Raum ${raum} hat nur ${seats.length} Plätze, die Klasse aber ${sus.length} SuS – dafür lässt sich keine Wunschrunde starten.`);
-            } else if (data.can_start_cycle) {
-                $('#sph_bu_start_cycle').show().prop('disabled', false).attr('title', '');
-                $('#sph_cycle_info').text('Keine Wunschrunde offen.');
-            } else {
-                // Nur die Klassenleitung darf eine Wunschrunde starten - sonst
-                // könnte jede Fachlehrkraft, die die Klasse aufruft, spontan
-                // eine Umfrage an alle SuS auslösen.
-                $('#sph_bu_start_cycle').show().prop('disabled', true)
-                    .attr('title', 'Nur die Klassenleitung kann eine Wunschrunde starten.');
-                $('#sph_duration_group').hide();
-                let names = (data.klassenleiter_names || []).join(', ') || 'nicht hinterlegt';
-                $('#sph_cycle_info').text(`Keine Wunschrunde offen. Nur die Klassenleitung (${names}) kann eine neue starten.`);
-            }
-        }
+        seating_groups = data.seating_groups || [];
         last_cycle = data.last_cycle;
-        // Ohne gespeicherten Plan gäbe es nichts anzuzeigen oder zu drucken.
-        $('#sph_link_public_view, #sph_link_print').toggle(!!last_cycle);
-        // Fairness-Ausgangslage: der Plan vor dieser Runde (beim Bearbeiten
-        // der Vorgänger des bearbeiteten Plans, siehe sph_get_state).
+        selected_email = null;
+        refresh_dropdowns();
+        let oc = data.open_cycle;
+        open_cycle_id = oc ? oc.id : null;
+        open_mode = oc ? oc.mode : null;
+        is_reopened_edit = open_mode === 'edit';
+        open_has_wishes = !!(oc && oc.poll_run_id);
+        let rules = oc || data.current_rules || {};
+        forced_pairs = rules.forced_pairs || [];
+        forbidden_pairs = rules.forbidden_pairs || [];
+        fixed_rules = rules.fixed_rules || [];
+        can_start_cycle = !!data.can_start_cycle;
+        rule_areas = data.rule_areas || {};
+        base_mode = oc ? (oc.base_mode || null) : null;
+        open_cycle_data = oc || null;
+        // Die Vorgaben gibt es in beiden Ansichten: auf der Startseite unter
+        // den Knöpfen zum aktuellen Plan, beim offenen Plan unter den Wünschen.
+        if (oc) $('#sph_vorgaben').insertAfter('#sph_wishes_section');
+        else $('#sph_vorgaben').appendTo('#sph_view_start');
+        $('#sph_view_start').toggle(!oc);
+        render_room_bar();
+        $('#sph_view_work, #sph_save_row').toggle(!!oc);
+        $('#sph_new_choice').hide();
+        if (oc) render_work_header(oc);
+        else render_start_header(data);
+
+        // Fairness-Ausgangslage: der Plan vor diesem (beim Ändern der
+        // Vorgänger des geänderten Plans, siehe sph_get_state) für die
+        // Rotation vorne/hinten, der letzte Plan mit Wünschen für den Vorrang.
         let previous = data.previous_cycle;
         last_seats = (previous && previous.seats) || {};
-        last_unlucky_emails = unlucky_emails((previous && previous.unresolved) || []);
-        last_lucky_emails = new Set((previous && previous.satisfied_emails) || []);
-        render_priority(previous);
-        // Ohne offene Wunschrunde lassen sich Paare, Regeln und "Sitzplan
-        // erzeugen" nicht sinnvoll bedienen (sie brauchen alle eine cycle_id) -
-        // deshalb ausblenden statt Klicks ins Leere laufen zu lassen.
-        $('#sph_pairs_section, #sph_rules_section, #sph_bu_generate').toggle(!!open_cycle_id);
+        let prio = data.priority_cycle;
+        last_unlucky_emails = unlucky_emails((prio && prio.unresolved) || []);
+        last_lucky_emails = new Set((prio && prio.satisfied_emails) || []);
+        render_priority(prio);
+
         if (!open_cycle_id) {
             plan_cycle_id = null;
             manual_changes = false;
             move_history = [];
         } else if (plan_cycle_id !== open_cycle_id) {
-            // Ein anderer offener Zyklus als der zuletzt angezeigte: Bei einer
-            // Bearbeitung startet die Lehrkraft vom gespeicherten Plan aus, bei
-            // einer frischen Wunschrunde erst nach "Sitzplan erzeugen".
+            // Ein anderer offener Plan als der zuletzt angezeigte: "Plan
+            // ändern" startet vom gespeicherten Plan, "Von Hand" vom leeren
+            // Raum, "Zufällig" wird gleich gewürfelt, eine Wunschrunde erst
+            // nach "Plan würfeln".
             manual_changes = false;
             move_history = [];
-            if (data.open_cycle.seats) {
-                current_placement = complete_placement(data.open_cycle.seats);
+            current_placement = {};
+            plan_cycle_id = null;
+            // Jeder neue Plan beginnt mit zugeklappten Vorgaben (die Zahl steht
+            // in der Überschrift).
+            $('#sph_vorgaben').prop('open', false);
+            unplaced_min_height = 0;
+            if (oc.seats) {
+                current_placement = complete_placement(oc.seats);
                 plan_cycle_id = open_cycle_id;
-            } else {
-                current_placement = {};
-                plan_cycle_id = null;
+            } else if (open_mode === 'manual') {
+                plan_cycle_id = open_cycle_id;
             }
         }
         render_pairs();
+        render_groups();
         render_rules();
-        render_rule_seatmap();
+        render_areas();
         render_wishes();
-        show_current_plan();
+        if ((open_mode === 'spread' || open_mode === 'random') && plan_cycle_id !== open_cycle_id) {
+            compute_plan(sus.map(s => s.email));
+        } else {
+            show_current_plan();
+        }
+        if (after) after();
     });
 }
 
-// Transparenz: wer wegen eines im Vorgängerplan unerfüllten Wunsches diesmal
-// bevorzugt wird (dieselbe Menge, die der Algorithmus über luck_multiplier
-// höher gewichtet). Nur in einer offenen Runde sinnvoll.
+// Kopf der Startansicht: Stand des gespeicherten Plans, Knöpfe.
+function render_start_header(data) {
+    if (last_cycle) {
+        let d = new Date(last_cycle.saved_at * 1000);
+        $('#sph_start_info').text(`Aktueller Sitzplan vom ${d.toLocaleDateString('de-DE')}. So sehen ihn alle Lehrkräfte der Klasse.`);
+    } else {
+        $('#sph_start_info').text('Für diese Klasse und diesen Raum ist noch kein Sitzplan gespeichert.');
+    }
+    $('#sph_bu_edit_saved, #sph_link_show, #sph_link_print').toggle(!!last_cycle);
+    // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen fällt
+    // auf, dass gar nicht alle in den Raum passen.
+    // (die Werkzeuge oben stellt render_room_bar ein)
+}
+
+// Leiste ganz oben, in beiden Ansichten: Raum mit Platzzahl, „Tische im Raum
+// ändern“ und der Shuffler.
+function render_room_bar() {
+    let too_small = sus.length > seats.length;
+    // Der Shuffler braucht wie jeder neue Plan einen Platz für alle.
+    $('#sph_link_shuffler').prop('disabled', too_small);
+    if (too_small) $('#sph_shuffler_box').hide();
+    $('#sph_room_info').text(too_small
+        ? `Raum ${raum} hat nur ${seats.length} Plätze, die Klasse aber ${sus.length} SuS. ` +
+          (sph_editor_allowed ? 'Legen Sie zuerst weitere Plätze an.' : 'Weitere Plätze kann nur die Administration anlegen.')
+        : `Raum ${raum}: ${seats.length} Plätze für ${sus.length} SuS`);
+    $('#sph_room_bar').toggleClass('sph-room-warn', too_small).show();
+    // Immer sichtbar; ist schon ein Plan offen, fragt der Klick nach (siehe unten).
+    $('#sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes').toggle(can_start_cycle).prop('disabled', too_small);
+    $('#sph_link_editor').toggleClass('btn-warning', too_small).toggleClass('btn-outline-primary', !too_small);
+    // Das Werkzeug, mit dem der offene Plan entsteht, ist hervorgehoben.
+    let active = {manual: '#sph_bu_start_manual', spread: '#sph_bu_start_spread', wishes: '#sph_bu_wishes'}[open_mode];
+    $('#sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes').removeClass('btn-primary').addClass('btn-outline-primary').attr('aria-pressed', 'false');
+    if (active) $(active).removeClass('btn-outline-primary').addClass('btn-primary').attr('aria-pressed', 'true');
+    if (open_cycle_id) $('#sph_new_choice').hide();
+    render_areas();
+}
+
+// Kopf der Arbeitsansicht: woher der Plan kommt und was als Nächstes zu tun ist.
+function render_work_header(oc) {
+    let steps = $('#sph_steps').empty();
+    $('#sph_close_wishes_row').toggle(open_mode === 'wishes' && oc.wishes_open);
+    if (open_mode === 'wishes') {
+        let labels = ['Wünsche sammeln', 'Plan bauen', 'Speichern'];
+        let current = oc.wishes_open ? 0 : 1;
+        labels.forEach((label, i) => {
+            steps.append($('<span>').addClass(i < current ? 'done' : (i === current ? 'on' : ''))
+                .text((i < current ? '✓ ' : '') + label));
+        });
+    }
+    if (open_mode === 'edit') {
+        let d = new Date(oc.reopened_from * 1000);
+        $('#sph_cycle_info').text(`Sie ändern den Sitzplan vom ${d.toLocaleDateString('de-DE')}. Beim Speichern wird er zum aktuellen Plan, der bisherige bleibt unter „Frühere Sitzpläne“.`);
+    } else if (open_mode === 'spread') {
+        let n = (seating_groups || []).filter(g => g.length >= 2).length;
+        $('#sph_cycle_info').text('Neuer Sitzplan, ohne Umfrage nach Ihren Vorgaben im Raum verteilt. ' +
+            (!area_on('spread', 'spread')
+                ? 'Die Verteilung im Raum wird bei diesem Werkzeug nicht berücksichtigt (Schalter unter „Vorgaben“).'
+                : n > 0
+                ? `Berücksichtigt: ${n} Verteilungsliste${n === 1 ? '' : 'n'}, Paare und feste Plätze. Setzen Sie einzelne Personen von Hand um (Namen anklicken, dann den Platz). Wer danach direkt bei jemandem von derselben Liste sitzt, wird rot markiert.`
+                : 'Es gibt noch keine Verteilungsliste. Legen Sie sie unter „Vorgaben → Verteilung im Raum“ an und würfeln Sie dann neu.'));
+    } else if (open_mode === 'random') {
+        $('#sph_cycle_info').text('Neuer Sitzplan, zufällig gewürfelt. Ihre Vorgaben sind berücksichtigt.');
+    } else if (open_mode === 'manual') {
+        $('#sph_cycle_info').text('Neuer Sitzplan von Hand: Klicken Sie einen Namen an und dann einen Platz.');
+    } else if (oc.wishes_open) {
+        $('#sph_bu_close_wishes').prop('disabled', false).text('Wunschrunde jetzt beenden');
+        start_countdown(oc);
+    } else {
+        // Die Umfrage ist vorbei (oder wurde vorzeitig beendet); der Plan
+        // bleibt offen zum Erzeugen, Nachbessern und Speichern.
+        let end = new Date(`${oc.end_date}T${oc.end_time}:00`);
+        $('#sph_cycle_info').text(`Wunschrunde beendet am ${end.toLocaleDateString('de-DE')} um ${oc.end_time} Uhr. ${answered_count()} von ${sus.length} SuS haben geantwortet.`);
+    }
+}
+
+// Transparenz: wer wegen eines im letzten Plan mit Wünschen unerfüllten
+// Wunsches diesmal Vorrang hat (dieselbe Menge, die der Algorithmus höher
+// gewichtet). Nur bei Plänen mit Wünschen.
 function render_priority(previous) {
-    if (!open_cycle_id) {
+    if (!open_cycle_id || !open_has_wishes) {
         $('#sph_priority_section').hide();
         return;
     }
     $('#sph_priority_section').show();
     if (!previous) {
-        $('#sph_priority_info').text('Es gibt noch keinen früheren gespeicherten Sitzplan – alle starten gleichberechtigt.');
+        $('#sph_priority_info').text('Es gibt noch keinen früheren Sitzplan mit Wünschen. Alle starten gleichberechtigt.');
         $('#sph_priority_names').empty();
         return;
     }
     let d = new Date(previous.saved_at * 1000);
     let names = sus.filter(s => last_unlucky_emails.has(s.email)).map(s => s.display_name);
-    $('#sph_priority_info').text(`Diese SuS hatten im Sitzplan vom ${d.toLocaleString('de-DE')} keinen ihrer Wunschpartner als Tischnachbarn und werden deshalb diesmal bei ihren Wünschen bevorzugt:`);
-    $('#sph_priority_names').text(names.length > 0 ? names.join(', ') : 'Niemand – damals haben alle mit Wunsch einen Wunschpartner bekommen.');
+    $('#sph_priority_info').text(`Diese SuS hatten im Sitzplan vom ${d.toLocaleDateString('de-DE')} keinen ihrer Wunschpartner als Tischnachbarn und haben deshalb diesmal Vorrang:`);
+    $('#sph_priority_names').text(names.length > 0 ? names.join(', ') : 'Niemand. Damals haben alle mit Wunsch einen Wunschpartner bekommen.');
 }
 
 // Wer hatte in einem gespeicherten Plan einen aktiven Wunsch, der nur mangels
@@ -847,17 +1733,31 @@ function complete_placement(saved) {
     return placement;
 }
 
-// Zeigt, was gerade zu sehen sein soll: in einer offenen Runde den
-// bearbeitbaren Plan (falls schon einer da ist), sonst den zuletzt
-// gespeicherten Plan zum Ansehen - damit nach dem Speichern nichts verschwindet.
+// Zeigt, was gerade zu sehen sein soll: beim offenen Plan den bearbeitbaren
+// Stand (falls schon einer da ist), sonst den zuletzt gespeicherten Plan zum
+// Ansehen - damit nach dem Speichern nichts verschwindet.
 function show_current_plan() {
-    $('#sph_bu_edit_saved').hide();
+    return with_active_rules(show_current_plan_raw);
+}
+
+function show_current_plan_raw() {
     if (open_cycle_id) {
-        if (plan_cycle_id === open_cycle_id && Object.keys(current_placement).length > 0) {
+        if (plan_cycle_id === open_cycle_id) {
             evaluate_placement();
             render_placement(true);
         } else {
-            clear_plan_view();
+            // Noch nicht gewürfelt: den Raum trotzdem zeigen, mit den festen
+            // Plätzen, damit man sieht, wer wo festgehalten ist.
+            current_placement = {};
+            for (let r of fixed_rules) {
+                if (!rule_is_exact_seat(r) || !sus.some(x => x.email === r[0])) continue;
+                let idx = seats.findIndex(st => st[0] === r[1][0] && st[1] === r[2][0]);
+                if (idx >= 0 && !Object.values(current_placement).includes(idx)) current_placement[r[0]] = idx;
+            }
+            current_unresolved = [];
+            current_satisfied_emails = [];
+            current_satisfaction = {};
+            render_placement(false, true);
         }
         return;
     }
@@ -879,17 +1779,15 @@ function show_current_plan() {
         students_with_want: current_satisfied_emails.length + unlucky_emails(current_unresolved).size,
     };
     render_placement(false);
-    $('#sph_bu_edit_saved').show();
 }
 
 function clear_plan_view() {
     current_placement = {};
     $('#sph_seats').empty().removeClass('editable').css('width', '').css('height', '');
-    $('#sph_unresolved_summary').empty();
-    $('#sph_plan_info').empty();
-    $('#sph_bu_save').hide();
-    $('#sph_bu_undo').hide();
-    $('#sph_bu_generate').text('Sitzplan erzeugen');
+    $('#sph_unresolved_summary, #sph_plan_info').empty();
+    $('#sph_plan_area, #sph_unplaced_box, #sph_selection_bar').hide();
+    $('#sph_bu_undo').prop('disabled', true);
+    $('#sph_bu_generate').html('<i class="fa fa-random"></i>&nbsp;&nbsp;Plan würfeln');
 }
 
 // Baut EINEN Sitzplan-Versuch auf (harte Vorgaben zuerst, dann Rest zufällig)
@@ -999,8 +1897,33 @@ function build_and_optimize_once(emails) {
         return 1;
     }
 
+    // Verteilung im Raum: direkt beieinander zählt wie eine verletzte Vorgabe
+    // der Lehrkraft. Darüber hinaus zählt für jede Person der Abstand zur
+    // nächsten Person von derselben Liste - je größer, desto besser. Ein Platz
+    // mehr Abstand wiegt knapp weniger als ein einseitiger Wunsch (5), damit
+    // Wünsche über die Listen hinweg weiter erfüllbar bleiben.
+    const GROUP_SPREAD = 4;
+    let rank = row_ranks();
+    let g_pairs = group_pairs().filter(([a, b]) => emails.includes(a) && emails.includes(b));
+    let g_mates = {};
+    for (let [a, b] of g_pairs) {
+        (g_mates[a] = g_mates[a] || []).push(b);
+        (g_mates[b] = g_mates[b] || []).push(a);
+    }
+
     function score(placement) {
         let total = 0;
+        for (let [a, b] of g_pairs) {
+            if (seats_close(placement[a], placement[b], rank)) total -= 1000;
+        }
+        for (let email in g_mates) {
+            let nearest = Infinity;
+            for (let other of g_mates[email]) {
+                let d = seat_distance(placement[email], placement[other]);
+                if (d < nearest) nearest = d;
+            }
+            total += GROUP_SPREAD * nearest;
+        }
         // Vorgaben der Lehrkraft sind hart: Ein Versuch, in dem sie nicht
         // aufgingen, darf beim "besten aus 10" nie gewinnen. (Die Tausch-Suche
         // selbst bewegt diese Personen nicht, deshalb nur hier.)
@@ -1019,15 +1942,15 @@ function build_and_optimize_once(emails) {
             // einseitige, damit die Suche diese "leichten Treffer" bevorzugt.
             // Wünsche gelten automatisch, außer die Lehrkraft hat "abgelehnt"
             // angeklickt (kein extra Bestätigen nötig).
-            if (w.want1_status !== 'rejected' && w.want1 && emails.includes(w.want1) && !vetoed_by(w.want1, email)) {
+            if (w.want1_status !== 'rejected' && w.want1 && emails.includes(w.want1) && !wish_blocked(w.want1, email)) {
                 let bonus = (is_mutual_active(email, w.want1) ? 25 : 5) * luck;
                 total += neighbors(placement[email], placement[w.want1]) ? bonus : 0;
             }
-            if (w.want2_status !== 'rejected' && w.want2 && emails.includes(w.want2) && !vetoed_by(w.want2, email)) {
+            if (w.want2_status !== 'rejected' && w.want2 && emails.includes(w.want2) && !wish_blocked(w.want2, email)) {
                 let bonus = (is_mutual_active(email, w.want2) ? 25 : 5) * luck;
                 total += neighbors(placement[email], placement[w.want2]) ? bonus : 0;
             }
-            if (w.want3_status !== 'rejected' && w.want3 && emails.includes(w.want3) && !vetoed_by(w.want3, email)) {
+            if (w.want3_status !== 'rejected' && w.want3 && emails.includes(w.want3) && !wish_blocked(w.want3, email)) {
                 let bonus = (is_mutual_active(email, w.want3) ? 25 : 5) * luck;
                 total += neighbors(placement[email], placement[w.want3]) ? bonus : 0;
             }
@@ -1037,7 +1960,7 @@ function build_and_optimize_once(emails) {
             // aber kleiner als "Nicht neben" und die Vorgaben der Lehrkraft.
             if (last_unlucky_emails.has(email) && ['want1', 'want2', 'want3'].some(slot =>
                     w[slot + '_status'] !== 'rejected' && w[slot] && emails.includes(w[slot]) &&
-                    !vetoed_by(w[slot], email) && neighbors(placement[email], placement[w[slot]]))) {
+                    !wish_blocked(w[slot], email) && neighbors(placement[email], placement[w[slot]]))) {
                 total += UNLUCKY_BONUS;
             }
             if (w.avoid1_status !== 'rejected' && w.avoid1 && emails.includes(w.avoid1)) {
@@ -1088,7 +2011,7 @@ function generate_plan() {
         return;
     }
     if (manual_changes) {
-        dashboardConfirm('Neu würfeln ersetzt den Plan samt deinen Änderungen per Ziehen. Trotzdem neu würfeln?',
+        dashboardConfirm('Neu würfeln ersetzt den Plan samt Ihren Änderungen von Hand. Trotzdem neu würfeln?',
             function () { compute_plan(emails); },
             { confirm: 'Neu würfeln', danger: true });
         return;
@@ -1097,6 +2020,10 @@ function generate_plan() {
 }
 
 function compute_plan(emails) {
+    return with_active_rules(() => compute_plan_raw(emails));
+}
+
+function compute_plan_raw(emails) {
     // Mehrere unabhängige Zufalls-Durchläufe, besten Score behalten - ein
     // einzelner Durchlauf kann in einem mittelmäßigen lokalen Optimum
     // hängenbleiben, gerade bei vielen SuS mit überlappenden Wünschen.
@@ -1119,6 +2046,10 @@ function compute_plan(emails) {
 // (De-)Aktivieren eines Wunsches aufgerufen, damit Farben und Quote immer zum
 // sichtbaren Plan passen.
 function evaluate_placement() {
+    return with_active_rules(evaluate_placement_raw);
+}
+
+function evaluate_placement_raw() {
     let placement = current_placement;
     let emails = sus.map(s => s.email).filter(e => placement[e] !== undefined);
     let failures = [];
@@ -1150,7 +2081,7 @@ function evaluate_placement() {
         if (!emails.includes(email)) continue;
         let w = wishes[email];
         let active_targets = ['want1', 'want2', 'want3']
-            .filter(slot => w[slot + '_status'] !== 'rejected' && w[slot] && emails.includes(w[slot]) && !vetoed_by(w[slot], email))
+            .filter(slot => w[slot + '_status'] !== 'rejected' && w[slot] && emails.includes(w[slot]) && !wish_blocked(w[slot], email))
             .map(slot => w[slot]);
 
         if (active_targets.length > 0) {
@@ -1188,22 +2119,43 @@ function evaluate_placement() {
 }
 
 // Zeichnet alle Plätze des Raums. editable: true = offener Plan, Personen
-// lassen sich per Ziehen tauschen bzw. auf freie Plätze verschieben;
+// lassen sich ziehen oder anklicken und auf einen anderen Platz setzen;
 // false = gespeicherter Plan nur zum Ansehen.
-function render_placement(editable) {
+function render_placement(editable, preview) {
+    return with_active_rules(() => render_placement_raw(editable, preview));
+}
+
+function render_placement_raw(editable, preview) {
     let [w, h] = room_width_height();
     let container = $('#sph_seats');
+    $('#sph_plan_area').show();
     container.empty().toggleClass('editable', !!editable);
     // Pixelbasierte Skalierung (wie sitzplan.html), passend zur .sph-container-Breite.
-    let container_width = Math.min($('.sph-container').width() || 900, 900);
-    let scale = Math.min(90, container_width / w);
+    let scale = seat_scale(w);
     container.css('position', 'relative').css('height', `${h * scale}px`).css('width', `${w * scale}px`);
-    let unresolved_emails = new Set(current_unresolved.map(f => f.email));
+    // Verteilungslisten hier frisch prüfen statt in current_unresolved: Das wird
+    // mit dem Plan gespeichert, und die Listen sollen nirgends sonst
+    // auftauchen als bei der Klassenleitung.
+    let group_issues = [];
+    let rank = row_ranks();
+    if (editable || preview) {
+        for (let [a, b] of group_pairs()) {
+            if (seats_close(current_placement[a], current_placement[b], rank)) {
+                group_issues.push({email: a, reason: `sitzt direkt bei ${display_name(b)} (gleiche Liste)`});
+                group_issues.push({email: b, reason: `sitzt direkt bei ${display_name(a)} (gleiche Liste)`});
+            }
+        }
+    }
+    let conflicts = (editable || preview) ? vorgaben_conflicts() : [];
+    let conflict_emails = new Set(conflicts.map(f => f.email));
+    let all_issues = current_unresolved.concat(group_issues);
+    let unresolved_emails = new Set(all_issues.map(f => f.email));
     let satisfied_emails = new Set(current_satisfied_emails);
     let student_at = {};
     for (let email in current_placement) student_at[current_placement[email]] = email;
+    if (selected_email && current_placement[selected_email] === undefined && !sus.some(s => s.email === selected_email)) selected_email = null;
     seats.forEach((seat, i) => {
-        let div = $('<div>').addClass('place').data('seat-index', i)
+        let div = $('<div>').addClass('place').data('seat-index', i).attr('data-seat-index', i)
             .css('left', `${seat[0] * scale}px`).css('top', `${seat[1] * scale}px`)
             .css('width', `${scale * 0.9}px`).css('height', `${scale * 0.9}px`);
         let email = student_at[i];
@@ -1214,60 +2166,202 @@ function render_placement(editable) {
             // z.B. einen festen Platz verletzt, soll trotzdem auffallen.
             if (unresolved_emails.has(email)) div.addClass('unresolved');
             else if (satisfied_emails.has(email)) div.addClass('satisfied');
-            let reasons = current_unresolved.filter(f => f.email === email).map(f => f.reason).join('; ');
-            if (reasons) div.attr('title', reasons);
-            div.append($('<div>').addClass('sph-name').text((editable && last_unlucky_emails.has(email) ? '👑 ' : '') + display_name(email)));
+            if (conflict_emails.has(email)) div.addClass('sph-conflict');
+            let titles = conflicts.concat(all_issues).filter(f => f.email === email).map(f => f.reason);
+            if (editable && last_unlucky_emails.has(email) && open_has_wishes) {
+                div.addClass('crown');
+                titles.unshift('👑 Vorrang: hatte im letzten Plan mit Wünschen keinen Wunschpartner');
+            }
+            if ((editable || preview) && exact_rule_for(email)) {
+                div.addClass('pinned');
+                titles.unshift('📌 fester Platz');
+            }
+            if (editable && email === selected_email) div.addClass('selected');
+            if (titles.length > 0) div.attr('title', titles.join('; '));
+            fill_student_card(div, email, scale * 0.9);
+            // Nur bei „Im Raum verteilen“: jede Liste in ihrer Farbe.
+            let li = open_mode === 'spread' && editable ? list_index_of(email) : -1;
+            if (li >= 0) {
+                div.addClass('sph-listed').addClass(list_color_class(li));
+                div.append($('<span>').addClass('sph-list-tag').text(group_letter(li)));
+            }
         }
         container.append(div);
     });
+    fit_card_names(container);
 
     let rate_html = '';
     if (current_satisfaction.students_with_want > 0) {
         let pct = Math.round(100 * current_satisfaction.students_satisfied / current_satisfaction.students_with_want);
         rate_html = `<p><strong>${current_satisfaction.students_satisfied} von ${current_satisfaction.students_with_want} SuS mit Wunsch (${pct}%)</strong> ` +
-            `haben mindestens einen ihrer aktiven Wunschpartner tatsächlich als Tischnachbarn bekommen.</p>`;
+            `haben mindestens einen ihrer aktiven Wunschpartner als Tischnachbarn.</p>`;
     }
     let key_html = '<p class="sph-legend">' +
-        '<span class="sph-color-key" style="border-color: #2e7d32; background-color: #e8f5e9;"></span>Wunschpartner sitzt daneben' +
-        '&nbsp;&nbsp;&nbsp;<span class="sph-color-key" style="border-color: #c62828; background-color: #fdecea;"></span>etwas ist nicht erfüllt (Grund unten)' +
-        '&nbsp;&nbsp;&nbsp;<span class="sph-color-key" style="border-color: #ddd; background-color: #fff;"></span>keine aktiven Wünsche</p>';
-    if (current_unresolved.length > 0) {
+        (current_satisfaction.students_with_want > 0
+            ? '<span class="sph-color-key" style="border-color: #2e7d32; background-color: #e8f5e9;"></span>Wunschpartner sitzt daneben&nbsp;&nbsp;&nbsp;'
+            : '') +
+        '<span class="sph-color-key" style="border-color: #c62828; background-color: #fdecea;"></span>etwas ist nicht erfüllt (Grund unten)</p>';
+    if (editable && open_mode === 'spread') {
+        let keys = seating_groups.map((g, i) => [g, i]).filter(([g]) => g.length >= 2)
+            .map(([g, i]) => `<span class="sph-list-key ${list_color_class(i)}"><span class="sph-list-tag">${group_letter(i)}</span>Liste ${group_letter(i)}</span>`);
+        if (keys.length > 0) rate_html += `<p class="sph-legend sph-list-legend">${keys.join('')}</p>`;
+    }
+    if ((editable || preview) && group_pairs().length > 0) {
+        rate_html += group_issues.length > 0
+            ? `<p class="sph-unresolved-list"><strong>Verteilung im Raum:</strong> ${group_issues.length / 2} Paar(e) sitzen direkt beieinander (siehe unten).</p>`
+            : '<p><strong>Verteilung im Raum:</strong> erfüllt.</p>';
+    }
+    if (conflicts.length > 0) {
+        let lines = conflicts.filter(f => f.summary).map(f => esc(f.summary));
+        rate_html = `<p class="sph-conflict-list">⚠ Widerspruch in Ihren Vorgaben (knallrot markiert):<br>${lines.join('<br>')}</p>` + rate_html;
+    }
+    if (all_issues.length > 0) {
         let byEmail = {};
-        current_unresolved.forEach(f => { byEmail[f.email] = byEmail[f.email] || []; byEmail[f.email].push(f.reason); });
+        all_issues.forEach(f => { byEmail[f.email] = byEmail[f.email] || []; byEmail[f.email].push(f.reason); });
         let lines = Object.keys(byEmail).map(e => esc(`${display_name(e)}: ${byEmail[e].join(', ')}`));
         $('#sph_unresolved_summary').html(rate_html + key_html + '<div class="sph-unresolved-list"><strong>Nicht erfüllt:</strong><br>' + lines.join('<br>') + '</div>');
+    } else if (Object.keys(current_placement).length > 0 && !preview) {
+        $('#sph_unresolved_summary').html(rate_html + (current_satisfaction.students_with_want > 0 ? key_html : '') + '<p>Alle Wünsche und Vorgaben sind erfüllt.</p>');
     } else {
-        $('#sph_unresolved_summary').html(rate_html + key_html + 'Alle aktiven Wünsche und Vorgaben sind erfüllt.');
+        $('#sph_unresolved_summary').empty();
     }
 
     if (editable) {
-        $('#sph_plan_info').text('Tipp: Eine Person auf einen anderen Platz ziehen tauscht die beiden (oder verschiebt sie auf einen freien Platz). Farben und Quote passen sich sofort an.');
-        attach_drag_handlers(container);
+        $('#sph_plan_info').text('Ziehen Sie eine Person auf einen anderen Platz, oder klicken Sie sie an und dann den Zielplatz. Farben und Quote passen sich sofort an.');
+        attach_seat_handlers(container);
+        render_unplaced();
+        render_selection_bar();
+    } else if (preview) {
+        $('#sph_plan_info').text(Object.keys(current_placement).length > 0
+            ? 'Noch kein Plan gewürfelt. Zu sehen sind nur die festen Plätze (📌). „Plan würfeln“ verteilt alle anderen; danach können Sie nachbessern.'
+            : 'Noch kein Plan gewürfelt. „Plan würfeln“ verteilt alle; danach können Sie nachbessern.');
+        $('#sph_unplaced_box, #sph_selection_bar').hide();
     } else {
-        let d = new Date(last_cycle.saved_at * 1000);
-        $('#sph_plan_info').text(`Aktuell gespeicherter Sitzplan vom ${d.toLocaleString('de-DE')} – so sehen ihn die SuS. Zum Ändern auf „Diesen Sitzplan bearbeiten“ klicken.`);
+        $('#sph_plan_info').empty();
+        $('#sph_unplaced_box, #sph_selection_bar').hide();
     }
-    $('#sph_bu_save').toggle(!!editable);
-    $('#sph_bu_undo').toggle(!!editable).prop('disabled', move_history.length === 0);
-    $('#sph_bu_generate').text(editable ? 'Neu würfeln' : 'Sitzplan erzeugen');
+    $('#sph_bu_undo').prop('disabled', move_history.length === 0);
+    $('#sph_bu_generate').html(Object.keys(current_placement).length > 0
+        ? '<i class="fa fa-random"></i>&nbsp;&nbsp;Neu würfeln'
+        : '<i class="fa fa-random"></i>&nbsp;&nbsp;Plan würfeln');
+}
+
+function unplaced_emails() {
+    return sus.map(s => s.email).filter(e => current_placement[e] === undefined);
+}
+
+// "Noch ohne Platz": Namen zum Anklicken, danach einen freien Platz anklicken
+// (wie früher auf der Seite "Verteilen").
+// Größte Höhe der Liste „Noch ohne Platz“ in diesem Plan (siehe render_unplaced).
+var unplaced_min_height = 0;
+
+function render_unplaced() {
+    let box = $('#sph_unplaced').empty();
+    let rest = unplaced_emails();
+    $('#sph_unplaced_box').toggle(rest.length > 0 || open_mode === 'manual');
+    for (let email of rest) {
+        box.append($('<button type="button">').addClass('btn btn-sm sph-chip')
+            .addClass(email === selected_email ? 'btn-primary' : 'btn-outline-secondary')
+            .attr('aria-pressed', email === selected_email ? 'true' : 'false')
+            .text(display_name(email))
+            .on('click', function () {
+                selected_email = selected_email === email ? null : email;
+                render_placement(true);
+            }));
+    }
+    if (rest.length === 0) box.append($('<span>').addClass('sph-legend').text('Alle haben einen Platz.'));
+    // Die Liste wird beim Setzen kürzer; ihre Höhe bleibt, damit der Plan
+    // darunter nicht nach oben rutscht.
+    box.css('min-height', '');
+    unplaced_min_height = Math.max(unplaced_min_height, box.outerHeight());
+    box.css('min-height', `${unplaced_min_height}px`);
+}
+
+// Die Leiste schwebt am unteren Rand (siehe .sph-selection), damit der Plan
+// beim Anklicken nicht springt.
+function render_selection_bar() {
+    let bar = $('#sph_selection_bar');
+    if (!selected_email) {
+        bar.hide();
+        return;
+    }
+    let placed = current_placement[selected_email] !== undefined;
+    $('#sph_selection_text').text(`${display_name(selected_email)} ist ausgewählt. Klicken Sie jetzt den Zielplatz an.`);
+    let fixed_on = !current_area_mode() || area_on(current_area_mode(), 'fixed');
+    $('#sph_bu_pin').toggle(placed && fixed_on).text(exact_rule_for(selected_email) ? '📌 Festen Platz lösen' : '📌 Platz festhalten');
+    $('#sph_bu_unplace').toggle(placed);
+    bar.show();
+}
+
+function occupant_of(idx) {
+    return Object.keys(current_placement).find(e => current_placement[e] === idx);
+}
+
+// Setzt eine Person auf einen Platz. Sitzt dort schon jemand, tauschen beide
+// (kommt die Person aus "Noch ohne Platz", geht die andere dorthin).
+function place_student(email, to_idx) {
+    let from_idx = current_placement[email];
+    if (from_idx === to_idx) return;
+    let other = occupant_of(to_idx);
+    move_history.push(Object.assign({}, current_placement));
+    current_placement[email] = to_idx;
+    if (other) {
+        if (from_idx !== undefined) current_placement[other] = from_idx;
+        else delete current_placement[other];
+    }
+    manual_changes = true;
+    evaluate_placement();
+    render_placement(true);
+}
+
+function unplace_student(email) {
+    if (current_placement[email] === undefined) return;
+    move_history.push(Object.assign({}, current_placement));
+    delete current_placement[email];
+    manual_changes = true;
+    evaluate_placement();
+    render_placement(true);
+}
+
+// Klick auf einen Platz: ohne Auswahl wählt er die Person dort aus, mit
+// Auswahl setzt er die ausgewählte Person dorthin.
+function seat_clicked(idx) {
+    let occupant = occupant_of(idx);
+    if (selected_email && selected_email !== occupant) {
+        let email = selected_email;
+        selected_email = null;
+        place_student(email, idx);
+        return;
+    }
+    selected_email = (occupant && occupant !== selected_email) ? occupant : null;
+    render_placement(true);
 }
 
 // Ziehen mit Pointer-Events statt HTML5-Drag&Drop: funktioniert so auch per
 // Finger oder Stift (Touchscreens wie dem Surface), nicht nur mit der Maus.
-function attach_drag_handlers(container) {
+// Wer nur antippt, ohne zu ziehen, wählt die Person aus (seat_clicked).
+function attach_seat_handlers(container) {
+    container.find('.place.empty').on('click', function () {
+        seat_clicked($(this).data('seat-index'));
+    });
     container.find('.place:not(.empty)').on('pointerdown', function (e) {
         if (e.button !== 0) return;
         e.preventDefault();
         // Loslassen außerhalb des Fensters kommt so trotzdem an - sonst bliebe
-        // die gezogene Namenskarte am Mauszeiger hängen.
+        // die gezogene Karte am Mauszeiger hängen.
         try { this.setPointerCapture(e.pointerId); } catch (err) {}
         let source = $(this);
-        let ghost = $('<div>').addClass('sph-drag-ghost').text(source.text())
-            .css({width: source.outerWidth(), height: source.outerHeight(), 'font-size': source.css('font-size')})
-            .appendTo('body');
-        source.addClass('drag-source');
+        let start_x = e.clientX, start_y = e.clientY;
+        let ghost = null;
         let target = null;
         function move(ev) {
+            if (!ghost) {
+                if (Math.hypot(ev.clientX - start_x, ev.clientY - start_y) < 6) return;
+                ghost = $('<div>').addClass('sph-drag-ghost').html(source.html())
+                    .css({width: source.outerWidth(), height: source.outerHeight()})
+                    .appendTo('body');
+                source.addClass('drag-source');
+            }
             ghost.css({left: ev.clientX - ghost.outerWidth() / 2, top: ev.clientY - ghost.outerHeight() / 2});
             let el = document.elementFromPoint(ev.clientX, ev.clientY);
             let hit = el ? $(el).closest('#sph_seats .place') : $();
@@ -1277,34 +2371,33 @@ function attach_drag_handlers(container) {
         }
         function up(ev) {
             $(document).off('pointermove', move).off('pointerup pointercancel', up);
+            if (!ghost) {
+                if (ev.type === 'pointerup') seat_clicked(source.data('seat-index'));
+                return;
+            }
             ghost.remove();
             source.removeClass('drag-source');
             if (target && ev.type === 'pointerup') {
+                selected_email = null;
                 move_student(source.data('seat-index'), target.data('seat-index'));
             } else if (target) {
                 target.removeClass('drop-target');
             }
         }
-        move(e);
         $(document).on('pointermove', move).on('pointerup pointercancel', up);
     });
 }
 
 function move_student(from_idx, to_idx) {
-    let a = Object.keys(current_placement).find(e => current_placement[e] === from_idx);
-    let b = Object.keys(current_placement).find(e => current_placement[e] === to_idx);
+    let a = occupant_of(from_idx);
     if (!a) return;
-    move_history.push(Object.assign({}, current_placement));
-    current_placement[a] = to_idx;
-    if (b) current_placement[b] = from_idx;
-    manual_changes = true;
-    evaluate_placement();
-    render_placement(true);
+    place_student(a, to_idx);
 }
 
 function undo_move() {
     if (move_history.length === 0) return;
     current_placement = move_history.pop();
+    selected_email = null;
     // Alle Züge zurückgenommen = wieder der gewürfelte bzw. geladene Stand.
     manual_changes = move_history.length > 0;
     evaluate_placement();
@@ -1312,44 +2405,35 @@ function undo_move() {
 }
 
 function render_history(cycles) {
+    $('#sph_history_count').text(cycles && cycles.length > 0 ? `(${cycles.length})` : '');
     if (!cycles || cycles.length === 0) {
-        $('#sph_history_body').html('<tr><td colspan="5" class="none-hint">Noch kein Sitzplan gespeichert.</td></tr>');
+        $('#sph_history_body').html('<tr><td colspan="4" class="none-hint">Noch kein Sitzplan gespeichert.</td></tr>');
         return;
     }
     let rows = '';
     cycles.forEach((c, i) => {
         let date_str = new Date(c.saved_at * 1000).toLocaleString('de-DE');
-        let current_badge = i === 0 ? ' <span class="badge badge-success">aktuell für SuS sichtbar</span>' : '';
-        // Von Hand verteilte Pläne ("Verteilen") haben keine Wünsche, die erfüllt sein könnten.
-        let summary = c.source === 'manual'
-            ? `von Hand verteilt, ${c.seats_count} SuS`
-            : `${c.satisfied_count} von ${c.seats_count} SuS mit erfülltem Wunsch, ${c.unresolved_count} offene Punkte`;
+        let current_badge = i === 0 ? ' <span class="badge badge-success">aktuell</span>' : '';
+        let summary = c.with_wishes
+            ? `${c.satisfied_count} von ${c.seats_count} SuS mit erfülltem Wunsch, ${c.unresolved_count} offene Punkte`
+            : `${c.seats_count} SuS, ohne Wünsche`;
         rows += `<tr>
             <td>${date_str}${current_badge}</td>
             <td>${summary}</td>
-            <td><a class="btn btn-sm btn-outline-secondary" href="/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?cycle=${encodeURIComponent(c.id)}" target="_blank">Für SuS anzeigen</a></td>
-            <td><button class="btn btn-sm btn-outline-primary bu-edit-cycle" data-id="${esc(c.id)}">Bearbeiten</button></td>
+            <td><a class="btn btn-sm btn-outline-secondary" href="/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?cycle=${encodeURIComponent(c.id)}" target="_blank">Anzeigen</a></td>
             <td><button class="btn btn-sm btn-outline-danger bu-delete-cycle" data-id="${esc(c.id)}">Löschen</button></td>
         </tr>`;
     });
     $('#sph_history_body').html(rows);
-    $('.bu-delete-cycle').off('click').on('click', function () {
-        let id = $(this).data('id');
+    $('.bu-delete-cycle').off('click').on('click', function (e) {
+        let id = $(e.currentTarget).data('id');
         dashboardConfirm('Diesen gespeicherten Sitzplan wirklich unwiderruflich löschen?', function () {
             api_call('/api/sph_delete_cycle', {cycle_id: id}, function (data) {
                 if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gelöscht werden.'); return; }
+                load_state();
                 load_history();
             });
         }, { confirm: 'Löschen', danger: true });
-    });
-    $('.bu-edit-cycle').off('click').on('click', function () {
-        let id = $(this).data('id');
-        api_call('/api/sph_reopen_saved_cycle', {cycle_id: id}, function (data) {
-            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zur Bearbeitung geöffnet werden.'); return; }
-            load_state();
-            load_history();
-            $('html, body').animate({scrollTop: $('#sph_cycle_controls').offset().top}, 300);
-        });
     });
 }
 
@@ -1359,40 +2443,158 @@ function load_history() {
     });
 }
 
+function start_new_plan(mode, extra) {
+    set_status('');
+    api_call('/api/sph_start_cycle', Object.assign({klasse: klasse, raum: raum, mode: mode}, extra || {}), function (data) {
+        if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gestartet werden.'); return; }
+        load_state();
+    });
+}
+
+function save_plan() {
+    let button = $('#sph_bu_save');
+    // Gegen Doppelklick: der zweite Klick käme sonst als zweites Speichern an.
+    if (button.prop('disabled')) return;
+    button.prop('disabled', true);
+    api_call('/api/sph_save_cycle', {
+        cycle_id: open_cycle_id,
+        seats: JSON.stringify(current_placement),
+        unresolved: JSON.stringify(current_unresolved),
+        satisfied_emails: JSON.stringify(current_satisfied_emails),
+    }, function (data) {
+        button.prop('disabled', false);
+        if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+        // Danach ist kein Plan mehr offen; load_state() zeigt den eben
+        // gespeicherten Plan in der Startansicht.
+        load_state(function () { set_status('Sitzplan gespeichert. Er ist jetzt der aktuelle Plan.'); });
+        load_history();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     let parts = window.location.pathname.replace('/sitzplanhelfer/', '').split('/');
     klasse = parts[0];
     raum = parts[1];
     seats = seats_dict[raum];
+    $('#sph_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
+    $('#sph_link_editor').attr('href', `/sitzplaneditor/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
+    $('#sph_link_editor').toggle(sph_editor_allowed);
     if (!seats) {
-        // Kein Layout für diesen Raum - mit einer Erklärung stehenbleiben statt
-        // wortlos auf die Startseite zu springen.
-        $('.sph-container').empty()
-            .append($('<h1>').text('Sitzplanhelfer'))
-            .append($('<p>').text(`Für Raum ${raum} ist keine Bestuhlung hinterlegt. Die Klassenleitung kann sie im Klassenbereich über den Sitzplan-Editor anlegen.`));
+        // Noch keine Tische für diesen Raum - mit einer Erklärung und dem Weg
+        // zum Editor stehenbleiben statt wortlos auf die Startseite zu springen.
+        $('#sph_view_start, #sph_view_work, #sph_plan_area, #sph_save_row, #sph_history_section').remove();
+        $('#sph_label').text(`${klasse} – Raum ${raum}`);
+        $('#sph_room_info').text(sph_editor_allowed
+            ? `Für Raum ${raum} sind noch keine Tische angelegt. Legen Sie sie zuerst an.`
+            : `Für Raum ${raum} sind noch keine Tische angelegt. Das kann nur die Administration.`);
+        $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-primary').addClass('btn-primary');
+        $('#sph_link_shuffler, #sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes, #sph_new_choice, #sph_shuffler_box').remove();
+        $('#sph_room_bar').addClass('sph-room-warn').show();
         return;
     }
     $('#sph_label').text(`${klasse} – Raum ${raum}`);
-    $('#sph_link_shuffler').attr('href', `/sitzplan/${klasse}/${raum}`);
-    $('#sph_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
-    $('#sph_link_public_view').attr('href', `/sitzplananzeige/${klasse}/${raum}`);
-    $('#sph_link_print').attr('href', `/sitzplananzeige/${klasse}/${raum}?print=1`);
+    $('#sph_link_print').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?print=1`);
+    $('#sph_link_show').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
+    $('#sph_sh_start').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
+    // Shuffler: erst seine Regeln zeigen, dann „Shuffler starten“
+    $('#sph_link_shuffler').click(function () {
+        set_status('');
+        $('#sph_new_choice').hide();
+        render_areas();
+        if ($('#sph_shuffler_box').is(':visible')) {
+            $('#sph_shuffler_box').hide();
+            return;
+        }
+        load_shuffler_rules(function () { $('#sph_shuffler_box').show(); });
+    });
+    $('#sph_sh_bu_add_rule').click(function () {
+        let email = $('#sph_sh_rule_sus').val();
+        let [xr, yr] = area_for_rule($('#sph_sh_rule_area').val());
+        let rules = shuffler_rules.rules.filter(r => r.email !== email).concat([{email: email, x: xr, y: yr}]);
+        save_shuffler_rules(rules, shuffler_rules.bff);
+    });
+    $('#sph_sh_bu_add_pair').click(function () {
+        let a = $('#sph_sh_pair_a').val(), b = $('#sph_sh_pair_b').val();
+        let freq = parseInt($('#sph_sh_pair_freq').val(), 10);
+        if (a === b) { dashboardAlert('Bitte wählen Sie zwei unterschiedliche Personen.'); return; }
+        let taken = [a, b].find(e => shuffler_rules.bff.some(p => p.a === e || p.b === e));
+        if (taken) {
+            dashboardAlert(`${display_name(taken)} ist beim Shuffler schon in einem Paar. Der Shuffler kennt je Person nur einen Partner; entfernen Sie das andere Paar zuerst.`);
+            return;
+        }
+        save_shuffler_rules(shuffler_rules.rules, shuffler_rules.bff.concat([{a: a, b: b, freq: freq}]));
+    });
 
+    // Ist schon ein Plan offen, fragen die Werkzeuge, ob er für den neuen Weg
+    // verworfen werden soll; then() läuft danach (oder sofort ohne offenen Plan).
+    function replace_open_plan(title, confirm_label, then) {
+        if (!open_cycle_id) { then(); return; }
+        let was = open_mode === 'wishes' ? 'eine Wunschrunde' : 'ein neuer Plan';
+        dashboardConfirm(`Es ist schon ${was} offen. Wollen Sie stattdessen neu beginnen, wird der offene Plan verworfen` +
+            (open_mode === 'wishes' ? ', die Umfrage verschwindet bei den SuS, und die Wünsche gehen verloren.' : '.') +
+            ' Ihre Vorgaben bleiben erhalten.', function () {
+            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+                load_state(then);
+            });
+        }, { title: title, confirm: confirm_label, danger: true });
+    }
+    // Die Wunschrunde fragt direkt unter den Werkzeugen nach der Dauer.
+    $('#sph_bu_wishes').click(function () {
+        set_status('');
+        $('#sph_shuffler_box').hide();
+        if (open_mode === 'wishes') return;
+        if (!open_cycle_id) {
+            $('#sph_new_choice').toggle();
+            render_areas();
+            return;
+        }
+        replace_open_plan('Wunschrunde', 'Verwerfen und Wunschrunde vorbereiten', function () { $('#sph_new_choice').show(); render_areas(); });
+    });
+    // Im Raum verteilen: ohne Umfrage sofort nach den Vorgaben gewürfelt.
+    $('#sph_bu_start_spread').click(function () {
+        set_status('');
+        if (open_mode === 'spread') return;
+        replace_open_plan('Im Raum verteilen', 'Verwerfen und neu verteilen', function () { start_new_plan('spread'); });
+    });
     $('#sph_bu_start_cycle').click(function () {
         let duration_days = parseInt($('#sph_duration_days').val(), 10);
         if (!(duration_days >= 1 && duration_days <= 60)) {
             dashboardAlert('Die Umfragedauer muss zwischen 1 und 60 Tagen liegen.');
             return;
         }
-        let carry_over = $('#sph_carry_over_group').is(':visible') && $('#sph_carry_over').is(':checked') ? 'yes' : 'no';
-        api_call('/api/sph_start_cycle', {klasse: klasse, raum: raum, duration_days: duration_days, carry_over: carry_over}, function (data) {
-            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gestartet werden.'); return; }
+        start_new_plan('wishes', {duration_days: duration_days});
+    });
+    $('#sph_bu_start_manual').click(function () {
+        if (!open_cycle_id) {
+            start_new_plan('manual');
+            return;
+        }
+        if (open_mode === 'manual') return;
+        // Es kann immer nur ein neuer Plan offen sein. Im offenen Plan lässt
+        // sich schon von Hand umsetzen; ganz von vorn geht es nur, wenn er
+        // verworfen wird.
+        let was = open_mode === 'wishes' ? 'eine Wunschrunde' : 'ein neuer Plan';
+        dashboardConfirm(`Es ist schon ${was} offen. Darin können Sie direkt von Hand umsetzen: Person anklicken, dann den Platz. ` +
+            'Wollen Sie stattdessen ganz von vorn von Hand verteilen, wird der offene Plan verworfen' +
+            (open_mode === 'wishes' ? ', die Umfrage verschwindet bei den SuS, und die Wünsche gehen verloren.' : '.') +
+            ' Ihre Vorgaben bleiben erhalten.', function () {
+            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+                start_new_plan('manual');
+            });
+        }, { title: 'Von Hand verteilen', confirm: 'Verwerfen und von Hand verteilen', danger: true });
+    });
+    $('#sph_bu_edit_saved').click(function () {
+        set_status('');
+        api_call('/api/sph_reopen_saved_cycle', {cycle_id: last_cycle.id}, function (data) {
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zum Ändern geöffnet werden.'); return; }
             load_state();
         });
     });
-    $('#sph_bu_close_wishes').click(function () {
-        let button = $(this);
-        dashboardConfirm(`Die Umfrage verschwindet sofort bei den SuS. Die bisher abgegebenen Wünsche (${answered_count()} von ${sus.length} SuS) bleiben erhalten, und du arbeitest mit ihnen weiter. Wer noch nicht geantwortet hat, kann es danach nicht mehr.`, function () {
+    $('#sph_bu_close_wishes').click(function (e) {
+        let button = $(e.currentTarget);
+        dashboardConfirm(`Die Umfrage verschwindet sofort bei den SuS. Die bisher abgegebenen Wünsche (${answered_count()} von ${sus.length} SuS) bleiben erhalten, und Sie arbeiten mit ihnen weiter. Wer noch nicht geantwortet hat, kann es danach nicht mehr.`, function () {
             button.prop('disabled', true).text('Wird beendet…');
             api_call('/api/sph_close_wishes', {cycle_id: open_cycle_id}, function (data) {
                 load_state();
@@ -1400,100 +2602,130 @@ document.addEventListener('DOMContentLoaded', function () {
         }, { title: 'Wunschrunde jetzt vorzeitig beenden?', confirm: 'Wunschrunde beenden' });
     });
     $('#sph_bu_discard_cycle').click(function () {
-        let frage = is_reopened_edit
-            // Beim Bearbeiten gehen weder Wünsche noch der Originalplan
-            // verloren - nur die hier gemachten Änderungen.
-            ? 'Bearbeitung verwerfen? Der ursprünglich gespeicherte Sitzplan bleibt unverändert in der Historie erhalten, und die Schülerwünsche gehen nicht verloren. Verworfen werden nur die hier vorgenommenen Änderungen – am Plan selbst sowie an Zwangspaaren, Verboten, festen Plätzen und Wunsch-Schaltern.'
-            : 'Diese Wunschrunde wirklich verwerfen? Alle bisher eingegangenen Wünsche, Zwangspaare, Verbote und festen Plätze für diesen Zyklus gehen dabei verloren, und die Umfrage wird bei den SuS sofort zurückgezogen. Bereits gespeicherte Pläne in der Historie sind davon nicht betroffen.';
-        dashboardConfirm(frage, function () {
+        let frage = open_mode === 'wishes'
+            ? 'Diese Wunschrunde verwerfen? Die eingegangenen Wünsche gehen verloren, und die Umfrage verschwindet sofort bei den SuS. Der gespeicherte Sitzplan bleibt, wie er ist.'
+            : (open_mode === 'edit'
+                ? 'Ihre Änderungen verwerfen? Der gespeicherte Sitzplan bleibt, wie er ist.'
+                : 'Diesen neuen Sitzplan verwerfen? Der gespeicherte Sitzplan bleibt, wie er ist.');
+        dashboardConfirm(frage + ' Ihre Vorgaben bleiben erhalten.', function () {
             api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
                 if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+                set_status('');
                 load_state();
             });
         }, { confirm: 'Verwerfen', danger: true });
     });
+    $('#sph_bu_add_group').click(function () {
+        save_groups(seating_groups.concat([[]]));
+    });
     $('#sph_bu_add_forced').click(function () {
         let a = $('#sph_pair_a').val(), b = $('#sph_pair_b').val();
-        if (a === b) { dashboardAlert('Bitte zwei unterschiedliche Personen wählen.'); return; }
+        if (a === b) { dashboardAlert('Bitte wählen Sie zwei unterschiedliche Personen.'); return; }
         if (pair_exists(forbidden_pairs, a, b)) {
-            dashboardAlert(`${display_name(a)} und ${display_name(b)} sind bereits als "darf nicht zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
+            dashboardAlert(`${display_name(a)} und ${display_name(b)} sind bereits als „dürfen nicht zusammensitzen“ gesetzt. Bitte entfernen Sie das zuerst.`);
             return;
         }
-        api_call('/api/sph_set_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: 'forced'}, function (data) {
+        api_call('/api/sph_set_pair', {...rules_target(), email_a: a, email_b: b, kind: 'forced'}, function (data) {
             if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
             forced_pairs = data.pairs;
             render_pairs();
+            rerender_open_plan();
         });
     });
     $('#sph_bu_add_forbidden').click(function () {
         let a = $('#sph_pair_a').val(), b = $('#sph_pair_b').val();
-        if (a === b) { dashboardAlert('Bitte zwei unterschiedliche Personen wählen.'); return; }
+        if (a === b) { dashboardAlert('Bitte wählen Sie zwei unterschiedliche Personen.'); return; }
         if (pair_exists(forced_pairs, a, b)) {
-            dashboardAlert(`${display_name(a)} und ${display_name(b)} sind bereits als "muss zusammensitzen" gesetzt - bitte das zuerst entfernen.`);
+            dashboardAlert(`${display_name(a)} und ${display_name(b)} sind bereits als „müssen zusammensitzen“ gesetzt. Bitte entfernen Sie das zuerst.`);
             return;
         }
         if (pinned_as_neighbors(a, b)) {
-            dashboardAlert(`${display_name(a)} und ${display_name(b)} sitzen bereits über feste Plätze nebeneinander - bitte zuerst einen der beiden festen Plätze entfernen.`);
+            dashboardAlert(`${display_name(a)} und ${display_name(b)} sitzen über feste Plätze nebeneinander. Bitte lösen Sie zuerst einen der beiden festen Plätze.`);
             return;
         }
-        api_call('/api/sph_set_pair', {cycle_id: open_cycle_id, email_a: a, email_b: b, kind: 'forbidden'}, function (data) {
+        api_call('/api/sph_set_pair', {...rules_target(), email_a: a, email_b: b, kind: 'forbidden'}, function (data) {
             if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
             forbidden_pairs = data.pairs;
             render_pairs();
+            rerender_open_plan();
         });
     });
     $('#sph_bu_add_rule').click(function () {
         let email = $('#sph_rule_sus').val();
         let area = $('#sph_rule_area').val();
+        let done = function (data) {
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            fixed_rules = data.rules;
+            render_rules();
+            rerender_open_plan();
+        };
         if (area === 'any') {
-            api_call('/api/sph_remove_fixed_rule', {cycle_id: open_cycle_id, email: email}, function (data) {
-                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht entfernt werden.'); return; }
-                fixed_rules = data.rules;
-                render_rules();
-                render_rule_seatmap();
-            });
+            api_call('/api/sph_remove_fixed_rule', {...rules_target(), email: email}, done);
         } else {
             let [xr, yr] = area_for_rule(area);
-            api_call('/api/sph_set_fixed_rule', {cycle_id: open_cycle_id, email: email, x_min: xr[0], x_max: xr[1], y_min: yr[0], y_max: yr[1]}, function (data) {
-                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
-                fixed_rules = data.rules;
-                render_rules();
-                render_rule_seatmap();
-            });
+            api_call('/api/sph_set_fixed_rule', {...rules_target(), email: email, x_min: xr[0], x_max: xr[1], y_min: yr[0], y_max: yr[1]}, done);
         }
     });
     $('#sph_bu_generate').click(function () {
+        selected_email = null;
         generate_plan();
     });
     $('#sph_bu_save').click(function () {
-        // Gegen Doppelklick: der zweite Klick käme sonst als zweites Speichern an.
-        let button = $(this);
-        if (button.prop('disabled')) return;
-        button.prop('disabled', true);
-        api_call('/api/sph_save_cycle', {
-            cycle_id: open_cycle_id,
-            seats: JSON.stringify(current_placement),
-            unresolved: JSON.stringify(current_unresolved),
-            satisfied_emails: JSON.stringify(current_satisfied_emails),
-        }, function (data) {
-            button.prop('disabled', false);
-            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
-            dashboardAlert('Sitzplan gespeichert.');
-            // Danach ist keine Runde mehr offen; load_state() zeigt den eben
-            // gespeicherten Plan zum Ansehen samt "Diesen Sitzplan bearbeiten".
-            load_state();
-            load_history();
-        });
+        if (Object.keys(current_placement).length === 0) {
+            dashboardAlert('Setzen Sie mindestens eine Person auf einen Platz.');
+            return;
+        }
+        let open = unplaced_emails().length;
+        if (open > 0) {
+            dashboardConfirm(`${open} ${open === 1 ? 'Person hat' : 'Personen haben'} noch keinen Platz. Trotzdem speichern?`,
+                save_plan, { title: 'Sitzplan speichern', confirm: 'Trotzdem speichern' });
+            return;
+        }
+        save_plan();
     });
     $('#sph_bu_undo').click(function () {
         undo_move();
     });
-    $('#sph_bu_edit_saved').click(function () {
-        api_call('/api/sph_reopen_saved_cycle', {cycle_id: last_cycle.id}, function (data) {
-            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zur Bearbeitung geöffnet werden.'); return; }
-            load_state();
-            load_history();
+    $('#sph_bu_pin').click(function () {
+        let email = selected_email;
+        selected_email = null;
+        if (email) toggle_pin(email);
+    });
+    $('#sph_bu_unplace').click(function () {
+        let email = selected_email;
+        selected_email = null;
+        if (email) unplace_student(email);
+    });
+    $('#sph_bu_deselect').click(function () {
+        selected_email = null;
+        render_placement(true);
+    });
+
+    // Die schwebende Auswahl-Leiste gehört an den Bildschirmrand, nicht in den
+    // Kasten der Seite (dessen Unschärfe-Filter würde sie dort festhalten).
+    $('#sph_selection_bar').appendTo('body');
+    $('.sph-area-switch input').on('change', function (e) {
+        let mode = current_area_mode();
+        if (!mode) return;
+        let area = $(e.currentTarget).data('area');
+        let active = $(e.currentTarget).is(':checked');
+        api_call('/api/sph_set_rule_area', {klasse: klasse, raum: raum, mode: mode, area: area, active: active ? 'yes' : 'no'}, function (data) {
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
+            rule_areas = data.areas || {};
+            render_areas();
+            render_groups();
+            render_wishes();
+            if (open_mode === 'spread' && open_cycle_data) render_work_header(open_cycle_data);
+            rerender_open_plan();
         });
+    });
+    let resize_timer = null;
+    window.addEventListener('resize', function () {
+        clearTimeout(resize_timer);
+        resize_timer = setTimeout(function () {
+            fixed_seat_scale = null;
+            if (open_cycle_id || Object.keys(current_placement).length > 0) show_current_plan();
+        }, 200);
     });
 
     load_state();

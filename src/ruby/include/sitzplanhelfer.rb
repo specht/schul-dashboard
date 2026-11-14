@@ -88,14 +88,24 @@ class Main < Sinatra::Base
         (@@klassenleiter[klasse] || []).map { |sh| @@user_info[@@shorthands[sh]] }.compact.map { |u| u[:display_name_official] }
     end
 
+    # Ein neuer Sitzplan entsteht auf einem dieser Wege (mode): 'wishes'
+    # startet eine Wunschrunde (Umfrage an die Klasse); 'spread' (nach den
+    # Vorgaben im Raum verteilt), 'manual' (von Hand) und 'random' (früher
+    # „Zufällig würfeln“, für noch offene Pläne) legen nur einen offenen Zyklus
+    # ohne Umfrage an - gewürfelt bzw. gesetzt wird im Browser.
+    SPH_MODES = %w(wishes spread manual random)
+
     post '/api/sph_start_cycle' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:klasse, :raum], :optional_keys => [:duration_days, :carry_over],
+        data = parse_request_data(:required_keys => [:klasse, :raum], :optional_keys => [:duration_days, :mode],
                                   :types => {:duration_days => Integer})
         klasse = data[:klasse]
         raum = data[:raum]
+        mode = data[:mode] || 'wishes'
+        assert(SPH_MODES.include?(mode), 'Unbekannter Weg.')
         duration_days = data[:duration_days] || 4
         sph_fail!('Die Umfragedauer muss zwischen 1 und 60 Tagen liegen.') unless (1..60).include?(duration_days)
+        assert(sitzplan_allowed_rooms(klasse).include?(raum), 'Dieser Raum gehört nicht zur Klasse.')
         # Nur die Klassenleitung (oder Admin) darf eine Wunschrunde STARTEN -
         # sonst könnte jede Fachlehrkraft, die die Klasse aufruft, spontan eine
         # Umfrage an alle SuS auslösen. Das Verwalten (Wünsche, Paare, Regeln,
@@ -133,27 +143,21 @@ class Main < Sinatra::Base
             now_time = Time.now.strftime('%H:%M')
             end_date = (Date.today + duration_days).strftime('%Y-%m-%d')
 
-            # Optional: Zwangspaare/Verbote/feste Plätze vom letzten GESPEICHERTEN
-            # Plan für dieselbe Klasse+Raum übernehmen, damit die Lehrkraft nicht
-            # jede Wunschrunde wieder bei Null anfängt. Bewusst nur gleiche
-            # Klasse+Raum, da die Koordinaten fester Plätze raumspezifisch sind.
-            carry_over = {:forced_pairs => '[]', :forbidden_pairs => '[]', :fixed_rules => '[]'}
-            if data[:carry_over] == 'yes'
-                last_rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum)
-                    MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-                    WHERE sc.saved_at IS NOT NULL
-                    RETURN sc
-                    ORDER BY sc.saved_at DESC
-                    LIMIT 1;
+            # Vorgaben gelten, bis die Klassenleitung sie ändert: Jeder neue
+            # Plan übernimmt den geltenden Stand (siehe sph_current_rules).
+            # Bewusst je Klasse+Raum, da die Koordinaten fester Plätze
+            # raumspezifisch sind.
+            carry_over = sph_current_rules(klasse, raum)
+
+            if mode != 'wishes'
+                neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :timestamp => timestamp, :id => cycle_id, :klasse => klasse, :raum => raum, :mode => mode, :forced_pairs => carry_over[:forced_pairs], :forbidden_pairs => carry_over[:forbidden_pairs], :fixed_rules => carry_over[:fixed_rules])
+                    MATCH (a:User {email: $session_email})
+                    CREATE (sc:SeatingCycle {id: $id, klasse: $klasse, raum: $raum, mode: $mode, created_at: $timestamp, forced_pairs: $forced_pairs, forbidden_pairs: $forbidden_pairs, fixed_rules: $fixed_rules})
+                    CREATE (sc)-[:STARTED_BY]->(a)
+                    RETURN sc;
                 END_OF_QUERY
-                unless last_rows.empty?
-                    last_sc = last_rows.first['sc']
-                    carry_over = {
-                        :forced_pairs => last_sc[:forced_pairs] || '[]',
-                        :forbidden_pairs => last_sc[:forbidden_pairs] || '[]',
-                        :fixed_rules => last_sc[:fixed_rules] || '[]',
-                    }
-                end
+                respond(:ok => true, :cycle_id => cycle_id)
+                return
             end
 
             transaction do
@@ -238,7 +242,15 @@ class Main < Sinatra::Base
         sus_emails = (@@schueler_for_klasse[klasse] || []).sort do |a, b|
             @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
         end
-        sus = sus_emails.map { |e| {:email => e, :display_name => @@user_info[e][:display_name_official]} }
+        # Vor- und Nachname getrennt, damit die Sitzkarte sie in zwei Zeilen
+        # setzen kann; nc_login für das Foto (wie im Shuffler).
+        sus = sus_emails.map do |e|
+            info = @@user_info[e]
+            {:email => e, :display_name => info[:display_name_official],
+             :first_name => info[:display_first_name] || info[:first_name],
+             :last_name => info[:display_last_name] || info[:last_name],
+             :nc_login => info[:nc_login]}
+        end
 
         can_start_cycle = klassenleiter_for_klasse_or_admin_logged_in?(klasse)
         klassenleiter_names = sph_klassenleiter_names(klasse)
@@ -280,6 +292,12 @@ class Main < Sinatra::Base
                 :end_date => pr && pr[:end_date],
                 :end_time => pr && pr[:end_time],
                 :wishes_open => !!wishes_open,
+                # 'wishes', 'spread', 'manual', 'random' (siehe sph_start_cycle) oder
+                # 'edit' für einen per "Plan ändern" geöffneten Plan
+                :mode => reopened_from ? 'edit' : (sc[:mode] || 'wishes'),
+                # Mit welchem Werkzeug der Plan entstanden ist (auch bei 'edit'):
+                # danach richten sich die eingeschalteten Bereiche der Vorgaben.
+                :base_mode => sph_base_mode(sc),
                 :reopened_from => reopened_from,
                 :seats => reopened_seats ? JSON.parse(reopened_seats) : nil,
                 :forced_pairs => JSON.parse(sc[:forced_pairs] || '[]'),
@@ -298,21 +316,71 @@ class Main < Sinatra::Base
         # Plans - sonst würde der Plan beim Nachbessern gegen sich selbst
         # ausgeglichen, und wer darin seinen Wunsch bekam, würde beim
         # Neuwürfeln benachteiligt.
-        previous_cycle = (open_cycle && open_cycle[:reopened_from]) ?
-            sph_saved_cycle_summary(klasse, raum, open_cycle[:reopened_from]) : last_cycle
+        saved_before = open_cycle && open_cycle[:reopened_from]
+        previous_cycle = saved_before ? sph_saved_cycle_summary(klasse, raum, saved_before) : last_cycle
+        # Vorrang (👑) gibt es nur für Wünsche: Maßstab ist der letzte
+        # gespeicherte Plan, in den Wünsche eingeflossen sind. Ein zufällig oder
+        # von Hand gesetzter Plan dazwischen hat keine Wünsche und sagt deshalb
+        # nichts darüber, wer zuletzt leer ausging.
+        priority_cycle = sph_saved_cycle_summary(klasse, raum, saved_before, true)
 
         respond(:ok => true, :klasse => klasse, :raum => raum, :sus => sus,
                 :can_start_cycle => can_start_cycle, :klassenleiter_names => klassenleiter_names,
                 :open_cycle => open_cycle, :wishes => wishes, :last_cycle => last_cycle,
-                :previous_cycle => previous_cycle)
+                :previous_cycle => previous_cycle, :priority_cycle => priority_cycle,
+                :current_rules => sph_current_rules(klasse, raum).transform_values { |v| JSON.parse(v) rescue [] },
+                :rule_areas => sph_rule_areas(klasse, raum),
+                :seating_groups => sph_load_seating_groups(klasse))
+    end
+
+    # Verteilung im Raum: SuS auf derselben Liste werden im Raum verteilt. Die Listen
+    # gehören zur Klasse (nicht zu einer Wunschrunde) und gelten, bis die
+    # Klassenleitung sie ändert. Nur über require_sph_access! erreichbar und
+    # nie Teil eines gespeicherten Plans, den andere Lehrkräfte oder SuS sehen.
+    # Mitglieder, die die Klasse inzwischen verlassen haben, fallen weg.
+    def sph_load_seating_groups(klasse)
+        rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse)
+            MATCH (g:SeatingGroups {klasse: $klasse})
+            RETURN g.groups AS groups;
+        END_OF_QUERY
+        return [] if rows.empty? || rows.first['groups'].nil?
+        sus_emails = @@schueler_for_klasse[klasse] || []
+        groups = JSON.parse(rows.first['groups']) rescue []
+        return [] unless groups.is_a?(Array)
+        groups.select { |g| g.is_a?(Array) }.map { |g| g.select { |e| sus_emails.include?(e) }.uniq }
+    end
+
+    post '/api/sph_save_seating_groups' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:klasse, :groups],
+                                  :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
+        klasse = data[:klasse]
+        require_sph_access!(klasse)
+        begin
+            groups = JSON.parse(data[:groups])
+        rescue JSON::ParserError
+            assert(false, 'Ungültige Verteilungslisten.')
+        end
+        assert(groups.is_a?(Array) && groups.size <= 30 && groups.all? { |g| g.is_a?(Array) }, 'Ungültige Verteilungslisten.')
+        # Nur SuS dieser Klasse, jede Person höchstens einmal je Liste.
+        sus_emails = @@schueler_for_klasse[klasse] || []
+        groups = groups.map { |g| g.select { |e| e.is_a?(String) && sus_emails.include?(e) }.uniq }
+        neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :groups => groups.to_json, :ts => Time.now.to_i)
+            MERGE (g:SeatingGroups {klasse: $klasse})
+            SET g.groups = $groups
+            SET g.updated = $ts;
+        END_OF_QUERY
+        respond(:ok => true, :groups => groups)
     end
 
     # Zuletzt gespeicherter Plan für Klasse+Raum - mit saved_before nur unter
-    # den Plänen, die davor gespeichert wurden.
-    def sph_saved_cycle_summary(klasse, raum, saved_before)
-        rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :before => saved_before || 2**62)
+    # den Plänen, die davor gespeichert wurden; mit with_wishes nur unter
+    # Plänen aus einer Wunschrunde (auch deren spätere Änderungen).
+    def sph_saved_cycle_summary(klasse, raum, saved_before, with_wishes = false)
+        rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :before => saved_before || 2**62, :with_wishes => with_wishes)
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
             WHERE sc.saved_at IS NOT NULL AND sc.saved_at < $before
+              AND (NOT $with_wishes OR sc.poll_run_id IS NOT NULL)
             RETURN sc
             ORDER BY sc.saved_at DESC
             LIMIT 1;
@@ -328,19 +396,18 @@ class Main < Sinatra::Base
         }
     end
 
-    # Öffentliche (Lehrkraft + eigene Klasse), wunsch-freie Sicht auf einen
-    # GESPEICHERTEN Sitzplan - für die SuS-Ansicht (sitzplananzeige.html).
-    # Absichtlich getrennt von sph_get_state: liefert NUR Namen + Plätze,
-    # nichts zu Wünschen/Bestätigungen/Paaren/Regeln (Lehrergeheimnis).
+    # Wunsch-freie Sicht auf einen GESPEICHERTEN Sitzplan für die Lehrkräfte
+    # der Klasse (sitzplananzeige.html, auch zum Drucken). SuS sehen den Plan
+    # im Dashboard nicht. Absichtlich getrennt von sph_get_state: liefert NUR
+    # Namen + Plätze, nichts zu Wünschen/Paaren/Regeln.
     # Ohne cycle_id: der zuletzt gespeicherte Plan. Mit cycle_id: genau
-    # dieser (frühere) Plan - für die Historien-Liste im Sitzplanhelfer.
+    # dieser (frühere) Plan - für die Liste früherer Pläne.
     post '/api/sph_get_public_plan' do
-        require_user!
+        require_teacher!
         data = parse_request_data(:required_keys => [:klasse, :raum], :optional_keys => [:cycle_id])
         klasse = data[:klasse]
         raum = data[:raum]
-        assert(sph_can_view?(klasse) || @session_user[:klasse] == klasse,
-               'Kein Zugriff auf den Sitzplan dieser Klasse.')
+        assert(sph_can_view?(klasse), 'Kein Zugriff auf den Sitzplan dieser Klasse.')
 
         if data[:cycle_id]
             rows = neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :klasse => klasse, :raum => raum)
@@ -363,8 +430,12 @@ class Main < Sinatra::Base
             sc = rows.first['sc']
             seats_by_email = JSON.parse(sc[:seats] || '{}')
             places = seats_by_email.map do |email, idx|
-                next nil unless @@user_info[email]
-                {:display_name => @@user_info[email][:display_name_official], :seat_index => idx}
+                info = @@user_info[email]
+                next nil unless info
+                {:display_name => info[:display_name_official],
+                 :first_name => info[:display_first_name] || info[:first_name],
+                 :last_name => info[:display_last_name] || info[:last_name],
+                 :nc_login => info[:nc_login], :seat_index => idx}
             end.compact
             respond(:ok => true, :klasse => klasse, :raum => raum, :saved_at => sc[:saved_at], :places => places)
         end
@@ -405,11 +476,132 @@ class Main < Sinatra::Base
         sc
     end
 
+    # Vorgaben (Zwangspaare, Verbote, feste Plätze) gelten für Klasse+Raum,
+    # bis die Klassenleitung sie ändert - auch wenn der Plan, in dem sie
+    # geändert wurden, danach verworfen wird. Deshalb nach jeder Änderung den
+    # Stand des Zyklus in SeatingRules merken; neue Pläne starten von dort.
+    def sph_remember_rules!(cycle_id)
+        neo4j_query(<<~END_OF_QUERY, :id => cycle_id)
+            MATCH (sc:SeatingCycle {id: $id})
+            MERGE (r:SeatingRules {key: sc.klasse + '/' + sc.raum})
+            SET r.forced_pairs = sc.forced_pairs
+            SET r.forbidden_pairs = sc.forbidden_pairs
+            SET r.fixed_rules = sc.fixed_rules;
+        END_OF_QUERY
+    end
+
+    # Die geltenden Vorgaben für Klasse+Raum: zuletzt geänderter Stand, sonst
+    # der des zuletzt gespeicherten Plans (Pläne aus der Zeit davor).
+    def sph_current_rules(klasse, raum)
+        rows = neo4j_query(<<~END_OF_QUERY, :key => "#{klasse}/#{raum}")
+            MATCH (r:SeatingRules {key: $key})
+            RETURN r;
+        END_OF_QUERY
+        source = rows.empty? ? nil : rows.first['r']
+        # Der Knoten kann auch nur die Schalter je Werkzeug enthalten (areas).
+        if source.nil? || source[:forced_pairs].nil?
+            last_rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum)
+                MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
+                WHERE sc.saved_at IS NOT NULL
+                RETURN sc
+                ORDER BY sc.saved_at DESC
+                LIMIT 1;
+            END_OF_QUERY
+            source = last_rows.empty? ? {} : last_rows.first['sc']
+        end
+        {
+            :forced_pairs => source[:forced_pairs] || '[]',
+            :forbidden_pairs => source[:forbidden_pairs] || '[]',
+            :fixed_rules => source[:fixed_rules] || '[]',
+        }
+    end
+
+    # Ziel einer Änderung an den Vorgaben: der offene Plan (cycle_id) oder,
+    # ohne offenen Plan, direkt die geltenden Vorgaben von Klasse+Raum - so
+    # lassen sich Vorgaben auch ohne Wunschrunde oder neuen Plan pflegen.
+    # Liefert das Ziel und die Vorgaben (JSON-Texte) wie in einem Zyklus.
+    def sph_rules_target!(data)
+        if data[:cycle_id]
+            sc = sph_load_cycle_for_edit!(data[:cycle_id])
+            rules = {:forced_pairs => sc[:forced_pairs] || '[]', :forbidden_pairs => sc[:forbidden_pairs] || '[]',
+                     :fixed_rules => sc[:fixed_rules] || '[]'}
+            return [{:cycle_id => sc[:id]}, rules]
+        end
+        klasse = data[:klasse]
+        raum = data[:raum]
+        assert(klasse.is_a?(String) && raum.is_a?(String), 'Klasse und Raum fehlen.')
+        require_sph_access!(klasse)
+        assert(sitzplan_allowed_rooms(klasse).include?(raum), 'Dieser Raum gehört nicht zur Klasse.')
+        [{:klasse => klasse, :raum => raum}, sph_current_rules(klasse, raum)]
+    end
+
+    SPH_RULE_PROPS = [:forced_pairs, :forbidden_pairs, :fixed_rules]
+
+    def sph_write_rule!(target, rules, prop, value)
+        assert(SPH_RULE_PROPS.include?(prop), 'Unbekannte Vorgabe.')
+        if target[:cycle_id]
+            neo4j_query(<<~END_OF_QUERY, :id => target[:cycle_id], :value => value.to_json)
+                MATCH (sc:SeatingCycle {id: $id})
+                SET sc.#{prop} = $value;
+            END_OF_QUERY
+            sph_remember_rules!(target[:cycle_id])
+        else
+            rules = rules.merge(prop => value.to_json)
+            neo4j_query(<<~END_OF_QUERY, :key => "#{target[:klasse]}/#{target[:raum]}", :fp => rules[:forced_pairs], :fb => rules[:forbidden_pairs], :fr => rules[:fixed_rules])
+                MERGE (r:SeatingRules {key: $key})
+                SET r.forced_pairs = $fp
+                SET r.forbidden_pairs = $fb
+                SET r.fixed_rules = $fr;
+            END_OF_QUERY
+        end
+    end
+
+    # Mit welchem Werkzeug ist ein Plan entstanden? Ältere Pläne haben kein
+    # mode: mit Umfrage war es eine Wunschrunde, sonst von Hand („Verteilen“).
+    def sph_base_mode(sc)
+        sc[:mode] || (sc[:poll_run_id] ? 'wishes' : 'manual')
+    end
+
+    # Welche Bereiche der Vorgaben nutzt welches Werkzeug? Die Vorgaben selbst
+    # gelten für alle; je Werkzeug lassen sich Paare, feste Plätze und die
+    # Verteilung im Raum ein- und ausschalten, ohne sie zu löschen. Fehlt ein
+    # Eintrag, ist der Bereich eingeschaltet.
+    SPH_AREA_MODES = %w(manual spread wishes random)
+    SPH_AREAS = %w(pairs fixed spread)
+
+    def sph_rule_areas(klasse, raum)
+        rows = neo4j_query(<<~END_OF_QUERY, :key => "#{klasse}/#{raum}")
+            MATCH (r:SeatingRules {key: $key})
+            RETURN r.areas AS areas;
+        END_OF_QUERY
+        areas = rows.empty? ? nil : (JSON.parse(rows.first['areas'] || '{}') rescue nil)
+        areas.is_a?(Hash) ? areas : {}
+    end
+
+    post '/api/sph_set_rule_area' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:klasse, :raum, :mode, :area, :active])
+        klasse = data[:klasse]
+        raum = data[:raum]
+        require_sph_access!(klasse)
+        assert(sitzplan_allowed_rooms(klasse).include?(raum), 'Dieser Raum gehört nicht zur Klasse.')
+        assert(SPH_AREA_MODES.include?(data[:mode]) && SPH_AREAS.include?(data[:area]) && %w(yes no).include?(data[:active]),
+               'Ungültige Einstellung.')
+        areas = sph_rule_areas(klasse, raum)
+        areas[data[:mode]] = {} unless areas[data[:mode]].is_a?(Hash)
+        areas[data[:mode]][data[:area]] = data[:active] == 'yes'
+        neo4j_query(<<~END_OF_QUERY, :key => "#{klasse}/#{raum}", :areas => areas.to_json)
+            MERGE (r:SeatingRules {key: $key})
+            SET r.areas = $areas;
+        END_OF_QUERY
+        respond(:ok => true, :areas => areas)
+    end
+
     post '/api/sph_set_pair' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email_a, :email_b, :kind])
+        data = parse_request_data(:required_keys => [:email_a, :email_b, :kind], :optional_keys => [:cycle_id, :klasse, :raum])
         assert(['forced', 'forbidden'].include?(data[:kind]), 'Unbekannte Paar-Art.')
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        target, sc = sph_rules_target!(data)
         prop = data[:kind] == 'forced' ? :forced_pairs : :forbidden_pairs
         other_prop = data[:kind] == 'forced' ? :forbidden_pairs : :forced_pairs
         wanted_pair = [data[:email_a], data[:email_b]].sort
@@ -437,33 +629,27 @@ class Main < Sinatra::Base
         end
         pairs = JSON.parse(sc[prop] || '[]')
         pairs << [data[:email_a], data[:email_b]] unless pairs.any? { |p| p.sort == wanted_pair }
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => pairs.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.#{prop} = $value;
-        END_OF_QUERY
+        sph_write_rule!(target, sc, prop, pairs)
         respond(:ok => true, :pairs => pairs)
     end
 
     post '/api/sph_remove_pair' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email_a, :email_b, :kind])
+        data = parse_request_data(:required_keys => [:email_a, :email_b, :kind], :optional_keys => [:cycle_id, :klasse, :raum])
         assert(['forced', 'forbidden'].include?(data[:kind]), 'Unbekannte Paar-Art.')
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        target, sc = sph_rules_target!(data)
         prop = data[:kind] == 'forced' ? :forced_pairs : :forbidden_pairs
         pairs = JSON.parse(sc[prop] || '[]')
         pairs.reject! { |p| p.sort == [data[:email_a], data[:email_b]].sort }
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => pairs.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.#{prop} = $value;
-        END_OF_QUERY
+        sph_write_rule!(target, sc, prop, pairs)
         respond(:ok => true, :pairs => pairs)
     end
 
     post '/api/sph_set_fixed_rule' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email, :x_min, :x_max, :y_min, :y_max],
+        data = parse_request_data(:required_keys => [:email, :x_min, :x_max, :y_min, :y_max], :optional_keys => [:cycle_id, :klasse, :raum],
                                   :types => {:x_min => Integer, :x_max => Integer, :y_min => Integer, :y_max => Integer})
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        target, sc = sph_rules_target!(data)
         rules = JSON.parse(sc[:fixed_rules] || '[]')
         # Ein exakter Platz (x_min == x_max und y_min == y_max, siehe
         # sitzplanhelfer.html/#sph_rule_seatmap) ist physisch nur einer Person
@@ -490,23 +676,17 @@ class Main < Sinatra::Base
         end
         rules.reject! { |r| r[0] == data[:email] }
         rules << [data[:email], [data[:x_min], data[:x_max]], [data[:y_min], data[:y_max]]]
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => rules.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.fixed_rules = $value;
-        END_OF_QUERY
+        sph_write_rule!(target, sc, :fixed_rules, rules)
         respond(:ok => true, :rules => rules)
     end
 
     post '/api/sph_remove_fixed_rule' do
         require_teacher!
-        data = parse_request_data(:required_keys => [:cycle_id, :email])
-        sc = sph_load_cycle_for_edit!(data[:cycle_id])
+        data = parse_request_data(:required_keys => [:email], :optional_keys => [:cycle_id, :klasse, :raum])
+        target, sc = sph_rules_target!(data)
         rules = JSON.parse(sc[:fixed_rules] || '[]')
         rules.reject! { |r| r[0] == data[:email] }
-        neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :value => rules.to_json)
-            MATCH (sc:SeatingCycle {id: $id})
-            SET sc.fixed_rules = $value;
-        END_OF_QUERY
+        sph_write_rule!(target, sc, :fixed_rules, rules)
         respond(:ok => true, :rules => rules)
     end
 
@@ -602,8 +782,8 @@ class Main < Sinatra::Base
                 :seats_count => JSON.parse(sc[:seats] || '{}').size,
                 :satisfied_count => JSON.parse(sc[:satisfied_emails] || '[]').size,
                 :unresolved_count => JSON.parse(sc[:unresolved] || '[]').map { |f| f['email'] }.uniq.size,
-                # 'manual' = über "Verteilen" von Hand gesetzt, ohne Wünsche
-                :source => sc[:source],
+                # Pläne ohne Wunschrunde (zufällig, von Hand, früher "Verteilen")
+                :with_wishes => !sc[:poll_run_id].nil?,
             }
         end
         respond(:ok => true, :cycles => cycles)
@@ -653,24 +833,26 @@ class Main < Sinatra::Base
             LIMIT 1;
         END_OF_QUERY
         unless existing_open.empty?
-            sph_fail!('Es ist bereits eine Wunschrunde oder eine Bearbeitung offen. Bitte diese zuerst speichern oder oben verwerfen, bevor du einen anderen Plan bearbeitest.')
+            sph_fail!('Es ist bereits eine Wunschrunde oder eine Bearbeitung offen. Bitte diese zuerst speichern oder verwerfen, bevor Sie einen anderen Plan bearbeiten.')
         end
 
         new_id = RandomTag.generate(12)
         timestamp = Time.now.to_i
-        params = {
+        # Die geltenden Vorgaben, nicht die vom Zeitpunkt des Originals.
+        rules = sph_current_rules(sc[:klasse], sc[:raum])
+        params = rules.merge({
+            :base_mode => sph_base_mode(sc),
             :id => new_id, :klasse => sc[:klasse], :raum => sc[:raum],
             :poll_id => sc[:poll_id], :poll_run_id => sc[:poll_run_id],
-            :forced_pairs => sc[:forced_pairs] || '[]', :forbidden_pairs => sc[:forbidden_pairs] || '[]',
-            :fixed_rules => sc[:fixed_rules] || '[]', :timestamp => timestamp,
+            :timestamp => timestamp,
             :session_email => @session_user[:email], :source_id => sc[:id],
-        }
+        })
         neo4j_query(<<~END_OF_QUERY, params)
             MATCH (a:User {email: $session_email})
             MATCH (old:SeatingCycle {id: $source_id})
             CREATE (nc:SeatingCycle {id: $id, klasse: $klasse, raum: $raum, poll_id: $poll_id, poll_run_id: $poll_run_id,
                                       created_at: $timestamp, forced_pairs: $forced_pairs, forbidden_pairs: $forbidden_pairs,
-                                      fixed_rules: $fixed_rules})
+                                      fixed_rules: $fixed_rules, mode: $base_mode})
             CREATE (nc)-[:STARTED_BY]->(a)
             CREATE (nc)-[:REOPENED_FROM]->(old);
         END_OF_QUERY

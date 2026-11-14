@@ -22,7 +22,7 @@ Presse:
 - Daten zu Stundenplänen, Vertretungsplänen, Pausenaufsichtsplänen, Kurswahlen werden aus CSV-Dateien gelesen, die aus WinSchule oder Untis exportiert werden
 - Anmeldung ohne Passwort, dafür mit Zahlencode, der per E-Mail versendet wird oder alternativ per OTP
 - mit Hilfe eines persönlichen iCal-Links kann der aktuelle Dashboard-Stundenplan in andere Kalender eingebunden werden
-- Sitzplanhelfer: wunschbasierter Sitzplan-Assistent, bei dem SuS per Umfrage Sitzwünsche angeben und die Lehrkraft Zwangsvorgaben, Trefferquote und eine Historie gespeicherter Pläne im Blick behält
+- Sitzplan: Die Klassenleitung erstellt den Sitzplan mit Sitzwünschen der SuS (per Umfrage), zufällig oder von Hand, behält Vorgaben, Trefferquote und frühere Pläne im Blick; getrennt davon die Gruppenbildung (zufällige Gruppen für Gruppenarbeiten)
 - außerdem u. a. Nachrichten, Termine, Umfragen, Kursplanung, Klassenarbeiten, Bibliothek, Zeugnisse, Projekttage und Monitore für Vertretungsplan und Raumbuchungen
 
 ## Schnellstart

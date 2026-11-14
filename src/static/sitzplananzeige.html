@@ -1,10 +1,29 @@
-#{redirect_on_error { require_user! }}
+#{redirect_on_error { require_teacher!; assert(sph_can_view?(sitzplan_path_params[0])) }}
 <style>
 .spa-container {
     max-width: 1100px;
-    margin: 0 auto;
+    margin: 1.5em auto;
     padding: 1em;
     text-align: center;
+    /* Karte wie im Sitzplan, sonst steht der Text direkt auf dem Hintergrundbild */
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 0.5em;
+    box-shadow: 0 0.2em 0.6em rgba(0,0,0,0.15);
+}
+body.dark .spa-container {
+    background-color: rgba(30, 33, 31, 0.9);
+    color: #e4e8e5;
+}
+body.dark #spa_seats .place {
+    background-color: #2a2f2c;
+}
+body.dark .spa-card-name {
+    color: #eee;
+}
+/* Breite Räume lassen sich auf schmalen Bildschirmen seitlich verschieben. */
+.spa-seat-scroll {
+    overflow-x: auto;
 }
 .spa-tafel {
     display: block;
@@ -30,19 +49,38 @@
     border-radius: 1vh;
     overflow: hidden;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
+    padding: 2px;
+}
+/* Wie im Sitzplan: Foto im Quadrat, darunter der ganze Name. */
+.spa-card-photo {
+    flex: none;
+    border-radius: 12%;
+    background-color: #e4e9e5;
+    background-size: cover;
+    background-position: center;
+}
+.spa-card-name {
+    width: 100%;
+    margin-top: 3px;
+    line-height: 1.1;
     font-weight: bold;
-    padding: 4px;
-    word-break: break-word;
+    color: #222;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+.spa-card-name.spa-break-anywhere {
+    overflow-wrap: anywhere;
+}
+.spa-card-name span {
+    display: block;
 }
 .spa-empty-hint {
     color: #666;
     margin-top: 2em;
-}
-#spa_bu_print {
-    display: none;
 }
 /* Ausdruck: nur Überschrift, Tafel und Plätze, ohne Dashboard-Menü,
    Hintergrundbild und Schatten (die werden oft gar nicht oder grau gedruckt). */
@@ -66,6 +104,15 @@
     .spa-container {
         max-width: none;
         padding: 0;
+        background: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+    }
+    .spa-seat-scroll {
+        overflow: visible;
+    }
+    .spa-card-name {
+        color: #000 !important;
     }
     .spa-container h1 {
         margin-top: 0;
@@ -88,10 +135,10 @@
 </style>
 <div class="spa-container">
     <h1>Sitzplan <span id="spa_label"></span></h1>
+    <div class='api_messages'></div>
     <p id="spa_saved_at" class="text-muted"></p>
-    <button class="btn btn-light spa-no-print" id="spa_bu_print"><i class="fa fa-print"></i>&nbsp;&nbsp;Drucken</button>
     <span class="spa-tafel">Tafel</span>
-    <div id="spa_seats"></div>
+    <div class="spa-seat-scroll"><div id="spa_seats"></div></div>
     <p class="spa-empty-hint" id="spa_empty_hint" style="display: none;">Für diese Klasse/diesen Raum wurde noch kein Sitzplan gespeichert.</p>
 </div>
 
@@ -118,9 +165,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     $('#spa_label').text(`${klasse} – Raum ${raum}`);
 
-    // Ohne ?cycle=... wird der zuletzt gespeicherte Plan gezeigt (Normalfall
-    // für SuS). Mit ?cycle=... zeigt der Link aus der Historien-Liste im
-    // Sitzplanhelfer gezielt einen bestimmten, ggf. älteren Plan.
+    // Ohne ?cycle=... wird der zuletzt gespeicherte Plan gezeigt. Mit
+    // ?cycle=... zeigt der Link aus „Frühere Sitzpläne“ gezielt einen
+    // bestimmten, ggf. älteren Plan.
     let cycle_id = new URLSearchParams(window.location.search).get('cycle');
     let request = {klasse: klasse, raum: raum};
     if (cycle_id) request.cycle_id = cycle_id;
@@ -136,12 +183,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         places = data.places;
         render_seats(false);
-        $('#spa_bu_print').show().on('click', function () { window.print(); });
         // Für den Ausdruck auf eine Querformat-Seite zugeschnitten zeichnen,
         // danach wieder in Bildschirmgröße.
         window.addEventListener('beforeprint', function () { render_seats(true); });
         window.addEventListener('afterprint', function () { render_seats(false); });
-        // ?print=1 (Link „Sitzplan drucken" im Sitzplanhelfer) öffnet direkt
+        // ?print=1 (Knopf „Drucken“ auf der Sitzplan-Seite) öffnet direkt
         // den Druckdialog.
         if (new URLSearchParams(window.location.search).get('print') === '1') {
             setTimeout(function () { window.print(); }, 300);
@@ -150,6 +196,9 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 var places = [];
+
+// Graue Figur, solange das Foto lädt oder wenn es keins gibt.
+const SPA_SILHOUETTE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><circle cx='10' cy='7.6' r='4' fill='%23a3aea7'/><ellipse cx='10' cy='19.5' rx='7.5' ry='6.5' fill='%23a3aea7'/></svg>";
 
 function render_seats(for_print) {
     let w = 1, h = 1;
@@ -164,19 +213,59 @@ function render_seats(for_print) {
         // Überschrift und Tafel ab.
         scale = Math.min(110, 1000 / w, 500 / h);
     } else {
+        // Nicht kleiner als 64, sonst passen Foto und Name nicht mehr auf den
+        // Platz - schmale Bildschirme verschieben den Raum dann seitlich.
         let container_width = Math.min($('.spa-container').width() || 900, 900);
-        scale = Math.min(90, container_width / w);
+        scale = Math.max(64, Math.min(90, container_width / w));
     }
     container.css('height', `${h * scale}px`).css('width', `${w * scale}px`);
+    let size = scale * 0.9;
     for (let place of places) {
         let seat = seats[place.seat_index];
         if (!seat) continue;
         let div = $('<div>').addClass('place')
             .css('left', `${seat[0] * scale}px`).css('top', `${seat[1] * scale}px`)
-            .css('width', `${scale * 0.9}px`).css('height', `${scale * 0.9}px`)
-            .css('font-size', `${scale * 0.14}px`)
-            .text(place.display_name);
+            .css('width', `${size}px`).css('height', `${size}px`);
+        // Wie im Sitzplan der Klassenleitung: Foto im Quadrat, darunter der
+        // ganze Name, Vor- und Nachname je in einer Zeile.
+        let photo_size = Math.round(size * 0.42);
+        let images = [`url("${SPA_SILHOUETTE}")`];
+        if (place.nc_login) images.unshift(`url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(place.nc_login)}/128)`);
+        div.append($('<div>').addClass('spa-card-photo')
+            .css({width: `${photo_size}px`, height: `${photo_size}px`, 'background-image': images.join(', ')}));
+        let name = $('<div>').addClass('spa-card-name').css('font-size', `${Math.max(8, Math.min(15, size * 0.155))}px`);
+        if (place.first_name || place.last_name) {
+            name.append($('<span>').text(place.first_name || ''))
+                .append(document.createTextNode(' '))
+                .append($('<span>').text(place.last_name || ''));
+        } else {
+            name.text(place.display_name);
+        }
+        div.append(name);
         container.append(div);
     }
+    fit_names(container);
+}
+
+// Namen nie abschneiden: erst die Schrift kleiner, dann das Foto, zuletzt
+// darf ein Wort umbrechen.
+function fit_names(container) {
+    container.find('.place').each(function () {
+        let card = this;
+        let name = card.querySelector('.spa-card-name');
+        let photo = card.querySelector('.spa-card-photo');
+        let overflows = () => name.scrollWidth > name.clientWidth + 1 || card.scrollHeight > card.clientHeight + 1;
+        let fs = parseFloat(name.style.fontSize);
+        while (overflows() && fs > 7) {
+            fs -= 0.5;
+            name.style.fontSize = `${fs}px`;
+        }
+        let ps = parseFloat(photo.style.width);
+        while (overflows() && ps > card.clientWidth * 0.3) {
+            ps -= 2;
+            photo.style.width = photo.style.height = `${ps}px`;
+        }
+        if (overflows()) name.classList.add('spa-break-anywhere');
+    });
 }
 </script>

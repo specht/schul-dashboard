@@ -18,6 +18,7 @@ module SitzplanDaten
     INTERNAL_DIR = '/internal/sitzplan'
     ROOMS_DIR = File.join(INTERNAL_DIR, 'raeume')
     BACKUP_DIR = File.join(ROOMS_DIR, 'backup')
+    LIST_BACKUP_DIR = File.join(INTERNAL_DIR, 'backup')
     BACKUPS_KEPT = 10
     LISTS = {
         :rules => {:var => 'rules', :legacy => ['rules.js']},
@@ -293,6 +294,34 @@ module SitzplanDaten
         entries = path.end_with?('.json') ? JsLiteral.new(src).whole : JsLiteral.new(src).definition(info[:var])
         raise FormatError, "#{info[:var]} ist keine Liste" unless entries.is_a?(Array)
         entries
+    end
+
+    # Wie list, aber vollständig und streng: Ist die Quelle nicht lesbar, gibt es
+    # einen Fehler statt einer leeren Liste. Grundlage zum Schreiben - sonst
+    # gingen beim ersten Speichern die Einträge aller anderen Klassen verloren.
+    def self.list_strict(kind)
+        path = list_path(kind)
+        entries = File.exist?(path) ? JSON.parse(read_utf8(path)) : legacy_list(kind)
+        raise FormatError, 'keine Liste' unless entries.is_a?(Array)
+        entries
+    end
+
+    # Schreibt rules.json bzw. bff.json unter /internal (nie nach /data) und
+    # behält die vorherige Fassung als Sicherung. Danach gilt diese Datei statt
+    # der alten rules.js/bff.js aus dem Datenrepo, wie nach migrate-sitzplan.rb.
+    def self.write_list(kind, entries)
+        raise FormatError, 'unbekannte Liste' unless LISTS[kind]
+        path = list_path(kind)
+        WRITE_MUTEX.synchronize do
+            FileUtils.mkdir_p(LIST_BACKUP_DIR)
+            if File.exist?(path)
+                stamp = Time.now.utc.strftime('%Y%m%dT%H%M%S%6NZ')
+                FileUtils.cp(path, File.join(LIST_BACKUP_DIR, "#{kind}-#{stamp}.json"))
+                backups = Dir[File.join(LIST_BACKUP_DIR, "#{kind}-[0-9]*.json")].sort
+                FileUtils.rm(backups[0...(backups.size - BACKUPS_KEPT)]) if backups.size > BACKUPS_KEPT
+            end
+            write_atomic(path, entries)
+        end
     end
 
     # Gibt bei unlesbaren Daten eine leere Liste zurück: lieber ohne Regeln mischen,

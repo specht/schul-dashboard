@@ -67,6 +67,65 @@ class Main < Sinatra::Base
         END_OF_QUERY
     end
 
+    # Regeln des Shufflers (rules: Bereich je Person, bff: Paare mit
+    # Häufigkeit) für die Klasse - für die Zwischenseite vor dem Shuffler. Nur
+    # die Klassenleitung; nur Einträge, bei denen alle Personen in der Klasse
+    # sind. Die Vorgaben der übrigen Werkzeuge sind davon getrennt.
+    def sitzplan_shuffler_rules_for(klasse)
+        login_to_email = {}
+        (@@schueler_for_klasse[klasse] || []).each { |e| login_to_email[@@user_info[e][:nc_login]] = e }
+        rules = SitzplanDaten.list(:rules).select { |r| login_to_email[r[0]] && r[1].is_a?(Array) && r[2].is_a?(Array) }
+        bff = SitzplanDaten.list(:bff).select { |b| login_to_email[b[0]] && login_to_email[b[1]] }
+        {
+            :rules => rules.map { |r| {:email => login_to_email[r[0]], :x => r[1], :y => r[2]} },
+            :bff => bff.map { |b| {:a => login_to_email[b[0]], :b => login_to_email[b[1]], :freq => (b[2].is_a?(Integer) && b[2] > 0 ? b[2] : 1)} },
+        }
+    end
+
+    post '/api/sitzplan_shuffler_rules' do
+        data = parse_request_data(:required_keys => [:klasse, :raum])
+        require_sitzplan_klassenleitung!(data[:klasse], data[:raum])
+        respond({:ok => true}.merge(sitzplan_shuffler_rules_for(data[:klasse])))
+    end
+
+    post '/api/sitzplan_shuffler_rules_save' do
+        data = parse_request_data(:required_keys => [:klasse, :raum, :rules, :bff],
+                                  :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
+        klasse = data[:klasse]
+        require_sitzplan_klassenleitung!(klasse, data[:raum])
+        email_to_login = {}
+        (@@schueler_for_klasse[klasse] || []).each { |e| email_to_login[e] = @@user_info[e][:nc_login] }
+        rules = JSON.parse(data[:rules]) rescue nil
+        bff = JSON.parse(data[:bff]) rescue nil
+        assert(rules.is_a?(Array) && bff.is_a?(Array) && rules.size <= 200 && bff.size <= 200, 'Ungültige Regeln.')
+        range_ok = lambda { |v| v.is_a?(Array) && v.size == 2 && v.all? { |n| n.is_a?(Numeric) && n.finite? && n.between?(0, 60) } && v[0] <= v[1] }
+        new_rules = rules.map do |r|
+            assert(r.is_a?(Hash) && email_to_login[r['email']] && range_ok.call(r['x']) && range_ok.call(r['y']), 'Ungültige Regeln.')
+            [email_to_login[r['email']], r['x'], r['y']]
+        end
+        new_bff = bff.map do |b|
+            assert(b.is_a?(Hash) && email_to_login[b['a']] && email_to_login[b['b']] && b['a'] != b['b'] &&
+                   b['freq'].is_a?(Integer) && b['freq'].between?(1, 10), 'Ungültige Paare.')
+            [email_to_login[b['a']], email_to_login[b['b']], b['freq']]
+        end
+        # Der Shuffler kennt je Person nur einen Partner.
+        in_pairs = new_bff.flat_map { |b| b[0, 2] }
+        sitzplan_fail!('Eine Person kann beim Shuffler nur in einem Paar sein.') if in_pairs.uniq.size != in_pairs.size
+        logins = email_to_login.values
+        begin
+            all_rules = SitzplanDaten.list_strict(:rules)
+            all_bff = SitzplanDaten.list_strict(:bff)
+        rescue SitzplanDaten::FormatError, JSON::ParserError
+            sitzplan_fail!('Die bisherigen Regeln des Shufflers sind nicht lesbar. Es wurde nichts geändert.')
+        end
+        # Einträge der übrigen Klassen bleiben, wie sie sind.
+        all_rules = all_rules.reject { |r| r.is_a?(Array) && logins.include?(r[0]) } + new_rules
+        all_bff = all_bff.reject { |b| b.is_a?(Array) && logins.include?(b[0]) && logins.include?(b[1]) } + new_bff
+        SitzplanDaten.write_list(:rules, all_rules)
+        SitzplanDaten.write_list(:bff, all_bff)
+        respond({:ok => true}.merge(sitzplan_shuffler_rules_for(klasse)))
+    end
+
     post '/api/sitzplaneditor_save' do
         data = parse_request_data(:required_keys => [:klasse, :raum, :seats],
                                   :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
@@ -89,60 +148,5 @@ class Main < Sinatra::Base
         seats = seats.map { |s| [s[0] - min_x, s[1] - min_y] + s[2..] }.sort_by { |s| [s[1], s[0]] }
         SitzplanDaten.write_room(data[:raum], seats)
         respond(:ok => true, :seats => seats)
-    end
-
-    post '/api/sitzplanverteilen_state' do
-        data = parse_request_data(:required_keys => [:klasse, :raum])
-        klasse = data[:klasse]
-        raum = data[:raum]
-        require_sitzplan_klassenleitung!(klasse, raum)
-        sus_emails = (@@schueler_for_klasse[klasse] || []).sort_by do |e|
-            [@@user_info[e][:last_name].downcase, @@user_info[e][:first_name].downcase]
-        end
-        sus = sus_emails.map do |e|
-            info = @@user_info[e]
-            first = info[:display_first_name] || info[:first_name]
-            last = info[:display_last_name] || info[:last_name]
-            {:email => e, :name => info[:display_name_official], :short => "#{first} #{last[0]}."}
-        end
-        rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum)
-            MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-            WHERE sc.saved_at IS NOT NULL
-            RETURN sc
-            ORDER BY sc.saved_at DESC
-            LIMIT 1;
-        END_OF_QUERY
-        last_seats = rows.empty? ? {} : JSON.parse(rows.first['sc'][:seats] || '{}')
-        respond(:ok => true, :sus => sus, :last_seats => last_seats)
-    end
-
-    # Speichert eine manuelle Verteilung als SeatingCycle wie der
-    # Sitzplanhelfer, damit sie in seiner Plan-Historie und in der
-    # SuS-Ansicht (sitzplananzeige.html) erscheint.
-    post '/api/sitzplanverteilen_save' do
-        data = parse_request_data(:required_keys => [:klasse, :raum, :seats],
-                                  :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
-        klasse = data[:klasse]
-        raum = data[:raum]
-        require_sitzplan_klassenleitung!(klasse, raum)
-        seats = JSON.parse(data[:seats]) rescue nil
-        assert(seats.is_a?(Hash), 'Ungültige Verteilung.')
-        sus_emails = @@schueler_for_klasse[klasse] || []
-        layout = SitzplanDaten.room(raum)
-        sitzplan_fail!('Für diesen Raum ist keine Bestuhlung angelegt.') if layout.nil?
-        seats = seats.select { |email, idx| sus_emails.include?(email) && idx.is_a?(Integer) && idx >= 0 && idx < layout.size }
-        assert(seats.values.uniq.size == seats.size, 'Ein Platz ist doppelt vergeben.')
-        sitzplan_fail!('Setzen Sie mindestens eine Person auf einen Platz.') if seats.empty?
-        timestamp = Time.now.to_i
-        neo4j_query_expect_one(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => RandomTag.generate(12), :klasse => klasse, :raum => raum, :timestamp => timestamp, :seats => seats.to_json)
-            MATCH (a:User {email: $session_email})
-            CREATE (sc:SeatingCycle {id: $id, klasse: $klasse, raum: $raum, source: 'manual',
-                                     created_at: $timestamp, saved_at: $timestamp, seats: $seats,
-                                     unresolved: '[]', satisfied_emails: '[]',
-                                     forced_pairs: '[]', forbidden_pairs: '[]', fixed_rules: '[]'})
-            CREATE (sc)-[:STARTED_BY]->(a)
-            RETURN sc;
-        END_OF_QUERY
-        respond(:ok => true, :placed => seats.size)
     end
 end

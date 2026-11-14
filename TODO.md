@@ -140,8 +140,9 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] Profil- und Admin-Menü sind sehr lange Dropdowns
 - [ ] Summernote-Editor auf dem Handy schwer bedienbar (Nachrichten,
       Termine)
-- [ ] Sitzplan-Ansicht auf dem Handy: Namen werden mitten im Wort
-      umbrochen („Musterman / n“)
+- [x] Sitzplan-Ansicht auf dem Handy: Namen werden mitten im Wort
+      umbrochen („Musterman / n“) – Plätze zeigen jetzt Foto und ganzen
+      Namen, breite Räume lassen sich seitlich verschieben
 
 ### Barrierefreiheit
 
@@ -157,7 +158,8 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] Navigation: Label „Toggle navigation“ auf Deutsch
 - [ ] `.text-muted` ist fest `#666` und im Dunkelmodus kaum lesbar
 - [ ] `sitzplan*`-Seiten haben keine Dunkelmodus-Regeln (weiße Karte mit
-      weißer Schrift möglich)
+      weißer Schrift möglich) – erledigt für Sitzplan-Seite und Ansicht
+      ohne Wünsche, offen für Editor und Shuffler
 - [ ] Kontraste bei eigenen Farbschemata und Filtern (Kontrast,
       Helligkeit) prüfen, z. B. mit axe-core in den E2E-Tests
 - [ ] Sichtbare Fokus-Rahmen (teilweise durch `dark.css` überschrieben)

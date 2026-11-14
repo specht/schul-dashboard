@@ -13,8 +13,15 @@ der Klasse zufällig mischt (mit optionalen statischen Regeln, siehe
 Auf der Klassenseite steht im Abschnitt „Sitzplan“ je Klassenraum ein
 Knopf „Sitzplan Raum …“: für die Klassenleitung diese Seite, für die
 übrigen Lehrkräfte der Klasse die Ansicht ohne Wünsche (siehe unten).
-Den unveränderten Shuffler öffnet die Klassenleitung über den Knopf
-„Shuffler“ oben auf dieser Seite. Getrennt davon steht im Abschnitt
+Den Shuffler öffnet die Klassenleitung über den Knopf „Shuffler“ oben auf
+dieser Seite. Vorher zeigt ein Kasten seine eigenen Regeln (Bereiche je
+Person und Paare mit Häufigkeit, `rules.json`/`bff.json`), die sich dort
+ansehen und ändern lassen; „Shuffler starten“ öffnet ihn dann. Diese Regeln
+sind getrennt von den Vorgaben der übrigen Werkzeuge. Gespeichert wird nur
+unter `/internal/sitzplan` (mit Sicherung der vorigen Fassung), nie in
+`/data`; beim ersten Speichern wird die alte Liste aus dem Datenrepo
+vollständig übernommen, verändert werden nur die Einträge der eigenen
+Klasse. Ist die bisherige Liste nicht lesbar, wird nichts gespeichert. Getrennt davon steht im Abschnitt
 „Gruppenbildung“ für alle Lehrkräfte der Klasse „Gruppen bilden“, ein
 eigenes Werkzeug ohne Bezug zum Sitzplan. Die früheren Knöpfe „Editor“,
 „Helfer“ und „Verteilen“ gibt es dort nicht mehr: Sie stehen als

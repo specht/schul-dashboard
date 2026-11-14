@@ -94,8 +94,7 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   await openSeatingPlan(page, RAUM);
   await expect(page.locator('#sph_link_editor')).toBeVisible();
   // the Shuffler itself stays as it is, it is opened from here
-  await expect(page.locator('#sph_link_shuffler')).toHaveAttribute('href', `/sitzplan/${KLASSE}/${RAUM}`);
-  await expect(page.locator('#sph_link_shuffler')).not.toHaveClass(/disabled/);
+  await expect(page.locator('#sph_link_shuffler')).toBeEnabled();
   await startNewPlan(page, 'cycle');
   // tables, Shuffler and "Von Hand verteilen" stay on top while the wish
   // round runs; starting over by hand asks first
@@ -485,6 +484,71 @@ test('Sitzplan: Widerspruch in den Vorgaben knallrot markiert', async ({ page })
   await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
   await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
   await discardOpenPlan(page);
+});
+
+test('Shuffler: Regeln vor dem Start ansehen und ändern', async ({ page }) => {
+  // no music in the example data
+  await page.route('**/api/get_music/**', (route) => route.fulfill({ status: 200, contentType: 'audio/mpeg', body: '' }));
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await openSeatingPlan(page, RAUM);
+
+  await page.locator('#sph_link_shuffler').click();
+  const box = page.locator('#sph_shuffler_box');
+  await expect(box).toBeVisible();
+  await expect(page.locator('#sph_sh_start')).toHaveAttribute('href', `/sitzplan/${KLASSE}/${RAUM}`);
+  // left over from an aborted earlier run
+  while (await page.locator('#sph_sh_rules_list a, #sph_sh_pairs_list a').count() > 0) {
+    const removed = page.waitForResponse('**/api/sitzplan_shuffler_rules_save');
+    await page.locator('#sph_sh_rules_list a, #sph_sh_pairs_list a').first().click();
+    await removed;
+  }
+
+  // an area and a pair, only for the Shuffler
+  await page.locator('#sph_sh_rule_sus').selectOption({ label: 'Max Mustermann' });
+  await page.locator('#sph_sh_rule_area').selectOption('front');
+  let saved = page.waitForResponse('**/api/sitzplan_shuffler_rules_save');
+  await page.locator('#sph_sh_bu_add_rule').click();
+  expect((await saved).status()).toBe(200);
+  await expect(page.locator('#sph_sh_rules_list')).toContainText('Max Mustermann (vorne)');
+  await page.locator('#sph_sh_pair_a').selectOption({ label: 'Elli Mustermann' });
+  await page.locator('#sph_sh_pair_b').selectOption({ label: 'Mallory Mustermann' });
+  await page.locator('#sph_sh_pair_freq').selectOption('2');
+  saved = page.waitForResponse('**/api/sitzplan_shuffler_rules_save');
+  await page.locator('#sph_sh_bu_add_pair').click();
+  expect((await saved).status()).toBe(200);
+  await expect(page.locator('#sph_sh_pairs_list')).toContainText('jedes 2. Mal');
+
+  // the Shuffler knows one partner per person only
+  await page.locator('#sph_sh_pair_a').selectOption({ label: 'Max Mustermann' });
+  await page.locator('#sph_sh_pair_b').selectOption({ label: 'Elli Mustermann' });
+  await page.locator('#sph_sh_bu_add_pair').click();
+  await expect(dashboardDialog(page)).toContainText('nur einen Partner');
+  await dashboardDialog(page).getByRole('button', { name: 'OK' }).click();
+
+  // kept, and the Vorgaben of the other tools are untouched
+  await page.reload();
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_forced_list')).toContainText('keine');
+  await expect(page.locator('#sph_rules_list')).toContainText('keine festen Plätze');
+  await page.locator('#sph_link_shuffler').click();
+  await expect(page.locator('#sph_sh_rules_list')).toContainText('Max Mustermann (vorne)');
+
+  // "Shuffler starten": the Shuffler gets exactly these rules
+  await page.locator('#sph_sh_start').click();
+  await expect(page.locator('#seats .place')).toHaveCount(3);
+  expect(await page.evaluate(() => [(window as any).rules.length, (window as any).bff.length, (window as any).bff[0][2]])).toEqual([1, 1, 2]);
+
+  // leave nothing behind
+  await page.goto(`/sitzplanhelfer/${KLASSE}/${RAUM}`);
+  await page.locator('#sph_link_shuffler').click();
+  for (let i = 0; i < 2; i++) {
+    const removed = page.waitForResponse('**/api/sitzplan_shuffler_rules_save');
+    await page.locator('#sph_sh_rules_list a, #sph_sh_pairs_list a').first().click();
+    expect((await removed).status()).toBe(200);
+  }
+  await expect(page.locator('#sph_sh_rules_list')).toContainText('keine');
+  await expect(page.locator('#sph_sh_pairs_list')).toContainText('keine');
 });
 
 test('Gruppenbildung: eigener Abschnitt, Gruppen für die Klasse mischen', async ({ page }) => {

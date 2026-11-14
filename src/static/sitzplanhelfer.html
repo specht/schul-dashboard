@@ -298,6 +298,11 @@ h5.sph-area-off {
     flex-wrap: wrap;
     gap: 0.5em;
 }
+.sph-room-bar #sph_shuffler_box h6 {
+    margin-top: 0.8em;
+    font-weight: bold;
+}
+.sph-room-bar #sph_shuffler_box,
 .sph-room-bar #sph_new_choice {
     margin: 1em 0 0.2em 0;
 }
@@ -507,7 +512,7 @@ body.dark .sph-group {
         <div class="sph-room-line"><i class="fa fa-th"></i>&nbsp;&nbsp;<span id="sph_room_info"></span></div>
         <div class="sph-tools">
             <a class="btn btn-outline-primary" id="sph_link_editor" href="#"><i class="fa fa-th"></i>&nbsp;&nbsp;Tische im Raum</a>
-            <a class="btn btn-outline-primary" id="sph_link_shuffler" href="#" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</a>
+            <button class="btn btn-outline-primary" id="sph_link_shuffler" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts. Vorher zeigt die Seite seine Regeln."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</button>
             <button class="btn btn-outline-primary" id="sph_bu_start_manual" title="Ohne Wünsche und ohne Würfeln: Sie setzen jede Person selbst auf ihren Platz."><i class="fa fa-hand-pointer-o"></i>&nbsp;&nbsp;Von Hand verteilen</button>
             <button class="btn btn-outline-primary" id="sph_bu_start_spread" title="Ohne Umfrage und ohne Wünsche: Der Plan wird sofort nach Ihren Vorgaben im Raum verteilt. Danach können Sie von Hand umsetzen."><i class="fa fa-th-large"></i>&nbsp;&nbsp;Im Raum verteilen</button>
             <button class="btn btn-outline-primary" id="sph_bu_wishes" title="Umfrage an die Klasse: Die SuS geben bis zu drei Wunschpartner an, danach erzeugen Sie den Plan."><i class="fa fa-comments"></i>&nbsp;&nbsp;Wunschrunde</button>
@@ -519,6 +524,40 @@ body.dark .sph-group {
                 <p><label for="sph_duration_days">Dauer der Umfrage:</label>
                     <input type="number" id="sph_duration_days" class="form-control sph-days" min="1" max="60" value="4"> Tage</p>
                 <button class="btn btn-primary" id="sph_bu_start_cycle">Wunschrunde starten</button>
+            </div>
+        </div>
+        <!-- Zwischenseite vor dem Shuffler: seine eigenen Regeln (rules/bff),
+             getrennt von den Vorgaben der übrigen Werkzeuge -->
+        <div id="sph_shuffler_box" class="sph-section" style="display: none;">
+            <div class="sph-choice">
+                <h5>Regeln für den Shuffler</h5>
+                <p class="sph-legend">Diese Regeln gelten nur für den Shuffler, der vor der Klasse zufällig auslost und nichts speichert. Ihre Vorgaben für die anderen Werkzeuge bleiben davon unberührt.</p>
+                <h6>Bereiche</h6>
+                <div class="form-inline">
+                    <select class="form-control" id="sph_sh_rule_sus"></select>
+                    <select class="form-control" id="sph_sh_rule_area" style="margin-left: 0.5em;">
+                        <option value="front">vorne (erste zwei Reihen)</option>
+                        <option value="back">hinten</option>
+                        <option value="left">links</option>
+                        <option value="right">rechts</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary sph-sh-edit" id="sph_sh_bu_add_rule" style="margin-left: 0.5em;">Bereich festlegen</button>
+                </div>
+                <div class="sph-rule-list" id="sph_sh_rules_list"><span class="none-hint">keine</span></div>
+                <h6>Paare</h6>
+                <div class="form-inline">
+                    <select class="form-control" id="sph_sh_pair_a"></select>
+                    <span>&nbsp;und&nbsp;</span>
+                    <select class="form-control" id="sph_sh_pair_b"></select>
+                    <select class="form-control" id="sph_sh_pair_freq" style="margin-left: 0.5em;">
+                        <option value="1">jedes Mal</option>
+                        <option value="2">jedes 2. Mal</option>
+                        <option value="3">jedes 3. Mal</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-success sph-sh-edit" id="sph_sh_bu_add_pair" style="margin-left: 0.5em;">sitzen zusammen</button>
+                </div>
+                <div class="sph-pair-list" id="sph_sh_pairs_list"><span class="none-hint">keine</span></div>
+                <p style="margin-top: 1em; margin-bottom: 0;"><a class="btn btn-primary" id="sph_sh_start" href="#"><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler starten</a></p>
             </div>
         </div>
     </div>
@@ -968,6 +1007,69 @@ function render_areas() {
         box.siblings('label').text(on ? 'berücksichtigen' : 'nicht berücksichtigen');
         box.closest('h5').toggleClass('sph-area-off', !on);
     }
+}
+
+// Regeln des Shufflers (siehe sitzplan_shuffler_rules in sitzplaneditor.rb):
+// {rules: [{email, x: [min, max], y: [min, max]}], bff: [{a, b, freq}]}.
+var shuffler_rules = {rules: [], bff: []};
+
+function load_shuffler_rules(done) {
+    api_call('/api/sitzplan_shuffler_rules', {klasse: klasse, raum: raum}, function (data) {
+        if (data.success === false) { dashboardAlert(data.error || 'Die Regeln des Shufflers konnten nicht geladen werden.'); return; }
+        shuffler_rules = {rules: data.rules || [], bff: data.bff || []};
+        render_shuffler_rules();
+        if (done) done();
+    });
+}
+
+function save_shuffler_rules(rules, bff) {
+    $('.sph-sh-edit, #sph_shuffler_box .sph-rule-list a, #sph_shuffler_box .sph-pair-list a').prop('disabled', true).css('pointer-events', 'none');
+    api_call('/api/sitzplan_shuffler_rules_save', {klasse: klasse, raum: raum, rules: JSON.stringify(rules), bff: JSON.stringify(bff)}, function (data) {
+        $('.sph-sh-edit').prop('disabled', false).css('pointer-events', '');
+        if (data.success === false) {
+            render_shuffler_rules();
+            dashboardAlert(data.error || 'Die Regeln des Shufflers konnten nicht gespeichert werden.');
+            return;
+        }
+        shuffler_rules = {rules: data.rules || [], bff: data.bff || []};
+        render_shuffler_rules();
+    });
+}
+
+// „vorne“ usw., wenn der Bereich zu einem der Standardbereiche passt.
+function shuffler_area_label(r) {
+    let labels = {front: 'vorne', back: 'hinten', left: 'links', right: 'rechts'};
+    for (let area in labels) {
+        let [xr, yr] = area_for_rule(area);
+        if (xr[0] === r.x[0] && xr[1] === r.x[1] && yr[0] === r.y[0] && yr[1] === r.y[1]) return labels[area];
+    }
+    return 'eigener Bereich';
+}
+
+function render_shuffler_rules() {
+    let opts = sus.map(s => `<option value="${esc(s.email)}">${esc(s.display_name)}</option>`).join('');
+    for (let id of ['#sph_sh_rule_sus', '#sph_sh_pair_a', '#sph_sh_pair_b']) {
+        let keep = $(id).val();
+        $(id).html(opts);
+        if (keep) $(id).val(keep);
+    }
+    let rl = $('#sph_sh_rules_list').empty();
+    if (shuffler_rules.rules.length === 0) rl.append($('<span>').addClass('none-hint').text('keine'));
+    shuffler_rules.rules.forEach((r, i) => {
+        rl.append($('<span>').addClass('rule-chip').text(`${display_name(r.email)} (${shuffler_area_label(r)})`)
+            .append($('<a>').html('&times;').attr('title', 'Regel entfernen').on('click', function () {
+                save_shuffler_rules(shuffler_rules.rules.filter((x, j) => j !== i), shuffler_rules.bff);
+            })));
+    });
+    let pl = $('#sph_sh_pairs_list').empty();
+    if (shuffler_rules.bff.length === 0) pl.append($('<span>').addClass('none-hint').text('keine'));
+    shuffler_rules.bff.forEach((p, i) => {
+        let how = p.freq === 1 ? 'jedes Mal' : `jedes ${p.freq}. Mal`;
+        pl.append($('<span>').addClass('pair-chip').text(`${display_name(p.a)} + ${display_name(p.b)} (${how})`)
+            .append($('<a>').html('&times;').attr('title', 'Paar entfernen').on('click', function () {
+                save_shuffler_rules(shuffler_rules.rules, shuffler_rules.bff.filter((x, j) => j !== i));
+            })));
+    });
 }
 
 // Wohin gehen Änderungen an den Vorgaben? In den offenen Plan oder, ohne
@@ -1528,8 +1630,8 @@ function render_start_header(data) {
 function render_room_bar() {
     let too_small = sus.length > seats.length;
     // Der Shuffler braucht wie jeder neue Plan einen Platz für alle.
-    $('#sph_link_shuffler').toggleClass('disabled', too_small)
-        .attr('aria-disabled', too_small ? 'true' : null).attr('tabindex', too_small ? '-1' : null);
+    $('#sph_link_shuffler').prop('disabled', too_small);
+    if (too_small) $('#sph_shuffler_box').hide();
     $('#sph_room_info').text(too_small
         ? `Raum ${raum} hat nur ${seats.length} Plätze, die Klasse aber ${sus.length} SuS. ` +
           (sph_editor_allowed ? 'Legen Sie zuerst weitere Plätze an.' : 'Weitere Plätze kann nur die Administration anlegen.')
@@ -2386,14 +2488,42 @@ document.addEventListener('DOMContentLoaded', function () {
             ? `Für Raum ${raum} sind noch keine Tische angelegt. Legen Sie sie zuerst an.`
             : `Für Raum ${raum} sind noch keine Tische angelegt. Das kann nur die Administration.`);
         $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-primary').addClass('btn-primary');
-        $('#sph_link_shuffler, #sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes, #sph_new_choice').remove();
+        $('#sph_link_shuffler, #sph_bu_start_manual, #sph_bu_start_spread, #sph_bu_wishes, #sph_new_choice, #sph_shuffler_box').remove();
         $('#sph_room_bar').addClass('sph-room-warn').show();
         return;
     }
     $('#sph_label').text(`${klasse} – Raum ${raum}`);
     $('#sph_link_print').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?print=1`);
     $('#sph_link_show').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
-    $('#sph_link_shuffler').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
+    $('#sph_sh_start').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
+    // Shuffler: erst seine Regeln zeigen, dann „Shuffler starten“
+    $('#sph_link_shuffler').click(function () {
+        set_status('');
+        $('#sph_new_choice').hide();
+        render_areas();
+        if ($('#sph_shuffler_box').is(':visible')) {
+            $('#sph_shuffler_box').hide();
+            return;
+        }
+        load_shuffler_rules(function () { $('#sph_shuffler_box').show(); });
+    });
+    $('#sph_sh_bu_add_rule').click(function () {
+        let email = $('#sph_sh_rule_sus').val();
+        let [xr, yr] = area_for_rule($('#sph_sh_rule_area').val());
+        let rules = shuffler_rules.rules.filter(r => r.email !== email).concat([{email: email, x: xr, y: yr}]);
+        save_shuffler_rules(rules, shuffler_rules.bff);
+    });
+    $('#sph_sh_bu_add_pair').click(function () {
+        let a = $('#sph_sh_pair_a').val(), b = $('#sph_sh_pair_b').val();
+        let freq = parseInt($('#sph_sh_pair_freq').val(), 10);
+        if (a === b) { dashboardAlert('Bitte wählen Sie zwei unterschiedliche Personen.'); return; }
+        let taken = [a, b].find(e => shuffler_rules.bff.some(p => p.a === e || p.b === e));
+        if (taken) {
+            dashboardAlert(`${display_name(taken)} ist beim Shuffler schon in einem Paar. Der Shuffler kennt je Person nur einen Partner; entfernen Sie das andere Paar zuerst.`);
+            return;
+        }
+        save_shuffler_rules(shuffler_rules.rules, shuffler_rules.bff.concat([{a: a, b: b, freq: freq}]));
+    });
 
     // Ist schon ein Plan offen, fragen die Werkzeuge, ob er für den neuen Weg
     // verworfen werden soll; then() läuft danach (oder sofort ohne offenen Plan).
@@ -2412,6 +2542,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Die Wunschrunde fragt direkt unter den Werkzeugen nach der Dauer.
     $('#sph_bu_wishes').click(function () {
         set_status('');
+        $('#sph_shuffler_box').hide();
         if (open_mode === 'wishes') return;
         if (!open_cycle_id) {
             $('#sph_new_choice').toggle();

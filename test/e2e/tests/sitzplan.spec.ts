@@ -440,6 +440,41 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
   }
 });
 
+test('Sitzplan: Widerspruch in den Vorgaben knallrot markiert', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await openSeatingPlan(page, RAUM);
+
+  // Max and Elli on the same list and at the same time a forced pair
+  await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_bu_add_group').click();
+  const list = page.locator('#sph_groups_list .sph-group').first();
+  await list.locator('select').selectOption({ label: 'Max Mustermann' });
+  await expect(list.locator('.pair-chip', { hasText: 'Max Mustermann' })).toBeVisible();
+  await list.locator('select').selectOption({ label: 'Elli Mustermann' });
+  await expect(list.locator('.pair-chip', { hasText: 'Elli Mustermann' })).toBeVisible();
+  await page.locator('#sph_pair_a').selectOption({ label: 'Max Mustermann' });
+  await page.locator('#sph_pair_b').selectOption({ label: 'Elli Mustermann' });
+  await page.locator('#sph_bu_add_forced').click();
+  await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
+
+  await startNewPlan(page, 'spread');
+  await expect(page.locator('#sph_seats .place.sph-conflict')).toHaveCount(2);
+  await expect(page.locator('#sph_seats .place.sph-conflict').first()).toHaveAttribute('title', /Widerspruch in den Vorgaben/);
+  await expect(page.locator('#sph_unresolved_summary .sph-conflict-list')).toContainText('Zwangspaar');
+
+  // the forced pair removed: no more conflict
+  await page.locator('#sph_vorgaben > summary').click();
+  await page.locator('#sph_forced_list .pair-chip a').first().click();
+  await expect(page.locator('#sph_forced_list')).not.toContainText('Elli Mustermann');
+  await expect(page.locator('#sph_seats .place.sph-conflict')).toHaveCount(0);
+
+  await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
+  await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
+  await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
+  await discardOpenPlan(page);
+});
+
 test('Gruppenbildung: eigener Abschnitt, Gruppen für die Klasse mischen', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.goto(`/directory/${KLASSE}`);

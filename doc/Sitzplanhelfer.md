@@ -52,7 +52,11 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
      Raum. Jede Liste hat dabei im Plan eine eigene Farbe und ihren
      Buchstaben (nur in diesem Werkzeug). Danach kann man von Hand
      umsetzen; wer dann direkt bei jemandem von derselben Liste sitzt, wird
-     rot markiert. Gibt es noch keine Liste, weist die Seite darauf hin.
+     rot markiert. Widersprechen sich die Vorgaben selbst (ein Zwangspaar
+     auf derselben Liste, oder zwei von derselben Liste mit festen Plätzen
+     direkt beieinander), sind beide im Plan knallrot mit ⚠ markiert und
+     unter dem Plan aufgeführt. Gibt es noch keine Liste, weist die Seite
+     darauf hin.
    - **Wunschrunde** (Umfrage an die Klasse) fragt direkt unter den
      Werkzeugen nach der Dauer (1–60 Tage, Standard 4) und legt dann eine
      Umfrage an. Die SuS sehen sie ganz normal über

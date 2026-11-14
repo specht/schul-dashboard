@@ -102,7 +102,7 @@ table.sph-wishes td, table.sph-wishes th {
 /* „Im Raum verteilen“: jede Verteilungsliste in einer eigenen Farbe. */
 .sph-list-tag {
     position: absolute;
-    bottom: 1px;
+    top: 1px;
     right: 2px;
     min-width: 1.4em;
     padding: 0 0.3em;
@@ -150,6 +150,27 @@ h5.sph-area-off {
 #sph_seats .place.sph-listed:not(.unresolved) {
     background-color: var(--sph-list-tint);
     border-color: var(--sph-list);
+}
+/* Widerspruch in den Vorgaben selbst (z. B. Zwangspaar auf derselben
+   Verteilungsliste): knallrot, vor allen anderen Farben. */
+#sph_seats .place.sph-conflict,
+#sph_seats .place.sph-conflict.sph-listed {
+    border-color: #ff0000;
+    background-color: #ffd0d0;
+    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.55);
+}
+#sph_seats .place.sph-conflict::before {
+    content: '⚠';
+    position: absolute;
+    top: 0;
+    left: 3px;
+    color: #ff0000;
+    font-size: 14px;
+    font-weight: bold;
+}
+.sph-conflict-list {
+    color: #e00000;
+    font-weight: bold;
 }
 #sph_seats .place.crown::after {
     content: '👑';
@@ -1095,6 +1116,44 @@ function list_color_class(i) {
     return `sph-list-c${i % 6}`;
 }
 
+// Widersprüche in den Vorgaben selbst, nur mit den für das Werkzeug
+// eingeschalteten Bereichen: Ein Zwangspaar steht auf derselben
+// Verteilungsliste (sitzt deshalb trotzdem zusammen), oder zwei von derselben
+// Liste haben feste Plätze direkt beieinander. [{email, reason}]
+function vorgaben_conflicts() {
+    let conflicts = [];
+    let rank = row_ranks();
+    let seen = new Set();
+    for (let g of seating_groups) {
+        if (g.length < 2) continue;
+        for (let i = 0; i < g.length; i++) {
+            for (let j = i + 1; j < g.length; j++) {
+                let a = g[i], b = g[j];
+                let key = [a, b].sort().join('|');
+                if (seen.has(key)) continue;
+                seen.add(key);
+                let reason = null;
+                if (pair_exists(forced_pairs, a, b)) {
+                    reason = 'Zwangspaar, aber auf derselben Verteilungsliste';
+                } else {
+                    let ra = exact_rule_for(a), rb = exact_rule_for(b);
+                    if (ra && rb) {
+                        let ia = seats.findIndex(s => s[0] === ra[1][0] && s[1] === ra[2][0]);
+                        let ib = seats.findIndex(s => s[0] === rb[1][0] && s[1] === rb[2][0]);
+                        if (ia >= 0 && ib >= 0 && seats_close(ia, ib, rank)) reason = 'feste Plätze direkt beieinander, aber auf derselben Verteilungsliste';
+                    }
+                }
+                if (reason) {
+                    conflicts.push({email: a, reason: `Widerspruch in den Vorgaben mit ${display_name(b)}: ${reason}`,
+                                    summary: `${display_name(a)} und ${display_name(b)}: ${reason}`});
+                    conflicts.push({email: b, reason: `Widerspruch in den Vorgaben mit ${display_name(a)}: ${reason}`});
+                }
+            }
+        }
+    }
+    return conflicts;
+}
+
 // Erste Liste mit mindestens zwei Personen, auf der email steht (oder -1).
 function list_index_of(email) {
     return seating_groups.findIndex(g => g.length >= 2 && g.includes(email));
@@ -1982,6 +2041,8 @@ function render_placement_raw(editable, preview) {
             }
         }
     }
+    let conflicts = (editable || preview) ? vorgaben_conflicts() : [];
+    let conflict_emails = new Set(conflicts.map(f => f.email));
     let all_issues = current_unresolved.concat(group_issues);
     let unresolved_emails = new Set(all_issues.map(f => f.email));
     let satisfied_emails = new Set(current_satisfied_emails);
@@ -2000,7 +2061,8 @@ function render_placement_raw(editable, preview) {
             // z.B. einen festen Platz verletzt, soll trotzdem auffallen.
             if (unresolved_emails.has(email)) div.addClass('unresolved');
             else if (satisfied_emails.has(email)) div.addClass('satisfied');
-            let titles = all_issues.filter(f => f.email === email).map(f => f.reason);
+            if (conflict_emails.has(email)) div.addClass('sph-conflict');
+            let titles = conflicts.concat(all_issues).filter(f => f.email === email).map(f => f.reason);
             if (editable && last_unlucky_emails.has(email) && open_has_wishes) {
                 div.addClass('crown');
                 titles.unshift('👑 Vorrang: hatte im letzten Plan mit Wünschen keinen Wunschpartner');
@@ -2043,6 +2105,10 @@ function render_placement_raw(editable, preview) {
         rate_html += group_issues.length > 0
             ? `<p class="sph-unresolved-list"><strong>Verteilung im Raum:</strong> ${group_issues.length / 2} Paar(e) sitzen direkt beieinander (siehe unten).</p>`
             : '<p><strong>Verteilung im Raum:</strong> erfüllt.</p>';
+    }
+    if (conflicts.length > 0) {
+        let lines = conflicts.filter(f => f.summary).map(f => esc(f.summary));
+        rate_html = `<p class="sph-conflict-list">⚠ Widerspruch in Ihren Vorgaben (knallrot markiert):<br>${lines.join('<br>')}</p>` + rate_html;
     }
     if (all_issues.length > 0) {
         let byEmail = {};

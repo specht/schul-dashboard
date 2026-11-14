@@ -139,16 +139,23 @@ Die Seite spricht die Lehrkraft mit „Sie“ an.
    Seite vorher nach. Danach zeigt die Startansicht den neuen Plan.
    **Verwerfen** (mit Rückfrage) wirft nur den offenen Plan weg; der
    gespeicherte Plan und die Vorgaben bleiben.
-7. **Plan ändern** öffnet den gespeicherten Plan in der Arbeitsansicht,
-   ohne neue Umfrage und auf Basis der bereits erhobenen Wünsche.
-   Gespeichert wird er als neuer aktueller Plan, der bisherige bleibt
-   unter „Frühere Sitzpläne“.
+7. **Plan ändern** (aktueller Plan) bzw. **Bearbeiten** (jeder Plan unter
+   „Frühere Sitzpläne“) öffnet einen gespeicherten Plan wieder in der
+   Arbeitsansicht, ohne neue Umfrage und auf Basis der bereits erhobenen
+   Wünsche. Er läuft im Werkzeug weiter, mit dem er entstanden ist (z. B.
+   „Im Raum verteilen“ mit farbigen Listen), als wäre er nie gespeichert
+   worden. **Speichern** überschreibt genau diesen Plan; er behält seinen
+   Platz in der Liste und zeigt „geändert am …“. **Verwerfen** lässt ihn,
+   wie er war.
 8. **Frühere Sitzpläne**: Jeder gespeicherte Plan bleibt erhalten, ist
-   einzeln anzeigbar und löschbar (z. B. bei Versehen; nicht, solange er
-   gerade geändert wird).
+   einzeln anzeigbar, bearbeitbar und löschbar (z. B. bei Versehen; nicht,
+   solange er gerade bearbeitet wird).
 9. **Drucken** öffnet die Ansicht ohne Wünsche direkt mit Druckdialog
-   (`?print=1`). Gedruckt werden nur Überschrift, Tafel und Plätze, auf
-   eine A4-Seite quer skaliert, ohne Dashboard-Menü und Hintergrund. Die
+   (`?print=1`), sobald die Fotos geladen sind. Gedruckt werden nur
+   Überschrift, Tafel und Plätze mit Foto und Namen, auf eine A4-Seite
+   quer skaliert, ohne Dashboard-Menü und Hintergrund. Die Fotos sind
+   echte Bilder, keine Hintergrundbilder, damit sie auch ohne die
+   Browser-Einstellung „Hintergrundgrafiken“ auf dem Papier landen. Die
    Ansicht „Für Schüler anzeigen“ selbst hat keinen eigenen Druckknopf.
 
 Jeder Platz zeigt wie im Shuffler oben das Foto (aus der Nextcloud) und

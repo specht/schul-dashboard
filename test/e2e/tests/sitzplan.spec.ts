@@ -595,4 +595,80 @@ test('Shuffler: nach dem Auslosen den Plan drucken', async ({ page }) => {
   await expect(page.locator('.keys')).toBeHidden();
   await expect(page.locator('#seats .place').first()).toBeVisible();
   await expect(page.locator('h1')).toContainText(KLASSE);
+  // the photos are background images: printed only when forced
+  const adjust = await page.locator('#seats .place img').first().evaluate((img) => {
+    const style = getComputedStyle(img);
+    return style.getPropertyValue('print-color-adjust') || style.getPropertyValue('-webkit-print-color-adjust');
+  });
+  expect(adjust).toBe('exact');
+});
+
+test('Sitzplan: gespeicherten Plan bearbeiten, an derselben Stelle speichern, mit Fotos drucken', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).__printed = 0;
+    window.print = () => { (window as any).__printed++; };
+  });
+  await login(page, ACCOUNTS.admin);
+  const RAUM = await setUpRoom(page);
+  await openSeatingPlan(page, RAUM);
+  await startNewPlan(page, 'spread');
+  await savePlan(page);
+
+  const history = page.locator('#sph_history_body tr');
+  await page.locator('#sph_history_section > summary').click();
+  await expect(history.first()).toContainText('aktuell');
+  const count = await history.count();
+  const savedId = await history.first().locator('.bu-edit-cycle').getAttribute('data-id');
+
+  // reopened from the list, the plan continues in the tool it was made with
+  await history.first().getByRole('button', { name: 'Bearbeiten' }).click();
+  await expect(page.locator('#sph_bu_discard_cycle')).toBeVisible();
+  await expect(page.locator('#sph_cycle_info')).toContainText('Sie bearbeiten den gespeicherten Sitzplan');
+  await expect(page.locator('#sph_room_bar #sph_bu_start_spread')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#sph_seats .place:not(.empty)')).toHaveCount(3);
+  await expect(history.first()).toContainText('wird bearbeitet');
+  await expect(history.first().locator('.bu-edit-cycle, .bu-delete-cycle')).toHaveCount(0);
+
+  // move Max to a free seat
+  const [maxSeat, freeSeat] = await page.evaluate(() => {
+    const w = window as any;
+    const email = w.sus.find((s: any) => s.display_name === 'Max Mustermann').email;
+    const taken = new Set(Object.values(w.current_placement));
+    return [w.current_placement[email], w.seats.findIndex((_: unknown, i: number) => !taken.has(i))];
+  });
+  await page.locator(`#sph_seats .place[data-seat-index="${maxSeat}"]`).click();
+  await page.locator(`#sph_seats .place[data-seat-index="${freeSeat}"]`).click();
+  await expect(page.locator(`#sph_seats .place[data-seat-index="${freeSeat}"]`)).toContainText('Max');
+
+  // saving overwrites the edited plan instead of adding another one
+  const saved = page.waitForResponse('**/api/sph_save_cycle');
+  await page.locator('#sph_bu_save').click();
+  expect((await saved).status()).toBe(200);
+  await expect(page.locator('#sph_status')).toContainText('überschrieben');
+  await expect(page.locator('#sph_view_start')).toBeVisible();
+  await expect(history.first()).toContainText('geändert am');
+  await expect(history).toHaveCount(count);
+  await expect(history.first().locator('.bu-edit-cycle')).toHaveAttribute('data-id', savedId!);
+  await expect(page.locator(`#sph_seats .place[data-seat-index="${freeSeat}"]`)).toContainText('Max');
+
+  // discarding an edit leaves the saved plan as it was
+  await history.first().getByRole('button', { name: 'Bearbeiten' }).click();
+  await expect(page.locator('#sph_cycle_info')).toContainText('Sie bearbeiten den gespeicherten Sitzplan');
+  await discardOpenPlan(page);
+  await expect(page.locator(`#sph_seats .place[data-seat-index="${freeSeat}"]`)).toContainText('Max');
+  await expect(history).toHaveCount(count);
+
+  // printing: the photos are real images (browsers leave out background
+  // images on paper), loaded before the print dialog opens
+  await page.goto(`/sitzplananzeige/${KLASSE}/${RAUM}?print=1`);
+  const photos = page.locator('#spa_seats img.spa-card-photo');
+  await expect(photos).toHaveCount(3);
+  await expect.poll(() => page.evaluate(() => (window as any).__printed), { timeout: 15000 }).toBe(1);
+  expect(await photos.evaluateAll((imgs) => imgs.every((i) => (i as HTMLImageElement).complete && !!(i as HTMLImageElement).src))).toBe(true);
+  // the page is drawn again for paper with the same, already loaded images
+  await photos.first().evaluate((img) => { (img as any).__mark = 1; });
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  await expect(photos).toHaveCount(3);
+  expect(await photos.evaluateAll((imgs) => imgs.some((i) => (i as any).__mark === 1))).toBe(true);
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
 });

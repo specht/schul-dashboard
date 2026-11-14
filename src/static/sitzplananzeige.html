@@ -55,13 +55,17 @@ body.dark .spa-card-name {
     text-align: center;
     padding: 2px;
 }
-/* Wie im Sitzplan: Foto im Quadrat, darunter der ganze Name. */
+/* Wie im Sitzplan: Foto im Quadrat, darunter der ganze Name. Das Foto ist
+   ein echtes Bild (kein Hintergrundbild): Browser lassen Hintergrundbilder
+   beim Drucken standardmäßig weg. */
 .spa-card-photo {
     flex: none;
+    display: block;
     border-radius: 12%;
     background-color: #e4e9e5;
-    background-size: cover;
-    background-position: center;
+    object-fit: cover;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 .spa-card-name {
     width: 100%;
@@ -178,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         if (data.saved_at) {
-            let d = new Date(data.saved_at * 1000);
+            let d = new Date((data.updated_at || data.saved_at) * 1000);
             $('#spa_saved_at').text(`Stand: ${d.toLocaleDateString('de-DE')}`);
         }
         places = data.places;
@@ -188,14 +192,46 @@ document.addEventListener('DOMContentLoaded', function () {
         window.addEventListener('beforeprint', function () { render_seats(true); });
         window.addEventListener('afterprint', function () { render_seats(false); });
         // ?print=1 (Knopf „Drucken“ auf der Sitzplan-Seite) öffnet direkt
-        // den Druckdialog.
+        // den Druckdialog - erst wenn die Fotos geladen sind, sonst fehlen
+        // sie auf dem Papier (spätestens nach 5 Sekunden trotzdem).
         if (new URLSearchParams(window.location.search).get('print') === '1') {
-            setTimeout(function () { window.print(); }, 300);
+            photos_loaded(5000).then(function () { window.print(); });
         }
     });
 });
 
 var places = [];
+// Die Foto-Elemente bleiben beim Umzeichnen (Bildschirm/Druck) dieselben,
+// damit sie nicht neu laden müssen, während der Druck schon läuft.
+var photo_for_place = {};
+
+function photos_loaded(timeout_ms) {
+    let pending = $('#spa_seats img.spa-card-photo').toArray()
+        .filter((img) => !img.complete)
+        .map((img) => new Promise(function (resolve) {
+            img.addEventListener('load', resolve, {once: true});
+            img.addEventListener('error', resolve, {once: true});
+        }));
+    let timeout = new Promise((resolve) => setTimeout(resolve, timeout_ms));
+    return Promise.race([Promise.all(pending), timeout]);
+}
+
+function photo_for(place) {
+    let key = `${place.seat_index}/${place.nc_login || ''}`;
+    if (!photo_for_place[key]) {
+        let img = document.createElement('img');
+        img.className = 'spa-card-photo';
+        img.alt = '';
+        img.addEventListener('error', function () {
+            if (img.src !== SPA_SILHOUETTE) img.src = SPA_SILHOUETTE;
+        });
+        img.src = place.nc_login
+            ? `#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(place.nc_login)}/128`
+            : SPA_SILHOUETTE;
+        photo_for_place[key] = img;
+    }
+    return photo_for_place[key];
+}
 
 // Graue Figur, solange das Foto lädt oder wenn es keins gibt.
 const SPA_SILHOUETTE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><circle cx='10' cy='7.6' r='4' fill='%23a3aea7'/><ellipse cx='10' cy='19.5' rx='7.5' ry='6.5' fill='%23a3aea7'/></svg>";
@@ -206,7 +242,10 @@ function render_seats(for_print) {
         if (s[0] + 1 > w) w = s[0] + 1;
         if (s[1] + 1 > h) h = s[1] + 1;
     }
-    let container = $('#spa_seats').empty();
+    let container = $('#spa_seats');
+    // detach statt empty: die Foto-Elemente werden wiederverwendet.
+    container.find('img.spa-card-photo').detach();
+    container.empty();
     let scale;
     if (for_print) {
         // A4 quer mit 1 cm Rand: ca. 1040 × 720 px nutzbar, davon gehen
@@ -229,10 +268,9 @@ function render_seats(for_print) {
         // Wie im Sitzplan der Klassenleitung: Foto im Quadrat, darunter der
         // ganze Name, Vor- und Nachname je in einer Zeile.
         let photo_size = Math.round(size * 0.42);
-        let images = [`url("${SPA_SILHOUETTE}")`];
-        if (place.nc_login) images.unshift(`url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(place.nc_login)}/128)`);
-        div.append($('<div>').addClass('spa-card-photo')
-            .css({width: `${photo_size}px`, height: `${photo_size}px`, 'background-image': images.join(', ')}));
+        let photo = photo_for(place);
+        photo.style.width = photo.style.height = `${photo_size}px`;
+        div.append(photo);
         let name = $('<div>').addClass('spa-card-name').css('font-size', `${Math.max(8, Math.min(15, size * 0.155))}px`);
         if (place.first_name || place.last_name) {
             name.append($('<span>').text(place.first_name || ''))

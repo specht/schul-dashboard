@@ -261,7 +261,7 @@ class Main < Sinatra::Base
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
             WHERE sc.saved_at IS NULL
             OPTIONAL MATCH (sc)-[:REOPENED_FROM]->(src:SeatingCycle)
-            RETURN sc, src.saved_at AS reopened_from, src.seats AS reopened_seats
+            RETURN sc, src.saved_at AS reopened_from, src.seats AS reopened_seats, src.id AS reopened_id
             ORDER BY sc.created_at DESC
             LIMIT 1;
         END_OF_QUERY
@@ -292,13 +292,14 @@ class Main < Sinatra::Base
                 :end_date => pr && pr[:end_date],
                 :end_time => pr && pr[:end_time],
                 :wishes_open => !!wishes_open,
-                # 'wishes', 'spread', 'manual', 'random' (siehe sph_start_cycle) oder
-                # 'edit' für einen per "Plan ändern" geöffneten Plan
-                :mode => reopened_from ? 'edit' : (sc[:mode] || 'wishes'),
-                # Mit welchem Werkzeug der Plan entstanden ist (auch bei 'edit'):
-                # danach richten sich die eingeschalteten Bereiche der Vorgaben.
+                # 'wishes', 'spread', 'manual', 'random' (siehe sph_start_cycle).
+                # Ein gespeicherter Plan, der wieder bearbeitet wird, läuft im
+                # Werkzeug, mit dem er entstanden ist - als wäre er nie
+                # gespeichert worden; reopened_from/reopened_id sagen, welcher.
+                :mode => reopened_from ? sph_base_mode(sc) : (sc[:mode] || 'wishes'),
                 :base_mode => sph_base_mode(sc),
                 :reopened_from => reopened_from,
+                :reopened_id => rows.first['reopened_id'],
                 :seats => reopened_seats ? JSON.parse(reopened_seats) : nil,
                 :forced_pairs => JSON.parse(sc[:forced_pairs] || '[]'),
                 :forbidden_pairs => JSON.parse(sc[:forbidden_pairs] || '[]'),
@@ -390,6 +391,7 @@ class Main < Sinatra::Base
         {
             :id => sc[:id],
             :saved_at => sc[:saved_at],
+            :updated_at => sc[:updated_at],
             :seats => JSON.parse(sc[:seats] || '{}'),
             :unresolved => JSON.parse(sc[:unresolved] || '[]'),
             :satisfied_emails => JSON.parse(sc[:satisfied_emails] || '[]'),
@@ -437,7 +439,8 @@ class Main < Sinatra::Base
                  :last_name => info[:display_last_name] || info[:last_name],
                  :nc_login => info[:nc_login], :seat_index => idx}
             end.compact
-            respond(:ok => true, :klasse => klasse, :raum => raum, :saved_at => sc[:saved_at], :places => places)
+            respond(:ok => true, :klasse => klasse, :raum => raum, :saved_at => sc[:saved_at],
+                    :updated_at => sc[:updated_at], :places => places)
         end
     end
 
@@ -749,6 +752,48 @@ class Main < Sinatra::Base
         timestamp = Time.now.to_i
         params = {:id => data[:cycle_id], :seats => seats.to_json, :unresolved => unresolved.to_json,
                   :satisfied_emails => satisfied.to_json, :timestamp => timestamp}
+        source = neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id])
+            MATCH (:SeatingCycle {id: $id})-[:REOPENED_FROM]->(src:SeatingCycle)
+            WHERE src.saved_at IS NOT NULL
+            RETURN src.id AS src_id;
+        END_OF_QUERY
+        unless source.empty?
+            # Ein wieder geöffneter Plan wird an seiner alten Stelle
+            # gespeichert: Der bearbeitete Plan bekommt Sitzordnung, Vorgaben
+            # und Wunsch-Ablehnungen der Bearbeitung, behält aber seinen Platz
+            # in der Liste (saved_at) und merkt sich, wann er geändert wurde.
+            # Die Bearbeitungskopie verschwindet danach.
+            params[:src_id] = source.first['src_id']
+            transaction do
+                neo4j_query(<<~END_OF_QUERY, params)
+                    MATCH (sc:SeatingCycle {id: $id})
+                    MATCH (src:SeatingCycle {id: $src_id})
+                    SET src.seats = $seats
+                    SET src.unresolved = $unresolved
+                    SET src.satisfied_emails = $satisfied_emails
+                    SET src.forced_pairs = sc.forced_pairs
+                    SET src.forbidden_pairs = sc.forbidden_pairs
+                    SET src.fixed_rules = sc.fixed_rules
+                    SET src.updated_at = $timestamp;
+                END_OF_QUERY
+                neo4j_query(<<~END_OF_QUERY, params)
+                    MATCH (sw:SeatWish)-[:FOR_CYCLE]->(:SeatingCycle {id: $src_id})
+                    DETACH DELETE sw;
+                END_OF_QUERY
+                neo4j_query(<<~END_OF_QUERY, params)
+                    MATCH (sw:SeatWish)-[r:FOR_CYCLE]->(:SeatingCycle {id: $id})
+                    MATCH (src:SeatingCycle {id: $src_id})
+                    CREATE (sw)-[:FOR_CYCLE]->(src)
+                    DELETE r;
+                END_OF_QUERY
+                neo4j_query(<<~END_OF_QUERY, params)
+                    MATCH (sc:SeatingCycle {id: $id})
+                    DETACH DELETE sc;
+                END_OF_QUERY
+            end
+            respond(:ok => true, :cycle_id => params[:src_id], :overwritten => true)
+            return
+        end
         neo4j_query(<<~END_OF_QUERY, params)
             MATCH (sc:SeatingCycle {id: $id})
             SET sc.seats = $seats
@@ -756,7 +801,7 @@ class Main < Sinatra::Base
             SET sc.satisfied_emails = $satisfied_emails
             SET sc.saved_at = $timestamp;
         END_OF_QUERY
-        respond(:ok => true)
+        respond(:ok => true, :cycle_id => data[:cycle_id], :overwritten => false)
     end
 
     # Liste aller GESPEICHERTEN Sitzpläne für Klasse+Raum, neueste zuerst -
@@ -779,6 +824,7 @@ class Main < Sinatra::Base
             {
                 :id => sc[:id],
                 :saved_at => sc[:saved_at],
+                :updated_at => sc[:updated_at],
                 :seats_count => JSON.parse(sc[:seats] || '{}').size,
                 :satisfied_count => JSON.parse(sc[:satisfied_emails] || '[]').size,
                 :unresolved_count => JSON.parse(sc[:unresolved] || '[]').map { |f| f['email'] }.uniq.size,
@@ -816,11 +862,11 @@ class Main < Sinatra::Base
     end
 
     # Öffnet einen bereits gespeicherten Sitzplan erneut zur Bearbeitung -
-    # OHNE eine neue Umfrage zu starten. Dafür wird ein neuer Zyklus angelegt,
-    # der dieselbe (bereits geschlossene) Wunschrunde referenziert sowie die
-    # Paare/Regeln/Wunsch-Ablehnungen des Ursprungs übernimmt. Der Ursprung
-    # bleibt unverändert in der Historie erhalten - "leicht ändern und neu
-    # ausmixen", nicht "von vorne anfangen".
+    # OHNE eine neue Umfrage zu starten. Dafür wird ein Bearbeitungszyklus
+    # angelegt, der dieselbe (bereits geschlossene) Wunschrunde referenziert
+    # sowie die Wunsch-Ablehnungen des Ursprungs übernimmt. Bis zum Speichern
+    # bleibt der Ursprung unverändert; Speichern überschreibt ihn (siehe
+    # sph_save_cycle), Verwerfen lässt ihn, wie er war.
     post '/api/sph_reopen_saved_cycle' do
         require_teacher!
         data = parse_request_data(:required_keys => [:cycle_id])

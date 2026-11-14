@@ -721,6 +721,9 @@ var open_cycle_id = null;
 // Ist der offene Zyklus eine per "Bearbeiten" geöffnete Kopie eines bereits
 // gespeicherten Plans (statt einer frisch gestarteten Wunschrunde)?
 var is_reopened_edit = false;
+// Welcher gespeicherte Plan gerade bearbeitet wird (Liste „Frühere Sitzpläne“).
+var reopened_id = null;
+var history_cycles = null;
 var current_placement = {};
 var current_unresolved = [];
 var current_satisfaction = {ok: 0, total: 0};
@@ -1503,8 +1506,9 @@ function refresh_wishes(done) {
     }, {no_please_wait: true});
 }
 
-// Wie entsteht der gerade offene Plan? 'wishes', 'spread', 'manual', 'random' oder
-// 'edit' (per "Plan ändern" geöffnet), siehe sph_start_cycle/sph_get_state.
+// Wie entsteht der gerade offene Plan? 'wishes', 'spread', 'manual', 'random'
+// (siehe sph_start_cycle/sph_get_state). Ein wieder geöffneter gespeicherter
+// Plan läuft im Werkzeug, mit dem er entstanden ist (is_reopened_edit).
 var open_mode = null;
 // Gehören zum offenen Plan Wünsche (Wunschrunde oder Änderung eines Plans
 // aus einer Wunschrunde)? Nur dann gibt es Wunschtabelle und Vorrang.
@@ -1542,7 +1546,8 @@ function load_state(after) {
         let oc = data.open_cycle;
         open_cycle_id = oc ? oc.id : null;
         open_mode = oc ? oc.mode : null;
-        is_reopened_edit = open_mode === 'edit';
+        is_reopened_edit = !!(oc && oc.reopened_from);
+        reopened_id = oc ? (oc.reopened_id || null) : null;
         open_has_wishes = !!(oc && oc.poll_run_id);
         let rules = oc || data.current_rules || {};
         forced_pairs = rules.forced_pairs || [];
@@ -1607,6 +1612,7 @@ function load_state(after) {
         } else {
             show_current_plan();
         }
+        if (history_cycles) render_history(history_cycles);
         if (after) after();
     });
 }
@@ -1615,7 +1621,8 @@ function load_state(after) {
 function render_start_header(data) {
     if (last_cycle) {
         let d = new Date(last_cycle.saved_at * 1000);
-        $('#sph_start_info').text(`Aktueller Sitzplan vom ${d.toLocaleDateString('de-DE')}. So sehen ihn alle Lehrkräfte der Klasse.`);
+        let changed = last_cycle.updated_at ? `, geändert am ${new Date(last_cycle.updated_at * 1000).toLocaleDateString('de-DE')}` : '';
+        $('#sph_start_info').text(`Aktueller Sitzplan vom ${d.toLocaleDateString('de-DE')}${changed}. So sehen ihn alle Lehrkräfte der Klasse.`);
     } else {
         $('#sph_start_info').text('Für diese Klasse und diesen Raum ist noch kein Sitzplan gespeichert.');
     }
@@ -1660,21 +1667,26 @@ function render_work_header(oc) {
                 .text((i < current ? '✓ ' : '') + label));
         });
     }
-    if (open_mode === 'edit') {
+    // Ein wieder geöffneter Plan: gleiche Hinweise wie im Werkzeug, davor,
+    // welcher Plan es ist und was Speichern tut.
+    let edit_info = '';
+    if (is_reopened_edit) {
         let d = new Date(oc.reopened_from * 1000);
-        $('#sph_cycle_info').text(`Sie ändern den Sitzplan vom ${d.toLocaleDateString('de-DE')}. Beim Speichern wird er zum aktuellen Plan, der bisherige bleibt unter „Frühere Sitzpläne“.`);
-    } else if (open_mode === 'spread') {
+        edit_info = `Sie bearbeiten den gespeicherten Sitzplan vom ${d.toLocaleDateString('de-DE')}. ` +
+            '„Speichern“ überschreibt ihn mit Ihren Änderungen, „Verwerfen“ lässt ihn, wie er war. ';
+    }
+    if (open_mode === 'spread') {
         let n = (seating_groups || []).filter(g => g.length >= 2).length;
-        $('#sph_cycle_info').text('Neuer Sitzplan, ohne Umfrage nach Ihren Vorgaben im Raum verteilt. ' +
+        $('#sph_cycle_info').text((edit_info || 'Neuer Sitzplan, ohne Umfrage nach Ihren Vorgaben im Raum verteilt. ') +
             (!area_on('spread', 'spread')
                 ? 'Die Verteilung im Raum wird bei diesem Werkzeug nicht berücksichtigt (Schalter unter „Vorgaben“).'
                 : n > 0
                 ? `Berücksichtigt: ${n} Verteilungsliste${n === 1 ? '' : 'n'}, Paare und feste Plätze. Setzen Sie einzelne Personen von Hand um (Namen anklicken, dann den Platz). Wer danach direkt bei jemandem von derselben Liste sitzt, wird rot markiert.`
                 : 'Es gibt noch keine Verteilungsliste. Legen Sie sie unter „Vorgaben → Verteilung im Raum“ an und würfeln Sie dann neu.'));
     } else if (open_mode === 'random') {
-        $('#sph_cycle_info').text('Neuer Sitzplan, zufällig gewürfelt. Ihre Vorgaben sind berücksichtigt.');
+        $('#sph_cycle_info').text(edit_info || 'Neuer Sitzplan, zufällig gewürfelt. Ihre Vorgaben sind berücksichtigt.');
     } else if (open_mode === 'manual') {
-        $('#sph_cycle_info').text('Neuer Sitzplan von Hand: Klicken Sie einen Namen an und dann einen Platz.');
+        $('#sph_cycle_info').text((edit_info || 'Neuer Sitzplan von Hand: ') + 'Klicken Sie einen Namen an und dann einen Platz.');
     } else if (oc.wishes_open) {
         $('#sph_bu_close_wishes').prop('disabled', false).text('Wunschrunde jetzt beenden');
         start_countdown(oc);
@@ -1682,7 +1694,7 @@ function render_work_header(oc) {
         // Die Umfrage ist vorbei (oder wurde vorzeitig beendet); der Plan
         // bleibt offen zum Erzeugen, Nachbessern und Speichern.
         let end = new Date(`${oc.end_date}T${oc.end_time}:00`);
-        $('#sph_cycle_info').text(`Wunschrunde beendet am ${end.toLocaleDateString('de-DE')} um ${oc.end_time} Uhr. ${answered_count()} von ${sus.length} SuS haben geantwortet.`);
+        $('#sph_cycle_info').text(edit_info + `Wunschrunde beendet am ${end.toLocaleDateString('de-DE')} um ${oc.end_time} Uhr. ${answered_count()} von ${sus.length} SuS haben geantwortet.`);
     }
 }
 
@@ -2413,18 +2425,28 @@ function render_history(cycles) {
     let rows = '';
     cycles.forEach((c, i) => {
         let date_str = new Date(c.saved_at * 1000).toLocaleString('de-DE');
+        if (c.updated_at) date_str += `<br><small class="text-muted">geändert am ${new Date(c.updated_at * 1000).toLocaleString('de-DE')}</small>`;
         let current_badge = i === 0 ? ' <span class="badge badge-success">aktuell</span>' : '';
+        let editing = c.id === reopened_id;
+        if (editing) current_badge += ' <span class="badge badge-warning">wird bearbeitet</span>';
+        let edit_button = can_start_cycle && !editing
+            ? ` <button class="btn btn-sm btn-outline-primary bu-edit-cycle" data-id="${esc(c.id)}">Bearbeiten</button>` : '';
+        let delete_button = editing ? '' : `<button class="btn btn-sm btn-outline-danger bu-delete-cycle" data-id="${esc(c.id)}">Löschen</button>`;
         let summary = c.with_wishes
             ? `${c.satisfied_count} von ${c.seats_count} SuS mit erfülltem Wunsch, ${c.unresolved_count} offene Punkte`
             : `${c.seats_count} SuS, ohne Wünsche`;
         rows += `<tr>
             <td>${date_str}${current_badge}</td>
             <td>${summary}</td>
-            <td><a class="btn btn-sm btn-outline-secondary" href="/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?cycle=${encodeURIComponent(c.id)}" target="_blank">Anzeigen</a></td>
-            <td><button class="btn btn-sm btn-outline-danger bu-delete-cycle" data-id="${esc(c.id)}">Löschen</button></td>
+            <td class="sph-history-actions"><a class="btn btn-sm btn-outline-secondary" href="/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?cycle=${encodeURIComponent(c.id)}" target="_blank">Anzeigen</a>${edit_button}</td>
+            <td>${delete_button}</td>
         </tr>`;
     });
     $('#sph_history_body').html(rows);
+    $('.bu-edit-cycle').off('click').on('click', function (e) {
+        let id = $(e.currentTarget).data('id');
+        replace_open_plan('Plan bearbeiten', 'Verwerfen und diesen Plan bearbeiten', function () { reopen_saved_plan(id); });
+    });
     $('.bu-delete-cycle').off('click').on('click', function (e) {
         let id = $(e.currentTarget).data('id');
         dashboardConfirm('Diesen gespeicherten Sitzplan wirklich unwiderruflich löschen?', function () {
@@ -2437,9 +2459,46 @@ function render_history(cycles) {
     });
 }
 
+// Was ist gerade offen, und was geht beim Verwerfen verloren? Für die
+// Nachfragen der Werkzeuge.
+function open_plan_was() {
+    return is_reopened_edit ? 'eine Bearbeitung' : (open_mode === 'wishes' ? 'eine Wunschrunde' : 'ein neuer Plan');
+}
+function open_plan_loss() {
+    if (is_reopened_edit) return '. Der gespeicherte Plan bleibt, wie er war.';
+    return open_mode === 'wishes' ? ', die Umfrage verschwindet bei den SuS, und die Wünsche gehen verloren.' : '.';
+}
+
+// Ist schon ein Plan offen, fragen die Werkzeuge, ob er für den neuen Weg
+// verworfen werden soll; then() läuft danach (oder sofort ohne offenen Plan).
+function replace_open_plan(title, confirm_label, then) {
+    if (!open_cycle_id) { then(); return; }
+    dashboardConfirm(`Es ist schon ${open_plan_was()} offen. Wollen Sie stattdessen neu beginnen, wird der offene Plan verworfen` +
+        open_plan_loss() + ' Ihre Vorgaben bleiben erhalten.', function () {
+        api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
+            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
+            load_state(then);
+        });
+    }, { title: title, confirm: confirm_label, danger: true });
+}
+
+// Öffnet einen gespeicherten Plan wieder: Er läuft im Werkzeug weiter, mit
+// dem er entstanden ist, und „Speichern“ überschreibt ihn.
+function reopen_saved_plan(cycle_id) {
+    set_status('');
+    api_call('/api/sph_reopen_saved_cycle', {cycle_id: cycle_id}, function (data) {
+        if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zum Bearbeiten geöffnet werden.'); return; }
+        load_state(function () {
+            let work = document.getElementById('sph_view_work');
+            if (work) work.scrollIntoView({block: 'start'});
+        });
+    });
+}
+
 function load_history() {
     api_call('/api/sph_list_saved_cycles', {klasse: klasse, raum: raum}, function (data) {
-        render_history(data.cycles);
+        history_cycles = data.cycles || [];
+        render_history(history_cycles);
     });
 }
 
@@ -2466,7 +2525,11 @@ function save_plan() {
         if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht gespeichert werden.'); return; }
         // Danach ist kein Plan mehr offen; load_state() zeigt den eben
         // gespeicherten Plan in der Startansicht.
-        load_state(function () { set_status('Sitzplan gespeichert. Er ist jetzt der aktuelle Plan.'); });
+        load_state(function () {
+            set_status(data.overwritten
+                ? 'Sitzplan gespeichert. Der bearbeitete Plan ist mit Ihren Änderungen überschrieben.'
+                : 'Sitzplan gespeichert. Er ist jetzt der aktuelle Plan.');
+        });
         load_history();
     });
 }
@@ -2525,25 +2588,11 @@ document.addEventListener('DOMContentLoaded', function () {
         save_shuffler_rules(shuffler_rules.rules, shuffler_rules.bff.concat([{a: a, b: b, freq: freq}]));
     });
 
-    // Ist schon ein Plan offen, fragen die Werkzeuge, ob er für den neuen Weg
-    // verworfen werden soll; then() läuft danach (oder sofort ohne offenen Plan).
-    function replace_open_plan(title, confirm_label, then) {
-        if (!open_cycle_id) { then(); return; }
-        let was = open_mode === 'wishes' ? 'eine Wunschrunde' : 'ein neuer Plan';
-        dashboardConfirm(`Es ist schon ${was} offen. Wollen Sie stattdessen neu beginnen, wird der offene Plan verworfen` +
-            (open_mode === 'wishes' ? ', die Umfrage verschwindet bei den SuS, und die Wünsche gehen verloren.' : '.') +
-            ' Ihre Vorgaben bleiben erhalten.', function () {
-            api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
-                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
-                load_state(then);
-            });
-        }, { title: title, confirm: confirm_label, danger: true });
-    }
     // Die Wunschrunde fragt direkt unter den Werkzeugen nach der Dauer.
     $('#sph_bu_wishes').click(function () {
         set_status('');
         $('#sph_shuffler_box').hide();
-        if (open_mode === 'wishes') return;
+        if (open_mode === 'wishes' && !is_reopened_edit) return;
         if (!open_cycle_id) {
             $('#sph_new_choice').toggle();
             render_areas();
@@ -2554,7 +2603,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Im Raum verteilen: ohne Umfrage sofort nach den Vorgaben gewürfelt.
     $('#sph_bu_start_spread').click(function () {
         set_status('');
-        if (open_mode === 'spread') return;
+        if (open_mode === 'spread' && !is_reopened_edit) return;
         replace_open_plan('Im Raum verteilen', 'Verwerfen und neu verteilen', function () { start_new_plan('spread'); });
     });
     $('#sph_bu_start_cycle').click(function () {
@@ -2570,15 +2619,13 @@ document.addEventListener('DOMContentLoaded', function () {
             start_new_plan('manual');
             return;
         }
-        if (open_mode === 'manual') return;
+        if (open_mode === 'manual' && !is_reopened_edit) return;
         // Es kann immer nur ein neuer Plan offen sein. Im offenen Plan lässt
         // sich schon von Hand umsetzen; ganz von vorn geht es nur, wenn er
         // verworfen wird.
-        let was = open_mode === 'wishes' ? 'eine Wunschrunde' : 'ein neuer Plan';
-        dashboardConfirm(`Es ist schon ${was} offen. Darin können Sie direkt von Hand umsetzen: Person anklicken, dann den Platz. ` +
+        dashboardConfirm(`Es ist schon ${open_plan_was()} offen. Darin können Sie direkt von Hand umsetzen: Person anklicken, dann den Platz. ` +
             'Wollen Sie stattdessen ganz von vorn von Hand verteilen, wird der offene Plan verworfen' +
-            (open_mode === 'wishes' ? ', die Umfrage verschwindet bei den SuS, und die Wünsche gehen verloren.' : '.') +
-            ' Ihre Vorgaben bleiben erhalten.', function () {
+            open_plan_loss() + ' Ihre Vorgaben bleiben erhalten.', function () {
             api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {
                 if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht verworfen werden.'); return; }
                 start_new_plan('manual');
@@ -2586,11 +2633,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, { title: 'Von Hand verteilen', confirm: 'Verwerfen und von Hand verteilen', danger: true });
     });
     $('#sph_bu_edit_saved').click(function () {
-        set_status('');
-        api_call('/api/sph_reopen_saved_cycle', {cycle_id: last_cycle.id}, function (data) {
-            if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht zum Ändern geöffnet werden.'); return; }
-            load_state();
-        });
+        reopen_saved_plan(last_cycle.id);
     });
     $('#sph_bu_close_wishes').click(function (e) {
         let button = $(e.currentTarget);
@@ -2602,10 +2645,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }, { title: 'Wunschrunde jetzt vorzeitig beenden?', confirm: 'Wunschrunde beenden' });
     });
     $('#sph_bu_discard_cycle').click(function () {
-        let frage = open_mode === 'wishes'
-            ? 'Diese Wunschrunde verwerfen? Die eingegangenen Wünsche gehen verloren, und die Umfrage verschwindet sofort bei den SuS. Der gespeicherte Sitzplan bleibt, wie er ist.'
-            : (open_mode === 'edit'
-                ? 'Ihre Änderungen verwerfen? Der gespeicherte Sitzplan bleibt, wie er ist.'
+        let frage = is_reopened_edit
+            ? 'Ihre Änderungen verwerfen? Der gespeicherte Sitzplan bleibt, wie er ist.'
+            : (open_mode === 'wishes'
+                ? 'Diese Wunschrunde verwerfen? Die eingegangenen Wünsche gehen verloren, und die Umfrage verschwindet sofort bei den SuS. Der gespeicherte Sitzplan bleibt, wie er ist.'
                 : 'Diesen neuen Sitzplan verwerfen? Der gespeicherte Sitzplan bleibt, wie er ist.');
         dashboardConfirm(frage + ' Ihre Vorgaben bleiben erhalten.', function () {
             api_call('/api/sph_discard_open_cycle', {cycle_id: open_cycle_id}, function (data) {

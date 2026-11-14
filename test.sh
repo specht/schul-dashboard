@@ -100,7 +100,8 @@ run_playwright() {
         -e BASE_URL="${E2E_BASE_URL:-$BASE_URL}" -e MAILPIT_URL="$MAILPIT_URL" -e CI=1 \
         -e SMOKE_ACCOUNTS -e LOGIN_CODE -e SAVE_PAGES_DIR \
         -e STATIC_DIR=/static -e UPDATE_KNOWN_PAGE_ERRORS="${UPDATE_KNOWN_PAGE_ERRORS:-0}" \
-        -v "$PWD/test/e2e:/e2e" -v "$PWD/src/static:/static:ro" -w /e2e \
+        -v "$PWD/test/e2e:/e2e" -v "$PWD/src/static:/static:ro" \
+        -v "$PWD/src/mail-password-bot:/mail-password-bot:ro" -w /e2e \
         "$PLAYWRIGHT_IMAGE" \
         bash -c "npm ci --no-audit --no-fund --loglevel=error && npx playwright test ${E2E_ARGS:---project=desktop --project=mobile --project=smoke}"
 }

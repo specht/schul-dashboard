@@ -1,0 +1,109 @@
+#!/usr/bin/env node
+'use strict';
+// Mailbox password bot – runs only on the maintainer's machines (README.md).
+//
+//   node bot.js check [--imap]         configuration, TOTP code to compare with the app, dashboard token
+//   node bot.js record                 open the bot's browser; you log in and click through, the structure is recorded
+//   node bot.js run --dry-run          everything up to the form, then "Abbrechen" – nothing is changed
+//   node bot.js run --test-mailbox     reset the test mailbox (two passwords take turns)
+//   node bot.js run                    approved cases from the dashboard, once
+//   node bot.js serve                  in the background: woken by the dashboard (websocket), asks every 15 minutes too
+//   node bot.js status
+const { execFile } = require('child_process');
+const { loadConfig, STATE_DIR, CONFIG_FILE } = require('./lib/config');
+const { State } = require('./lib/state');
+const { totpAt } = require('./lib/totp');
+const { imapLoginWorks } = require('./lib/imap');
+const { dashboardClient } = require('./lib/dashboard');
+const ionos = require('./lib/ionos');
+
+function notify(text) {
+    execFile('notify-send', ['--urgency=critical', 'Passwort-Bot', text], () => {});
+}
+
+// a desktop question; without a desktop (or zenity) the answer is no
+function confirmOnDesktop(lines) {
+    return new Promise((resolve) => {
+        execFile('zenity', ['--question', '--title=Passwort-Bot', '--width=480', '--ok-label=Ausführen', '--cancel-label=Abbrechen',
+            `--text=${lines.join('\n')}`], { timeout: 15 * 60 * 1000 }, (err) => resolve(!err));
+    });
+}
+
+async function openContext(config, state) {
+    const { chromium } = require('playwright-core');
+    return chromium.launchPersistentContext(state.profileDir, {
+        channel: config.chrome_channel,
+        headless: false,
+        viewport: null,
+        locale: 'de-DE',
+    });
+}
+
+async function main() {
+    const [command, ...flags] = process.argv.slice(2);
+    if (!command || command === 'help' || command === '--help') {
+        console.log(require('fs').readFileSync(__filename, 'utf8').split('\n').slice(2, 11).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+        return;
+    }
+    // recording needs no access data (you type them yourself), only the machine
+    const config = loadConfig({ recordingOnly: command === 'record' });
+    const state = new State(STATE_DIR);
+    if (command === 'record') {
+        const { record } = require('./lib/record');
+        state.lock();
+        try {
+            const context = await openContext(config, state);
+            await record({ context, state, testMailbox: config.test_mailbox });
+        } finally { state.unlock(); }
+        return;
+    }
+    const imap = (user, password) => imapLoginWorks({ host: config.imap_host, port: config.imap_port }, user, password);
+    const dashboard = dashboardClient({ url: config.dashboard_url, token: config.dashboard_token });
+
+    if (command === 'check') {
+        console.log(`Konfiguration: ${CONFIG_FILE} – in Ordnung`);
+        console.log(`Rechner: ${config.host} (erlaubt: ${config.hosts.join(', ')}), Zustand: ${STATE_DIR}`);
+        console.log(`IONOS-Ablauf: ${ionos.FLOW_STATUS}`);
+        const t = totpAt(config.totp);
+        console.log(`TOTP jetzt: ${t.code} (noch ${t.remaining} s) – stimmt das mit der Authenticator-App überein?`);
+        const pending = await dashboard.pending();
+        console.log(`Dashboard: Token gilt, ${pending.cases.length} freigegebene(r) Fall/Fälle${pending.paused ? `, ANGEHALTEN: ${pending.paused.reason}` : ''}`);
+        if (config.test_mailbox && flags.includes('--imap')) {
+            const works = await Promise.all(config.test_mailbox_passwords.map((pw) => imap(config.test_mailbox, pw).catch((e) => e.message)));
+            console.log(`IMAP Test-Postfach: Passwort 1 ${works[0]}, Passwort 2 ${works[1]}`);
+        }
+        console.log(`Heute auf diesem Rechner: ${JSON.stringify(state.counters())}`);
+        return;
+    }
+    if (command === 'status') {
+        const pending = await dashboard.pending();
+        console.log(pending.paused ? `ANGEHALTEN seit ${new Date(pending.paused.ts * 1000).toLocaleString('de-DE')}: ${pending.paused.reason}` : 'Nicht angehalten');
+        const stop = state.lastStop();
+        if (stop) console.log(`Letzter Halt auf diesem Rechner (${stop.ts}): ${stop.reason}${stop.screenshot ? `\nBildschirmfoto: ${stop.screenshot}` : ''}`);
+        console.log(`Freigegebene Fälle: ${pending.cases.length}, heute auf diesem Rechner: ${JSON.stringify(state.counters())}, Log: ${state.logFile}`);
+        return;
+    }
+    if (command === 'resume') {
+        console.log('Freigeben geht nur im Dashboard, auf der Seite „Passwörter“ (Administration).');
+        return;
+    }
+    const runOnce = (opts = {}) => require('./lib/run').run({
+        config, state, dashboard, imapLoginWorks: imap, notify,
+        confirm: config.confirm ? confirmOnDesktop : undefined,
+        openContext: () => openContext(config, state), ...opts,
+    });
+    if (command === 'run') {
+        const summary = await runOnce({ dryRun: flags.includes('--dry-run'), testMailbox: flags.includes('--test-mailbox') });
+        console.log(JSON.stringify({ status: summary.status, done: summary.done.length, failed: summary.failed.length, postponed: summary.postponed.length, dryRun: summary.dryRun.length }));
+        process.exitCode = summary.status === 'ok' ? 0 : 2;
+        return;
+    }
+    if (command === 'serve') {
+        const log = (message) => { state.log(message); console.log(`${new Date().toLocaleTimeString('de-DE')} ${message}`); };
+        await require('./lib/serve').serve({ config, runOnce: () => runOnce(), log }).loop;
+        return;
+    }
+    throw new Error(`Unbekannter Befehl: ${command}`);
+}
+
+main().catch((err) => { console.error(err.message); process.exitCode = 1; });

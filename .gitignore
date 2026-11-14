@@ -82,3 +82,6 @@ src/ruby/email-templates/*.out
 /test/e2e/test-results/
 /test/e2e/playwright-report/
 test/e2e/golden/
+
+# mailbox password bot: dependencies (config and state live outside the repository)
+/src/mail-password-bot/node_modules/

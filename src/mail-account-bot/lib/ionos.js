@@ -39,9 +39,9 @@ const { totpAt } = require('./totp');
 // verified 2026-11-14: dry runs and a reset of the test mailbox, a dry run on
 // a real case with the 2FA login – watched by the maintainer
 const FLOW_STATUS = 'verified';
-// creating mailboxes (and the export): recorded 2026-11-14, not yet watched –
-// real mailboxes only once it is 'verified'; the export is read-only
-const CREATE_FLOW_STATUS = 'recorded';
+// creating mailboxes (and the export): recorded 2026-11-14; verified the same
+// day with a dry run of two real approved mailboxes, watched by the maintainer
+const CREATE_FLOW_STATUS = 'verified';
 
 const HOSTS = ['login.ionos.de', 'mein.ionos.de'];
 

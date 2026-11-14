@@ -587,8 +587,9 @@ test('Bot hält an: nach dem Anlegen zeigt IONOS ein anderes Postfach', async ({
   expect(dashboard.createResults.map((r) => r.id)).not.toContain('n2');
 });
 
-test('Bot legt an: echte Postfächer erst, wenn das Anlegen bestätigt ist', async ({ browser }) => {
-  expect(ionos.CREATE_FLOW_STATUS).toBe('recorded');
+test('Bot legt an: echte Postfächer, seit das Anlegen bestätigt ist', async ({ browser }) => {
+  // watched by the maintainer on 2026-11-14; any change to the creation steps sets it back to 'recorded'
+  expect(ionos.CREATE_FLOW_STATUS).toBe('verified');
   const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
   const dashboard = fakeDashboard([], { create: [createJob(NEW)] });
   const summary = await run({
@@ -596,11 +597,10 @@ test('Bot legt an: echte Postfächer erst, wenn das Anlegen bestätigt ist', asy
     imapLoginWorks: async (u: string, p: string) => fake.passwords.get(u) === p,
     openContext: async () => { const c = await browser.newContext(); await fake.install(c); return c; },
   });
-  expect(summary.status).toBe('ok');
-  // the list is fetched (read-only), nothing is created
+  expect(summary.status, summary.reason).toBe('ok');
   expect(dashboard.uploads).toHaveLength(1);
-  expect(fake.created).toHaveLength(0);
-  expect(dashboard.createResults).toHaveLength(0);
+  expect(fake.created.map((c) => c.address)).toEqual([NEW]);
+  expect(dashboard.createResults.map((r) => [r.id, r.ok])).toEqual([['n1', true]]);
 });
 
 test('Bot wartet angemeldet: ein Weckruf holt neue Fälle sofort, ohne neue Anmeldung', async ({ browser }) => {

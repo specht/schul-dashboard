@@ -161,13 +161,9 @@ test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Vertei
   const name = (await source.locator('.sph-card-name').textContent())!;
   const free = page.locator('#sph_seats .place.empty').first();
   const to = await free.getAttribute('data-seat-index');
-  await free.scrollIntoViewIfNeeded();
-  const a = (await source.boundingBox())!;
-  const b = (await free.boundingBox())!;
-  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 5 });
-  await page.mouse.up();
+  // the whole room on screen, so that both seats are where the mouse goes
+  await page.locator('#sph_seats').scrollIntoViewIfNeeded();
+  await source.dragTo(free);
   const seat = (index: string | null) => page.locator(`#sph_seats .place[data-seat-index="${index}"]`);
   await expect(seat(to)).toHaveText(name);
   await expect(seat(from)).toHaveClass(/empty/);

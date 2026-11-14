@@ -28,12 +28,14 @@ Die Seite hat zwei Ansichten. Lange Erklärungen sind zugeklappt
 („Wie funktioniert das?“), ebenso „Vorgaben“ und „Frühere Sitzpläne“.
 Die Seite spricht die Lehrkraft mit „Sie“ an.
 
-1. **Startansicht**: zeigt den aktuell gespeicherten Plan mit den
-   Knöpfen „Neuer Sitzplan“, „Plan ändern“, „Drucken“ und „Shuffler“.
-   Darunter liegen aufklappbar „Frühere Sitzpläne“ und, wo die Klassenleitung die Tische
-   ändern darf, der Link „Tische im Raum ändern“. Hat der Raum weniger
-   Plätze als die Klasse SuS, lässt sich kein neuer Plan beginnen und
-   der Shuffler nicht öffnen.
+1. **Startansicht**: Ganz oben steht als erster Schritt der Raum mit
+   der Zahl der Plätze und, wo die Klassenleitung die Tische ändern darf,
+   „Tische im Raum ändern“ (gelb hervorgehoben, wenn Plätze fehlen;
+   „Tische anlegen“, wenn es noch keine gibt). Darunter der aktuell
+   gespeicherte Plan mit den Knöpfen „Neuer Sitzplan“, „Plan ändern“,
+   „Drucken“ und „Shuffler“, darunter aufklappbar „Frühere Sitzpläne“.
+   Hat der Raum weniger Plätze als die Klasse SuS, lässt sich kein neuer
+   Plan beginnen und der Shuffler nicht öffnen.
 2. **Neuer Sitzplan** fragt, wie der Plan entstehen soll:
    - **Mit Wünschen der Klasse**: legt eine Umfrage an und startet einen
      Timer (einstellbar 1–60 Tage, Standard 4). Die SuS sehen sie ganz

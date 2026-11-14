@@ -210,6 +210,29 @@ table.sph-wishes td, table.sph-wishes th {
     justify-content: flex-end;
     margin-top: 1.5em;
 }
+.sph-room-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1em;
+    align-items: center;
+    padding: 0.5em 0.9em;
+    margin-bottom: 1em;
+    border: 1px solid #d6dbd7;
+    border-radius: 0.5em;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+.sph-room-bar.sph-room-warn {
+    border-color: #e0b84a;
+    background-color: #fff6dc;
+}
+body.dark .sph-room-bar {
+    border-color: #444b46;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+body.dark .sph-room-bar.sph-room-warn {
+    border-color: #8a6d1e;
+    background-color: #3a3014;
+}
 .sph-status:empty {
     display: none;
 }
@@ -383,6 +406,13 @@ body.dark .sph-group {
     <p><a class="btn btn-outline-secondary" id="sph_back_link" href="#"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></p>
     <p id="sph_status" class="sph-status" role="status"></p>
 
+    <!-- Der erste Schritt: die Tische im Raum. Steht oben, auch wenn man ihn
+         nicht jedes Mal braucht. -->
+    <div id="sph_room_bar" class="sph-room-bar" style="display: none;">
+        <span><i class="fa fa-th"></i>&nbsp;&nbsp;<span id="sph_room_info"></span></span>
+        <a class="btn btn-sm btn-outline-secondary" id="sph_link_editor" href="#">Tische im Raum ändern</a>
+    </div>
+
     <!-- Startansicht: der gespeicherte Plan, wie ihn die Lehrkräfte der Klasse sehen -->
     <div id="sph_view_start" style="display: none;">
         <p id="sph_start_info" class="sph-legend"></p>
@@ -523,7 +553,6 @@ body.dark .sph-group {
         </table>
         </div>
     </details>
-    <p id="sph_editor_row" style="display: none;"><a href="#" id="sph_link_editor"><i class="fa fa-th"></i>&nbsp;&nbsp;Tische im Raum ändern</a></p>
 </div>
 
 <script>
@@ -1181,6 +1210,7 @@ function load_state(after) {
         forbidden_pairs = oc ? (oc.forbidden_pairs || []) : [];
         fixed_rules = oc ? (oc.fixed_rules || []) : [];
         $('#sph_view_start').toggle(!oc);
+        if (oc) $('#sph_room_bar').hide();
         $('#sph_view_work, #sph_save_row').toggle(!!oc);
         $('#sph_new_choice').hide();
         if (oc) render_work_header(oc);
@@ -1246,12 +1276,14 @@ function render_start_header(data) {
     // Der Shuffler braucht wie jeder neue Plan einen Platz für alle.
     $('#sph_link_shuffler').toggleClass('disabled', too_small)
         .attr('aria-disabled', too_small ? 'true' : null).attr('tabindex', too_small ? '-1' : null);
-    if (too_small) {
-        // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen
-        // fällt auf, dass gar nicht alle in den Raum passen.
-        $('#sph_start_info').append(document.createTextNode(` Raum ${raum} hat nur ${seats.length} Plätze, die Klasse aber ${sus.length} SuS. ` +
-            (sph_editor_allowed ? 'Legen Sie unter „Tische im Raum ändern“ weitere Plätze an.' : 'Weitere Plätze kann nur die Administration anlegen.')));
-    }
+    // Sonst geben die SuS tagelang Wünsche ab, und erst beim Erzeugen fällt
+    // auf, dass gar nicht alle in den Raum passen.
+    $('#sph_room_info').text(too_small
+        ? `Raum ${raum} hat nur ${seats.length} Plätze, die Klasse aber ${sus.length} SuS. ` +
+          (sph_editor_allowed ? 'Legen Sie zuerst weitere Plätze an.' : 'Weitere Plätze kann nur die Administration anlegen.')
+        : `Raum ${raum}: ${seats.length} Plätze für ${sus.length} SuS`);
+    $('#sph_room_bar').toggleClass('sph-room-warn', too_small).show();
+    $('#sph_link_editor').toggleClass('btn-warning', too_small).toggleClass('btn-outline-secondary', !too_small);
 }
 
 // Kopf der Arbeitsansicht: woher der Plan kommt und was als Nächstes zu tun ist.
@@ -2015,15 +2047,17 @@ document.addEventListener('DOMContentLoaded', function () {
     seats = seats_dict[raum];
     $('#sph_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
     $('#sph_link_editor').attr('href', `/sitzplaneditor/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
-    $('#sph_editor_row').toggle(sph_editor_allowed);
+    $('#sph_link_editor').toggle(sph_editor_allowed);
     if (!seats) {
         // Noch keine Tische für diesen Raum - mit einer Erklärung und dem Weg
         // zum Editor stehenbleiben statt wortlos auf die Startseite zu springen.
         $('#sph_view_start, #sph_view_work, #sph_plan_area, #sph_save_row, #sph_history_section').remove();
         $('#sph_label').text(`${klasse} – Raum ${raum}`);
-        $('#sph_status').removeClass('sph-status').addClass('sph-legend').text(sph_editor_allowed
+        $('#sph_room_info').text(sph_editor_allowed
             ? `Für Raum ${raum} sind noch keine Tische angelegt. Legen Sie sie zuerst an.`
             : `Für Raum ${raum} sind noch keine Tische angelegt. Das kann nur die Administration.`);
+        $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-secondary').addClass('btn-primary');
+        $('#sph_room_bar').addClass('sph-room-warn').show();
         return;
     }
     $('#sph_label').text(`${klasse} – Raum ${raum}`);

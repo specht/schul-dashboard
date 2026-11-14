@@ -273,6 +273,26 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await expect(modal.locator('#ta_reply_body')).toHaveValue(new RegExp(`für das Postfach und das Eltern-Postfach von ${a.name} zurückgesetzt und sende Ihnen die Zugangsdaten im Anhang`));
   await expect(modal.locator('#ta_reply_body')).toHaveValue(/Viele Grüße\n/);
   await expect(modal.locator('#reply_attachment')).toContainText(a.name);
+  // the attachment can be looked at before sending
+  const [letter, preview] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/mail_password_case_letter')),
+    page.context().waitForEvent('page'),
+    modal.locator('#bu_preview_reply_letter').click(),
+  ]);
+  expect(letter.status()).toBe(200);
+  expect(letter.headers()['content-type']).toContain('application/pdf');
+  await preview.close();
+  // copies: CC and BCC, several separated by commas; a wrong address is refused
+  const cc = [`oma.${testInfo.project.name}@example.org`, `opa.${testInfo.project.name}@example.org`];
+  const bcc = `sekretariat.${testInfo.project.name}@example.org`;
+  await modal.locator('#ti_reply_cc').fill('kein-gueltiger-empfaenger');
+  await modal.locator('#bu_send_mail_case_reply').click();
+  const refused = dashboardDialog(page);
+  await expect(refused).toContainText('Es wurde nichts gesendet');
+  await refused.getByRole('button', { name: 'OK' }).click();
+  await expect(modal).toBeVisible();
+  await modal.locator('#ti_reply_cc').fill(cc.join(', '));
+  await modal.locator('#ti_reply_bcc').fill(bcc);
   // a real, edited letter text is far longer than the 512 bytes a request may have by default
   const longer = 'Bitte bewahren Sie den Brief gut auf; bei Fragen wenden Sie sich gern an die Schule. '.repeat(12);
   await modal.locator('#ta_reply_body').fill(`Sehr geehrter Herr Postfachtest,\n\nanbei die Zugangsdaten.\n\n${longer}\n\nViele Grüße`);
@@ -283,13 +303,16 @@ test('Administration: Anfrage per E-Mail eintragen, von Hand erledigen, mit E-Ma
   await page.locator('#mail_cases_closed').locator('xpath=ancestor::details').locator('summary').click();
   const closedRow = page.locator('#mail_cases_closed tr.mail-case').filter({ hasText: family }).first();
   await expect(closedRow.locator('.mail-case-replied')).toContainText(family);
+  await expect(closedRow.locator('.mail-case-replied')).toContainText(cc[0]);
 
   await expect.poll(async () => (await mails(family, REPLY_SUBJECT)).length).toBe(1);
   const [summary] = await mails(family, REPLY_SUBJECT);
   const message = await (await fetch(`${MAILPIT_URL}/api/v1/message/${summary.ID}`)).json();
   expect(message.Text).toContain('Sehr geehrter Herr Postfachtest');
   expect(message.ReplyTo.map((x: { Address: string }) => x.Address)).toEqual([ACCOUNTS.admin]);
-  expect(message.Bcc.map((x: { Address: string }) => x.Address)).toEqual([ACCOUNTS.admin]);
+  expect(message.Cc.map((x: { Address: string }) => x.Address)).toEqual(cc);
+  // the admin always gets a copy
+  expect(message.Bcc.map((x: { Address: string }) => x.Address)).toEqual([ACCOUNTS.admin, bcc]);
   expect(message.Attachments).toHaveLength(1);
   expect(message.Attachments[0].ContentType).toBe('application/pdf');
   expect(message.Attachments[0].FileName).toContain(a.name);

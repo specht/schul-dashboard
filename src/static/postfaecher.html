@@ -10,6 +10,16 @@
           <label for='ti_reply_to'>An</label>
           <input id='ti_reply_to' type='email' class='form-control' autocomplete='off' />
         </div>
+        <div class='form-row'>
+          <div class='form-group col-md-6'>
+            <label for='ti_reply_cc'>CC</label>
+            <input id='ti_reply_cc' class='form-control' placeholder='optional, mehrere mit Komma' autocomplete='off' />
+          </div>
+          <div class='form-group col-md-6'>
+            <label for='ti_reply_bcc'>BCC</label>
+            <input id='ti_reply_bcc' class='form-control' placeholder='optional, mehrere mit Komma' autocomplete='off' />
+          </div>
+        </div>
         <div class='form-group'>
           <label for='ti_reply_subject'>Betreff</label>
           <input id='ti_reply_subject' class='form-control' maxlength='200' autocomplete='off' />
@@ -18,7 +28,8 @@
           <label for='ta_reply_body'>Text</label>
           <textarea id='ta_reply_body' class='form-control' rows='9'></textarea>
         </div>
-        <p class='text-muted' style='margin-bottom: 0;'><i class='fa fa-paperclip'></i>&nbsp;&nbsp;<span id='reply_attachment'></span><br />
+        <p class='text-muted' style='margin-bottom: 0;'><i class='fa fa-paperclip'></i>&nbsp;&nbsp;<span id='reply_attachment'></span>
+        <button id='bu_preview_reply_letter' class='btn btn-xs btn-outline-secondary' style='margin-left: 0.5em;'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ansehen</button><br />
         Antworten gehen an dich, du bekommst eine Kopie.</p>
       </div>
       <div class="modal-footer">
@@ -163,7 +174,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (entry.ts_done) step.append($('<small>').addClass('text-muted').text(' (' + fmt_ts(entry.ts_done) + ')'));
             if (entry.message && entry.state !== 'done') step.append($('<div>').addClass('text-muted').text(entry.message));
             if (entry.ts_reply) {
-                step.append($('<div>').addClass('text-muted mail-case-replied').text('Antwort an ' + entry.reply_sent_to + ' gesendet (' + fmt_ts(entry.ts_reply) + ')'));
+                const copies = (entry.reply_cc || []).length ? `, CC: ${entry.reply_cc.join(', ')}` : '';
+                step.append($('<div>').addClass('text-muted mail-case-replied').text('Antwort an ' + entry.reply_sent_to + copies + ' gesendet (' + fmt_ts(entry.ts_reply) + ')'));
             } else if (entry.ts_closed) {
                 step.append($('<div>').addClass('text-muted').text('ohne Antwort abgeschlossen'));
             }
@@ -378,16 +390,35 @@ document.addEventListener('DOMContentLoaded', function() {
         api_call('/api/mail_password_case_reply_draft', { id: reply_case_id }, function(data) {
             if (!data.success) return;
             $('#ti_reply_to').val(data.to);
+            $('#ti_reply_cc').val('');
+            $('#ti_reply_bcc').val('');
             $('#ti_reply_subject').val(data.subject);
             $('#ta_reply_body').val(data.body);
             $('#reply_attachment').text(data.attachment);
             $('#mailCaseReplyModal').modal('show');
         });
     });
+    $('#bu_preview_reply_letter').on('click', function(e) {
+        const button = $(e.currentTarget).prop('disabled', true);
+        fetch('/api/mail_password_case_letter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: reply_case_id }),
+        })
+        .then((response) => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.blob();
+        })
+        .then((blob) => window.open(window.URL.createObjectURL(blob), '_blank'))
+        .catch(() => dashboardAlert('Der E-Mail-Brief konnte nicht erstellt werden.', 'Fehler'))
+        .finally(() => button.prop('disabled', false));
+    });
     $('#bu_send_mail_case_reply').on('click', function() {
         const payload = {
             id: reply_case_id,
             to: $('#ti_reply_to').val().trim(),
+            cc: $('#ti_reply_cc').val().trim(),
+            bcc: $('#ti_reply_bcc').val().trim(),
             subject: $('#ti_reply_subject').val().trim(),
             body: $('#ta_reply_body').val(),
         };
@@ -397,6 +428,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         api_call('/api/send_mail_password_case_reply', payload, function(data) {
             if (!data.success) return;
+            if (data.error === 'invalid_copy_address') {
+                dashboardAlert('Eine Adresse bei CC oder BCC stimmt nicht (höchstens 5 je Feld, mit Komma getrennt). Es wurde nichts gesendet.', 'Adresse prüfen');
+                return;
+            }
             $('#mailCaseReplyModal').modal('hide');
             load();
         });

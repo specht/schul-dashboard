@@ -465,6 +465,7 @@ class Main < Sinatra::Base
                     :ts_decided => c[:ts_decided],
                     :ts_reply => c[:ts_reply],
                     :reply_sent_to => c[:reply_sent_to],
+                    :reply_cc => c[:reply_cc],
                     :ts_closed => c[:ts_closed],
                 )
             end
@@ -520,36 +521,73 @@ class Main < Sinatra::Base
         respond(mail_password_case_reply_draft(c))
     end
 
+    MAIL_REPLY_ADDRESS_RE = /\A[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+\z/
+    MAIL_REPLY_MAX_COPIES = 5
+
+    # the E-Mail-Brief(e) a reply carries: [pdf, filename]
+    def mail_password_case_letter(c)
+        students = mail_password_case_students(c)
+        assert(!students.empty?)
+        filename = students.size == 1 ? "E-Mail-Brief #{@@user_info[students.first][:display_name]}.pdf" : 'E-Mail-Briefe.pdf'
+        [Main.print_email_letters(students), filename]
+    end
+
+    # "a@x.de, b@y.de" -> checked list, nil if one is invalid or there are
+    # more than MAIL_REPLY_MAX_COPIES
+    def mail_reply_addresses(text)
+        list = text.to_s.split(/[,;\s]+/).map(&:strip).reject(&:empty?).uniq
+        return nil if list.size > MAIL_REPLY_MAX_COPIES
+        return nil unless list.all? { |x| x =~ MAIL_REPLY_ADDRESS_RE }
+        list
+    end
+
+    # the attachment before sending, to look at
+    post '/api/mail_password_case_letter' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:id], :max_value_lengths => {:id => 64})
+        c = mail_password_case(data[:id])
+        assert(c && c[:state] == 'done', 'case not done')
+        pdf, _ = mail_password_case_letter(c)
+        respond_raw_with_mimetype(pdf, 'application/pdf')
+    end
+
     post '/api/send_mail_password_case_reply' do
         require_admin!
-        data = parse_request_data(:required_keys => [:id, :to, :subject, :body],
-                                  :max_value_lengths => {:id => 64, :to => 256, :subject => 200, :body => 10000},
+        data = parse_request_data(:required_keys => [:id, :to, :subject, :body], :optional_keys => [:cc, :bcc],
+                                  :max_value_lengths => {:id => 64, :to => 256, :subject => 200, :body => 10000, :cc => 1500, :bcc => 1500},
                                   # the default 512 bytes are far too little for a letter text
                                   :max_body_length => 32 * 1024)
         c = mail_password_case(data[:id])
         assert(c && c[:state] == 'done', 'case not done')
         recipient = data[:to].strip
-        assert(recipient =~ /\A[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+\z/, 'invalid recipient')
-        students = mail_password_case_students(c)
-        assert(!students.empty?)
-        pdf = Main.print_email_letters(students)
-        filename = students.size == 1 ? "E-Mail-Brief #{@@user_info[students.first][:display_name]}.pdf" : 'E-Mail-Briefe.pdf'
-        admin_email = @session_user[:email]
-        subject_text = data[:subject].strip
-        body_text = data[:body]
-        deliver_mail(body_text) do
-            to recipient
-            from SMTP_FROM
-            reply_to admin_email
-            bcc admin_email
-            subject subject_text
-            add_file :content_type => 'application/pdf', :content => pdf, :filename => filename
+        assert(recipient =~ MAIL_REPLY_ADDRESS_RE, 'invalid recipient')
+        cc_list = mail_reply_addresses(data[:cc])
+        extra_bcc = mail_reply_addresses(data[:bcc])
+        if cc_list.nil? || extra_bcc.nil?
+            # a typo in a copy address: say so, send nothing
+            respond(:error => 'invalid_copy_address')
+        else
+            admin_email = @session_user[:email]
+            # the admin always gets a copy
+            bcc_list = ([admin_email] + extra_bcc).uniq
+            pdf, filename = mail_password_case_letter(c)
+            subject_text = data[:subject].strip
+            body_text = data[:body]
+            deliver_mail(body_text) do
+                to recipient
+                cc cc_list unless cc_list.empty?
+                from SMTP_FROM
+                reply_to admin_email
+                bcc bcc_list
+                subject subject_text
+                add_file :content_type => 'application/pdf', :content => pdf, :filename => filename
+            end
+            neo4j_query(<<~END_OF_QUERY, :id => c[:id], :ts => Time.now.to_f, :to => recipient, :cc => cc_list, :bcc => bcc_list - [admin_email])
+                MATCH (c:MailPasswordCase {id: $id})
+                SET c.ts_reply = $ts, c.reply_sent_to = $to, c.reply_cc = $cc, c.reply_bcc = $bcc;
+            END_OF_QUERY
+            respond(:result => 'sent')
         end
-        neo4j_query(<<~END_OF_QUERY, :id => c[:id], :ts => Time.now.to_f, :to => recipient)
-            MATCH (c:MailPasswordCase {id: $id})
-            SET c.ts_reply = $ts, c.reply_sent_to = $to;
-        END_OF_QUERY
-        respond(:result => 'sent')
     end
 
     # ---- interface for the bot (Authorization: Bearer <token>) ----

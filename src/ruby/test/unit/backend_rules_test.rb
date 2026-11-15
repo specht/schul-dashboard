@@ -54,4 +54,33 @@ class BackendRulesTest < Minitest::Test
         end
         assert_empty offenders, "Use RandomTag::digits / SecureRandom for codes:\n" + offenders.join("\n")
     end
+
+    # No shell strings with values in them (AGENTS.md): system('cmd', arg, …).
+    # Known exceptions build their commands only from random tags, the
+    # school's own configuration or the repository – not from requests or
+    # uploads. Don't add to this list; convert instead.
+    SHELL_STRING_EXCEPTIONS = {
+        'include/comment.rb' => 1,  # ffmpeg, paths from a random tag
+        'include/zeugnisse.rb' => 1, # unzip of the configured forms
+        'main.rb' => 2,              # advent calendar, names from a tracked file
+    }
+
+    def test_no_new_shell_strings_with_values
+        found = Hash.new(0)
+        lines = []
+        files = Dir[File.join(RUBY_DIR, 'main.rb')] + Dir[File.join(RUBY_DIR, 'include', '**', '*.rb')] +
+                Dir[File.join(RUBY_DIR, '*-repl.rb')]
+        files.each do |path|
+            File.readlines(path, encoding: 'utf-8').each_with_index do |line, i|
+                next if line.strip.start_with?('#')
+                next unless (line =~ /\b(system|spawn|exec|popen\w*|capture\w*)\s*\(?\s*"/ && line.include?('#{')) ||
+                            line =~ /`[^`]*#\{/ || line =~ /%x[\(\{\[]/
+                file = path.sub(RUBY_DIR + '/', '')
+                found[file] += 1
+                lines << "#{file}:#{i + 1}: #{line.strip}"
+            end
+        end
+        assert_equal SHELL_STRING_EXCEPTIONS, found.to_h,
+                     "Call programs with an argument list instead of a shell string:\n" + lines.join("\n")
+    end
 end

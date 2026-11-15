@@ -31,7 +31,7 @@ class Main < Sinatra::Base
         filename = entry['filename']
         blob = entry['tempfile'].read
         sha1 = Digest::SHA1.hexdigest(blob)
-        path = "/raw/uploads/images/unterstufenparty/#{sha1}.#{filename.split('.').last}"
+        path = "/raw/uploads/images/unterstufenparty/#{sha1}.#{upload_image_extension(filename)}"
         FileUtils.mkdir_p(File.dirname(path))
         File.open(path, 'w') do |f|
             f.write(blob)

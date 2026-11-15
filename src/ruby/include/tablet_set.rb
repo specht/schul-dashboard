@@ -178,9 +178,17 @@ class Main < Sinatra::Base
         result
     end
 
+    # Tablet set ids come from the client: only sets from the configuration.
+    def assert_known_tablet_sets(tablet_sets)
+        tablet_sets = (tablet_sets || []).map(&:to_s)
+        assert(tablet_sets.all? { |id| @@tablet_sets.include?(id) }, 'unknown tablet set')
+        tablet_sets
+    end
+
     # book a list of tablet sets for a specific lesson, or unbook all tablet sets
     def book_tablet_set_for_lesson(datum, start_time, end_time, tablet_sets = [], lesson_key, offset)
         require_user_with_role!(:can_book_tablets)
+        tablet_sets = assert_known_tablet_sets(tablet_sets)
         conflicting_tablets = []
         unless tablet_sets.empty?
             # check if it's bookable
@@ -196,7 +204,7 @@ class Main < Sinatra::Base
             transaction do
                 # make sure tablet sets exist in database
                 tablet_sets.each do |tablet_set_id|
-                    neo4j_query("MERGE (:TabletSet {id: '#{tablet_set_id}'})")
+                    neo4j_query("MERGE (:TabletSet {id: $id})", :id => tablet_set_id)
                 end
                 timestamp = Time.now.to_i
                 data = {
@@ -247,6 +255,7 @@ class Main < Sinatra::Base
     # book a list of tablet sets for a specific lesson, or unbook all tablet sets
     def book_tablet_set_for_timespan(datum, start_time, end_time, reason, tablet_sets)
         require_user_who_can_manage_tablets!
+        tablet_sets = assert_known_tablet_sets(tablet_sets)
         conflicting_tablets = []
         unless tablet_sets.empty?
             # check if it's bookable
@@ -258,7 +267,7 @@ class Main < Sinatra::Base
             transaction do
                 # make sure tablet sets exist in database
                 tablet_sets.each do |tablet_set_id|
-                    neo4j_query("MERGE (:TabletSet {id: '#{tablet_set_id}'})")
+                    neo4j_query("MERGE (:TabletSet {id: $id})", :id => tablet_set_id)
                 end
                 timestamp = Time.now.to_i
                 data = {

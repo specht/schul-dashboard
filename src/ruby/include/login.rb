@@ -156,8 +156,7 @@ class Main < Sinatra::Base
             if first_method != 'email'
                 available_second_methods << 'email'
             end
-            srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
-            random_code = (0..5).map { |x| rand(10).to_s }.join('')
+            random_code = RandomTag::digits(6)
             random_code = '654321' if DEVELOPMENT
             result = neo4j_query_expect_one(<<~END_OF_QUERY, :tag => data[:tag], :code2 => random_code)
                 MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
@@ -582,8 +581,7 @@ class Main < Sinatra::Base
             respond(:error => 'too_many_login_attempts')
             return
         end
-        srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
-        random_code = (0..5).map { |x| rand(10).to_s }.join('')
+        random_code = RandomTag::digits(6)
         random_code = '123456' if DEVELOPMENT
         random_code = DEMO_ACCOUNT_FIXED_PIN if data[:email] == DEMO_ACCOUNT_EMAIL
         tag = RandomTag::generate(8)
@@ -840,8 +838,7 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:method])
         method = data[:method]
-        srand(Digest::SHA2.hexdigest(LOGIN_CODE_SALT).to_i + (Time.now.to_f * 1000000).to_i)
-        random_code = (0..5).map { |x| rand(10).to_s }.join('')
+        random_code = RandomTag::digits(6)
         random_code = '654321' if DEVELOPMENT
         tag = RandomTag::generate(8)
         # debug "!!!!! #{data[:email]} => #{tag} / #{random_code} !!!!!"

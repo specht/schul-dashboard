@@ -169,10 +169,19 @@ eingesetzt werden, HTML- bzw. JSON-sicher maskieren.
    `user_with_role_logged_in?(:…)` …), dann `parse_request_data` mit
    Pflichtfeldern, Typen und Längen.
 3. Cypher immer mit Parametern (`$name`), nie mit `#{…}`.
-4. Keine Shell-Strings mit Daten aus Anfragen: `system('befehl', arg1, arg2)`
-   statt `system("befehl #{arg}")`.
-5. `respond(…)` für die Antwort.
-6. Tests dazu schreiben (siehe [Tests](file.Tests.html)).
+4. Keine Shell-Strings mit Daten: `system('befehl', arg1, arg2)` statt
+   `system("befehl #{arg}")`. Ein Unit-Test (`backend_rules`) lässt keine
+   neuen zu.
+5. Codes für Anmeldung und Bestätigung mit `RandomTag::digits`, IDs mit
+   `RandomTag::generate` – nie mit `rand`/`srand` (der globale Generator wird
+   an anderen Stellen fest initialisiert).
+6. Dateien von fremden Adressen nur mit `fetch_public_uri` (`include/file.rb`)
+   holen: nur http(s), keine internen Adressen, keine Weiterleitungen.
+7. Soll eine Route von einer anderen Seite aus per Browser aufrufbar sein,
+   die Herkunft in `CROSS_ORIGIN_POSTS` (`main.rb`) eintragen – sonst antwortet
+   das Dashboard mit 403.
+8. `respond(…)` für die Antwort.
+9. Tests dazu schreiben (siehe [Tests](file.Tests.html)).
 
 ## Konventionen
 

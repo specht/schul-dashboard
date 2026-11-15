@@ -99,10 +99,20 @@ neu gestartet und anschließend der Stundenplan neu geschrieben werden
 ## Ablauf einer Anfrage
 
 1. nginx prüft, ob es eine passende Datei gibt (`try_files`). Wenn nicht,
-   geht die Anfrage an `ruby`.
+   geht die Anfrage an `ruby`. `.html`-Dateien liefert nginx nie selbst aus –
+   es sind Vorlagen für Ruby. Hochgeladene Dateien unter `/raw` und `/f`
+   gehen mit `X-Content-Type-Options: nosniff` hinaus; HTML, SVG und andere
+   Dateien, die ein Browser ausführen würde, nur als Download und ohne
+   Skripte (`Content-Security-Policy: sandbox`).
 2. `config.ru` beantwortet `/api/ping` selbst (für die Neustart-Seite) und
    reicht alles andere an `Main` weiter.
-3. Der Filter `before '*'` in `main.rb` liest die Cookies, sucht die Session
+3. Der Filter `before '*'` in `main.rb` weist zuerst ändernde Anfragen
+   (POST …) ab, die ein Browser von einer anderen Seite schickt – erkennbar
+   an `Origin` bzw. `Sec-Fetch-Site`. Programme ohne Browser (Bots, andere
+   Server) senden diese Header nicht und kommen durch. Routen, die bewusst
+   von einer anderen Seite aufgerufen werden, stehen mit der erlaubten
+   Herkunft in `CROSS_ORIGIN_POSTS`.
+   Danach liest er die Cookies, sucht die Session
    in Neo4j und setzt `@session_user` (bzw. `@session_device` für Geräte wie
    Bibliotheks-Scanner oder Monitore).
 4. Dann greift entweder eine API-Route (`/api/…`) oder die Seiten-Route

@@ -111,7 +111,9 @@ test('Begrenzte Plätze: volle Antworten sind gesperrt, die Auswertung zeigt die
   await runModal.locator('.bu-poll-run-spontaneous[data-minutes="60"]').click();
   const runSaved = page.waitForResponse('**/api/save_poll_run');
   await page.locator('#bu_save_poll_run').click();
-  expect((await runSaved).status()).toBe(200);
+  const runResponse = await runSaved;
+  expect(runResponse.status()).toBe(200);
+  const prid = (await runResponse.json()).poll_run.prid;
   // whether places are limited can't be changed afterwards
   await expect(page.locator('#bu_poll_run_limited_places')).toBeDisabled();
 
@@ -181,4 +183,9 @@ test('Begrenzte Plätze: volle Antworten sind gesperrt, die Auswertung zeigt die
   await expect(orders.nth(0).locator('li')).toHaveCount(1);
   await expect(orders.nth(0)).toContainText('Max');
   await expect(orders.nth(1)).toContainText(/Elli|Elisabeth/);
+
+  // the results as a spreadsheet (runs with names only; the run's id is in the URL path)
+  const xlsx = await page.request.get(`/api/poll_run_results_xlsx/${prid}`);
+  expect(xlsx.status()).toBe(200);
+  expect(xlsx.headers()['content-type']).toContain('spreadsheet');
 });

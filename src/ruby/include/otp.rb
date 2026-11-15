@@ -114,8 +114,10 @@ class Main < Sinatra::Base
         assert(@@user_info.include?(data[:email]))
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600
+        # replaces an earlier OTP login only – anybody can call this for any
+        # address, so codes sent by mail or SMS stay valid
         neo4j_query(<<~END_OF_QUERY, :email => data[:email])
-            MATCH (l:LoginCode)-[:BELONGS_TO]->(n:User {email: $email})
+            MATCH (l:LoginCode {otp: true})-[:BELONGS_TO]->(n:User {email: $email})
             DETACH DELETE l;
         END_OF_QUERY
         neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :valid_to => valid_to.to_i)

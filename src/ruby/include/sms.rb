@@ -63,7 +63,7 @@ class Main < Sinatra::Base
         number = number.e164_number()
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600
-        random_code = (0..5).map { |x| rand(10).to_s }.join('')
+        random_code = RandomTag::digits(6)
         send_sms(number, "Dein Bestaetigungscode zur Aktivierung der SMS-Anmeldung lautet #{random_code}.")
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :telephone_number => number.obfuscate(SMS_PHONE_NUMBER_PASSPHRASE), :tag => tag, :code => random_code, :valid_to => valid_to.to_i})
             MATCH (u:User {email: $email})

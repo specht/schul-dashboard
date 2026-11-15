@@ -1,5 +1,5 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
-import { ACCOUNTS, apiLogin, clearLoginMails, totp } from './fixtures';
+import { ACCOUNTS, ROLE_ACCOUNTS, apiLogin, clearLoginMails, totp, waitForMailedCode } from './fixtures';
 
 // 1×1 PNG
 const PNG = Buffer.from(
@@ -39,5 +39,180 @@ test('Bild-Upload nimmt nur Bilddateien an', async ({ baseURL }) => {
   for (const name of ['foto.$(id)', 'foto.html', 'foto']) {
     expect((await upload(name)).status(), name).not.toBe(200);
   }
+  await request.dispose();
+});
+
+test('Unterstufenparty-Upload nimmt nur Bilddateien an', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  // a student with the "unterstufenparty" role
+  await apiLogin(request, ROLE_ACCOUNTS.sv);
+
+  const upload = (name: string, buffer: Buffer = PNG) => request.post('/api/up_upload_image', {
+    multipart: { card: { name, mimeType: 'image/jpeg', buffer } },
+  });
+
+  // the page always sends "card.jpg"
+  expect((await upload('card.jpg')).status(), 'regular image').toBe(200);
+  for (const name of ['card.html', 'card.svg', 'card']) {
+    expect((await upload(name, Buffer.from(`<p>${name}</p>`))).status(), name).not.toBe(200);
+  }
+  await request.dispose();
+});
+
+test('Hochgeladene Dateien laufen nie als Seite des Dashboards', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(request, ACCOUNTS.admin);
+  const suffix = Date.now().toString(36);
+  const names = {
+    html: `seite-${suffix}.html`,
+    svg: `bild-${suffix}.svg`,
+    png: `bild-${suffix}.png`,
+    unknown: `daten-${suffix}.xyz`,
+  };
+  const contents: Record<string, Buffer> = {
+    html: Buffer.from('<!doctype html><p>Seite</p>'),
+    svg: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><text>x</text></svg>'),
+    png: PNG,
+    unknown: Buffer.from('<p>kein Typ</p>'),
+  };
+  for (const [kind, filename] of Object.entries(names)) {
+    const upload = await request.post('/api/upload_file', {
+      multipart: { filename, file: { name: filename, mimeType: 'application/octet-stream', buffer: contents[kind] } },
+    });
+    expect(upload.status(), filename).toBe(200);
+  }
+
+  try {
+    for (const prefix of ['/f/', '/raw/uploads/files/']) {
+      // HTML and SVG: download only, and even then without scripts or the site's origin
+      for (const filename of [names.html, names.svg]) {
+        const response = await request.get(prefix + filename);
+        expect(response.status(), prefix + filename).toBe(200);
+        const headers = response.headers();
+        expect(headers['content-disposition'], prefix + filename).toBe('attachment');
+        expect(headers['content-security-policy'], prefix + filename).toBe('sandbox');
+        expect(headers['x-content-type-options'], prefix + filename).toBe('nosniff');
+      }
+      // images still show in the browser
+      const png = await request.get(prefix + names.png);
+      expect(png.status()).toBe(200);
+      expect(png.headers()['content-type']).toBe('image/png');
+      expect(png.headers()['content-disposition']).toBeUndefined();
+      expect(png.headers()['x-content-type-options']).toBe('nosniff');
+      // unknown types are never guessed to be HTML
+      const unknown = await request.get(prefix + names.unknown);
+      expect(unknown.headers()['content-type']).not.toContain('html');
+      expect(unknown.headers()['x-content-type-options']).toBe('nosniff');
+    }
+  } finally {
+    for (const filename of Object.values(names)) {
+      await request.post('/api/delete_file', { data: { filename } });
+    }
+  }
+  await request.dispose();
+});
+
+test('Datei per URL holen erreicht keine internen Dienste', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(request, ACCOUNTS.admin);
+  for (const uri of [
+    'http://neo4j:7474/',
+    'http://ruby:3000/api/ping',
+    'http://127.0.0.1:3000/api/ping',
+    'http://localhost:3000/api/ping',
+    'http://[::1]:3000/api/ping',
+    'http://169.254.169.254/latest/meta-data/',
+    'file:///etc/passwd',
+    'gopher://neo4j:7687/',
+    // the Nextcloud branch only checked whether the address contains the Nextcloud URL
+    'http://neo4j:7474/?http://localhost:8024',
+  ]) {
+    const response = await request.post('/api/upload_file_via_uri', { data: { uri } });
+    expect(response.status(), uri).not.toBe(200);
+    expect(await response.text(), uri).not.toContain('"body"');
+  }
+  await request.dispose();
+});
+
+test('Seitenvorlagen sind nicht als Quelltext abrufbar', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  for (const path of [
+    '/_template.html', '/login.html', '/index.html', '/polls.html',
+    '/hack/level_1.html', '/cypher/title.html', '/errors/neustart.html',
+  ]) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(404);
+    expect(await response.text(), path).not.toContain('#{');
+  }
+  // the pages themselves still work, and so do other static files
+  expect((await request.get('/')).status()).toBe(200);
+  expect((await request.get('/favicon.ico')).status()).toBe(200);
+  await request.dispose();
+});
+
+test('Anfragen von fremden Seiten werden abgewiesen', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(request, ACCOUNTS.schueler);
+  // changes something for the logged-in person (here: nothing, Max has no OTP)
+  const post = (headers: Record<string, string>) =>
+    request.post('/api/delete_otp_token', { data: {}, headers });
+
+  // another site of the same school domain, or a sandboxed page
+  for (const headers of [
+    { origin: 'https://sv.beispielschule.de' },
+    { origin: 'https://evil.example' },
+    { origin: 'null' },
+    { 'sec-fetch-site': 'same-site' },
+    { 'sec-fetch-site': 'cross-site' },
+  ]) {
+    expect((await post(headers)).status(), JSON.stringify(headers)).toBe(403);
+  }
+  // the dashboard's own pages, and programs without a browser
+  const own = new URL(baseURL!).origin;
+  expect((await post({ origin: own, 'sec-fetch-site': 'same-origin' })).status()).toBe(200);
+  expect((await post({})).status()).toBe(200);
+  // reading stays possible (links from other sites keep working)
+  expect((await request.get('/', { headers: { 'sec-fetch-site': 'cross-site' } })).status()).toBe(200);
+  await request.dispose();
+});
+
+test('OTP-Anmeldung durch Fremde löscht keine offenen E-Mail-Codes', async ({ baseURL }) => {
+  const email = ACCOUNTS.schueler_oberstufe;
+  const own = await playwrightRequest.newContext({ baseURL });
+  const stranger = await playwrightRequest.newContext({ baseURL });
+  await clearLoginMails(email);
+  const login = await own.post('/api/login', { data: { email } });
+  expect(login.status()).toBe(200);
+  const { tag } = await login.json();
+  const code = await waitForMailedCode(email);
+
+  // somebody else starts an OTP login for the same address, without being logged in
+  expect((await stranger.post('/api/login_otp', { data: { email } })).status()).toBe(200);
+
+  // the code from the mail still works
+  const confirm = await own.post('/api/confirm_login', { data: { tag, code } });
+  expect(confirm.status()).toBe(200);
+  expect(await confirm.text()).not.toContain('error');
+  await own.dispose();
+  await stranger.dispose();
+});
+
+test('Tablet-Buchung nur für bekannte Tabletsätze', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(request, ACCOUNTS.admin);
+  // far in the future, so that no other test sees the booking
+  const slot = { datum: `${new Date().getFullYear() + 3}-03-03`, start_time: '10:00', end_time: '11:00' };
+  const book = (tablet_sets: string[]) => request.post('/api/book_tablet_sets_for_timespan', {
+    data: { ...slot, reason: 'Test', tablet_sets },
+  });
+
+  for (const id of ['Tabletsatz 99', "Tabletsatz 1'})-[:X]->(:Y {id: 'z"]) {
+    expect((await book([id])).status(), id).not.toBe(200);
+  }
+  expect((await book(['Tabletsatz 1'])).status()).toBe(200);
+  const unbook = await request.post('/api/unbook_tablet_set_booking', {
+    data: { ...slot, tablet_set: 'Tabletsatz 1' },
+  });
+  expect(unbook.status()).toBe(200);
   await request.dispose();
 });

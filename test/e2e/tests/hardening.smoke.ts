@@ -196,3 +196,23 @@ test('OTP-Anmeldung durch Fremde löscht keine offenen E-Mail-Codes', async ({ b
   await own.dispose();
   await stranger.dispose();
 });
+
+test('Tablet-Buchung nur für bekannte Tabletsätze', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(request, ACCOUNTS.admin);
+  // far in the future, so that no other test sees the booking
+  const slot = { datum: `${new Date().getFullYear() + 3}-03-03`, start_time: '10:00', end_time: '11:00' };
+  const book = (tablet_sets: string[]) => request.post('/api/book_tablet_sets_for_timespan', {
+    data: { ...slot, reason: 'Test', tablet_sets },
+  });
+
+  for (const id of ['Tabletsatz 99', "Tabletsatz 1'})-[:X]->(:Y {id: 'z"]) {
+    expect((await book([id])).status(), id).not.toBe(200);
+  }
+  expect((await book(['Tabletsatz 1'])).status()).toBe(200);
+  const unbook = await request.post('/api/unbook_tablet_set_booking', {
+    data: { ...slot, tablet_set: 'Tabletsatz 1' },
+  });
+  expect(unbook.status()).toBe(200);
+  await request.dispose();
+});

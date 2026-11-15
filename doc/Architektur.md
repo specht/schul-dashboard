@@ -126,6 +126,15 @@ Seite Daten vor und liest dann `src/static/<seite>.html`. Diese Datei wird in
 `src/static/_template.html` (Navigation, Farbschema, globale Skripte)
 eingesetzt.
 
+Lehrkräfte haben in der Navigation eine Suche („Suchen“ oder Taste `/`):
+Schüler:innen mit Klasse, Lehrkräfte (auch nach Kürzel), Klassen, Kurse und
+die Seiten des eigenen Menüs. Die Liste liefert `GET /api/quick_search_index`
+(`include/quick_search.rb`, nur was jede Lehrkraft ohnehin öffnen darf) beim
+ersten Öffnen; die Menüseiten liest `code.js` aus der Navigation selbst. Ein
+Treffer führt zur Klassenliste mit `#quick=<id>`, dort wird die Zeile
+markiert (`data-user-id`). Wird die Leiste zu voll, fallen nacheinander das
+Wort „Suchen“, die Menü-Icons und der Schulname neben dem Logo weg.
+
 Anschließend wird jeder Ausdruck `#{…}` im Ergebnis **als Ruby-Code
 ausgewertet** – das Template funktioniert also wie ein großer Ruby-String.
 Dadurch können Seiten direkt Hilfsfunktionen aufrufen, z. B.

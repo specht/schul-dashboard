@@ -184,7 +184,7 @@ class Main < Sinatra::Base
             end.each.with_index do |email, _|
                 record = @@user_info[email]
                 dashboard_amt_names << record[:display_name] if dashboard_amt.include?(email)
-                io.puts "<tr class='user_row' data-email='#{email}' data-display-name='#{record[:display_name]}' data-first-name='#{record[:first_name]}' data-pronoun='#{record[:geschlecht] == 'm' ? 'er' : 'sie'}'>"
+                io.puts "<tr class='user_row' data-email='#{email}' data-user-id='#{record[:id]}' data-display-name='#{record[:display_name]}' data-first-name='#{record[:first_name]}' data-pronoun='#{record[:geschlecht] == 'm' ? 'er' : 'sie'}'>"
                 io.puts "<td>#{_ + 1}.</td>"
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 salzh_style = ''
@@ -1296,7 +1296,7 @@ class Main < Sinatra::Base
                 end
 
                 record = @@user_info[email]
-                io.puts "<tr class='user_row' data-email='#{email}' data-display-name='#{record[:display_name]}' data-first-name='#{record[:first_name]}' data-pronoun='#{record[:geschlecht] == 'm' ? 'er' : 'sie'}'>"
+                io.puts "<tr class='user_row' data-email='#{email}' data-user-id='#{record[:id]}' data-display-name='#{record[:display_name]}' data-first-name='#{record[:first_name]}' data-pronoun='#{record[:geschlecht] == 'm' ? 'er' : 'sie'}'>"
                 io.puts "<td>#{user_icon(email, 'avatar-md')}</td>"
                 io.puts "<td>#{record[:last_name]}</td>"
                 io.puts "<td>#{record[:first_name]}</td>"

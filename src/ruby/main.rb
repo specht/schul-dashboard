@@ -148,6 +148,7 @@ require './include/otp.rb'
 require './include/phishing.rb'
 require './include/poll.rb'
 require './include/pk5.rb'
+require './include/quick_search.rb'
 require './include/projekte.rb'
 require './include/public_event.rb'
 require './include/roles.rb'
@@ -2585,6 +2586,11 @@ class Main < Sinatra::Base
                     new_messages_count_s = '99+' if new_messages_count > 99
                     # always there (hidden when 0), so pages can update it
                     io.puts "<a href='/messages' class='new-messages-indicator-mini'#{new_messages_count > 0 ? '' : ' hidden'}><i class='fa fa-comment' style='color: #{primary_color};'></i><span>#{new_messages_count > 0 ? new_messages_count_s : ''}</span></a>"
+                end
+                if teacher_logged_in?
+                    # a menu item like the others, but outside the collapsed menu, so it
+                    # is there on phones too (code.js)
+                    io.puts "<ul class='navbar-nav nav-quick-search-nav'><li class='nav-item'><a href='#' role='button' id='bu_quick_search' class='nav-link nav-icon nav-quick-search' title='Suchen (Taste /)'><div class='icon'><i class='fa fa-search'></i></div><span class='nav-quick-search-label'>Suchen</span></a></li></ul>"
                 end
             else
                 nav_items << ['/hilfe', 'Hilfe', 'fa fa-question-circle']

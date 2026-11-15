@@ -107,6 +107,10 @@ hierher übernehmen, wenn sie angegangen werden.
       `/gen/` wird mit `max-age=60` ausgeliefert, und nur Lehrkräfte laden
       Wochendateien mit Cache-Buster (`timetable.html`). In der Entwicklung
       ist der Cache abgeschaltet
+- [ ] Menüleiste für Admins zwischen 768 und etwa 1100 px Breite zu breit:
+      Schullogo und Name werden links abgeschnitten. Darüber hilft
+      `code.js` (Suche) nacheinander: ohne „Suchen“, ohne Menü-Icons, ohne
+      Schulnamen neben dem Logo
 
 ### Wünsche
 

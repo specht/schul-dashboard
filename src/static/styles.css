@@ -3002,3 +3002,134 @@ body.dark .hl {
         }
     }
 }
+/* search in the navigation bar (code.js, quick search): a menu item like
+   the others, outside the collapsed menu */
+.nav-quick-search-nav {
+    flex-direction: row;
+}
+
+.quick-search-panel {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    left: auto;
+    width: 36em;
+    max-width: calc(100vw - 32px);
+    padding: 8px;
+    z-index: 8001;
+}
+
+.quick-search-results {
+    max-height: min(60vh, 32em);
+    overflow-y: auto;
+    margin-top: 6px;
+}
+
+.quick-search-row {
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    padding: 0 4px;
+}
+
+.quick-search-row.active {
+    background-color: rgba(0, 0, 0, 0.07);
+}
+
+body.dark .quick-search-row.active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.quick-search-main {
+    flex-grow: 1;
+    min-width: 0;
+    padding: 6px 4px;
+    color: inherit !important;
+    text-decoration: none !important;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.6em;
+}
+
+.quick-search-main .fa {
+    width: 1.2em;
+    text-align: center;
+    opacity: 0.6;
+}
+
+.quick-search-sub {
+    font-size: 85%;
+    opacity: 0.7;
+}
+
+.quick-search-action {
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+.quick-search-hint, .quick-search-empty {
+    padding: 6px 8px;
+}
+
+.quick-search-keys {
+    font-size: 80%;
+    padding: 6px 4px 0 4px;
+}
+
+@media (hover: none) {
+    .quick-search-keys {
+        display: none;
+    }
+}
+
+tr.quick-search-highlight > td {
+    background-color: rgba(255, 193, 7, 0.35) !important;
+}
+
+/* not enough room in the bar: the icon instead of the label */
+.nav-quick-search.no-label .nav-quick-search-label {
+    display: none;
+}
+
+.nav-link.nav-quick-search.no-label {
+    padding-right: 8px;
+}
+
+.navbar.hide_icons .nav-link.nav-quick-search.no-label .icon {
+    display: inline-flex;
+    position: static;
+}
+
+.navbar.hide_brand .brand-brand {
+    display: none;
+}
+
+/* phones: icon and label side by side, centred in the bar */
+@media (max-width: 767px) {
+    .nav-quick-search-nav .nav-item {
+        margin-right: 8px;
+    }
+
+    .nav-link.nav-icon.nav-quick-search {
+        display: flex;
+        align-items: center;
+        padding: .5rem 8px !important;
+    }
+
+    .nav-link.nav-quick-search .icon {
+        position: static;
+        margin-right: 0.5em;
+    }
+}
+
+/* very narrow phones: the icon only (the link keeps its title) */
+@media (max-width: 399px) {
+    .nav-quick-search-label {
+        display: none;
+    }
+
+    .nav-link.nav-quick-search .icon {
+        margin-right: 0;
+    }
+}

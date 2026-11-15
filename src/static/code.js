@@ -688,3 +688,257 @@ function padWithZeroes(num, length) {
         s = '0' + s;
     return s;
 }
+
+// Search in the navigation bar (teachers): students with their class,
+// teachers, classes, courses and the pages of the person's own menu. The list
+// comes from /api/quick_search_index on first use and stays in this page.
+// "/" opens it, arrow keys choose, Enter opens, Escape closes.
+var quick_search = { items: null, loading: false, failed: false, results: [], active: 0 };
+var QUICK_SEARCH_KIND_ORDER = { klasse: 0, lehrer: 1, schueler: 2, kurs: 3, seite: 4 };
+var QUICK_SEARCH_ICONS = { klasse: 'fa-users', lehrer: 'fa-id-badge', schueler: 'fa-user', kurs: 'fa-book', seite: 'fa-link' };
+
+function quick_search_normalize(s) {
+    return (s || '').toString().toLowerCase().replace(/ß/g, 'ss')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function quick_search_words(s) {
+    return quick_search_normalize(s).split(/[\s\-.,·()\/:]+/).filter(function (w) { return w.length > 0; });
+}
+
+function quick_search_prepare(item) {
+    item.words = quick_search_words(item.label + ' ' + (item.terms || ''));
+    item.label_norm = quick_search_normalize(item.label);
+    item.shorthand_norm = item.shorthand ? quick_search_normalize(item.shorthand) : null;
+    return item;
+}
+
+// the links of the person's own menu (only what they may open anyway)
+function quick_search_menu_items(known_hrefs) {
+    let items = [];
+    $('#navbarTogglerDemo02 a[href]').each(function (_, a) {
+        let href = a.getAttribute('href');
+        if (!href || href.charAt(0) !== '/' || known_hrefs[href]) return;
+        known_hrefs[href] = true;
+        let label = (a.querySelector('.label') || a).textContent.trim();
+        if (label.length === 0) return;
+        let toggle = $(a).closest('.dropdown').find('.dropdown-toggle').first();
+        let section = 'Menü';
+        if (toggle.length > 0)
+            section = toggle.attr('id') === 'navbarDropdownProfile' ? 'Profil' : toggle.text().trim();
+        items.push(quick_search_prepare({ kind: 'seite', label: label, sub: section, href: href }));
+    });
+    return items;
+}
+
+function quick_search_load() {
+    if (quick_search.items !== null || quick_search.loading) return;
+    quick_search.loading = true;
+    fetch('/api/quick_search_index', { credentials: 'same-origin' }).then(function (response) {
+        if (!response.ok) throw new Error(response.status);
+        return response.json();
+    }).then(function (data) {
+        let known_hrefs = {};
+        let items = data.items.map(function (item) {
+            known_hrefs[item.href] = true;
+            return quick_search_prepare(item);
+        });
+        quick_search.items = items.concat(quick_search_menu_items(known_hrefs));
+        quick_search.loading = false;
+        quick_search_update();
+    }).catch(function () {
+        quick_search.loading = false;
+        quick_search.failed = true;
+        quick_search_update();
+    });
+}
+
+function quick_search_find(query) {
+    let query_words = quick_search_words(query);
+    if (query_words.length === 0) return [];
+    let q = quick_search_normalize(query).trim();
+    let found = [];
+    for (let item of quick_search.items) {
+        let exact = item.shorthand_norm === q || item.label_norm === q;
+        let matches = exact || query_words.every(function (qw) {
+            return item.words.some(function (w) { return w.indexOf(qw) === 0; });
+        });
+        if (matches) found.push({ item: item, exact: exact });
+    }
+    found.sort(function (a, b) {
+        if (a.exact !== b.exact) return a.exact ? -1 : 1;
+        let ka = QUICK_SEARCH_KIND_ORDER[a.item.kind], kb = QUICK_SEARCH_KIND_ORDER[b.item.kind];
+        if (ka !== kb) return ka - kb;
+        return a.item.label.localeCompare(b.item.label, 'de');
+    });
+    return found.slice(0, 20).map(function (x) { return x.item; });
+}
+
+function quick_search_message(cls, text) {
+    return $('<div>').addClass(cls).addClass('text-muted').text(text);
+}
+
+function quick_search_update() {
+    let list = $('#quick_search_panel .quick-search-results');
+    if (list.length === 0) return;
+    list.empty();
+    let query = $('#ti_quick_search').val();
+    quick_search.results = [];
+    if (quick_search.failed) {
+        list.append(quick_search_message('quick-search-hint', 'Die Suche ist gerade nicht verfügbar.'));
+        return;
+    }
+    if (quick_search.items === null) {
+        list.append(quick_search_message('quick-search-hint', 'Wird geladen…'));
+        return;
+    }
+    if (quick_search_words(query).length === 0) {
+        list.append(quick_search_message('quick-search-hint', 'Name, Kürzel, Klasse, Kurs oder Seite eingeben'));
+        return;
+    }
+    quick_search.results = quick_search_find(query);
+    // a resting pointer must not pick a row of the new list
+    quick_search.pointer = quick_search.last_pointer;
+    quick_search.active = 0;
+    if (quick_search.results.length === 0) {
+        list.append(quick_search_message('quick-search-empty', 'Keine Treffer'));
+        return;
+    }
+    quick_search.results.forEach(function (item, index) {
+        let row = $('<div class="quick-search-row">').toggleClass('active', index === 0);
+        let main = $('<a class="quick-search-main">').attr('href', item.href);
+        main.append($('<i class="fa">').addClass(QUICK_SEARCH_ICONS[item.kind] || 'fa-link'));
+        main.append($('<span class="quick-search-label">').text(item.label));
+        if (item.sub) main.append($('<span class="quick-search-sub">').text(item.sub));
+        row.append(main);
+        for (let action of (item.actions || []))
+            row.append($('<a class="btn btn-xs btn-outline-secondary quick-search-action">').attr('href', action[1]).text(action[0]));
+        // only real mouse movement – not rows appearing under a resting pointer
+        row.on('mousemove', function (e) {
+            if (quick_search.pointer === e.screenX + ',' + e.screenY) return;
+            quick_search.pointer = e.screenX + ',' + e.screenY;
+            if (quick_search.active !== index) quick_search_set_active(index, false);
+        });
+        list.append(row);
+    });
+}
+
+function quick_search_set_active(index, scroll) {
+    let rows = $('#quick_search_panel .quick-search-row');
+    if (rows.length === 0) return;
+    quick_search.active = (index + rows.length) % rows.length;
+    rows.removeClass('active');
+    let row = rows.eq(quick_search.active).addClass('active');
+    if (scroll) row[0].scrollIntoView({ block: 'nearest' });
+}
+
+function quick_search_open() {
+    let panel = $('#quick_search_panel');
+    if (panel.length === 0) {
+        panel = $('<div id="quick_search_panel" class="quick-search-panel dropdown-menu show" role="dialog" aria-label="Suche" hidden>');
+        let input = $('<input id="ti_quick_search" type="text" class="form-control" autocomplete="off" spellcheck="false">')
+            .attr('placeholder', 'Name, Kürzel, Klasse, Kurs oder Seite').attr('aria-label', 'Suchen');
+        panel.append(input);
+        panel.append('<div class="quick-search-results"></div>');
+        panel.append(quick_search_message('quick-search-keys', '↑ ↓ auswählen · Enter öffnen · Esc schließen'));
+        $('body').append(panel);
+        input.on('input', quick_search_update);
+        // also when the link only changes the #part of this page
+        panel.on('click', 'a', function () { quick_search_close(); });
+        input.on('keydown', function (e) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                quick_search_set_active(quick_search.active + (e.key === 'ArrowDown' ? 1 : -1), true);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                let item = quick_search.results[quick_search.active];
+                if (item) {
+                    quick_search_close();
+                    window.location.href = item.href;
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                quick_search_close();
+                $('#bu_quick_search').focus();
+            }
+        });
+    }
+    let navbar = document.querySelector('nav.navbar');
+    if (navbar) panel.css('top', (navbar.getBoundingClientRect().bottom + 4) + 'px');
+    panel.prop('hidden', false);
+    $('#ti_quick_search').trigger('focus').trigger('select');
+    quick_search_load();
+    quick_search_update();
+}
+
+function quick_search_close() {
+    $('#quick_search_panel').prop('hidden', true);
+}
+
+// /directory/5a#quick=<id>: mark the person's row and scroll to it
+function quick_search_highlight_from_hash() {
+    let match = /^#quick=([a-z0-9]+)$/.exec(window.location.hash);
+    if (!match) return;
+    let row = document.querySelector('[data-user-id="' + match[1] + '"]');
+    if (!row) return;
+    $('.quick-search-highlight').removeClass('quick-search-highlight');
+    row.classList.add('quick-search-highlight');
+    row.scrollIntoView({ block: 'center' });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    quick_search_highlight_from_hash();
+    window.addEventListener('hashchange', quick_search_highlight_from_hash);
+    let button = document.getElementById('bu_quick_search');
+    if (!button) return;
+    // the label only while the bar has room for it (long admin menus)
+    let navbar = button.closest('nav');
+    // right-aligned: what doesn't fit sticks out on the left
+    let overflows = function () {
+        let bar = navbar.getBoundingClientRect();
+        return Array.from(navbar.children).some(function (el) {
+            let r = el.getBoundingClientRect();
+            return r.width > 0 && (r.left < bar.left - 0.5 || r.right > bar.right + 0.5);
+        });
+    };
+    // first without the search label, then without the menu icons (and
+    // with the label again if it fits then)
+    let fit_label = function () {
+        button.classList.remove('no-label');
+        navbar.classList.remove('hide_icons', 'hide_brand');
+        if (window.innerWidth < 768) return;
+        if (!overflows()) return;
+        button.classList.add('no-label');
+        if (!overflows()) return;
+        // without icons, the label may fit again
+        navbar.classList.add('hide_icons');
+        button.classList.remove('no-label');
+        if (overflows()) button.classList.add('no-label');
+        // last resort: the logo without the school's name
+        if (overflows()) navbar.classList.add('hide_brand');
+    };
+    fit_label();
+    window.addEventListener('resize', fit_label);
+    window.addEventListener('load', fit_label);
+    button.addEventListener('click', function (e) {
+        e.preventDefault();
+        if ($('#quick_search_panel').is(':visible')) quick_search_close(); else quick_search_open();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+        let el = document.activeElement;
+        if (el && (el.isContentEditable || /^(input|textarea|select)$/i.test(el.tagName))) return;
+        if ($('.modal.show').length > 0) return;
+        e.preventDefault();
+        quick_search_open();
+    });
+    document.addEventListener('mousemove', function (e) {
+        quick_search.last_pointer = e.screenX + ',' + e.screenY;
+    });
+    document.addEventListener('mousedown', function (e) {
+        let panel = document.getElementById('quick_search_panel');
+        if (!panel || panel.hidden) return;
+        if (panel.contains(e.target) || button.contains(e.target)) return;
+        quick_search_close();
+    });
+});

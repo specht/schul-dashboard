@@ -40,6 +40,14 @@ die Tests die Codes lesen:
 |---|---|
 | Dashboard | http://localhost:8125 |
 | Mailpit (Weboberfläche und API) | http://localhost:8126 |
+| Nextcloud-Ersatz (API für die Tests) | http://localhost:8127 |
+| IMAP-Ersatz (API für die Tests) | http://localhost:8128 |
+
+Der IMAP-Ersatz (`src/ruby/test/fake_imap.ru`) steht für den Mail-Server des
+Anbieters bei der Postfach-Prüfung: Er nimmt nur das ursprüngliche Passwort
+aus dem E-Mail-Brief an, kennt von den Mails nur das Eingangsdatum und
+protokolliert die Befehle, damit die Tests prüfen können, dass nie Inhalte
+gelesen werden.
 
 Nach dem Start richtet `test/e2e/seed.cypher` zwei Konten für die
 Anmelde-Tests ein: `torstenson@beispielschule.de` muss einen zweiten Faktor

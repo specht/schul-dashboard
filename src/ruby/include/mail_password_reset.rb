@@ -191,10 +191,14 @@ class Main < Sinatra::Base
                     students << {:email => email, :name => info[:display_name].to_s, :klasse => tr_klasse(klasse)}
                 end
             end
-            io.puts "<h4>E-Mail-Brief suchen</h4>"
+            io.puts "<h4>Schüler:in suchen</h4>"
+            io.puts "<p class='text-muted'>Für den E-Mail-Brief, zum Prüfen des Postfachs (z. B. wenn keine E-Mails ankommen) und zum Zurücksetzen des Passworts.</p>"
             io.puts "<input id='ti_letter_search' class='form-control' type='search' placeholder='Name, Klasse oder E-Mail-Adresse' autocomplete='off' />"
             io.puts "<div class='table-responsive' style='display: none; margin-top: 0.5em;'><table class='table table-sm letter-results' id='letter_results'>"
-            io.puts "<thead><tr><th>Name</th><th>Klasse</th><th>E-Mail-Adresse</th><th></th></tr></thead><tbody></tbody></table></div>"
+            io.puts "<thead><tr><th>Schüler:in</th><th>Klasse</th><th></th></tr></thead><tbody></tbody></table></div>"
+            io.puts "<details id='mailbox_check_log_box'><summary>Postfach-Prüfungen (letzte #{MAILBOX_CHECK_KEEP_DAYS} Tage): <span id='mailbox_check_log_count'>…</span></summary>"
+            io.puts "<p class='text-muted mailbox-check-log-hint'>Gespeichert wird nur, wer wann welches Postfach geprüft hat, ob die Anmeldung geklappt hat und ob eine Antwort ging – nicht, was gefunden wurde. Nur Admins sehen diese Liste; nach #{MAILBOX_CHECK_KEEP_DAYS} Tagen wird ein Eintrag gelöscht.</p>"
+            io.puts "<div id='mailbox_check_log'></div></details>"
             io.puts "<script type='application/json' id='letter_students'>#{students.to_json.gsub('</', '<\\/')}</script>"
             io.puts "<h4 style='margin-top: 1.5em;'>Anfragen zum Zurücksetzen</h4>"
             io.puts "<datalist id='li_mail_reset_mailboxes'>"

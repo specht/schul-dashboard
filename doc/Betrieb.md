@@ -90,6 +90,20 @@ Teile:
     sucht sie Schüler:innen nach Name, Klasse oder Adresse, öffnet den
     E-Mail-Brief und trägt Anfragen per E-Mail selbst ein („Neue Anfrage“:
     betroffene Postfächer, Antwortadresse, Notiz).
+  - „Postfach prüfen…“ hilft, wenn jemand schreibt, dass keine E-Mails mehr
+    ankommen: Die Adressliste des Mail-Anbieters zeigt, ob es ein Postfach
+    gibt oder nur eine Weiterleitung; dann meldet sich das Dashboard per
+    IMAP mit dem ursprünglichen Passwort an und liest je Ordner nur Anzahl
+    und Eingangsdatum der E-Mails – keine Betreffs, Absender oder Inhalte
+    (nur lesend, `EXAMINE`). Daraus folgt eine Einschätzung (kommen an, aber
+    werden nicht abgerufen; Filterregel; nichts Neues; fast voll; Passwort
+    geändert) und ein Antwortentwurf mit Verweis auf die Anleitung
+    `/hilfe#email-programm`, auf Wunsch mit dem E-Mail-Brief im Anhang.
+    Gespeichert wird nur, wer wann welches Postfach geprüft hat, ob die
+    Anmeldung klappte und ob eine Antwort ging (Knoten `MailboxCheck`); die
+    Liste „Postfach-Prüfungen“ sehen nur Admins, Einträge werden nach 90
+    Tagen gelöscht. Weiterleitungen und Filterregeln, die jemand im Webmail
+    selbst eingerichtet hat, sieht das Dashboard nicht – nur ihre Wirkung.
   - Jeder offene Fall zeigt den nächsten Schritt: 1. prüfen (Zurücksetzen
     oder Ablehnen), 2. zurücksetzen (Bot oder von Hand im Kundenbereich des
     Mail-Anbieters, dann „Erledigt“ oder „Hat nicht geklappt“), 3. antworten

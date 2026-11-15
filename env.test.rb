@@ -74,4 +74,14 @@ EXTRA_SERVICES = {
         :user => '1000',
         :ports => ['127.0.0.1:8127:80'],
     },
+    # IMAP-Ersatz für die Postfach-Prüfung (src/ruby/test/fake_imap.ru):
+    # IMAP auf imap:1143 im Stack, API für die Tests auf 8128
+    :imap => {
+        :build => './docker/ruby',
+        :volumes => ['./src/ruby:/app:ro'],
+        :working_dir => '/app',
+        :entrypoint => 'rackup test/fake_imap.ru --server puma --env production --host 0.0.0.0 --port 80',
+        :user => '1000',
+        :ports => ['127.0.0.1:8128:80'],
+    },
 }

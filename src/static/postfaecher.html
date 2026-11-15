@@ -28,13 +28,42 @@
           <label for='ta_reply_body'>Text</label>
           <textarea id='ta_reply_body' class='form-control' rows='9'></textarea>
         </div>
-        <p class='text-muted' style='margin-bottom: 0;'><i class='fa fa-paperclip'></i>&nbsp;&nbsp;<span id='reply_attachment'></span>
+        <p class='text-muted' style='margin-bottom: 0;'>
+        <span id='reply_case_attachment'><i class='fa fa-paperclip'></i>&nbsp;&nbsp;<span id='reply_attachment'></span></span>
+        <label id='reply_check_attachment' class='mb-0' hidden><input type='checkbox' id='cb_reply_attach_letter' />&nbsp;&nbsp;<i class='fa fa-paperclip'></i>&nbsp;&nbsp;<span id='reply_check_attachment_label'></span> anhängen</label>
         <button id='bu_preview_reply_letter' class='btn btn-xs btn-outline-secondary' style='margin-left: 0.5em;'><i class='fa fa-eye'></i>&nbsp;&nbsp;Ansehen</button><br />
         Antworten gehen an dich, du bekommst eine Kopie.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Abbrechen</button>
         <button id='bu_send_mail_case_reply' class="btn btn-success"><i class='fa fa-paper-plane'></i>&nbsp;&nbsp;Senden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="mailboxCheckModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Postfach prüfen<span id='mailbox_check_title_name' class='text-muted'></span></h5>
+      </div>
+      <div class="modal-body">
+        <div class='btn-group btn-group-sm mailbox-check-choice' role='group' aria-label='Welches Postfach'>
+          <button type='button' id='bu_check_student' class='btn btn-outline-secondary'>Schüler-Postfach</button>
+          <button type='button' id='bu_check_parents' class='btn btn-outline-secondary'>Eltern-Postfach</button>
+        </div>
+        <div id='mailbox_check_result'></div>
+        <details class='mailbox-check-note'>
+          <summary>Was wird gelesen und gespeichert?</summary>
+          <p>Das Dashboard meldet sich mit dem ursprünglichen Passwort aus dem E-Mail-Brief beim Mail-Server an und liest je Ordner nur, wie viele E-Mails darin sind und von wann die neueste ist – keine Betreffs, Absender oder Inhalte. Es ändert nichts am Postfach und benachrichtigt niemanden.</p>
+          <p>Gespeichert wird nur, wer wann welches Postfach geprüft hat, ob die Anmeldung geklappt hat und ob eine Antwort ging – nicht, was gefunden wurde. Diese Liste sehen nur Admins, hier auf der Seite unter „Postfach-Prüfungen“. Nach 90 Tagen wird ein Eintrag gelöscht.</p>
+        </details>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+        <button type="button" id='bu_mailbox_check_reset' class="btn btn-outline-secondary" title='Übernimmt das Postfach in „Neue Anfrage“ – zurückgesetzt wird erst nach der Freigabe' disabled>Zurücksetzen beantragen…</button>
+        <button type="button" id='bu_mailbox_check_reply' class="btn btn-outline-secondary" disabled><i class='fa fa-reply'></i>&nbsp;&nbsp;Antwort schreiben…</button>
       </div>
     </div>
   </div>
@@ -102,6 +131,51 @@
     body.dark #mail_bot_log_box summary, body.dark .mail-bot-log-line time, body.dark .mail-bot-log-day { color: #b0b5ba; }
     body.dark .mail-bot-log-line[data-kind="stop"] span { color: #f0b429; }
     .letter-results .btn { margin: 0.15em 0.2em 0.15em 0; }
+    /* the mailbox check */
+    .mailbox-check-choice { margin-bottom: 1em; }
+    .mailbox-check-head { font-weight: 500; margin-bottom: 0.6em; }
+    .mailbox-check-head .text-muted { font-weight: normal; }
+    .mailbox-check-assessment { list-style: none; padding: 0; margin: 0 0 1em 0; }
+    .mailbox-check-assessment li { display: flex; gap: 0.6em; padding: 0.45em 0.7em; border-radius: 0.4em; margin-bottom: 0.4em;
+        background: #f6f7f8; border: 1px solid #e1e4e8; }
+    .mailbox-check-assessment li .fa { flex: none; margin-top: 0.2em; width: 1em; text-align: center; }
+    .mailbox-check-assessment li[data-level="ok"] .fa { color: #1f9d55; }
+    .mailbox-check-assessment li[data-level="warn"] .fa { color: #d99a06; }
+    .mailbox-check-assessment li[data-level="problem"] .fa { color: #c0392b; }
+    .mailbox-check-assessment li[data-level="info"] .fa { color: #5f6368; }
+    body.dark .mailbox-check-assessment li { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); }
+    .mailbox-check-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25em 1em; margin-bottom: 1em; }
+    .mailbox-check-facts dt { font-weight: 500; }
+    .mailbox-check-facts dd { margin: 0; }
+    .mailbox-check-folders td, .mailbox-check-folders th { padding: 0.3em 0.75em; }
+    .mailbox-check-folders .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .mailbox-check-note { font-size: 90%; margin: 0.75em 0 0 0; }
+    .mailbox-check-note summary { color: #5f6368; cursor: pointer; }
+    .mailbox-check-note p { margin: 0.4em 0 0 0; color: #5f6368; }
+    body.dark .mailbox-check-note summary, body.dark .mailbox-check-note p { color: #b0b5ba; }
+    #mailbox_check_title_name { font-weight: normal; }
+    .mailbox-check-progress { display: flex; gap: 0.75em; align-items: flex-start; padding: 0.75em 0; }
+    .mailbox-check-progress .fa { margin-top: 0.2em; }
+    .mailbox-check-error { padding: 0.65em 0.9em; border-radius: 0.4em; border: 1px solid #e1e4e8; background: #fdf6e3; margin-bottom: 0.5em; }
+    .mailbox-check-error .btn { margin-top: 0.5em; }
+    body.dark .mailbox-check-error { background: rgba(255, 200, 0, 0.08); border-color: rgba(255, 255, 255, 0.14); }
+    .letter-name { font-weight: 500; }
+    .letter-email { font-size: 90%; overflow-wrap: anywhere; }
+    .letter-actions { display: flex; flex-wrap: wrap; gap: 0.3em 0.4em; align-items: center; justify-content: flex-end; }
+    .letter-actions .btn { margin: 0; }
+    .letter-reset { display: inline-flex; align-items: center; gap: 0.4em; white-space: nowrap; }
+    #mailbox_check_log_box { margin: 0.5em 0 0 0; }
+    #mailbox_check_log_box summary { color: #5f6368; cursor: pointer; padding: 0.2em 0; }
+    .mailbox-check-log-hint { font-size: 90%; margin: 0.3em 0; }
+    body.dark #mailbox_check_log_box summary { color: #b0b5ba; }
+    @media (max-width: 575px) {
+        .letter-actions { justify-content: flex-start; }
+        .letter-reset { white-space: normal; flex-wrap: wrap; }
+    }
+    @media (max-width: 575px) {
+        .mailbox-check-facts { grid-template-columns: 1fr; }
+        .mailbox-check-facts dd { margin-bottom: 0.4em; }
+    }
     @media (max-width: 575px) {
         .mail-cases td { display: block; border-top: none; }
         .mail-cases tr td:first-child { border-top: 1px solid rgba(0, 0, 0, 0.1); }
@@ -427,23 +501,188 @@ document.addEventListener('DOMContentLoaded', function() {
         const found = STUDENTS.filter((st) => words.every((w) => st.haystack.indexOf(w) >= 0));
         for (const st of found.slice(0, 30)) {
             const tr = $('<tr>').addClass('letter-result').attr('data-email', st.email);
-            tr.append($('<td>').text(st.name));
+            tr.append($('<td>').append($('<div>').addClass('letter-name').text(st.name),
+                                       $('<div>').addClass('text-muted letter-email').text(st.email)));
             tr.append($('<td>').text(st.klasse));
-            tr.append($('<td>').addClass('text-muted').text(st.email));
-            const actions = $('<td>');
+            const actions = $('<div>').addClass('letter-actions');
             const letter = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_open_letter').html("<i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail-Brief");
             letter.on('click', (e) => open_letter(st.email, $(e.currentTarget)));
-            const own = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_case_student').text('Postfach zurücksetzen…');
+            const check = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_check_mailbox').html("<i class='fa fa-stethoscope'></i>&nbsp;&nbsp;Postfach prüfen…");
+            check.on('click', () => open_mailbox_check(st));
+            const own = $('<button>').addClass('btn btn-outline-secondary bu_case_student').text('Schüler-Postfach');
             own.on('click', () => add_to_case(st.email));
-            const parents = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_case_parents').text('Eltern-Postfach zurücksetzen…');
+            const parents = $('<button>').addClass('btn btn-outline-secondary bu_case_parents').text('Eltern-Postfach');
             parents.on('click', () => add_to_case('eltern.' + st.email));
-            tr.append(actions.append(letter).append(own).append(parents));
+            const reset = $('<span>').addClass('letter-reset').append(
+                $('<span>').addClass('text-muted').text('Zurücksetzen beantragen:'),
+                $('<div>').addClass('btn-group btn-group-sm').attr('role', 'group').append(own, parents));
+            tr.append($('<td>').append(actions.append(letter, check, reset)));
             tbody.append(tr);
         }
-        if (found.length === 0) tbody.append($('<tr>').append($('<td>').attr('colspan', 4).addClass('text-muted').text('Niemand gefunden.')));
-        if (found.length > 30) tbody.append($('<tr>').append($('<td>').attr('colspan', 4).addClass('text-muted').text(`… und ${found.length - 30} weitere – bitte genauer suchen.`)));
+        if (found.length === 0) tbody.append($('<tr>').append($('<td>').attr('colspan', 3).addClass('text-muted').text('Niemand gefunden.')));
+        if (found.length > 30) tbody.append($('<tr>').append($('<td>').attr('colspan', 3).addClass('text-muted').text(`… und ${found.length - 30} weitere – bitte genauer suchen.`)));
     }
     $('#ti_letter_search').on('input', search_letters);
+
+    // ---- checking one mailbox (include/mailbox_check.rb) ----
+
+    let check_student = null;
+    let check_result = null;
+    let reply_mode = 'case';
+    const CHECK_ICONS = { ok: 'fa-check-circle', warn: 'fa-exclamation-triangle', problem: 'fa-times-circle', info: 'fa-info-circle' };
+    const LIST_LABELS = { mailbox: 'Postfach', forward: 'nur Weiterleitung, kein Postfach', missing: 'nicht vorhanden' };
+    const LOGIN_LABELS = { ok: 'klappt', refused: 'abgelehnt – das Passwort wurde geändert', error: 'Mail-Server nicht erreichbar' };
+
+    function fmt_kb(kb) {
+        if (kb >= 1024 * 1024) return (kb / 1024 / 1024).toFixed(1).replace('.', ',') + ' GB';
+        if (kb >= 1024) return Math.round(kb / 1024) + ' MB';
+        return kb + ' KB';
+    }
+
+    // errors are shown in the dialog, not behind it
+    function post_json(url, payload) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        }).then((response) => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        });
+    }
+
+    function open_mailbox_check(st) {
+        check_student = st;
+        $('#mailbox_check_title_name').text(` – ${st.name} (${st.klasse})`);
+        $('#mailboxCheckModal').modal('show');
+        run_mailbox_check(st.email);
+    }
+
+    function run_mailbox_check(mailbox) {
+        check_result = null;
+        const parents = mailbox !== check_student.email;
+        $('#bu_check_student').toggleClass('active', !parents);
+        $('#bu_check_parents').toggleClass('active', parents);
+        $('#bu_mailbox_check_reply, #bu_mailbox_check_reset, #bu_check_student, #bu_check_parents').prop('disabled', true);
+        $('#mailbox_check_result').empty().append($('<div>').addClass('mailbox-check-progress').append(
+            $('<i>').addClass('fa fa-spinner fa-pulse'),
+            $('<div>').append($('<div>').text(`Prüfe ${mailbox} …`),
+                              $('<div>').addClass('text-muted').text('Das Dashboard meldet sich beim Mail-Server an – das kann bis zu 30 Sekunden dauern.'))));
+        post_json('/api/check_mailbox', { mailbox: mailbox })
+        .then((data) => {
+            check_result = data;
+            render_mailbox_check(data);
+            $('#bu_mailbox_check_reply, #bu_mailbox_check_reset').prop('disabled', false);
+            load_check_log();
+        })
+        .catch((error) => {
+            const retry = $('<button>').addClass('btn btn-sm btn-outline-secondary').text('Noch einmal prüfen');
+            retry.on('click', () => run_mailbox_check(mailbox));
+            $('#mailbox_check_result').empty().append($('<div>').addClass('mailbox-check-error').append(
+                $('<div>').text(`Die Prüfung hat nicht geklappt (${error.message}). Vielleicht wurde das Dashboard gerade neu gestartet.`),
+                retry));
+        })
+        .finally(() => $('#bu_check_student, #bu_check_parents').prop('disabled', false));
+    }
+
+    function load_check_log() {
+        post_json('/api/mailbox_check_log', {}).then((data) => {
+            $('#mailbox_check_log_count').text(data.entries.length);
+            const div = $('#mailbox_check_log').empty();
+            if (data.entries.length === 0) {
+                div.append($('<p>').addClass('text-muted').text('Noch keine Prüfungen.'));
+                return;
+            }
+            const table = $('<table>').addClass('table table-sm mailbox-check-log');
+            table.append($('<thead>').append($('<tr>').append(
+                $('<th>').text('Wann'), $('<th>').text('Postfach'), $('<th>').text('Geprüft von'),
+                $('<th>').text('Ursprüngliches Passwort'), $('<th>').text('Antwort'))));
+            const tbody = $('<tbody>');
+            for (const e of data.entries) {
+                let reply = '–';
+                if (e.ts_reply) reply = `an ${e.reply_sent_to}, ${fmt_ts(e.ts_reply)}${e.reply_letter ? ', mit E-Mail-Brief' : ''}`;
+                tbody.append($('<tr>').append(
+                    $('<td>').css('white-space', 'nowrap').text(fmt_ts(e.ts)),
+                    $('<td>').append($('<div>').text(e.label), $('<div>').addClass('text-muted').css('font-size', '90%').text(e.mailbox)),
+                    $('<td>').text(e.checked_by),
+                    $('<td>').text(LOGIN_LABELS[e.login] || e.login),
+                    $('<td>').text(reply)));
+            }
+            div.append($('<div>').addClass('table-responsive').append(table.append(tbody)));
+        }).catch(() => $('#mailbox_check_log_count').text('?'));
+    }
+    load_check_log();
+
+    function render_mailbox_check(data) {
+        const div = $('#mailbox_check_result').empty();
+        div.append($('<div>').addClass('mailbox-check-head').text(data.label + ' ').append($('<span>').addClass('text-muted').text(data.mailbox)));
+        const list = $('<ul>').addClass('mailbox-check-assessment');
+        for (const item of data.assessment) {
+            const li = $('<li>').attr('data-level', item.level).attr('data-key', item.key);
+            li.append($('<i>').addClass('fa ' + CHECK_ICONS[item.level]));
+            li.append($('<span>').text(item.text));
+            list.append(li);
+        }
+        div.append(list);
+
+        const facts = $('<dl>').addClass('mailbox-check-facts');
+        let list_text = LIST_LABELS[data.list.kind];
+        if (data.list.type) list_text += ` (${data.list.type})`;
+        list_text += data.list.source === 'ionos' ? `, Stand ${data.list.date}` : ' (Liste aus der Datei, ohne Art)';
+        facts.append($('<dt>').text('Adressliste'), $('<dd>').attr('data-fact', 'list').text(list_text));
+        let login_text = LOGIN_LABELS[data.imap.login];
+        if (data.imap.error) login_text += ` (${data.imap.error})`;
+        facts.append($('<dt>').text('Ursprüngliches Passwort'), $('<dd>').attr('data-fact', 'login').text(login_text));
+        if (data.imap.quota) {
+            const q = data.imap.quota;
+            facts.append($('<dt>').text('Speicherplatz'), $('<dd>').attr('data-fact', 'quota')
+                .text(`${fmt_kb(q.used_kb)} von ${fmt_kb(q.limit_kb)} belegt (${Math.round(100 * q.used_kb / q.limit_kb)} %)`));
+        }
+        div.append(facts);
+
+        if (data.imap.folders && data.imap.folders.length > 0) {
+            const table = $('<table>').addClass('table mailbox-check-folders');
+            table.append($('<thead>').append($('<tr>').append(
+                $('<th>').text('Ordner'), $('<th>').addClass('num').text('E-Mails'),
+                $('<th>').addClass('num').text('letzte 30 Tage'), $('<th>').text('neueste vom'))));
+            const tbody = $('<tbody>');
+            for (const f of data.imap.folders) {
+                tbody.append($('<tr>').attr('data-folder', f.name).append(
+                    $('<td>').text(f.name.toUpperCase() === 'INBOX' ? 'Posteingang' : f.name),
+                    $('<td>').addClass('num').text(f.messages),
+                    $('<td>').addClass('num').text(f.recent),
+                    $('<td>').text(f.newest_date || '–')));
+            }
+            div.append($('<div>').addClass('table-responsive').append(table.append(tbody)));
+        }
+    }
+
+    $('#bu_check_student').on('click', () => run_mailbox_check(check_student.email));
+    $('#bu_check_parents').on('click', () => run_mailbox_check('eltern.' + check_student.email));
+    $('#bu_mailbox_check_reset').on('click', function() {
+        $('#mailboxCheckModal').modal('hide');
+        add_to_case(check_result.mailbox);
+    });
+
+    function set_reply_mode(mode) {
+        reply_mode = mode;
+        $('#reply_case_attachment').prop('hidden', mode !== 'case');
+        $('#reply_check_attachment').prop('hidden', mode !== 'check');
+    }
+
+    $('#bu_mailbox_check_reply').on('click', function() {
+        const draft = check_result.draft;
+        set_reply_mode('check');
+        $('#ti_reply_to').val('');
+        $('#ti_reply_cc').val('');
+        $('#ti_reply_bcc').val('');
+        $('#ti_reply_subject').val(draft.subject);
+        $('#ta_reply_body').val(draft.body);
+        $('#cb_reply_attach_letter').prop('checked', false);
+        $('#reply_check_attachment_label').text(draft.attachment);
+        $('#mailboxCheckModal').modal('hide');
+        $('#mailCaseReplyModal').modal('show');
+    });
 
     // admin: a request that came in by mail
     function render_case_mailboxes() {
@@ -523,6 +762,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reply_case_id = $(e.currentTarget).data('id');
         api_call('/api/mail_password_case_reply_draft', { id: reply_case_id }, function(data) {
             if (!data.success) return;
+            set_reply_mode('case');
             $('#ti_reply_to').val(data.to);
             $('#ti_reply_cc').val('');
             $('#ti_reply_bcc').val('');
@@ -533,6 +773,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     $('#bu_preview_reply_letter').on('click', function(e) {
+        if (reply_mode === 'check') {
+            open_letter(check_student.email, $(e.currentTarget));
+            return;
+        }
         const button = $(e.currentTarget).prop('disabled', true);
         fetch('/api/mail_password_case_letter', {
             method: 'POST',
@@ -560,7 +804,13 @@ document.addEventListener('DOMContentLoaded', function() {
             dashboardAlert('Bitte eine Empfängeradresse eintragen.', 'Kein Empfänger');
             return;
         }
-        api_call('/api/send_mail_password_case_reply', payload, function(data) {
+        let url = '/api/send_mail_password_case_reply';
+        if (reply_mode === 'check') {
+            url = '/api/send_mailbox_check_reply';
+            payload.id = check_result.id;
+            payload.attach_letter = $('#cb_reply_attach_letter').is(':checked');
+        }
+        api_call(url, payload, function(data) {
             if (!data.success) return;
             if (data.error === 'invalid_copy_address') {
                 dashboardAlert('Eine Adresse bei CC oder BCC stimmt nicht (höchstens 5 je Feld, mit Komma getrennt). Es wurde nichts gesendet.', 'Adresse prüfen');
@@ -568,6 +818,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             $('#mailCaseReplyModal').modal('hide');
             load();
+            if (reply_mode === 'check') load_check_log();
         });
     });
 

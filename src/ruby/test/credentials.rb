@@ -32,6 +32,10 @@ UNTIS_VERTRETUNGSPLAN_BASE_URL = 'https://vertretungsplan.test.invalid'
 # so no class would have a room and seating plans would be unavailable).
 ROOM_ORDER = %w(108 129 317 323)
 
+# the mailbox check on /postfaecher talks to the IMAP stand-in
+# (test/fake_imap.ru, service "imap" in env.test.rb), plain IMAP inside the stack
+MAILBOX_CHECK_IMAP = {:host => 'imap', :port => 1143, :ssl => false}
+
 # for the fake bot in test/e2e/tests/mail-password-reset.spec.ts
 MAIL_ACCOUNT_BOT_TOKEN = 'test-mail-password-reset-bot-token-0123456789'
 

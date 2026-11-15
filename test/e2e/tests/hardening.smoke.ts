@@ -1,5 +1,5 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
-import { ACCOUNTS, ROLE_ACCOUNTS, apiLogin, clearLoginMails, totp } from './fixtures';
+import { ACCOUNTS, ROLE_ACCOUNTS, apiLogin, clearLoginMails, totp, waitForMailedCode } from './fixtures';
 
 // 1×1 PNG
 const PNG = Buffer.from(
@@ -174,4 +174,25 @@ test('Anfragen von fremden Seiten werden abgewiesen', async ({ baseURL }) => {
   // reading stays possible (links from other sites keep working)
   expect((await request.get('/', { headers: { 'sec-fetch-site': 'cross-site' } })).status()).toBe(200);
   await request.dispose();
+});
+
+test('OTP-Anmeldung durch Fremde löscht keine offenen E-Mail-Codes', async ({ baseURL }) => {
+  const email = ACCOUNTS.schueler_oberstufe;
+  const own = await playwrightRequest.newContext({ baseURL });
+  const stranger = await playwrightRequest.newContext({ baseURL });
+  await clearLoginMails(email);
+  const login = await own.post('/api/login', { data: { email } });
+  expect(login.status()).toBe(200);
+  const { tag } = await login.json();
+  const code = await waitForMailedCode(email);
+
+  // somebody else starts an OTP login for the same address, without being logged in
+  expect((await stranger.post('/api/login_otp', { data: { email } })).status()).toBe(200);
+
+  // the code from the mail still works
+  const confirm = await own.post('/api/confirm_login', { data: { tag, code } });
+  expect(confirm.status()).toBe(200);
+  expect(await confirm.text()).not.toContain('error');
+  await own.dispose();
+  await stranger.dispose();
 });

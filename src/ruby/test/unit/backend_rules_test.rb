@@ -39,4 +39,19 @@ class BackendRulesTest < Minitest::Test
         end
         assert_empty offenders, "Use n.prop IS NOT NULL / IS NULL instead of EXISTS(n.prop):\n" + offenders.join("\n")
     end
+
+    # Login and confirmation codes must come from SecureRandom. rand/srand use
+    # Ruby's global generator, which other code seeds with fixed or guessable
+    # values – shared by all request threads.
+    def test_codes_only_from_secure_random
+        offenders = []
+        %w(include/login.rb include/otp.rb include/sms.rb).each do |file|
+            File.readlines(File.join(RUBY_DIR, file), encoding: 'utf-8').each_with_index do |line, i|
+                next if line.strip.start_with?('#')
+                next unless line =~ /(?<![\w.:])s?rand\s*\(|Random\.new/
+                offenders << "#{file}:#{i + 1}: #{line.strip}"
+            end
+        end
+        assert_empty offenders, "Use RandomTag::digits / SecureRandom for codes:\n" + offenders.join("\n")
+    end
 end

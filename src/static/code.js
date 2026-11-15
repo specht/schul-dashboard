@@ -901,9 +901,22 @@ document.addEventListener('DOMContentLoaded', function () {
             return r.width > 0 && (r.left < bar.left - 0.5 || r.right > bar.right + 0.5);
         });
     };
+    // desktop: right before the profile menu; phones: next to the menu
+    // button, outside the collapsed menu
+    let item = button.closest('li');
+    let menu_place = item.nextElementSibling;
+    let phone_place = navbar.querySelector('.nav-quick-search-nav');
+    let place_item = function () {
+        if (window.innerWidth < 768) {
+            if (phone_place && item.parentNode !== phone_place) phone_place.appendChild(item);
+        } else if (menu_place && item.nextElementSibling !== menu_place) {
+            menu_place.parentNode.insertBefore(item, menu_place);
+        }
+    };
     // first without the search label, then without the menu icons (and
     // with the label again if it fits then)
     let fit_label = function () {
+        place_item();
         button.classList.remove('no-label');
         navbar.classList.remove('hide_icons', 'hide_brand');
         if (window.innerWidth < 768) return;

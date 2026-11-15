@@ -2581,6 +2581,8 @@ class Main < Sinatra::Base
                     nav_items << :phishing
                 end
                 # nav_items << :advent_calendar #if advents_calendar_date_today > 0
+                # second to last, right before the profile menu
+                nav_items << :quick_search if teacher_logged_in?
                 nav_items << :profile
                 if user_with_role_logged_in?(:can_receive_messages)
                     new_messages_count_s = new_messages_count.to_s
@@ -2589,9 +2591,8 @@ class Main < Sinatra::Base
                     io.puts "<a href='/messages' class='new-messages-indicator-mini'#{new_messages_count > 0 ? '' : ' hidden'}><i class='fa fa-comment' style='color: #{primary_color};'></i><span>#{new_messages_count > 0 ? new_messages_count_s : ''}</span></a>"
                 end
                 if teacher_logged_in?
-                    # a menu item like the others, but outside the collapsed menu, so it
-                    # is there on phones too (code.js)
-                    io.puts "<ul class='navbar-nav nav-quick-search-nav'><li class='nav-item'><a href='#' role='button' id='bu_quick_search' class='nav-link nav-icon nav-quick-search' title='Suchen (Taste /)'><div class='icon'><i class='fa fa-search'></i></div><span class='nav-quick-search-label'>Suchen</span></a></li></ul>"
+                    # on phones, code.js moves the search here, outside the collapsed menu
+                    io.puts "<ul class='navbar-nav nav-quick-search-nav'></ul>"
                 end
             else
                 nav_items << ['/hilfe', 'Hilfe', 'fa fa-question-circle']
@@ -2681,6 +2682,8 @@ class Main < Sinatra::Base
                         io.puts "<a class='bu-launch-adventskalender nav-link nav-icon'><div class='icon'><i class='fa fa-snowflake-o'></i></div>Adventskalender</a>"
                         io.puts "</li>"
                     end
+                elsif x == :quick_search
+                    io.puts "<li class='nav-item nav-quick-search-item'><a href='#' role='button' id='bu_quick_search' class='nav-link nav-icon nav-quick-search' title='Suchen (Taste /)'><div class='icon'><i class='fa fa-search'></i></div><span class='nav-quick-search-label'>Suchen</span></a></li>"
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownProfile' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"

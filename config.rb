@@ -150,6 +150,10 @@ nginx_config = <<~eos
 
         location / {
             root /usr/share/nginx/html;
+            # pages are Ruby templates – never send their source
+            location ~* \\.html?$ {
+                return 404;
+            }
             try_files $uri @ruby;
         }
 

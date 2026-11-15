@@ -59,7 +59,8 @@ Playwright-Berichte liegen nach einem Lauf unter
   (`page_template`), Regeln für Backend und Frontend (`backend_rules`,
   `frontend_rules`, z. B. keine nativen Dialoge), Mail-Schutz in der
   Entwicklung (`mail_guard`), Mail-Weiterleitung, Dienst-Überwachung
-  (`service_status`), A/B-Wochen, Tablet-Sets, Bild-Uploads, `gz_output`,
+  (`service_status`), A/B-Wochen, Tablet-Sets, Bild-Uploads und ihre Umwandlung
+  durch den Bild-Bot (`image_converter`), `gz_output`,
   Hot Reload (`dev_reloader`)
 - **E2E im Browser** (`*.spec.ts`, Desktop und Handy): Anmeldung und Sitzung,
   Profil, Nachrichten, Termine, Umfragen, Kursplanung, Kommentare,

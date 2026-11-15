@@ -132,7 +132,17 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   required keys, types and lengths.
 - Cypher always with parameters (`$name`), never insert values via `#{…}`.
 - No shell strings containing data from requests or files:
-  `system('cmd', arg1, arg2)` instead of `system("cmd #{arg}")`.
+  `system('cmd', arg1, arg2)` instead of `system("cmd #{arg}")`. A unit test
+  allows no new ones.
+- Login and confirmation codes come from `RandomTag::digits` (SecureRandom),
+  never from `rand`/`srand` – other code seeds the global generator with fixed
+  values. A unit test enforces this for the login files.
+- Fetch URLs given by users only through `fetch_public_uri`
+  (`include/file.rb`): http(s) only, no internal addresses, no redirects.
+- Requests that change something (POST …) are refused when a browser sends
+  them from another site (`Origin`/`Sec-Fetch-Site`, `before '*'` in
+  `main.rb`). A route meant to be called from another site goes into
+  `CROSS_ORIGIN_POSTS` with the allowed origin.
 - Uploaded files: check the extension against a whitelist, never take the
   client's extension unchecked.
 - New `include/*.rb` files must be required explicitly in `main.rb`.
@@ -154,6 +164,9 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   development only (production output stays identical): hot reload
   (`DEV_HOT_RELOAD`) is on by default, and the dev nginx binds to
   `127.0.0.1` unless `NGINX_HOST_ADDRESS` is set.
+- Neo4j runs without a password – decided: it publishes no port outside
+  Docker (development: `127.0.0.1` only). Never publish 7474/7687 on another
+  address.
 - The nginx configuration is copied into the image: after changes run
   `./config.rb build nginx && ./config.rb up -d nginx`.
 - `src/static/errors/neustart.html` (the 502 page) is served by nginx

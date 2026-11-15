@@ -12,7 +12,7 @@ Containern.
 ```
 ./test.sh unit       # Ruby-Unit-Tests (ca. 2 s, ohne Datenbank)
 ./test.sh e2e        # Test-Stack starten, Playwright ausführen, Stack entfernen (ca. 1 min)
-./test.sh all        # beides
+./test.sh all        # beides, vorher die Prüfung von tailwind.css
 ```
 
 Zum Entwickeln von Tests:

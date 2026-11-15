@@ -5,7 +5,7 @@
 #   ./test.sh unit         Ruby unit tests (no database needed)
 #   ./test.sh e2e          start test stack, run Playwright, stop stack
 #   ./test.sh e2e-run      run Playwright against an already running stack (./test.sh up)
-#   ./test.sh all          unit + e2e
+#   ./test.sh all          tailwind.css check + unit + e2e
 #   ./test.sh up | down    start / stop (and wipe) the test stack
 #   ./test.sh logs [svc]   follow logs of the test stack
 #
@@ -119,11 +119,20 @@ run_e2e() {
     return $status
 }
 
+check_tailwind() {
+    # the committed CSS must come from the tracked pages (tailwind.config.js)
+    if command -v npx >/dev/null; then
+        ./tailwind.sh check
+    else
+        echo "npx not found – tailwind.css not checked"
+    fi
+}
+
 case "${1:-}" in
     unit) run_unit ;;
     e2e)  run_e2e ;;
     e2e-run) run_playwright ;;
-    all)  run_unit && run_e2e ;;
+    all)  check_tailwind && run_unit && run_e2e ;;
     up)   stack_up; echo "Test stack running on $BASE_URL" ;;
     down) stack_down ;;
     logs) shift; compose logs -f "$@" ;;

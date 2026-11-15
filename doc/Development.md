@@ -22,7 +22,14 @@ Sign-on, sonst endet jede Seite nach der Anmeldung mit HTTP 500 – siehe
 Das Dashboard läuft dann unter [http://localhost:8025](http://localhost:8025),
 der Neo4j-Browser unter [http://localhost:8021](http://localhost:8021).
 `./config.rb up` startet im Development-Modus zusätzlich `tailwind.sh`, das
-`src/static/tailwind.css` bei Änderungen neu baut.
+`src/static/tailwind.css` bei Änderungen neu baut. Dabei zählen nur Dateien,
+die in git sind (`tailwind.config.js`): Derselbe Stand ergibt auf jedem
+Rechner dieselbe Datei, egal was sonst lokal herumliegt. Ändert sich
+`tailwind.css`, braucht eine Seite neue Klassen – dann gehört die Datei mit
+in denselben Commit. Eine neue Seite zählt erst, wenn sie in git ist
+(`git add`, dann `tailwind.sh` neu starten). `./tailwind.sh build` baut die
+Datei einmal, `./tailwind.sh check` prüft sie (läuft in `./test.sh all`
+mit). In Produktion wird nichts gebaut, dort gilt die Datei aus git.
 
 Die Stundenpläne sind nach dem ersten Start leer:
 
@@ -97,7 +104,7 @@ nichts davon weitergeben).
 | `src/ruby/**/*.rb` | `rerun` startet den Ruby-Server neu. Bis er wieder da ist, zeigt nginx die Neustart-Seite, die sich selbst neu lädt.  Mit Hot Reload (siehe unten) gilt das nicht für `src/ruby/include/*.rb`. |
 | `src/static/*.html` | sofort wirksam (Templates werden bei jeder Anfrage gelesen) |
 | JS/CSS, die gebündelt werden (`compile_js`/`compile_css` in `main.rb`) | im Development-Modus bei jeder Seitenanfrage neu gebündelt |
-| Tailwind-Klassen in HTML/JS | `tailwind.sh` muss laufen |
+| Tailwind-Klassen in HTML/JS | `tailwind.sh` muss laufen; die geänderte `tailwind.css` mit committen |
 | Eingangsdaten unter `/data` | Konfigurationsdateien werden im Development-Modus bei jeder Anfrage neu geladen; für Stundenplan- oder Personendaten Ruby neu starten und `update-timetables.rb` ausführen |
 | nginx-Konfiguration in `config.rb` | `./config.rb build nginx && ./config.rb up -d nginx` – die Konfiguration wird ins Image kopiert, ein Neustart allein reicht nicht |
 | `src/ruby/Gemfile` | `./config.rb build ruby` (Gemfile wird beim Aufruf von `config.rb` nach `docker/ruby` kopiert) |

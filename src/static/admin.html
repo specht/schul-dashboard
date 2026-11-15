@@ -4,6 +4,11 @@
         background-image: none;
         background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
+    /* links and buttons in the rows: the text at the same height */
+    tr.user_row .btn-xs {
+        display: inline-flex;
+        align-items: center;
+    }
 </style>
 <div class='container-fluid white'>
     <div class='row'>

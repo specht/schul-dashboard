@@ -37,6 +37,8 @@ const MAILBOXES: FakeMailbox[] = [
   { address: `weiterleitung.bot@${DOMAIN}`, kind: 'forward' },
   { address: TEACHER },
 ];
+// the dashboard account whose approvals the bot carries out (config "approvers")
+const APPROVER = 'clarke@beispielschule.de';
 const PASSWORD = 'Abc-def-Ghi-23';
 const PASSWORD_2 = 'Xyz-uvw-Rst-45';
 
@@ -55,17 +57,20 @@ function botConfig(overrides: Record<string, unknown> = {}) {
       ionos_password: 'nur-ein-test',
       totp_secret: TEST_OTP_SECRET,
       allowed_mailboxes: `^(eltern\\.)?[a-z0-9.-]+@${DOMAIN.replace(/\./g, '\\.')}$`,
+      approvers: [APPROVER],
     },
     { hostname: 'testrechner' },
   );
   return Object.assign(config, { pace: 0, timeout_ms: 4000, verify_delays_s: [0], linger_minutes: 0, totp_min_remaining_s: 0 }, overrides);
 }
 
-type Case = { id: string | null; mailboxes: { mailbox: string; kind?: string | null; password: string }[] };
+type Case = { id: string | null; approved_by?: string; approved_at?: number; mailboxes: { mailbox: string; kind?: string | null; password: string }[] };
 
 // the dashboard's bot interface, with the shared state (pause, run lock,
 // logins of all machines) as in mail_password_reset.rb
-type Create = { id: string; mailbox: string; kind: string | null; password: string };
+type Create = { id: string; mailbox: string; kind: string | null; password: string; approved_by?: string };
+// approved by the approver unless a test says otherwise
+const approved = <T extends object>(c: T) => ({ approved_by: APPROVER, approved_at: 1763208000, ...c });
 
 function fakeDashboard(cases: Case[], { create = [] as Create[], listWanted = false } = {}) {
   const reports: { id: string; ok: boolean; message: string }[] = [];
@@ -77,7 +82,7 @@ function fakeDashboard(cases: Case[], { create = [] as Create[], listWanted = fa
     createResults: [] as { id: string; ok: boolean; message: string }[],
     async creation() {
       const open = d.create.filter((c) => !d.createResults.some((r) => r.id === c.id));
-      return { create: d.paused ? [] : open, address_list: { ts: null, wanted: !d.paused && (d.listWanted || open.length > 0) }, paused: !!d.paused };
+      return { create: d.paused ? [] : open.map(approved), address_list: { ts: null, wanted: !d.paused && (d.listWanted || open.length > 0) }, paused: !!d.paused };
     },
     async uploadAddressList(rows: { address: string; type: string }[]) { d.uploads.push(rows); d.listWanted = false; return { result: 'ok' }; },
     async createResult(id: string, ok: boolean, message: string) { d.createResults.push({ id, ok, message }); return { result: 'ok' }; },
@@ -86,7 +91,7 @@ function fakeDashboard(cases: Case[], { create = [] as Create[], listWanted = fa
     logins: 0,
     claims: [] as string[],
     async pending() {
-      return { cases: d.paused ? [] : cases.filter((c) => !reports.some((r) => r.id === c.id)), paused: d.paused };
+      return { cases: d.paused ? [] : cases.filter((c) => !reports.some((r) => r.id === c.id)).map(approved), paused: d.paused };
     },
     async report(id: string, ok: boolean, message: string) { reports.push({ id, ok, message }); return 'ok'; },
     activities: [] as string[],
@@ -147,7 +152,7 @@ const attempts = (fake: FakeIonos) => fake.logins.filter((l) => l.username !== u
 
 const kindOf = (mailbox: string) => (mailbox.startsWith('eltern.') ? 'parents' : 'student');
 const one = (mailbox: string, id = 'case-1', password = PASSWORD, kind: string | null = kindOf(mailbox.trim().toLowerCase())): Case =>
-  ({ id, mailboxes: [{ mailbox, kind, password }] });
+  ({ id, approved_by: APPROVER, approved_at: 1763208000, mailboxes: [{ mailbox, kind, password }] });
 
 test('Bot: meldet sich einmal an, setzt genau das eine Postfach zurück, prüft und meldet es', async ({ browser }) => {
   // a fresh browser profile: the cookie banner comes first
@@ -355,12 +360,43 @@ test('Bot: ohne Bestätigung am Rechner geschieht nichts', async ({ browser }) =
   const { summary, contexts, dashboard } = await runBot(browser, fake, [one(ANNA), one(ANNA_PARENTS, 'p')], {
     confirm: async (lines: string[]) => { asked = lines; return false; },
   });
-  expect(asked.slice(1)).toEqual([ANNA, ANNA_PARENTS]);
+  // each with who approved it and when
+  expect(asked.slice(1).map((l) => l.split(' ')[0])).toEqual([ANNA, ANNA_PARENTS]);
+  expect(asked[1]).toContain(`(freigegeben von ${APPROVER}, `);
   expect(summary.status).toBe('not_confirmed');
   expect(contexts).toBe(0);
   expect(fake.resets).toHaveLength(0);
   expect(dashboard.reports).toHaveLength(0);
   expect(dashboard.runHost).toBeNull();
+});
+
+test('Bot: nur Freigaben der Personen aus der eigenen Konfiguration – andere werden gemeldet, IONOS bleibt zu', async ({ browser }) => {
+  const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  let asked = false;
+  const other = { ...one(ANNA, 'by-other'), approved_by: 'andere.admin@beispielschule.de' };
+  const nobody = { ...one(BEN, 'by-nobody'), approved_by: '' };
+  const dashboard = fakeDashboard([other, nobody]);
+  const { summary, contexts } = await runBot(browser, fake, [], { dashboard, confirm: async () => { asked = true; return true; } });
+  expect(asked).toBe(false);
+  expect(contexts).toBe(0);
+  expect(fake.resets).toHaveLength(0);
+  expect(summary.done).toHaveLength(0);
+  expect(dashboard.reports.map((r) => [r.id, r.ok])).toEqual([['by-other', false], ['by-nobody', false]]);
+  expect(dashboard.reports[0].message).toContain('Freigegeben von andere.admin@beispielschule.de');
+  expect(dashboard.reports[0].message).toContain(APPROVER);
+  expect(dashboard.reports[1].message).toContain('Freigegeben von unbekannt');
+
+  // creating, too (the address list may still be fetched – read-only, as on "Jetzt abgleichen")
+  const fake2 = fakeIonos(MAILBOXES, {}, { loggedIn: true });
+  const dashboard2 = fakeDashboard([], {
+    create: [{ id: 'create-other', mailbox: `neu.bot@${DOMAIN}`, kind: 'student', password: PASSWORD, approved_by: 'andere.admin@beispielschule.de' }],
+  });
+  await runBot(browser, fake2, [], { dashboard: dashboard2, confirm: async () => { asked = true; return true; } });
+  expect(asked).toBe(false);
+  expect(fake2.created).toHaveLength(0);
+  expect(dashboard2.createResults.map((r) => [r.id, r.ok])).toEqual([['create-other', false]]);
+  expect(dashboard2.createResults[0].message).toContain('Freigegeben von andere.admin@beispielschule.de');
+  expect(caseProblem({ ...one(ANNA), approved_by: APPROVER.toUpperCase() }, botConfig())).toBeNull();
 });
 
 test('Bot: echte Fälle erst, wenn der IONOS-Ablauf bestätigt ist', async ({ browser }) => {
@@ -379,6 +415,7 @@ test('Bot: Konfiguration nur für diesen Rechner, ohne Lücken', async () => {
   const base = {
     host: 'testrechner', dashboard_url: 'https://dashboard.test.invalid', dashboard_token: 't'.repeat(40),
     ionos_login: 'x', ionos_password: 'y', totp_secret: TEST_OTP_SECRET, allowed_mailboxes: `^[a-z.]+@${DOMAIN}$`,
+    approvers: [APPROVER],
   };
   expect(() => validateConfig(base, { hostname: 'anderer-rechner' })).toThrow(/nur auf „testrechner“/);
   // several machines (home, laptop)
@@ -394,6 +431,12 @@ test('Bot: Konfiguration nur für diesen Rechner, ohne Lücken', async () => {
   expect(() => validateConfig({ ...base, ionos_password: '' }, { hostname: 'testrechner' })).toThrow(/ionos_password/);
   expect(() => validateConfig({ ...base, test_mailbox: TEACHER, test_mailbox_passwords: [PASSWORD, PASSWORD_2] }, { hostname: 'testrechner' })).toThrow(/test_mailbox/);
   expect(() => validateConfig({ ...base, test_mailbox: ANNA, test_mailbox_passwords: [PASSWORD, PASSWORD] }, { hostname: 'testrechner' })).toThrow(/zwei verschiedene/);
+  // whose approvals count: only this file decides
+  const { approvers, ...noApprovers } = base;
+  expect(() => validateConfig(noApprovers, { hostname: 'testrechner' })).toThrow(/approvers fehlt/);
+  expect(() => validateConfig({ ...base, approvers: [] }, { hostname: 'testrechner' })).toThrow(/approvers/);
+  expect(() => validateConfig({ ...base, approvers: ['kein-name'] }, { hostname: 'testrechner' })).toThrow(/approvers/);
+  expect(validateConfig({ ...base, approvers: ['Clarke@Beispielschule.de'] }, { hostname: 'testrechner' }).approvers).toEqual([APPROVER]);
   expect(validateConfig(base, { hostname: 'testrechner' }).pace).toBe(1);
 });
 
@@ -412,7 +455,7 @@ test('Bot: Anmeldung ohne zweiten Faktor nur ausdrücklich (ionos_2fa: false)', 
   expect(asks.resets).toHaveLength(0);
   // without 2FA no TOTP secret is needed; with it, it is
   const { totp_secret, ...noSecret } = { host: 'testrechner', dashboard_url: 'https://d.test.invalid', dashboard_token: 't'.repeat(40),
-    ionos_login: 'x', ionos_password: 'y', totp_secret: TEST_OTP_SECRET, allowed_mailboxes: `^[a-z.]+@${DOMAIN}$` };
+    ionos_login: 'x', ionos_password: 'y', totp_secret: TEST_OTP_SECRET, allowed_mailboxes: `^[a-z.]+@${DOMAIN}$`, approvers: [APPROVER] };
   expect(validateConfig({ ...noSecret, ionos_2fa: false }, { hostname: 'testrechner' }).totp).toBeUndefined();
   expect(() => validateConfig(noSecret, { hostname: 'testrechner' })).toThrow(/totp_secret fehlt/);
 });
@@ -422,7 +465,7 @@ test('Bot: lokale Entwicklungsinstanz als Dashboard nur für das Test-Postfach',
   const fake = fakeIonos(MAILBOXES, {}, { loggedIn: true });
   await expect(runBot(browser, fake, [one(ANNA)], { config })).rejects.toThrow(/nur --test-mailbox/);
   expect(fake.resets).toHaveLength(0);
-  const base = { host: 'testrechner', dashboard_token: 't'.repeat(40), ionos_login: 'x', ionos_password: 'y', ionos_2fa: false, allowed_mailboxes: `^[a-z.]+@${DOMAIN}$` };
+  const base = { host: 'testrechner', dashboard_token: 't'.repeat(40), ionos_login: 'x', ionos_password: 'y', ionos_2fa: false, allowed_mailboxes: `^[a-z.]+@${DOMAIN}$`, approvers: [APPROVER] };
   expect(validateConfig({ ...base, dashboard_url: 'http://localhost:8025' }, { hostname: 'testrechner' }).dashboard_is_local).toBe(true);
   expect(() => validateConfig({ ...base, dashboard_url: 'http://dashboard.example.org' }, { hostname: 'testrechner' })).toThrow(/https/);
 });

@@ -129,9 +129,11 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:id, :action], :max_value_lengths => {:id => 64, :action => 16})
         to = {'retry' => 'approved', 'cancel' => 'cancelled'}[data[:action]]
         assert(to, 'unknown action')
-        row = neo4j_query(<<~END_OF_QUERY, :id => data[:id], :to => to, :ts => Time.now.to_f).first
+        row = neo4j_query(<<~END_OF_QUERY, :id => data[:id], :to => to, :ts => Time.now.to_f, :by => @session_user[:email]).first
             MATCH (c:MailAccountCreateCase {id: $id, state: 'failed'})
             SET c.state = $to, c.ts_updated = $ts
+            // a retry is a new approval: the bot checks who gave it
+            FOREACH (_ IN CASE WHEN $to = 'approved' THEN [1] ELSE [] END | SET c.decided_by = $by, c.ts_decided = $ts)
             RETURN c.id AS id;
         END_OF_QUERY
         mail_account_wake_bot_for_creation if row && to == 'approved'
@@ -142,13 +144,14 @@ class Main < Sinatra::Base
 
     # what to create, and whether the address list is wanted
     def mail_account_bot_creation_work
-        rows = neo4j_query("MATCH (c:MailAccountCreateCase {state: 'approved'}) RETURN c.id AS id, c.mailbox AS mailbox ORDER BY c.ts;")
+        rows = neo4j_query("MATCH (c:MailAccountCreateCase {state: 'approved'}) RETURN c.id AS id, c.mailbox AS mailbox, c.decided_by AS decided_by, COALESCE(c.ts_decided, c.ts) AS ts_decided ORDER BY c.ts;")
         list = mail_address_list
         wanted = !rows.empty? || list[:ts].nil? || (list[:wanted_ts] && (list[:ts].nil? || list[:wanted_ts] > list[:ts])) ||
                  Time.now.to_i - list[:ts].to_i > MAIL_ADDRESS_LIST_STALE_AFTER
         {
             :create => rows.map do |row|
                 {:id => row['id'], :mailbox => row['mailbox'], :kind => mail_account_kind(row['mailbox']),
+                 :approved_by => row['decided_by'], :approved_at => row['ts_decided'],
                  :password => Main.gen_password_for_email(row['mailbox'])}
             end,
             :address_list => {:ts => list[:ts], :wanted => !!wanted},

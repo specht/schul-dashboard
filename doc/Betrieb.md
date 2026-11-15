@@ -124,7 +124,13 @@ markiert sie auf der Seite als erledigt. Schlägt der Bot fehl, bekommt die
 Administration eine Mail.
 
 Der Bot (`src/mail-account-bot`, siehe dessen README) läuft nur auf den
-Rechnern der Administration, nicht auf dem Server. Hält er an, ist er für
+Rechnern der Administration, nicht auf dem Server. Er führt nur Fälle aus,
+die eine der Personen aus seiner eigenen Konfiguration (`approvers`)
+freigegeben hat – das Dashboard nennt ihm dazu, wer freigegeben hat;
+„Erneut versuchen“ zählt als neue Freigabe. Fälle anderer Admins meldet er
+als nicht erledigt, ohne den Mail-Anbieter zu öffnen. Vor jedem Durchgang
+fragt er am Rechner nach, mit der Liste der Postfächer und wer sie wann
+freigegeben hat. Hält er an, ist er für
 alle Rechner angehalten, bis die Administration ihn auf der Seite
 „Postfach-Anfragen und E-Mail-Briefe“ wieder freigibt; dort steht auch, ob
 er verbunden ist, was er zuletzt getan hat, und darunter sein Protokoll (die

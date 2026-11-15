@@ -33,8 +33,16 @@ can get it locked.
 - **Nothing to do, no IONOS.** If a mailbox already accepts its original
   password (IMAP check), the control panel isn't opened at all.
 - **The maintainer says yes.** Before every sitting the bot asks in the
-  terminal with the list of mailboxes; no answer, no action – also in
-  background mode (`serve`), which therefore runs in a terminal.
+  terminal with the list of mailboxes, each with who approved it and when;
+  no answer, no action – also in background mode (`serve`), which
+  therefore runs in a terminal.
+- **Only the maintainer's approvals.** `approvers` in the configuration
+  lists the dashboard accounts whose approvals the bot carries out. A job
+  approved by anybody else (another admin) is reported back as not done,
+  without opening IONOS; it runs once one of the approvers approves it
+  again ("Erneut versuchen" – a retry counts as a new approval). Which
+  dashboard the bot talks to is `dashboard_url` alone – a running dev
+  instance is never asked.
 - **One sitting, human pace.** All approved cases one after another, with
   pauses and typing like a person; then the bot stays 20 minutes with the
   same session in case more get approved.
@@ -107,6 +115,7 @@ chmod 600 ~/.ssh/gyst-mail-account-bot/config.json
   "ionos_password": "<IONOS password>",
   "totp_secret": "<base32 secret or the otpauth:// URI from the QR code>",
   "allowed_mailboxes": "^(eltern\\.)?[a-z0-9.-]+@<student mail domain, dots escaped>$",
+  "approvers": ["<your dashboard address>"],
   "test_mailbox": "<a mailbox only for tests>",
   "test_mailbox_passwords": ["<password A>", "<password B>"]
 }

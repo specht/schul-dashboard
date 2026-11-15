@@ -34,7 +34,7 @@ const DEFAULTS = {
     chrome_channel: 'chrome',
 };
 
-const REQUIRED = ['dashboard_url', 'dashboard_token', 'ionos_login', 'ionos_password', 'allowed_mailboxes'];
+const REQUIRED = ['dashboard_url', 'dashboard_token', 'ionos_login', 'ionos_password', 'allowed_mailboxes', 'approvers'];
 
 function checkFileIsPrivate(file, what) {
     const st = fs.statSync(file);
@@ -73,6 +73,13 @@ function validateConfig(raw, { hostname = os.hostname(), recordingOnly = false }
         throw new Error('Konfiguration: allowed_mailboxes muss ein verankerter Ausdruck mit Domain sein (^…@…$)');
     }
     config.allowed_mailboxes_re = new RegExp(pattern);
+    // whose approvals on the dashboard the bot carries out: only this file
+    // decides, so another admin account can't make it act
+    if (!Array.isArray(config.approvers) || config.approvers.length === 0 || config.approvers.length > 5 ||
+        !config.approvers.every((a) => /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(String(a)))) {
+        throw new Error('Konfiguration: approvers muss eine Liste von 1–5 Dashboard-Adressen sein (wessen Freigaben der Bot ausführt)');
+    }
+    config.approvers = config.approvers.map((a) => String(a).toLowerCase());
     // the IONOS login with a second factor – false only while it isn't set up
     // yet; then the bot stops if IONOS asks for a code after all
     if (config.ionos_2fa === undefined) config.ionos_2fa = true;

@@ -421,7 +421,8 @@ class Main < Sinatra::Base
             respond(:result => c ? 'ok' : 'wrong_state')
         else
             extra = case data[:action]
-                when 'approve', 'reject' then 'c.ts_decided = $ts, c.decided_by = $by'
+                # a retry is a new approval: the bot checks who gave it
+                when 'approve', 'reject', 'retry' then 'c.ts_decided = $ts, c.decided_by = $by'
                 when 'close' then 'c.ts_closed = $ts'
                 else 'c.ts_updated = $ts'
             end
@@ -699,9 +700,11 @@ class Main < Sinatra::Base
         if b[:paused_ts]
             respond(:cases => [], :paused => {:ts => b[:paused_ts], :reason => b[:paused_reason]})
         else
-            rows = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN c.id AS id, c.mailboxes AS mailboxes ORDER BY c.ts;")
+            rows = neo4j_query("MATCH (c:MailPasswordCase {state: 'approved'}) RETURN c.id AS id, c.mailboxes AS mailboxes, c.decided_by AS decided_by, c.ts_decided AS ts_decided ORDER BY c.ts;")
             respond(:cases => rows.map do |row|
-                {:id => row['id'], :mailboxes => row['mailboxes'].map do |mailbox|
+                # who approved it: the bot only acts on approvals of the people
+                # in its own configuration
+                {:id => row['id'], :approved_by => row['decided_by'], :approved_at => row['ts_decided'], :mailboxes => row['mailboxes'].map do |mailbox|
                     student = mail_password_reset_student(mailbox)
                     {
                         :mailbox => mailbox,

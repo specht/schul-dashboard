@@ -162,6 +162,10 @@ test('Klassenleitung beantragt; Ablehnen, Fehler des Bots landen bei der Adminis
   const failuresBefore = (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length;
   expect((await (await requestReset(kl, student.email)).json()).result).toBe('requested');
   await step(admin, (await latestCase(admin, student.email))!.id, 'approve');
+  // the bot learns who approved it (it only acts on its own approvers)
+  const approvedCase = (await botCases(baseURL, student.email)).open[0] as any;
+  expect(approvedCase.approved_by).toBe(ACCOUNTS.admin);
+  expect(typeof approvedCase.approved_at).toBe('number');
   // the bot's messages can be long (up to 500 characters, umlauts count twice)
   await botFinishes(baseURL, student.email, false, 'Testfehler: ' + 'Der Bot hat angehalten, Änderung prüfen ä ö ü '.repeat(12).slice(0, 480));
   await expect.poll(async () => (await mails(ADMIN_MAIL, FAILURE_NOTICE)).length).toBe(failuresBefore + 1);
@@ -171,8 +175,11 @@ test('Klassenleitung beantragt; Ablehnen, Fehler des Bots landen bei der Adminis
   // the bot's message is for the admin only
   expect(latest.message).toBeUndefined();
 
-  // the admin tries again
+  // the admin tries again: a new approval, by whoever clicks
   await step(admin, latest.id, 'retry');
+  const retried = (await botCases(baseURL, student.email)).open[0] as any;
+  expect(retried.approved_by).toBe(ACCOUNTS.admin);
+  expect(retried.approved_at).toBeGreaterThan(approvedCase.approved_at);
   const password = await botFinishes(baseURL, student.email, true);
   latest = (await latestCase(kl, student.email))!;
   expect(latest.state).toBe('done');

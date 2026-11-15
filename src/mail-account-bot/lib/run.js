@@ -12,9 +12,14 @@ const { Stop, CaseProblem, Postpone, makePacer, watchNavigation, sleep } = requi
 
 // The bot's own check, independent of the dashboard: only a student's
 // mailbox or the parents' eltern.<student> mailbox on the allowed domain,
-// and the dashboard must say which of the two it is.
+// the dashboard must say which of the two it is, and it must have been
+// approved by one of the approvers in the bot's configuration (the test
+// mailbox, id null, comes from the configuration itself).
 function caseProblem(c, config) {
     if (!c || (typeof c.id !== 'string' && c.id !== null) || !Array.isArray(c.mailboxes) || c.mailboxes.length === 0) return 'Unvollständiger Fall vom Dashboard';
+    if (c.id !== null && !(typeof c.approved_by === 'string' && config.approvers.includes(c.approved_by.toLowerCase()))) {
+        return `Freigegeben von ${c.approved_by || 'unbekannt'} – der Bot führt nur Freigaben von ${config.approvers.join(', ')} aus. Zum Ausführen selbst noch einmal freigeben („Erneut versuchen“).`;
+    }
     for (const m of c.mailboxes) {
         if (typeof m.mailbox !== 'string' || m.mailbox !== m.mailbox.trim().toLowerCase()) return 'Ungültige Adresse vom Dashboard';
         if (!config.allowed_mailboxes_re.test(m.mailbox)) return `${m.mailbox}: der Bot setzt nur Schüler- und Eltern-Postfächer zurück`;
@@ -28,7 +33,14 @@ function caseProblem(c, config) {
 // the same check for a mailbox to create
 function createProblem(c, config) {
     if (!c || typeof c.id !== 'string') return 'Unvollständiger Auftrag vom Dashboard';
-    return caseProblem({ id: c.id, mailboxes: [{ mailbox: c.mailbox, kind: c.kind, password: c.password }] }, config);
+    return caseProblem({ id: c.id, approved_by: c.approved_by, mailboxes: [{ mailbox: c.mailbox, kind: c.kind, password: c.password }] }, config);
+}
+
+// "anna@… (freigegeben von x@…, 15.11.2026, 13:05)" for the question in the terminal
+function withApproval(mailbox, c) {
+    if (c.id === null || !c.approved_by) return mailbox;
+    const when = typeof c.approved_at === 'number' ? `, ${new Date(c.approved_at * 1000).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}` : '';
+    return `${mailbox} (freigegeben von ${c.approved_by}${when})`;
 }
 
 // options: config, state, dashboard, imapLoginWorks(user, password),
@@ -172,7 +184,7 @@ async function run(options) {
         if (work.length === 0) return true;
 
         // the maintainer's last word, on his own machine
-        const mailboxes = work.flatMap((c) => c.toReset.map((m) => m.mailbox));
+        const mailboxes = work.flatMap((c) => c.toReset.map((m) => withApproval(m.mailbox, c)));
         if (!(await confirm([`${dryRun ? 'Probelauf (nichts wird geändert)' : 'Bei IONOS zurücksetzen'}: ${mailboxes.length} Postfach/Postfächer`, ...mailboxes]))) {
             log('Nicht bestätigt – die Fälle bleiben freigegeben');
             for (const c of work) { handled.add(c.id); summary.postponed.push(c.id); }
@@ -268,7 +280,7 @@ async function run(options) {
         const listWanted = work.address_list.wanted && !exported;
         if (!listWanted && (cases.length === 0 || !mayCreate)) return true;
         const toCreate = mayCreate ? cases : [];
-        if (toCreate.length > 0 && !(await confirm([`${dryRun ? 'Probelauf (nichts wird angelegt)' : 'Bei IONOS anlegen'}: ${toCreate.length} Postfach/Postfächer`, ...toCreate.map((c) => c.mailbox)]))) {
+        if (toCreate.length > 0 && !(await confirm([`${dryRun ? 'Probelauf (nichts wird angelegt)' : 'Bei IONOS anlegen'}: ${toCreate.length} Postfach/Postfächer`, ...toCreate.map((c) => withApproval(c.mailbox, c))]))) {
             log('Nicht bestätigt – die Postfächer bleiben freigegeben');
             for (const c of toCreate) handled.add(`create:${c.id}`);
             summary.status = 'not_confirmed';

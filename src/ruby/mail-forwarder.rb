@@ -64,33 +64,30 @@ class Script
         @@mailing_list
     end
 
-    def allowed_senders()
-        results = Set.new()
-        results |= Set.new(@@users_for_role[:can_use_mailing_lists])
-        temp = $neo4j.neo4j_query(<<~END_OF_QUERY).map { |x| { :email => x['u.email'] } }
-            MATCH (u:User {ev: true})
-            RETURN u.email;
-        END_OF_QUERY
-        temp.each do |row|
-            results << 'eltern.' + row[:email]
-        end
+    # [full_senders, ev_klassen] for MailForwarding.check_sender: who may use
+    # every list, and the parent representatives with their classes
+    def sender_permissions()
+        full = Set.new(@@users_for_role[:can_use_mailing_lists])
         path = '/app/mail-forwarder-emails.txt'
         if File.exist?(path)
             File.open(path) do |f|
                 f.each do |line|
                     line.strip!
                     next if line[0] == '#' || line.empty?
-                    results << line
+                    full << line
                 end
             end
         end
+        ev_klassen = {}
+        $neo4j.neo4j_query("MATCH (u:User {ev: true}) RETURN u.email;").each do |row|
+            klasse = (@@user_info[row['u.email']] || {})[:klasse]
+            next unless klasse
+            (ev_klassen["eltern.#{row['u.email']}".downcase] ||= []) << klasse
+        end
         @@klassen_order.each do |klasse|
-            results << "ev.#{klasse}@mail.gymnasiumsteglitz.de"
+            (ev_klassen["ev.#{klasse}@#{SCHUL_MAIL_DOMAIN}".downcase] ||= []) << klasse
         end
-        @@schueler_for_klasse['11'].each do |email|
-            results << email
-        end
-        results.map { |x| x.downcase }
+        [Set.new(full.map(&:downcase)), ev_klassen]
     end
 
     # Sends one stored mail to its pending recipients (one pass; temporary
@@ -192,7 +189,30 @@ class Script
                             File.open(mail_path, 'w') do |f|
                                 f.puts body
                             end
-                            unless allowed_senders().include?(from_address.downcase)
+                            # which lists the mail goes to, and may this sender use each of them?
+                            lists = fresh_mailing_list()
+                            list_suffix = MAILING_LIST_EMAIL.split('@').last.downcase
+                            addressed = ((mail.to || []) + (mail.cc || []) + (mail.bcc || [])).map(&:downcase).uniq.select do |m|
+                                m.split('@').last == list_suffix && m != MAILING_LIST_EMAIL.downcase && lists.include?(m)
+                            end
+                            full_senders, ev_klassen = sender_permissions()
+                            decision, refused_lists = MailForwarding.check_sender(from_address, addressed, full_senders: full_senders,
+                                                                                  ev_klassen: ev_klassen, lists: lists, domain: list_suffix)
+                            if decision == :refused
+                                STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to sender #{mail.from[0]} (#{refused_lists.size} list(s) not allowed): #{mail.subject}"
+                                MailForwarding.deliver_bounce(log: bounce_log) do
+                                    deliver_mail do |m2|
+                                        m2.reply_to = "#{MAIL_SUPPORT_NAME} <#{MAIL_SUPPORT_EMAIL}>"
+                                        m2.to = ["#{mail.from[0]}"]
+                                        m2.from = [SMTP_FROM]
+                                        m2.cc = []
+                                        m2.bcc = []
+                                        m2.subject = "[Nicht zustellbar: Verteiler nicht freigeschaltet] #{mail.subject}"
+                                        m2.body = "Sie haben versucht, eine E-Mail an Verteiler zu schicken, für die Ihre Absender-Adresse nicht freigeschaltet ist:\r\n\r\n#{refused_lists.join("\r\n")}\r\n\r\nDie E-Mail wurde an niemanden verschickt.\r\n\r\nElternvertreter:innen können die Verteiler ihrer Klasse (Eltern, Schüler:innen, Lehrkräfte) und den Verteiler aller Elternvertreter:innen verwenden, Projektleitungen die Verteiler ihres Projekts. Bei Fragen schreiben Sie bitte an #{MAIL_SUPPORT_EMAIL}.\r\n\r\n"
+                                    end
+                                end
+                                imap.copy(mid, 'Bounced')
+                            elsif decision == :unknown_sender
                                 STDERR.puts "[#{Time.now.strftime('%Y-%m-%d %H:%M')}] Bouncing mail back to invalid sender #{mail.from[0]}: #{mail.subject}"
                                 MailForwarding.deliver_bounce(log: bounce_log) do
                                     deliver_mail do |m2|

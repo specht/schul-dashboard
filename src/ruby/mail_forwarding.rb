@@ -95,6 +95,35 @@ module MailForwarding
         mail
     end
 
+    # Who may send to which mailing list. Lists are checked one by one:
+    # - full_senders (role can_use_mailing_lists, mail-forwarder-emails.txt):
+    #   every list
+    # - ev_klassen {sender => [klasse, …]}, parent representatives (their
+    #   eltern.<child> address, the class's ev.<klasse>@ address): the lists
+    #   of their own class (parents, students, teachers) and all parent
+    #   representatives (ev@)
+    # - extra_allowed_users of a list (e.g. the organisers of a project): that
+    #   list
+    # lists: the mailing lists ({address => {:recipients, :extra_allowed_users}}),
+    # list_addresses: the existing lists the mail is addressed to.
+    # Returns [:ok, []], [:unknown_sender, []] (may use no list at all) or
+    # [:refused, [list addresses the sender may not use]].
+    def self.check_sender(sender, list_addresses, full_senders:, ev_klassen:, lists:, domain:)
+        sender = sender.to_s.downcase
+        return [:ok, []] if full_senders.include?(sender)
+        klassen = (ev_klassen[sender] || []).map { |k| k.to_s.downcase }
+        extra = lambda do |address|
+            ((lists[address] || {})[:extra_allowed_users] || []).any? { |x| x.to_s.downcase == sender }
+        end
+        known = !klassen.empty? || lists.keys.any? { |address| extra.call(address) }
+        return [:unknown_sender, []] unless known
+        domain = domain.downcase
+        own = klassen.flat_map { |k| %w(eltern klasse lehrer).map { |x| "#{x}.#{k}@#{domain}" } }
+        own << "ev@#{domain}" unless klassen.empty?
+        refused = list_addresses.map(&:downcase).reject { |address| own.include?(address) || extra.call(address) }
+        refused.empty? ? [:ok, []] : [:refused, refused.sort]
+    end
+
     # A bounce that is refused (5xx) must not stop the receiving: log it and
     # go on with the next mail. Temporary errors still end the pass (the
     # mail is tried again).

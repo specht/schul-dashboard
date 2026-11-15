@@ -149,3 +149,29 @@ test('Seitenvorlagen sind nicht als Quelltext abrufbar', async ({ baseURL }) => 
   expect((await request.get('/favicon.ico')).status()).toBe(200);
   await request.dispose();
 });
+
+test('Anfragen von fremden Seiten werden abgewiesen', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(request, ACCOUNTS.schueler);
+  // changes something for the logged-in person (here: nothing, Max has no OTP)
+  const post = (headers: Record<string, string>) =>
+    request.post('/api/delete_otp_token', { data: {}, headers });
+
+  // another site of the same school domain, or a sandboxed page
+  for (const headers of [
+    { origin: 'https://sv.beispielschule.de' },
+    { origin: 'https://evil.example' },
+    { origin: 'null' },
+    { 'sec-fetch-site': 'same-site' },
+    { 'sec-fetch-site': 'cross-site' },
+  ]) {
+    expect((await post(headers)).status(), JSON.stringify(headers)).toBe(403);
+  }
+  // the dashboard's own pages, and programs without a browser
+  const own = new URL(baseURL!).origin;
+  expect((await post({ origin: own, 'sec-fetch-site': 'same-origin' })).status()).toBe(200);
+  expect((await post({})).status()).toBe(200);
+  // reading stays possible (links from other sites keep working)
+  expect((await request.get('/', { headers: { 'sec-fetch-site': 'cross-site' } })).status()).toBe(200);
+  await request.dispose();
+});

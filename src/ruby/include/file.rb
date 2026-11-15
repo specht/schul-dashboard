@@ -37,39 +37,70 @@ class Main < Sinatra::Base
         respond(:files => files)
     end
 
+    # Address ranges the server never fetches from on behalf of a user: the
+    # Docker network with the database and the bots, loopback, link-local
+    # (cloud metadata) and other non-public ranges.
+    BLOCKED_FETCH_RANGES = %w(
+        0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16
+        172.16.0.0/12 192.0.0.0/24 192.168.0.0/16 198.18.0.0/15 224.0.0.0/3
+        ::/128 ::1/128 fc00::/7 fe80::/10 ff00::/8
+    ).map { |x| IPAddr.new(x) }
+    MAX_FETCHED_FILE_SIZE = 32 * 1024 * 1024
+
+    # Fetches a public http(s) address without following redirects and
+    # returns [HTTP status, body]. The host is resolved once, every address
+    # is checked, and curl connects to exactly the checked address.
+    def fetch_public_uri(uri_string)
+        uri = URI.parse(uri_string.to_s) rescue nil
+        assert(uri.is_a?(URI::HTTP) && !uri.hostname.to_s.empty?, 'invalid uri')
+        addresses = (Addrinfo.getaddrinfo(uri.hostname, uri.port, nil, :STREAM) rescue []).map do |a|
+            IPAddr.new(a.ip_address.sub(/%.*\z/, '')).native
+        end.uniq
+        assert(!addresses.empty?, 'unknown host')
+        addresses.each do |ip|
+            assert(BLOCKED_FETCH_RANGES.none? { |range| range.include?(ip) }, 'address not allowed')
+        end
+        address = addresses.find(&:ipv4?) || addresses.first
+        c = Curl::Easy.new(uri.to_s)
+        c.resolve = ["#{uri.hostname}:#{uri.port}:#{address.ipv6? ? "[#{address}]" : address}"]
+        c.follow_location = false
+        c.connect_timeout = 10
+        c.timeout = 60
+        body = String.new
+        c.on_body do |chunk|
+            body << chunk
+            # a different count aborts the transfer
+            body.bytesize > MAX_FETCHED_FILE_SIZE ? 0 : chunk.bytesize
+        end
+        c.perform
+        [c.response_code, body]
+    end
+
     post '/api/upload_file_via_uri' do
         require_user_who_can_upload_files!
         data = parse_request_data(:required_keys => [:uri])
-        uri = data[:uri]
-        STDERR.puts uri
-        if uri.include?(NEXTCLOUD_URL)
-            c = Curl::Easy.new(uri)
-            c.perform
-            if c.status == '200'
-                dom = Nokogiri::HTML.parse(c.body_str)
-                uri2 = nil
-                begin
-                    uri2 = dom.css('#downloadURL').first.get_attribute('value')
-                rescue
-                    uri2 = dom.css('#previewURL').first.get_attribute('value')
-                end
-                assert(!(uri2.nil?))
-                filename = dom.css('#filename').first.get_attribute('value')
-                STDERR.puts uri2
-                STDERR.puts filename
-                c2 = Curl::Easy.new(uri2)
-                c2.perform
-                if c2.status == '200'
-                    respond(:filename => filename, :body => Base64::strict_encode64(c2.body_str), :size => c2.body_str.size)
+        uri = URI.parse(data[:uri]) rescue nil
+        assert(uri.is_a?(URI::HTTP), 'invalid uri')
+        nextcloud_host = (URI.parse(NEXTCLOUD_URL).hostname rescue nil)
+        if nextcloud_host && uri.hostname == nextcloud_host
+            # a Nextcloud share page: the file itself is linked on the page
+            status, body = fetch_public_uri(uri.to_s)
+            if status == 200
+                dom = Nokogiri::HTML.parse(body)
+                link = dom.css('#downloadURL').first || dom.css('#previewURL').first
+                name = dom.css('#filename').first
+                assert(!link.nil? && !name.nil?)
+                status, body = fetch_public_uri(link.get_attribute('value'))
+                if status == 200
+                    respond(:filename => name.get_attribute('value'), :body => Base64::strict_encode64(body), :size => body.size)
                     return
                 end
             end
         else
-            filename = CGI.unescape(File.basename(URI.parse(uri).path))
-            c = Curl::Easy.new(uri)
-            c.perform
-            if c.status == '200'
-                respond(:filename => filename, :body => Base64::strict_encode64(c.body_str), :size => c.body_str.size)
+            filename = CGI.unescape(File.basename(uri.path.to_s))
+            status, body = fetch_public_uri(uri.to_s)
+            if status == 200
+                respond(:filename => filename, :body => Base64::strict_encode64(body), :size => body.size)
                 return
             end
         end

@@ -58,6 +58,18 @@ end
 GEN_CACHE_CONTROL = DEVELOPMENT ? 'no-cache' : 'max-age=60'
 
 nginx_config = <<~eos
+    # Uploaded files keep the name the uploader chose. Pages, SVG and other
+    # files a browser would run are only offered for download, and even then
+    # without scripts and without the dashboard's origin.
+    map $uri $upload_disposition {
+        default "";
+        ~*\\.(s?html?|xht|xhtml|svgz?|xml|xsl|xslt|js|mjs|wasm|swf)$ "attachment";
+    }
+    map $uri $upload_csp {
+        default "";
+        ~*\\.(s?html?|xht|xhtml|svgz?|xml|xsl|xslt|js|mjs|wasm|swf)$ "sandbox";
+    }
+
     log_format custom '$http_x_forwarded_for - $remote_user [$time_local] "$request" '
                         '$status $body_bytes_sent "$http_referer" '
                         '"$http_user_agent" "$request_time"';
@@ -97,11 +109,17 @@ nginx_config = <<~eos
         location /raw/ {
             rewrite ^/raw(.*)$ $1 break;
             root /raw;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header Content-Disposition $upload_disposition always;
+            add_header Content-Security-Policy $upload_csp always;
         }
 
         location /f/ {
             rewrite ^/f(.*)$ $1 break;
             root /raw/uploads/files;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header Content-Disposition $upload_disposition always;
+            add_header Content-Security-Policy $upload_csp always;
         }
 
         location /gen/ {

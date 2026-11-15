@@ -260,6 +260,11 @@ class RandomTag
     def self.generate(length = 12)
         self.to_base31(SecureRandom.hex(length).to_i(16))[0, length]
     end
+
+    # a numeric code for logins and confirmations, e.g. "042917"
+    def self.digits(count = 6)
+        Array.new(count) { SecureRandom.random_number(10) }.join('')
+    end
 end
 
 def mail_html_to_plain_text(s)

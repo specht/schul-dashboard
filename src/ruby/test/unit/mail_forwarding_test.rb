@@ -152,4 +152,46 @@ class MailForwardingTest < Minitest::Test
         MailForwarding.deliver_pending(s, on_progress: ->(st) { saved << st[:sent].dup }) { |_| }
         assert_equal [%w(a), %w(a b)], saved
     end
+
+    # ---- who may send to which list (check_sender) ----
+
+    D = 'verteiler.example.com'
+    LISTS = {
+        "eltern.10a@#{D}" => {:recipients => []}, "klasse.10a@#{D}" => {:recipients => []},
+        "lehrer.10a@#{D}" => {:recipients => []}, "eltern.9a@#{D}" => {:recipients => []},
+        "eltern@#{D}" => {:recipients => []}, "sus@#{D}" => {:recipients => []}, "ev@#{D}" => {:recipients => []},
+        "projekt-3@#{D}" => {:recipients => [], :extra_allowed_users => ['orga@mail.example.com']},
+        "eltern.projekt-3@#{D}" => {:recipients => [], :extra_allowed_users => ['orga@mail.example.com']},
+        "projekt-4@#{D}" => {:recipients => [], :extra_allowed_users => ['andere@mail.example.com']},
+    }
+
+    def check(sender, *lists)
+        MailForwarding.check_sender(sender, lists.map { |x| "#{x}@#{D}" }, domain: D, lists: LISTS,
+                                    full_senders: Set.new(['lehrkraft@example.com']),
+                                    ev_klassen: {'eltern.kind@mail.example.com' => ['10a'], 'ev.10a@mail.example.com' => ['10a']})
+    end
+
+    def test_parent_representative_only_own_class_and_all_representatives
+        %w(eltern.10a klasse.10a lehrer.10a ev).each do |list|
+            assert_equal [:ok, []], check('eltern.kind@mail.example.com', list), list
+            assert_equal [:ok, []], check('EV.10a@Mail.Example.com', list), list
+        end
+        assert_equal [:refused, ["eltern.9a@#{D}"]], check('eltern.kind@mail.example.com', 'eltern.9a')
+        assert_equal [:refused, ["eltern@#{D}", "sus@#{D}"]], check('eltern.kind@mail.example.com', 'sus', 'eltern', 'eltern.10a')
+        assert_equal [:refused, ["projekt-3@#{D}"]], check('ev.10a@mail.example.com', 'projekt-3')
+    end
+
+    def test_organisers_only_their_own_project
+        assert_equal [:ok, []], check('orga@mail.example.com', 'projekt-3', 'eltern.projekt-3')
+        assert_equal [:refused, ["projekt-4@#{D}"]], check('orga@mail.example.com', 'projekt-4')
+        assert_equal [:refused, ["eltern.10a@#{D}"]], check('Orga@mail.example.com', 'eltern.10a')
+    end
+
+    def test_full_senders_every_list_unknown_senders_none
+        assert_equal [:ok, []], check('Lehrkraft@example.com', 'eltern', 'sus', 'eltern.9a', 'projekt-4')
+        assert_equal [:unknown_sender, []], check('fremd@example.org', 'eltern.10a')
+        # a class 11 student is not a sender of their own any more
+        assert_equal [:unknown_sender, []], check('schueler.11@mail.example.com', 'sus')
+    end
+
 end

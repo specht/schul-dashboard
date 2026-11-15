@@ -178,6 +178,12 @@ p {
     .place, #seats, #seats .place img, #seats .place .label {
         transition: none !important;
     }
+    /* Die Fotos sind Hintergrundbilder - ohne das lassen Browser sie beim
+       Drucken weg. */
+    #seats .place img {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
 }
 </style>
 <script>

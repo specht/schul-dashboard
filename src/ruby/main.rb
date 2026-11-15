@@ -2080,7 +2080,37 @@ class Main < Sinatra::Base
         end
     end
 
+    # Cross-origin requests that a browser may send with the session cookie
+    # and that are wanted anyway: path => allowed origins.
+    CROSS_ORIGIN_POSTS = {
+        '/api/get_current_jitsi_users_for_presence_token' => defined?(JITSI_HOST) ? ["https://#{JITSI_HOST}"] : [],
+    }
+
+    # Requests that change something have to come from the dashboard's own
+    # pages. SameSite=Lax sends the session cookie along from every subdomain
+    # of the school's domain, so check where a browser request comes from:
+    # its Origin header, or Sec-Fetch-Site where a browser sends no Origin.
+    # Programs without a browser (bots, other servers) send neither and pass –
+    # they don't carry anybody's browser cookies.
+    def foreign_browser_request?
+        return false if request.get? || request.head? || request.options?
+        origin = request.env['HTTP_ORIGIN']
+        if origin
+            return false if (CROSS_ORIGIN_POSTS[request.path] || []).include?(origin)
+            origin_host = (URI.parse(origin).host rescue nil)
+            return true if origin_host.nil?
+            own_hosts = [request.host, (URI.parse(WEB_ROOT).host rescue nil)].compact.map(&:downcase)
+            return !own_hosts.include?(origin_host.downcase)
+        end
+        site = request.env['HTTP_SEC_FETCH_SITE']
+        !(site.nil? || ['same-origin', 'none'].include?(site))
+    end
+
     before '*' do
+        if foreign_browser_request?
+            debug "Refused #{request.request_method} #{request.path} from another site (#{request.env['HTTP_ORIGIN'] || request.env['HTTP_SEC_FETCH_SITE']})"
+            halt 403, 'Forbidden'
+        end
         if DEVELOPMENT
             # reload on every request; silence the "already initialized
             # constant" warnings this causes

@@ -94,7 +94,7 @@ Teile:
     ankommen: Die Adressliste des Mail-Anbieters zeigt, ob es ein Postfach
     gibt oder nur eine Weiterleitung; dann meldet sich das Dashboard per
     IMAP mit dem ursprünglichen Passwort an und liest je Ordner nur Anzahl
-    und Eingangsdatum der E-Mails – keine Betreffs, Absender oder Inhalte
+    und Eingangsdatum der E-Mails – keine Betreffzeilen, Absender oder Inhalte
     (nur lesend, `EXAMINE`). Daraus folgt eine Einschätzung (kommen an, aber
     werden nicht abgerufen; Filterregel; nichts Neues; fast voll; Passwort
     geändert) und ein Antwortentwurf mit Verweis auf die Anleitung

@@ -166,8 +166,8 @@ class Main < Sinatra::Base
         lines = []
         lines << (du ? "Hallo #{info[:first_name]}," : 'Sehr geehrte Frau / Herr …,')
         lines << ''
-        lines << t.call("danke für deine Nachricht. Ich habe dein schulisches Postfach #{mailbox} mit einem automatisierten Verfahren geprüft. Dabei wurde keine E-Mail geöffnet – weder Inhalte noch Betreffs oder Absender, nur die Anzahl der E-Mails und ihr Eingangsdatum.",
-                        "vielen Dank für Ihre Nachricht. Ich habe das Eltern-Postfach #{mailbox} mit einem automatisierten Verfahren geprüft. Dabei wurde keine E-Mail geöffnet – weder Inhalte noch Betreffs oder Absender, nur die Anzahl der E-Mails und ihr Eingangsdatum.")
+        lines << t.call("danke für deine Nachricht. Ich habe dein schulisches Postfach #{mailbox} mit einem automatisierten Verfahren geprüft. Dabei wurde keine E-Mail geöffnet – weder Inhalte noch Betreffzeilen oder Absender, nur die Anzahl der E-Mails und ihr Eingangsdatum.",
+                        "vielen Dank für Ihre Nachricht. Ich habe das Eltern-Postfach #{mailbox} mit einem automatisierten Verfahren geprüft. Dabei wurde keine E-Mail geöffnet – weder Inhalte noch Betreffzeilen oder Absender, nur die Anzahl der E-Mails und ihr Eingangsdatum.")
         lines << ''
         if keys.include?('forward')
             lines << t.call('Für deine Adresse ist bei unserem Mail-Anbieter kein Postfach eingerichtet, sondern nur eine Weiterleitung. Ich kümmere mich darum und melde mich wieder.',

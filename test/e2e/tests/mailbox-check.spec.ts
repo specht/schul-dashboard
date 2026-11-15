@@ -79,7 +79,7 @@ test('E-Mails kommen an, werden aber nicht abgerufen: Prüfung ohne Inhalte, Ant
   expect(body).toContain('Hallo Max,');
   // says how it was checked: automatically, no mail opened
   expect(body).toContain('mit einem automatisierten Verfahren geprüft');
-  expect(body).toContain('weder Inhalte noch Betreffs oder Absender');
+  expect(body).toContain('weder Inhalte noch Betreffzeilen oder Absender');
   expect(body).toContain('/hilfe#email-programm');
   expect(body).toContain('Gmail');
   await expect(page.locator('#reply_check_attachment')).toBeVisible();

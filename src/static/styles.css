@@ -3137,6 +3137,10 @@ tr.quick-search-highlight > td {
         position: static;
         margin-right: 0.5em;
     }
+
+    .nav-link.nav-quick-search.no-label .icon {
+        margin-right: 0;
+    }
 }
 
 /* very narrow phones: the icon only (the link keeps its title) */

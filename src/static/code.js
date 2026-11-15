@@ -919,13 +919,31 @@ document.addEventListener('DOMContentLoaded', function () {
             menu_place.parentNode.insertBefore(item, menu_place);
         }
     };
+    // phones: the bar wraps instead – logo, search and menu button must
+    // share the first row (the opened menu is a row of its own)
+    let wraps = function () {
+        let tops = [], bottoms = [];
+        Array.from(navbar.children).forEach(function (el) {
+            if (el.classList.contains('navbar-collapse')) return;
+            let r = el.getBoundingClientRect();
+            if (r.width === 0) return;
+            tops.push(r.top);
+            bottoms.push(r.bottom);
+        });
+        return tops.length > 0 && Math.max.apply(null, tops) >= Math.min.apply(null, bottoms) - 0.5;
+    };
     // first without the search label, then without the menu icons (and
     // with the label again if it fits then)
     let fit_label = function () {
         place_item();
         button.classList.remove('no-label');
         navbar.classList.remove('hide_icons', 'hide_brand');
-        if (window.innerWidth < 768) return;
+        if (window.innerWidth < 768) {
+            // first without the label, then the logo without the name
+            if (wraps()) button.classList.add('no-label');
+            if (wraps()) navbar.classList.add('hide_brand');
+            return;
+        }
         if (!overflows()) return;
         button.classList.add('no-label');
         if (!overflows()) return;
@@ -939,6 +957,8 @@ document.addEventListener('DOMContentLoaded', function () {
     fit_label();
     window.addEventListener('resize', fit_label);
     window.addEventListener('load', fit_label);
+    // the brand font changes the width of the school's name
+    if (document.fonts) document.fonts.ready.then(fit_label);
     button.addEventListener('click', function (e) {
         e.preventDefault();
         if ($('#quick_search_panel').is(':visible')) quick_search_close(); else quick_search_open();

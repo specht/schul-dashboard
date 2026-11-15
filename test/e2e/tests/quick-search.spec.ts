@@ -89,3 +89,40 @@ test('Schüler:innen haben keine Personensuche', async ({ page }) => {
   await expect(page.locator('#bu_quick_search')).toHaveCount(0);
   expect((await page.request.get('/api/quick_search_index')).status()).not.toBe(200);
 });
+
+// Phones: with a wide font (Riffic, one of the fonts users can choose) the
+// menu button wrapped into a second row. Riffic isn't in the repository
+// (commercial), so longer school names stand in for the wider text. The
+// label goes first, then the name next to the logo.
+test('Auf dem Handy bleiben Logo, Suche und Menü-Knopf in einer Zeile', async ({ page }) => {
+  await login(page, ACCOUNTS.teacher);
+  const toggler = page.locator('.navbar-toggler');
+  const search = page.locator('#bu_quick_search');
+  const label = page.locator('.nav-quick-search-label');
+  const brand = page.locator('.brand-brand');
+  const setup = async (width: number, name: string) => {
+    await page.setViewportSize({ width, height: 800 });
+    await brand.evaluate((el, n) => { el.innerHTML = '&nbsp;&nbsp;' + n; window.dispatchEvent(new Event('resize')); }, name);
+    const t = (await toggler.boundingBox())!;
+    const s = (await search.boundingBox())!;
+    expect(t.x + t.width).toBeLessThanOrEqual(width);
+    // menu button and search in the same row
+    expect(Math.abs((t.y + t.height / 2) - (s.y + s.height / 2))).toBeLessThan(t.height / 2);
+  };
+  // fits as it is
+  await setup(412, 'Beispielschule');
+  await expect(label).toBeVisible();
+  await expect(brand).toBeVisible();
+  // a little too long: without the label
+  await setup(412, 'Gymnasium am Stadtpark');
+  await expect(label).toBeHidden();
+  await expect(brand).toBeVisible();
+  // far too long: the logo alone
+  await setup(320, 'Sehr lange Beispielschule am Stadtpark');
+  await expect(label).toBeHidden();
+  await expect(brand).toBeHidden();
+  // back to a wide screen: everything again
+  await setup(600, 'Beispielschule');
+  await expect(label).toBeVisible();
+  await expect(brand).toBeVisible();
+});

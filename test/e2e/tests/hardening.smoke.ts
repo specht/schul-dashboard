@@ -133,3 +133,19 @@ test('Datei per URL holen erreicht keine internen Dienste', async ({ baseURL }) 
   }
   await request.dispose();
 });
+
+test('Seitenvorlagen sind nicht als Quelltext abrufbar', async ({ baseURL }) => {
+  const request = await playwrightRequest.newContext({ baseURL });
+  for (const path of [
+    '/_template.html', '/login.html', '/index.html', '/polls.html',
+    '/hack/level_1.html', '/cypher/title.html', '/errors/neustart.html',
+  ]) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(404);
+    expect(await response.text(), path).not.toContain('#{');
+  }
+  // the pages themselves still work, and so do other static files
+  expect((await request.get('/')).status()).toBe(200);
+  expect((await request.get('/favicon.ico')).status()).toBe(200);
+  await request.dispose();
+});

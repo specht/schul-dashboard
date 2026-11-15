@@ -68,7 +68,16 @@ test('Bot-Zustand: verbunden und tätig getrennt – arbeitet oder wartet angeme
   await expect(state.locator('.mail-bot-activity')).toContainText('meldet sich in');
   await expect(state.locator('.mail-bot-countdown')).toHaveText(/^(9|10):\d\d$/);
   const first = await state.locator('.mail-bot-countdown').textContent();
+  // the line doesn't jump while it counts: the countdown keeps its width
+  const width = async () => (await state.locator('.mail-bot-countdown').boundingBox())!.width;
+  const firstWidth = await width();
   await expect.poll(() => state.locator('.mail-bot-countdown').textContent(), { timeout: 5000 }).not.toBe(first);
+  expect(await width()).toBe(firstWidth);
+  await expect.poll(async () => (await state.locator('.mail-bot-countdown').textContent()) !== first, { timeout: 5000 }).toBe(true);
+  for (let i = 0; i < 4; i++) {
+    expect(await width(), await state.locator('.mail-bot-countdown').textContent() || '').toBe(firstWidth);
+    await page.waitForTimeout(1000);
+  }
   expect((await post(api, '/api/mail_account_bot/claim', { host: 'rechner-a', activity: 'working' })).result).toBe('ok');
   await page.reload();
   await expect(state.locator('.mail-bot-activity')).toHaveAttribute('data-activity', 'working');

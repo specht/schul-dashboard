@@ -77,6 +77,9 @@ test('E-Mails kommen an, werden aber nicht abgerufen: Prüfung ohne Inhalte, Ant
   await expect(page.locator('#ti_reply_subject')).toHaveValue('Dein schulisches E-Mail-Postfach');
   const body = await page.locator('#ta_reply_body').inputValue();
   expect(body).toContain('Hallo Max,');
+  // says how it was checked: automatically, no mail opened
+  expect(body).toContain('mit einem automatisierten Verfahren geprüft');
+  expect(body).toContain('weder Inhalte noch Betreffs oder Absender');
   expect(body).toContain('/hilfe#email-programm');
   expect(body).toContain('Gmail');
   await expect(page.locator('#reply_check_attachment')).toBeVisible();
@@ -129,7 +132,9 @@ test('Nur eine Weiterleitung, fehlendes Eltern-Postfach', async ({ page }) => {
   await expect(modal.locator('.mailbox-check-head')).toContainText(`eltern.${MAX}`);
   // parents are addressed with "Sie"
   await modal.locator('#bu_mailbox_check_reply').click();
-  expect(await page.locator('#ta_reply_body').inputValue()).toContain('Sehr geehrte');
+  const parentsBody = await page.locator('#ta_reply_body').inputValue();
+  expect(parentsBody).toContain('Sehr geehrte');
+  expect(parentsBody).toContain('Dabei wurde keine E-Mail geöffnet');
   await expect(page.locator('#ti_reply_subject')).toHaveValue('Ihr schulisches E-Mail-Postfach');
 });
 

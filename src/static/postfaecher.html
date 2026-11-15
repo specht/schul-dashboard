@@ -116,6 +116,8 @@
     body.dark .mail-bot-row { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); }
     body.dark .mail-bot-detail { color: #b0b5ba; }
     .mail-bot-now { margin-top: 0.15em; }
+    /* a fixed width with equal digits: the line doesn't jump every second */
+    .mail-bot-countdown { display: inline-block; min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; }
     /* the bot's log: newest at the bottom, scrolls by itself while you are at the end */
     #mail_bot_log_box { margin: -0.5em 0 1em 0; }
     #mail_bot_log_box summary { color: #5f6368; cursor: pointer; padding: 0.2em 0; }

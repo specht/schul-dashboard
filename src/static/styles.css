@@ -3078,9 +3078,25 @@ body.dark .quick-search-row.active {
 }
 
 @media (hover: none) {
-    .quick-search-keys {
+    .quick-search-keys, .quick-search-tip {
         display: none;
     }
+}
+
+/* keys like keycaps (as in the workspace project), not Bootstrap's dark kbd */
+.quick-search-panel kbd {
+    font: 11.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: inherit;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 4px;
+    box-shadow: none;
+}
+
+body.dark .quick-search-panel kbd {
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 tr.quick-search-highlight > td {

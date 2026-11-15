@@ -794,6 +794,9 @@ function quick_search_update() {
     }
     if (quick_search_words(query).length === 0) {
         list.append(quick_search_message('quick-search-hint', 'Name, Kürzel, Klasse, Kurs oder Seite eingeben'));
+        // only where there is a keyboard (same as the keys line)
+        list.append($('<div class="quick-search-hint quick-search-tip text-muted">').append(
+            'Tipp: Mit der Taste ', $('<kbd>').text('/'), ' öffnest du die Suche auf jeder Seite.'));
         return;
     }
     quick_search.results = quick_search_find(query);
@@ -840,7 +843,10 @@ function quick_search_open() {
             .attr('placeholder', 'Name, Kürzel, Klasse, Kurs oder Seite').attr('aria-label', 'Suchen');
         panel.append(input);
         panel.append('<div class="quick-search-results"></div>');
-        panel.append(quick_search_message('quick-search-keys', '↑ ↓ auswählen · Enter öffnen · Esc schließen'));
+        let key = function (text) { return $('<kbd>').text(text); };
+        panel.append($('<div class="quick-search-keys text-muted">').append(
+            key('↑'), ' ', key('↓'), ' auswählen · ', key('Enter'), ' öffnen · ', key('Esc'), ' schließen · ',
+            key('/'), ' öffnet die Suche auf jeder Seite'));
         $('body').append(panel);
         input.on('input', quick_search_update);
         // also when the link only changes the #part of this page

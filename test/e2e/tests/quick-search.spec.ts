@@ -30,6 +30,9 @@ test('Suche mit der Tastatur: Klassen, Kürzel und Namensanfänge', async ({ pag
   const input = page.locator('#ti_quick_search');
   await expect(input).toBeFocused();
   const rows = page.locator('.quick-search-row');
+  // the panel tells about the key
+  await expect(page.locator('.quick-search-tip kbd')).toHaveText('/');
+  await expect(page.locator('.quick-search-keys kbd', { hasText: '/' })).toBeVisible();
 
   // a class comes before its students
   await input.fill('5a');

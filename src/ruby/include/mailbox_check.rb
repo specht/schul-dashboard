@@ -54,6 +54,16 @@ class Main < Sinatra::Base
         end
     end
 
+    # The STORAGE values (in KB) from a raw line like
+    # * QUOTA "" (STORAGE 512 1024 MESSAGE 3 100000), nil if there are none.
+    def self.mailbox_check_quota_from_line(line)
+        resources = line.to_s[/\A\* QUOTA .*\((.*)\)\s*\z/m, 1]
+        return nil unless resources
+        used, limit = resources.scan(/(\S+) (\d+) (\d+)/).find { |name, _, _| name.upcase == 'STORAGE' }&.drop(1)
+        return nil if limit.nil? || limit.to_i <= 0
+        {:used_kb => used.to_i, :limit_kb => limit.to_i}
+    end
+
     # {:login => 'ok' | 'refused' | 'error', :error, :folders, :quota}
     def mailbox_check_imap(mailbox)
         config = mailbox_check_imap_config
@@ -95,6 +105,11 @@ class Main < Sinatra::Base
                         quota = imap.getquotaroot('INBOX').find { |x| x.is_a?(Net::IMAP::MailboxQuota) }
                         result[:quota] = {:used_kb => quota.usage.to_i, :limit_kb => quota.quota.to_i} if quota && quota.quota.to_i > 0
                     rescue Net::IMAP::NoResponseError, Net::IMAP::BadResponseError
+                    rescue Net::IMAP::ResponseParseError => e
+                        # net-imap only understands one resource per QUOTA line;
+                        # the provider sends storage and message count together.
+                        # The connection is gone after this – quota comes last.
+                        result[:quota] = Main.mailbox_check_quota_from_line(e.string)
                     end
                 end
             end

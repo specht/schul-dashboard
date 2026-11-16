@@ -129,7 +129,8 @@ def serve_imap(client)
             when 'GETQUOTAROOT'
                 quota = mailbox['quota']
                 client.write("* QUOTAROOT #{quoted(args[0].to_s)} \"\"\r\n")
-                client.write("* QUOTA \"\" (STORAGE #{quota['used_kb']} #{quota['limit_kb']})\r\n") if quota
+                # like the real server: storage and message count in one response
+                client.write("* QUOTA \"\" (STORAGE #{quota['used_kb']} #{quota['limit_kb']} MESSAGE 0 100000)\r\n") if quota
                 client.write("#{tag} OK GETQUOTAROOT completed\r\n")
             else
                 client.write("#{tag} BAD unknown command\r\n")

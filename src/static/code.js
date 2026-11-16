@@ -939,8 +939,9 @@ document.addEventListener('DOMContentLoaded', function () {
         button.classList.remove('no-label');
         navbar.classList.remove('hide_icons', 'hide_brand');
         if (window.innerWidth < 768) {
-            // first without the label, then the logo without the name
-            if (wraps()) button.classList.add('no-label');
+            // phones: the icon only; the logo without the name if even
+            // that doesn't fit
+            button.classList.add('no-label');
             if (wraps()) navbar.classList.add('hide_brand');
             return;
         }

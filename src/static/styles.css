@@ -3121,7 +3121,7 @@ tr.quick-search-highlight > td {
     display: none;
 }
 
-/* phones: icon and label side by side, centred in the bar */
+/* phones: the icon only, centred in the bar (the link keeps its title) */
 @media (max-width: 767px) {
     .nav-quick-search-nav .nav-item {
         margin-right: 8px;
@@ -3141,16 +3141,9 @@ tr.quick-search-highlight > td {
     .nav-link.nav-quick-search.no-label .icon {
         margin-right: 0;
     }
-}
 
-/* very narrow phones: the icon only (the link keeps its title) */
-@media (max-width: 399px) {
     .nav-quick-search-label {
         display: none;
-    }
-
-    .nav-link.nav-quick-search .icon {
-        margin-right: 0;
     }
 }
 

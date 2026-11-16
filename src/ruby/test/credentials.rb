@@ -15,6 +15,9 @@ WEB_ROOT = 'http://localhost:8125'
 
 # the fake SMS gateway in test/e2e/tests/sms-usage.spec.ts
 SMS_GATEWAY_SECRET = 'test-sms-gateway-secret'
+# short heartbeat, so the tests needn't wait a minute
+SMS_GATEWAY_PING_INTERVAL = 1
+SMS_GATEWAY_STALE_AFTER = 3
 
 SCHUL_MAIL_LOGIN_URL = 'https://mail.test.invalid'
 SCHUL_MAIL_LOGIN_SMTP_HOST = 'smtp.test.invalid'

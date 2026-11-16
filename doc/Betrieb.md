@@ -234,7 +234,11 @@ beendeter Thread, während der Prozess weiterläuft, fällt so ebenfalls auf.
 ## SMS-Anmeldung
 
 SMS-Codes laufen über ein SMS-Gateway, das sich per Websocket mit `/ws_sms`
-verbindet. Ist es nicht verbunden, gehen die Codes per E-Mail.
+verbindet. Ist es nicht verbunden, gehen die Codes per E-Mail. Der Server
+schickt dem Gateway alle 20 Sekunden einen Ping; bleibt die Antwort 60
+Sekunden aus (z. B. weil die Internetverbindung des Gateways weg ist, die
+Verbindung für den Server aber noch offen aussieht), gilt es als offline,
+die Verbindung wird getrennt und die Codes gehen wieder per E-Mail.
 
 - **Übersicht:** `/sms_anmeldung` (nur Administration, verlinkt auf
   `/admin`): Status des Gateways, gesendete SMS, alle Personen mit

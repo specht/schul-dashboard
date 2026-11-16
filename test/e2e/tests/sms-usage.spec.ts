@@ -1,5 +1,7 @@
 import { test, expect, login, typeEmail, clearLoginMails, waitForMailedCode, ACCOUNTS, ROLE_ACCOUNTS } from './fixtures';
 import type { Page } from '@playwright/test';
+import net from 'node:net';
+import crypto from 'node:crypto';
 
 // SMS codes go through a gateway that connects to /ws_sms. Every SMS is
 // recorded with recipient and purpose (no number, no text), and
@@ -31,6 +33,28 @@ async function fakeSmsGateway(baseURL: string) {
     },
     close: () => ws.close(),
   };
+}
+
+// A gateway whose connection is gone without the server noticing (e.g. its
+// internet is down): it connects and authenticates, then never answers the
+// server's pings. A normal client answers them by itself, so this one speaks
+// the websocket protocol on a plain socket.
+async function silentSmsGateway(baseURL: string) {
+  const url = new URL(baseURL);
+  const socket = net.connect(Number(url.port || 80), url.hostname);
+  await new Promise((resolve, reject) => { socket.once('connect', resolve); socket.once('error', reject); });
+  socket.write(`GET /ws_sms HTTP/1.1\r\nHost: ${url.host}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n` +
+    `Sec-WebSocket-Key: ${crypto.randomBytes(16).toString('base64')}\r\nSec-WebSocket-Version: 13\r\n\r\n`);
+  await new Promise<void>((resolve) => {
+    let received = '';
+    socket.on('data', (d) => { received += d.toString('latin1'); if (received.includes('\r\n\r\n')) resolve(); });
+  });
+  // one masked text frame with the secret, then silence
+  const payload = Buffer.from(JSON.stringify({ hello: SMS_GATEWAY_SECRET }));
+  const mask = crypto.randomBytes(4);
+  const masked = Buffer.from(payload.map((b, i) => b ^ mask[i % 4]));
+  socket.write(Buffer.concat([Buffer.from([0x81, 0x80 | payload.length]), mask, masked]));
+  return { close: () => socket.destroy() };
 }
 
 const codeIn = (sms: Sms) => /(\d{6})/.exec(sms.message)![1];
@@ -131,6 +155,31 @@ test('SMS als zweiter Faktor wird mitgezählt, Personen ohne OTP stehen oben', a
     expect(otp).toEqual([...otp].sort((a, b) => Number(a) - Number(b)));
   } finally {
     await user.request.post('/api/delete_telephone_number', { data: {} });
+    gateway.close();
+  }
+});
+
+// src/ruby/test/credentials.rb: ping every second, offline after 3 seconds
+// without an answer (production: 20 and 60 seconds)
+test('SMS-Gateway: ohne Antwort auf den Ping gilt es als offline, mit Antwort bleibt es online', async ({ page, baseURL }) => {
+  await login(page, ACCOUNTS.admin);
+  const status = page.locator('#sms_gateway_status');
+  const silent = await silentSmsGateway(baseURL!);
+  try {
+    await openUsagePage(page);
+    // codes would go into the void – the dashboard notices and uses email
+    await expect.poll(async () => { await page.goto('/sms_anmeldung'); return status.innerText(); }, { timeout: 15_000 }).toContain('offline');
+  } finally {
+    silent.close();
+  }
+  const gateway = await fakeSmsGateway(baseURL!);
+  try {
+    await openUsagePage(page);
+    // well past the 3 seconds: still there
+    await page.waitForTimeout(6_000);
+    await page.goto('/sms_anmeldung');
+    await expect(status).toContainText('online');
+  } finally {
     gateway.close();
   }
 });

@@ -14,6 +14,12 @@ class String
     end
 end
 
+# The gateway is pinged on the websocket; one that doesn't answer for a while
+# (e.g. its internet connection is gone, while the server still sees an open
+# connection) no longer counts as ready, so codes go by email instead.
+SMS_GATEWAY_PING_INTERVAL = 20 unless defined?(SMS_GATEWAY_PING_INTERVAL)
+SMS_GATEWAY_STALE_AFTER = 60 unless defined?(SMS_GATEWAY_STALE_AFTER)
+
 class Main < Sinatra::Base
 
     def user_is_eligible_for_sms?
@@ -21,8 +27,16 @@ class Main < Sinatra::Base
         return teacher_logged_in? || user_with_role_logged_in?(:praktikum)
     end
 
+    # an authenticated gateway that answered recently
+    def self.sms_gateway
+        now = Time.now.to_f
+        (@@ws_clients[:authenticated_sms] || {}).values.select do |client|
+            now - client[:last_seen] < SMS_GATEWAY_STALE_AFTER
+        end.max_by { |client| client[:last_seen] }
+    end
+
     def self.sms_gateway_ready?
-        (@@ws_clients[:authenticated_sms] || {}).values.size > 0
+        !sms_gateway.nil?
     end
 
     def session_user_telephone_number
@@ -57,7 +71,9 @@ class Main < Sinatra::Base
         data = {:telephone_number => telephone_number, :message => message}
         # no number and no text in the log – the text usually is a login code
         debug "Sending SMS (#{message.size} characters)"
-        @@ws_clients[:authenticated_sms].values.first[:ws].send(data.to_json)
+        gateway = Main.sms_gateway
+        raise 'SMS gateway not available' if gateway.nil?
+        gateway[:ws].send(data.to_json)
         ds = Date.today.strftime('%Y-%m-%d')
         neo4j_query(<<~END_OF_QUERY, {:ds => ds})
             MERGE (d:SmsDay {ds: $ds})
@@ -281,6 +297,18 @@ class Main < Sinatra::Base
                 @@ws_clients[:authenticated_sms] ||= {}
                 STDERR.puts "Got #{@@ws_clients[:sms].size} connected SMS gateways."
                 ws.send({command: 'hello', time: Time.now.to_i }.to_json)
+                # heartbeat: every client answers a ping with a pong by itself
+                @@ws_clients[:sms][client_id][:timer] = EM.add_periodic_timer(SMS_GATEWAY_PING_INTERVAL) do
+                    client = @@ws_clients[:authenticated_sms][client_id]
+                    next unless client
+                    if Time.now.to_f - client[:last_seen] >= SMS_GATEWAY_STALE_AFTER
+                        STDERR.puts "SMS gateway did not answer for #{SMS_GATEWAY_STALE_AFTER} seconds, dropping it."
+                        @@ws_clients[:authenticated_sms].delete(client_id)
+                        ws.close()
+                    else
+                        ws.ping('') { client[:last_seen] = Time.now.to_f }
+                    end
+                end
             end
 
             ws.on(:message) do |msg|
@@ -293,7 +321,7 @@ class Main < Sinatra::Base
                 if data
                     if Rack::Utils.secure_compare(data['hello'].to_s, SMS_GATEWAY_SECRET.to_s)
                         @@ws_clients[:sms][client_id][:authenticated] = true
-                        @@ws_clients[:authenticated_sms][client_id] = {:ws => ws, :authenticated => true}
+                        @@ws_clients[:authenticated_sms][client_id] = {:ws => ws, :authenticated => true, :last_seen => Time.now.to_f}
                     else
                         ws.close()
                     end
@@ -303,6 +331,8 @@ class Main < Sinatra::Base
             ws.on(:close) do |event|
                 client_id = request.env['HTTP_SEC_WEBSOCKET_KEY']
                 @@ws_clients[:sms] ||= {}
+                timer = (@@ws_clients[:sms][client_id] || {})[:timer]
+                timer.cancel if timer
                 @@ws_clients[:sms].delete(client_id)
                 @@ws_clients[:authenticated_sms] ||= {}
                 @@ws_clients[:authenticated_sms].delete(client_id)

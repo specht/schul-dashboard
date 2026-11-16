@@ -26,6 +26,28 @@ class BackendRulesTest < Minitest::Test
         assert_equal 1, offenders.size, offenders.join("\n")
     end
 
+    # Every SMS is recorded with its recipient and purpose (/sms_anmeldung,
+    # to move people from SMS to OTP). Keyword arguments only fail when the
+    # line runs – this also covers rare paths like the conference notice.
+    def test_every_sms_has_recipient_and_purpose
+        purposes = File.read(File.join(RUBY_DIR, 'include', 'sms.rb'))[/SMS_PURPOSES = \{(.*?)\}/m, 1].scan(/'(\w+)' =>/).flatten
+        refute_empty purposes
+        calls = 0
+        offenders = []
+        own_ruby_files.each do |path|
+            File.readlines(path, encoding: 'utf-8').each_with_index do |line, i|
+                next if line.strip.start_with?('#') || line.include?('def send_sms')
+                next unless line =~ /\bsend_sms\(/
+                calls += 1
+                purpose = line[/purpose: '(\w+)'/, 1]
+                next if line.include?('email: ') && purposes.include?(purpose)
+                offenders << "#{path.sub(RUBY_DIR + '/', '')}:#{i + 1}: #{line.strip}"
+            end
+        end
+        assert calls >= 7, "expected the SMS calls in login, Tresor, profile and monitor (found #{calls})"
+        assert_empty offenders, "send_sms(number, text, email: ..., purpose: '<SMS_PURPOSES key>'):\n" + offenders.join("\n")
+    end
+
     # Neo4j 5 no longer knows exists(n.prop) – a syntax error there; the
     # replacement works on 4.4 as well. (exists() with a pattern is fine.)
     def test_no_exists_function_on_properties

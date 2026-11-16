@@ -231,6 +231,22 @@ beendeter Thread, während der Prozess weiterläuft, fällt so ebenfalls auf.
 - Ein Dienst, der dauerhaft entfernt wurde, bleibt als „keine Rückmeldung“
   stehen, bis seine Datei in `/internal/status` gelöscht wird.
 
+## SMS-Anmeldung
+
+SMS-Codes laufen über ein SMS-Gateway, das sich per Websocket mit `/ws_sms`
+verbindet. Ist es nicht verbunden, gehen die Codes per E-Mail.
+
+- **Übersicht:** `/sms_anmeldung` (nur Administration, verlinkt auf
+  `/admin`): Status des Gateways, gesendete SMS, alle Personen mit
+  hinterlegter Telefonnummer – zuerst die ohne OTP – mit der Zahl ihrer SMS
+  in den letzten 30 und 90 Tagen und wofür (Anmeldung, zweiter Faktor,
+  Tresor, Nummer bestätigen, Zeugniskonferenz). Ein Knopf kopiert die
+  Adressen der Personen ohne OTP.
+- **Aufzeichnung:** Jede SMS legt einen Knoten `SmsSend` (Zeitpunkt, Zweck)
+  an der Person an – ohne Telefonnummer und ohne Text. Einträge, die älter
+  als 180 Tage sind, werden beim Senden gelöscht. `SmsDay` zählt weiterhin
+  nur die SMS pro Tag.
+
 ## Datensicherung
 
 Was gesichert werden muss:

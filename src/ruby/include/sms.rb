@@ -39,7 +39,21 @@ class Main < Sinatra::Base
         return @session_user[:telephone_number_changed] < DateTime.now.strftime('%Y-%m-%d')
     end
 
-    def send_sms(telephone_number, message)
+    # what an SMS was for (SmsSend.purpose, shown on /sms_anmeldung)
+    SMS_PURPOSES = {
+        'login' => 'Anmeldung',
+        'login_2fa' => '2. Faktor',
+        'tresor' => 'Tresor',
+        'confirm_number' => 'Nummer bestätigen',
+        'conference' => 'Zeugniskonferenz',
+    }
+    # how long the SMS log per person is kept
+    SMS_LOG_KEEP_DAYS = 180
+
+    # email: the person the SMS is for; purpose: a key of SMS_PURPOSES.
+    # Per person, only when and why is recorded – no number, no text.
+    def send_sms(telephone_number, message, email:, purpose:)
+        assert(SMS_PURPOSES.include?(purpose))
         data = {:telephone_number => telephone_number, :message => message}
         # no number and no text in the log – the text usually is a login code
         debug "Sending SMS (#{message.size} characters)"
@@ -49,6 +63,112 @@ class Main < Sinatra::Base
             MERGE (d:SmsDay {ds: $ds})
             SET d.count = COALESCE(d.count, 0) + 1;
         END_OF_QUERY
+        begin
+            neo4j_query(<<~END_OF_QUERY, {:email => email, :purpose => purpose, :ts => Time.now.to_i})
+                MATCH (u:User {email: $email})
+                CREATE (s:SmsSend {ts: $ts, purpose: $purpose})-[:BELONGS_TO]->(u);
+            END_OF_QUERY
+            sms_log_cleanup()
+        rescue StandardError => e
+            # the SMS is out – the statistics must not break the login
+            STDERR.puts "Unable to record SMS: #{e.class}"
+        end
+    end
+
+    def sms_log_cleanup
+        neo4j_query(<<~END_OF_QUERY, {:ts => Time.now.to_i - SMS_LOG_KEEP_DAYS * 24 * 60 * 60})
+            MATCH (s:SmsSend) WHERE s.ts < $ts
+            DETACH DELETE s;
+        END_OF_QUERY
+    end
+
+    # /sms_anmeldung: who still uses SMS codes, to move them to OTP. People
+    # without OTP first – they are the ones to talk to.
+    def print_sms_usage
+        require_admin!
+        now = Time.now.to_i
+        day = 24 * 60 * 60
+        people = {}
+        person = lambda { |email| people[email] ||= {:email => email, :phone => false, :otp => false, :prefers_sms => false, :sends => [], :sessions => 0} }
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User) WHERE u.telephone_number IS NOT NULL
+            RETURN u.email AS email, u.otp_token IS NOT NULL AS otp, u.preferred_login_method AS preferred;
+        END_OF_QUERY
+            x = person.call(row['email'])
+            x[:phone] = true
+            x[:otp] = row['otp']
+            x[:prefers_sms] = row['preferred'] == 'sms'
+        end
+        neo4j_query(<<~END_OF_QUERY, {:ts => now - 90 * day}).each do |row|
+            MATCH (s:SmsSend)-[:BELONGS_TO]->(u:User) WHERE s.ts >= $ts
+            RETURN u.email AS email, u.otp_token IS NOT NULL AS otp, s.ts AS ts, s.purpose AS purpose;
+        END_OF_QUERY
+            x = person.call(row['email'])
+            x[:otp] = row['otp']
+            x[:sends] << [row['ts'], row['purpose']]
+        end
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (s:Session)-[:BELONGS_TO]->(u:User) WHERE s.method = 'sms'
+            RETURN u.email AS email, count(s) AS sessions;
+        END_OF_QUERY
+            person.call(row['email'])[:sessions] = row['sessions'] if people[row['email']]
+        end
+        recorded_since = neo4j_query("MATCH (s:SmsSend) RETURN min(s.ts) AS ts").first['ts']
+        totals = {}
+        [30, 90].each do |days|
+            totals[days] = neo4j_query(<<~END_OF_QUERY, {:ds => (Date.today - days + 1).strftime('%Y-%m-%d')}).first['n'] || 0
+                MATCH (d:SmsDay) WHERE d.ds >= $ds RETURN sum(d.count) AS n;
+            END_OF_QUERY
+        end
+        name_for = lambda do |email|
+            info = @@user_info[email]
+            info ? [info[:display_name], info[:shorthand]] : [email, nil]
+        end
+        rows = people.values.sort_by do |x|
+            [x[:otp] ? 1 : 0, -x[:sends].size, name_for.call(x[:email])[0].to_s.downcase]
+        end
+        without_otp = people.values.select { |x| x[:phone] && !x[:otp] }
+
+        StringIO.open do |io|
+            io.puts "<h3>SMS-Anmeldung</h3>"
+            io.puts "<div class='sms-usage-summary'>"
+            io.puts "<div><span class='sms-usage-label'>SMS-Gateway</span><span id='sms_gateway_status'>#{Main.sms_gateway_ready? ? '<i class=\'fa fa-check text-success\'></i>&nbsp;online' : '<i class=\'fa fa-times text-danger\'></i>&nbsp;offline – Codes gehen per E-Mail'}</span></div>"
+            io.puts "<div><span class='sms-usage-label'>Gesendet</span><span>#{totals[30]} SMS in 30 Tagen, #{totals[90]} in 90 Tagen</span></div>"
+            io.puts "<div><span class='sms-usage-label'>Telefonnummer</span><span id='sms_usage_counts'>#{people.values.count { |x| x[:phone] }} Personen, davon <strong>#{without_otp.size} ohne OTP</strong></span></div>"
+            since = recorded_since ? "seit #{Time.at(recorded_since).strftime('%d.%m.%Y')}" : 'ab der nächsten SMS'
+            io.puts "<div><span class='sms-usage-label'>Pro Person</span><span>aufgezeichnet #{since}: wann und wofür, ohne Nummer und Text; nach #{SMS_LOG_KEEP_DAYS} Tagen gelöscht</span></div>"
+            io.puts "</div>"
+            unless without_otp.empty?
+                addresses = without_otp.map { |x| x[:email] }.sort.join(', ')
+                io.puts "<p><button class='btn btn-sm btn-outline-secondary' id='bu_copy_sms_addresses' data-addresses='#{CGI.escapeHTML(addresses)}'><i class='fa fa-clipboard'></i>&nbsp;&nbsp;Adressen ohne OTP kopieren</button></p>"
+            end
+            io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
+            io.puts "<table class='table table-sm narrow sms-usage-table'>"
+            io.puts "<tr><th>Name</th><th>OTP</th><th>Anmeldung per SMS</th><th class='text-right'>SMS 30&nbsp;Tage</th><th class='text-right'>SMS 90&nbsp;Tage</th><th>Zuletzt</th><th>Wofür (90 Tage)</th></tr>"
+            rows.each do |x|
+                name, shorthand = name_for.call(x[:email])
+                recent = x[:sends].count { |ts, _| ts >= now - 30 * day }
+                last = x[:sends].map(&:first).max
+                purposes = x[:sends].group_by(&:last).map { |purpose, list| [list.size, SMS_PURPOSES[purpose] || purpose] }.sort_by { |n, label| [-n, label] }
+                login = []
+                login << 'bevorzugt' if x[:prefers_sms]
+                login << "#{x[:sessions]}&nbsp;#{x[:sessions] == 1 ? 'Sitzung' : 'Sitzungen'}" if x[:sessions] > 0
+                login << '<span class=\'text-muted\'>Nummer gelöscht</span>' unless x[:phone]
+                io.puts "<tr class='sms-usage-row' data-email='#{CGI.escapeHTML(x[:email])}' data-sms30='#{recent}' data-sms90='#{x[:sends].size}'>"
+                io.puts "<td>#{CGI.escapeHTML(name.to_s)}#{shorthand ? " <span class='text-muted'>(#{CGI.escapeHTML(shorthand)})</span>" : ''}</td>"
+                io.puts "<td class='sms-usage-otp'>#{x[:otp] ? '<i class=\'fa fa-check text-success\'></i>&nbsp;ja' : '<strong>nein</strong>'}</td>"
+                io.puts "<td>#{login.empty? ? '&ndash;' : login.join(', ')}</td>"
+                io.puts "<td class='text-right'>#{recent}</td>"
+                io.puts "<td class='text-right'>#{x[:sends].size}</td>"
+                io.puts "<td>#{last ? Time.at(last).strftime('%d.%m.%Y') : '&ndash;'}</td>"
+                io.puts "<td class='sms-usage-purposes'>#{purposes.map { |n, label| "#{n}×&nbsp;#{CGI.escapeHTML(label)}" }.join(', ')}</td>"
+                io.puts "</tr>"
+            end
+            io.puts "</table>"
+            io.puts "</div>"
+            io.puts "<p class='text-muted'>„Sitzungen“: noch aktive Anmeldungen, die mit einem SMS-Code begonnen haben (auch aus der Zeit vor der Aufzeichnung). Den zweiten Faktor bei der Anmeldung von Lehrkräften zählen nur die SMS-Spalten.</p>"
+            io.string
+        end
     end
 
     post '/api/save_telephone_number' do
@@ -64,7 +184,7 @@ class Main < Sinatra::Base
         tag = RandomTag::generate(8)
         valid_to = Time.now + 600
         random_code = RandomTag::digits(6)
-        send_sms(number, "Dein Bestaetigungscode zur Aktivierung der SMS-Anmeldung lautet #{random_code}.")
+        send_sms(number, "Dein Bestaetigungscode zur Aktivierung der SMS-Anmeldung lautet #{random_code}.", email: @session_user[:email], purpose: 'confirm_number')
         neo4j_query(<<~END_OF_QUERY, {:email => @session_user[:email], :telephone_number => number.obfuscate(SMS_PHONE_NUMBER_PASSPHRASE), :tag => tag, :code => random_code, :valid_to => valid_to.to_i})
             MATCH (u:User {email: $email})
             CREATE (l:PhoneNumberConfirmation {tag: $tag, code: $code, valid_to: $valid_to, telephone_number: $telephone_number})-[:BELONGS_TO]->(u)
@@ -111,7 +231,7 @@ class Main < Sinatra::Base
             SET u.telephone_number = $telephone_number
             SET u.telephone_number_changed = $today;
         END_OF_QUERY
-        send_sms(sms_code[:telephone_number].deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Anmeldung per SMS ist nun aktiviert.")
+        send_sms(sms_code[:telephone_number].deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Anmeldung per SMS ist nun aktiviert.", email: @session_user[:email], purpose: 'confirm_number')
 
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (l:PhoneNumberConfirmation {tag: $tag})

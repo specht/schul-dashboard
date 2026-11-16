@@ -1,0 +1,55 @@
+#{this_is_a_page_for_logged_in_admins}
+<style>
+    .sms-usage-summary > div {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 0.3em;
+    }
+
+    .sms-usage-label {
+        width: 9em;
+        flex-shrink: 0;
+        font-weight: bold;
+    }
+
+    .sms-usage-summary {
+        margin-bottom: 1em;
+    }
+
+    .sms-usage-table td, .sms-usage-table th {
+        white-space: nowrap;
+    }
+
+    .sms-usage-table td.sms-usage-purposes {
+        white-space: normal;
+        min-width: 12em;
+    }
+
+    @media (max-width: 575px) {
+        .sms-usage-label {
+            width: 100%;
+        }
+    }
+</style>
+<div class='container-fluid solid white'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <div class='api_messages' style='display: none;'></div>
+            #{print_sms_usage()}
+        </div>
+    </div>
+</div>
+<script>
+    window.addEventListener('load', function () {
+        let button = document.getElementById('bu_copy_sms_addresses');
+        if (!button) return;
+        button.addEventListener('click', function (e) {
+            let addresses = e.currentTarget.dataset.addresses;
+            let show = function () { dashboardAlert(addresses, 'Adressen ohne OTP'); };
+            if (!(navigator.clipboard && navigator.clipboard.writeText)) return show();
+            navigator.clipboard.writeText(addresses).then(function () {
+                button.innerHTML = "<i class='fa fa-check'></i>&nbsp;&nbsp;Kopiert";
+            }, show);
+        });
+    });
+</script>

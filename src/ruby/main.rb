@@ -391,6 +391,7 @@ class SetupDatabase
         'LessonInfo/offset',
         'LoginCode/code',
         'SecondFactor/ts_expire',
+        'SmsSend/ts',
         'SecondLoginCode/code',
         'Mail/ts_sent',
         'MailAccountBotLog/ts',

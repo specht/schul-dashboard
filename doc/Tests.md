@@ -49,6 +49,10 @@ aus dem E-Mail-Brief an, kennt von den Mails nur das Eingangsdatum und
 protokolliert die Befehle, damit die Tests prüfen können, dass nie Inhalte
 gelesen werden.
 
+Ein SMS-Gateway gibt es im Test-Stack nicht. `tests/sms-usage.spec.ts`
+verbindet sich selbst wie das Gateway mit `/ws_sms` (Geheimnis aus
+`src/ruby/test/credentials.rb`) und liest die Codes aus den empfangenen SMS.
+
 Nach dem Start richtet `test/e2e/seed.cypher` zwei Konten für die
 Anmelde-Tests ein: `torstenson@beispielschule.de` muss einen zweiten Faktor
 (OTP) verwenden, `clarke@beispielschule.de` meldet sich per OTP-App an.

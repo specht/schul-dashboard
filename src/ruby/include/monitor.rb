@@ -245,7 +245,7 @@ class Main < Sinatra::Base
                         END_OF_QUERY
                         if telephone_number
                             begin
-                                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Zensurenkonferenz der Klasse #{klasse} beginnt jetzt.")
+                                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Die Zensurenkonferenz der Klasse #{klasse} beginnt jetzt.", email: email, purpose: 'conference')
                             rescue
                                 STDERR.puts "Failed to send SMS to #{telephone_number}"
                             end

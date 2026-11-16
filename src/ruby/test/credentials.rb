@@ -13,6 +13,9 @@ $VERBOSE = nil
 # must match NGINX_HOST_PORT in env.test.rb
 WEB_ROOT = 'http://localhost:8125'
 
+# the fake SMS gateway in test/e2e/tests/sms-usage.spec.ts
+SMS_GATEWAY_SECRET = 'test-sms-gateway-secret'
+
 SCHUL_MAIL_LOGIN_URL = 'https://mail.test.invalid'
 SCHUL_MAIL_LOGIN_SMTP_HOST = 'smtp.test.invalid'
 SCHUL_MAIL_LOGIN_IMAP_HOST = 'imap.test.invalid'

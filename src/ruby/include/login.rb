@@ -170,7 +170,7 @@ class Main < Sinatra::Base
             }
 
             if available_second_methods == ['sms']
-                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}", email: user[:email], purpose: 'login_2fa')
                 response[:sent] = :sms
             elsif available_second_methods == ['email']
                 deliver_mail do
@@ -309,7 +309,7 @@ class Main < Sinatra::Base
         if data[:method] == 'sms'
             telephone_number = user[:telephone_number]
             if telephone_number.size > 0
-                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{login_code[:code2]}")
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{login_code[:code2]}", email: user[:email], purpose: 'login_2fa')
             end
         elsif data[:method] == 'email'
             deliver_mail do
@@ -611,7 +611,7 @@ class Main < Sinatra::Base
         email_recipient = data[:email]
         begin
             if preferred_login_method == 'sms'
-                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}", email: data[:email], purpose: 'login')
             elsif preferred_login_method == 'otp'
             else
                 deliver_mail do
@@ -853,7 +853,7 @@ class Main < Sinatra::Base
         begin
             if method == 'sms'
                 assert(session_user_telephone_number_good_for_tresor)
-                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}")
+                send_sms(telephone_number.deobfuscate(SMS_PHONE_NUMBER_PASSPHRASE), "Dein Anmeldecode lautet #{random_code}", email: @session_user[:email], purpose: 'tresor')
             elsif method == 'otp'
                 assert(session_user_otp_token_good_for_tresor)
             else

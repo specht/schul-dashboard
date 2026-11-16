@@ -69,6 +69,26 @@
 .zg-group.shuffling .zg-name {
     color: #999;
 }
+.zg-access {
+    border: 1px solid #ddd;
+    border-radius: 0.5em;
+    padding: 0.6em 0.9em;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+.zg-access .zg-person {
+    display: inline-block;
+    border-radius: 1em;
+    padding: 0.2em 0.4em 0.2em 0.8em;
+    margin: 0.2em;
+    background: #e3f2fd;
+    border: 1px solid #90caf9;
+}
+.zg-access .zg-person button {
+    border: none;
+    background: none;
+    padding: 0 0.3em;
+    color: #555;
+}
 .zg-warning {
     color: #8a6d00;
     font-size: 0.9em;
@@ -119,7 +139,7 @@
             <label class="zg-choice"><input type="radio" name="zg_rest" value="bigger" checked> einige Gruppen größer</label>
             <label class="zg-choice"><input type="radio" name="zg_rest" value="smaller"> einige Gruppen kleiner</label>
         </div>
-        <div class="zg-row">
+        <div class="zg-row" id="zg_gender_row">
             <span class="zg-label">Jungen und Mädchen</span>
             <label class="zg-choice"><input type="radio" name="zg_gender" value="egal" checked> egal</label>
             <label class="zg-choice"><input type="radio" name="zg_gender" value="gemischt"> gemischt</label>
@@ -148,6 +168,13 @@
     </div>
 
     <div class="zg-groups" id="zg_groups"></div>
+
+    <details class="zg-section zg-access" id="zg_access" style="display: none; margin-top: 2em;">
+        <summary><strong>Wer darf diese Seite außer den Admins nutzen?</strong> <span id="zg_access_count"></span></summary>
+        <p class="zg-legend" style="margin-top: 0.5em;">Nur Admins sehen und ändern diese Liste. Wer hier steht, findet „Gruppenbildung Kollegium“ im persönlichen Menü, sieht aber nur die eigenen zuletzt gemischten Gruppen.</p>
+        <div id="zg_access_list"></div>
+        <select class="form-control" id="zg_access_add" style="max-width: 22em; margin-top: 0.4em;"></select>
+    </details>
 </div>
 
 <div id="zg_beamer">
@@ -163,6 +190,10 @@ var klasse = '';
 var sus = [];
 var absent = new Set();
 var is_klassenleitung = false;
+// Gruppen aus dem Kollegium statt aus einer Klasse (/zufallsgruppen/kollegium).
+var kollegium = false;
+// Nur für Admins gefüllt: wer die Kollegium-Seite außerdem nutzen darf.
+var access_emails = null;
 // Nur für die Klassenleitung gefüllt (siehe zg_get_state).
 var distribution = null;
 var current_groups = [];
@@ -193,7 +224,7 @@ function settings() {
     return {
         size: size,
         rest: $('input[name=zg_rest]:checked').val(),
-        gender: $('input[name=zg_gender]:checked').val(),
+        gender: kollegium ? 'egal' : $('input[name=zg_gender]:checked').val(),
         distribution: is_klassenleitung && $('#zg_distribution').is(':checked'),
     };
 }
@@ -472,6 +503,32 @@ function close_beamer() {
     $('#zg_beamer').hide();
 }
 
+function render_access() {
+    if (access_emails === null) return;
+    $('#zg_access').show();
+    $('#zg_access_count').text(access_emails.length > 0 ? `(${access_emails.length})` : '(nur Admins)');
+    let list = $('#zg_access_list').empty();
+    if (access_emails.length === 0) list.append($('<span>').addClass('zg-legend').text('Bisher nur die Admins.'));
+    for (let e of access_emails) {
+        let rm = $('<button>').attr('title', 'Freigabe entfernen').html('&times;').on('click', function () {
+            save_access(access_emails.filter(x => x !== e));
+        });
+        list.append($('<span>').addClass('zg-person').text(display_name(e)).append(rm));
+    }
+    let sel = $('#zg_access_add').empty().append($('<option>').val('').text('+ Lehrkraft freigeben …'));
+    for (let s of sus) {
+        if (!access_emails.includes(s.email)) sel.append($('<option>').val(s.email).text(s.display_name));
+    }
+}
+
+function save_access(emails) {
+    api_call('/api/zg_save_kollegium_access', {emails: JSON.stringify(emails)}, function (data) {
+        if (data.success === false) { dashboardAlert(data.error || 'Die Freigabe konnte nicht gespeichert werden.'); return; }
+        access_emails = data.emails;
+        render_access();
+    });
+}
+
 function apply_settings(s) {
     if (!s) return;
     if (s.size) $('#zg_size').val(s.size);
@@ -482,14 +539,25 @@ function apply_settings(s) {
 
 document.addEventListener('DOMContentLoaded', function () {
     klasse = decodeURIComponent(window.location.pathname.replace('/zufallsgruppen/', '').split('/')[0]);
-    $('#zg_label').text(klasse);
-    $('#zg_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
+    kollegium = klasse === 'kollegium';
+    if (kollegium) {
+        $('#zg_label').text('Kollegium');
+        $('#zg_back_link').attr('href', '/').html('<i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück');
+        $('#zg_gender_row').remove();
+    } else {
+        $('#zg_label').text(klasse);
+        $('#zg_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
+    }
     api_call('/api/zg_get_state', {klasse: klasse}, function (data) {
         if (data.success === false || !data.sus) {
-            $('#zg_preview').text('Die Klasse konnte nicht geladen werden. Bitte die Seite neu laden.');
+            $('#zg_preview').text((kollegium ? 'Das Kollegium' : 'Die Klasse') + ' konnte nicht geladen werden. Bitte die Seite neu laden.');
             return;
         }
         sus = data.sus;
+        if (kollegium && data.access) {
+            access_emails = data.access.emails || [];
+            render_access();
+        }
         // Erst jetzt kennt die Seite die Klasse; vorher gäbe Mischen leere Gruppen.
         $('#zg_bu_mix').prop('disabled', false);
         is_klassenleitung = !!data.is_klassenleitung;
@@ -522,6 +590,10 @@ document.addEventListener('DOMContentLoaded', function () {
         render_presence();
     });
     $('#zg_bu_mix').click(do_mix);
+    $('#zg_access_add').on('change', function () {
+        let e = $(this).val();
+        if (e) save_access(access_emails.concat([e]));
+    });
     $('#zg_bu_beamer').click(open_beamer);
     $('#zg_bu_beamer_mix').click(do_mix);
     $('#zg_bu_beamer_close').click(close_beamer);

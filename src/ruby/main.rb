@@ -360,6 +360,7 @@ class SetupDatabase
         'PublicEventPerson/tag',
         'PublicEventTrack/track',
         'RandomGroups/key',
+        'RandomGroupsAccess/id',
         'SchulTablet/code',
         'SeatingCycle/id',
         'SeatingGroups/klasse',
@@ -2794,6 +2795,9 @@ class Main < Sinatra::Base
                         end
                         if user_with_role_logged_in?(:can_create_polls)
                             io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"
+                        end
+                        if zg_can_use?(ZG_KOLLEGIUM)
+                            io.puts "<a class='dropdown-item nav-icon' href='/zufallsgruppen/kollegium'><div class='icon'><i class='fa fa-random'></i></div><span class='label'>Gruppenbildung Kollegium</span></a>"
                         end
                         io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                         if user_with_role_logged_in?(:can_use_mailing_lists)

@@ -3153,3 +3153,65 @@ tr.quick-search-highlight > td {
         margin-right: 0;
     }
 }
+
+/* a lesson mail as it will be sent (/unterrichtsmails, timetable → Mail) */
+.lesson-mail-preview {
+    background-color: #fff;
+    color: #212529;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.4em;
+    padding: 0.8em 1em;
+    overflow-wrap: anywhere;
+}
+
+body.dark .lesson-mail-preview {
+    background-color: #1c1c1e;
+    color: #eee;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.lesson-mail-preview-subject {
+    font-weight: bold;
+    padding-bottom: 0.5em;
+    margin-bottom: 0.7em;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+}
+
+.lesson-mail-preview-body p:last-child {
+    margin-bottom: 0;
+}
+
+.lesson-mail-preview-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3em 0.7em;
+    padding: 0.8em 0 0.4em 0;
+}
+
+.lesson-mail-preview-head label {
+    margin: 0;
+}
+
+.lesson-mail-preview-head select {
+    width: auto;
+    max-width: 100%;
+    padding-right: 2.2em;
+}
+
+#mailModal .lesson-mail-preview {
+    font-size: 90%;
+}
+
+.lesson-mail-preview-details {
+    margin-top: 0.6em;
+}
+
+.lesson-mail-preview-details > summary {
+    cursor: pointer;
+    padding: 0.4em 0;
+}
+
+.lesson-mail-preview-toggle {
+    font-weight: bold;
+}

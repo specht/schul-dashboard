@@ -13,7 +13,9 @@ require 'json'
 require 'jwt'
 require 'kramdown'
 require 'mail'
+require './lesson_mail_templates.rb'
 require './mail_guard.rb'
+require './mail_text.rb'
 require './page_template.rb'
 require './service_status.rb'
 require './tablet_set_sync.rb'
@@ -168,6 +170,7 @@ require './include/tests.rb'
 require './include/test_events.rb'
 require './include/theme.rb'
 require './include/tresor.rb'
+require './include/unterrichtsmails.rb'
 require './include/unterstufenparty.rb'
 require './include/user.rb'
 require './include/vote.rb'
@@ -271,7 +274,7 @@ class RandomTag
 end
 
 def mail_html_to_plain_text(s)
-    s.gsub('<p>', "\n\n").gsub(/<br\s*\/?>/, "\n").gsub(/<\/?[^>]*>/, '').strip
+    MailText.html_to_plain_text(s)
 end
 
 def deliver_mail(plain_text = nil, &block)
@@ -348,6 +351,7 @@ class SetupDatabase
         'Lab8Projekt/nr',
         'Lab9Projekt/nr',
         'Lesson/key',
+        'LessonMailTemplate/reason',
         'LoginCode/tag',
         'Mail/tag',
         'Message/key',

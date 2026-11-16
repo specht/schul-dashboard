@@ -251,6 +251,30 @@ die Verbindung wird getrennt und die Codes gehen wieder per E-Mail.
   als 180 Tage sind, werden beim Senden gelöscht. `SmsDay` zählt weiterhin
   nur die SMS pro Tag.
 
+## Mails aus dem Unterricht
+
+Lehrkräfte schicken aus einer Stunde im Stundenplan (Knopf »Mail«) eine
+E-Mail an die Eltern, z. B. bei fehlenden Hausaufgaben. Der Versand läuft
+zeitverzögert über den `mail_bot`. Die Texte der sieben Gründe ändern
+Admins unter `/unterrichtsmails` (Administration → Seiten), mit einer
+Vorschau für Max bzw. Erika Mustermann (5a) und dem eigenen Namen als
+Lehrkraft.
+
+- Platzhalter: `{Vorname}`, `{Name}`, `{Klasse}`, `{Fach}`, `{Notiz}`
+  (wird zu » (Notiz)« oder entfällt), `{Lehrkraft}`, `{Lehrkraft der Stunde}`;
+  vom Geschlecht abhängige Wörter als `{männlich|weiblich}`, z. B.
+  `{Ihr Sohn|Ihre Tochter}`.
+- Wer die Mail schickt, unterschreibt sie (`{Lehrkraft}`) und bekommt die
+  Antworten. Otium-Mails schickt die Otium-Aufsicht für die Stunde, aus der
+  das Kind ins Otium kam; der Text nennt die Lehrkraft der Stunde, die eine
+  Kopie bekommt (ebenso die Klassenleitung).
+- Lehrkräfte sehen im Mail-Dialog eine Vorschau der Mail für jedes Kind der
+  Stunde, bevor sie sie senden.
+- Geänderte Texte liegen als `LessonMailTemplate`-Knoten in der Datenbank;
+  ohne Knoten gilt der Standardtext aus `src/ruby/lesson_mail_templates.rb`.
+  Der `mail_bot` liest die Texte vor jedem Durchlauf, ein Neustart ist nicht
+  nötig.
+
 ## Datensicherung
 
 Was gesichert werden muss:

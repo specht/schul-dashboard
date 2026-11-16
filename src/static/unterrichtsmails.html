@@ -1,0 +1,328 @@
+#{this_is_a_page_for_logged_in_admins}
+<style>
+    .lesson-mail-reason-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5em 1em;
+        margin-bottom: 1em;
+    }
+
+    .lesson-mail-reason-row label {
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .lesson-mail-reason-row select {
+        width: auto;
+        max-width: 100%;
+        padding-right: 2.2em;
+    }
+
+    .lesson-mail-panel {
+        border: 1px solid rgba(128, 128, 128, 0.3);
+        border-radius: 0.5em;
+        padding: 1em;
+        margin-bottom: 1em;
+        background-color: rgba(128, 128, 128, 0.06);
+    }
+
+    .lesson-mail-panel h4 {
+        font-size: 120%;
+        margin-bottom: 0.8em;
+    }
+
+    .lesson-mail-panel label {
+        font-weight: bold;
+        margin-bottom: 0.3em;
+    }
+
+    .lesson-mail-field {
+        margin-bottom: 0.9em;
+    }
+
+    #ti_lesson_mail_body {
+        font-size: 95%;
+        line-height: 1.45;
+    }
+
+    .lesson-mail-hint {
+        font-size: 90%;
+        margin-top: 0.3em;
+    }
+
+    .lesson-mail-placeholders {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 0.35em 0.8em;
+        align-items: baseline;
+        font-size: 90%;
+    }
+
+    .lesson-mail-placeholders .btn {
+        justify-self: start;
+    }
+
+    .lesson-mail-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5em;
+        margin-top: 1em;
+    }
+
+    .lesson-mail-preview-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5em;
+        margin-bottom: 0.8em;
+    }
+
+    .lesson-mail-preview-controls select {
+        width: auto;
+        max-width: 100%;
+        padding-right: 2.2em;
+    }
+
+    .lesson-mail-preview-controls input {
+        flex: 1 1 12em;
+        width: auto;
+    }
+
+    @media (min-width: 992px) {
+        .lesson-mail-sticky {
+            position: sticky;
+            top: 5em;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .lesson-mail-placeholders {
+            grid-template-columns: 1fr;
+            gap: 0.15em;
+        }
+
+        .lesson-mail-placeholders .text-muted {
+            margin-bottom: 0.4em;
+        }
+    }
+</style>
+<div class='container-fluid solid white'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>Mails aus dem Unterricht</h2>
+            <p class='text-muted'>
+                Lehrkräfte können aus einer Stunde im Stundenplan eine E-Mail an die Eltern schicken (Knopf »Mail«).
+                Hier legst du die Texte dafür fest. Die Mail geht an die Eltern, das Kind und die Lehrkraft bekommen eine Kopie,
+                Antworten gehen an die Lehrkraft, die die Mail schickt. Änderungen gelten für alle Mails, die ab dem Speichern verschickt werden.
+            </p>
+            <div class='api_messages' style='display: none;'></div>
+            <div class='lesson-mail-reason-row'>
+                <label for='ti_lesson_mail_reason'>Grund</label>
+                <select id='ti_lesson_mail_reason' class='form-control'></select>
+                <span id='lesson_mail_status' class='text-muted'></span>
+            </div>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-lg-6'>
+            <div class='lesson-mail-panel'>
+                <h4>Text bearbeiten</h4>
+                <div class='lesson-mail-field'>
+                    <label for='ti_lesson_mail_subject'>Betreff</label>
+                    <input id='ti_lesson_mail_subject' class='form-control' type='text' autocomplete='off'>
+                </div>
+                <div class='lesson-mail-field'>
+                    <label for='ti_lesson_mail_body'>Text</label>
+                    <textarea id='ti_lesson_mail_body' class='form-control' rows='14'></textarea>
+                    <div class='text-muted lesson-mail-hint'>Eine Leerzeile beginnt einen neuen Absatz.</div>
+                </div>
+                <div class='lesson-mail-field'>
+                    <label>Platzhalter</label> <span class='text-muted lesson-mail-hint'>– ein Klick fügt ihn an der Schreibmarke ein</span>
+                    <div class='lesson-mail-placeholders' id='lesson_mail_placeholders'></div>
+                    <div class='text-muted lesson-mail-hint' style='margin-top: 0.6em;'>
+                        Wörter, die vom Geschlecht des Kindes abhängen, schreibst du mit beiden Formen in geschweifte Klammern,
+                        zuerst männlich, dann weiblich: <code>{Ihr Sohn|Ihre Tochter}</code>, <code>{ihn|sie}</code>.
+                    </div>
+                </div>
+                <div id='lesson_mail_errors' class='alert alert-warning' style='display: none;'></div>
+                <div class='lesson-mail-buttons'>
+                    <button id='bu_save_lesson_mail' class='btn btn-success' disabled><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
+                    <button id='bu_discard_lesson_mail' class='btn btn-outline-secondary' disabled><i class='fa fa-undo'></i>&nbsp;&nbsp;Änderungen verwerfen</button>
+                    <button id='bu_reset_lesson_mail' class='btn btn-outline-secondary'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Standardtext wiederherstellen</button>
+                </div>
+            </div>
+        </div>
+        <div class='col-lg-6'>
+            <div class='lesson-mail-panel lesson-mail-sticky'>
+                <h4>Vorschau</h4>
+                <div class='lesson-mail-preview-controls'>
+                    <select id='ti_lesson_mail_preview_student' class='form-control' aria-label='Kind für die Vorschau'>
+                        <option value='m'>Max Mustermann, Klasse 5a</option>
+                        <option value='w'>Erika Mustermann, Klasse 5a</option>
+                    </select>
+                    <input id='ti_lesson_mail_preview_note' class='form-control' type='text' placeholder='Notiz der Lehrkraft' aria-label='Notiz der Lehrkraft für die Vorschau' autocomplete='off'>
+                </div>
+                <div class='lesson-mail-preview' data-testid='lesson-mail-preview'>
+                    <div class='lesson-mail-preview-subject' id='lesson_mail_preview_subject'></div>
+                    <div class='lesson-mail-preview-body' id='lesson_mail_preview_body'></div>
+                </div>
+                <div class='text-muted lesson-mail-hint' style='margin-top: 0.6em;'>
+                    In der Vorschau schickst du die Mail selbst; Lehrkraft der Stunde ist »Frau Beispiel«, das Fach Mathematik.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    window.addEventListener('load', function () {
+        let templates = #{lesson_mail_templates_page_data.to_json.gsub('</', '<\/')};
+        let placeholders = #{LessonMailTemplates::PLACEHOLDERS.to_json.gsub('</', '<\/')};
+        let el = function (id) { return document.getElementById(id); };
+        let select = el('ti_lesson_mail_reason');
+        let subject = el('ti_lesson_mail_subject');
+        let body = el('ti_lesson_mail_body');
+        let note = el('ti_lesson_mail_preview_note');
+        let student = el('ti_lesson_mail_preview_student');
+        let current = null;
+        let preview_timer = null;
+        let preview_seq = 0;
+        let errors = [];
+        let last_field = body;
+
+        for (let t of templates) {
+            let option = document.createElement('option');
+            option.value = t.reason;
+            option.textContent = t.label;
+            select.appendChild(option);
+        }
+
+        for (let name of Object.keys(placeholders)) {
+            let button = document.createElement('button');
+            button.className = 'btn btn-sm btn-outline-secondary bu-insert-placeholder';
+            button.type = 'button';
+            button.textContent = '{' + name + '}';
+            button.dataset.placeholder = '{' + name + '}';
+            // keep the cursor in the text field
+            button.addEventListener('mousedown', function (e) { e.preventDefault(); });
+            button.addEventListener('click', function (e) {
+                insert_text(last_field, e.currentTarget.dataset.placeholder);
+            });
+            let description = document.createElement('span');
+            description.className = 'text-muted';
+            description.textContent = placeholders[name];
+            el('lesson_mail_placeholders').appendChild(button);
+            el('lesson_mail_placeholders').appendChild(description);
+        }
+
+        function insert_text(field, text) {
+            let start = field.selectionStart ?? field.value.length;
+            let end = field.selectionEnd ?? field.value.length;
+            field.value = field.value.slice(0, start) + text + field.value.slice(end);
+            field.focus();
+            field.setSelectionRange(start + text.length, start + text.length);
+            changed();
+        }
+
+        function template_for(reason) {
+            return templates.find(function (t) { return t.reason === reason; });
+        }
+
+        function dirty() {
+            return current !== null && (subject.value !== current.subject || body.value !== current.body);
+        }
+
+        function update_status() {
+            let status = current.customized ? `Angepasst am ${current.updated} von ${current.updated_by}` : 'Standardtext';
+            if (dirty()) status += ' – Änderungen nicht gespeichert';
+            el('lesson_mail_status').textContent = status;
+            el('bu_save_lesson_mail').disabled = !dirty() || errors.length > 0;
+            el('bu_discard_lesson_mail').disabled = !dirty();
+            el('bu_reset_lesson_mail').disabled = !current.customized && subject.value === current.default_subject && body.value === current.default_body;
+        }
+
+        function show_errors(list) {
+            errors = list || [];
+            let box = el('lesson_mail_errors');
+            box.textContent = '';
+            for (let error of errors) {
+                let div = document.createElement('div');
+                div.textContent = error;
+                box.appendChild(div);
+            }
+            box.style.display = errors.length > 0 ? '' : 'none';
+            update_status();
+        }
+
+        function load_preview() {
+            let seq = ++preview_seq;
+            api_call('/api/preview_lesson_mail_template', {
+                reason: current.reason, subject: subject.value, body: body.value,
+                note: note.value, geschlecht: student.value,
+            }, function (data) {
+                if (seq !== preview_seq || !data.success) return;
+                el('lesson_mail_preview_subject').textContent = data.subject;
+                // rendered and escaped by the server
+                el('lesson_mail_preview_body').innerHTML = data.html;
+                show_errors(data.errors);
+            }, { no_please_wait: true });
+        }
+
+        function changed() {
+            update_status();
+            clearTimeout(preview_timer);
+            preview_timer = setTimeout(load_preview, 250);
+        }
+
+        function show(reason) {
+            current = template_for(reason);
+            select.value = reason;
+            subject.value = current.subject;
+            body.value = current.body;
+            note.value = current.example_note;
+            show_errors([]);
+            load_preview();
+        }
+
+        function replace_templates(list) {
+            templates = list;
+            show(current.reason);
+        }
+
+        select.addEventListener('change', function (e) {
+            let reason = e.currentTarget.value;
+            if (!dirty()) return show(reason);
+            select.value = current.reason;
+            dashboardConfirm('Deine Änderungen an diesem Text sind noch nicht gespeichert. Möchtest du sie verwerfen?', function () {
+                show(reason);
+            }, { title: 'Änderungen verwerfen?', confirm: 'Verwerfen', danger: true });
+        });
+        for (let field of [subject, body]) {
+            field.addEventListener('input', changed);
+            field.addEventListener('focus', function (e) { last_field = e.currentTarget; });
+        }
+        note.addEventListener('input', changed);
+        student.addEventListener('change', changed);
+
+        el('bu_save_lesson_mail').addEventListener('click', function () {
+            api_call('/api/save_lesson_mail_template', {
+                reason: current.reason, subject: subject.value, body: body.value,
+            }, function (data) {
+                if (!data.success) return;
+                if (data.errors) return show_errors(data.errors);
+                replace_templates(data.templates);
+            });
+        });
+        el('bu_discard_lesson_mail').addEventListener('click', function () {
+            show(current.reason);
+        });
+        el('bu_reset_lesson_mail').addEventListener('click', function () {
+            dashboardConfirm(`Der Text für »${current.label}« wird durch den Standardtext ersetzt. Deine Anpassungen gehen verloren.`, function () {
+                api_call('/api/reset_lesson_mail_template', { reason: current.reason }, function (data) {
+                    if (data.success) replace_templates(data.templates);
+                });
+            }, { title: 'Standardtext wiederherstellen?', confirm: 'Wiederherstellen', danger: true });
+        });
+
+        show(templates[0].reason);
+    });
+</script>

@@ -112,7 +112,7 @@ class Main < Sinatra::Base
                     ['#teachers', 'Lehrkräfte'], ['#sus', 'Schüler:innen'], ['#external_users', 'Externe'],
                     ['#website', 'Website'], ['#tablets', 'Tablets'], ['#monitor', 'Monitor'], ['#bibliothek', 'Bibliothek'],
                 ], nil],
-                ['Seiten', [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile']], nil],
+                ['Seiten', [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o']], nil],
                 ['LogoDIDACT', [['/api/all_sus_logo_didact', 'Alle SuS'], ['/api/all_lul_logo_didact', 'Alle Lehrkräfte']], 'fa-download'],
                 ['Untis', [['/api/all_sus_untis', 'Alle SuS'], ['/api/all_kurse_untis', 'Alle Kurse']], 'fa-download'],
                 ['Informatik-Biber', [['/api/all_users_informatik_biber.xlsx', 'Anmeldungen (Excel)'], ['/api/all_users_informatik_biber', 'Zugangsdaten (Text)']], 'fa-download'],

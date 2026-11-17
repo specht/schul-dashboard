@@ -3111,7 +3111,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
 
 .pv-week-row {
     display: grid;
-    grid-template-columns: 42px auto 1fr auto;
+    /* fixed columns: every title starts at the same place */
+    grid-template-columns: 42px 40px minmax(0, 1fr) auto;
     align-items: center;
     gap: 10px;
     width: 100%;
@@ -3130,10 +3131,27 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .pv-week-row .pv-ag-subj {
-    min-width: 34px;
+    min-width: 0;
+    width: 40px;
     height: 28px;
+    padding: 0 2px;
     border-radius: 8px;
     font-size: 11px;
+    overflow: hidden;
+}
+
+/* no subject colour (cancelled): a quiet chip, as in the day */
+.pv-week-row:not([style*='--c']) .pv-ag-subj {
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+}
+
+.pv-week-room {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
 }
 
 .pv-week-time {
@@ -3171,4 +3189,48 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .pv-week-row.pv-ag-off .pv-week-title {
     text-decoration: line-through;
     color: var(--pv-muted);
+}
+
+/* the "Kurse" sheet: its links as list rows */
+.pv-sheet-links {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 6px;
+}
+
+.pv-sheet-links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 8px;
+    border-radius: 10px;
+    color: var(--pv-ink) !important;
+    text-decoration: none !important;
+    font-size: 1rem;
+}
+
+.pv-sheet-links a + a {
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-sheet-links a::after {
+    content: "";
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border: solid var(--pv-muted);
+    border-width: 0 2px 2px 0;
+    transform: rotate(-45deg);
+}
+
+.pv-sheet-links a.active {
+    background: var(--acc-soft);
+    color: var(--acc-text) !important;
+    font-weight: 700;
+}
+
+.pv-link-sheet {
+    max-height: 80vh;
+    overflow-y: auto;
 }

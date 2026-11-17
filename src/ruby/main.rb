@@ -3808,6 +3808,7 @@ class Main < Sinatra::Base
         sent_messages = []
         messages_preview = {:new_ids => [], :nc_logins => {}}
         stored_events = []
+        pv_events_archive = nil
         stored_groups = []
         stored_angebote = []
         stored_polls = []
@@ -4048,37 +4049,15 @@ class Main < Sinatra::Base
             unless user_with_role_logged_in?(:can_create_events)
                 redirect "#{WEB_ROOT}/", 302
             else
-                stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'], :recipient => x['u.email']} }
-                    MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
-                    WHERE COALESCE(e.deleted, false) = false
-                    WITH e
-                    OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
-                    WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
-                    RETURN e, u.email
-                    ORDER BY e.date DESC, e.start_time DESC, e.id;
-                END_OF_QUERY
+                if ui_preview?
+                    # Neues Design: what is coming and the last four weeks,
+                    # older events on demand (/api/get_events_archive)
+                    stored_events = organized_events(@session_user[:email], events_recent_from, nil)
+                    pv_events_archive = organized_events_archive_years(@session_user[:email], events_recent_from)
+                else
+                    stored_events = organized_events(@session_user[:email])
+                end
                 external_users_for_session_user = external_users_for_session_user()
-                temp = {}
-                temp_order = []
-                stored_events.each do |x|
-                    unless temp[x[:info][:id]]
-                        t = Time.parse(x[:info][:date])
-                        temp[x[:info][:id]] = {
-                            :recipients => [],
-                            :eid => x[:info][:id],
-                            :info => x[:info],
-                            :dow => t.wday
-                        }
-                        temp_order << x[:info][:id]
-                    end
-                    temp[x[:info][:id]][:recipients] << x[:recipient]
-                end
-                stored_events = temp_order.map do |x|
-                    e = temp[x]
-                    e[:info][:start_time] = fix_h_to_hh(e[:info][:start_time])
-                    e[:info][:end_time] = fix_h_to_hh(e[:info][:end_time])
-                    e
-                end
             end
         elsif path == 'groups'
             unless user_with_role_logged_in?(:can_write_messages)

@@ -210,3 +210,25 @@ test('Neues Design: Tabler-Icons statt Fork Awesome', async ({ page }) => {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Fonts: the new design's own, self-hosted fonts instead of the font choice
+test('Neues Design: eigene Schriften', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/profil');
+  expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).not.toContain('Atkinson');
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/profil');
+    expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('Atkinson Hyperlegible Next');
+    expect(await page.locator('h2').first().evaluate((el) => getComputedStyle(el).fontFamily)).toContain('Bricolage Grotesque');
+    // really loaded, from the dashboard itself
+    await page.evaluate(() => document.fonts.ready);
+    const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '')));
+    expect(loaded).toContain('Atkinson Hyperlegible Next');
+    expect(loaded).toContain('Bricolage Grotesque');
+    await expect(page.locator('#font_preview_note')).toBeVisible();
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

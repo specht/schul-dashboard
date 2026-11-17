@@ -25,6 +25,28 @@ html {
     --analog-opacity: 0 !important;
 }
 
+/* Fonts of the new design (include/fonts-v2): very readable text, a font
+   with character for headings. The font choice in the profile belongs to
+   today's design. */
+.ui-preview {
+    --pv-text: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'Bricolage Grotesque', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+    --pv-mono: 'Atkinson Hyperlegible Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-family: var(--pv-text) !important;
+    letter-spacing: normal !important;
+}
+
+.ui-preview h1, .ui-preview h2, .ui-preview h3, .ui-preview h4,
+.ui-preview .navbar-brand, .ui-preview .modal-title {
+    font-family: var(--pv-display) !important;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.ui-preview code, .ui-preview pre, .ui-preview kbd, .ui-preview .tnum {
+    font-family: var(--pv-mono) !important;
+}
+
 /* feedback while the new design is a preview */
 .design-feedback-button {
     position: fixed;

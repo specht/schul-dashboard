@@ -227,10 +227,30 @@
     window.pv_menu_links = function(toggle_id) {
         var menu = document.querySelector('[aria-labelledby="' + toggle_id + '"]');
         if (!menu) return [];
-        return Array.prototype.map.call(menu.querySelectorAll('a.dropdown-item[href]'), function(a) {
+        return Array.prototype.map.call(menu.querySelectorAll('a.dropdown-item[href]:not([data-meeting])'), function(a) {
             var label = a.querySelector('.label');
             // [label, href, group size, one's own]
             return [(label || a).textContent.trim(), a.getAttribute('href'), a.getAttribute('data-count'), a.getAttribute('data-own') === '1'];
         }).filter(function(x) { return x[0] && x[1] && x[1].charAt(0) === '/'; });
     };
+
+    // the Kursbuch entries (Planung) in the school's class order, grade 5
+    // first, then by name – each part of the menu (between dividers) on its own
+    function sort_course_menu() {
+        var menu = document.querySelector('[aria-labelledby="navbarDropdownKurse"]');
+        if (!menu) return;
+        var parts = [[]];
+        Array.prototype.slice.call(menu.children).forEach(function(el) {
+            if (el.classList.contains('dropdown-divider')) parts.push(el, []);
+            else parts[parts.length - 1].push(el);
+        });
+        var key = function(a) { return parseInt(a.getAttribute('data-order') || '999', 10); };
+        var name = function(a) { return a.textContent.trim(); };
+        parts.forEach(function(part) {
+            if (!Array.isArray(part)) { menu.appendChild(part); return; }
+            part.sort(function(a, b) { return key(a) - key(b) || name(a).localeCompare(name(b), 'de'); });
+            part.forEach(function(el) { menu.appendChild(el); });
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sort_course_menu); else sort_course_menu();
 })();

@@ -2841,12 +2841,23 @@ class Main < Sinatra::Base
                         io.puts "</a>"
                         io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKurse'>"
                         taken_lesson_keys = Set.new()
+                        # team meetings ("Team Klasse 6") are no lessons: data-meeting
+                        # (the new design leaves them out of the Kursbuch entries)
+                        # the position of the course's first class in the school's order
+                        # (grade 5 first): data-order, the new design sorts by it
+                        class_order = lambda do |info|
+                            (info[:klassen] || []).map { |k| @@klassen_order.index(k) || 999 }.min || 999
+                        end
+                        meeting = lambda do |info|
+                            ((info[:klassen] || []).any? { |k| k.to_s.downcase == 'team' } ||
+                             (@@faecher[info[:fach]] || info[:fach]).to_s =~ /\Ateam\b/i) ? " data-meeting='1'" : ''
+                        end
                         (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
                             lesson_info = @@lessons[:lesson_keys][lesson_key]
                             if lesson_info
                                 fach = lesson_info[:fach]
                                 fach = @@faecher[fach] if @@faecher[fach]
-                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}' data-order='#{class_order.call(lesson_info)}'#{meeting.call(lesson_info)}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
                                 taken_lesson_keys << lesson_key
                             end
                         end
@@ -2865,7 +2876,7 @@ class Main < Sinatra::Base
                                     if lesson_info
                                         fach = lesson_info[:fach]
                                         fach = @@faecher[fach] if @@faecher[fach]
-                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}' data-order='#{class_order.call(lesson_info)}'#{meeting.call(lesson_info)}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
                                     end
                                 end
                             end

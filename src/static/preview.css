@@ -3252,3 +3252,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
     max-height: 80vh;
     overflow-y: auto;
 }
+
+/* team meetings are no lessons: not among the Kursbuch entries (main.rb, data-meeting) */
+.ui-preview .navbar .dropdown-item[data-meeting] {
+    display: none !important;
+}

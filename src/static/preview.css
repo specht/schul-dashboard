@@ -3685,3 +3685,14 @@ body.ui-preview:has(.container-fluid.solid)::before {
     outline: none;
     box-shadow: none;
 }
+
+@media (max-width: 767px) {
+    body.ui-preview:not(.pv-agenda-on) .nav-quick-search-nav .nav-item {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+}

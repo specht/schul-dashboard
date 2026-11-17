@@ -80,6 +80,9 @@ test('Neues Design: Umfrage anlegen, durchführen, beantworten, auswerten', asyn
     await page.locator('#bu_save_poll_run').click();
     expect((await runSaved).status()).toBe(200);
     await page.locator('#bu_close_poll_run_modal').evaluate((b: HTMLElement) => b.click());
+    await expect(runModal).toBeHidden();
+    // closing went back over the dialog's history entry (pv_back): let it settle
+    await page.waitForFunction(() => !(history.state && history.state.pvLayer));
 
     await page.goto('/polls');
     const run = page.locator('.pv-poll', { hasText: title }).locator('.pv-run');

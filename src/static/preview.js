@@ -318,7 +318,7 @@
     // permissions): tools are copied into the sections, Lerngruppen is moved;
     // the original menus stay in the page, hidden (the Kurse sheet and the
     // search read them).
-    var SCHULE = /^\/(events|polls|prepare_vote|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
+    var SCHULE = /^\/(events|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
     var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpost|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound)(\/|$)/;
     var MAX_COURSES = 6;
 
@@ -401,7 +401,7 @@
         // sections before the search / profile at the bottom
         var anchor = main_nav.querySelector('.nav-quick-search-item') || main_nav.querySelector('.nav-item.dropdown:last-child');
         // "Schule": the most used first, the seasonal ones last
-        var ORDER = ['/events', '/polls', '/bibliothek', '/mailing_lists', '/prepare_vote', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
+        var ORDER = ['/events', '/polls', '/bibliothek', '/mailing_lists', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
         var rank = function(a) {
             var href = a.getAttribute('href') || '';
             for (var i = 0; i < ORDER.length; i++) if (href.indexOf(ORDER[i]) === 0) return i;
@@ -413,7 +413,7 @@
         // sub-groups of the larger sections, in this order
         var SUB = {
             schule: [
-                ['Planen & Abstimmen', /^\/(events|polls|prepare_vote|mailing_lists|groups|zufallsgruppen|kurslisten)/],
+                ['Planen & Abstimmen', /^\/(events|polls|mailing_lists|groups|zufallsgruppen|kurslisten)/],
                 ['Angebote', /^\/(bibliothek|angebote|lehrbuchverein|mittagessen|klassenmemory_assign|salzh)/],
                 ['Projekte & Aktionen', /^\/(projekttage|pk5|lab8|lab9|up)(\/|_|$)/],
                 ['Gremien', /^\/(gev|agr_app)|^https:\/\/sv\./],
@@ -626,7 +626,53 @@
             foot_list.appendChild(li);
         } else collapse.querySelector('.navbar-nav').appendChild(line);
     }
-    function later() { more_search(); weekday_columns(); help_tile(); legal_line(); }
+    // phones, "Mehr": tiles fill their rows. The grids have six columns, a
+    // tile spans two; a row that isn't full spreads its tiles: two left over
+    // take half the width each, one left over turns the last four into two
+    // rows of two (never a lonely tile). Separators start a new group.
+    function balance_tiles() {
+        var shown = function(el) { return getComputedStyle(el).display !== 'none'; };
+        var by_order = function(a, b) { return (parseInt(getComputedStyle(a).order, 10) || 0) - (parseInt(getComputedStyle(b).order, 10) || 0); };
+        var apply = function(run, per_row) {
+            run.forEach(function(el) { el.classList.remove('pv-span-2', 'pv-span-3', 'pv-span-6'); el.classList.add(per_row === 2 ? 'pv-span-3' : 'pv-span-2'); });
+            var n = run.length, rest = n % per_row;
+            if (rest === 0) return;
+            var wide = function(list, cls) { list.forEach(function(el) { el.classList.remove('pv-span-2', 'pv-span-3'); el.classList.add(cls); }); };
+            if (per_row === 2 || n === 1) { wide([run[n - 1]], 'pv-span-6'); return; }
+            if (rest === 2) wide(run.slice(n - 2), 'pv-span-3');
+            else wide(run.slice(Math.max(0, n - 4)), 'pv-span-3');
+        };
+        var groups = function(holder, is_tile, per_row, sort) {
+            if (!holder) return;
+            var run = [];
+            var kids = Array.prototype.slice.call(holder.children).filter(shown);
+            if (sort) kids.sort(by_order);
+            kids.forEach(function(el) {
+                if (is_tile(el)) run.push(el);
+                else { if (run.length) apply(run, per_row); run = []; }
+            });
+            if (run.length) apply(run, per_row);
+        };
+        var collapse = document.querySelector('.ui-preview #navbarTogglerDemo02');
+        if (!collapse) return;
+        // the top level and the profile's tiles share one grid on phones
+        // (preview.css: the profile item dissolves), in their CSS order
+        var top = collapse.querySelector('.navbar-nav:not(.pv-nav-foot)');
+        var profile_menu = collapse.querySelector('[aria-labelledby="navbarDropdownProfile"]');
+        var first_tiles = [];
+        if (top) Array.prototype.slice.call(top.children).filter(shown).forEach(function(el) {
+            if (el.classList.contains('nav-item') && !el.classList.contains('dropdown') && !el.classList.contains('pv-nav-section') && !el.classList.contains('nav-quick-search-item') && !el.classList.contains('pv-more-search')) first_tiles.push(el);
+        });
+        if (profile_menu) Array.prototype.slice.call(profile_menu.children).filter(shown).forEach(function(el) {
+            if (el.classList.contains('dropdown-item') && !el.classList.contains('switch-session')) first_tiles.push(el);
+        });
+        first_tiles.sort(by_order);
+        if (first_tiles.length) apply(first_tiles, 3);
+        collapse.querySelectorAll('.pv-nav-body').forEach(function(body) {
+            groups(body, function(el) { return el.classList.contains('pv-nav-entry'); }, 3, false);
+        });
+    }
+    function later() { more_search(); weekday_columns(); help_tile(); legal_line(); balance_tiles(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });
 })();
 

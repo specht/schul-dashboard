@@ -13,6 +13,15 @@ in [doc/Gestaltung.md](../../doc/Gestaltung.md).
   grey box inside a card: sections, hairlines and spacing instead; facts as a
   quiet line with commas; actions in lists as quiet text buttons, delete as a
   red icon. First applied to the polls list.
+- **Page types (2026-11-17).** The maintainer accepted all six recommendations
+  of the page pattern proposal: one or two visible actions plus a ••• menu
+  (delete always inside), the main action in the page header on phones,
+  width by page type (lists, forms, reading at most about 980 px; tables,
+  timetable, admin overviews full width), current sub-items as rows with
+  finished ones folded, short forms in a dialog / long editors full height,
+  tables as list rows on phones (real matrices scroll sideways). Long lists:
+  current first, older by school year, blocks of 50. Written up in
+  doc/Gestaltung.md, "Seitentypen".
 
 - **Opt-in first, switch at the end.** Users try the new design voluntarily;
   only when it has proven itself does it become the default, with a way back

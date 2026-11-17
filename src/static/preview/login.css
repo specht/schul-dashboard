@@ -510,3 +510,12 @@ body.ui-preview.pv-public:has(.otp-page) .foot {
     width: fit-content;
     margin: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) auto;
 }
+
+/* under the address field: the beginning is enough (the server completes a
+   unique prefix, include/login.rb) */
+.ui-preview .pv-login .pv-login-field-hint {
+    margin: -4px 2px 2px;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: var(--pv-muted);
+}

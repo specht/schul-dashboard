@@ -35,6 +35,28 @@ class DesignTokensTest < Minitest::Test
         assert_equal [], missing
     end
 
+    # neighbours on the gradient that are often taught by the same person can
+    # be told apart in most schemes (colour distance ΔE76, median over schemes)
+    def test_neighbouring_subjects_differ
+        lab = lambda do |hex|
+            r, g, b = T.hex_to_rgb(hex).map { |v| v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055)**2.4 }
+            x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047
+            y = r * 0.2126 + g * 0.7152 + b * 0.0722
+            z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883
+            f = ->(v) { v > 0.008856 ? v**(1.0 / 3) : 7.787 * v + 16.0 / 116 }
+            [116 * f.(y) - 16, 500 * (f.(x) - f.(y)), 200 * (f.(y) - f.(z))]
+        end
+        [%w(ma in), %w(ma bio), %w(ma ph), %w(ge pw), %w(en la)].each do |a, b|
+            [false, true].each do |dark|
+                d = COLOR_SCHEME_COLORS.map do |entry|
+                    t = T.tokens(entry[0], dark)
+                    lab.(t["--subj-#{a}"]).zip(lab.(t["--subj-#{b}"])).sum { |p, q| (p - q)**2 }**0.5
+                end.sort
+                assert_operator d[d.size / 2], :>=, 15, "#{a}/#{b} #{dark ? 'dunkel' : 'hell'}: Median #{d[d.size / 2].round}"
+            end
+        end
+    end
+
     def test_subject_colours_are_readable_in_every_scheme
         each_scheme do |code, name, dark|
             t = T.tokens(code, dark)

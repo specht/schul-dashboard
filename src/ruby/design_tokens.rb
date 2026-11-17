@@ -71,14 +71,23 @@ module DesignTokens
         ":root { " + tokens(color_scheme, dark).map { |k, v| "#{k}: #{v};" }.join(' ') + " }"
     end
 
+    # Neighbouring subjects must be told apart, also in schemes with nearly
+    # one colour: the less the scheme's hues differ, the more the hue is
+    # spread along the gradient (up to ±60°), and the lightness goes up and
+    # down along it (a wave with period 0.16: subjects 0.08 apart, e.g.
+    # Mathematik and Informatik, get opposite tones). Readability stays the
+    # floor: at least 4.5:1 for white text (light) / dark text (dark).
+    LIGHTNESS_PERIOD = 0.16
+    LIGHTNESS_RANGE = 5.0   # contrast added at the darkest (light mode) / lightest (dark mode) tone
     def self.subject_colour(colors, t, spread, dark, surface)
         c = gradient(colors, t)
         h, l, s = rgb_to_hls(c)
-        # nearly one-coloured schemes (e.g. Sky): spread the hue a little
-        h = (h + (t - 0.5) * 70.0 / 360.0) % 1.0 if spread < 40
+        k = [140 - spread, 0].max.clamp(0, 120)
+        h = (h + (t - 0.5) * k / 360.0) % 1.0
         s = [s, 0.45].max
         c = hls_to_rgb(h, l, s)
-        dark ? adjust(c, surface, 5.0, :lighter) : adjust(c, [1, 1, 1], 4.5, :darker)
+        wave = 0.5 + 0.5 * Math.cos(2 * Math::PI * t / LIGHTNESS_PERIOD)
+        dark ? adjust(c, surface, 5.0 + LIGHTNESS_RANGE * wave, :lighter) : adjust(c, [1, 1, 1], 4.5 + LIGHTNESS_RANGE * wave, :darker)
     end
 
     # Text over the left 60 % of the backdrop band: the colour (white or ink)

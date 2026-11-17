@@ -5,7 +5,8 @@
     }
 
     /* new design (preview): the text colour that belongs to the subject colour */
-    .ui-preview .fc-v-event.pv-subject .fc-event-main, .ui-preview .fc-h-event.pv-subject .fc-event-main {
+    .ui-preview .fc-v-event.pv-subject .fc-event-main, .ui-preview .fc-h-event.pv-subject .fc-event-main,
+    .ui-preview .fc-v-event.pv-quiet .fc-event-main, .ui-preview .fc-h-event.pv-quiet .fc-event-main {
         color: inherit;
     }
 
@@ -151,7 +152,7 @@
     </div>
 </div>
 
-<div class="modal" id="lessonModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal pv-sheet" id="lessonModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -194,7 +195,7 @@
     </div>
 </div>
 
-<div class="modal" id="mailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal pv-sheet" id="mailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -639,8 +640,15 @@ function preview_subject_color(event) {
 
 // text on the subject colours: they are computed for white text in light
 // mode and for dark text in dark mode (design_tokens.rb)
+// Everything that is not a lesson taking place (events, birthdays,
+// cancelled lessons, break duties) is a calm surface without colour.
 function preview_text_color(event) {
-    if (!preview_subject_color(event)) return;
+    if (!document.body || !document.body.classList.contains('ui-preview')) return;
+    if (!preview_subject_color(event)) {
+        event.textColor = event.entfall ? 'var(--pv-muted)' : 'var(--pv-ink)';
+        event.classNames = (event.classNames || []).concat(['pv-quiet'], event.entfall ? ['pv-off'] : []);
+        return;
+    }
     event.textColor = document.body.classList.contains('dark') ? '#0a1222' : '#ffffff';
     event.classNames = (event.classNames || []).concat(['pv-subject']);
 }
@@ -816,6 +824,7 @@ function install_preview_agenda_swipe() {
 function timetable_event_color(event) {
     let subject_color = preview_subject_color(event);
     if (subject_color) return subject_color;
+    if (document.body && document.body.classList.contains('ui-preview')) return 'var(--pv-hover)';
     if (event.is_event)
         return #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'};
     if (event.entfall)
@@ -1400,7 +1409,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 raum.addClass('condensed');
 
                 raum.css('position', 'absolute').css('right', '-1px');
-                raum.css('background-color', preview_subject_color(arg.event.extendedProps) || #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.primary'});
+                // new design: on calm surfaces (no subject colour) the room has no box
+                raum.css('background-color', preview_subject_color(arg.event.extendedProps) || (document.body.classList.contains('ui-preview') ? 'transparent' : #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.primary'}));
                 raum.css('padding-right', '2px');
 
                 raum.css('padding-left', '4px');
@@ -2150,6 +2160,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             else
                 $('.sus-notes-here').hide();
+
+            // Neues Design (Vorschau): the dialog in the lesson's subject colour
+            let pv_dialog = document.querySelector('#lessonModal .modal-content');
+            let pv_color = preview_subject_color(event);
+            if (pv_color) pv_dialog.style.setProperty('--c', pv_color); else pv_dialog.style.removeProperty('--c');
 
             $('#lessonModal').modal('show');
         }

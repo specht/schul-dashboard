@@ -296,6 +296,9 @@ class Main < Sinatra::Base
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
                     cursor: pointer;
                 }
+                body.modal-open .design-quick-toggle {
+                    display: none;
+                }
                 .design-quick-toggle:hover, .design-quick-toggle:focus-visible {
                     opacity: 1;
                 }

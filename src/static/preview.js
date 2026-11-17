@@ -49,4 +49,56 @@
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
     window.addEventListener('resize', place_open_menus);
+
+    // Phones: dialogs with .pv-sheet are sheets (preview.css) – pull one down to
+    // close it, from its header or from its content when that is scrolled
+    // to the top. Not far enough: it springs back.
+    var sheet = null;   // { content, y, t, dragging, dy }
+    function sheet_move(content, y, ms) {
+        content.style.transition = ms ? 'transform ' + ms + 'ms ease-out' : 'none';
+        content.style.transform = y ? 'translateY(' + y + 'px)' : '';
+    }
+    document.addEventListener('touchstart', function(e) {
+        sheet = null;
+        if (SIDEBAR.matches || e.touches.length !== 1 || !e.target.closest) return;
+        // on the sheet or on the veil above it
+        var modal = e.target.closest('.pv-sheet.show');
+        if (!modal) return;
+        var content = modal.querySelector('.modal-content');
+        if (!content) return;
+        var body = content.querySelector('.modal-body');
+        if (body && body.contains(e.target) && body.scrollTop > 0) return;
+        if (e.target.closest('textarea, input, select')) return;
+        sheet = { modal: modal, content: content, y: e.touches[0].clientY, t: Date.now(), dragging: false, dy: 0 };
+    }, { passive: true });
+    document.addEventListener('touchmove', function(e) {
+        if (!sheet || e.touches.length !== 1) return;
+        var dy = e.touches[0].clientY - sheet.y;
+        if (!sheet.dragging) {
+            if (dy < -8) { sheet = null; return; }
+            if (dy < 8) return;
+            sheet.dragging = true;
+        }
+        e.preventDefault();
+        sheet.dy = Math.max(0, dy);
+        sheet_move(sheet.content, sheet.dy, 0);
+    }, { passive: false });
+    function sheet_end() {
+        if (!sheet) return;
+        var s = sheet;
+        sheet = null;
+        if (!s.dragging) return;
+        var quick = Date.now() - s.t < 250 && s.dy > 30;
+        if (s.dy > 90 || quick) {
+            sheet_move(s.content, s.content.offsetHeight + 20, 180);
+            setTimeout(function() {
+                if (window.jQuery) window.jQuery(s.modal).modal('hide');
+                setTimeout(function() { sheet_move(s.content, 0, 0); }, 50);
+            }, 180);
+        } else {
+            sheet_move(s.content, 0, 160);
+        }
+    }
+    document.addEventListener('touchend', sheet_end);
+    document.addEventListener('touchcancel', sheet_end);
 })();

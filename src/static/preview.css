@@ -74,6 +74,7 @@ html {
    menu). The pages themselves appear unchanged in the content area. */
 
 .ui-preview {
+    --pv-sidebar: 288px;
     --pv-surface: #ffffff;
     --pv-line: #dfe3e8;
     --pv-ink: #131b26;
@@ -144,7 +145,7 @@ html {
 @media (min-width: 768px) {
     .ui-preview {
         padding-top: 0;
-        padding-left: 264px;
+        padding-left: var(--pv-sidebar);
     }
 
     .ui-preview .navbar {
@@ -153,7 +154,7 @@ html {
         bottom: 0;
         left: 0;
         right: auto;
-        width: 264px;
+        width: var(--pv-sidebar);
         flex-direction: column;
         flex-wrap: nowrap;
         align-items: stretch;
@@ -200,6 +201,26 @@ html {
     .ui-preview .navbar .nav-item {
         width: 100%;
         border: 0 !important;
+        /* styles.css spaces the items of the old horizontal bar */
+        padding: 0;
+        margin: 0;
+    }
+
+    /* menus open to the side: a chevron pointing there, at the right edge */
+    .ui-preview .navbar .navbar-collapse .dropdown-toggle::after {
+        content: "";
+        margin-left: auto;
+        width: 7px;
+        height: 7px;
+        border: solid var(--pv-muted);
+        border-width: 0 2px 2px 0;
+        transform: rotate(-45deg);
+        vertical-align: middle;
+        flex: none;
+    }
+
+    .ui-preview .navbar .nav-item.dropdown.show > .dropdown-toggle::after {
+        border-color: var(--pv-ink);
     }
 
     .ui-preview .navbar .nav-link {
@@ -276,7 +297,7 @@ html {
        the sidebar itself stays short and never scrolls */
     .ui-preview .navbar .dropdown-menu {
         position: fixed !important;
-        left: 264px !important;
+        left: var(--pv-sidebar) !important;
         top: var(--pv-menu-top, 12px) !important;
         right: auto !important;
         transform: none !important;
@@ -284,7 +305,7 @@ html {
         margin: 0 0 0 6px;
         padding: 6px;
         min-width: 236px;
-        max-width: calc(100vw - 264px - 24px);
+        max-width: calc(100vw - var(--pv-sidebar) - 24px);
         max-height: var(--pv-menu-max, calc(100vh - 24px)) !important;
         overflow-y: auto !important;
         column-gap: 4px;
@@ -314,11 +335,11 @@ html {
     }
 
     .ui-preview .foot {
-        left: 264px;
+        left: var(--pv-sidebar);
     }
 
     .ui-preview .design-feedback-button {
-        left: calc(264px + 12px);
+        left: calc(var(--pv-sidebar) + 12px);
     }
 }
 
@@ -721,4 +742,408 @@ html {
 .pv-ag-time {
     color: var(--pv-muted);
     font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Timetable: toolbar and the switcher (Kürzel, classes, rooms) ---------- */
+.ui-preview .fc .fc-button-primary,
+.ui-preview .fc .fc-button-primary:not(:disabled):active,
+.ui-preview .fc .fc-button-primary:not(:disabled).fc-button-active {
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.ui-preview .fc .fc-button-primary:hover {
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview .fc .fc-button-primary:disabled {
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+    opacity: 0.7;
+}
+
+.ui-preview .fc .fc-button {
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-weight: 600;
+}
+
+.ui-preview .fc .fc-button-group > .fc-button:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.ui-preview .fc .fc-button-group > .fc-button:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: -1px;
+}
+
+.ui-preview .fc .fc-button:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+}
+
+/* the switcher as a panel of its own */
+.ui-preview .timetable_chooser > div:not(.hint) {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.ui-preview .timetable_chooser hr {
+    border-top: 1px solid var(--pv-line);
+    margin: 8px 0 10px;
+}
+
+.ui-preview .ttc {
+    width: auto;
+    min-width: 44px;
+    padding: 4px 10px;
+    margin: 0 2px 6px 0;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    box-shadow: none;
+    font-weight: 600;
+    text-align: center;
+}
+
+.ui-preview .ttc:hover {
+    background: var(--acc-soft);
+    border-color: transparent;
+    color: var(--acc-text);
+}
+
+.ui-preview .ttc.active {
+    background: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+    box-shadow: none;
+    font-weight: 700;
+}
+
+/* "Alle Lehrkräfte", "Alle Klassen", "Alle Räume": quiet text buttons */
+.ui-preview .ttc[class*='bu-show-alle'] {
+    min-width: 0;
+    background: transparent;
+    border: 1px solid var(--pv-line);
+    color: var(--acc-text);
+    font-weight: 600;
+    padding: 3px 10px !important;
+}
+
+/* ---------- Dialogs ---------- */
+.ui-preview .modal-content {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.ui-preview .modal-header {
+    border-bottom: 1px solid var(--pv-line);
+    padding: 16px 20px 12px;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.ui-preview .modal-title {
+    font-family: var(--pv-display);
+    font-weight: 700;
+}
+
+.ui-preview .modal-body hr {
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .modal-footer {
+    border-top: 1px solid var(--pv-line);
+    padding: 10px 16px;
+    gap: 6px;
+}
+
+.ui-preview .modal-footer > * {
+    margin: 0;
+}
+
+.ui-preview .modal-footer .btn {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* the lesson dialog: a band in the subject colour, the room as a chip,
+   quiet buttons and one accent action */
+.ui-preview #lessonModal .modal-header {
+    border-top: 6px solid var(--c, var(--acc));
+}
+
+.ui-preview #lessonModal .zeitpunkt {
+    font-family: var(--pv-text);
+    font-weight: normal;
+    color: var(--pv-muted);
+    margin-top: 4px;
+}
+
+.ui-preview #lessonModal .raum-label:not(:empty) {
+    flex: none;
+    font-size: 1rem !important;
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--pv-hover);
+}
+
+/* the substitution note: a band across the whole dialog, right below the
+   header (body padding 1rem + column padding 15px) */
+.ui-preview #lessonModal .vertretungs-text:not(:empty) {
+    margin: -1rem calc(-15px - 1rem) 1rem;
+    padding: 12px calc(15px + 1rem);
+    border: 0;
+    border-radius: 0;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+.ui-preview #lessonModal .modal-body {
+    box-shadow: none;
+}
+
+.ui-preview #lessonModal .modal-footer .btn-warning,
+.ui-preview #lessonModal .modal-footer .btn-secondary {
+    background: var(--pv-hover);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #lessonModal .modal-footer .btn-success {
+    background: var(--acc);
+    border: 1px solid var(--acc);
+    color: var(--acc-ink);
+}
+
+/* phones: dialogs with .pv-sheet (lesson, parent mail) as a sheet from the bottom */
+@media (max-width: 767px) {
+    /* styles.css keeps dialogs 1.5em off the bottom edge */
+    .ui-preview .pv-sheet {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .ui-preview .pv-sheet .modal-dialog {
+        margin: 0;
+        max-width: none;
+        min-height: 100%;
+        height: 100%;
+        /* Bootstrap leaves 1rem free below scrollable dialogs */
+        max-height: none;
+        justify-content: flex-end;
+        align-items: stretch;
+    }
+
+    /* the grab handle: pull down to close (preview.js) */
+    .ui-preview .pv-sheet .modal-content::before {
+        content: "";
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        margin-left: -20px;
+        border-radius: 2px;
+        background: var(--pv-line);
+        z-index: 1;
+    }
+
+    .ui-preview .pv-sheet .modal-header {
+        padding-top: 26px;
+    }
+
+    .ui-preview .pv-sheet .modal-content {
+        border-radius: 20px 20px 0 0;
+        max-height: 90svh;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* slides up from the bottom edge (these dialogs have no Bootstrap fade) */
+    .ui-preview .pv-sheet.show .modal-content {
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .ui-preview .pv-sheet .modal-footer {
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 10px 12px;
+    }
+
+    .ui-preview .pv-sheet .modal-footer .btn {
+        flex: none;
+        font-size: 0.9rem;
+        padding: 6px 10px;
+    }
+
+    /* "Schließen" at the end of the row */
+    .ui-preview .pv-sheet .modal-footer [data-dismiss='modal'] {
+        margin-left: auto;
+    }
+}
+
+/* nothing floats over an open dialog */
+.ui-preview.modal-open .design-feedback-button {
+    display: none;
+}
+
+@keyframes pv-sheet-up {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-preview .pv-sheet.show .modal-content {
+        animation: none;
+    }
+}
+
+/* ---------- Timetable grid (the week on desktop) ---------- */
+.ui-preview .fc .fc-view-harness {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: 16px;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.ui-preview .fc table {
+    background: transparent;
+}
+
+.ui-preview .fc-scrollgrid {
+    border-radius: 16px;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.ui-preview .fc-theme-standard td,
+.ui-preview .fc-theme-standard th,
+.ui-preview .fc-theme-standard .fc-scrollgrid {
+    border-color: var(--pv-line);
+}
+
+.ui-preview .fc .fc-col-header-cell-cushion {
+    color: var(--pv-ink);
+    font-family: var(--pv-display);
+    font-weight: 700;
+    padding: 8px 4px;
+}
+
+.ui-preview .fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+    color: var(--acc-text);
+}
+
+.ui-preview .fc-timegrid-col.fc-day-today,
+.ui-preview .fc-daygrid-day.fc-day-today {
+    background-color: color-mix(in srgb, var(--acc-soft) 55%, transparent) !important;
+}
+
+.ui-preview .fc .fc-timegrid-slot-label-cushion,
+.ui-preview .fc .fc-timegrid-axis-cushion {
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .fc .fc-timegrid-now-indicator-line {
+    border-color: var(--acc);
+    border-width: 2px 0 0;
+}
+
+.ui-preview .fc .fc-timegrid-now-indicator-arrow {
+    border-color: var(--acc);
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+}
+
+/* the lessons: rounded blocks, a little lift, no outline */
+.ui-preview .fc-timegrid-event-harness {
+    box-shadow: none;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.ui-preview .fc-v-event {
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.ui-preview .fc-timegrid-event-harness-inset .fc-timegrid-event {
+    box-shadow: 0 0 0 1px var(--pv-surface), 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* events, birthdays, cancelled lessons, duties: calm surfaces (timetable.html,
+   preview_text_color); only lessons carry colour */
+.ui-preview .fc-event.pv-quiet {
+    box-shadow: inset 3px 0 0 var(--pv-line);
+}
+
+.ui-preview .fc-v-event.pv-quiet {
+    box-shadow: inset 3px 0 0 var(--pv-line), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.ui-preview .fc-event.pv-off {
+    background: repeating-linear-gradient(135deg, var(--pv-hover) 0 6px, var(--pv-surface) 6px 12px) !important;
+}
+
+.ui-preview .fc-daygrid-event {
+    border: 0;
+    border-radius: 6px;
+    padding: 1px 4px;
+    margin-bottom: 2px;
+}
+
+.ui-preview .fc-daygrid-event .fc-event-title,
+.ui-preview .fc-daygrid-event .fc-event-time {
+    color: var(--pv-ink);
+}
+
+/* ---------- Hints next to the timetable (weekend, homework) ---------- */
+.ui-preview .hint,
+.ui-preview .weekend_events {
+    font-size: 0.92em;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 0;
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.ui-preview .hint hr,
+.ui-preview .weekend_events hr {
+    border-top: 1px solid var(--pv-line);
+    margin: 8px 0;
+}
+
+.ui-preview .hint b:first-child,
+.ui-preview .weekend_events > p:first-child b {
+    font-family: var(--pv-display);
 }

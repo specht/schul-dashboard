@@ -435,10 +435,41 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
     const duty = page.locator('#pv_agenda .pv-ag-duty');
     await expect(duty).toContainText('Hof Nord');
     await expect(duty).toContainText('7:30–7:45');
+    const cardColour = await card.evaluate((el) => getComputedStyle(el).borderLeftColor);
     await card.click();
     await expect(page.locator('#lessonModal')).toBeVisible();
     await expect(page.locator('#lessonModal .lesson-label')).not.toBeEmpty();
-    await page.locator('#lessonModal').getByRole('button', { name: 'Schließen' }).click();
+    // the dialog: a band in the lesson's colour, a sheet from the bottom on phones
+    await page.waitForTimeout(400);
+    const dialog = await page.evaluate(() => {
+      const header = document.querySelector('#lessonModal .modal-header')!;
+      const content = document.querySelector('#lessonModal .modal-content')!.getBoundingClientRect();
+      return { band: getComputedStyle(header).borderTopColor, bottom: content.bottom, height: window.innerHeight };
+    });
+    expect(dialog.band).toBe(cardColour);
+    expect(Math.abs(dialog.bottom - dialog.height)).toBeLessThan(2);
+    // pulled down by its header, the sheet closes
+    const header = (await page.locator('#lessonModal .modal-header').boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const hx = header.x + header.width / 2, hy = header.y + 20;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: hx, y: hy }] });
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: hx, y: hy + i * 20 }] });
+      await page.waitForTimeout(30);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(page.locator('#lessonModal')).toBeHidden();
+    // also when pulled down on the veil above it
+    await card.click();
+    await expect(page.locator('#lessonModal')).toBeVisible();
+    await page.waitForTimeout(400);
+    const top = (await page.locator('#lessonModal .modal-content').boundingBox())!.y;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: hx, y: top / 2 }] });
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: hx, y: top / 2 + i * 20 }] });
+      await page.waitForTimeout(30);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect(page.locator('#lessonModal')).toBeHidden();
     // swiping left: the next school day, its date as the heading
     const day = () => page.evaluate(() => (window as any).moment((window as any).calendar.getDate()).format('YYYY-MM-DD'));
@@ -498,6 +529,32 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
     }
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/ui-preview/);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Timetable switcher: pills on a panel, the shown timetable in the accent
+test('Neues Design: Stundenplan-Auswahl als Chips', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const active = page.locator('.timetable_chooser .ttc.active').first();
+    await expect(active).toBeVisible();
+    const look = await active.evaluate((el) => {
+      const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
+      return {
+        bg: getComputedStyle(el).backgroundColor,
+        acc: `rgb(${[1, 3, 5].map((i) => parseInt(acc.slice(i, i + 2), 16)).join(', ')})`,
+        radius: parseFloat(getComputedStyle(el).borderTopLeftRadius),
+        cut: el.scrollWidth > el.clientWidth + 1,
+      };
+    });
+    expect(look.bg).toBe(look.acc);
+    expect(look.radius).toBeGreaterThan(10);
+    // no label is cut off (rooms like "Otium" are longer than a Kürzel)
+    expect(await page.locator('.timetable_chooser .ttc:visible').evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth + 1).length)).toBe(0);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

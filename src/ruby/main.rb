@@ -2810,7 +2810,6 @@ class Main < Sinatra::Base
                         if zg_can_use?(ZG_KOLLEGIUM)
                             io.puts "<a class='dropdown-item nav-icon' href='/zufallsgruppen/kollegium'><div class='icon'><i class='fa fa-random'></i></div><span class='label'>Gruppenbildung Kollegium</span></a>"
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                         if user_with_role_logged_in?(:can_use_mailing_lists)
                             io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                         end

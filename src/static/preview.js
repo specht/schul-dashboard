@@ -672,6 +672,74 @@
             groups(body, function(el) { return el.classList.contains('pv-nav-entry'); }, 3, false);
         });
     }
+    // ---------- Back (button or swipe) closes what opened like a screen ----------
+    // Dialogs and sheets (Bootstrap modals), "Mehr" on phones and overlays of
+    // a page's own (pv_back.opened / pv_back.closed) get a history entry when
+    // they open; back closes the top one instead of leaving the page, and
+    // closing one in the page goes back over its entry (doc/Gestaltung.md).
+    var pv_back = (function() {
+        var open = [];          // [{id, close}] in opening order
+        var skip_pop = 0;       // pops caused by our own history.back()
+        var layer = function() { return history.state && history.state.pvLayer; };
+        // a reload with a layer entry on top: nothing is open any more
+        if (layer()) history.replaceState(Object.assign({}, history.state, { pvLayer: null }), '');
+        window.addEventListener('popstate', function(e) {
+            if (skip_pop > 0) { skip_pop--; return; }
+            var want = e.state && e.state.pvLayer;
+            // close every layer above the one the entry belongs to
+            while (open.length && open[open.length - 1].id !== want) {
+                var top = open.pop();
+                try { top.close(); } catch (err) {}
+            }
+        });
+        return {
+            opened: function(id, close) {
+                if (open.some(function(x) { return x.id === id; })) return;
+                open.push({ id: id, close: close });
+                history.pushState(Object.assign({}, history.state || {}, { pvLayer: id }), '');
+            },
+            closed: function(id) {
+                var i = -1;
+                open.forEach(function(x, k) { if (x.id === id) i = k; });
+                if (i < 0) return;              // closed by back already
+                open.splice(i, 1);
+                if (layer() === id) { skip_pop++; history.back(); }
+            }
+        };
+    })();
+    window.pv_back = pv_back;
+    function back_closes_layers() {
+        if (!window.jQuery) return;
+        var $ = window.jQuery;
+        var n = 0;
+        var id_of = function(el) {
+            if (!el.dataset.pvLayer) el.dataset.pvLayer = 'modal-' + (el.id || ++n);
+            return el.dataset.pvLayer;
+        };
+        $(document).on('show.bs.modal', '.modal', function(e) {
+            if (e.target !== e.currentTarget) return;
+            var el = e.currentTarget;
+            pv_back.opened(id_of(el), function() { $(el).modal('hide'); });
+        });
+        $(document).on('hidden.bs.modal', '.modal', function(e) {
+            if (e.target !== e.currentTarget) return;
+            pv_back.closed(id_of(e.currentTarget));
+        });
+        // "Mehr" (phones only; on larger screens the menu is the sidebar)
+        var menu = $('#navbarTogglerDemo02');
+        menu.on('show.bs.collapse', function(e) {
+            if (e.target !== menu[0] || SIDEBAR.matches) return;
+            pv_back.opened('mehr', function() {
+                if (window.pv_menu_hide_now) window.pv_menu_hide_now(); else menu.collapse('hide');
+            });
+        });
+        menu.on('hidden.bs.collapse', function(e) {
+            if (e.target !== menu[0]) return;
+            pv_back.closed('mehr');
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', back_closes_layers); else back_closes_layers();
+
     function later() { more_search(); weekday_columns(); help_tile(); legal_line(); balance_tiles(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });
 })();

@@ -209,6 +209,17 @@ Aktionen und das Verhalten am Handy.
   Modal): sie gleiten hoch, lassen sich nach unten ziehen oder über den
   Schleier schließen und liegen über der Tab-Leiste.
 - Ungespeicherte Änderungen werden vor dem Schließen nachgefragt.
+- **Zurück schließt, was wie ein eigener Bildschirm aufgeht.** Die
+  Zurück-Geste (Wischen vom Rand, Zurück-Taste des Handys oder Browsers)
+  schließt das oberste Sheet, den obersten Dialog, »Mehr« oder eine
+  geöffnete Nachricht und verlässt die Seite nicht. Bootstrap-Dialoge und
+  »Mehr« machen das von selbst (`preview.js`); eigene Ebenen melden sich mit
+  `pv_back.opened(id, schließen)` beim Öffnen und `pv_back.closed(id)` beim
+  Schließen an. Ansichten, die man teilen oder neu laden können soll (eine
+  geöffnete Nachricht), stehen zusätzlich in der Adresse (Hash), damit
+  Neuladen sie wieder öffnet.
+- **Wischgesten** der Seite (Tag für Tag, Karten) beginnen nicht in den
+  äußersten 24 px am Rand: dort liegt die Zurück-Geste des Systems.
 - Auf dem Desktop öffnen sich Menüs der Seitenleiste als Feld daneben (siehe
   3); Menüs im Fuß öffnen sich nach oben.
 

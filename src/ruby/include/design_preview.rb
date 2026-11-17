@@ -47,7 +47,7 @@ class Main < Sinatra::Base
     def design_preview_head(color_scheme)
         return '' unless ui_preview?
         dark = !!(@session_user || {})[:dark]
-        "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark)}</style>\n" +
+        "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, color_scheme)}</style>\n" +
             "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
             "<link href='#{preview_asset('/preview.css')}' rel='stylesheet' />\n" +
             "<script src='#{preview_asset('/preview.js')}'></script>\n" +

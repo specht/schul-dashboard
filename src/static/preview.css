@@ -1894,7 +1894,9 @@ html {
         padding: calc(22px + env(safe-area-inset-top, 0px)) 20px 20px;
         color: var(--band-ink);
         text-shadow: var(--band-shadow);
-        background: linear-gradient(180deg, rgba(var(--band-scrim), var(--band-scrim-a)), rgba(var(--band-scrim), calc(var(--band-scrim-a) * 0.4)));
+        /* at least a light shade behind the text: the real backdrop can have
+           brighter spots than the computed one */
+        background: linear-gradient(180deg, rgba(var(--band-scrim), max(var(--band-scrim-a), 0.18)), rgba(var(--band-scrim), max(calc(var(--band-scrim-a) * 0.4), 0.06)));
     }
 
     .pv-day-band h1 {

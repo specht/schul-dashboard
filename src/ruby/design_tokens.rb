@@ -94,9 +94,15 @@ module DesignTokens
         SUBJECT_SPOTS.include?(key) ? key : nil
     end
 
-    def self.tokens(color_scheme, dark)
+    # backdrop: the scheme whose backdrop is shown (a curated scheme's tokens
+    # come from its tuned colours, its backdrop from its own); its first
+    # letter 'd' means the dark variant of the backdrop
+    def self.tokens(color_scheme, dark, backdrop = nil)
         dark = !!dark
+        backdrop ||= color_scheme
         colors = [1, 7, 13].map { |i| hex_to_rgb(color_scheme.to_s[i, 6] || '000000') }
+        backdrop_colors = [1, 7, 13].map { |i| hex_to_rgb(backdrop.to_s[i, 6] || '000000') }
+        dark_backdrop = dark || backdrop.to_s[0] == 'd'
         main = colors[1]
         # a very light or grey main colour: use the most colourful of the three
         base = colourfulness(main) < 0.12 ? colors.max_by { |c| colourfulness(c) } : main
@@ -109,7 +115,7 @@ module DesignTokens
             '--acc-soft' => rgb_to_hex(mix(acc, surface, dark ? 0.78 : 0.88)),
             '--acc-text' => rgb_to_hex(dark ? adjust(acc, paper, 7.0, :lighter) : adjust(acc, paper, 5.6, :darker)),
         }
-        ink, scrim, alpha = band_text(colors, dark)
+        ink, scrim, alpha = band_text(backdrop_colors, dark_backdrop)
         tokens['--band-ink'] = ink == [1, 1, 1] ? '#ffffff' : '#131b26'
         tokens['--band-shadow'] = ink == [1, 1, 1] ? '0 1px 2px rgba(0,0,0,.25)' : 'none'
         tokens['--band-scrim'] = scrim == [0, 0, 0] ? '0,0,0' : '255,255,255'
@@ -122,8 +128,8 @@ module DesignTokens
     end
 
     # CSS for a <style> element: the tokens on :root
-    def self.css(color_scheme, dark)
-        ":root { " + tokens(color_scheme, dark).map { |k, v| "#{k}: #{v};" }.join(' ') + " }"
+    def self.css(color_scheme, dark, backdrop = nil)
+        ":root { " + tokens(color_scheme, dark, backdrop).map { |k, v| "#{k}: #{v};" }.join(' ') + " }"
     end
 
     # Neighbouring subjects must be told apart, also in schemes with nearly

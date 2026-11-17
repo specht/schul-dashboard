@@ -71,6 +71,20 @@ class DesignTokensTest < Minitest::Test
         end
     end
 
+    # the header text on the backdrop: the dark variant of a backdrop (scheme
+    # code starting with 'd') counts as dark, and the backdrop is the scheme's
+    # own even when its tokens come from tuned colours
+    def test_band_text_on_dark_backdrop
+        light = T.tokens('l4aa03f16795a80bc420', false, 'l4aa03f003f2e80bc420')
+        dark_variant = T.tokens('d4aa03f16795a80bc420', false, 'd4aa03f003f2e80bc420')
+        assert_equal '#ffffff', dark_variant['--band-ink']
+        refute_equal light['--band-scrim-a'], nil
+        COLOR_SCHEME_COLORS.each do |entry|
+            code = 'd' + entry[0][1, 18] + '0'
+            assert_equal '#ffffff', T.tokens(code, false)['--band-ink'], "#{entry[1]}: dunkler Hintergrund"
+        end
+    end
+
     def test_scheme_distance
         sky = 'la2c6e80d60aea2c6e80'
         assert_in_delta 0, T.scheme_distance(sky, sky), 0.001

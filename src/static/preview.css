@@ -3333,8 +3333,39 @@ body.ui-preview:has(.container-fluid.solid)::before {
     padding-bottom: 9px;
 }
 
+/* a double lesson: two single chips tied together – exactly twice the
+   height, a notch left and right in the middle and a faint seam */
 .pv-week-row.pv-week-double .pv-ag-subj {
-    height: 46px;
+    height: 56px;
+}
+
+.pv-week-row.pv-week-double .pv-ag-subj,
+.pv-ag-card.pv-ag-double .pv-ag-subj {
+    position: relative;
+    place-items: start center;
+    padding-top: 8px;
+    -webkit-mask:
+        radial-gradient(circle 4.5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 4.5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+    mask:
+        radial-gradient(circle 4.5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 4.5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+}
+
+.pv-week-row.pv-week-double .pv-ag-subj::after,
+.pv-ag-card.pv-ag-double .pv-ag-subj::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: 50%;
+    border-top: 1px dotted currentColor;
+    opacity: 0.22;
+}
+
+.pv-ag-card.pv-ag-double .pv-ag-subj {
+    height: 76px;
+    padding-top: 12px;
 }
 
 /* double lessons in the week: everything at the top, level with the start time */

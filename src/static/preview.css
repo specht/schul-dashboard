@@ -3907,3 +3907,163 @@ body.ui-preview:has(.container-fluid.solid)::before {
         box-shadow: none !important;
     }
 }
+
+/* ---------- "Mehr" on phones, consistent: everything a tile, one heading level ---------- */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    /* full rows: oneself, the sections, the search slot */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.dropdown:has(> #navbarDropdownProfile),
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-nav-section,
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-quick-search-item {
+        grid-column: 1 / -1;
+    }
+
+    /* top-level entries (Datentresor …) as tiles */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link {
+        flex-direction: column;
+        align-items: center !important;
+        justify-content: center;
+        gap: 6px;
+        height: 100%;
+        min-height: 82px;
+        padding: 10px 4px !important;
+        border-radius: 14px;
+        background: var(--pv-hover);
+        font-size: 0.8rem;
+        line-height: 1.2;
+        text-align: center;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown) > .nav-link .icon {
+        width: 26px;
+        height: 26px !important;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--acc-text);
+    }
+
+    /* one heading level: the sub-groups only as spacing */
+    .ui-preview .pv-nav-sub {
+        font-size: 0;
+        padding: 0;
+        height: 2px;
+    }
+
+    .ui-preview .pv-nav-section {
+        margin-top: 8px !important;
+    }
+
+    /* oneself: the card opens the profile, the personal actions as small tiles */
+    .ui-preview .navbar .navbar-collapse .nav-item.dropdown:has(> #navbarDropdownProfile) {
+        margin-bottom: 4px !important;
+        padding: 10px !important;
+    }
+
+    .ui-preview #navbarDropdownProfile {
+        pointer-events: auto;
+        font-size: 1.05rem;
+        padding: 4px 6px !important;
+    }
+
+    .ui-preview #navbarDropdownProfile::before {
+        content: "Profil und Einstellungen";
+        order: 3;
+        margin-left: auto;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--acc-text);
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+        gap: 6px;
+        margin-top: 8px !important;
+        padding: 0 !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-divider,
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] a.dropdown-item[href='/profil'] {
+        display: none !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item {
+        flex-direction: column;
+        align-items: center !important;
+        justify-content: center;
+        gap: 4px;
+        min-height: 64px;
+        padding: 8px 4px !important;
+        border-radius: 12px;
+        background: var(--pv-surface);
+        font-size: 0.74rem;
+        line-height: 1.15;
+        text-align: center;
+        white-space: normal;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .icon {
+        width: auto;
+        height: 20px !important;
+        justify-content: center;
+        font-size: 17px;
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item,
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .label {
+        font-size: 0.74rem !important;
+        line-height: 1.15;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .icon {
+        width: 100% !important;
+        display: flex;
+        justify-content: center;
+        color: var(--acc-text) !important;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .label {
+        display: block;
+        width: 100%;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        text-align: center;
+        max-width: none !important;
+    }
+}
+
+/* tiles tinted per group – colours from the scheme's subject palette, so
+   they are readable in every scheme, light and dark */
+@media (max-width: 767px) {
+    .ui-preview .pv-nav-entry[data-tone='schule-0'] { --tone: var(--subj-de); }
+    .ui-preview .pv-nav-entry[data-tone='schule-1'] { --tone: var(--subj-bio); }
+    .ui-preview .pv-nav-entry[data-tone='schule-2'] { --tone: var(--subj-ku); }
+    .ui-preview .pv-nav-entry[data-tone='schule-3'] { --tone: var(--subj-ge); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-0'] { --tone: var(--subj-en); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-1'] { --tone: var(--subj-phy); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-2'] { --tone: var(--subj-ma); }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry[data-tone] {
+        background: color-mix(in srgb, var(--tone) 11%, var(--pv-surface));
+    }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry[data-tone] .icon {
+        color: var(--tone) !important;
+    }
+
+    .ui-preview.dark .navbar .pv-nav-body .pv-nav-entry[data-tone] {
+        background: color-mix(in srgb, var(--tone) 16%, var(--pv-surface));
+    }
+}

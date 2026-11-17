@@ -416,12 +416,14 @@
         [['schule', schule], ['verwaltung', verwaltung]].forEach(function(pair) {
             var sec = pair[1], groups = SUB[pair[0]];
             var entries = Array.prototype.slice.call(sec.querySelectorAll('.pv-nav-entry'));
-            if (entries.length < 8) return;
             var which = function(a) {
                 var href = a.getAttribute('href') || '';
                 for (var i = 0; i < groups.length; i++) if (groups[i][1].test(href)) return i;
                 return groups.length;
             };
+            // the group as a colour (phones: tiles tinted per group, preview.css)
+            entries.forEach(function(a) { a.dataset.tone = pair[0] + '-' + which(a); });
+            if (entries.length < 8) return;
             entries.sort(function(a, b) { return which(a) - which(b); });
             var last = -1;
             entries.forEach(function(a) {
@@ -521,5 +523,21 @@
     }
     if (document.readyState === 'complete') keep_sidebar_place(); else window.addEventListener('load', keep_sidebar_place);
 
+
+    // the personal entries without the trailing "…" of today's menu
+    var strip_ellipsis = function() {
+        document.querySelectorAll('.ui-preview [aria-labelledby="navbarDropdownProfile"] .label').forEach(function(l) {
+            l.textContent = l.textContent.replace(/\s*(…|\.\.\.)\s*$/, '');
+        });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', strip_ellipsis); else strip_ellipsis();
+    // phones: the own card in "Mehr" opens the profile (instead of folding a menu)
+    document.addEventListener('click', function(e) {
+        if (SIDEBAR.matches || !e.target.closest || !e.target.closest('#navbarDropdownProfile')) return;
+        if (!document.body.classList.contains('ui-preview')) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        location.href = '/profil';
+    }, true);
 })();
 

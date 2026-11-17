@@ -3806,6 +3806,7 @@ class Main < Sinatra::Base
 
         now = Time.now.to_i - MESSAGE_DELAY
         sent_messages = []
+        messages_preview = {:new_ids => [], :nc_logins => {}}
         stored_events = []
         stored_groups = []
         stored_angebote = []
@@ -3998,6 +3999,21 @@ class Main < Sinatra::Base
             unless @session_user
                 redirect "#{WEB_ROOT}/", 302
             else
+                # new design: which messages are new (before this visit marks
+                # them as seen) and the senders' profile pictures
+                if ui_preview?
+                    messages_preview[:new_ids] = get_unread_messages(Time.now.to_i + 1)
+                    neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).each do |row|
+                        MATCH (c)-[:TO]->(:User {email: $email})
+                        WHERE (c:TextComment OR c:AudioComment OR c:Message)
+                        MATCH (c)-[:FROM]->(a:User)
+                        RETURN DISTINCT a.email
+                    END_OF_QUERY
+                        nc_login = (@@user_info[row['a.email']] || {})[:nc_login]
+                        next if nc_login.nil? || nc_login.empty?
+                        messages_preview[:nc_logins][row['a.email']] = nc_login
+                    end
+                end
                 neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
                     MATCH (c)-[ruc:TO]->(:User {email: $email})
                     WHERE (c:TextComment OR c:AudioComment OR c:Message)

@@ -74,6 +74,145 @@ var sent_messages = #{sent_messages.to_json};
 var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
 var message_cache = {};
 var force_close = false;
+// Neues Design (Vorschau): which messages are new, the senders' profile
+// pictures (main.rb), and a class for the page's own styles (preview/messages.css)
+var pv_messages = #{messages_preview.to_json};
+var PV_MESSAGES = document.body.classList.contains('ui-preview');
+// (plain DOM: this runs while the page loads, before jQuery)
+if (PV_MESSAGES) {
+    document.body.classList.add('pv-messages-page');
+    // the title with "Neue Nachricht" next to it
+    let title = document.querySelector('.messages-container-inbox').closest('.col-md-8').querySelector('h2');
+    let top = document.createElement('div');
+    top.className = 'pv-msg-top';
+    title.before(top);
+    top.append(title);
+    if ('#{user_with_role_logged_in?(:can_write_messages)}' === 'true')
+        top.append(document.querySelector('.bu-compose-message'));
+    // the compose dialog: a sheet on phones; recipients as chips in one field
+    // with the search, the suggestions below it
+    let modal = document.getElementById('composeModal');
+    modal.classList.add('pv-sheet');
+    modal.querySelector('.modal-dialog').classList.add('modal-dialog-scrollable');
+    let input = document.getElementById('ti_recipients');
+    let group = input.closest('.form-group');
+    group.classList.add('pv-rcpt');
+    let list = modal.querySelector('.recipients_list');
+    let old_group = list.closest('.form-group');
+    let field = document.createElement('div');
+    field.className = 'pv-rcpt-field';
+    let label = document.createElement('label');
+    label.htmlFor = 'ti_recipients';
+    label.className = 'pv-rcpt-label';
+    label.textContent = 'An';
+    field.append(label, list, input);
+    let box = document.createElement('div');
+    box.className = 'pv-rcpt-box';
+    let dropdown = modal.querySelector('.recipient-input-dropdown');
+    dropdown.setAttribute('role', 'listbox');
+    dropdown.setAttribute('aria-label', 'Vorschläge');
+    box.append(field, dropdown);
+    group.prepend(box);
+    let count = document.getElementById('recipient_count');
+    count.classList.add('pv-rcpt-count');
+    count.setAttribute('aria-live', 'polite');
+    group.append(count);
+    old_group.remove();
+    let delete_button = document.getElementById('bu_delete_message');
+    delete_button.lastChild.textContent = '\u00a0\u00a0Löschen';
+    input.placeholder = 'Name, Klasse oder Gruppe suchen …';
+    input.autocomplete = 'off';
+    field.addEventListener('click', function(e) {
+        if (e.target === e.currentTarget || e.target === list)
+            input.focus();
+    });
+    // the suggestions close when one clicks elsewhere
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest || !e.target.closest('.pv-rcpt'))
+            dropdown.style.display = 'none';
+    });
+}
+
+function pv_iso_date(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// "Heute", "Gestern", "Montag, 16.11." (with the year when it is another one)
+function pv_day_label(date, dow) {
+    let now = new Date();
+    if (date === pv_iso_date(now))
+        return 'Heute';
+    let yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    if (date === pv_iso_date(yesterday))
+        return 'Gestern';
+    let label = weekdays_long[dow] + ', ' + date.substr(8, 2) + '.' + date.substr(5, 2) + '.';
+    if (date.substr(0, 4) !== String(now.getFullYear()))
+        label += date.substr(0, 4);
+    return label;
+}
+
+function pv_time(timestamp) {
+    let d = new Date(timestamp * 1000);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+// the sender's profile picture from Nextcloud, a calm grey circle without one
+function pv_avatar(email) {
+    let avatar = $('<div>').addClass('pv-msg-avatar').attr('aria-hidden', 'true');
+    let nc_login = (pv_messages.nc_logins || {})[email];
+    if (nc_login)
+        avatar.css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(nc_login)}/64)`);
+    return avatar;
+}
+
+// one entry of the inbox: sender, time, a marker when it is new, the text
+function pv_inbox_item(message, can_reply) {
+    let unread = (pv_messages.new_ids || []).indexOf(message.mid || message.id) >= 0;
+    let card = $('<article>').addClass('text-comment pv-msg');
+    if (unread)
+        card.addClass('pv-unread');
+    let head = $('<div>').addClass('from pv-msg-head');
+    head.append(pv_avatar(message.from_email));
+    let who = $('<div>').addClass('pv-msg-who');
+    who.append($('<span>').addClass('pv-msg-name').text(message.from || ''));
+    let meta = $('<div>').addClass('pv-msg-meta');
+    if (unread)
+        meta.append($('<span>').addClass('pv-msg-new').text('Neu'));
+    if (message.audio_comment_tag)
+        meta.append($('<span>').text('Audio-Rückmeldung'));
+    else if (message.text_comment)
+        meta.append($('<span>').text('Rückmeldung'));
+    if (message.timestamp)
+        meta.append($('<time>').addClass('pv-msg-time').attr('datetime', new Date(message.timestamp * 1000).toISOString()).text(pv_time(message.timestamp)));
+    who.append(meta);
+    head.append(who);
+    card.append(head);
+    if (message.text_comment) {
+        card.append($('<div>').addClass('message').html(message.text_comment));
+    } else if (message.audio_comment_tag) {
+        card.append(create_audio_player(message.from, message.audio_comment_tag, message.duration / 1000).addClass('pv-audio'));
+    } else if (message.mid) {
+        if (can_reply) {
+            let reply_button = $('<button>').addClass('btn btn-sm btn-outline-secondary pv-msg-reply').html("<i class='fa fa-reply'></i>&nbsp;&nbsp;Antworten");
+            reply_button.click(function(e) {
+                compose_message(message.from_email);
+            });
+            head.append(reply_button);
+        }
+        let msg_div = $('<div>').addClass('message').html("<i class='fa fa-spinner fa-spin'></i>");
+        card.append(msg_div);
+        card.data('mid', message.mid);
+        card.data('msg_div', msg_div[0]);
+    }
+    return card;
+}
+
+function pv_inbox_empty() {
+    return $('<div>').addClass('pv-msg-empty')
+        .append($('<i>').addClass('fa fa-inbox').attr('aria-hidden', 'true'))
+        .append($('<p>').addClass('pv-msg-empty-title').text('Noch keine Nachrichten'))
+        .append($('<p>').text('Nachrichten und Rückmeldungen aus dem Unterricht erscheinen hier.'));
+}
 
 function can_send() {
     return (net_recipients_list.length > 0) && $($('#summernote').summernote('code')).text().trim().length > 0;
@@ -86,8 +225,9 @@ function pending_changes() {
 function update_buttons() {
     if (old_mid) {
         $('#bu_delete_message').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
-        $('#bu_discard_message span').html('Änderungen verwerfen');
-        $('#bu_send_message span').html('Änderungen speichern');
+        // new design: the title says "Nachricht bearbeiten", short labels keep the buttons in one row
+        $('#bu_discard_message span').html(PV_MESSAGES ? 'Verwerfen' : 'Änderungen verwerfen');
+        $('#bu_send_message span').html(PV_MESSAGES ? 'Speichern' : 'Änderungen speichern');
     } else {
         $('#bu_delete_message').prop('disabled', true).hide().addClass('btn-outline-secondary').removeClass('btn-danger');
         $('#bu_discard_message span').html('Verwerfen');
@@ -171,6 +311,8 @@ function update_net_recipients_list() {
         $('#recipient_count').html('keine Empfänger');
     else
         $('#recipient_count').html('' + net_recipients_list.length + ' Empfänger');
+    if (PV_MESSAGES)
+        $('#ti_recipients').attr('placeholder', Object.keys(recipients_list).length === 0 ? 'Name, Klasse oder Gruppe suchen …' : 'Weitere hinzufügen …');
     update_buttons();
 }
 
@@ -184,9 +326,20 @@ function gen_recipient_span(key, with_rm) {
     if (with_rm) {
         let rm_button = $('<span>').addClass('rm').data('key', key);
         rm_button.click(function(e) {
-            remove_recipient($(e.target).data('key'));
-            $(e.target).closest('.recipient').remove();
+            remove_recipient($(e.currentTarget).data('key'));
+            $(e.currentTarget).closest('.recipient').remove();
+            if (PV_MESSAGES)
+                $('#ti_recipients').focus();
         });
+        if (PV_MESSAGES) {
+            rm_button.attr({role: 'button', tabindex: '0', 'aria-label': recipients[key].label + ' entfernen'});
+            rm_button.keydown(function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    $(e.currentTarget).click();
+                }
+            });
+        }
         recipient.addClass('with-rm').append(rm_button);
     }
     if (recipients[key].teacher)
@@ -276,12 +429,28 @@ function update_sent_messages() {
     $('.outbox-messages-here').empty();
     for (message of sent_messages) {
         let row = $('<tr>');
-        row.append($('<td>').html(weekdays[message.dow] + '. ' + message.date.substr(8, 2) + '.' + message.date.substr(5, 2) + '.' + message.date.substr(0, 4)));
+        if (PV_MESSAGES)
+            row.append($('<td>').addClass('pv-out-date').text(pv_day_label(message.date, message.dow)));
+        else
+            row.append($('<td>').html(weekdays[message.dow] + '. ' + message.date.substr(8, 2) + '.' + message.date.substr(5, 2) + '.' + message.date.substr(0, 4)));
         let cell = $('<td>');
         let recipients = compact_address_list(message.recipients);
-        for (email of recipients)
+        // new design: a few recipients, then how many more
+        let shown = (PV_MESSAGES && recipients.length > 5) ? recipients.slice(0, 4) : recipients;
+        for (email of shown)
             cell.append(gen_recipient_span(email), false);
+        if (shown.length < recipients.length)
+            cell.append($('<span>').addClass('pv-out-more').text('+ ' + (recipients.length - shown.length) + ' weitere'));
         row.append(cell);
+        if (PV_MESSAGES) {
+            row.attr('tabindex', '0');
+            row.keydown(function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    $(e.currentTarget).click();
+                }
+            });
+        }
         let msg_div = $('<td>').html("<i class='fa fa-spinner fa-spin'></i>");
         row.append(msg_div);
         if (message.mid in message_cache) {
@@ -303,6 +472,8 @@ function update_sent_messages() {
                     $('.recipients_list').append(gen_recipient_span(email, true));
                 }
                 update_net_recipients_list();
+                if (PV_MESSAGES)
+                    $('#composeModal > .modal-dialog > .modal-content > .modal-header > .modal-title').text('Nachricht bearbeiten');
                 $('#composeModal').modal('show');
                 force_close = false;
                 old_recipients_list = [...net_recipients_list];
@@ -318,6 +489,8 @@ function update_sent_messages() {
 }
 
 function compose_message(to) {
+    if (PV_MESSAGES)
+        $('#composeModal > .modal-dialog > .modal-content > .modal-header > .modal-title').text(typeof(to) === 'undefined' ? 'Neue Nachricht' : 'Antworten');
     $('#summernote').summernote('reset');
     recipients_list = {};
     $('.recipients_list').empty();
@@ -374,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     $('#summernote').summernote({
-        placeholder: 'Bitte geben Sie Ihre Nachricht ein',
+        placeholder: PV_MESSAGES ? 'Nachricht schreiben …' : 'Bitte geben Sie Ihre Nachricht ein',
         callbacks: {
             onChange: function() {
                 update_buttons();
@@ -392,8 +565,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         lang: 'de-DE',
-        height: 300,
-        toolbar: [
+        height: PV_MESSAGES ? 240 : 300,
+        // new design: the link dialog as a dialog of its own, not nested in
+        // the compose sheet
+        dialogsInBody: PV_MESSAGES,
+        // new design: messages are shown in the design's own type, so only
+        // what survives that (bold, italics, lists, links)
+        toolbar: PV_MESSAGES ? [
+            ['font', ['bold', 'italic', 'underline', 'clear']],
+            ['para', ['ul', 'ol']],
+            ['insert', ['link']],
+        ] : [
             ['style', ['style']],
             ['font', ['bold', 'underline', 'clear']],
             ['fontname', ['fontname']],
@@ -406,9 +588,25 @@ document.addEventListener('DOMContentLoaded', function() {
         ],
     });
 
+    // a confirmation on top must not leave the dialog below it unscrollable
+    if (PV_MESSAGES) {
+        $(document).on('hidden.bs.modal', '#__template_modal', function() {
+            if ($('#composeModal').hasClass('show'))
+                $('body').addClass('modal-open');
+        });
+    }
+
     $('#composeModal').on('hide.bs.modal', function(e) {
         if ($(e.target).attr('id') === 'composeModal' && pending_changes() && (!force_close)) {
-            $('#publish_message_btn_container').effect('shake', {direction: 'left', distance: 4});
+            // new design: ask instead of shaking the buttons (on phones the
+            // sheet is pulled down without looking at them)
+            if (PV_MESSAGES) {
+                if (!$('#__template_modal').hasClass('show'))
+                    dashboardConfirm(old_mid ? 'Die Änderungen an dieser Nachricht gehen verloren.' : 'Der Text und die Empfänger gehen verloren.', function() {
+                        discard_message();
+                    }, {title: old_mid ? 'Änderungen verwerfen?' : 'Nachricht verwerfen?', confirm: 'Verwerfen', cancel: 'Weiter bearbeiten', danger: true});
+            } else
+                $('#publish_message_btn_container').effect('shake', {direction: 'left', distance: 4});
             e.preventDefault();
             e.stopImmediatePropagation();
             return false;
@@ -451,7 +649,50 @@ document.addEventListener('DOMContentLoaded', function() {
         $('.messages-container-inbox').hide();
     });
 
+    // new design: arrow keys walk through the suggestions, Enter takes the
+    // chosen one, Escape closes them, Backspace in the empty field removes
+    // the last recipient
+    function pv_recipient_key(e) {
+        let dropdown = $('.recipient-input-dropdown');
+        let items = dropdown.find('.recipient');
+        let open = dropdown.is(':visible') && items.length > 0;
+        let active = items.filter('.pv-active');
+        if (open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            let i = items.index(active);
+            i = (e.key === 'ArrowDown') ? Math.min(items.length - 1, i + 1) : Math.max(0, i - 1);
+            items.removeClass('pv-active').attr('aria-selected', 'false');
+            let next = items.eq(i).addClass('pv-active').attr('aria-selected', 'true');
+            next[0].scrollIntoView({block: 'nearest'});
+            e.preventDefault();
+            return true;
+        }
+        if (open && e.key === 'Enter' && active.length > 0) {
+            e.preventDefault();
+            add_recipient(active.data('key'));
+            return true;
+        }
+        if (open && e.key === 'Escape') {
+            // closes the suggestions, not the dialog
+            dropdown.hide();
+            e.preventDefault();
+            e.stopPropagation();
+            return true;
+        }
+        if (e.key === 'Backspace' && $(e.currentTarget).val() === '') {
+            let last = $('.recipients_list .recipient').last();
+            if (last.length > 0) {
+                remove_recipient(last.data('key'));
+                last.remove();
+                e.preventDefault();
+                return true;
+            }
+        }
+        return false;
+    }
+
     $('#ti_recipients').keydown(function(e) {
+        if (PV_MESSAGES && pv_recipient_key(e))
+            return;
         if ((e.keyCode === 9 || e.keyCode === 13) && ($(e.target).val().length > 0)) {
             if (Object.keys(autocomplete_results).length === 1) {
                 let key = recipients_cache.keys[Object.keys(autocomplete_results)[0]];
@@ -463,6 +704,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     $('#ti_recipients').keyup(function(e) {
+        if (PV_MESSAGES && ['ArrowDown', 'ArrowUp', 'Escape'].indexOf(e.key) >= 0)
+            return;
         if ($('#ti_recipients')[0].selectionStart == $(e.target).val().length) {
             let value = $(e.target).val();
             let backspace_pressed = (e.keyCode === 8);
@@ -519,8 +762,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let key of result_keys) {
                     let k = recipients_cache.keys[key];
                     let r = gen_recipient_span(k);
+                    if (PV_MESSAGES)
+                        r.attr({role: 'option', 'aria-selected': 'false'});
                     r.click(function(e) {
-                        add_recipient($(e.target).data('key'));
+                        add_recipient($(e.currentTarget).data('key'));
                     });
                     $('.recipient-input-dropdown').append(r);
                 }
@@ -543,6 +788,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 let messages = JSON.parse(e.target.result);
                 messages = filter_events_by_timestamp(messages, show_messages_from);
                 let old_date = null;
+                if (PV_MESSAGES) {
+                    let inbox = $('.messages-container-inbox');
+                    if ((messages || []).length === 0)
+                        inbox.append(pv_inbox_empty());
+                    for (let message of (messages || [])) {
+                        if (message.date !== old_date) {
+                            old_date = message.date;
+                            inbox.append($('<h3>').addClass('messages-date pv-msg-day').append($('<span>').text(pv_day_label(message.date, message.dow))));
+                        }
+                        let card = pv_inbox_item(message, '#{teacher_logged_in?}' === 'true');
+                        inbox.append(card);
+                        observer.observe(card[0]);
+                    }
+                    return;
+                }
                 if ((messages || []).length === 0)
                 {
                     let comment = $('<p>').html('Keine Nachrichten gefunden!<br /><br />¯\\\_(ツ)_/¯');

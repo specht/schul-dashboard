@@ -49,6 +49,8 @@ test('Gruppenbildung Kollegium: Admin mischt das Kollegium und gibt eine Lehrkra
   // no rules besides size and remainder for the staff
   await expect(page.locator('#zg_gender_row')).toHaveCount(0);
   await expect(page.locator('#zg_distribution_row')).toBeHidden();
+  // whole names here (Kürzel: next test)
+  await page.locator('input[name=zg_labels][value=name]').check();
   await expect(page.locator('#zg_presence .zg-chip', { hasText: 'Torstenson' }).first()).toBeVisible();
   await page.locator('#zg_bu_mix').click();
   await expect(page.locator('#zg_groups')).toContainText('Gruppe 1');
@@ -79,4 +81,62 @@ test('Gruppenbildung Kollegium: Admin mischt das Kollegium und gibt eine Lehrkra
   await clearAccessList(page);
   await teacher.goto(PAGE);
   await expect(teacher).not.toHaveURL(new RegExp(PAGE));
+});
+
+// With many teachers, whole names get too small on the projector: the staff
+// version shows Kürzel by default (names on request), and the projector view
+// fills the screen – Kürzel side by side in each group.
+test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bildschirm', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto(PAGE);
+  const chip = (text: string) => page.locator('#zg_presence .zg-chip').filter({ hasText: new RegExp(`^${text}$`) });
+
+  await page.locator('input[name=zg_labels][value=shorthand]').check();
+  await expect(chip('Ts')).toHaveAttribute('title', /Torstenson/);
+  // the Nextcloud picture next to the Kürzel, for recognizing people
+  await expect(chip('Ts').locator('.zg-avatar')).toHaveAttribute('style', /\/index\.php\/avatar\/[^/]+\/128/);
+  await page.locator('#zg_size').fill('2');
+  await page.locator('#zg_bu_mix').click();
+  await expect(page.locator('#zg_groups .zg-name').filter({ hasText: /^Cl$/ })).toHaveCount(1);
+
+  // names instead, kept for the next visit
+  const saved = page.waitForResponse('**/api/zg_save_last');
+  await page.locator('input[name=zg_labels][value=name]').check();
+  await expect(chip('Ts')).toHaveCount(0);
+  await expect(page.locator('#zg_presence .zg-avatar')).toHaveCount(0);
+  await expect(page.locator('#zg_presence')).toContainText('Torstenson');
+  await expect(page.locator('#zg_groups')).toContainText('Clarke');
+  await saved;
+  await page.reload();
+  await expect(page.locator('input[name=zg_labels][value=name]')).toBeChecked();
+  await expect(page.locator('#zg_groups')).toContainText('Clarke');
+  await page.locator('input[name=zg_labels][value=shorthand]').check();
+  await expect(page.locator('#zg_groups .zg-name').filter({ hasText: /^Cl$/ })).toHaveCount(1);
+
+  // projector: every group fully on the screen, nothing cut off
+  await page.locator('#zg_bu_beamer').click();
+  const cards = page.locator('#zg_beamer .zg-group');
+  await expect(cards.first()).toBeVisible();
+  await expect(cards.first().locator('.zg-avatar').first()).toBeVisible();
+  const viewport = page.viewportSize()!;
+  for (const card of await cards.all()) {
+    const box = (await card.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    expect(await card.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  }
+  await page.locator('#zg_bu_beamer_close').click();
+
+  // a school-sized staff: 17 groups of six on a 1920×1080 projector
+  const layout = await page.evaluate(() => {
+    const w = window as unknown as { beamer_layout: (...a: number[]) => { font: number; mcols: number } };
+    return {
+      shorthand: w.beamer_layout(1890, 1050, 17, 6, 1.5, 4.5),
+      names: w.beamer_layout(1890, 1050, 17, 6, 9, 4.5),
+    };
+  });
+  // Kürzel side by side and much larger than whole names
+  expect(layout.shorthand.mcols).toBeGreaterThan(1);
+  expect(layout.shorthand.font).toBeGreaterThan(40);
+  expect(layout.shorthand.font).toBeGreaterThan(layout.names.font * 1.5);
 });

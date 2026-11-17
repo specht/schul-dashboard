@@ -64,8 +64,12 @@ class Main < Sinatra::Base
         sus_emails = zg_member_emails(klasse)
         sus = sus_emails.map do |e|
             if kollegium
-                # Im Kollegium gibt es keine Regel nach Geschlecht.
-                {:email => e, :display_name => @@user_info[e][:display_name]}
+                # Im Kollegium gibt es keine Regel nach Geschlecht. Für den
+                # Beamer zählt vor allem das Kürzel: bei vielen Lehrkräften
+                # sind ganze Namen von hinten nicht mehr lesbar.
+                {:email => e, :display_name => @@user_info[e][:display_name],
+                 :shorthand => @@user_info[e][:shorthand],
+                 :nc_login => @@user_info[e][:nc_login]}
             else
                 {:email => e,
                  :display_name => @@user_info[e][:display_name_official],
@@ -142,7 +146,9 @@ class Main < Sinatra::Base
         clean = {}
         clean['size'] = settings['size'].to_i if settings['size'].is_a?(Integer)
         clean['rest'] = settings['rest'] if %w(bigger smaller).include?(settings['rest'])
-        unless kollegium
+        if kollegium
+            clean['labels'] = settings['labels'] if %w(shorthand name).include?(settings['labels'])
+        else
             clean['gender'] = settings['gender'] if %w(egal gemischt getrennt).include?(settings['gender'])
             clean['distribution'] = !!settings['distribution'] if sph_can_manage?(klasse)
         end

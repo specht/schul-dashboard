@@ -176,6 +176,19 @@ Klassenleitung kann zusätzlich die Listen für die Verteilung im Raum und
 die Zwangspaare berücksichtigen lassen; anderen Lehrkräften werden diese
 gar nicht erst übertragen.
 
+`/zufallsgruppen/kollegium` ist dieselbe Seite für das ganze Kollegium
+(z. B. für Konferenzen), für Admins und die Lehrkräfte, die ein Admin dort
+freigibt. Weil ganze Namen bei vielen Lehrkräften auf dem Beamer zu klein
+werden, zeigt sie standardmäßig die Kürzel mit dem Nextcloud-Bild der
+Person davor (der Name steht im Tooltip); auf Wunsch die Namen, die Wahl
+wird gemerkt.
+
+Die Beamer-Ansicht füllt den Bildschirm: Sie misst die Beschriftungen in
+der verwendeten Schrift und probiert alle Kombinationen aus Spalten (Karten)
+und Namensspalten je Karte; genommen wird die mit der größten Schrift.
+Kürzel stehen so nebeneinander in gleich breiten Zellen (eine
+unvollständige letzte Zeile mittig), Namen untereinander.
+
 ## Datenmodell (Neo4j)
 
 - **`SeatingCycle`**: ein Durchlauf pro Klasse+Raum. Enthält `mode`

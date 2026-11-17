@@ -41,6 +41,28 @@
     cursor: pointer;
     user-select: none;
 }
+.zg-avatar {
+    display: inline-block;
+    width: 1.15em;
+    height: 1.15em;
+    border-radius: 50%;
+    background-color: rgba(128, 128, 128, 0.25);
+    background-size: cover;
+    background-position: center;
+    vertical-align: -0.2em;
+    margin-right: 0.3em;
+    flex: none;
+}
+.zg-chip .zg-avatar {
+    width: 1.4em;
+    height: 1.4em;
+    vertical-align: -0.35em;
+    margin-left: -0.5em;
+}
+.zg-chip.absent .zg-avatar {
+    opacity: 0.4;
+    filter: saturate(0);
+}
 .zg-chip.absent {
     background: #f4f4f4;
     border-color: #ddd;
@@ -63,8 +85,14 @@
     margin: 0 0 0.4em 0;
     font-weight: bold;
 }
+.zg-group .zg-members {
+    display: grid;
+    grid-template-columns: repeat(var(--zg-mcols, 1), max-content);
+    column-gap: 0.9em;
+}
 .zg-group .zg-name {
     padding: 0.1em 0;
+    white-space: nowrap;
 }
 .zg-group.shuffling .zg-name {
     color: #999;
@@ -100,20 +128,62 @@
     inset: 0;
     z-index: 2000;
     background-color: #fff;
-    padding: 2vh 2vw;
-    overflow: auto;
+    color: #212529;
+    padding: 1.5vh 1.5vw;
+    overflow: hidden;
 }
+/* Spalten, Schriftgröße und Namensspalten je Karte berechnet render_beamer
+   so, dass alle Gruppen den Bildschirm möglichst groß füllen. */
 #zg_beamer .zg-groups {
     grid-template-columns: repeat(var(--zg-cols, 3), 1fr);
-    gap: 1.5vh 1.5vw;
+    grid-auto-rows: 1fr;
+    gap: var(--zg-gap-y, 1.5vh) var(--zg-gap-x, 1.5vw);
+    height: 100%;
 }
 #zg_beamer .zg-group {
     font-size: var(--zg-font, 3vh);
-    padding: 1vh 1.2vw;
+    line-height: 1.2;
+    padding: 0.25em 0.5em;
+    overflow: hidden;
+    color: #212529;
 }
 #zg_beamer .zg-group h5 {
-    font-size: 1em;
+    font-size: 0.6em;
+    line-height: 1.15;
+    margin-bottom: 0.1em;
     color: #2f7fd6;
+    width: max-content;
+    white-space: nowrap;
+}
+#zg_beamer .zg-group {
+    display: flex;
+    flex-direction: column;
+}
+#zg_beamer .zg-group .zg-members {
+    width: max-content;
+    column-gap: 0.6em;
+}
+/* Kürzel: gleich breite Zellen über die ganze Karte, jedes mittig, die
+   Zeilen gleichmäßig zwischen Überschrift und unterem Rand verteilt */
+#zg_beamer.zg-short .zg-group .zg-members {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+    width: 100%;
+    flex: 1;
+    row-gap: 0.15em;
+    column-gap: 0.35em;
+}
+#zg_beamer.zg-short .zg-group .zg-name {
+    flex: 0 0 calc((100% - (var(--zg-mcols, 1) - 1) * 0.35em) / var(--zg-mcols, 1));
+    text-align: center;
+}
+#zg_beamer.zg-short .zg-group h5 {
+    align-self: center;
+}
+#zg_beamer .zg-group .zg-name {
+    padding: 0;
 }
 #zg_beamer .zg-beamer-buttons {
     position: fixed;
@@ -138,6 +208,12 @@
             <span class="zg-label">Wenn es nicht aufgeht</span>
             <label class="zg-choice"><input type="radio" name="zg_rest" value="bigger" checked> einige Gruppen größer</label>
             <label class="zg-choice"><input type="radio" name="zg_rest" value="smaller"> einige Gruppen kleiner</label>
+        </div>
+        <div class="zg-row" id="zg_labels_row" style="display: none;">
+            <span class="zg-label">Anzeige</span>
+            <label class="zg-choice"><input type="radio" name="zg_labels" value="shorthand" checked> Kürzel</label>
+            <label class="zg-choice"><input type="radio" name="zg_labels" value="name"> Name</label>
+            <div class="zg-legend">Mit Kürzeln bleibt der Beamer auch bei vielen Gruppen gut lesbar.</div>
         </div>
         <div class="zg-row" id="zg_gender_row">
             <span class="zg-label">Jungen und Mädchen</span>
@@ -203,6 +279,37 @@ function display_name(email) {
     return s ? s.display_name : email;
 }
 
+// Im Kollegium wahlweise das Kürzel (Standard) statt des Namens.
+function use_shorthands() {
+    return kollegium && $('input[name=zg_labels]:checked').val() !== 'name';
+}
+
+function label(email) {
+    let s = sus.find(x => x.email === email);
+    if (!s) return email;
+    return (use_shorthands() && s.shorthand) ? s.shorthand : s.display_name;
+}
+
+// Im Kollegium mit Kürzeln: das Nextcloud-Bild davor, zum schnellen Erkennen.
+function use_avatars() {
+    return use_shorthands();
+}
+
+function avatar_el(email) {
+    let s = sus.find(x => x.email === email);
+    let el = $('<span>').addClass('zg-avatar').attr('aria-hidden', 'true');
+    if (s && s.nc_login) el.css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(s.nc_login)}/128)`);
+    return el;
+}
+
+// Inhalt einer Namenszeile oder eines Chips: ggf. Bild, dann Kürzel oder Name
+function fill_name(el, email) {
+    el.empty();
+    if (use_avatars()) el.append(avatar_el(email));
+    el.append($('<span>').addClass('zg-label-text').text(label(email)));
+    return el;
+}
+
 function gender_of(email) {
     let s = sus.find(x => x.email === email);
     return s ? s.geschlecht : null;
@@ -226,6 +333,7 @@ function settings() {
         rest: $('input[name=zg_rest]:checked').val(),
         gender: kollegium ? 'egal' : $('input[name=zg_gender]:checked').val(),
         distribution: is_klassenleitung && $('#zg_distribution').is(':checked'),
+        labels: use_shorthands() ? 'shorthand' : 'name',
     };
 }
 
@@ -276,8 +384,11 @@ function update_preview() {
 
 function render_presence() {
     let el = $('#zg_presence').empty();
-    for (let s of sus) {
-        let chip = $('<span>').addClass('zg-chip').toggleClass('absent', absent.has(s.email)).text(s.display_name);
+    let people = sus.slice();
+    if (use_shorthands()) people.sort((a, b) => label(a.email).localeCompare(label(b.email), 'de'));
+    for (let s of people) {
+        let chip = fill_name($('<span>').addClass('zg-chip').toggleClass('absent', absent.has(s.email)), s.email);
+        if (use_shorthands()) chip.attr('title', s.display_name);
         chip.on('click', function () {
             if (absent.has(s.email)) absent.delete(s.email); else absent.add(s.email);
             render_presence();
@@ -413,20 +524,32 @@ function mix_groups() {
         if (best_cost === 0) break;
     }
     // Innerhalb einer Gruppe alphabetisch - leichter zu finden.
-    best = (best || []).map(g => g.sort((x, y) => display_name(x).localeCompare(display_name(y), 'de')));
+    best = (best || []).map(g => sort_group(g));
     return {groups: best, pairs: pairs, settings: s};
+}
+
+function sort_group(g) {
+    return g.slice().sort((x, y) => label(x).localeCompare(label(y), 'de'));
 }
 
 function group_cards(groups) {
     return groups.map((g, i) => {
         let card = $('<div>').addClass('zg-group');
         card.append($('<h5>').text(`Gruppe ${i + 1}`));
-        for (let e of g) card.append($('<div>').addClass('zg-name').text(display_name(e)));
+        let members = $('<div>').addClass('zg-members');
+        for (let e of sort_group(g)) {
+            let name = fill_name($('<div>').addClass('zg-name'), e);
+            if (use_shorthands()) name.attr('title', display_name(e));
+            members.append(name);
+        }
+        card.append(members);
         return card;
     });
 }
 
 function render_groups(groups) {
+    // Kürzel passen nebeneinander, Namen untereinander.
+    $('#zg_groups').css('--zg-mcols', use_shorthands() ? 3 : 1);
     $('#zg_groups').empty().append(group_cards(groups));
     $('#zg_bu_beamer').toggle(groups.length > 0);
     if ($('#zg_beamer').is(':visible')) render_beamer();
@@ -452,7 +575,7 @@ function animate_and_show(result) {
     let started = Date.now();
     let timer = setInterval(function () {
         $('.zg-group.shuffling .zg-name').each(function () {
-            $(this).text(display_name(present[Math.floor(Math.random() * present.length)]));
+            fill_name($(this), present[Math.floor(Math.random() * present.length)]);
         });
         if (Date.now() - started > 900) {
             clearInterval(timer);
@@ -472,23 +595,121 @@ function do_mix() {
     });
 }
 
-// Spalten und Schriftgröße so wählen, dass alle Gruppen auf eine
-// Beamer-Seite passen.
+// Alle Gruppen auf einer Beamer-Seite, so groß wie möglich: probiert jede
+// Zahl von Spalten (Karten) und von Namensspalten je Karte und nimmt die
+// größte Schrift, bei der die breiteste Beschriftung und die volle Gruppe
+// in ihre Karte passen. Die Breiten werden in der echten Schrift gemessen.
+// sizes: Gruppengrößen (für gleichmäßig gefüllte Zeilen, z. B. 3 + 3 statt 4 + 2)
+function beamer_layout(W, H, n, max_members, widest_em, header_em, all, sizes) {
+    let candidates = [];
+    sizes = sizes || [max_members];
+    let gap_x = W * 0.012, gap_y = H * 0.015;
+    for (let cols = 1; cols <= n; cols++) {
+        let rows = Math.ceil(n / cols);
+        let card_w = (W - gap_x * (cols - 1)) / cols;
+        let card_h = (H - gap_y * (rows - 1)) / rows;
+        for (let mcols = 1; mcols <= max_members; mcols++) {
+            let mrows = Math.ceil(max_members / mcols);
+            // Höhe in em: Innenabstand 0,5 + Überschrift 0,6 × 1,15 + 0,1 + Zeilen à 1,2
+            let font_h = card_h / (0.5 + 0.69 + 0.1 + mrows * 1.2 + 0.1);
+            // Breite in em: Innenabstand 1 + Spalten + Abstände à 0,6
+            let font_w = card_w / (1.0 + mcols * widest_em + (mcols - 1) * 0.6 + 0.1);
+            let font_head = card_w / (1.0 + header_em * 0.6 + 0.1);
+            let font = Math.min(font_h, font_w, font_head);
+            // halb leere letzte Zeilen sehen unruhig aus
+            let ragged = 0;
+            for (let g of new Set(sizes)) {
+                let rest = g % mcols;
+                if (rest !== 0 && rest < mcols / 2) ragged++;
+            }
+            let balance = 1 - 0.08 * ragged;
+            candidates.push({font: font, score: font * balance, balance: balance, cols: cols, mcols: mcols, gap_x: gap_x, gap_y: gap_y});
+        }
+    }
+    candidates.sort((a, b) => b.score - a.score);
+    return all ? candidates : candidates[0];
+}
+
+function groups_mcols() {
+    return $('#zg_beamer_groups').css('--zg-mcols');
+}
+
+// Größte Schrift, bei der jede Karte ihren Inhalt ganz zeigt – gemessen,
+// nicht geschätzt: skaliert so lange, bis die vollste Karte genau passt.
+function fit_beamer_font(font, max_font) {
+    let beamer = $('#zg_beamer');
+    let cards = $('#zg_beamer_groups .zg-group');
+    for (let i = 0; i < 6; i++) {
+        beamer.css('--zg-font', `${font.toFixed(2)}px`);
+        let ratio = Infinity;
+        cards.each(function () {
+            let card = $(this);
+            let h5 = card.children('h5'), members = card.children('.zg-members');
+            let avail_w = card.innerWidth() - parseFloat(card.css('padding-left')) - parseFloat(card.css('padding-right'));
+            let avail_h = card.innerHeight() - parseFloat(card.css('padding-top')) - parseFloat(card.css('padding-bottom'));
+            // Platz, den die Namen selbst brauchen (die Zellen können breiter sein)
+            let names = members.children('.zg-name');
+            let mcols = parseInt(groups_mcols(), 10) || 1;
+            let cell_w = 0, cell_h = 0;
+            names.each(function () {
+                // die Breite des Textes, nicht die seiner Zelle
+                let range = document.createRange();
+                range.selectNodeContents(this);
+                cell_w = Math.max(cell_w, range.getBoundingClientRect().width);
+                cell_h = Math.max(cell_h, this.getBoundingClientRect().height);
+            });
+            let gap = parseFloat(members.css('column-gap')) || 0;
+            let used_cols = Math.min(mcols, names.length);
+            let need_w = Math.max(h5[0].getBoundingClientRect().width, used_cols * cell_w + (used_cols - 1) * gap);
+            let need_h = h5.outerHeight(true) + Math.ceil(names.length / mcols) * cell_h;
+            ratio = Math.min(ratio, avail_w / need_w, avail_h / need_h);
+        });
+        if (!isFinite(ratio)) break;
+        let next = Math.min(max_font, font * (ratio >= 1 ? 1 + (ratio - 1) * 0.9 : ratio * 0.98));
+        if (Math.abs(next - font) < 0.25 && ratio >= 1) break;
+        font = next;
+    }
+    beamer.css('--zg-font', `${font.toFixed(2)}px`);
+    return font;
+}
+
 function render_beamer() {
+    let beamer = $('#zg_beamer');
+    let groups_el = $('#zg_beamer_groups');
+    beamer.toggleClass('zg-short', use_shorthands());
+    groups_el.empty().append(group_cards(current_groups));
     let n = Math.max(1, current_groups.length);
     let max_members = Math.max(1, ...current_groups.map(g => g.length));
-    let ratio = window.innerWidth / Math.max(1, window.innerHeight);
-    let cols = Math.max(1, Math.min(n, Math.round(Math.sqrt(n * ratio * 1.2))));
-    let rows = Math.ceil(n / cols);
-    // Je Karte: Überschrift + Namen à ca. 1,5 Zeilenhöhen, dazu Innenabstand.
-    let font = Math.min(5, 88 / (rows * ((max_members + 1) * 1.5 + 1.4)));
-    // Der längste Name soll in eine Zeile seiner Spalte passen (ca. 0,6 em je Zeichen).
-    let longest = Math.max(8, ...current_groups.flat().map(e => display_name(e).length));
-    let col_px = window.innerWidth * 0.94 / cols - 40;
-    let font_by_width = (col_px / (longest * 0.6)) / window.innerHeight * 100;
-    font = Math.min(font, font_by_width);
-    $('#zg_beamer').css('--zg-cols', cols).css('--zg-font', `${font.toFixed(2)}vh`);
-    $('#zg_beamer_groups').empty().append(group_cards(current_groups));
+    // Breiten in em, gemessen in der Schrift der Karten
+    let probe = $('<span>').css({position: 'absolute', visibility: 'hidden', whiteSpace: 'nowrap', fontSize: '100px'});
+    let host = groups_el.find('.zg-name').first();
+    (host.length ? host : groups_el).append(probe);
+    let measure = function (text, bold) {
+        probe.css('font-weight', bold ? 'bold' : 'normal').text(text);
+        return probe[0].getBoundingClientRect().width / 100;
+    };
+    let widest_em = Math.max(1, ...current_groups.flat().map(e => measure(label(e), false))) + (use_avatars() ? 1.45 : 0);
+    let header_em = measure(`Gruppe ${n}`, true);
+    probe.remove();
+    let W = beamer.innerWidth() - parseFloat(beamer.css('padding-left')) - parseFloat(beamer.css('padding-right'));
+    let H = beamer.innerHeight() - parseFloat(beamer.css('padding-top')) - parseFloat(beamer.css('padding-bottom'));
+    // nicht absurd groß bei wenigen Gruppen
+    let max_font = H / 6;
+    // die aussichtsreichsten Aufteilungen ausprobieren und nachmessen
+    let best = null;
+    let sizes = current_groups.map(g => g.length);
+    for (let layout of beamer_layout(W, H, n, max_members, widest_em, header_em, true, sizes).slice(0, 10)) {
+        beamer.css('--zg-cols', layout.cols)
+            .css('--zg-gap-x', `${layout.gap_x.toFixed(1)}px`).css('--zg-gap-y', `${layout.gap_y.toFixed(1)}px`);
+        groups_el.css('--zg-mcols', layout.mcols);
+        let font = fit_beamer_font(Math.min(layout.font, max_font), max_font);
+        if (best === null || font * layout.balance > best.font * best.layout.balance) best = {layout: layout, font: font};
+    }
+    beamer.css('--zg-cols', best.layout.cols)
+        .css('--zg-gap-x', `${best.layout.gap_x.toFixed(1)}px`).css('--zg-gap-y', `${best.layout.gap_y.toFixed(1)}px`);
+    groups_el.css('--zg-mcols', best.layout.mcols);
+    // etwas Luft zum Kartenrand
+    beamer.css('--zg-font', `${(fit_beamer_font(best.font, max_font) * 0.97).toFixed(2)}px`);
 }
 
 function open_beamer() {
@@ -534,6 +755,7 @@ function apply_settings(s) {
     if (s.size) $('#zg_size').val(s.size);
     if (s.rest) $(`input[name=zg_rest][value=${s.rest}]`).prop('checked', true);
     if (s.gender) $(`input[name=zg_gender][value=${s.gender}]`).prop('checked', true);
+    if (s.labels) $(`input[name=zg_labels][value=${s.labels}]`).prop('checked', true);
     if (is_klassenleitung && typeof s.distribution === 'boolean') $('#zg_distribution').prop('checked', s.distribution);
 }
 
@@ -544,6 +766,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#zg_label').text('Kollegium');
         $('#zg_back_link').attr('href', '/').html('<i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück');
         $('#zg_gender_row').remove();
+        $('#zg_labels_row').show();
     } else {
         $('#zg_label').text(klasse);
         $('#zg_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
@@ -583,6 +806,14 @@ document.addEventListener('DOMContentLoaded', function () {
         render_presence();
     });
     $('#zg_size').on('input change', update_preview);
+    // Kürzel oder Namen: sofort überall, und für das nächste Öffnen merken
+    $('input[name=zg_labels]').on('change', function () {
+        render_presence();
+        if (current_groups.length > 0) {
+            render_groups(current_groups);
+            api_call('/api/zg_save_last', {klasse: klasse, groups: JSON.stringify(current_groups), settings: JSON.stringify(settings())}, function () {});
+        }
+    });
     $('input[name=zg_rest], input[name=zg_gender]').on('change', update_preview);
     $('#zg_all_present').click(function (e) {
         e.preventDefault();

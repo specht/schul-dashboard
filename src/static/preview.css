@@ -1635,3 +1635,76 @@ html {
     font-size: 0.9em;
     line-height: 1.2;
 }
+
+/* ---------- Tablets: the sidebar as an icon rail ----------
+   Between phone and desktop the full sidebar takes too much room from the
+   timetable. The rail shows the icons only (names as tooltips, preview.js;
+   the text stays for screen readers); menus still open beside it. */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview {
+        --pv-sidebar: 76px;
+    }
+
+    .ui-preview .navbar {
+        padding: 12px 8px;
+    }
+
+    .ui-preview .navbar .navbar-brand {
+        margin: 0 auto 12px;
+        padding: 6px;
+    }
+
+    .ui-preview .navbar .brand-brand {
+        display: none;
+    }
+
+    .ui-preview .navbar .navbar-brand img {
+        margin: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link {
+        font-size: 0;
+        justify-content: center;
+        padding: 10px 0 !important;
+        gap: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link .icon {
+        font-size: 18px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link::after,
+    .ui-preview .navbar .nav-quick-search-label {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .nav-quick-search {
+        border: 0 !important;
+    }
+
+    .ui-preview .navbar .dropdown-menu {
+        font-size: 1rem;
+    }
+}
+
+/* ---------- Kursbuch (lessons.html): the side pane ----------
+   styles.css fixes the pane to the right with 25 % of the window, sized
+   for today's top bar; next to the sidebar that is more than its column
+   and covers the table. */
+.ui-preview .lesson_pane {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+@media (min-width: 768px) {
+    .ui-preview .lesson_pane {
+        top: 0;
+        width: calc((100vw - var(--pv-sidebar)) * 0.25);
+        height: 100vh;
+        margin-top: 0;
+        padding-top: 24px;
+        box-shadow: -1px 0 0 var(--pv-line), -8px 0 24px rgba(0, 0, 0, 0.06);
+    }
+}

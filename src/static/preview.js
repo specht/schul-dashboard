@@ -50,6 +50,16 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
     window.addEventListener('resize', place_open_menus);
 
+    // the icon rail on tablets shows no names: give every entry a tooltip
+    function rail_titles() {
+        document.querySelectorAll('.navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link').forEach(function(a) {
+            if (a.getAttribute('title')) return;
+            var name = (a.textContent || '').replace(/\s+/g, ' ').trim();
+            if (name) a.setAttribute('title', name);
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rail_titles); else rail_titles();
+
     // Phones: dialogs with .pv-sheet are sheets (preview.css) – pull one down to
     // close it, from its header or from its content when that is scrolled
     // to the top. Not far enough: it springs back.

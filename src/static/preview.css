@@ -3367,3 +3367,9 @@ body.ui-preview:has(.container-fluid.solid)::before {
     padding: 6px 0;
     color: var(--pv-muted);
 }
+
+/* the poll editor's divider below the entries: a fine line, no shadow */
+.ui-preview hr.poll-entry-divider {
+    box-shadow: none !important;
+    border-top: 1px solid var(--pv-line);
+}

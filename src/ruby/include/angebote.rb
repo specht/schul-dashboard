@@ -161,8 +161,10 @@ class Main < Sinatra::Base
             owner = row['ou.email']
             angebot = row['a']
             next unless @@user_info[owner]
+            info = @@user_info[owner]
             angebote << {
-                :owner => @@user_info[owner][:display_name],
+                # students see teachers by their official name ("Herr Dr. …")
+                :owner => (info[:teacher] && info[:display_name_official]) || info[:display_name],
                 :name => angebot[:name],
             }
         end

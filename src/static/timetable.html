@@ -765,7 +765,7 @@ function render_preview_agenda_inner() {
         let label = $('<div>').html(x.label_short || '');
         label.find('s, del, strike').remove();
         let code = label.text().trim().split(/[\s(]/)[0];
-        let chip = $('<span>').addClass('pv-ag-subj').text(code.length > 0 ? code.substr(0, 4) : '•');
+        let chip = $('<span>').addClass('pv-ag-subj').toggleClass('pv-ag-subj-long', code.length >= 4).text(code.length > 0 ? code.substr(0, 4) : '•');
         // the subject colour for chip and card (jQuery's css() ignores custom properties)
         if (color) {
             card[0].style.setProperty('--c', color);
@@ -958,6 +958,7 @@ function preview_plan_items() {
 function preview_close_plan_menu(animate) {
     let menu = $('.pv-plan-menu');
     if (menu.length === 0) return;
+    if (window.pv_back) window.pv_back.closed('plan-menu');
     $('.pv-plan-veil').remove();
     document.body.classList.remove('pv-sheet-open');
     if (animate && !window.matchMedia('(min-width: 768px)').matches) {
@@ -1019,6 +1020,8 @@ function preview_open_plan_menu(button) {
         let veil = $('<div class="pv-menu-veil pv-plan-veil">').on('click', function() { preview_close_plan_menu(true); });
         $('body').append(veil, menu);
         document.body.classList.add('pv-sheet-open');
+        // back (button or swipe) closes it instead of leaving the page
+        if (window.pv_back) window.pv_back.opened('plan-menu', function() { preview_close_plan_menu(true); });
     } else {
         $(button).after(menu);
     }
@@ -1129,7 +1132,7 @@ function render_preview_side() {
             card[0].style.setProperty('--c', color);
             card[0].style.setProperty('--ci', preview_subject_ink(x));
         }
-        card.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
+        card.append($('<span>').addClass('pv-ag-subj').toggleClass('pv-ag-subj-long', preview_subject_code(x).length >= 4).text(preview_subject_code(x)));
         let text = $('<span>').addClass('pv-side-text');
         text.append($('<b>').html(x.label || e.title || ''));
         text.append($('<small>').html((x.raum ? 'Raum ' + x.raum + ', ' : '') + preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
@@ -1268,6 +1271,8 @@ function install_preview_agenda_swipe() {
     };
     box.addEventListener('touchstart', function(e) {
         start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+        // the system's back gesture starts at the screen edge: leave it alone
+        if (start && (start.x < 24 || start.x > window.innerWidth - 24)) start = null;
         dragging = false;
     }, { passive: true });
     box.addEventListener('touchmove', function(e) {
@@ -1720,6 +1725,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // a quick next swipe: the previous slide ends at once
             if (settling) settling.finish();
             start = (e.touches.length === 1) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+            // the system's back gesture starts at the screen edge: leave it alone
+            if (start && (start.x < 24 || start.x > window.innerWidth - 24)) start = null;
             dragging = false;
         }, { passive: true });
 

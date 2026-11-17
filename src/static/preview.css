@@ -714,9 +714,11 @@ html {
 
 .pv-ag-subj {
     flex: none;
-    min-width: 38px;
+    /* one width for every subject, so the titles start in one column;
+       four-letter codes (Nawi, StrA) get a smaller size to fit */
+    width: 44px;
     height: 38px;
-    padding: 0 6px;
+    padding: 0 2px;
     box-sizing: border-box;
     border-radius: 11px;
     display: grid;
@@ -730,6 +732,11 @@ html {
 
 .dark .pv-ag-subj {
     color: var(--ci, #0a1222);
+}
+
+.pv-ag-subj.pv-ag-subj-long {
+    font-size: 11.5px;
+    letter-spacing: -0.01em;
 }
 
 /* no subject colour (cancelled, events): a quiet chip */
@@ -1528,13 +1535,15 @@ html {
 }
 
 /* ---------- Switches (Bootstrap Toggle) as real switches ----------
-   A track (accent when on) with the state text next to a round knob.
+   A compact track without text: the knob on the right and the accent
+   colour mean "on"; the row's label says what "on" is (doc/Gestaltung.md).
    Bootstrap Toggle slides a group twice as wide as the switch; its knob
    sits in the middle of that group, i.e. on the switch's edge – moved in
-   by half a knob plus the gap. */
+   by half a knob plus the gap (11 + 3 px). */
 .ui-preview .toggle.btn {
-    width: 76px !important;
-    height: 30px !important;
+    flex: none;
+    width: 46px !important;
+    height: 28px !important;
     min-height: 0 !important;
     padding: 0;
     border: 0;
@@ -1545,48 +1554,112 @@ html {
 
 .ui-preview .toggle .toggle-on,
 .ui-preview .toggle .toggle-off {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     border: 0 !important;
     border-radius: 0;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
+    padding: 0 !important;
+    font-size: 0 !important;
+    color: transparent !important;
     box-shadow: none;
 }
 
 .ui-preview .toggle .toggle-on {
     background: var(--acc) !important;
-    color: var(--acc-ink) !important;
-    padding: 0 28px 0 0 !important;
 }
 
 .ui-preview .toggle .toggle-off {
-    background: var(--pv-line) !important;
-    color: var(--pv-ink) !important;
-    padding: 0 0 0 28px !important;
+    background: color-mix(in srgb, var(--pv-ink) 22%, var(--pv-surface)) !important;
 }
 
 .ui-preview .toggle .toggle-handle {
-    width: 24px !important;
-    height: 24px;
+    width: 22px !important;
+    height: 22px;
     top: 3px;
     padding: 0;
     border: 0;
     border-radius: 50%;
     background: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    transform: translateX(-15px);
+    transform: translateX(-14px);
 }
 
 .ui-preview .toggle.off .toggle-handle {
-    transform: translateX(15px);
+    transform: translateX(14px);
 }
 
 .ui-preview .toggle:focus-within {
     outline: 2px solid var(--acc-text);
     outline-offset: 2px;
+}
+
+/* no general button style may reach the switch's parts: the ID-based
+   ".ui-preview #main_container .btn" (10 px corners) and inherited borders,
+   shadows or press effects otherwise turn the knob into a rounded square
+   and show a light strip above the track */
+.ui-preview .toggle.btn,
+.ui-preview #main_container .toggle.btn {
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.ui-preview #main_container .toggle .toggle-group {
+    top: 0 !important;
+    bottom: 0 !important;
+}
+
+.ui-preview #main_container .toggle .toggle-on,
+.ui-preview #main_container .toggle .toggle-off {
+    top: 0 !important;
+    bottom: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.ui-preview .toggle .toggle-handle,
+.ui-preview #main_container .toggle .toggle-handle {
+    /* placed absolutely in the middle of the group (= the track's edge),
+       not on the text baseline, which put it about 2 px too low */
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 22px !important;
+    height: 22px !important;
+    margin: -11px 0 0 -11px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* profile, "Darstellung": settings rows – label (and description) left,
+   the switch right, level with the first line; every row full width */
+.ui-preview .col-md-4:has(> div > .toggle),
+.ui-preview .col-md-12:has(> div > .toggle) {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-top: 0 !important;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .col-md-4:has(> div > .toggle) > div,
+.ui-preview .col-md-12:has(> div > .toggle) > div {
+    align-items: flex-start !important;
+    gap: 16px;
+}
+
+.ui-preview .col-md-4:has(> div > .toggle) label,
+.ui-preview .col-md-12:has(> div > .toggle) label {
+    margin: 2px 0 0 !important;
+    font-weight: 600 !important;
+    color: var(--pv-ink);
 }
 
 /* ---------- Colour schemes and patterns (profile) ---------- */
@@ -3384,11 +3457,11 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .pv-ag-card.pv-ag-double .pv-ag-subj::after {
     content: "";
     position: absolute;
-    left: 6px;
-    right: 6px;
+    left: 4px;
+    right: 4px;
     top: 50%;
-    border-top: 1px dotted currentColor;
-    opacity: 0.22;
+    border-top: 1px dashed currentColor;
+    opacity: 0.45;
 }
 
 .pv-ag-card.pv-ag-double .pv-ag-subj {
@@ -5140,5 +5213,165 @@ body.ui-preview:has(.container-fluid.solid)::before {
 @media (min-width: 768px) {
     .pv-lmore.pv-lmore-phone {
         display: none;
+    }
+}
+
+/* "Mehr" on phones, the personal tiles: settings first (Passwörter, hell /
+   dunkel), then signing in and out side by side; all the same height */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > * {
+        order: 5;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .switch-session {
+        order: 0;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[href='/passwoerter'] {
+        order: 1;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .nav-dark,
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .nav-light {
+        order: 2;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[href='/login'] {
+        order: 3;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[onclick*='perform_logout'] {
+        order: 4;
+    }
+
+    /* two lines of label fit; one-line tiles keep the same height */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        min-height: 68px !important;
+    }
+}
+
+/* ---------- "Mehr" on phones: one tile concept, rows without gaps ----------
+   Six columns; a tile spans two, preview.js (balance_tiles) widens the last
+   tiles of a group so that every row is full. The personal tiles look like
+   all the others: icon centred above the label. */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav,
+    .ui-preview .pv-nav-section .pv-nav-body,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+
+    .ui-preview .navbar .pv-span-2 { grid-column: span 2; }
+    .ui-preview .navbar .pv-span-3 { grid-column: span 3; }
+    .ui-preview .navbar .pv-span-6 { grid-column: span 6; }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        min-height: 82px !important;
+        padding: 10px 6px !important;
+        border-radius: 14px !important;
+        background: var(--pv-hover) !important;
+        text-align: center !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) .icon {
+        width: 26px !important;
+        height: 26px !important;
+        margin: 0 !important;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--acc-text) !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) .label {
+        text-align: center !important;
+        font-size: 0.8rem !important;
+        line-height: 1.2 !important;
+    }
+}
+
+/* ---------- "Mehr" on phones: oneself and the first tiles in one grid ----------
+   The profile's item and menu dissolve (display: contents), so its tiles and
+   the top-level tiles (Datentresor, Hilfe) share the six-column grid: rows
+   of three like the sections below. The order: search, oneself, other
+   accounts, then Datentresor, Passwörter, Dunkel / Hilfe, Anmeldung,
+   Abmelden; everything else (the sections, the legal line) after. */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > * {
+        order: 20;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-more-search {
+        order: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.dropdown:has(> #navbarDropdownProfile),
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] {
+        display: contents !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile {
+        order: 1;
+        grid-column: 1 / -1;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .switch-session {
+        order: 2;
+        grid-column: 1 / -1;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) {
+        order: 3;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[href='/passwoerter'] {
+        order: 4;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .nav-dark,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .nav-light {
+        order: 5;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-help-tile {
+        order: 6;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[href='/login'] {
+        order: 7;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[onclick*='perform_logout'] {
+        order: 8;
+    }
+
+    /* the profile's other entries (Meine Klasse, Mittagessen …) join the
+       first tiles, next to Datentresor */
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > :not(.switch-session):not(a[href='/passwoerter']):not(.nav-dark):not(.nav-light):not(a[href='/login']):not(a[onclick*='perform_logout']) {
+        order: 3;
+    }
+
+    /* the top-level tiles take the size of the personal ones */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link {
+        min-height: 82px;
+    }
+}
+
+@media (max-width: 767px) {
+    /* Hilfe after the settings (more specific than the rule for top-level tiles) */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.pv-help-tile:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) {
+        order: 6;
+    }
+
+    /* every tile starts at the top: the icons of a row stand on one line,
+       also when a label takes two lines */
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry,
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        justify-content: flex-start !important;
+        padding-top: 16px !important;
     }
 }

@@ -599,6 +599,40 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
 
 // Phones: other plans (Kürzel, classes, rooms) through a "Plan" button in the
 // header – a sheet with search, the shown plan in the accent; no chip panel
+// Back (button or swipe from the edge) closes what opened like a screen –
+// "Mehr", the plan menu – and stays on the page; closing one in the page
+// leaves no extra history entry behind (preview.js, pv_back).
+test('Neues Design: Zurück schließt Sheets am Handy', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Sheets nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/messages');
+    await page.goto('/');
+    const more = page.locator('#navbarTogglerDemo02');
+    await page.locator('#bu_pv_more').click();
+    await expect(more).toHaveClass(/\bshow\b/);
+    await page.goBack({ waitUntil: 'commit' });
+    await expect(more).toBeHidden();
+    expect(new URL(page.url()).pathname).toBe('/');
+    const plan = page.locator('#pv_day_band .pv-band-plan');
+    await plan.click();
+    await expect(page.locator('.pv-plan-menu')).toBeVisible();
+    await page.goBack({ waitUntil: 'commit' });
+    await expect(page.locator('.pv-plan-menu')).toHaveCount(0);
+    expect(new URL(page.url()).pathname).toBe('/');
+    // closed in the page: the next back leaves the page as usual
+    await page.locator('#bu_pv_more').click();
+    await expect(more).toHaveClass(/\bshow\b/);
+    await page.locator('#bu_pv_more').click();
+    await expect(more).toBeHidden();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/messages$/);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('Neues Design: Plan wählen am Handy', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'am Desktop das Menü im Kopf (eigener Test)');
   await login(page, ACCOUNTS.admin);

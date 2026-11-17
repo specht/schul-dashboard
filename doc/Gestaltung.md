@@ -46,6 +46,11 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
   Design Byte für Byte gleich bleiben, steht ihr Teil für das neue Design in
   `src/static/preview/<seite>.js`, den die Seite nur im neuen Design lädt
   (Beispiel: Termine).
+- **Achtung Tailwind:** Die Entwicklungsinstanz erzeugt `tailwind.css` neu,
+  sobald sich Dateien unter `src/static` ändern, und liest dabei jedes Wort
+  als möglichen Klassennamen, auch in Skripten (`if (!grid)` ergibt eine
+  Klasse `!grid`). Ändert sich `tailwind.css` unerwartet, das Wort im Code
+  umbenennen und die Datei zurücksetzen, nicht mit einchecken.
 - **Prüfen, dass das alte Design gleich bleibt:** dieselbe Seite mit
   ausgeschalteter Vorschau vor und nach der Änderung vergleichen
   (Screenshots oder DOM), am Desktop und am Handy.
@@ -64,7 +69,12 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
 - **Handy:** keine Kopfleiste. Unten eine Tab-Leiste (Lehrkräfte: Heute,
   Woche, Nachrichten, Kurse, Mehr; Schülerinnen und Schüler: Heute, Woche,
   Aufgaben, Nachrichten, Mehr). »Mehr« ist ein Sheet mit Suche oben und den
-  Einträgen als Kacheln, farbig nach Gruppe.
+  Einträgen als Kacheln, farbig nach Gruppe. Alle Kacheln folgen einem
+  Muster (Symbol mittig über der Beschriftung, gleiche Höhe, die Symbole
+  einer Reihe auf einer Linie, auch bei zweizeiliger Beschriftung), und jede
+  Reihe ist voll: Bleiben in einer Gruppe Kacheln übrig, werden die
+  letzten breiter (zwei übrig: je halbe Breite; eine übrig: die letzten
+  vier als zwei Reihen zu zwei).
 - **Suche:** überall mit `/` oder `Strg+K`. Sie findet Seiten, Kurse,
   Personen und Links nach Name und Stichwort.
 - **Die Seite selbst** steht auf einem Panel (`--pv-surface`, Radius 14 bis
@@ -185,7 +195,8 @@ Umfragen, Termine, News verwalten)
 - `pv_list.row({sub: true, chip})`: eine Unterzeile, eingerückt, mit
   Status-Chip; laufende mit Akzentlinie links.
 - `pv_list.menu`: das »•••«-Menü neben dem Knopf, am Handy ein Sheet mit dem
-  Titel oben; Pfeiltasten, Escape schließt, Löschen in ruhigem Rot am Ende.
+  Titel oben; Pfeiltasten, Escape schließt, »Zurück« schließt das Sheet,
+  Löschen in ruhigem Rot am Ende.
 - `pv_list.confirm_delete`: Löschen immer mit `dashboardConfirm` und
   `danger: true`.
 - `pv_list.fold`: Gefaltetes hinter »2 beendete Durchführungen anzeigen«.
@@ -223,6 +234,17 @@ Umfragen, Termine, News verwalten)
   Modal): sie gleiten hoch, lassen sich nach unten ziehen oder über den
   Schleier schließen und liegen über der Tab-Leiste.
 - Ungespeicherte Änderungen werden vor dem Schließen nachgefragt.
+- **Zurück schließt, was wie ein eigener Bildschirm aufgeht.** Die
+  Zurück-Geste (Wischen vom Rand, Zurück-Taste des Handys oder Browsers)
+  schließt das oberste Sheet, den obersten Dialog, »Mehr« oder eine
+  geöffnete Nachricht und verlässt die Seite nicht. Bootstrap-Dialoge und
+  »Mehr« machen das von selbst (`preview.js`); eigene Ebenen melden sich mit
+  `pv_back.opened(id, schließen)` beim Öffnen und `pv_back.closed(id)` beim
+  Schließen an. Ansichten, die man teilen oder neu laden können soll (eine
+  geöffnete Nachricht), stehen zusätzlich in der Adresse (Hash), damit
+  Neuladen sie wieder öffnet.
+- **Wischgesten** der Seite (Tag für Tag, Karten) beginnen nicht in den
+  äußersten 24 px am Rand: dort liegt die Zurück-Geste des Systems.
 - Auf dem Desktop öffnen sich Menüs der Seitenleiste als Feld daneben (siehe
   3); Menüs im Fuß öffnen sich nach oben.
 

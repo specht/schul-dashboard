@@ -177,6 +177,16 @@ test('Neues Design: Umfrage anlegen, durchführen, beantworten, auswerten', asyn
       expect(Math.abs(m.y - (b.y + b.height))).toBeLessThan(12);
     }
     await expect(items.last()).toHaveClass(/pv-amenu-danger/);
+    if (testInfo.project.name === 'mobile') {
+      // back (button or swipe) closes the sheet and stays on the page
+      const url = page.url();
+      await page.goBack();
+      await expect(menu).toHaveCount(0);
+      expect(page.url()).toBe(url);
+      await expect(page.locator('.pv-amenu-veil')).toHaveCount(0);
+      await more.click();
+      await expect(menu).toBeVisible();
+    }
     // Escape closes it and gives the focus back
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);

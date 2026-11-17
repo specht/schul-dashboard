@@ -475,6 +475,8 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
     });
     expect(dialog.band).toBe(cardColour);
     expect(Math.abs(dialog.bottom - dialog.height)).toBeLessThan(2);
+    // nothing lies on top of the sheet, not even the tab bar
+    expect(await page.evaluate(() => !!document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 20)!.closest('#lessonModal'))).toBe(true);
     // pulled down by its header, the sheet closes
     const header = (await page.locator('#lessonModal .modal-header').boundingBox())!;
     const cdp = await page.context().newCDPSession(page);

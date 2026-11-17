@@ -443,14 +443,8 @@ html {
     .pv-menu-veil {
         position: fixed;
         inset: 0;
-        z-index: 99999;
+        z-index: 7990;
         background: rgba(0, 0, 0, 0.4);
-    }
-
-    /* the navbar (with the sheet) above the veil: Bootstrap's .fixed-top
-       (z-index 1030) would otherwise win over styles.css */
-    .ui-preview .navbar {
-        z-index: 100000;
     }
 
     /* the entries: full width, even spacing (styles.css spaces the items of
@@ -488,10 +482,10 @@ html {
         left: 0;
         right: 0;
         bottom: 0;
-        /* the navbar (and with it the "Mehr" sheet) has 100000 (styles.css):
-           the same here, later in the page, so the tab bar stays on top;
-           dialogs (100001) above both */
-        z-index: 100000;
+        /* layers (the template sets .navbar and .modal to 8000): veil 7990,
+           navbar with the "Mehr" sheet 8000, tab bar 8001, dialog backdrop
+           8050, dialogs and sheets 8100 */
+        z-index: 8001;
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
         background: var(--pv-surface);
         border-top: 1px solid var(--pv-line);
@@ -1846,4 +1840,13 @@ html {
    from the profile (next to the switch) */
 .ui-preview .design-feedback-button {
     display: none !important;
+}
+
+/* dialogs above the tab bar (see the layers at .pv-tabbar) */
+.ui-preview .modal {
+    z-index: 8100;
+}
+
+.ui-preview .modal-backdrop {
+    z-index: 8050;
 }

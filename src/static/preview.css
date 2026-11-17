@@ -1147,3 +1147,264 @@ html {
 .ui-preview .weekend_events > p:first-child b {
     font-family: var(--pv-display);
 }
+
+/* ---------- Pages: the content panel ---------- */
+.ui-preview .container {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: 16px;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.14);
+}
+
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container,
+    .ui-preview #main_container > div > .container {
+        margin-top: 24px;
+        margin-bottom: 48px;
+    }
+}
+
+.ui-preview .container hr {
+    border-top: 1px solid var(--pv-line);
+}
+
+/* ---------- Messages ---------- */
+/* Posteingang / Postausgang as a segmented switch (messages.html swaps
+   btn-primary and btn-outline-secondary) */
+.ui-preview .btn-group:has(#bu-inbox) {
+    background: var(--pv-hover);
+    border-radius: 12px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.ui-preview .btn-group:has(#bu-inbox) .btn {
+    border: 0;
+    border-radius: 9px !important;
+    background: transparent;
+    color: var(--pv-muted);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.ui-preview .btn-group:has(#bu-inbox) .btn.btn-primary {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ui-preview .bu-compose-message {
+    float: right;
+    background: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+    font-weight: 600;
+    border-radius: 10px;
+}
+
+.ui-preview .messages-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 1;
+    border: 0;
+    margin: 18px 0 10px;
+    color: var(--pv-muted);
+    font-size: 0.82em;
+    font-weight: 600;
+}
+
+.ui-preview .messages-date::before,
+.ui-preview .messages-date::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--pv-line);
+}
+
+.ui-preview .text-comment,
+.ui-preview .audio-player {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    box-shadow: none;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+.ui-preview .text-comment .from {
+    background: transparent;
+    box-shadow: none;
+    border-bottom: 1px solid var(--pv-line);
+    margin: -12px -16px 10px;
+    padding: 12px 16px 10px;
+    border-radius: 14px 14px 0 0;
+    font-weight: 700;
+}
+
+.ui-preview .text-comment .from .buttons {
+    top: -3px;
+    left: 4px;
+}
+
+.ui-preview .text-comment .from .buttons .btn,
+.ui-preview .outbox-messages-here .btn {
+    border-radius: 999px;
+    background: var(--pv-hover);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview .text-comment .message {
+    overflow-wrap: anywhere;
+}
+
+/* phones: the switch and "Neue Nachricht" side by side, compact */
+@media (max-width: 767px) {
+    .ui-preview .btn-group:has(#bu-inbox) .btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+
+    .ui-preview .bu-compose-message {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+}
+
+/* ---------- Pages: headings and forms ---------- */
+.ui-preview .container h2 {
+    font-family: var(--pv-display);
+    font-weight: 700;
+    font-size: 1.55rem;
+    letter-spacing: -0.01em;
+    margin-top: 36px !important;
+    margin-bottom: 14px !important;
+}
+
+/* the page title: no space above it */
+.ui-preview .container > .row > [class*='col'] > h2:first-child {
+    margin-top: 0 !important;
+}
+
+.ui-preview .container h3,
+.ui-preview .container h4 {
+    font-family: var(--pv-display);
+    font-weight: 700;
+}
+
+.ui-preview .container label {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--pv-muted);
+    margin-bottom: 4px;
+}
+
+.ui-preview .form-control,
+.ui-preview .custom-select {
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background-color: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .form-control:focus,
+.ui-preview .custom-select:focus {
+    border-color: var(--acc);
+    box-shadow: 0 0 0 3px var(--acc-soft);
+}
+
+.ui-preview .form-control[readonly],
+.ui-preview .form-control:disabled {
+    background-color: var(--pv-hover);
+    border-color: transparent;
+    color: var(--pv-ink);
+}
+
+.ui-preview .form-control::placeholder {
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+/* the profile picture: round, a little shadow */
+.ui-preview .avatar-lg {
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- Switches (Bootstrap Toggle): a pill, "on" in the accent ---------- */
+.ui-preview .toggle.btn {
+    border: 0;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px var(--pv-line);
+}
+
+.ui-preview .toggle .toggle-on,
+.ui-preview .toggle .toggle-off {
+    border: 0;
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.ui-preview .toggle .toggle-on {
+    background: var(--acc);
+    color: var(--acc-ink);
+}
+
+.ui-preview .toggle .toggle-off {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+.ui-preview .toggle .toggle-handle {
+    background: var(--pv-surface);
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Colour schemes and patterns (profile) ---------- */
+.ui-preview .swatch {
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.ui-preview .swatch.active {
+    box-shadow: 0 0 0 3px var(--pv-surface), 0 0 0 5px var(--acc);
+}
+
+.ui-preview .swatch:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--pv-surface), 0 0 0 5px var(--acc-text);
+}
+
+/* ---------- Tables ---------- */
+.ui-preview .container table,
+.ui-preview .modal table {
+    background: transparent;
+    color: var(--pv-ink);
+}
+
+.ui-preview .table td,
+.ui-preview .table th {
+    border-top-color: var(--pv-line);
+}
+
+.ui-preview .table thead th {
+    border-bottom: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.ui-preview .table-striped tbody tr:nth-of-type(odd) {
+    background-color: color-mix(in srgb, var(--pv-hover) 75%, transparent);
+}
+
+.ui-preview .table-hover tbody tr:hover {
+    background-color: var(--acc-soft);
+}

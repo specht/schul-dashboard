@@ -712,10 +712,13 @@ function render_preview_agenda_inner() {
     let last_end = null;
     for (let e of timed) {
         let x = e.extendedProps;
-        if (last_end && e.start - last_end >= 25 * 60 * 1000) {
-            box.append($('<div>').addClass('pv-ag-gap').text('frei bis ' + preview_hhmm(e.start)));
-        } else if (last_end && e.start - last_end >= 10 * 60 * 1000) {
-            box.append($('<div>').addClass('pv-ag-gap').text('Pause bis ' + preview_hhmm(e.start)));
+        // the gap with its length first: "20' Pause bis 10:40", "1 h 25' frei bis 12:20"
+        let gap = last_end ? Math.round((e.start - last_end) / 60000) : 0;
+        let gap_len = gap < 60 ? gap + "'" : Math.floor(gap / 60) + ' h' + (gap % 60 ? ' ' + (gap % 60) + "'" : '');
+        if (gap >= 25) {
+            box.append($('<div>').addClass('pv-ag-gap').text(gap_len + ' frei bis ' + preview_hhmm(e.start)));
+        } else if (gap >= 10) {
+            box.append($('<div>').addClass('pv-ag-gap').text(gap_len + ' Pause bis ' + preview_hhmm(e.start)));
         }
         if (!last_end || e.end > last_end) last_end = e.end;
         if (x.pausenaufsicht) {

@@ -540,7 +540,7 @@ test('Neues Design: Stundenplan-Auswahl als Chips', async ({ page }) => {
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
     await page.goto('/');
-    const active = page.locator('.timetable_chooser .ttc.active').first();
+    const active = page.locator('.timetable_chooser .ttc.active:visible').first();
     await expect(active).toBeVisible();
     const look = await active.evaluate((el) => {
       const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();

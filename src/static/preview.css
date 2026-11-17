@@ -191,10 +191,11 @@ html {
         position: static;
     }
 
-    /* quick search first, as a search field */
+    /* at the bottom: the search, right above the profile */
     .ui-preview .navbar .nav-quick-search-item {
-        order: -1;
-        margin-bottom: 8px;
+        margin-top: auto;
+        padding-top: 8px;
+        border-top: 1px solid var(--pv-line) !important;
     }
 
     .ui-preview .navbar .nav-quick-search {
@@ -206,9 +207,16 @@ html {
         display: inline !important;
     }
 
-    /* the profile at the bottom */
+    /* the profile at the very bottom (below the search for teachers) */
     .ui-preview .navbar .nav-item.dropdown:last-child {
         margin-top: auto;
+    }
+
+    .ui-preview .navbar .nav-quick-search-item + .nav-item.dropdown:last-child {
+        margin-top: 2px;
+    }
+
+    .ui-preview .navbar .nav-item.dropdown:last-child:not(.nav-quick-search-item + .nav-item) {
         border-top: 1px solid var(--pv-line) !important;
         padding-top: 8px;
     }

@@ -145,6 +145,11 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await expect(nav.locator('.nav-link.pv-active')).toContainText('Nachrichten');
       const profile = (await page.locator('#navbarDropdownProfile').boundingBox())!;
       expect(profile.y).toBeGreaterThan(viewport.height / 2);
+      // the search right above the profile
+      const search = (await page.locator('#bu_quick_search').boundingBox())!;
+      expect(search.y).toBeGreaterThan(viewport.height / 2);
+      expect(search.y).toBeLessThan(profile.y);
+      expect(profile.y - (search.y + search.height)).toBeLessThan(30);
       // menus open in place
       await page.locator('#navbarDropdownProfile').click();
       await expect(nav.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();

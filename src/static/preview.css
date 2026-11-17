@@ -189,7 +189,7 @@ html {
 }
 
 @media (max-width: 767px) {
-    body.ui-preview:not(.pv-agenda-on) .navbar .nav-quick-search-nav {
+    body.ui-preview:not(.pv-agenda-on) .navbar .nav-quick-search-nav.pv-unused {
         display: flex !important;
         position: absolute;
         right: calc(10px + env(safe-area-inset-right, 0px));
@@ -2814,12 +2814,24 @@ body.ui-preview.dark::before {
    Everything fixed to the top or bottom keeps the safe areas free. */
 @media (max-width: 767px) {
     /* pages with the white top bar: the bar reaches up, its content below the island */
-    body.ui-preview:not(.pv-agenda-on) .navbar {
-        padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+    /* no top bar on phones: the tab bar is the navigation; pages start
+       with their content, clear of the status bar */
+    body.ui-preview {
+        padding-top: env(safe-area-inset-top, 0px) !important;
     }
 
-    body.ui-preview:not(.pv-agenda-on) {
-        padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    .ui-preview .navbar {
+        min-height: 0;
+        height: 0;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .ui-preview .navbar .navbar-brand,
+    .ui-preview .navbar .nav-quick-search-nav {
+        display: none !important;
     }
 
     /* the agenda's header has its own top padding with the inset (pv-day-band) */
@@ -4141,4 +4153,189 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .input-group > .form-control:not(:last-child) {
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
+}
+
+/* menus whose entries are written as buttons (poll editor "Eintrag
+   hinzufügen"): calm menu entries */
+.ui-preview .dropdown-menu .dropdown-item.btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: 0 !important;
+    border-radius: 8px;
+    background: transparent !important;
+    color: var(--pv-ink) !important;
+    font-weight: normal;
+    text-align: left;
+    padding: 8px 12px;
+}
+
+.ui-preview .dropdown-menu .dropdown-item.btn:hover {
+    background: var(--pv-hover) !important;
+}
+
+.ui-preview .dropdown-menu .dropdown-item.btn i {
+    width: 18px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .dropdown-menu:not(.navbar .dropdown-menu) {
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+    padding: 6px;
+}
+
+/* move up / down: calm buttons everywhere (the poll editor's entries used
+   the main colour) */
+.ui-preview .btn:has(> .fa-arrow-up),
+.ui-preview .btn:has(> .fa-arrow-down) {
+    background: var(--pv-surface) !important;
+    border: 1px solid var(--pv-line) !important;
+    color: var(--pv-ink) !important;
+}
+
+.ui-preview .btn:has(> .fa-arrow-up):disabled,
+.ui-preview .btn:has(> .fa-arrow-down):disabled {
+    color: var(--pv-muted) !important;
+    opacity: 0.5;
+}
+
+/* the search at the top of "Mehr" on phones (preview.js) */
+.pv-more-search {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-more-search {
+        display: flex;
+        grid-column: 1 / -1;
+        order: -2;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 46px;
+        padding: 0 14px;
+        border: 1px solid var(--pv-line);
+        border-radius: 12px;
+        background: var(--pv-surface);
+        color: var(--pv-muted);
+        font: inherit;
+        text-align: left;
+    }
+}
+
+/* weekdays in front of dates (Termine, Kursbuch …): a fixed width, so the
+   dates stand in a column */
+.ui-preview .pv-weekday {
+    display: inline-block;
+    min-width: 2.2em;
+}
+
+/* ---------- Desktop sidebar: search and oneself always in view ----------
+   (preview.js moves them into a footer; only the list above it scrolls) */
+@media (min-width: 768px) {
+    .ui-preview .navbar {
+        overflow: hidden !important;
+        padding-bottom: 8px;
+    }
+
+    .ui-preview .navbar .navbar-collapse {
+        min-height: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav:not(.pv-nav-foot) {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav.pv-nav-foot {
+        flex: none !important;
+        margin-top: 0 !important;
+        padding-top: 8px;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .pv-nav-foot .nav-quick-search-item,
+    .ui-preview .pv-nav-foot .nav-item.dropdown {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        border-top: 0 !important;
+    }
+
+    /* one heading level: the groups inside a section only as spacing */
+    .ui-preview .pv-nav-sub {
+        font-size: 0;
+        padding: 0;
+        height: 8px;
+    }
+}
+
+/* ---------- "Mehr" on phones: the top calm and even ---------- */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item {
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+        gap: 10px !important;
+        min-height: 46px !important;
+        padding: 8px 12px !important;
+        text-align: left !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .icon {
+        width: 20px !important;
+        flex: none;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .label {
+        text-align: left !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Hilfe: a tile next to Datentresor (preview.js) */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] a.dropdown-item[href='/hilfe'] {
+        display: none !important;
+    }
+}
+
+.pv-help-tile {
+    display: none !important;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-help-tile {
+        display: block !important;
+    }
+}
+
+/* other accounts one is signed in with: a full row each, above the actions */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session {
+        grid-column: 1 / -1;
+        min-height: 44px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .icon .avatar-sm {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-size: cover;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session::after {
+        content: "wechseln";
+        margin-left: auto;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--acc-text);
+    }
 }

@@ -488,6 +488,16 @@
         collapse.querySelectorAll('.pv-nav-entry[href]').forEach(function(a) {
             if ((a.getAttribute('href') || '').replace(/\/$/, '') === here) a.classList.add('pv-active');
         });
+        // desktop: search and oneself in a footer, only the list scrolls
+        if (SIDEBAR.matches) {
+            var foot = document.createElement('ul');
+            foot.className = 'navbar-nav pv-nav-foot';
+            var search_item = main_nav.querySelector('.nav-quick-search-item');
+            var profile_toggle = document.getElementById('navbarDropdownProfile');
+            if (search_item) foot.appendChild(search_item);
+            if (profile_toggle) foot.appendChild(profile_toggle.closest('.nav-item'));
+            if (foot.children.length) collapse.appendChild(foot);
+        }
         if (typeof place_open_menus === 'function') place_open_menus();
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', regroup_navigation); else regroup_navigation();
@@ -498,6 +508,7 @@
     function keep_sidebar_place() {
         var nav = document.querySelector('.ui-preview nav.navbar');
         if (!nav || !SIDEBAR.matches) return;
+        nav = nav.querySelector('.navbar-collapse > .navbar-nav:not(.pv-nav-foot)') || nav;
         var KEY = 'pv_sidebar';
         var state = {};
         try { state = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch (e) {}
@@ -539,5 +550,47 @@
         e.stopImmediatePropagation();
         location.href = '/profil';
     }, true);
+
+    // phones: the search at the top of "Mehr" (the top bar has no icon)
+    function more_search() {
+        var nav = document.querySelector('.ui-preview #navbarTogglerDemo02 > .navbar-nav');
+        if (!nav || !document.getElementById('bu_quick_search') || nav.querySelector('.pv-more-search')) return;
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pv-more-search pv-search-button';
+        b.innerHTML = "<i class='fa fa-search'></i><span>Suchen</span>";
+        b.addEventListener('click', function() { if (window.pv_menu_hide_now) window.pv_menu_hide_now(); });
+        nav.insertBefore(b, nav.firstChild);
+    }
+    // "Mo. 23.11.2026" in table cells: the weekday at a fixed width
+    function weekday_columns() {
+        document.querySelectorAll('.ui-preview td').forEach(function(td) {
+            if (td.children.length) return;
+            var m = /^(Mo|Di|Mi|Do|Fr|Sa|So)\.\s+(\d{1,2}\.\d{1,2}\.\d{2,4}.*)$/.exec(td.textContent.trim());
+            if (!m) return;
+            td.textContent = '';
+            var wd = document.createElement('span');
+            wd.className = 'pv-weekday';
+            wd.textContent = m[1] + '.';
+            td.appendChild(wd);
+            td.appendChild(document.createTextNode(' ' + m[2]));
+        });
+    }
+    // phones: Hilfe as a tile next to Datentresor (the personal part keeps four)
+    function help_tile() {
+        var nav = document.querySelector('.ui-preview #navbarTogglerDemo02 > .navbar-nav');
+        var help = document.querySelector('[aria-labelledby="navbarDropdownProfile"] a[href="/hilfe"]');
+        if (!nav || !help || nav.querySelector('.pv-help-tile')) return;
+        var li = document.createElement('li');
+        li.className = 'nav-item pv-help-tile';
+        var a = help.cloneNode(true);
+        a.className = 'nav-link nav-icon';
+        li.appendChild(a);
+        var tresor = nav.querySelector('a.nav-link[href="/tresor"]');
+        var before = tresor ? tresor.closest('.nav-item').nextSibling : nav.querySelector('.pv-nav-section');
+        nav.insertBefore(li, before);
+    }
+    function later() { more_search(); weekday_columns(); help_tile(); }
+    if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });
 })();
 

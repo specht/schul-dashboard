@@ -199,8 +199,10 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await expect(page.locator('.pv-menu-veil')).toBeHidden();
       // teachers: Heute · Woche · Nachrichten · Kurse · Mehr (as in the mockups)
       await expect(tabs.locator('.pv-tab')).toHaveText(['Heute', 'Woche', 'Nachrichten', 'Kurse', 'Mehr']);
-      // the search: an icon in the top bar of other pages
-      await page.locator('.nav-quick-search-nav .nav-quick-search').click();
+      // the search: at the top of "Mehr" (no icon in the top bar)
+      await expect(page.locator('.nav-quick-search-nav .nav-quick-search')).toBeHidden();
+      await tabs.locator('#bu_pv_more').click();
+      await page.locator('.pv-more-search').click();
       await expect(page.locator('#ti_quick_search')).toBeVisible();
       await page.locator('#ti_quick_search').press('Escape');
       // "Kurse": Kursbuch and class lists as a sheet

@@ -655,15 +655,22 @@
         };
         var collapse = document.querySelector('.ui-preview #navbarTogglerDemo02');
         if (!collapse) return;
-        groups(collapse.querySelector('.navbar-nav:not(.pv-nav-foot)'), function(el) {
-            return el.classList.contains('nav-item') && !el.classList.contains('dropdown') && !el.classList.contains('pv-nav-section') && !el.classList.contains('nav-quick-search-item') && !el.classList.contains('pv-more-search');
-        }, 3, false);
+        // the top level and the profile's tiles share one grid on phones
+        // (preview.css: the profile item dissolves), in their CSS order
+        var top = collapse.querySelector('.navbar-nav:not(.pv-nav-foot)');
+        var profile_menu = collapse.querySelector('[aria-labelledby="navbarDropdownProfile"]');
+        var first_tiles = [];
+        if (top) Array.prototype.slice.call(top.children).filter(shown).forEach(function(el) {
+            if (el.classList.contains('nav-item') && !el.classList.contains('dropdown') && !el.classList.contains('pv-nav-section') && !el.classList.contains('nav-quick-search-item') && !el.classList.contains('pv-more-search')) first_tiles.push(el);
+        });
+        if (profile_menu) Array.prototype.slice.call(profile_menu.children).filter(shown).forEach(function(el) {
+            if (el.classList.contains('dropdown-item') && !el.classList.contains('switch-session')) first_tiles.push(el);
+        });
+        first_tiles.sort(by_order);
+        if (first_tiles.length) apply(first_tiles, 3);
         collapse.querySelectorAll('.pv-nav-body').forEach(function(body) {
             groups(body, function(el) { return el.classList.contains('pv-nav-entry'); }, 3, false);
         });
-        groups(collapse.querySelector('[aria-labelledby="navbarDropdownProfile"]'), function(el) {
-            return el.classList.contains('dropdown-item') && !el.classList.contains('switch-session');
-        }, 2, true);
     }
     function later() { more_search(); weekday_columns(); help_tile(); legal_line(); balance_tiles(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });

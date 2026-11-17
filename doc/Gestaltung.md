@@ -67,7 +67,8 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
   Woche, Nachrichten, Kurse, Mehr; Schülerinnen und Schüler: Heute, Woche,
   Aufgaben, Nachrichten, Mehr). »Mehr« ist ein Sheet mit Suche oben und den
   Einträgen als Kacheln, farbig nach Gruppe. Alle Kacheln folgen einem
-  Muster (Symbol mittig über der Beschriftung, gleiche Höhe), und jede
+  Muster (Symbol mittig über der Beschriftung, gleiche Höhe, die Symbole
+  einer Reihe auf einer Linie, auch bei zweizeiliger Beschriftung), und jede
   Reihe ist voll: Bleiben in einer Gruppe Kacheln übrig, werden die
   letzten breiter (zwei übrig: je halbe Breite; eine übrig: die letzten
   vier als zwei Reihen zu zwei).

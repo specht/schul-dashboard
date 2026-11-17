@@ -4730,3 +4730,84 @@ body.ui-preview:has(.container-fluid.solid)::before {
         line-height: 1.2 !important;
     }
 }
+
+/* ---------- "Mehr" on phones: oneself and the first tiles in one grid ----------
+   The profile's item and menu dissolve (display: contents), so its tiles and
+   the top-level tiles (Datentresor, Hilfe) share the six-column grid: rows
+   of three like the sections below. The order: search, oneself, other
+   accounts, then Datentresor, Passwörter, Dunkel / Hilfe, Anmeldung,
+   Abmelden; everything else (the sections, the legal line) after. */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > * {
+        order: 20;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-more-search {
+        order: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.dropdown:has(> #navbarDropdownProfile),
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] {
+        display: contents !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile {
+        order: 1;
+        grid-column: 1 / -1;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .switch-session {
+        order: 2;
+        grid-column: 1 / -1;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) {
+        order: 3;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[href='/passwoerter'] {
+        order: 4;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .nav-dark,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .nav-light {
+        order: 5;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-help-tile {
+        order: 6;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[href='/login'] {
+        order: 7;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[onclick*='perform_logout'] {
+        order: 8;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > :not(.switch-session):not(a[href='/passwoerter']):not(.nav-dark):not(.nav-light):not(a[href='/login']):not(a[onclick*='perform_logout']) {
+        order: 20;
+    }
+
+    /* the top-level tiles take the size of the personal ones */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link {
+        min-height: 82px;
+    }
+}
+
+@media (max-width: 767px) {
+    /* Hilfe after the settings (more specific than the rule for top-level tiles) */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.pv-help-tile:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) {
+        order: 6;
+    }
+
+    /* every tile starts at the top: the icons of a row stand on one line,
+       also when a label takes two lines */
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry,
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        justify-content: flex-start !important;
+        padding-top: 16px !important;
+    }
+}

@@ -655,7 +655,18 @@ function preview_hhmm(d) {
     return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
+// if anything goes wrong, the time grid stays – never an empty page
 function render_preview_agenda() {
+    try {
+        render_preview_agenda_inner();
+    } catch (err) {
+        console.warn('agenda', err);
+        document.body.classList.remove('pv-agenda-on');
+        $('#pv_agenda').attr('hidden', true);
+    }
+}
+
+function render_preview_agenda_inner() {
     let box = $('#pv_agenda');
     if (!preview_agenda_wanted()) {
         document.body.classList.remove('pv-agenda-on');

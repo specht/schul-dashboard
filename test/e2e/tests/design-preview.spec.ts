@@ -413,3 +413,21 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Styles and scripts of the preview carry a version: after a change browsers
+// load them again instead of keeping an old copy (nginx serves them as files)
+test('Neues Design: Dateien mit Version, damit Änderungen ankommen', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    for (const selector of ['link[href^="/preview.css"]', 'script[src^="/preview.js"]', 'link[href^="/include/fonts-v2/fonts.css"]',
+      'link[href^="/include/tabler/tabler-icons.css"]', 'script[src^="/include/tabler/fa-to-tabler.js"]']) {
+      const url = await page.locator(selector).first().evaluate((el) => el.getAttribute('href') || el.getAttribute('src'));
+      expect(url, selector).toMatch(/\?v=\d{9,}$/);
+      expect((await page.request.get(url!)).status(), selector).toBe(200);
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

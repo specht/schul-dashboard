@@ -30,16 +30,24 @@ class Main < Sinatra::Base
     end
 
     # <style> with the tokens and the preview styles, only for those who opted in
+    # static files (served by nginx) with their modification time, so that
+    # browsers fetch them again after every change instead of keeping an old copy
+    def preview_asset(path)
+        "#{path}?v=#{File.mtime(File.join('/static', path)).to_i}"
+    rescue StandardError
+        path
+    end
+
     def design_preview_head(color_scheme)
         return '' unless ui_preview?
         dark = !!(@session_user || {})[:dark]
         "<style id='design_tokens'>#{DesignTokens.css(color_scheme, dark)}</style>\n" +
-            "<link href='/include/fonts-v2/fonts.css' rel='stylesheet' />\n" +
-            "<link href='/preview.css' rel='stylesheet' />\n" +
-            "<script src='/preview.js'></script>\n" +
+            "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
+            "<link href='#{preview_asset('/preview.css')}' rel='stylesheet' />\n" +
+            "<script src='#{preview_asset('/preview.js')}'></script>\n" +
             # Tabler icons instead of Fork Awesome (include/tabler/fa-to-tabler.js)
-            "<link href='/include/tabler/tabler-icons.css' rel='stylesheet' />\n" +
-            "<script src='/include/tabler/fa-to-tabler.js'></script>"
+            "<link href='#{preview_asset('/include/tabler/tabler-icons.css')}' rel='stylesheet' />\n" +
+            "<script src='#{preview_asset('/include/tabler/fa-to-tabler.js')}'></script>"
     end
 
     post '/api/set_ui_preview' do

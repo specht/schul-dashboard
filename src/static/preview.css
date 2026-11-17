@@ -4463,3 +4463,120 @@ body.ui-preview:has(.container-fluid.solid)::before {
     align-items: center;
     gap: 4px 14px;
 }
+
+/* ---------- "Mehr" on phones: oneself without a box (doc/Gestaltung.md, "Flächen") ----------
+   One's own row (picture, name, "Profil und Einstellungen" below, chevron),
+   other accounts as plain rows, the personal actions as tiles directly on
+   the sheet like the groups below. */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse .nav-item.dropdown:has(> #navbarDropdownProfile) {
+        padding: 0 !important;
+        border-radius: 0;
+        background: transparent;
+        margin-bottom: 4px !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile {
+        position: relative;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-content: center;
+        column-gap: 12px;
+        min-height: 64px;
+        padding: 8px 4px 8px 62px !important;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+
+    /* the picture beside the two lines, out of the grid */
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile > .icon {
+        position: absolute;
+        left: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 46px !important;
+        height: 46px !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile > .icon > * {
+        width: 46px !important;
+        height: 46px !important;
+        border-radius: 50%;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile > .menu-user-name {
+        grid-column: 1;
+        grid-row: 1;
+        overflow-wrap: anywhere;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile::before {
+        grid-column: 1;
+        grid-row: 2;
+        order: 0;
+        margin: 1px 0 0;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile::after {
+        display: block !important;
+        grid-column: 2;
+        grid-row: 1 / 3;
+        align-self: center;
+        content: "";
+        width: 8px;
+        height: 8px;
+        margin: 0 6px 0 0;
+        border: solid var(--pv-muted);
+        border-width: 0 2px 2px 0;
+        transform: rotate(-45deg);
+    }
+
+    /* other accounts: plain rows with a hairline, "wechseln" at the end */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session {
+        min-height: 44px !important;
+        padding: 8px 4px !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        border-top: 1px solid var(--pv-line);
+        align-items: center !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session + .dropdown-item:not(.switch-session) {
+        margin-top: 8px;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .label {
+        font-size: 0.9rem !important;
+    }
+
+    /* the personal actions: quiet tiles on the sheet, icon level with the
+       first line */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        padding: 0 !important;
+        margin-top: 0 !important;
+        gap: 8px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item:not(.switch-session) {
+        align-items: flex-start !important;
+        background: var(--pv-hover) !important;
+        border-radius: 12px !important;
+        min-height: 48px !important;
+        padding: 12px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item:not(.switch-session) .icon {
+        height: 1.15em !important;
+        margin-top: 1px;
+        align-items: center;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item:not(.switch-session) .label {
+        line-height: 1.2 !important;
+        font-size: 0.88rem !important;
+    }
+}

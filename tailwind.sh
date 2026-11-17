@@ -10,7 +10,21 @@ cd "$(dirname "$0")"
 TAILWIND=(npx -y tailwindcss@3.0.24)
 
 case "${1:-watch}" in
-    watch) exec "${TAILWIND[@]}" -o src/static/tailwind.css --watch ;;
+    watch)
+        # A complete build on every change, not tailwind's own --watch: that one
+        # only ever adds classes, so a class removed from a page stayed in the
+        # file until a restart and tailwind.css drifted from what git gives.
+        # Each build also reads the list of tracked files again.
+        "${TAILWIND[@]}" -o src/static/tailwind.css 2>/dev/null
+        stamp=$(mktemp)
+        trap 'rm -f "$stamp"' EXIT
+        while sleep 1; do
+            if [ -n "$(find src/static -maxdepth 1 \( -name '*.html' -o -name '*.js' \) -newer "$stamp" -print -quit)" ]; then
+                touch "$stamp"
+                "${TAILWIND[@]}" -o src/static/tailwind.css 2>/dev/null || true
+            fi
+        done
+        ;;
     build) "${TAILWIND[@]}" -o src/static/tailwind.css ;;
     check)
         tmp=$(mktemp)

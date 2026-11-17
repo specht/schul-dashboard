@@ -22,12 +22,14 @@ Sign-on, sonst endet jede Seite nach der Anmeldung mit HTTP 500 – siehe
 Das Dashboard läuft dann unter [http://localhost:8025](http://localhost:8025),
 der Neo4j-Browser unter [http://localhost:8021](http://localhost:8021).
 `./config.rb up` startet im Development-Modus zusätzlich `tailwind.sh`, das
-`src/static/tailwind.css` bei Änderungen neu baut. Dabei zählen nur Dateien,
+`src/static/tailwind.css` bei jeder Änderung einer Seite vollständig neu baut
+(nicht inkrementell: Tailwinds eigenes `--watch` behält entfernte Klassen bis
+zum Neustart). Dabei zählen nur Dateien,
 die in git sind (`tailwind.config.js`): Derselbe Stand ergibt auf jedem
 Rechner dieselbe Datei, egal was sonst lokal herumliegt. Ändert sich
 `tailwind.css`, braucht eine Seite neue Klassen – dann gehört die Datei mit
 in denselben Commit. Eine neue Seite zählt erst, wenn sie in git ist
-(`git add`, dann `tailwind.sh` neu starten). `./tailwind.sh build` baut die
+(`git add`; der nächste Bau nach einer Änderung nimmt sie mit). `./tailwind.sh build` baut die
 Datei einmal, `./tailwind.sh check` prüft sie (läuft in `./test.sh all`
 mit). In Produktion wird nichts gebaut, dort gilt die Datei aus git.
 

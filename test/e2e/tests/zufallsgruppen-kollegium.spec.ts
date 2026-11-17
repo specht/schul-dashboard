@@ -140,6 +140,11 @@ test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bil
   expect(chipWidths.length).toBeGreaterThan(1);
   expect(Math.max(...chipWidths) - Math.min(...chipWidths)).toBeLessThanOrEqual(1);
   expect(await page.locator('#zg_beamer .zg-name').first().evaluate((el) => getComputedStyle(el).borderRadius)).not.toBe('0px');
+  // the group number as a badge in the corner instead of a heading line
+  const badge = cards.first().locator('h5');
+  await expect(badge).toHaveText(/^\s*(Gruppe )?1\s*$/);
+  await expect(badge.locator('.zg-gword')).toBeHidden();
+  expect(await badge.evaluate((el) => getComputedStyle(el).position)).toBe('absolute');
   // cards hug their Kürzel: the fullest card has no wide empty band (cards in a
   // row are equally tall, so one with fewer people keeps a free line)
   const slack = await cards.evaluateAll((els) => {

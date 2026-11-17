@@ -198,13 +198,29 @@
     margin-right: 0.28em;
     vertical-align: 0;
 }
-#zg_beamer.zg-short .zg-group h5 {
-    align-self: center;
-    font-size: 0.7em;
-    margin-bottom: 0.35em;
-}
+/* Kürzel: die Gruppennummer als Plakette oben links, die Chips bekommen
+   die ganze Höhe der Karte */
 #zg_beamer.zg-short .zg-group {
-    padding: 0.4em 0.6em 0.6em;
+    position: relative;
+    padding: 0.35em 0.6em 0.35em 1.4em;
+}
+#zg_beamer.zg-short .zg-group h5 {
+    position: absolute;
+    left: 0.3em;
+    top: 0.3em;
+    margin: 0;
+    width: 1.8em;
+    height: 1.8em;
+    font-size: 0.6em;
+    line-height: 1;
+    border-radius: 50%;
+    background: #2f7fd6;
+    color: #fff;
+    display: grid;
+    place-items: center;
+}
+#zg_beamer.zg-short .zg-group h5 .zg-gword {
+    display: none;
 }
 #zg_beamer.zg-fitted .zg-groups {
     grid-auto-rows: auto;
@@ -581,7 +597,7 @@ function sort_group(g) {
 function group_cards(groups) {
     return groups.map((g, i) => {
         let card = $('<div>').addClass('zg-group');
-        card.append($('<h5>').text(`Gruppe ${i + 1}`));
+        card.append($('<h5>').append($('<span>').addClass('zg-gword').text('Gruppe '), $('<span>').addClass('zg-gnum').text(i + 1)));
         let members = $('<div>').addClass('zg-members');
         for (let e of sort_group(g)) {
             let name = fill_name($('<div>').addClass('zg-name'), e);
@@ -657,10 +673,11 @@ function beamer_layout(W, H, n, max_members, widest_em, header_em, all, sizes) {
         for (let mcols = 1; mcols <= max_members; mcols++) {
             let mrows = Math.ceil(max_members / mcols);
             // Höhe in em: Innenabstand 0,5 + Überschrift 0,6 × 1,15 + 0,1 + Zeilen à 1,2
-            let font_h = card_h / (0.5 + 0.69 + 0.1 + mrows * 1.2 + 0.1);
+            let head = header_em > 0 ? 0.69 + 0.1 : 0;
+            let font_h = card_h / (0.5 + head + mrows * 1.2 + 0.1);
             // Breite in em: Innenabstand 1 + Spalten + Abstände à 0,6
             let font_w = card_w / (1.0 + mcols * widest_em + (mcols - 1) * 0.6 + 0.1);
-            let font_head = card_w / (1.0 + header_em * 0.6 + 0.1);
+            let font_head = header_em > 0 ? card_w / (1.0 + header_em * 0.6 + 0.1) : Infinity;
             let font = Math.min(font_h, font_w, font_head);
             // halb leere letzte Zeilen sehen unruhig aus
             let ragged = 0;
@@ -710,8 +727,11 @@ function fit_beamer_font(font, max_font) {
             });
             let gap = parseFloat(members.css('column-gap')) || 0;
             let used_cols = Math.min(mcols, names.length);
-            let need_w = Math.max(h5[0].getBoundingClientRect().width, used_cols * cell_w + (used_cols - 1) * gap);
-            let need_h = h5.outerHeight(true) + Math.ceil(names.length / mcols) * cell_h;
+            // Kürzel: die Nummer sitzt als Plakette in der Ecke, ohne eigene Zeile
+            let head_w = chips ? 0 : h5[0].getBoundingClientRect().width;
+            let head_h = chips ? 0 : h5.outerHeight(true);
+            let need_w = Math.max(head_w, used_cols * cell_w + (used_cols - 1) * gap);
+            let need_h = head_h + Math.ceil(names.length / mcols) * cell_h;
             ratio = Math.min(ratio, avail_w / need_w, avail_h / need_h);
         });
         if (!isFinite(ratio)) break;
@@ -742,7 +762,7 @@ function render_beamer() {
     // Chips: Bild, Abstand, Innenabstand und Rand dazu
     let widest_em = Math.max(1, ...current_groups.flat().map(e => measure(label(e), false))) + (use_avatars() ? 1.45 : 0) + (use_shorthands() ? 0.65 : 0);
     beamer.css('--zg-chip-w', `${widest_em.toFixed(3)}em`);
-    let header_em = measure(`Gruppe ${n}`, true);
+    let header_em = use_shorthands() ? 0 : measure(`Gruppe ${n}`, true);
     probe.remove();
     let W = beamer.innerWidth() - parseFloat(beamer.css('padding-left')) - parseFloat(beamer.css('padding-right'));
     let H = beamer.innerHeight() - parseFloat(beamer.css('padding-top')) - parseFloat(beamer.css('padding-bottom'));
@@ -763,7 +783,7 @@ function render_beamer() {
         .css('--zg-gap-x', `${best.layout.gap_x.toFixed(1)}px`).css('--zg-gap-y', `${best.layout.gap_y.toFixed(1)}px`);
     groups_el.css('--zg-mcols', best.layout.mcols);
     // etwas Luft zum Kartenrand; Kürzel brauchen nicht die ganze Karte
-    let scale = use_shorthands() ? 0.75 : 0.97;
+    let scale = use_shorthands() ? 0.85 : 0.97;
     beamer.css('--zg-font', `${(fit_beamer_font(best.font, max_font) * scale).toFixed(2)}px`);
     // Kürzel: Karten so hoch wie ihr Inhalt, das Raster mittig auf dem Bildschirm
     beamer.toggleClass('zg-fitted', use_shorthands());

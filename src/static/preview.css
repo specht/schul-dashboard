@@ -3380,3 +3380,58 @@ body.ui-preview:has(.container-fluid.solid)::before {
     box-shadow: none !important;
     border-top: 1px solid var(--pv-line);
 }
+
+/* ---------- "Mehr" on phones: every entry a full touch row (44 px) ---------- */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse .dropdown-menu {
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+        margin: 0 0 6px;
+        padding: 0 0 0 30px;
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 44px;
+        padding: 8px 12px !important;
+        border-radius: 10px;
+        font-size: 1rem;
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-item .icon {
+        position: static;
+        flex: none;
+        width: 22px;
+        margin: 0 !important;
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-item .label {
+        position: static;
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-divider {
+        margin: 6px 12px;
+    }
+
+    /* chevrons instead of the triangles; turned while the part is open */
+    .ui-preview .navbar .navbar-collapse .dropdown-toggle::after {
+        content: "";
+        margin-left: auto;
+        width: 8px;
+        height: 8px;
+        border: solid var(--pv-muted);
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        transition: transform 0.15s;
+        flex: none;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-item.show > .dropdown-toggle::after {
+        transform: rotate(-135deg);
+    }
+}

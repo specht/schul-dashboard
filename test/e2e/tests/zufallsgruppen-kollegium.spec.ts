@@ -140,15 +140,15 @@ test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bil
   expect(chipWidths.length).toBeGreaterThan(1);
   expect(Math.max(...chipWidths) - Math.min(...chipWidths)).toBeLessThanOrEqual(1);
   expect(await page.locator('#zg_beamer .zg-name').first().evaluate((el) => getComputedStyle(el).borderRadius)).not.toBe('0px');
-  // Kürzel are large, but leave room in the card
-  const fill = await cards.evaluateAll((els) => Math.max(...els.map((card) => {
-    const h5 = card.querySelector('h5')!.getBoundingClientRect();
-    const names = [...card.querySelectorAll('.zg-name')].map((n) => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect(); });
-    const top = Math.min(...names.map((r) => r.top)), bottom = Math.max(...names.map((r) => r.bottom));
-    const c = card.getBoundingClientRect();
-    return (bottom - top) / (c.bottom - h5.bottom);
-  })));
-  expect(fill).toBeLessThan(0.85);
+  // cards hug their Kürzel: the fullest card has no wide empty band (cards in a
+  // row are equally tall, so one with fewer people keeps a free line)
+  const slack = await cards.evaluateAll((els) => {
+    const full = els.reduce((a, b) => (b.querySelectorAll('.zg-name').length > a.querySelectorAll('.zg-name').length ? b : a));
+    const c = full.getBoundingClientRect();
+    const bottom = Math.max(...[...full.querySelectorAll('.zg-name')].map((n) => n.getBoundingClientRect().bottom));
+    return (c.bottom - bottom) / c.height;
+  });
+  expect(slack).toBeLessThan(0.2);
   await page.locator('#zg_bu_beamer_close').click();
 
   // a school-sized staff: 17 groups of six on a 1920×1080 projector
@@ -161,6 +161,18 @@ test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bil
   });
   // Kürzel side by side and much larger than whole names
   expect(layout.shorthand.mcols).toBeGreaterThan(1);
+  // 18 groups of four or five: a full grid (6 × 3), not 8 columns with a half empty last row
+  const grid = await page.evaluate(() => {
+    const w = window as unknown as { beamer_layout: (...a: unknown[]) => { cols: number } };
+    const empty = (n: number, l: { cols: number }) => Math.ceil(n / l.cols) * l.cols - n;
+    return {
+      eighteen: empty(18, w.beamer_layout(1890, 1050, 18, 5, 4.0, 4.6, false, [4, 5])),
+      // groups of six (one of seven), the usual case: 12 groups, 4 × 3
+      twelve: empty(12, w.beamer_layout(1890, 1050, 12, 7, 4.0, 4.6, false, [6, 7])),
+    };
+  });
+  expect(grid.eighteen).toBe(0);
+  expect(grid.twelve).toBe(0);
   expect(layout.shorthand.font).toBeGreaterThan(40);
   expect(layout.shorthand.font).toBeGreaterThan(layout.names.font * 1.5);
 });

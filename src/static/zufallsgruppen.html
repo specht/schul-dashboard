@@ -200,6 +200,18 @@
 }
 #zg_beamer.zg-short .zg-group h5 {
     align-self: center;
+    font-size: 0.7em;
+    margin-bottom: 0.35em;
+}
+#zg_beamer.zg-short .zg-group {
+    padding: 0.4em 0.6em 0.6em;
+}
+#zg_beamer.zg-fitted .zg-groups {
+    grid-auto-rows: auto;
+    align-content: center;
+}
+#zg_beamer.zg-fitted .zg-group .zg-members {
+    flex: none;
 }
 #zg_beamer .zg-group .zg-name {
     padding: 0;
@@ -657,6 +669,9 @@ function beamer_layout(W, H, n, max_members, widest_em, header_em, all, sizes) {
                 if (rest !== 0 && rest < mcols / 2) ragged++;
             }
             let balance = 1 - 0.08 * ragged;
+            // leere Plätze im Raster (z. B. 18 Gruppen in 8 Spalten) sehen unfertig aus
+            let fill = n / (rows * cols);
+            balance *= 0.75 + 0.25 * fill;
             candidates.push({font: font, score: font * balance, balance: balance, cols: cols, mcols: mcols, gap_x: gap_x, gap_y: gap_y});
         }
     }
@@ -712,6 +727,7 @@ function render_beamer() {
     let beamer = $('#zg_beamer');
     let groups_el = $('#zg_beamer_groups');
     beamer.toggleClass('zg-short', use_shorthands());
+    beamer.removeClass('zg-fitted');
     groups_el.empty().append(group_cards(current_groups));
     let n = Math.max(1, current_groups.length);
     let max_members = Math.max(1, ...current_groups.map(g => g.length));
@@ -749,6 +765,8 @@ function render_beamer() {
     // etwas Luft zum Kartenrand; Kürzel brauchen nicht die ganze Karte
     let scale = use_shorthands() ? 0.75 : 0.97;
     beamer.css('--zg-font', `${(fit_beamer_font(best.font, max_font) * scale).toFixed(2)}px`);
+    // Kürzel: Karten so hoch wie ihr Inhalt, das Raster mittig auf dem Bildschirm
+    beamer.toggleClass('zg-fitted', use_shorthands());
     size_avatars(beamer);
 }
 

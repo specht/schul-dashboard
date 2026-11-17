@@ -1584,6 +1584,44 @@ html {
     outline-offset: 2px;
 }
 
+/* no general button style may reach the switch's parts: the ID-based
+   ".ui-preview #main_container .btn" (10 px corners) and inherited borders,
+   shadows or press effects otherwise turn the knob into a rounded square
+   and show a light strip above the track */
+.ui-preview .toggle.btn,
+.ui-preview #main_container .toggle.btn {
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.ui-preview #main_container .toggle .toggle-group {
+    top: 0 !important;
+    bottom: 0 !important;
+}
+
+.ui-preview #main_container .toggle .toggle-on,
+.ui-preview #main_container .toggle .toggle-off {
+    top: 0 !important;
+    bottom: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.ui-preview #main_container .toggle .toggle-handle {
+    width: 22px !important;
+    height: 22px !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
 /* profile, "Darstellung": settings rows – label (and description) left,
    the switch right, level with the first line; every row full width */
 .ui-preview .col-md-4:has(> div > .toggle),

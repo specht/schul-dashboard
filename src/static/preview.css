@@ -4111,3 +4111,34 @@ body.ui-preview:has(.container-fluid.solid)::before {
     border-radius: 8px;
     font: 700 0.72rem/1 var(--pv-display);
 }
+
+/* input groups with several buttons: only the outer corners are round,
+   field and buttons share one outline */
+.ui-preview .input-group > .input-group-append > .btn,
+.ui-preview .input-group > .input-group-append > .input-group-text {
+    border-radius: 0 !important;
+    margin-left: -1px;
+    border: 1px solid var(--pv-line) !important;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .input-group > .input-group-append:last-child > .btn:last-child,
+.ui-preview .input-group > .input-group-append:last-child > .input-group-text:last-child {
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
+}
+
+.ui-preview .input-group > .input-group-append > .btn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .input-group > .form-control,
+.ui-preview .input-group > .form-control[readonly] {
+    border: 1px solid var(--pv-line) !important;
+}
+
+.ui-preview .input-group > .form-control:not(:last-child) {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}

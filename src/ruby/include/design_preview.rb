@@ -24,7 +24,88 @@ class Main < Sinatra::Base
         # monitors keep their own layout, also when an admin views them
         # (manage_monitor embeds them with the admin's session)
         return false if ((request.path rescue '') || '').start_with?('/monitor')
+        return ui_preview_account? if user_logged_in?
+        ui_preview_public_page? && UI_PREVIEW_COOKIE_VALUES.include?(ui_preview_cookie)
+    end
+
+    # the account's own setting (logged in)
+    def ui_preview_account?
         ui_preview_allowed? && !!(@session_user || {})[:ui_preview]
+    end
+
+    # Logged out (the login and code pages) there is no account to ask, so
+    # the browser remembers the look: whoever switches the preview on gets a
+    # long-lived cookie with nothing in it but "light" or "dark" – no session
+    # data, no name, never written into a page. Switching it off (or logging
+    # in with an account without the preview) removes it again. It is purely
+    # cosmetic: someone who sets it by hand only sees the public pages below
+    # in the new look (whose styles are public files anyway); switching the
+    # preview on for an account still needs ui_preview_allowed?, and logging
+    # in works exactly the same in both looks.
+    UI_PREVIEW_COOKIE = 'ui_preview'
+    UI_PREVIEW_COOKIE_VALUES = %w(light dark)
+    # the pages someone sees logged out that have a design in the preview
+    # ('' and 'index' are the login page when nobody is logged in)
+    UI_PREVIEW_PUBLIC_PAGES = %w(index login c login_otp otp)
+
+    def ui_preview_public_page?
+        # library devices have a login page of their own
+        return false if @session_device
+        page = ((request.path rescue '') || '').split('/')[1].to_s
+        UI_PREVIEW_PUBLIC_PAGES.include?(page.empty? ? 'index' : page)
+    end
+
+    # dark mode: the account's setting, logged out the remembered look
+    def ui_dark?
+        return !!@session_user[:dark] if user_logged_in?
+        ui_preview? && ui_preview_cookie == 'dark'
+    end
+
+    def ui_preview_cookie
+        (request.cookies[UI_PREVIEW_COOKIE] rescue nil)
+    end
+
+    def set_ui_preview_cookie(look)
+        if look
+            response.set_cookie(UI_PREVIEW_COOKIE,
+                                :value => look,
+                                :expires => Time.new + COOKIE_EXPIRY_TIME,
+                                :path => '/',
+                                :httponly => true,
+                                :same_site => :lax,
+                                :secure => DEVELOPMENT ? false : true)
+        else
+            response.delete_cookie(UI_PREVIEW_COOKIE, :path => '/')
+        end
+    end
+
+    # on every page while logged in: the cookie follows the account (the
+    # preview switched on for someone else, on another device, light / dark)
+    def sync_ui_preview_cookie
+        return unless user_logged_in?
+        look = ui_preview_account? ? (@session_user[:dark] ? 'dark' : 'light') : nil
+        set_ui_preview_cookie(look) if look != ui_preview_cookie
+    end
+
+    # body classes of the new design; pv-public: logged out (no navigation)
+    def design_preview_body_class
+        return '' unless ui_preview?
+        user_logged_in? ? ' ui-preview' : ' ui-preview pv-public'
+    end
+
+    # the login pages logged out (no navigation): the school's name and icon
+    # at the top of the card, a way back to the start
+    def design_preview_public_brand
+        return '' unless ui_preview? && !user_logged_in?
+        "<a class='pv-login-brand' href='/'><img src='/#{ui_dark? ? DARK_SCHUL_ICON : SCHUL_ICON}' alt=''><span>#{CGI.escapeHTML(SCHUL_NAME)}</span></a>"
+    end
+
+    # code fields (c.html): in the new design a text field with the numeric
+    # keyboard (a number field shows spin arrows and
+    # changes on scrolling) that phones can fill from an SMS or mail
+    def design_preview_code_input_type
+        return 'type="number"' unless ui_preview?
+        'type="text" inputmode="numeric" autocomplete="one-time-code" spellcheck="false"'
     end
 
     # the role a feedback entry is filed under
@@ -73,8 +154,9 @@ class Main < Sinatra::Base
     end
 
     def design_preview_head(color_scheme)
+        sync_ui_preview_cookie
         return '' unless ui_preview?
-        dark = !!(@session_user || {})[:dark]
+        dark = ui_dark?
         backdrop, backdrop_css = design_preview_backdrop(color_scheme, dark)
         # the page reaches behind the island / status bar (safe areas in
         # preview.css); in a browser tab the browser's own bar stays, on the
@@ -113,6 +195,8 @@ class Main < Sinatra::Base
         # switching back: one optional question, filed like other feedback
         reason = (data[:reason] || '').strip
         store_design_feedback('opt_out', reason, nil, nil, false) if !on && !reason.empty?
+        # the look for the login pages of this browser (see UI_PREVIEW_COOKIE)
+        set_ui_preview_cookie(on ? (@session_user[:dark] ? 'dark' : 'light') : nil)
         respond(:ok => true)
     end
 
@@ -163,7 +247,7 @@ class Main < Sinatra::Base
     # feedback button and dialog in the template (preview only); teachers are
     # addressed with "Sie", everyone else with "du"
     def design_feedback_html
-        return '' unless ui_preview?
+        return '' unless ui_preview? && user_logged_in?
         sie = teacher_logged_in?
         placeholder = sie ? 'Was gefällt Ihnen, was fehlt, was klappt nicht?' : 'Was gefällt dir, was fehlt, was klappt nicht?'
         contact = sie ? 'Sie dürfen mich dazu ansprechen.' : 'Ihr dürft mich dazu ansprechen.'

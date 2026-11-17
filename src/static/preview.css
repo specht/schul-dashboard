@@ -3457,11 +3457,11 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .pv-ag-card.pv-ag-double .pv-ag-subj::after {
     content: "";
     position: absolute;
-    left: 6px;
-    right: 6px;
+    left: 4px;
+    right: 4px;
     top: 50%;
-    border-top: 1px dotted currentColor;
-    opacity: 0.22;
+    border-top: 1px dashed currentColor;
+    opacity: 0.45;
 }
 
 .pv-ag-card.pv-ag-double .pv-ag-subj {

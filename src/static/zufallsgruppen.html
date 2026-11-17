@@ -295,11 +295,26 @@ function use_avatars() {
     return use_shorthands();
 }
 
+// Nextcloud-Bild in passender Größe: stark verkleinerte Bilder wirken zackig
+function avatar_url(nc_login, px) {
+    let need = px * (window.devicePixelRatio || 1);
+    let size = [64, 128, 256, 512].find(x => x >= need) || 512;
+    return `url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(nc_login)}/${size})`;
+}
+
 function avatar_el(email) {
     let s = sus.find(x => x.email === email);
     let el = $('<span>').addClass('zg-avatar').attr('aria-hidden', 'true');
-    if (s && s.nc_login) el.css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(s.nc_login)}/128)`);
+    if (s && s.nc_login) el.attr('data-nc', s.nc_login).css('background-image', avatar_url(s.nc_login, 24));
     return el;
+}
+
+// nach dem Festlegen der Schriftgröße: Bilder in der angezeigten Größe laden
+function size_avatars(scope) {
+    $(scope).find('.zg-avatar[data-nc]').each(function () {
+        let px = this.getBoundingClientRect().width;
+        if (px > 0) $(this).css('background-image', avatar_url(this.getAttribute('data-nc'), px));
+    });
 }
 
 // Inhalt einer Namenszeile oder eines Chips: ggf. Bild, dann Kürzel oder Name
@@ -708,8 +723,10 @@ function render_beamer() {
     beamer.css('--zg-cols', best.layout.cols)
         .css('--zg-gap-x', `${best.layout.gap_x.toFixed(1)}px`).css('--zg-gap-y', `${best.layout.gap_y.toFixed(1)}px`);
     groups_el.css('--zg-mcols', best.layout.mcols);
-    // etwas Luft zum Kartenrand
-    beamer.css('--zg-font', `${(fit_beamer_font(best.font, max_font) * 0.97).toFixed(2)}px`);
+    // etwas Luft zum Kartenrand; Kürzel brauchen nicht die ganze Karte
+    let scale = use_shorthands() ? 0.75 : 0.97;
+    beamer.css('--zg-font', `${(fit_beamer_font(best.font, max_font) * scale).toFixed(2)}px`);
+    size_avatars(beamer);
 }
 
 function open_beamer() {

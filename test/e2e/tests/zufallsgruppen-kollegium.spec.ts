@@ -94,7 +94,7 @@ test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bil
   await page.locator('input[name=zg_labels][value=shorthand]').check();
   await expect(chip('Ts')).toHaveAttribute('title', /Torstenson/);
   // the Nextcloud picture next to the Kürzel, for recognizing people
-  await expect(chip('Ts').locator('.zg-avatar')).toHaveAttribute('style', /\/index\.php\/avatar\/[^/]+\/128/);
+  await expect(chip('Ts').locator('.zg-avatar')).toHaveAttribute('style', /\/index\.php\/avatar\/[^/]+\/\d+/);
   await page.locator('#zg_size').fill('2');
   await page.locator('#zg_bu_mix').click();
   await expect(page.locator('#zg_groups .zg-name').filter({ hasText: /^Cl$/ })).toHaveCount(1);
@@ -125,6 +125,25 @@ test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bil
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
     expect(await card.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   }
+  // pictures fetched in about the size they are shown (scaled down a lot, they look jagged)
+  const avatars = await page.locator('#zg_beamer .zg-avatar').evaluateAll((els) => els.map((el) => ({
+    px: el.getBoundingClientRect().width * window.devicePixelRatio,
+    size: Number(/\/avatar\/[^/]+\/(\d+)/.exec((el as HTMLElement).style.backgroundImage)?.[1] ?? 0),
+  })));
+  expect(avatars.length).toBeGreaterThan(0);
+  for (const a of avatars) {
+    expect(a.size).toBeGreaterThanOrEqual(Math.min(512, a.px));
+    expect(a.size).toBeLessThanOrEqual(Math.max(64, a.px * 2));
+  }
+  // Kürzel are large, but leave room in the card
+  const fill = await cards.evaluateAll((els) => Math.max(...els.map((card) => {
+    const h5 = card.querySelector('h5')!.getBoundingClientRect();
+    const names = [...card.querySelectorAll('.zg-name')].map((n) => { const r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect(); });
+    const top = Math.min(...names.map((r) => r.top)), bottom = Math.max(...names.map((r) => r.bottom));
+    const c = card.getBoundingClientRect();
+    return (bottom - top) / (c.bottom - h5.bottom);
+  })));
+  expect(fill).toBeLessThan(0.85);
   await page.locator('#zg_bu_beamer_close').click();
 
   // a school-sized staff: 17 groups of six on a 1920×1080 projector

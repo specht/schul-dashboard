@@ -2993,3 +2993,14 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .lesson_table td {
     vertical-align: top;
 }
+
+/* figures of equal width wherever numbers are read in columns (dates, times,
+   rooms): tables, the timetable, the agenda, the side column, fields */
+.ui-preview table,
+.ui-preview .fc,
+.ui-preview .pv-agenda,
+.ui-preview .pv-side,
+.ui-preview .pv-day-strip,
+.ui-preview .form-control {
+    font-variant-numeric: tabular-nums;
+}

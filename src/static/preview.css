@@ -1774,3 +1774,14 @@ html {
     color: var(--acc-text);
     font-family: var(--pv-text);
 }
+
+/* phones: the page panel with a margin like the agenda, so its rounded
+   corners are not cut off at the screen's edges */
+@media (max-width: 767px) {
+    .ui-preview #main_container > .container,
+    .ui-preview #main_container > div > .container {
+        width: auto;
+        max-width: none;
+        margin: 12px 12px 24px;
+    }
+}

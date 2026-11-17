@@ -774,7 +774,15 @@ function render_preview_agenda_inner() {
         let head = $('<div>').addClass('pv-ag-head').append(chip);
         let title = $('<div>').addClass('pv-ag-title');
         title.append($('<b>').html(x.label || e.title || ''));
-        if (x.raum) title.append($('<span>').addClass('pv-ag-room').html(x.raum));
+        // the length in words too: "Doppelstunde" (the card is also taller)
+        let length_label = (x.count || 1) === 2 ? 'Doppelstunde' : ((x.count || 1) > 2 ? x.count + ' Stunden' : '');
+        if (x.raum || length_label) {
+            let meta = $('<span>').addClass('pv-ag-room');
+            if (x.raum) meta.append($('<span>').html(x.raum));
+            if (length_label) meta.append($('<span>').addClass('pv-ag-length').text(length_label));
+            title.append(meta);
+        }
+        if ((x.count || 1) > 1) card.addClass('pv-ag-double');
         head.append(title);
         let running = now >= e.start && now < e.end;
         if (running) head.append($('<span>').addClass('pv-ag-now').text('Jetzt'));
@@ -1247,10 +1255,11 @@ function render_preview_week_agenda(box) {
         if (lessons.length === 0) section.append($('<div>').addClass('pv-week-none').text('keine Stunden'));
         for (let e of lessons) {
             let x = e.extendedProps;
-            let row = $('<button type="button">').addClass('pv-week-row').toggleClass('pv-ag-off', !!x.entfall);
+            let row = $('<button type="button">').addClass('pv-week-row').toggleClass('pv-ag-off', !!x.entfall).toggleClass('pv-week-double', (x.count || 1) > 1);
             let color = preview_subject_color(x);
             if (color) { row[0].style.setProperty('--c', color); row[0].style.setProperty('--ci', preview_subject_ink(x)); }
-            row.append($('<span>').addClass('pv-week-time').text(preview_hhmm(e.start)));
+            // start and end: a double lesson reads as one at a glance
+            row.append($('<span>').addClass('pv-week-time').append($('<b>').text(preview_hhmm(e.start)), $('<span>').text(preview_hhmm(e.end))));
             row.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
             let label = $('<span>').addClass('pv-week-title').html(x.label || e.title || '');
             row.append(label);

@@ -3289,3 +3289,40 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .pv-band-search:focus:not(:focus-visible) {
     outline: none;
 }
+
+/* ---------- Double lessons: taller, and said in words ---------- */
+.pv-ag-card.pv-ag-double {
+    min-height: 128px;
+}
+
+.pv-ag-room > span + span::before {
+    content: " · ";
+}
+
+.pv-ag-length {
+    font-weight: 600;
+}
+
+.pv-week-time {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.pv-week-time b {
+    font-weight: 600;
+    color: var(--pv-ink);
+}
+
+.pv-week-time span {
+    font-size: 0.78rem;
+}
+
+.pv-week-row.pv-week-double {
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+.pv-week-row.pv-week-double .pv-ag-subj {
+    height: 46px;
+}

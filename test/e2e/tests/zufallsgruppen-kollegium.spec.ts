@@ -181,3 +181,35 @@ test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bil
   expect(layout.shorthand.font).toBeGreaterThan(40);
   expect(layout.shorthand.font).toBeGreaterThan(layout.names.font * 1.5);
 });
+
+// Extended staff (Kürzel with a leading underscore) has a block of its own and
+// is only put into groups once tapped there.
+test('Gruppenbildung Kollegium: erweitertes Personal nur auf Antippen dabei', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto(PAGE);
+  await page.locator('input[name=zg_labels][value=name]').check();
+  const extended = page.locator('#zg_extended');
+  const chip = extended.locator('.zg-chip', { hasText: 'Sozial' });
+  // not in the main list, not added yet (also after a mix from an earlier run)
+  await expect(page.locator('#zg_presence')).not.toContainText('Sozial');
+  await extended.locator('#zg_extended_none').click();
+  await expect(chip).toHaveClass(/absent/);
+  await page.locator('#zg_bu_mix').click();
+  await expect(page.locator('#zg_groups')).toContainText('Gruppe 1');
+  await expect(page.locator('#zg_groups')).not.toContainText('Sozial');
+  // "Alle da" leaves the extended staff alone
+  await page.locator('#zg_all_present').click();
+  await expect(chip).toHaveClass(/absent/);
+
+  // tapped: in the next mix, and still added after reloading
+  await chip.click();
+  await expect(chip).not.toHaveClass(/absent/);
+  await page.locator('#zg_bu_mix').click();
+  await expect(page.locator('#zg_groups')).toContainText('Sozial');
+  await page.reload();
+  await expect(page.locator('#zg_extended .zg-chip', { hasText: 'Sozial' })).not.toHaveClass(/absent/);
+  // the Kürzel is shown without the underscore
+  await page.locator('input[name=zg_labels][value=shorthand]').check();
+  await expect(page.locator('#zg_extended .zg-chip').filter({ hasText: /^Ss$/ })).toHaveCount(1);
+  await page.locator('#zg_extended_none').click();
+});

@@ -45,6 +45,12 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   push and deploy. Each approval covers that one action only.
 - Before every push: `git fetch`, merge new commits from `origin/master`,
   **then run the full test suite** (`./test.sh all`) on the merged state.
+  Decided exception (2026-11-17), for changes that only affect the new
+  design preview (`preview.css`, `preview.js`, code paths that only run
+  with `ui_preview?`): unit tests plus the affected E2E specs
+  (`design-preview.spec.ts` and the specs of the changed pages) on the
+  merged state are enough to push and deploy; the full suite then runs
+  right after, and a failure is fixed or reverted at once.
 - No force push to `master`. Don't delete other people's branches; delete
   local branches only when they are fully contained in `master`.
 

@@ -689,11 +689,8 @@ test('Neues Design: Kopf über dem Stundenplan am Desktop', async ({ page }, tes
     await expect(head).toContainText('Kalenderwoche');
     await expect(page.locator('.fc-header-toolbar')).toBeHidden();
     await expect(page.locator('.timetable_chooser .ttc').first()).toBeHidden();
-    // Tag and Woche
-    await head.getByRole('button', { name: 'Tag', exact: true }).click();
-    await expect.poll(() => page.evaluate(() => (window as any).calendar.view.type)).toBe('timeGridDay');
-    await page.locator('#pv_week_head').getByRole('button', { name: 'Woche', exact: true }).click();
-    await expect.poll(() => page.evaluate(() => (window as any).calendar.view.type)).toBe('timeGridWeek');
+    // the week only (a single day is the phone's agenda)
+    await expect(head.getByRole('button', { name: 'Tag', exact: true })).toHaveCount(0);
     // the plan menu: search and pick a class
     await page.locator('.pv-plan-button').click();
     await page.locator('.pv-plan-menu input').fill('5a');

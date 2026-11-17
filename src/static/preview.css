@@ -2464,3 +2464,15 @@ body.ui-preview.dark::before {
         color: var(--pv-muted);
     }
 }
+
+/* larger screens, "Tag": the agenda at a readable width below the header */
+@media (min-width: 768px) {
+    .ui-preview .pv-agenda {
+        max-width: 760px;
+        min-height: 0;
+    }
+}
+
+.ui-preview.pv-agenda-on #calendar {
+    margin-bottom: 0 !important;
+}

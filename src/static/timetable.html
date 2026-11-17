@@ -670,9 +670,11 @@ function preview_text_color(event) {
 // Neues Design (Vorschau) on phones: the day as an agenda instead of the time
 // grid – lessons as cards, breaks and free time as narrow gaps, the current
 // lesson with its progress. Tapping a card opens the same lesson dialog.
+// the day as an agenda: on phones, and on larger screens when "Tag" is
+// chosen (one wide column of the grid makes little sense there)
 function preview_agenda_wanted() {
-    return document.body.classList.contains('ui-preview') && window.matchMedia('(max-width: 767px)').matches &&
-        window.calendar && window.calendar.view.type === 'timeGridDay';
+    return document.body.classList.contains('ui-preview') && window.calendar &&
+        window.calendar.view.type === 'timeGridDay' && !tablet_logged_in;
 }
 
 function preview_hhmm(d) {
@@ -1008,14 +1010,8 @@ function render_preview_week_head() {
     let sub = 'Kalenderwoche ' + moment(start).isoWeek() + (active ? ' · Plan ' + active : '');
     head.empty().removeAttr('hidden');
     head.append($('<div class="pv-wh-title">').append($('<h2>').text(title), $('<div class="pv-wh-sub">').text(sub)));
+    // the week only: a single day is the phone's agenda
     let tools = $('<div class="pv-wh-tools">');
-    let seg = $('<div class="pv-wh-seg" role="group" aria-label="Ansicht">');
-    [['timeGridDay', 'Tag'], ['timeGridWeek', 'Woche']].forEach(function(v) {
-        let b = $('<button type="button">').text(v[1]).attr('aria-pressed', view.type === v[0] ? 'true' : 'false');
-        b.on('click', function() { window.calendar.changeView(v[0]); });
-        seg.append(b);
-    });
-    tools.append(seg);
     if (preview_plan_items().length > 1) {
         let plan = $('<button type="button" class="pv-wh-btn pv-plan-button" aria-haspopup="dialog">').append($('<span>').text('Plan ' + (active || 'wählen')), $('<i class="fa fa-caret-down">'));
         plan.on('click', function(e) {

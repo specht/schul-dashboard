@@ -1,0 +1,49 @@
+// New design preview: shows Tabler icons instead of Fork Awesome, without
+// changing the pages. Every element with a mapped fa-<name> class also gets
+// "ti ti-<tabler name>"; the fa-* classes stay, because pages check them
+// (e.g. hasClass('fa-eye')). When a page swaps an icon by changing its
+// classes, the Tabler class follows. Unmapped icons keep Fork Awesome.
+(function () {
+    var MAP = {"address-book":"address-book","address-card-o":"id","align-left":"align-left","ambulance":"ambulance","android":"brand-android","angle-double-left":"chevrons-left","angle-double-right":"chevrons-right","angle-down":"chevron-down","angle-left":"chevron-left","angle-right":"chevron-right","angle-up":"chevron-up","apple":"brand-apple","archive":"archive","arrow-circle-down":"circle-arrow-down","arrow-circle-left":"circle-arrow-left","arrow-circle-right":"circle-arrow-right","arrow-circle-up":"circle-arrow-up","arrow-down":"arrow-down","arrow-left":"arrow-left","arrow-right":"arrow-right","arrow-up":"arrow-up","arrows":"arrows-move","arrows-h":"arrows-horizontal","arrows-v":"arrows-vertical","asterisk":"asterisk","at":"at","balance-scale":"scale","ban":"ban","bank":"building-bank","bar-chart":"chart-bar","barcode":"barcode","bars":"menu-2","battery-full":"battery-4","bed":"bed","beer":"beer","bell":"bell","bell-o":"bell","bell-slash":"bell-off","bicycle":"bike","birthday":"cake","birthday-cake":"cake","bolt":"bolt","book":"book","bookmark":"bookmark","bug":"bug","building":"building","bullhorn":"speakerphone","bus":"bus","calculator":"calculator","calendar":"calendar","calendar-check-o":"calendar-check","calendar-minus-o":"calendar-minus","calendar-o":"calendar","calendar-plus-o":"calendar-plus","calendar-times-o":"calendar-x","camera":"camera","car":"car","caret-down":"caret-down","caret-left":"caret-left","caret-right":"caret-right","caret-up":"caret-up","certificate":"certificate","check":"check","check-circle":"circle-check","check-circle-o":"circle-check","check-square":"square-check","check-square-o":"square-check","chevron-down":"chevron-down","chevron-left":"chevron-left","chevron-right":"chevron-right","chevron-up":"chevron-up","child":"mood-kid","chrome":"brand-chrome","circle":"circle","circle-o":"circle","circle-o-notch":"loader-2","circle-thin":"circle","clipboard":"clipboard","clock":"clock","clock-o":"clock","clone":"copy","cloud":"cloud","cloud-download":"cloud-download","cloud-upload":"cloud-upload","code":"code","coffee":"coffee","cog":"settings","cogs":"settings","columns":"columns","comment":"message","comment-o":"message","commenting":"message-dots","comments":"messages","comments-o":"messages","compass":"compass","compress":"arrows-minimize","copy":"copy","crosshairs":"crosshair","cube":"cube","cubes":"box","cutlery":"tools-kitchen-2","dashboard":"dashboard","database":"database","desktop":"device-desktop","dot-circle-o":"circle-dot","download":"download","drivers-license":"id","edit":"edit","ellipsis-h":"dots","ellipsis-v":"dots-vertical","envelope":"mail","envelope-o":"mail","envelope-open":"mail-opened","envelope-open-o":"mail-opened","eur":"currency-euro","euro":"currency-euro","exchange":"arrows-exchange","exclamation":"exclamation-mark","exclamation-circle":"alert-circle","exclamation-triangle":"alert-triangle","expand":"arrows-maximize","external-link":"external-link","eye":"eye","eye-slash":"eye-off","facebook":"brand-facebook","female":"woman","female-sign":"gender-female","file-code-o":"file-code","file-excel-o":"file-spreadsheet","file-o":"file","file-pdf-o":"file-type-pdf","file-powerpoint-o":"file-type-ppt","file-text-o":"file-text","file-word-o":"file-type-doc","file-zip-o":"file-zip","files-o":"copy","film":"movie","film-o":"movie","filter":"filter","filter-o":"filter","fire":"flame","firefox":"brand-firefox","flag":"flag","flask":"flask","floppy-o":"device-floppy","folder":"folder","folder-o":"folder","folder-open":"folder-open","frown-o":"mood-sad","gamepad":"device-gamepad","gavel":"gavel","gear":"settings","gears":"settings","gift":"gift","github":"brand-github","globe":"world","graduation-cap":"school","group":"users-group","hand-paper-o":"hand-stop","hand-pointer-o":"hand-finger","hashtag":"hash","hdd-o":"database","headphones":"headphones","heart":"heart","heartbeat":"heartbeat","history":"history","home":"home","hourglass":"hourglass","hourglass-o":"hourglass","i-cursor":"cursor-text","id-badge":"id-badge","id-card-o":"id","image":"photo","inbox":"inbox","industry":"building-factory","info":"info-small","info-circle":"info-circle","instagram":"brand-instagram","institution":"building-bank","key":"key","key-modern":"key","key-o":"key","keyboard-o":"keyboard","language":"language","laptop":"device-laptop","leaf":"leaf","level-down":"corner-right-down","level-up":"corner-right-up","lightbulb-o":"bulb","link":"link","linux":"brand-ubuntu","list":"list","list-alt":"list-details","list-ol":"list-numbers","list-ul":"list","location-arrow":"location","lock":"lock","long-arrow-down":"arrow-narrow-down","long-arrow-right":"arrow-narrow-right","magic":"wand","mail-forward":"mail-forward","male":"man","map":"map","map-marker":"map-pin","map-pin":"map-pin","medkit":"first-aid-kit","meh-o":"mood-empty","microphone":"microphone","microphone-slash":"microphone-off","minus":"minus","minus-circle":"circle-minus","mobile":"device-mobile","money":"cash","moon":"moon","mouse-pointer":"pointer","music":"music","navicon":"menu-2","newspaper-o":"news","nextcloud":"cloud","object-group":"layout-board","paint-brush":"brush","paper-plane":"send","paperclip":"paperclip","pause":"player-pause","paw":"paw","pencil":"pencil","pencil-square-o":"edit","percent":"percentage","phone":"phone","photo":"photo","picture-o":"photo","pie-chart":"chart-pie","plane":"plane","play":"player-play","plug":"plug","plus":"plus","plus-circle":"circle-plus","podcast":"microphone-2","power-off":"power","print":"printer","puzzle-piece":"puzzle","qrcode":"qrcode","question":"question-mark","question-circle":"help-circle","question-circle-o":"help-circle","quote-left":"quote","random":"arrows-shuffle","refresh":"refresh","reorder":"menu-2","repeat":"repeat","repeat-alt":"repeat","reply":"corner-up-left","retweet":"repeat","rocket":"rocket","rss":"rss","save":"device-floppy","search":"search","search-minus":"zoom-out","search-plus":"zoom-in","send":"send","server":"server","share":"share","share-alt":"share","shield":"shield","shopping-basket":"basket","shopping-cart":"shopping-cart","sign-in":"login","sign-language":"hand-finger","sign-out":"logout","signal":"antenna-bars-5","sitemap":"sitemap","sliders":"adjustments","smile-o":"mood-smile","snowflake-o":"snowflake","sort":"arrows-sort","sort-alpha-asc":"sort-ascending-letters","spinner":"loader-2","square":"square","square-o":"square","star":"star","star-o":"star","stethoscope":"stethoscope","sticky":"note","sticky-note":"note","sticky-note-o":"note","stop":"player-stop","street-view":"walk","sun":"sun","sun-o":"sun","table":"table","tablet":"device-tablet","tag":"tag","tags":"tags","tasks":"list-check","telegram":"brand-telegram","terminal":"terminal","th":"layout-grid","th-large":"layout-grid","th-list":"layout-list","thumbs-down":"thumb-down","thumbs-o-down":"thumb-down","thumbs-o-up":"thumb-up","thumbs-up":"thumb-up","ticket":"ticket","times":"x","times-circle":"circle-x","toggle-off":"toggle-left","toggle-on":"toggle-right","trash":"trash","trash-o":"trash","tree":"tree","trophy":"trophy","tv":"device-tv","twitter":"brand-x","umbrella":"umbrella","undo":"arrow-back-up","university":"building-bank","unlock":"lock-open","unlock-alt":"lock-open","upload":"upload","usb":"usb","user":"user","user-circle":"user-circle","user-circle-o":"user-circle","user-o":"user","user-plus":"user-plus","user-secret":"spy","user-times":"user-x","users":"users","vcard":"id","video-camera":"video","video-camera-slash":"video-off","volume-off":"volume-off","volume-up":"volume","warning":"alert-triangle","whatsapp":"brand-whatsapp","wheelchair":"wheelchair","wifi":"wifi","wikipedia-w":"brand-wikipedia","windows":"brand-windows","wrench":"tool","youtube":"brand-youtube","youtube-play":"brand-youtube"};
+    function tablerFor(el) {
+        var cls = el.classList;
+        for (var i = 0; i < cls.length; i++) {
+            var c = cls[i];
+            if (c.indexOf('fa-') === 0 && MAP[c.slice(3)]) return MAP[c.slice(3)];
+        }
+        return null;
+    }
+    function swap(el) {
+        if (!el.classList || !el.classList.contains('fa')) return;
+        var t = tablerFor(el);
+        var want = t ? 'ti-' + t : null;
+        // drop a Tabler icon that no longer fits
+        for (var i = el.classList.length - 1; i >= 0; i--) {
+            var c = el.classList[i];
+            if (c.indexOf('ti-') === 0 && c !== want) el.classList.remove(c);
+        }
+        if (want) {
+            if (!el.classList.contains('ti')) el.classList.add('ti');
+            if (!el.classList.contains(want)) el.classList.add(want);
+        } else if (el.classList.contains('ti')) {
+            el.classList.remove('ti');
+        }
+    }
+    function swapAll(root) {
+        if (root.nodeType !== 1) return;
+        swap(root);
+        var els = root.querySelectorAll('.fa');
+        for (var i = 0; i < els.length; i++) swap(els[i]);
+    }
+    function start() {
+        swapAll(document.body);
+        new MutationObserver(function (mutations) {
+            mutations.forEach(function (m) {
+                if (m.type === 'attributes') swap(m.target);
+                else m.addedNodes.forEach(swapAll);
+            });
+        }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+})();

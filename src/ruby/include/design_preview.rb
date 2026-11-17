@@ -34,7 +34,10 @@ class Main < Sinatra::Base
         return '' unless ui_preview?
         dark = !!(@session_user || {})[:dark]
         "<style id='design_tokens'>#{DesignTokens.css(color_scheme, dark)}</style>\n" +
-            "<link href='/preview.css' rel='stylesheet' />"
+            "<link href='/preview.css' rel='stylesheet' />\n" +
+            # Tabler icons instead of Fork Awesome (include/tabler/fa-to-tabler.js)
+            "<link href='/include/tabler/tabler-icons.css' rel='stylesheet' />\n" +
+            "<script src='/include/tabler/fa-to-tabler.js'></script>"
     end
 
     post '/api/set_ui_preview' do

@@ -32,6 +32,12 @@ the server only).
   already, and the new design does not offer them. Colour scheme, pattern and
   light/dark remain the personal touch.
 - **Feedback during opt-in** (see phase 1).
+- **Tabler icons** instead of Fork Awesome (today about 1 150 uses of 157
+  different icons in 92 files). Self-hosted (MIT), no CDN. A mapping table
+  from each Fork Awesome icon to its Tabler counterpart; in the preview a small
+  script swaps the icons in the browser (also those created by JavaScript), so
+  the pages need no change yet; converted pages write Tabler icons directly;
+  Fork Awesome goes away at the switch.
 - **Admins first.** The preview starts with admins only; the next stages
   (teachers, everyone) are one constant (\`UI_PREVIEW_FOR\` in
   \`include/design_preview.rb\`).

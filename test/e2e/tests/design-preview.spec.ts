@@ -175,3 +175,38 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Icons: in the preview Tabler instead of Fork Awesome, without changing the
+// pages – also for icons created later and when a page swaps an icon.
+test('Neues Design: Tabler-Icons statt Fork Awesome', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/messages');
+  await expect(page.locator('.ti')).toHaveCount(0);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/messages');
+    const admin = page.locator('#navbarDropdownAdmin .fa');
+    await expect(admin).toHaveClass(/\bti ti-tool\b/);
+    // the old class stays (pages check it), the Tabler font draws the glyph
+    await expect(admin).toHaveClass(/\bfa-wrench\b/);
+    expect(await admin.evaluate((el) => getComputedStyle(el).fontFamily)).toContain('tabler-icons');
+    // an icon a page adds later, and one it swaps
+    const swapped = await page.evaluate(async () => {
+      const i = document.createElement('i');
+      i.className = 'fa fa-eye';
+      document.body.appendChild(i);
+      await new Promise((r) => setTimeout(r, 50));
+      const added = i.className;
+      i.classList.remove('fa-eye');
+      i.classList.add('fa-eye-slash');
+      await new Promise((r) => setTimeout(r, 50));
+      return { added, swapped: i.className };
+    });
+    expect(swapped.added).toMatch(/\bti-eye\b/);
+    expect(swapped.swapped).toMatch(/\bti-eye-off\b/);
+    expect(swapped.swapped).not.toMatch(/\bti-eye\b(?!-)/);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

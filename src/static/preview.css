@@ -1528,13 +1528,15 @@ html {
 }
 
 /* ---------- Switches (Bootstrap Toggle) as real switches ----------
-   A track (accent when on) with the state text next to a round knob.
+   A compact track without text: the knob on the right and the accent
+   colour mean "on"; the row's label says what "on" is (doc/Gestaltung.md).
    Bootstrap Toggle slides a group twice as wide as the switch; its knob
    sits in the middle of that group, i.e. on the switch's edge – moved in
-   by half a knob plus the gap. */
+   by half a knob plus the gap (11 + 3 px). */
 .ui-preview .toggle.btn {
-    width: 76px !important;
-    height: 30px !important;
+    flex: none;
+    width: 46px !important;
+    height: 28px !important;
     min-height: 0 !important;
     padding: 0;
     border: 0;
@@ -1545,48 +1547,66 @@ html {
 
 .ui-preview .toggle .toggle-on,
 .ui-preview .toggle .toggle-off {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     border: 0 !important;
     border-radius: 0;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
+    padding: 0 !important;
+    font-size: 0 !important;
+    color: transparent !important;
     box-shadow: none;
 }
 
 .ui-preview .toggle .toggle-on {
     background: var(--acc) !important;
-    color: var(--acc-ink) !important;
-    padding: 0 28px 0 0 !important;
 }
 
 .ui-preview .toggle .toggle-off {
-    background: var(--pv-line) !important;
-    color: var(--pv-ink) !important;
-    padding: 0 0 0 28px !important;
+    background: color-mix(in srgb, var(--pv-ink) 22%, var(--pv-surface)) !important;
 }
 
 .ui-preview .toggle .toggle-handle {
-    width: 24px !important;
-    height: 24px;
+    width: 22px !important;
+    height: 22px;
     top: 3px;
     padding: 0;
     border: 0;
     border-radius: 50%;
     background: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    transform: translateX(-15px);
+    transform: translateX(-14px);
 }
 
 .ui-preview .toggle.off .toggle-handle {
-    transform: translateX(15px);
+    transform: translateX(14px);
 }
 
 .ui-preview .toggle:focus-within {
     outline: 2px solid var(--acc-text);
     outline-offset: 2px;
+}
+
+/* profile, "Darstellung": settings rows – label (and description) left,
+   the switch right, level with the first line; every row full width */
+.ui-preview .col-md-4:has(> div > .toggle),
+.ui-preview .col-md-12:has(> div > .toggle) {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-top: 0 !important;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .col-md-4:has(> div > .toggle) > div,
+.ui-preview .col-md-12:has(> div > .toggle) > div {
+    align-items: flex-start !important;
+    gap: 16px;
+}
+
+.ui-preview .col-md-4:has(> div > .toggle) label,
+.ui-preview .col-md-12:has(> div > .toggle) label {
+    margin: 2px 0 0 !important;
+    font-weight: 600 !important;
+    color: var(--pv-ink);
 }
 
 /* ---------- Colour schemes and patterns (profile) ---------- */

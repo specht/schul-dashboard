@@ -2550,3 +2550,12 @@ body.ui-preview.dark::before {
         color: var(--pv-ink);
     }
 }
+
+/* larger screens: Bootstrap sizes .container by the window (up to 1140 px),
+   not by the room next to the sidebar – it would reach the window's edge */
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container,
+    .ui-preview #main_container > div > .container {
+        max-width: min(1140px, calc(100% - 48px));
+    }
+}

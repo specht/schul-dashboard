@@ -129,6 +129,9 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       expect(box.width).toBeLessThan(300);
       const main = (await page.locator('#main_container').boundingBox())!;
       expect(main.x).toBeGreaterThanOrEqual(box.width - 1);
+      // the page's panel keeps a margin to the window's edge (Bootstrap sizes it by the window)
+      const panel = (await page.locator('#main_container .container').first().boundingBox())!;
+      expect(panel.x + panel.width).toBeLessThanOrEqual(viewport.width - 16);
       await expect(page.locator('.pv-tabbar')).toBeHidden();
       // the current page is marked, the profile sits at the bottom
       await expect(nav.locator('.nav-link.pv-active')).toContainText('Nachrichten');

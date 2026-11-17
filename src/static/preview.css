@@ -1918,25 +1918,50 @@ html {
         margin-bottom: 0 !important;
     }
 
+    /* the header: no box of its own – the shade lies seamlessly over the
+       top of the backdrop (body::after below) */
     .ui-preview.pv-agenda-on .pv-day-band:not([hidden]) {
+        display: block;
+        margin: 0 -15px 14px;
+        padding: calc(10px + env(safe-area-inset-top, 0px)) 18px 4px;
+        color: var(--band-ink);
+        text-shadow: var(--band-shadow);
+    }
+
+    body.ui-preview.pv-agenda-on {
+        position: relative;
+    }
+
+    body.ui-preview.pv-agenda-on::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 340px;
+        z-index: -1;
+        pointer-events: none;
+        background: linear-gradient(180deg,
+            rgba(var(--band-scrim), max(var(--band-scrim-a), 0.22)) 0%,
+            rgba(var(--band-scrim), max(calc(var(--band-scrim-a) * 0.7), 0.14)) 45%,
+            rgba(var(--band-scrim), 0) 100%);
+    }
+
+    .pv-band-top {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        margin: 0 -15px 14px;
-        padding: calc(22px + env(safe-area-inset-top, 0px)) 20px 20px;
-        color: var(--band-ink);
-        text-shadow: var(--band-shadow);
-        /* at least a light shade behind the text: the real backdrop can have
-           brighter spots than the computed one */
-        background: linear-gradient(180deg, rgba(var(--band-scrim), max(var(--band-scrim-a), 0.18)), rgba(var(--band-scrim), max(calc(var(--band-scrim-a) * 0.4), 0.06)));
+        gap: 10px;
+        min-height: 40px;
+        margin-bottom: 14px;
     }
 
     .pv-day-band h1 {
         margin: 0;
-        font: 800 1.85rem/1.1 var(--pv-display);
-        letter-spacing: -0.01em;
+        font: 800 1.75rem/1.12 var(--pv-display);
+        letter-spacing: -0.015em;
         color: inherit;
+        text-wrap: balance;
     }
 
     .pv-band-sub {
@@ -1947,11 +1972,11 @@ html {
 
     .pv-band-avatar {
         flex: none;
-        width: 48px;
-        height: 48px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         overflow: hidden;
-        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 1px 4px rgba(0, 0, 0, 0.18);
         display: grid;
         place-items: center;
         background: var(--pv-surface);
@@ -2577,8 +2602,8 @@ body.ui-preview.dark::before {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        margin-top: 8px;
-        padding: 5px 12px;
+        margin-top: 0;
+        padding: 7px 12px;
         border: 0;
         border-radius: 999px;
         background: rgba(255, 255, 255, 0.92);
@@ -3046,15 +3071,15 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .pv-band-search {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border: 0;
     border-radius: 50%;
     display: grid;
     place-items: center;
     background: rgba(255, 255, 255, 0.92);
     color: #131b26;
-    font-size: 19px;
+    font-size: 16px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
@@ -3256,4 +3281,11 @@ body.ui-preview:has(.container-fluid.solid)::before {
 /* team meetings are no lessons: not among the Kursbuch entries (main.rb, data-meeting) */
 .ui-preview .navbar .dropdown-item[data-meeting] {
     display: none !important;
+}
+
+/* tabs and header buttons: the focus frame for keyboards only */
+.pv-tab:focus:not(:focus-visible),
+.pv-band-plan:focus:not(:focus-visible),
+.pv-band-search:focus:not(:focus-visible) {
+    outline: none;
 }

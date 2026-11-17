@@ -891,9 +891,8 @@ function render_preview_day_band(day, label, is_today, subtitle) {
         if (changes > 0) parts.push(changes === 1 ? '1 Änderung' : changes + ' Änderungen');
     }
     band.empty().removeAttr('hidden');
-    let text = $('<div>').addClass('pv-band-text');
-    text.append($('<h1>').text(label), $('<div>').addClass('pv-band-sub').text(parts.join(' · ')));
-    // other plans (Kürzel, classes, rooms): the same menu as on larger screens
+    // a slim row on top: the plan on the left, search and profile on the right
+    let top = $('<div>').addClass('pv-band-top');
     if (preview_plan_items().length > 1) {
         let active = $('.timetable_chooser .ttc.active').first().text().trim();
         let plan = $('<button type="button" class="pv-band-plan pv-plan-button" aria-haspopup="dialog">')
@@ -901,17 +900,18 @@ function render_preview_day_band(day, label, is_today, subtitle) {
         plan.on('click', function(ev) {
             if ($('.pv-plan-menu').length) preview_close_plan_menu(true); else preview_open_plan_menu(ev.currentTarget);
         });
-        text.append(plan);
+        top.append(plan);
     }
-    band.append(text);
-    // the search (teachers) and the profile picture, as a link to the profile
     let corner = $('<div>').addClass('pv-band-corner');
     if (document.getElementById('bu_quick_search'))
         corner.append($('<button type="button" class="pv-band-search pv-search-button" aria-label="Suchen">').append($('<i class="fa fa-search">')));
     let avatar = $('#navbarDropdownProfile .icon').first().clone();
     if (avatar.length > 0)
         corner.append($('<a>').addClass('pv-band-avatar').attr('href', '/profil').attr('aria-label', 'Profil').append(avatar.contents()));
-    band.append(corner);
+    top.append(corner);
+    band.append(top);
+    // the day across the full width, the line with what it holds
+    band.append($('<h1>').text(label), $('<div>').addClass('pv-band-sub').text(parts.join(' · ')));
 }
 
 // The school days of the shown week as a strip: tap one to show it, the dots

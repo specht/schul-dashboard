@@ -4587,3 +4587,37 @@ body.ui-preview:has(.container-fluid.solid)::before {
         font-size: 0.88rem !important;
     }
 }
+
+/* "Mehr" on phones, the personal tiles: settings first (Passwörter, hell /
+   dunkel), then signing in and out side by side; all the same height */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > * {
+        order: 5;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .switch-session {
+        order: 0;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[href='/passwoerter'] {
+        order: 1;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .nav-dark,
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .nav-light {
+        order: 2;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[href='/login'] {
+        order: 3;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[onclick*='perform_logout'] {
+        order: 4;
+    }
+
+    /* two lines of label fit; one-line tiles keep the same height */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        min-height: 68px !important;
+    }
+}

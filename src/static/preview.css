@@ -626,7 +626,10 @@ html {
     --c: var(--pv-line);
     width: 100%;
     min-width: 0;
-    overflow-wrap: anywhere;
+    /* German hyphenation first ("Gesellschafts-wissenschaften"), breaking
+       only what cannot be hyphenated (addresses, links) */
+    hyphens: auto;
+    overflow-wrap: break-word;
     border-left: 5px solid var(--c) !important;
     background: var(--pv-surface);
     border: 1px solid var(--pv-line);

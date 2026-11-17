@@ -824,10 +824,11 @@ function render_preview_day_strip(day) {
     for (let i = 0; i < 5; i++) {
         let d = new Date(monday);
         d.setDate(monday.getDate() + i);
+        // lessons as in the header: a double lesson counts twice
         let count = events.filter(function(e) {
             let x = e.extendedProps || {};
             return !e.allDay && e.start && e.start.toDateString() === d.toDateString() && x.lesson && !x.is_event && !x.pausenaufsicht && !x.entfall;
-        }).length;
+        }).reduce(function(n, e) { return n + ((e.extendedProps || {}).count || 1); }, 0);
         let button = $('<button type="button">').addClass('pv-strip-day')
             .toggleClass('pv-strip-active', d.toDateString() === day.toDateString())
             .toggleClass('pv-strip-today', d.toDateString() === today)

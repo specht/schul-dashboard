@@ -32,13 +32,13 @@
         }
         var top = anchor.top - offset;
         // menus of the footer (oneself): open upwards, the panel's bottom level
-        // with the entry's
+        // with the sidebar's bottom
         var in_foot = !!toggle.closest('.pv-nav-foot');
         if (in_foot) {
             bottom = window.innerHeight;
-            top = anchor.bottom + 6 - Math.min(height, room);
+            top = bottom - 8 - Math.min(height, room);
         }
-        top = Math.max(12, Math.min(top, bottom - Math.min(height, room) - (in_foot ? 4 : 12)));
+        top = Math.max(12, Math.min(top, bottom - Math.min(height, room) - (in_foot ? 8 : 12)));
         menu.style.setProperty('--pv-menu-top', Math.round(top) + 'px');
     }
 
@@ -303,6 +303,10 @@
             e.stopPropagation();
             box.hidden = !box.hidden;
             toggle.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
+            // taller or shorter now: fit the panel into the window again
+            var opener = menu.parentElement && menu.parentElement.querySelector('.dropdown-toggle');
+            if (opener && menu.classList.contains('show')) place_menu(menu, opener);
+            if (!box.hidden) toggle.scrollIntoView({ block: 'nearest' });
         });
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fold_group_menu); else fold_group_menu();
@@ -598,7 +602,7 @@
         nav.insertBefore(li, before);
     }
     // the page's footer line (copyright, Impressum, GitHub) moves into the
-    // navigation: below oneself in the sidebar, at the end of "Mehr"
+    // navigation: the sidebar's very bottom, the end of "Mehr"
     function legal_line() {
         var collapse = document.querySelector('.ui-preview #navbarTogglerDemo02');
         var foot = document.querySelector('.foot');
@@ -613,9 +617,14 @@
         if (imprint) parts.push(imprint.cloneNode(true));
         if (github) { var g = document.createElement('a'); g.href = github.href; g.target = '_blank'; g.rel = 'noopener'; g.className = 'pv-legal-icon'; g.setAttribute('aria-label', 'Quelltext auf GitHub'); g.title = 'Quelltext auf GitHub'; g.innerHTML = "<i class='fa fa-github'></i>"; parts.push(g); }
         parts.forEach(function(el) { line.appendChild(el); });
-        // larger screens: bottom right of the window; phones: the end of "Mehr"
-        if (SIDEBAR.matches) document.body.appendChild(line);
-        else collapse.querySelector('.navbar-nav').appendChild(line);
+        // sidebar: the very bottom, below oneself; phones: the end of "Mehr"
+        var foot_list = collapse.querySelector('.pv-nav-foot');
+        if (foot_list) {
+            var li = document.createElement('li');
+            li.className = 'pv-legal-item';
+            li.appendChild(line);
+            foot_list.appendChild(li);
+        } else collapse.querySelector('.navbar-nav').appendChild(line);
     }
     function later() { more_search(); weekday_columns(); help_tile(); legal_line(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });

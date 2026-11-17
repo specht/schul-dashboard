@@ -405,6 +405,15 @@ html {
         break-inside: avoid;
     }
 
+    /* the unfolded "Weitere Lerngruppen" may flow on into the next column */
+    .ui-preview .navbar .dropdown-menu > .pv-more-groups-list {
+        break-inside: auto;
+    }
+
+    .ui-preview .navbar .pv-more-groups-list > * {
+        break-inside: avoid;
+    }
+
     .ui-preview .navbar .nav-item.dropdown.show > .nav-link {
         background: var(--pv-hover);
     }
@@ -1243,6 +1252,13 @@ html {
 }
 
 /* the lessons: rounded blocks, a little lift, no outline */
+/* a little air between the all-day row and the first lesson: in the
+   divider row (FullCalendar doesn't measure it; padding inside the time
+   grid itself makes it re-measure endlessly) */
+.ui-preview .fc .fc-timegrid-divider {
+    padding-bottom: 12px;
+}
+
 .ui-preview .fc-timegrid-event-harness {
     box-shadow: none;
     margin-left: 2px;
@@ -4417,17 +4433,26 @@ body.ui-preview:has(.container-fluid.solid)::before {
     vertical-align: -1px;
 }
 
-/* the footer line: small, bottom right of the window on larger screens */
+/* the footer line in the sidebar: the very bottom, below oneself, quiet */
 @media (min-width: 768px) {
-    .ui-preview .pv-legal {
-        position: fixed;
-        right: 14px;
-        bottom: 8px;
-        z-index: 5;
-        padding: 3px 10px;
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--pv-surface) 85%, transparent);
-        backdrop-filter: blur(6px);
+    .ui-preview .pv-nav-foot .pv-legal {
+        padding: 4px 12px 0;
+        justify-content: flex-start;
+        font-size: 0.68rem;
+        opacity: 0.8;
+    }
+}
+
+/* the icon rail: only Impressum and the icon, stacked */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .pv-nav-foot .pv-legal {
+        flex-direction: column;
+        padding: 6px 0 0;
+        gap: 4px;
+    }
+
+    .ui-preview .pv-legal > a:not(.pv-legal-icon):not([href='/impressum']) {
+        display: none;
     }
 }
 

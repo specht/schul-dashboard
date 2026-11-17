@@ -31,7 +31,14 @@
             offset = (f.top - m.top) + (f.height - anchor.height) / 2;
         }
         var top = anchor.top - offset;
-        top = Math.max(12, Math.min(top, bottom - Math.min(height, room) - 12));
+        // menus of the footer (oneself): open upwards, the panel's bottom level
+        // with the entry's
+        var in_foot = !!toggle.closest('.pv-nav-foot');
+        if (in_foot) {
+            bottom = window.innerHeight;
+            top = anchor.bottom + 6 - Math.min(height, room);
+        }
+        top = Math.max(12, Math.min(top, bottom - Math.min(height, room) - (in_foot ? 4 : 12)));
         menu.style.setProperty('--pv-menu-top', Math.round(top) + 'px');
     }
 

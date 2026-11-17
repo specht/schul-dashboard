@@ -4339,3 +4339,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
         color: var(--acc-text);
     }
 }
+
+/* the footer's menu (oneself) above the page's grey footer line */
+.ui-preview .pv-nav-foot .dropdown-menu {
+    z-index: 100001 !important;
+}

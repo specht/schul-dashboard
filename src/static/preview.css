@@ -1722,3 +1722,36 @@ html {
         box-shadow: -1px 0 0 var(--pv-line), -8px 0 24px rgba(0, 0, 0, 0.06);
     }
 }
+
+/* ---------- Dark mode: dark.css overrides with !important ----------
+   (.active dark grey, input fields half black, dotted grid lines); the new
+   design's tokens win here. FullCalendar's sticky header takes its colour
+   from --fc-page-bg-color (white by default). */
+.ui-preview .fc {
+    --fc-page-bg-color: var(--pv-surface);
+    --fc-neutral-bg-color: var(--pv-hover);
+    --fc-border-color: var(--pv-line);
+}
+
+.ui-preview.dark .fc-theme-standard td,
+.ui-preview.dark .fc-theme-standard th {
+    border-style: solid;
+}
+
+.ui-preview.dark .ttc.active {
+    background-color: var(--acc) !important;
+    border-color: var(--acc) !important;
+    color: var(--acc-ink) !important;
+}
+
+.ui-preview.dark .form-control {
+    background-color: var(--pv-surface) !important;
+    color: var(--pv-ink) !important;
+    border-color: var(--pv-line) !important;
+}
+
+.ui-preview.dark .form-control[readonly],
+.ui-preview.dark .form-control:disabled {
+    background-color: var(--pv-hover) !important;
+    border-color: transparent !important;
+}

@@ -593,3 +593,41 @@ test('Neues Design: Farbschemata auswählen (Admins)', async ({ page, newUserPag
   await login(teacher, ACCOUNTS.teacher);
   expect((await teacher.request.post('/api/design_palette_mark', { data: { code, mark: 'keep' } })).status()).not.toBe(200);
 });
+
+// Dark mode: dark.css sets some things with !important (white sticky
+// timetable header from FullCalendar, .active, input fields); the new
+// design's colours have to win
+test('Neues Design: dunkel – Stundenplan-Kopf, Auswahl und Eingabefelder', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Wochenansicht und Auswahl-Leiste am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'dark' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-col-header-cell').first()).toBeVisible();
+    const colours = await page.evaluate(() => {
+      const root = getComputedStyle(document.documentElement);
+      const hex = (h: string) => `rgb(${[1, 3, 5].map((i) => parseInt(h.trim().slice(i, i + 2), 16)).join(', ')})`;
+      // the background one sees behind the day names: the first one that is not transparent
+      let header: Element | null = document.querySelector('.fc-col-header-cell');
+      while (header && ['rgba(0, 0, 0, 0)', 'transparent'].includes(getComputedStyle(header).backgroundColor)) header = header.parentElement;
+      const active = document.querySelector('.timetable_chooser .ttc.active') as HTMLElement;
+      return {
+        header: header ? getComputedStyle(header).backgroundColor : null,
+        surface: hex(getComputedStyle(document.body).getPropertyValue('--pv-surface')),
+        active: active ? getComputedStyle(active).backgroundColor : null,
+        acc: hex(root.getPropertyValue('--acc')),
+      };
+    });
+    expect(colours.header).toBe(colours.surface);
+    expect(colours.active).toBe(colours.acc);
+    await page.goto('/profil');
+    const field = page.locator('input.form-control[readonly]').first();
+    const bg = await field.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const hover = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--pv-hover').trim());
+    expect(bg).toBe(`rgb(${[1, 3, 5].map((i) => parseInt(hover.slice(i, i + 2), 16)).join(', ')})`);
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

@@ -712,8 +712,6 @@ function render_preview_agenda_inner() {
     let day = window.calendar.view.currentStart;
     let same_day = function(d) { return d && d.getFullYear() === day.getFullYear() && d.getMonth() === day.getMonth() && d.getDate() === day.getDate(); };
     let all = window.calendar.getEvents().filter(function(e) { return same_day(e.start); });
-    let all_day = all.filter(function(e) { return e.allDay; });
-    let timed = all.filter(function(e) { return !e.allDay; }).sort(function(a, b) { return a.start - b.start; });
     let now = new Date();
     let months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
     let weekday_names = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -725,6 +723,15 @@ function render_preview_agenda_inner() {
             window.timetable_options.eventClick({ event: fc_event, el: e.currentTarget, jsEvent: e, view: window.calendar.view });
         };
     };
+    preview_agenda_fill_day(box, day, all, now, open);
+}
+
+// the cards of one day (all-day entries, gaps, duty, lessons) into box;
+// also used for the neighbouring day while swiping (preview_agenda_ghost)
+function preview_agenda_fill_day(box, day, all, now, open) {
+    let same_day = function(d) { return d && d.getFullYear() === day.getFullYear() && d.getMonth() === day.getMonth() && d.getDate() === day.getDate(); };
+    let all_day = all.filter(function(e) { return e.allDay; });
+    let timed = all.filter(function(e) { return !e.allDay; }).sort(function(a, b) { return a.start - b.start; });
     for (let e of all_day) {
         let row = $('<button type="button">').addClass('pv-ag-allday').html(e.extendedProps.label || e.title || '');
         row.on('click', open(e));
@@ -958,6 +965,7 @@ function preview_plan_items() {
 function preview_close_plan_menu(animate) {
     let menu = $('.pv-plan-menu');
     if (menu.length === 0) return;
+    if (window.pv_back) window.pv_back.closed('plan-menu');
     $('.pv-plan-veil').remove();
     document.body.classList.remove('pv-sheet-open');
     if (animate && !window.matchMedia('(min-width: 768px)').matches) {
@@ -1019,6 +1027,8 @@ function preview_open_plan_menu(button) {
         let veil = $('<div class="pv-menu-veil pv-plan-veil">').on('click', function() { preview_close_plan_menu(true); });
         $('body').append(veil, menu);
         document.body.classList.add('pv-sheet-open');
+        // back (button or swipe) closes it instead of leaving the page
+        if (window.pv_back) window.pv_back.opened('plan-menu', function() { preview_close_plan_menu(true); });
     } else {
         $(button).after(menu);
     }
@@ -1202,7 +1212,21 @@ function render_preview_week_agenda(box) {
     end.setDate(start.getDate() + 4);
     let months_short = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
     let names = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-    let events = window.calendar.getEvents();
+    let total = preview_week_fill(box, start, window.calendar.getEvents());
+    // the header: the week instead of the day, no day strip
+    let label = start.getMonth() === end.getMonth()
+        ? start.getDate() + '.–' + end.getDate() + '. ' + months_short[end.getMonth()]
+        : start.getDate() + '. ' + months_short[start.getMonth()] + ' – ' + end.getDate() + '. ' + months_short[end.getMonth()];
+    render_preview_day_band(start, label, false, 'Kalenderwoche ' + moment(start).isoWeek() + ', ' + (total === 1 ? '1 Stunde' : total + ' Stunden'));
+    $('#pv_day_strip').attr('hidden', true);
+}
+
+// the five school days of a week (start: Monday) as compact lists into box;
+// returns the number of lessons. Also used for the neighbouring week while
+// swiping (preview_agenda_ghost)
+function preview_week_fill(box, start, events) {
+    let months_short = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+    let names = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
     let total = 0;
     let today = new Date().toDateString();
     let days = $('<div>').addClass('pv-week-days');
@@ -1245,29 +1269,82 @@ function render_preview_week_agenda(box) {
         days.append(section);
     }
     box.append(days);
-    // the header: the week instead of the day, no day strip
-    let label = start.getMonth() === end.getMonth()
-        ? start.getDate() + '.–' + end.getDate() + '. ' + months_short[end.getMonth()]
-        : start.getDate() + '. ' + months_short[start.getMonth()] + ' – ' + end.getDate() + '. ' + months_short[end.getMonth()];
-    render_preview_day_band(start, label, false, 'Kalenderwoche ' + moment(start).isoWeek() + ', ' + (total === 1 ? '1 Stunde' : total + ' Stunden'));
-    $('#pv_day_strip').attr('hidden', true);
+    return total;
 }
 
-// swiping the agenda: it follows the finger, then the next / previous school
-// day slides in from the side
+// the neighbouring day (or week, on the "Woche" tab) as a card of its own,
+// drawn from the preloaded weeks, for swiping: it comes in beside the
+// agenda while the finger moves. Only a picture – the real day is drawn
+// when the swipe ends. dir: 1 = next, -1 = previous.
+function preview_agenda_ghost(dir) {
+    let week = location.hash === '#woche';
+    let ghost = $('<div>').addClass('pv-agenda pv-agenda-ghost').attr('aria-hidden', 'true').toggleClass('pv-agenda-week', week);
+    let as_event = function(r) {
+        return { start: new Date(r.start), end: new Date(r.end), allDay: !!r.allDay || (r.start || '').length <= 10, title: r.title, extendedProps: r };
+    };
+    let cached = function(d) { return !!(timetable_weeks[timetable_id + '/' + timetable_week_key(moment(d).format('YYYY-MM-DD'))] || {}).text; };
+    let events_of = function(d) { return timetable_cached_events(moment(d).format('YYYY-MM-DD')).map(as_event); };
+    let base = new Date(window.calendar.view.currentStart);
+    base.setHours(0, 0, 0, 0);
+    if (week) {
+        let monday = new Date(base);
+        while (monday.getDay() !== 1) monday.setDate(monday.getDate() + (monday.getDay() === 0 ? 1 : -1));
+        monday.setDate(monday.getDate() + 7 * dir);
+        if (!cached(monday)) return ghost.append($('<div>').addClass('pv-ag-empty').text('…'))[0];
+        let events = [];
+        for (let i = 0; i < 5; i++) {
+            let d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            events = events.concat(events_of(d));
+        }
+        preview_week_fill(ghost, monday, events);
+        return ghost[0];
+    }
+    let day = new Date(base);
+    do { day.setDate(day.getDate() + dir); } while (day.getDay() === 0 || day.getDay() === 6);
+    if (!cached(day)) return ghost.append($('<div>').addClass('pv-ag-empty').text('…'))[0];
+    preview_agenda_fill_day(ghost, day, events_of(day), new Date(), function() { return function() {}; });
+    return ghost[0];
+}
+
+// swiping the agenda: it follows the finger with the neighbouring day (or
+// week) beside it; far enough, and that one slides into place
 function install_preview_agenda_swipe() {
     let box = document.getElementById('pv_agenda');
     if (!box || box.dataset.swipe) return;
     box.dataset.swipe = '1';
     box.style.touchAction = 'pan-y pinch-zoom';
     let start = null, dragging = false;
+    let ghost = null, ghost_dir = 0;
+    const GAP = 16;
+    let width = function() { return box.offsetWidth + GAP; };
+    let place = function(el, x, ms) {
+        el.style.transition = ms ? 'transform ' + ms + 'ms ease-out' : 'none';
+        el.style.transform = x ? 'translateX(' + x + 'px)' : '';
+    };
+    let drop_ghost = function() {
+        if (ghost) ghost.remove();
+        ghost = null;
+        ghost_dir = 0;
+    };
+    // fixed to the viewport where the agenda is: no sideways scroll area
+    let ensure_ghost = function(dir) {
+        if (ghost && ghost_dir === dir) return;
+        drop_ghost();
+        ghost = preview_agenda_ghost(dir);
+        ghost_dir = dir;
+        let r = box.getBoundingClientRect();
+        Object.assign(ghost.style, { position: 'fixed', top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '1' });
+        document.body.appendChild(ghost);
+    };
     let move = function(x, ms) {
-        box.style.transition = ms ? 'transform ' + ms + 'ms ease-out, opacity ' + ms + 'ms ease-out' : 'none';
-        box.style.transform = x ? 'translateX(' + x + 'px)' : '';
-        box.style.opacity = x ? String(Math.max(0.3, 1 - Math.abs(x) / window.innerWidth)) : '';
+        place(box, x, ms);
+        if (ghost) place(ghost, x + ghost_dir * width(), ms);
     };
     box.addEventListener('touchstart', function(e) {
         start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+        // the system's back gesture starts at the screen edge: leave it alone
+        if (start && (start.x < 24 || start.x > window.innerWidth - 24)) start = null;
         dragging = false;
     }, { passive: true });
     box.addEventListener('touchmove', function(e) {
@@ -1278,8 +1355,13 @@ function install_preview_agenda_swipe() {
             if (Math.abs(dx) < 10) return;
             dragging = true;
         }
+        ensure_ghost(dx < 0 ? 1 : -1);
         move(dx, 0);
     }, { passive: true });
+    let cancel = function() {
+        move(0, 150);
+        setTimeout(drop_ghost, 150);
+    };
     let finish = function(e) {
         if (!start) return;
         let s = start; start = null;
@@ -1287,20 +1369,20 @@ function install_preview_agenda_swipe() {
         dragging = false;
         let dx = (e.changedTouches[0] || {}).clientX - s.x;
         let quick = Date.now() - s.t < 250 && Math.abs(dx) > 40;
-        if (!(Math.abs(dx) > box.offsetWidth * 0.25 || quick)) { move(0, 150); return; }
+        if (!(Math.abs(dx) > box.offsetWidth * 0.25 || quick)) { cancel(); return; }
         let dir = dx < 0 ? 1 : -1;
-        move(-dir * window.innerWidth, 120);
+        ensure_ghost(dir);
+        move(-dir * width(), 160);
         setTimeout(function() {
             if (location.hash === '#woche') window.calendar.incrementDate({ weeks: dir });
             else if (dir > 0) window.calendar.next(); else window.calendar.prev();
             render_preview_agenda();
-            move(dir * window.innerWidth * 0.5, 0);
-            box.getBoundingClientRect();
-            move(0, 160);
-        }, 120);
+            place(box, 0, 0);
+            drop_ghost();
+        }, 160);
     };
     box.addEventListener('touchend', finish);
-    box.addEventListener('touchcancel', function() { if (start) { start = null; dragging = false; move(0, 150); } });
+    box.addEventListener('touchcancel', function() { if (start) { start = null; dragging = false; cancel(); } });
 }
 
 function timetable_event_color(event) {
@@ -1720,6 +1802,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // a quick next swipe: the previous slide ends at once
             if (settling) settling.finish();
             start = (e.touches.length === 1) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+            // the system's back gesture starts at the screen edge: leave it alone
+            if (start && (start.x < 24 || start.x > window.innerWidth - 24)) start = null;
             dragging = false;
         }, { passive: true });
 

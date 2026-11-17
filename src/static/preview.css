@@ -1986,3 +1986,61 @@ html {
         opacity: 0.85;
     }
 }
+
+/* ---------- Found by the sweep on real data (dark mode, contrast, overflow) ---------- */
+/* outline buttons ("Verwerfen", "Speichern", "Umplanen" in the Kursbuch …) */
+.ui-preview .btn-outline-secondary {
+    color: var(--pv-ink);
+    border-color: var(--pv-line);
+}
+
+.ui-preview .btn-outline-secondary:hover {
+    background-color: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+/* grey hints: the template fixes .text-muted at #666 */
+.ui-preview .text-muted {
+    color: var(--pv-muted) !important;
+}
+
+/* links in page text */
+.ui-preview #main_container a:where(:not(.btn, .nav-link, .dropdown-item, .pv-band-avatar)) {
+    color: var(--acc-text);
+}
+
+/* not in the timetable (day numbers, events keep their colours) */
+.ui-preview #main_container .fc a {
+    color: inherit;
+}
+
+/* messages bring their own text colours (pasted from mails): readable in dark mode */
+.ui-preview.dark .text-comment .message,
+.ui-preview.dark .text-comment .message * {
+    color: var(--pv-ink) !important;
+    background-color: transparent !important;
+}
+
+/* error messages */
+.ui-preview .text-danger {
+    color: #b42318 !important;
+}
+
+.ui-preview.dark .text-danger {
+    color: #ff8f8f !important;
+}
+
+.ui-preview.dark .bg-light {
+    background-color: var(--pv-hover) !important;
+}
+
+/* long words (addresses, links) wrap instead of widening the page on phones */
+.ui-preview .container,
+.ui-preview .text-comment .message {
+    overflow-wrap: break-word;
+}
+
+.ui-preview .text-comment .message img,
+.ui-preview .text-comment .message table {
+    max-width: 100%;
+}

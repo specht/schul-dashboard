@@ -609,9 +609,10 @@ html {
     background: repeating-linear-gradient(135deg, var(--pv-hover) 0 6px, var(--pv-surface) 6px 12px);
 }
 
+/* chip, title and "Jetzt" at the top, also when the title wraps */
 .pv-ag-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
 }
 
@@ -1759,4 +1760,17 @@ html {
 .ui-preview.dark .form-control:disabled {
     background-color: var(--pv-hover) !important;
     border-color: transparent !important;
+}
+
+/* ---------- Small things the sweep found (contrast) ---------- */
+/* links that look like buttons ("Später" in the authenticator hint) */
+.ui-preview .btn-link {
+    color: var(--acc-text);
+}
+
+/* Kursbuch markers (NC, LR, Jitsi): light turquoise with white text was 3:1 */
+.ui-preview span.bv {
+    background-color: var(--acc-soft);
+    color: var(--acc-text);
+    font-family: var(--pv-text);
 }

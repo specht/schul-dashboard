@@ -62,6 +62,8 @@ append_lines(File.join(target, 'lehrer', 'lehrer.csv'), [
     # Playwright project, see test/e2e/seed.cypher)
     'sms.eins@beispielschule.de,Se,w,Eins,Sina,,',
     'sms.zwei@beispielschule.de,Sz,m,Zwei,Sven,,',
+    # extended staff: Kürzel with a leading underscore (Gruppenbildung Kollegium)
+    'sozialarbeit@beispielschule.de,_Ss,w,Sozial,Sarah,,',
 ])
 append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'sekretariat@beispielschule.de,w,Sekretariat,Sabine,',

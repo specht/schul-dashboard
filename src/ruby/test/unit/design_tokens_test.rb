@@ -49,6 +49,28 @@ class DesignTokensTest < Minitest::Test
         end
     end
 
+    # the curated set: real schemes, tuned colours only for themselves and
+    # readable like all others
+    def test_curated_set
+        keys = COLOR_SCHEME_COLORS.map { |entry| entry[0][1, 18] }
+        T::CURATED.each { |key, name, _| assert_includes keys, key, name }
+        assert_operator T::CURATED.size, :>=, 12
+        assert T.curated?('la2c6e80d60aea2c6e80')
+        assert_equal 'la2c6e80d60aea2c6e80', T.effective_scheme('la2c6e80d60aea2c6e80')
+        assert_equal 'd4aa03f16795a80bc423', T.effective_scheme('d4aa03f003f2e80bc423')
+        assert_equal 'Sky', T.closest_curated('la2c6e80d60aea2c6e80')[1]
+        T::CURATED_TUNED.each_value do |tuned|
+            [false, true].each do |dark|
+                t = T.tokens('l' + tuned + '0', dark)
+                surface = rgb(T::SURFACE[dark])
+                T::SUBJECT_SPOTS.each_key do |key|
+                    assert_operator T.contrast(rgb(t["--subj-#{key}"]), surface), :>=, 4.5, "#{tuned} #{dark}: #{key}"
+                end
+                assert_operator T.contrast(rgb(t['--acc']), surface), :>=, 4.5
+            end
+        end
+    end
+
     def test_scheme_distance
         sky = 'la2c6e80d60aea2c6e80'
         assert_in_delta 0, T.scheme_distance(sky, sky), 0.001

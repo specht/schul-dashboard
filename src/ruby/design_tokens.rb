@@ -33,6 +33,61 @@ module DesignTokens
     # codes in the subject list that are not taught subjects
     NOT_SUBJECTS = %w(ber esl fsl sl)
 
+    # The curated set of the new design (review/2026-11/redesign.md): the
+    # most used schemes and every colour family, single-coloured and colourful.
+    # [colours (18 hex), name, tuned colours or nil]. Tuned colours apply only
+    # to the new design's tokens; the backdrop stays the scheme's own. Other
+    # schemes stay usable as people's own (and kids can make new ones).
+    CURATED = [
+        ['a2c6e80d60aea2c6e8', 'Sky', nil],
+        ['307fdc03396cfe0e8d', 'Zoomer', nil],
+        ['073b4c118ab2946b2d', 'Ravenclaw', '1d5f8a118ab2b88a3e'],
+        ['053a4d001eff00d7ff', 'Unter dem Meer', nil],
+        ['119c7503626414a19e', '20.000 Meilen unter dem Meer', nil],
+        ['4aa03f003f2e80bc42', 'Thylakoid', '4aa03f16795a80bc42'],
+        ['94b2a1ff7d03e0ff03', 'Orangensaft', nil],
+        ['fcbf499e0001eeba30', 'Gryffindor', nil],
+        ['6a00009626006a0000', 'Blutroter Sommer', nil],
+        ['32031ba63570ff99cc', 'BOOMBAYAH', nil],
+        ['7146749f6976cc8b79', 'Ice cream', '714674c0506fe0876a'],
+        ['a86fd07638a15a2b7a', 'Amethyst', nil],
+        ['0000ff6600ffcc00ff', 'Purple Valley', nil],
+        ['788aa3e8a598b56576', 'Dreamy', nil],
+        ['55beedf9b935e5185d', 'ソフトクリーム', nil],
+        ['013adedf3a01f7fe2e', 'Sunset', nil],
+        ['aaaaaa777777cccccc', 'Shadows', nil],
+    ]
+    CURATED_TUNED = CURATED.select { |_, _, tuned| tuned }.map { |key, _, tuned| [key, tuned] }.to_h
+
+    # the scheme the new design computes its tokens from: a curated scheme's
+    # tuned colours, otherwise the scheme itself
+    def self.effective_scheme(color_scheme)
+        code = color_scheme.to_s
+        tuned = CURATED_TUNED[code[1, 18]]
+        tuned ? code[0] + tuned + code[19..].to_s : code
+    end
+
+    def self.curated?(color_scheme)
+        CURATED.any? { |key, _, _| key == color_scheme.to_s[1, 18] }
+    end
+
+    # the curated scheme closest to any scheme (for suggestions): compared by
+    # what the new design shows – the accent and subject colours across the
+    # gradient (light mode), not the raw colours, of which one may be nearly
+    # white and hardly visible
+    LOOK_TOKENS = %w(--acc --subj-de --subj-la --subj-ma --subj-ge --subj-sp)
+    def self.look(color_scheme)
+        t = tokens('l' + effective_scheme(color_scheme)[1, 18] + '0', false)
+        LOOK_TOKENS.map { |k| t[k] }
+    end
+
+    def self.closest_curated(color_scheme)
+        @curated_looks ||= CURATED.map { |key, _, _| look('l' + key) }
+        mine = look(color_scheme)
+        i = (0...CURATED.size).min_by { |j| mine.zip(@curated_looks[j]).sum { |a, b| delta_e(a, b) } }
+        CURATED[i]
+    end
+
     # 'EN' (LK), 'en' (GK), 'Nawi', 'La LK' → the key in SUBJECT_SPOTS (nil if unknown)
     def self.subject_key(code)
         key = code.to_s.strip.split(/[\s_-]/).first.to_s.downcase
@@ -87,7 +142,22 @@ module DesignTokens
         s = [s, 0.45].max
         c = hls_to_rgb(h, l, s)
         wave = 0.5 + 0.5 * Math.cos(2 * Math::PI * t / LIGHTNESS_PERIOD)
-        dark ? adjust(c, surface, 5.0 + LIGHTNESS_RANGE * wave, :lighter) : adjust(c, [1, 1, 1], 4.5 + LIGHTNESS_RANGE * wave, :darker)
+        dark ? fit(c, surface, 5.0 + LIGHTNESS_RANGE * wave, :lighter) : fit(c, [1, 1, 1], 4.5 + LIGHTNESS_RANGE * wave, :darker)
+    end
+
+    # like adjust, but in both directions: a colour with more contrast than
+    # the target (e.g. pure blue) is brought back towards it, so the lightness
+    # wave also works for very dark or saturated scheme colours. Never below
+    # the target.
+    def self.fit(c, bg, target, direction)
+        h, l, s = rgb_to_hls(c)
+        back = direction == :darker ? 0.01 : -0.01
+        100.times do
+            break if contrast(hex_to_rgb(rgb_to_hex(hls_to_rgb(h, l + back, s))), bg) < target + 0.4
+            l += back
+            break if l <= 0 || l >= 1
+        end
+        adjust(hls_to_rgb(h, l.clamp(0.0, 1.0), s), bg, target, direction)
     end
 
     # Text over the left 60 % of the backdrop band: the colour (white or ink)

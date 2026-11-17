@@ -21,6 +21,9 @@
     .pal-lesson { display: flex; gap: 8px; align-items: center; background: var(--surface); border-radius: 10px; padding: 7px 9px; border-left: 4px solid var(--c); box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.2); }
     .pal-lesson b, .pal-lesson small { display: block; }
     .pal-lesson small { opacity: 0.65; }
+    .pal-section { margin: 28px 0 14px; }
+    .pal-tuned { font-size: 13px; opacity: 0.8; }
+    .pal-tuned i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 2px; vertical-align: -1px; }
     .pal-marks { margin-left: 8px; }
     .pal-marks .btn.active { font-weight: 700; }
     .pal-row[data-mark='keep'] .pal-head b, .pal-mark-keep b { color: #1a7f37; }
@@ -39,7 +42,7 @@
     <div class='row'>
         <div class='col-md-12'>
             <h2>Farbschemata im neuen Design</h2>
-            <p>Alle Farbschemata, wie das neue Design sie heute aus den drei Farben ableitet – hell und dunkel. Grundlage für die neue, kuratierte Auswahl: <b>Behalten</b> kommt so in die Auswahl, <b>Anpassen</b> kommt mit überarbeiteten Farben hinein, <b>Weg</b> wird nicht mehr angeboten – wer es nutzt, bekommt das ähnlichste behaltene Schema.</p>
+            <p>Alle Farbschemata, wie das neue Design sie heute aus den drei Farben ableitet – hell und dunkel. Oben die kuratierte Auswahl für das neue Design (angepasste Schemata mit ihren neuen Farben), darunter alle weiteren. Mit <b>Behalten</b>, <b>Anpassen</b> und <b>Weg</b> lässt sich die Auswahl kommentieren.</p>
             <div class='api_messages' style='display: none;'></div>
             #{design_palettes_html}
         </div>

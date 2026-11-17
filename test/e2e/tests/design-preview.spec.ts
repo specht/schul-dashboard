@@ -577,8 +577,9 @@ test('Neues Design: Farbschemata auswählen (Admins)', async ({ page, newUserPag
     await row('Sky').locator('.bu_palette_mark', { hasText: 'Behalten' }).click();
     await expect(row('Sky').locator('.bu_palette_mark.active')).toHaveText('Behalten');
     await expect(row('Sky')).toHaveAttribute('data-mark', 'keep');
-    // the others would go to the only kept scheme
-    await expect(row('Dreamy').locator('.pal-target')).toContainText('Sky');
+    // schemes outside the curated set show the closest one in it
+    await expect(row('Dreamy').locator('.pal-target')).toHaveCount(0);
+    await expect(row('Wellenbad').locator('.pal-target')).toContainText('ähnlich in der Auswahl');
     // clicking the active mark again removes it
     await row('Sky').locator('.bu_palette_mark.active').click();
     await expect(row('Sky')).toHaveAttribute('data-mark', 'none');

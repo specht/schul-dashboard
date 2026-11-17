@@ -44,7 +44,7 @@ class Main < Sinatra::Base
     def design_preview_head(color_scheme)
         return '' unless ui_preview?
         dark = !!(@session_user || {})[:dark]
-        "<style id='design_tokens'>#{DesignTokens.css(color_scheme, dark)}</style>\n" +
+        "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark)}</style>\n" +
             "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
             "<link href='#{preview_asset('/preview.css')}' rel='stylesheet' />\n" +
             "<script src='#{preview_asset('/preview.js')}'></script>\n" +
@@ -372,18 +372,15 @@ class Main < Sinatra::Base
         end
         # COLOR_SCHEME_COLORS is rewritten at startup (main.rb); the codes and
         # names are kept in @@color_scheme_info
-        schemes = @@color_scheme_info.map { |code, info| [code, info[0]] }.sort_by { |code, name| [-counts[code[1, 18]], name.to_s] }
+        # accounts without a choice of their own have the standard scheme (Sky)
+        counts[@@standard_color_scheme[1, 18]] += random
+        schemes = @@color_scheme_info.map { |code, info| [code, info[0]] }.sort_by { |code, name| [DesignTokens.curated?(code) ? 0 : 1, -counts[code[1, 18]], name.to_s] }
         names = schemes.to_h
         marks = {}
         neo4j_query(<<~END_OF_QUERY).each { |row| marks[row['code']] = {'mark' => row['mark'], 'by' => row['by'], 'ts' => row['ts']} }
             MATCH (p:DesignPaletteMark)
             RETURN p.code AS code, p.mark AS mark, p.by AS by, p.ts AS ts;
         END_OF_QUERY
-        kept = schemes.map(&:first).select { |code| %w(keep tune).include?((marks[code] || {})['mark']) }
-        # where a dropped (or not yet marked) scheme would go: the closest kept one
-        target = lambda do |code|
-            kept.min_by { |k| DesignTokens.scheme_distance(code, k) }
-        end
         StringIO.open do |io|
             tally = Hash.new(0)
             accounts = Hash.new(0)
@@ -392,17 +389,29 @@ class Main < Sinatra::Base
                 tally[m] += 1
                 accounts[m] += counts[code[1, 18]]
             end
-            io.puts "<p class='text-muted'>#{schemes.size} Farbschemata, sortiert nach Nutzung. Ohne eigenes Schema: #{random} Konten (bekommen täglich ein zufälliges).</p>"
+            curated_accounts = schemes.select { |code, _| DesignTokens.curated?(code) }.sum { |code, _| counts[code[1, 18]] }
+            io.puts "<p class='text-muted'>#{schemes.size} Farbschemata, sortiert nach Nutzung (#{random} Konten ohne eigene Wahl zählen zum Standard Sky). <b>Kuratierte Auswahl: #{DesignTokens::CURATED.size} Schemata, #{curated_accounts} von #{counts.values.sum} Konten.</b> Alle anderen bleiben als eigenes Schema nutzbar; im Profil wird das ähnlichste aus der Auswahl vorgeschlagen.</p>"
             io.puts "<p class='pal-tally'>"
             [['keep', 'Behalten'], ['tune', 'Anpassen'], ['drop', 'Weg'], ['none', 'Offen']].each do |m, label|
                 io.puts "<span class='pal-mark-#{m}'>#{label}: <b>#{tally[m]}</b> Schemata, #{accounts[m]} Konten</span>"
             end
             io.puts "</p>"
+            shown_rest = false
+            io.puts "<h3 class='pal-section'>Kuratierte Auswahl</h3>"
             schemes.each do |code, name|
+                curated = DesignTokens.curated?(code)
+                if !curated && !shown_rest
+                    io.puts "<h3 class='pal-section'>Weitere Schemata (bleiben als eigene nutzbar)</h3>"
+                    shown_rest = true
+                end
+                effective = DesignTokens.effective_scheme(code)
                 mark = marks[code] || {}
                 io.puts "<div class='pal-row' data-code='#{code}' data-mark='#{mark['mark'] || 'none'}'>"
                 io.puts "<div class='pal-head'><b>#{CGI.escapeHTML(name.to_s)}</b>"
                 io.puts "<span class='pal-dots'>" + [1, 7, 13].map { |i| "<i style='background: ##{code[i, 6]}'></i>" }.join + "</span>"
+                if effective != code
+                    io.puts "<span class='pal-tuned'>angepasst → " + [1, 7, 13].map { |i| "<i style='background: ##{effective[i, 6]}'></i>" }.join + "</span>"
+                end
                 io.puts "<span class='pal-count'>#{counts[code[1, 18]]} Konten</span>"
                 io.puts "<span class='pal-marks btn-group btn-group-sm' role='group' aria-label='Auswahl für #{CGI.escapeHTML(name.to_s)}'>"
                 [['keep', 'Behalten'], ['tune', 'Anpassen'], ['drop', 'Weg']].each do |m, label|
@@ -413,13 +422,13 @@ class Main < Sinatra::Base
                 if mark['mark']
                     io.puts "<div class='pal-by'>#{CGI.escapeHTML(mark['by'].to_s)}, #{Time.at(mark['ts'].to_i).strftime('%d.%m.%Y')}</div>"
                 end
-                if !%w(keep tune).include?(mark['mark']) && !kept.empty?
-                    t = target.call(code)
-                    io.puts "<div class='pal-target'>würde zu <b>#{CGI.escapeHTML(names[t].to_s)}</b> " + [1, 7, 13].map { |i| "<i style='background: ##{t[i, 6]}'></i>" }.join + "</div>"
+                unless curated
+                    key, cname, _ = DesignTokens.closest_curated(code)
+                    io.puts "<div class='pal-target'>ähnlich in der Auswahl: <b>#{CGI.escapeHTML(cname)}</b> " + [0, 6, 12].map { |i| "<i style='background: ##{key[i, 6]}'></i>" }.join + "</div>"
                 end
                 io.puts "<div class='pal-cards'>"
                 [false, true].each do |dark|
-                    t = DesignTokens.tokens(code, dark)
+                    t = DesignTokens.tokens(effective, dark)
                     vars = t.map { |k, v| "#{k}: #{v}" }.join('; ')
                     surface = '#' + DesignTokens::SURFACE[dark]
                     paper = '#' + DesignTokens::PAPER[dark]

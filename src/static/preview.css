@@ -472,7 +472,8 @@ html {
 
 .pv-ag-row {
     display: grid;
-    grid-template-columns: 46px 1fr;
+    /* minmax: long texts wrap instead of widening the card */
+    grid-template-columns: 46px minmax(0, 1fr);
     gap: 8px;
     align-items: start;
 }
@@ -499,7 +500,11 @@ html {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    --c: var(--pv-line);
     width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    border-left: 5px solid var(--c) !important;
     background: var(--pv-surface);
     border: 1px solid var(--pv-line);
     border-radius: 14px;
@@ -537,7 +542,6 @@ html {
 }
 
 .pv-ag-subj {
-    --c: var(--acc);
     flex: none;
     min-width: 38px;
     height: 38px;
@@ -547,8 +551,19 @@ html {
     display: grid;
     place-items: center;
     font: 800 13px/1 var(--pv-display);
-    color: var(--c);
-    background: color-mix(in srgb, var(--c) 16%, var(--pv-surface));
+    /* the subject colours are made for white text (light) / dark text (dark) */
+    color: #ffffff;
+    background: var(--c);
+}
+
+.dark .pv-ag-subj {
+    color: #0a1222;
+}
+
+/* no subject colour (cancelled, events): a quiet chip */
+.pv-ag-card:not([style*='--c']) .pv-ag-subj {
+    color: var(--pv-muted);
+    background: var(--pv-hover);
 }
 
 .pv-ag-title {
@@ -599,15 +614,27 @@ html {
     font-weight: bold;
     padding: 3px 8px;
     border-radius: 999px;
-    background: var(--pv-hover);
-    color: var(--pv-ink);
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+/* the topic: up to two lines, wrapping */
+.pv-ag-topic {
+    align-items: flex-start;
+    border-radius: 10px;
+}
+
+.pv-ag-topic i {
+    margin-top: 2px;
 }
 
 .pv-ag-topic span {
     font-weight: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .pv-ag-progress {
@@ -652,12 +679,40 @@ html {
     justify-content: space-between;
     gap: 8px;
     margin-left: 54px;
+    min-width: 0;
     border: 0;
     background: var(--pv-hover);
     border-radius: 999px;
     padding: 5px 12px;
     font-size: 0.85em;
     color: var(--pv-ink);
+}
+
+.pv-ag-duty-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pv-ag-duty-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pv-ag-duty-label i {
+    color: var(--pv-muted);
+}
+
+.pv-ag-duty-where {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pv-ag-time {
+    flex: none;
 }
 
 .pv-ag-time {

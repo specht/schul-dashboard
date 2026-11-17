@@ -710,7 +710,11 @@ function render_preview_agenda_inner() {
         if (!last_end || e.end > last_end) last_end = e.end;
         if (x.pausenaufsicht) {
             let duty = $('<button type="button">').addClass('pv-ag-duty');
-            duty.append($('<span>').addClass('pv-ag-duty-label').html(x.label || 'Aufsicht'));
+            // where, right away – the place is what one needs to know
+            let duty_label = $('<span>').addClass('pv-ag-duty-label');
+            duty_label.append($('<i>').addClass('fa fa-eye'), $('<span>').text('Aufsicht'));
+            if (x.raum) duty_label.append($('<b>').addClass('pv-ag-duty-where').html(x.raum));
+            duty.append(duty_label);
             duty.append($('<span>').addClass('pv-ag-time').text(preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
             duty.on('click', open(e));
             box.append(duty);
@@ -724,7 +728,8 @@ function render_preview_agenda_inner() {
         label.find('s, del, strike').remove();
         let code = label.text().trim().split(/[\s(]/)[0];
         let chip = $('<span>').addClass('pv-ag-subj').text(code.length > 0 ? code.substr(0, 4) : '•');
-        if (color) chip.css('--c', color);
+        // the subject colour for chip and card (jQuery's css() ignores custom properties)
+        if (color) card[0].style.setProperty('--c', color);
         let head = $('<div>').addClass('pv-ag-head').append(chip);
         let title = $('<div>').addClass('pv-ag-title');
         title.append($('<b>').html(x.label || e.title || ''));

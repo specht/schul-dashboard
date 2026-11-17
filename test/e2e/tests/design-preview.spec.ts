@@ -383,7 +383,43 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
     const card = page.locator('#pv_agenda .pv-ag-card').first();
     await expect(card).toBeVisible();
     await expect(card.locator('.pv-ag-subj')).not.toHaveText('');
+    // in the subject's colour: chip and the bar on the left
+    const colours = await page.evaluate(() => {
+      const card = [...document.querySelectorAll('#pv_agenda .pv-ag-card')].find((el) => /Mathematik|Latein|Naturwiss/.test(el.textContent || '')) as HTMLElement;
+      const key = /Mathematik/.test(card.textContent!) ? 'ma' : /Latein/.test(card.textContent!) ? 'la' : 'nawi';
+      const hex = getComputedStyle(document.documentElement).getPropertyValue('--subj-' + key).trim();
+      const rgb = `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
+      return { rgb, chip: getComputedStyle(card.querySelector('.pv-ag-subj')!).backgroundColor, bar: getComputedStyle(card).borderLeftColor };
+    });
+    expect(colours.chip).toBe(colours.rgb);
+    expect(colours.bar).toBe(colours.rgb);
     await expect(page.locator('#pv_agenda .pv-ag-when').first()).toHaveText(/\d:\d\d/);
+    // long texts (a topic, a long note) wrap inside the panel
+    await page.evaluate(() => {
+      const w = window as any;
+      const d = w.calendar.getDate().toDateString();
+      const ev = w.calendar.getEvents().find((e: any) => !e.allDay && e.start.toDateString() === d && !e.extendedProps.pausenaufsicht);
+      ev.setExtendedProp('data', { ...(ev.extendedProps.data || {}), stundenthema_text: 'Probeklausur (75 Minuten, kann zu Hause oder am Donnerstag in der Schule geschrieben werden), bitte Taschenrechner mitbringen' });
+      ev.setExtendedProp('vertretungs_text', 'Ein sehr langer Hinweis ohne Leerzeichen: Donaudampfschifffahrtsgesellschaftskapitänsmütze');
+    });
+    await expect(page.locator('#pv_agenda .pv-ag-topic').first()).toBeVisible();
+    const overflow = await page.evaluate(() => {
+      const panel = document.getElementById('pv_agenda')!.getBoundingClientRect();
+      return [...document.querySelectorAll('#pv_agenda .pv-ag-card, #pv_agenda .pv-ag-mark, #pv_agenda .pv-ag-note')]
+        .filter((el) => el.getBoundingClientRect().right > panel.right + 1).length;
+    });
+    expect(overflow).toBe(0);
+    // a break duty says where, without opening it
+    await page.evaluate(() => {
+      const w = window as any;
+      const d = new Date(w.calendar.getDate());
+      d.setHours(7, 30, 0, 0);
+      w.calendar.addEvent({ start: d, end: new Date(d.getTime() + 15 * 60000),
+        extendedProps: { lesson: true, pausenaufsicht: true, raum: 'Hof Nord', label: 'Pausenaufsicht' } });
+    });
+    const duty = page.locator('#pv_agenda .pv-ag-duty');
+    await expect(duty).toContainText('Hof Nord');
+    await expect(duty).toContainText('7:30–7:45');
     await card.click();
     await expect(page.locator('#lessonModal')).toBeVisible();
     await expect(page.locator('#lessonModal .lesson-label')).not.toBeEmpty();

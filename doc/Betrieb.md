@@ -297,11 +297,23 @@ Ein neues Design entsteht schrittweise und lässt sich vorab ausprobieren:
 im Profil unter »Helligkeit« mit dem Schalter »Neues Design (Vorschau)«.
 Vorerst steht der Schalter nur Admins zur Verfügung; wer ihn sonst sehen
 darf, legt `UI_PREVIEW_FOR` in `src/ruby/include/design_preview.rb` fest
-(`:admins`, `:teachers`, `:all`). Mit eingeschalteter Vorschau berechnet
-das Dashboard die Farben aus dem Farbschema (`design_tokens.rb`, Kontrast
-für hell und dunkel geprüft) und lädt `preview.css`.
+(`:admins`, `:teachers`, `:all`). Auf Entwicklungsinstanzen dürfen ihn alle
+Konten einschalten, damit sich die Seiten jeder Rolle mit echten Daten
+prüfen lassen. Mit eingeschalteter Vorschau berechnet das Dashboard die
+Farben aus dem Farbschema (`design_tokens.rb`, Kontrast für hell und dunkel
+geprüft) und lädt `preview.css` und `preview.js`. Das bisherige Design
+bleibt für alle anderen unverändert.
 
-Unten links erscheint dann »Feedback zum neuen Design«. Gespeichert werden
+Im neuen Design gibt es eine kuratierte Auswahl von Farbschemata
+(`DesignTokens::CURATED`); andere Schemata bleiben nutzbar, und im Profil
+lässt sich aus drei Farben ein eigenes zusammenstellen. Admins sehen unter
+`/design_palettes` (Administration → Seiten) alle Schemata im neuen Design,
+hell und dunkel, mit der Zahl der Konten je Schema. Der Hintergrund folgt im
+neuen Design dem Schalter »Helligkeit«; die eigene Einstellung
+»Hintergrund« entfällt dort.
+
+Rückmeldungen gibt es im Profil über »Feedback geben« neben dem Schalter.
+Gespeichert werden
 der Text, die Seite, Handy oder Desktop, hell oder dunkel, das Farbschema und
 die Rolle – die E-Mail-Adresse nur, wenn die Person angesprochen werden
 möchte. Admins sehen alles unter `/design_feedback` (Administration →

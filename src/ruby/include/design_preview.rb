@@ -44,10 +44,22 @@ class Main < Sinatra::Base
         path
     end
 
+    # In the new design the backdrop follows light / dark mode (one switch
+    # instead of "Hintergrund" and "Helligkeit"): the light or dark variant
+    # of the scheme's backdrop, the ground below it to match.
+    def design_preview_backdrop(color_scheme, dark)
+        code = (dark ? 'd' : 'l') + color_scheme.to_s[1..].to_s
+        jpg = "/gen/bg/bg-#{code}.jpg"
+        url = File.exist?(jpg) ? jpg : "/gen/bg/bg-#{code[0, code.size - 1]}0.svg"
+        [code, "<style id='design_backdrop'>body.ui-preview { background-image: url(#{url}); background-color: #{dark ? '#0e131a' : '#f3f5f8'}; }</style>\n"]
+    end
+
     def design_preview_head(color_scheme)
         return '' unless ui_preview?
         dark = !!(@session_user || {})[:dark]
-        "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, color_scheme)}</style>\n" +
+        backdrop, backdrop_css = design_preview_backdrop(color_scheme, dark)
+        backdrop_css +
+        "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, backdrop)}</style>\n" +
             "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
             "<link href='#{preview_asset('/preview.css')}' rel='stylesheet' />\n" +
             "<script src='#{preview_asset('/preview.js')}'></script>\n" +

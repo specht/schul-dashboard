@@ -709,3 +709,27 @@ test('Neues Design: Kopf über dem Stundenplan am Desktop', async ({ page }, tes
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// One switch: in the new design the backdrop follows light / dark mode
+// (today a separate "Hintergrund" setting picks its variant)
+test('Neues Design: der Hintergrund folgt hell und dunkel', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_color_scheme', { data: { scheme: 'da2c6e80d60aea2c6e80' } });
+  try {
+    const backdrop = () => page.evaluate(() => getComputedStyle(document.body).backgroundImage);
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.goto('/');
+    expect(await backdrop()).toContain('bg-la2c6e8');
+    await page.request.post('/api/set_dark_css', { data: { mode: 'dark' } });
+    await page.goto('/');
+    expect(await backdrop()).toContain('bg-da2c6e8');
+    // the separate setting is not offered in the new design
+    await page.goto('/profil');
+    await expect(page.locator('.toggle:has(#dark_switch)')).toBeHidden();
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

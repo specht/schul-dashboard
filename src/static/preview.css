@@ -2127,11 +2127,14 @@ html {
         margin: 4px 0 14px;
     }
 
+    /* on the backdrop: the same soft shade behind the text as on phones */
     .pv-wh-title {
         color: var(--band-ink);
         text-shadow: var(--band-shadow);
-        padding: 4px 12px 6px 0;
-        border-radius: 12px;
+        padding: 6px 14px 8px;
+        margin-left: -14px;
+        border-radius: 14px;
+        background: rgba(var(--band-scrim), max(var(--band-scrim-a), 0.18));
     }
 
     .pv-wh-title h2 {
@@ -2351,4 +2354,113 @@ body.ui-preview.dark::before {
 .ui-preview .lesson_pane .explanation,
 .ui-preview .lesson_pane .button-with-label span {
     color: var(--pv-muted);
+}
+
+/* ---------- Desktop, wide screens: the column beside the week (render_preview_side) ---------- */
+.pv-side {
+    display: none;
+}
+
+@media (min-width: 1200px) {
+    .ui-preview.pv-week-head-on .timetable_chooser:not(.pv-col-empty) {
+        flex: 0 0 272px;
+        max-width: 272px;
+    }
+
+    .ui-preview .pv-side:not([hidden]) {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        /* level with the timetable below the header */
+        margin-top: 21px;
+    }
+
+    .pv-side-box {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .pv-side-box h3 {
+        margin: 0 2px;
+        font: 700 0.78rem/1.2 var(--pv-text);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--pv-muted);
+    }
+
+    .pv-side-lesson,
+    .pv-side-change {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 6px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .pv-side-lesson:hover,
+    .pv-side-change:hover {
+        background: var(--pv-hover);
+    }
+
+    .pv-side-lesson:not([style*='--c']) .pv-ag-subj {
+        background: var(--acc);
+    }
+
+    .pv-side-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.25;
+    }
+
+    .pv-side-text b {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pv-side-text small {
+        color: var(--pv-muted);
+        font-size: 0.82rem;
+    }
+
+    .pv-side-tag {
+        flex: none;
+        min-width: 52px;
+        padding: 3px 6px;
+        border-radius: 8px;
+        background: #fff1d6;
+        color: #7a4b00;
+        font: 700 0.72rem/1.1 var(--pv-text);
+        text-align: center;
+    }
+
+    .dark .pv-side-tag {
+        background: #4a3510;
+        color: #ffd58a;
+    }
+
+    .pv-side-tag.pv-side-tag-off {
+        background: var(--pv-hover);
+        color: var(--pv-muted);
+    }
+
+    .pv-side-empty {
+        margin: 0 4px;
+        font-size: 0.88rem;
+        color: var(--pv-muted);
+    }
 }

@@ -148,6 +148,7 @@
             <div id='pv_agenda' class='pv-agenda' aria-live='polite' hidden></div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-lg-2 col-md-12 side-panel'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
+            <aside id='pv_side' class='pv-side' aria-label='Heute und Änderungen' hidden></aside>
             <div class='hint weekend_events' style='display: none;'></div>
             <div class='hint future_homework' style='display: none;'></div>
             #{print_timetable_chooser()}
@@ -1022,6 +1023,7 @@ function render_preview_week_head() {
     nav.append($('<button type="button" aria-label="Weiter">').append($('<i class="fa fa-chevron-right">')).on('click', function() { window.calendar.next(); }));
     tools.append(today, nav);
     head.append(tools);
+    render_preview_side();
     // side columns with nothing visible give their room to the timetable
     $('#calendar').closest('.row').children().not($('#calendar').parent()).each(function(_, col) {
         let visible = $(col).children().filter(function(_, c) {
@@ -1029,6 +1031,99 @@ function render_preview_week_head() {
         }).filter(function(_, c) { return !(c.querySelector('.ttc') && !c.classList.contains('hint')); });
         col.classList.toggle('pv-col-empty', visible.length === 0);
     });
+}
+
+// the subject's short code for a chip ("Ma", "Nawi"), from label_short
+// without the crossed-out part
+function preview_subject_code(x) {
+    let label = $('<div>').html(x.label_short || '');
+    label.find('s, del, strike').remove();
+    let code = label.text().trim().split(/[\s(]/)[0];
+    return code.length > 0 ? code.substr(0, 4) : '•';
+}
+
+// Desktop, wide screens (new design): a column beside the week – the lesson
+// now or next today (with Kursbuch and Mail for one's own), and the changes
+// of the shown week. Clicking opens the lesson dialog.
+function render_preview_side() {
+    let side = $('#pv_side');
+    if (!preview_week_head_wanted() || !window.matchMedia('(min-width: 1200px)').matches) {
+        side.attr('hidden', true);
+        return;
+    }
+    side.empty();
+    let now = new Date();
+    let open = function(fc_event) {
+        return function(ev) {
+            window.timetable_options.eventClick({ event: fc_event, el: ev.currentTarget, jsEvent: ev, view: window.calendar.view });
+        };
+    };
+    let lessons = window.calendar.getEvents().filter(function(e) {
+        let x = e.extendedProps || {};
+        return !e.allDay && e.start && x.lesson && !x.is_event && !x.pausenaufsicht;
+    }).sort(function(a, b) { return a.start - b.start; });
+    // now or next, today
+    let today = lessons.filter(function(e) { return e.start.toDateString() === now.toDateString() && !e.extendedProps.entfall && e.end > now; });
+    if (today.length > 0) {
+        let e = today[0], x = e.extendedProps;
+        let running = e.start <= now;
+        let box = $('<section>').addClass('pv-side-box');
+        box.append($('<h3>').text(running ? 'Jetzt' : 'Als Nächstes · ' + preview_hhmm(e.start)));
+        let card = $('<button type="button">').addClass('pv-side-lesson');
+        let color = preview_subject_color(x);
+        if (color) card[0].style.setProperty('--c', color);
+        card.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
+        let text = $('<span>').addClass('pv-side-text');
+        text.append($('<b>').html(x.label || e.title || ''));
+        text.append($('<small>').html((x.raum ? 'Raum ' + x.raum + ' · ' : '') + preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
+        card.append(text);
+        card.on('click', open(e));
+        box.append(card);
+        if (running) {
+            box.append($('<div>').addClass('pv-ag-progress').append($('<b>').css('width', Math.round(100 * (now - e.start) / (e.end - e.start)) + '%')));
+            box.append($('<div>').addClass('pv-ag-left').text('noch ' + Math.ceil((e.end - now) / 60000) + ' min'));
+        }
+        if (typeof my_lessons !== 'undefined' && my_lessons.indexOf(x.lesson_key) >= 0 && x.lesson_offset !== null && x.lesson_offset >= 0) {
+            let actions = $('<div>').addClass('pv-ag-actions');
+            actions.append($('<a>').addClass('pv-ag-action').attr('href', '/lessons/' + x.lesson_key + '#' + x.lesson_offset).append($('<i>').addClass('fa fa-edit'), $('<span>').text('Kursbuch')));
+            let mail = $('<button type="button">').addClass('pv-ag-action').append($('<i>').addClass('fa fa-envelope-o'), $('<span>').text('Mail'));
+            mail.on('click', function(ev) {
+                open(e)(ev);
+                if ($('#lessonModal .bu-mail').is(':visible')) $('#lessonModal .bu-mail').trigger('click');
+            });
+            actions.append(mail);
+            box.append(actions);
+        }
+        side.append(box);
+    }
+    // changes of the shown week
+    let view = window.calendar.view;
+    let changes = lessons.filter(function(e) {
+        let x = e.extendedProps;
+        return e.start >= view.currentStart && e.start < view.currentEnd && (x.entfall || preview_room_change(x.raum) || x.vertretungs_text);
+    });
+    let box = $('<section>').addClass('pv-side-box');
+    box.append($('<h3>').text('Geändert diese Woche'));
+    if (changes.length === 0) {
+        box.append($('<p>').addClass('pv-side-empty').text('Keine Änderungen.'));
+    }
+    let names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    for (let e of changes.slice(0, 8)) {
+        let x = e.extendedProps;
+        let room = preview_room_change(x.raum);
+        let kind = x.entfall ? 'Entfall' : (room ? 'Raum' : 'Vertr.');
+        let what = x.entfall ? 'entfällt' : (room ? 'Raum ' + room[1] + ' statt ' + room[0] : $('<div>').html(x.vertretungs_text).text().trim());
+        let item = $('<button type="button">').addClass('pv-side-change');
+        item.append($('<span>').addClass('pv-side-tag').toggleClass('pv-side-tag-off', !!x.entfall).text(kind));
+        let label = $('<div>').html(x.label_short || '');
+        label.find('s, del, strike').remove();
+        item.append($('<span>').addClass('pv-side-text').append($('<b>').text(label.text().trim()), $('<small>').text(names[e.start.getDay()] + ' ' + preview_hhmm(e.start) + ' · ' + what)));
+        item.on('click', open(e));
+        box.append(item);
+    }
+    if (changes.length > 8) box.append($('<p>').addClass('pv-side-empty').text('und ' + (changes.length - 8) + ' weitere'));
+    side.append(box);
+    side.removeAttr('hidden');
 }
 
 // swiping the agenda: it follows the finger, then the next / previous school

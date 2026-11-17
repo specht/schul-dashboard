@@ -253,4 +253,50 @@
         });
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sort_course_menu); else sort_course_menu();
+
+    // Lerngruppen: one's own groups first (classes, then courses), the others
+    // behind "Weitere Lerngruppen (N)" – usually not needed (main.rb: data-own)
+    function fold_group_menu() {
+        var menu = document.querySelector('[aria-labelledby="navbarDropdownKlassen"]');
+        if (!menu || menu.dataset.pvFolded) return;
+        menu.dataset.pvFolded = '1';
+        var items = Array.prototype.slice.call(menu.querySelectorAll('a.dropdown-item'));
+        var own = items.filter(function(a) { return a.getAttribute('data-own') === '1'; });
+        var others = items.filter(function(a) { return a.getAttribute('data-own') !== '1'; });
+        if (others.length === 0) return;
+        var own_classes = own.filter(function(a) { return /^Klasse\b/.test(a.textContent.trim()); });
+        var own_courses = own.filter(function(a) { return own_classes.indexOf(a) < 0; });
+        menu.querySelectorAll('.dropdown-divider').forEach(function(d) { d.remove(); });
+        own_classes.forEach(function(a) { menu.appendChild(a); });
+        if (own_classes.length && own_courses.length) {
+            var d1 = document.createElement('div');
+            d1.className = 'dropdown-divider';
+            menu.appendChild(d1);
+        }
+        own_courses.forEach(function(a) { menu.appendChild(a); });
+        var toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'dropdown-item pv-more-groups';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.textContent = 'Weitere Lerngruppen (' + others.length + ')';
+        var box = document.createElement('div');
+        box.className = 'pv-more-groups-list';
+        box.hidden = true;
+        others.forEach(function(a) { box.appendChild(a); });
+        if (own.length) {
+            var d2 = document.createElement('div');
+            d2.className = 'dropdown-divider';
+            menu.appendChild(d2);
+        }
+        menu.appendChild(toggle);
+        menu.appendChild(box);
+        toggle.addEventListener('click', function(e) {
+            // keep the menu open (Bootstrap closes dropdowns on clicks inside)
+            e.preventDefault();
+            e.stopPropagation();
+            box.hidden = !box.hidden;
+            toggle.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fold_group_menu); else fold_group_menu();
 })();

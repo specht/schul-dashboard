@@ -143,6 +143,7 @@
                             <div>
                                 <label for="ui_preview_switch" style="margin: 0; font-weight: bold;">Neues Design (Vorschau)</label>
                                 <div class="text-muted" style="font-size: 0.9em;">#{teacher_logged_in? ? 'Probieren Sie aus, woran wir gerade arbeiten. Sie können jederzeit zurückwechseln – über Feedback freuen wir uns.' : 'Probier aus, woran wir gerade arbeiten. Du kannst jederzeit zurückwechseln – über Feedback freuen wir uns.'}</div>
+                                #{ui_preview? ? "<button type='button' class='btn btn-link btn-sm p-0 bu-open-design-feedback' id='bu_profile_design_feedback'>Feedback geben</button>" : ''}
                             </div>
                             <input #{@session_user[:ui_preview] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="an" data-off="aus" data-onstyle="secondary" data-offstyle="secondary" id='ui_preview_switch'>
                         </div>

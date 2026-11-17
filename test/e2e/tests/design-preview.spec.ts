@@ -22,8 +22,10 @@ test('Neues Design: Admin schaltet die Vorschau ein, gibt Feedback, schaltet sie
   // colours computed from the colour scheme
   expect(await page.locator('#design_tokens').textContent()).toMatch(/--acc: #[0-9a-f]{6};.*--subj-ma: #[0-9a-f]{6};/);
 
-  // feedback, with the wish to be contacted
-  await page.locator('#bu_design_feedback').click();
+  // feedback, with the wish to be contacted – from the profile; the floating
+  // button is hidden for now
+  await expect(page.locator('#bu_design_feedback')).toBeHidden();
+  await page.locator('#bu_profile_design_feedback').click();
   const dialog = page.locator('#designFeedbackModal');
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('#ti_design_feedback')).toHaveAttribute('placeholder', /Ihnen/);

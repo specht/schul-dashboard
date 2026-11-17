@@ -1785,3 +1785,9 @@ html {
         margin: 12px 12px 24px;
     }
 }
+
+/* the floating feedback button is in the way; for now feedback is given
+   from the profile (next to the switch) */
+.ui-preview .design-feedback-button {
+    display: none !important;
+}

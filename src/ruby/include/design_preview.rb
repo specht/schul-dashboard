@@ -154,7 +154,8 @@ class Main < Sinatra::Base
             <script>
                 window.addEventListener('load', function () {
                     let modal = $('#designFeedbackModal');
-                    $('#bu_design_feedback').on('click', function () {
+                    // the floating button (hidden for now, preview.css) or the link in the profile
+                    $('#bu_design_feedback, .bu-open-design-feedback').on('click', function () {
                         modal.find('.design-feedback-thanks').hide();
                         modal.find('textarea, .form-check, .design-feedback-note, #bu_send_design_feedback').show();
                         modal.modal('show');

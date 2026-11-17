@@ -3650,28 +3650,6 @@ body.ui-preview:has(.container-fluid.solid)::before {
     border-radius: 50%;
 }
 
-/* no picture: the initials */
-.ui-preview .pv-avatar-initials {
-    position: relative;
-    background: var(--acc) !important;
-    background-image: none !important;
-}
-
-.ui-preview .pv-avatar-initials::after {
-    content: attr(data-pv-initials);
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    color: var(--acc-ink);
-    font: 700 0.42em/1 var(--pv-text);
-    font-size: max(11px, 40cqi);
-}
-
-.ui-preview .pv-avatar-initials {
-    container-type: inline-size;
-}
-
 .ui-preview .pv-avatar-hint {
     margin-top: 10px;
     font-size: 0.85rem;

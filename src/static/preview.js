@@ -521,52 +521,5 @@
     }
     if (document.readyState === 'complete') keep_sidebar_place(); else window.addEventListener('load', keep_sidebar_place);
 
-    // Profile pictures come from Nextcloud. Where none arrives (no picture
-    // set, Nextcloud not reachable): a circle with the initials instead of
-    // an empty grey one.
-    function initials(name) {
-        var words = (name || '').replace(/\(.*?\)/g, '').replace(/\b(Dr|Prof|Herr|Frau)\.?\s/g, '').trim().split(/\s+/).filter(Boolean);
-        if (words.length === 0) return '';
-        return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
-    }
-    function own_name() {
-        var t = document.querySelector('#navbarDropdownProfile');
-        return t ? t.textContent.trim() : '';
-    }
-    function mark_initials(el, name) {
-        if (!el || el.dataset.pvInitials) return;
-        el.dataset.pvInitials = initials(name);
-        el.classList.add('pv-avatar-initials');
-    }
-    function check_background(el, name) {
-        var m = /url\(["']?([^"')]+)["']?\)/.exec(el.style.backgroundImage || '');
-        if (!m || m[1].indexOf('data:') === 0) { mark_initials(el, name); return; }
-        var img = new Image();
-        img.onload = function() { if (img.naturalWidth <= 1) mark_initials(el, name); };
-        img.onerror = function() { mark_initials(el, name); };
-        img.src = m[1];
-    }
-    function avatars() {
-        var name = own_name();
-        document.querySelectorAll('.ui-preview img.avatar-lg').forEach(function(img) {
-            var fail = function() {
-                var d = document.createElement('div');
-                d.className = 'avatar-lg pv-avatar-initials';
-                d.dataset.pvInitials = initials(name);
-                img.replaceWith(d);
-            };
-            if (img.complete && img.naturalWidth === 0) fail(); else img.addEventListener('error', fail);
-        });
-        // the own picture in the menu and the day's header
-        document.querySelectorAll('#navbarDropdownProfile .icon > div, .pv-band-avatar > div').forEach(function(el) { check_background(el, name); });
-        // class lists: each person's picture, their initials where none arrives
-        document.querySelectorAll('tr.user_row .avatar-md').forEach(function(el) {
-            var row = el.closest('tr');
-            var person = ((row.getAttribute('data-first-name') || '') + ' ' + (row.querySelector('td:nth-child(3)') || {}).textContent).trim();
-            check_background(el, person);
-        });
-    }
-    if (document.readyState === 'complete') avatars(); else window.addEventListener('load', avatars);
-    window.pv_check_avatars = avatars;
 })();
 

@@ -6,6 +6,14 @@ the server only).
 
 ## What the maintainer decided so far
 
+The rules that follow from these decisions, for everyone changing pages, are
+in [doc/Gestaltung.md](../../doc/Gestaltung.md).
+
+- **One surface per page (2026-11-17).** No card inside the page panel and no
+  grey box inside a card: sections, hairlines and spacing instead; facts as a
+  quiet line with commas; actions in lists as quiet text buttons, delete as a
+  red icon. First applied to the polls list.
+
 - **Opt-in first, switch at the end.** Users try the new design voluntarily;
   only when it has proven itself does it become the default, with a way back
   for a while, and then the old look goes away.

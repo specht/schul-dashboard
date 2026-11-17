@@ -1140,7 +1140,7 @@
                 let bu_add_answer_div = $('<div>').addClass('button-with-label-relaxed');
                 let bu_add_answer = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Antwortmöglichkeit hinzufügen").data('item-index', item_index);
                 bu_add_answer.click(function (e) {
-                    let item_index = $(e.target).data('item-index');
+                    let item_index = $(e.currentTarget).data('item-index');
                     current_poll.items[item_index].answers.push('');
                     update_current_poll();
                     $('input').filter(`[data-item-index='${item_index}']`).filter(`[data-answer-index='${current_poll.items[item_index].answers.length - 1}']`).focus();

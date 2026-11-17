@@ -189,3 +189,22 @@ test('Begrenzte Plätze: volle Antworten sind gesperrt, die Auswertung zeigt die
   expect(xlsx.status()).toBe(200);
   expect(xlsx.headers()['content-type']).toContain('spreadsheet');
 });
+
+test('Antwortmöglichkeit hinzufügen: auch ein Klick auf das Symbol im Knopf', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/polls');
+  const modal = page.locator('#composeModal');
+  await page.locator('.bu-new-poll').click();
+  await expect(modal).toBeVisible();
+  await modal.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
+  await page.locator('.bu-poll-add-radio').click();
+  const add = modal.getByRole('button', { name: 'Antwortmöglichkeit hinzufügen' });
+  const answers = modal.locator('input[placeholder="Bitte geben Sie eine Antwortmöglichkeit ein"]');
+  await add.locator('i').click();
+  await expect(answers).toHaveCount(1);
+  await add.locator('i').click();
+  await expect(answers).toHaveCount(2);
+  await page.locator('#bu_discard_poll').click();
+  await expect(modal).toBeHidden();
+});

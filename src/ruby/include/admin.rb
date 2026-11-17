@@ -443,6 +443,19 @@ class Main < Sinatra::Base
         end
     end
 
+    # Entwürfe zum Dashboard (Ideensammlung, für Admins): Die Seite liegt nur
+    # auf dem Server in /internal, nicht im öffentlichen Repository.
+    WERKSTATT_PATH = '/internal/werkstatt.html'
+
+    get '/api/werkstatt' do
+        require_admin!
+        if File.exist?(WERKSTATT_PATH)
+            respond_raw_with_mimetype(File.read(WERKSTATT_PATH), 'text/html; charset=utf-8')
+        else
+            respond_raw_with_mimetype("Die Seite liegt noch nicht auf dem Server (#{WERKSTATT_PATH}).", 'text/plain; charset=utf-8')
+        end
+    end
+
     get '/api/all_users' do
         require_admin!
         respond_raw_with_mimetype(print_all_users, 'text/plain')

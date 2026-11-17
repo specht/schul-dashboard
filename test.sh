@@ -63,11 +63,17 @@ ensure_sso_keys() {
     [ -f .test-stack/internal/sso-keys/sso_private.pem ] || { echo "SSO keys missing"; return 1; }
 }
 
+ensure_werkstatt_example() {
+    # /api/werkstatt serves /internal/werkstatt.html – a stand-in for the tests
+    compose run --rm --no-deps -T --entrypoint "ruby test/create_werkstatt_example.rb" ruby
+}
+
 stack_up() {
     stack_down
     prepare_input
     prepare
     ensure_sso_keys
+    ensure_werkstatt_example
     compose up -d "${STACK_SERVICES[@]}"
     wait_for "dashboard" "curl -fsS $BASE_URL/api/ping"
     wait_for "timetable service" "compose exec -T ruby curl -fsS http://timetable:8080/api/update/all"

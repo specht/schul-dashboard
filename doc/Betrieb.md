@@ -291,6 +291,15 @@ Lehrkraft.
   Der `mail_bot` liest die Texte vor jedem Durchlauf, ein Neustart ist nicht
   nötig.
 
+## Werkstatt (Entwürfe)
+
+Unter `/api/werkstatt` sehen Admins eine Seite mit Entwürfen und Ideen für
+das Dashboard. Sie liegt nicht im Repository, sondern nur auf dem Server
+als `internal/werkstatt.html` (eine einzelne HTML-Datei, Bilder darin
+eingebettet) und wird unverändert ausgeliefert. Fehlt die Datei, sagt die
+Adresse das. Eine neue Fassung wird per `scp` an dieselbe Stelle kopiert;
+ein Neustart ist nicht nötig.
+
 ## Datensicherung
 
 Was gesichert werden muss:

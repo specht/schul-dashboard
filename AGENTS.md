@@ -184,6 +184,13 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 
 ## 7. Deployment
 
+- **Design ideas page** (`/api/werkstatt`, admins only): the page itself is
+  not in the repository (public) but only on the server in
+  `internal/werkstatt.html`, copied there with `scp`. This is the one
+  decided exception to "never edit files on the server" (2026-11-17); the
+  route and its test are in git. Replacing the page needs the same approval
+  as a deploy.
+
 - On the server: `git pull`, then `./config.rb restart ruby` (run
   `./config.rb build` first after changes to Dockerfiles, Gemfile or the
   nginx configuration). The bots (`timetable`, `mail_bot`, …) load the same

@@ -612,12 +612,10 @@
         if (school) { var s = school.cloneNode(true); s.textContent = '© ' + new Date().getFullYear() + ' ' + school.textContent.replace(/\s+/g, ' ').trim(); parts.push(s); }
         if (imprint) parts.push(imprint.cloneNode(true));
         if (github) { var g = document.createElement('a'); g.href = github.href; g.target = '_blank'; g.rel = 'noopener'; g.className = 'pv-legal-icon'; g.setAttribute('aria-label', 'Quelltext auf GitHub'); g.title = 'Quelltext auf GitHub'; g.innerHTML = "<i class='fa fa-github'></i>"; parts.push(g); }
-        parts.forEach(function(el, i) {
-            if (i) line.appendChild(document.createTextNode(' · '));
-            line.appendChild(el);
-        });
-        var target = collapse.querySelector('.pv-nav-foot') || collapse.querySelector('.navbar-nav');
-        target.appendChild(line);
+        parts.forEach(function(el) { line.appendChild(el); });
+        // larger screens: bottom right of the window; phones: the end of "Mehr"
+        if (SIDEBAR.matches) document.body.appendChild(line);
+        else collapse.querySelector('.navbar-nav').appendChild(line);
     }
     function later() { more_search(); weekday_columns(); help_tile(); legal_line(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });

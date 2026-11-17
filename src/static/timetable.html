@@ -804,7 +804,7 @@ function render_preview_agenda_inner() {
             card.addClass('pv-ag-running');
             let total = e.end - e.start, done = now - e.start;
             card.append($('<div>').addClass('pv-ag-progress').append($('<b>').css('width', Math.round(100 * done / total) + '%')));
-            card.append($('<div>').addClass('pv-ag-left').text(Math.floor((now - e.start) / 60000) + ' min um · noch ' + Math.ceil((e.end - now) / 60000) + ' min'));
+            card.append($('<div>').addClass('pv-ag-left').text(Math.floor((now - e.start) / 60000) + ' min um, noch ' + Math.ceil((e.end - now) / 60000) + ' min'));
             // the own lesson right now: Kursbuch and Mail without opening the dialog
             if (typeof my_lessons !== 'undefined' && my_lessons.indexOf(x.lesson_key) >= 0 && x.lesson_offset !== null && x.lesson_offset >= 0) {
                 let actions = $('<div>').addClass('pv-ag-actions');
@@ -891,7 +891,7 @@ function render_preview_day_band(day, label, is_today, subtitle) {
         // nothing but the picture (students): no row of its own, the picture beside the day
         band.append($('<div>').addClass('pv-band-title').append(title, corner));
     }
-    band.append($('<div>').addClass('pv-band-sub').text(parts.join(' · ')));
+    band.append($('<div>').addClass('pv-band-sub').text(parts.join(', ')));
 }
 
 // The school days of the shown week as a strip: tap one to show it, the dots
@@ -1050,7 +1050,7 @@ function render_preview_week_head() {
         : (start.getMonth() === end.getMonth() ? start.getDate() + '.–' + end.getDate() + '. ' + months[start.getMonth()]
             : start.getDate() + '. ' + short[start.getMonth()] + ' – ' + end.getDate() + '. ' + short[end.getMonth()]);
     let active = $('.timetable_chooser .ttc.active').first().text().trim();
-    let sub = 'Kalenderwoche ' + moment(start).isoWeek() + (active ? ' · Plan ' + active : '');
+    let sub = 'Kalenderwoche ' + moment(start).isoWeek() + (active ? ', Plan ' + active : '');
     head.empty().removeAttr('hidden');
     head.append($('<div class="pv-wh-title">').append($('<h2>').text(title), $('<div class="pv-wh-sub">').text(sub)));
     // the week only: a single day is the phone's agenda
@@ -1122,7 +1122,7 @@ function render_preview_side() {
         let e = today[0], x = e.extendedProps;
         let running = e.start <= now;
         let box = $('<section>').addClass('pv-side-box');
-        box.append($('<h3>').text(running ? 'Jetzt' : 'Als Nächstes · ' + preview_hhmm(e.start)));
+        box.append($('<h3>').text(running ? 'Jetzt' : 'Als Nächstes um ' + preview_hhmm(e.start)));
         let card = $('<button type="button">').addClass('pv-side-lesson');
         let color = preview_subject_color(x);
         if (color) {
@@ -1132,7 +1132,7 @@ function render_preview_side() {
         card.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
         let text = $('<span>').addClass('pv-side-text');
         text.append($('<b>').html(x.label || e.title || ''));
-        text.append($('<small>').html((x.raum ? 'Raum ' + x.raum + ' · ' : '') + preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
+        text.append($('<small>').html((x.raum ? 'Raum ' + x.raum + ', ' : '') + preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
         card.append(text);
         card.on('click', open(e));
         box.append(card);
@@ -1178,7 +1178,7 @@ function render_preview_side() {
         let kept = label.clone();
         kept.find('s, del, strike').remove();
         let name = kept.text().trim().replace(/^\(.*\)$/, '') || label.text().trim();
-        item.append($('<span>').addClass('pv-side-text').append($('<b>').text(name), $('<small>').text(names[e.start.getDay()] + ' ' + preview_hhmm(e.start) + ' · ' + what)));
+        item.append($('<span>').addClass('pv-side-text').append($('<b>').text(name), $('<small>').text(names[e.start.getDay()] + ' ' + preview_hhmm(e.start) + ', ' + what)));
         item.on('click', open(e));
         box.append(item);
     }
@@ -1249,7 +1249,7 @@ function render_preview_week_agenda(box) {
     let label = start.getMonth() === end.getMonth()
         ? start.getDate() + '.–' + end.getDate() + '. ' + months_short[end.getMonth()]
         : start.getDate() + '. ' + months_short[start.getMonth()] + ' – ' + end.getDate() + '. ' + months_short[end.getMonth()];
-    render_preview_day_band(start, label, false, 'Kalenderwoche ' + moment(start).isoWeek() + ' · ' + (total === 1 ? '1 Stunde' : total + ' Stunden'));
+    render_preview_day_band(start, label, false, 'Kalenderwoche ' + moment(start).isoWeek() + ', ' + (total === 1 ? '1 Stunde' : total + ' Stunden'));
     $('#pv_day_strip').attr('hidden', true);
 }
 
@@ -1943,7 +1943,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     div1b.addClass('pv-ev-row');
                 }
                 if (pv_inline_topic)
-                    div1b.append($('<span>').addClass('pv-ev-inline-topic').text($('<div>').html(String(event_data.stundenthema_text).replace(/<br\s*\/?>/g, ' · ')).text()));
+                    div1b.append($('<span>').addClass('pv-ev-inline-topic').text($('<div>').html(String(event_data.stundenthema_text).replace(/<br\s*\/?>/g, '; ')).text()));
                 // the ⓘ only where the topic is not shown (today's design; the new one shows it)
                 else if (event_data.stundenthema_text && !pv_design)
                     markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));

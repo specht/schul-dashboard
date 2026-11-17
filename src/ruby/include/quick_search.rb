@@ -22,7 +22,7 @@ class Main < Sinatra::Base
             item = {
                 :kind => 'klasse',
                 :label => "Klasse #{tr_klasse(klasse)}",
-                :sub => sub.join(' · '),
+                :sub => sub.join(', '),
                 :terms => "Klasse #{tr_klasse(klasse)} #{klasse}",
                 :href => "/directory/#{CGI.escape(klasse)}",
             }
@@ -40,7 +40,7 @@ class Main < Sinatra::Base
             items << {
                 :kind => 'lehrer',
                 :label => user[:display_name],
-                :sub => sub.join(' · '),
+                :sub => sub.join(', '),
                 :terms => [user[:first_name], user[:last_name], user[:display_name]].join(' '),
                 :shorthand => user[:shorthand],
                 :href => "/timetable/#{user[:id]}",
@@ -73,7 +73,7 @@ class Main < Sinatra::Base
             items << {
                 :kind => 'kurs',
                 :label => info[:pretty_folder_name],
-                :sub => sub.join(' · '),
+                :sub => sub.join(', '),
                 :terms => [info[:pretty_folder_name], fach, (info[:lehrer] || []).join(' ')].join(' '),
                 :href => "/directory/#{CGI.escape(lesson_key)}",
             }

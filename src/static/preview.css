@@ -3318,7 +3318,7 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .pv-ag-room > span + span::before {
-    content: " · ";
+    content: ", ";
 }
 
 .pv-ag-length {
@@ -4415,4 +4415,26 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .pv-legal .pv-legal-icon {
     font-size: 0.95rem;
     vertical-align: -1px;
+}
+
+/* the footer line: small, bottom right of the window on larger screens */
+@media (min-width: 768px) {
+    .ui-preview .pv-legal {
+        position: fixed;
+        right: 14px;
+        bottom: 8px;
+        z-index: 5;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--pv-surface) 85%, transparent);
+        backdrop-filter: blur(6px);
+    }
+}
+
+.ui-preview .pv-legal {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4px 14px;
 }

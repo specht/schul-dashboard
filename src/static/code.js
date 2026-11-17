@@ -861,7 +861,7 @@ function quick_search_open() {
         panel.append('<div class="quick-search-results"></div>');
         let key = function (text) { return $('<kbd>').text(text); };
         panel.append($('<div class="quick-search-keys text-muted">').append(
-            key('↑'), ' ', key('↓'), ' auswählen · ', key('Enter'), ' öffnen · ', key('Esc'), ' schließen · ',
+            key('↑'), ' ', key('↓'), ' auswählen, ', key('Enter'), ' öffnen, ', key('Esc'), ' schließen, ',
             key('/'), ' oder ', key('Strg'), '+', key('K'), ' öffnet die Suche auf jeder Seite'));
         $('body').append(panel);
         input.on('input', quick_search_update);

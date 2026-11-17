@@ -232,8 +232,8 @@ class Main < Sinatra::Base
             if data[:entries].empty?
                 io.puts "<p class='text-muted'>Noch kein Feedback.</p>"
             else
-                by_role = data[:entries].group_by { |e| e[:role] }.map { |r, es| "#{CGI.escapeHTML(r.to_s)}: #{es.size}" }.join(' · ')
-                io.puts "<p class='text-muted'>#{data[:entries].size} Rückmeldungen · #{by_role}</p>"
+                by_role = data[:entries].group_by { |e| e[:role] }.map { |r, es| "#{CGI.escapeHTML(r.to_s)}: #{es.size}" }.join(', ')
+                io.puts "<p class='text-muted'>#{data[:entries].size} Rückmeldungen, #{by_role}</p>"
                 io.puts "<div class='table-responsive'><table class='table table-sm design-feedback-table'>"
                 io.puts "<thead><tr><th>Wann</th><th>Art</th><th>Rolle</th><th>Seite</th><th>Gerät</th><th>Text</th><th>Ansprechen</th></tr></thead><tbody>"
                 data[:entries].each do |e|

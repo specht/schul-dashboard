@@ -966,6 +966,8 @@ function preview_plan_items() {
         if (seen[id]) return;
         seen[id] = true;
         let group = el.classList.contains('ttc-teacher') ? 'Lehrkräfte' : el.classList.contains('ttc-klasse') ? 'Klassen' : el.classList.contains('ttc-room') ? 'Räume' : 'Pläne';
+        // Kürzel with a leading _ are no teachers (accounts without lessons)
+        if (group === 'Lehrkräfte' && el.textContent.trim().charAt(0) === '_' && !el.classList.contains('active')) return;
         // the chip panel shows one's own (Kürzel, classes, rooms) at first, the rest after "Alle …"
         items.push({ el: el, label: el.textContent.trim(), group: group, active: el.classList.contains('active'), extra: el.style.display === 'none' });
     });

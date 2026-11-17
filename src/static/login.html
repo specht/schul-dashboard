@@ -63,7 +63,8 @@ window.addEventListener('load', function () {
         const return_to = get_return_to();
 
         api_call('/api/login', { email: $('#email').val(), return_to: return_to }, function(data) {
-            if (data.success === true) {
+            // api_call sets success for every answer: refusals come as {error: …}
+            if (data.success === true && !data.error) {
                 window.location.href = '/c/' + data.tag;
             } else {
                 $('#email').prop('disabled', false);

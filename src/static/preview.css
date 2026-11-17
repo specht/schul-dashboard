@@ -2480,6 +2480,15 @@ body.ui-preview.dark::before {
     color: var(--acc-ink);
 }
 
+.pv-plan-more {
+    border: 0;
+    background: none;
+    padding: 6px 4px;
+    color: var(--acc-text);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    cursor: pointer;
+}
+
 /* phones: a sheet from below, above the tab bar */
 @media (max-width: 767px) {
     .pv-plan-menu {
@@ -2496,9 +2505,24 @@ body.ui-preview.dark::before {
         animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
+    /* calmer than pills: plain entries in an even grid, the shown plan marked */
+    .pv-plan-chips {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+        gap: 2px;
+    }
+
     .pv-plan-chip {
-        padding: 7px 12px;
-        font-size: 0.95rem;
+        min-width: 0;
+        padding: 10px 4px;
+        border-radius: 10px;
+        background: transparent;
+        font-size: 1rem;
+    }
+
+    .pv-plan-more {
+        grid-column: 1 / -1;
+        justify-self: start;
     }
 
     /* the chips below the agenda give way to the menu */

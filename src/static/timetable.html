@@ -953,23 +953,29 @@ function preview_plan_items() {
         if (seen[id]) return;
         seen[id] = true;
         let group = el.classList.contains('ttc-teacher') ? 'Lehrkräfte' : el.classList.contains('ttc-klasse') ? 'Klassen' : el.classList.contains('ttc-room') ? 'Räume' : 'Pläne';
-        items.push({ el: el, label: el.textContent.trim(), group: group, active: el.classList.contains('active') });
+        // the chip panel shows one's own (Kürzel, classes, rooms) at first, the rest after "Alle …"
+        items.push({ el: el, label: el.textContent.trim(), group: group, active: el.classList.contains('active'), extra: el.style.display === 'none' });
     });
     return items;
 }
 
 function preview_open_plan_menu(button) {
     $('.pv-plan-menu').remove();
+    let phone = !window.matchMedia('(min-width: 768px)').matches;
     let items = preview_plan_items();
+    let expanded = {};
     let menu = $('<div class="pv-plan-menu" role="dialog" aria-label="Plan wählen">');
-    let input = $('<input type="search" class="form-control" placeholder="Kürzel, Klasse oder Raum" aria-label="Plan suchen">');
+    // search only with a keyboard nearby: on phones the keyboard would cover the list
+    let input = phone ? null : $('<input type="search" class="form-control" placeholder="Kürzel, Klasse oder Raum" aria-label="Plan suchen">');
     let list = $('<div class="pv-plan-list">');
     let fill = function() {
-        let q = input.val().trim().toLowerCase();
+        let q = input ? input.val().trim().toLowerCase() : '';
         list.empty();
         for (let group of ['Pläne', 'Lehrkräfte', 'Klassen', 'Räume']) {
-            let found = items.filter(function(x) { return x.group === group && (q === '' || x.label.toLowerCase().indexOf(q) >= 0); });
-            if (found.length === 0) continue;
+            let all = items.filter(function(x) { return x.group === group && (q === '' || x.label.toLowerCase().indexOf(q) >= 0); });
+            if (all.length === 0) continue;
+            let found = (q !== '' || expanded[group]) ? all : all.filter(function(x) { return !x.extra || x.active; });
+            let more = all.length - found.length;
             list.append($('<div class="pv-plan-group">').text(group));
             let chips = $('<div class="pv-plan-chips">');
             for (let x of found) {
@@ -977,20 +983,28 @@ function preview_open_plan_menu(button) {
                 chip.on('click', function() { menu.remove(); x.el.click(); });
                 chips.append(chip);
             }
+            if (more > 0) {
+                let all_button = $('<button type="button" class="pv-plan-more">').text('Alle ' + group + ' (' + all.length + ')');
+                all_button.on('click', function() { expanded[group] = true; fill(); });
+                chips.append(all_button);
+            }
             list.append(chips);
         }
         if (list.children().length === 0) list.append($('<div class="pv-plan-group">').text('Nichts gefunden'));
     };
-    input.on('input', fill);
-    input.on('keydown', function(e) {
-        if (e.key === 'Escape') { menu.remove(); button.focus(); }
-        if (e.key === 'Enter') { let first = list.find('.pv-plan-chip').first(); if (first.length) first.click(); }
-    });
-    menu.append(input, list);
+    if (input) {
+        input.on('input', fill);
+        input.on('keydown', function(e) {
+            if (e.key === 'Escape') { menu.remove(); button.focus(); }
+            if (e.key === 'Enter') { let first = list.find('.pv-plan-chip').first(); if (first.length) first.click(); }
+        });
+        menu.append(input);
+    }
+    menu.append(list);
     fill();
-    $(button).after(menu);
-    // on phones the keyboard would cover the list: focus only with a real keyboard nearby
-    if (window.matchMedia('(min-width: 768px)').matches) input.focus();
+    // phones: a sheet on the page itself (redrawing the header must not close it)
+    if (phone) $('body').append(menu); else $(button).after(menu);
+    if (input) input.focus();
     setTimeout(function() {
         $(document).one('mousedown.pvplan', function(e) {
             if (!$(e.target).closest('.pv-plan-menu, .pv-plan-button').length) menu.remove();

@@ -3674,3 +3674,12 @@ body.ui-preview:has(.container-fluid.solid)::before {
         border: 0 !important;
     }
 }
+
+/* a picture that does not load: a calm grey circle, not the cut-off
+   "missing image" symbol (alt text and icon hidden) */
+.ui-preview img.avatar-lg {
+    background: var(--pv-hover);
+    color: transparent;
+    font-size: 0;
+    overflow: hidden;
+}

@@ -68,7 +68,7 @@
                         <div class='col-md-12'>
                             <div class="form-group">
                                 <label>Profilbild</label>
-                                <a href='#{NEXTCLOUD_URL}/index.php/settings/user' target='_blank'><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256}' class='avatar-lg'/></a>
+                                <a href='#{NEXTCLOUD_URL}/index.php/settings/user' target='_blank'><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256' class='avatar-lg'/></a>
                                 #{ui_preview? ? "<p class='pv-avatar-hint'>Das Profilbild kommt aus der Nextcloud: dort oben rechts auf das eigene Bild → <b>Persönliche Einstellungen</b> → <b>Profilbild</b> hochladen. <a href='#{NEXTCLOUD_URL}/index.php/settings/user' target='_blank' rel='noopener'>Zur Nextcloud</a></p>" : ''}
                             </div>
                         </div>

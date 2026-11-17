@@ -1,2 +1,662 @@
 /* Neues Design (Vorschau): messages – loaded after preview.css for users with the preview
-   (include/design_preview.rb). Uses the tokens and helpers of preview.css. */
+   (include/design_preview.rb). Uses the tokens and helpers of preview.css.
+   Everything here is scoped to body.pv-messages-page (set by messages.html in the
+   preview), because other pages reuse the class names (composeModal, recipients …). */
+
+/* ---------- Top: the title, "Neue Nachricht" next to it, the switch below ---------- */
+.pv-messages-page .pv-msg-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.pv-messages-page .pv-msg-top h2 {
+    margin: 0 !important;
+    min-width: 0;
+}
+
+.pv-messages-page .pv-msg-top .bu-compose-message {
+    position: static;
+    flex: none;
+    margin: 0;
+}
+
+/* the switch alone in its row; no divider below it */
+.pv-messages-page div:has(> .btn-group #bu-inbox) > hr {
+    display: none;
+}
+
+.pv-messages-page div:has(> .btn-group #bu-inbox) {
+    margin-bottom: 4px;
+}
+
+/* ---------- Inbox: one card per message ---------- */
+.pv-messages-page .messages-container-inbox {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pv-messages-page .pv-msg-day {
+    font-family: var(--pv-text) !important;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--pv-muted);
+    margin: 14px 0 0 !important;
+}
+
+.pv-messages-page .pv-msg-day:first-child {
+    margin-top: 6px !important;
+}
+
+.pv-messages-page .text-comment.pv-msg {
+    position: relative;
+    margin: 0;
+    padding: 14px 16px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+}
+
+/* new since the last visit: a line in the accent at the start, and the word "Neu" */
+.pv-messages-page .text-comment.pv-msg.pv-unread {
+    border-color: color-mix(in srgb, var(--acc) 45%, var(--pv-line));
+    box-shadow: inset 4px 0 0 var(--acc);
+}
+
+/* the head: picture, name with time below, "Antworten" – all at the top */
+.pv-messages-page .text-comment.pv-msg .from.pv-msg-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 0 0 10px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-weight: normal;
+}
+
+.pv-messages-page .pv-msg-avatar {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--pv-hover);
+    background-size: cover;
+    background-position: center;
+}
+
+.pv-messages-page .pv-msg-who {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 1px;
+}
+
+.pv-messages-page .pv-msg-name {
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.pv-messages-page .pv-msg-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+}
+
+.pv-messages-page .pv-msg-time {
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-messages-page .pv-msg-new {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-weight: 700;
+    font-size: 0.78rem;
+}
+
+.pv-messages-page .text-comment.pv-msg .pv-msg-reply {
+    flex: none;
+    border-radius: 999px;
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+    font-weight: 600;
+    padding: 4px 12px;
+}
+
+.pv-messages-page .text-comment.pv-msg .pv-msg-reply:hover,
+.pv-messages-page .text-comment.pv-msg .pv-msg-reply:focus-visible {
+    background: var(--pv-hover);
+}
+
+/* the text: aligned with the name, a comfortable line length */
+.pv-messages-page .text-comment.pv-msg > .message {
+    margin-left: 52px;
+    max-width: 68ch;
+    line-height: 1.55;
+}
+
+.pv-messages-page .text-comment.pv-msg > .message ul,
+.pv-messages-page .text-comment.pv-msg > .message ol {
+    padding-left: 1.4em !important;
+}
+
+/* ---------- Audio comments: play, the bar, the length, mp3 ---------- */
+.pv-messages-page .pv-msg .audio-player.pv-audio {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 0 52px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.pv-messages-page .pv-audio .player-top {
+    display: contents;
+}
+
+/* the name is in the head already */
+.pv-messages-page .pv-audio .player-from {
+    display: none;
+}
+
+.pv-messages-page .pv-audio .player-button {
+    order: 1;
+    position: static;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+}
+
+.pv-messages-page .pv-audio .player-seek {
+    order: 2;
+    flex: 1;
+    min-width: 60px;
+    height: 32px;
+    top: 0;
+    cursor: pointer;
+}
+
+.pv-messages-page .pv-audio .player-progress {
+    margin: 0 6px;
+    top: 15px;
+    border-top: 3px solid var(--pv-line);
+    border-radius: 2px;
+}
+
+.pv-messages-page .pv-audio .player-indicator-container {
+    top: -8px;
+}
+
+.pv-messages-page .pv-audio .player-indicator {
+    width: 14px;
+    height: 14px;
+    background: var(--acc);
+}
+
+.pv-messages-page .pv-audio .player-duration {
+    order: 3;
+    flex: none;
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+    opacity: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-messages-page .pv-audio .player-top > a.btn {
+    order: 4;
+    flex: none;
+    border-radius: 999px;
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+    font-size: 0.8rem;
+    padding: 2px 10px;
+}
+
+/* ---------- Empty inbox ---------- */
+.pv-messages-page .pv-msg-empty {
+    text-align: center;
+    padding: 36px 16px 28px;
+    color: var(--pv-muted);
+}
+
+.pv-messages-page .pv-msg-empty i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.pv-messages-page .pv-msg-empty p {
+    margin: 0 auto 4px;
+    max-width: 36ch;
+}
+
+.pv-messages-page .pv-msg-empty .pv-msg-empty-title {
+    color: var(--pv-ink);
+    font-weight: 700;
+}
+
+/* ---------- Outbox: a list of cards instead of a table ---------- */
+.pv-messages-page .messages-container-outbox table,
+.pv-messages-page .messages-container-outbox tbody {
+    display: block;
+    margin: 0;
+}
+
+.pv-messages-page .messages-container-outbox thead {
+    display: none;
+}
+
+.pv-messages-page .messages-container-outbox tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pv-messages-page .messages-container-outbox tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "to date" "text text";
+    gap: 6px 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink);
+    cursor: pointer;
+}
+
+.pv-messages-page .messages-container-outbox tbody tr:hover {
+    background: var(--pv-hover) !important;
+}
+
+.pv-messages-page .messages-container-outbox tbody tr:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+}
+
+.pv-messages-page .messages-container-outbox tbody td {
+    display: block;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow: visible;
+}
+
+.pv-messages-page .messages-container-outbox td.pv-out-date {
+    grid-area: date;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+    white-space: nowrap;
+    padding-top: 3px;
+}
+
+.pv-messages-page .messages-container-outbox td:nth-child(2) {
+    grid-area: to;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.pv-messages-page .messages-container-outbox td:nth-child(3) {
+    grid-area: text;
+    color: var(--pv-muted);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.pv-messages-page .pv-out-more {
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+    padding: 0 4px;
+}
+
+/* nothing sent yet */
+.pv-messages-page .messages-container-outbox tbody:empty::after {
+    content: "Noch keine Nachrichten gesendet. Mit »Neue Nachricht« schreiben Sie an Personen, Klassen oder Gruppen.";
+    display: block;
+    padding: 24px 8px;
+    text-align: center;
+    color: var(--pv-muted);
+}
+
+/* ---------- Recipients as chips (outbox, compose, suggestions) ---------- */
+.pv-messages-page .recipient {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--pv-line);
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    box-shadow: none;
+    font-size: 0.88rem;
+    line-height: 1.35;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+/* teachers: a calm tint of the accent instead of today's yellow */
+.pv-messages-page .recipient.teacher {
+    background: var(--acc-soft);
+    border-color: color-mix(in srgb, var(--acc) 25%, var(--pv-line));
+    color: var(--acc-text);
+}
+
+.pv-messages-page .messages-container-outbox .recipient {
+    padding: 2px 9px;
+    margin: 0;
+}
+
+/* the remove button inside a chip: a round target */
+.pv-messages-page .recipient.with-rm {
+    padding-right: 4px;
+}
+
+.pv-messages-page .recipient .rm {
+    position: relative;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.pv-messages-page .recipient .rm::after {
+    content: '×';
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    line-height: 1;
+    color: inherit;
+    opacity: 0.7;
+}
+
+.pv-messages-page .recipient .rm:hover,
+.pv-messages-page .recipient .rm:focus-visible {
+    background: color-mix(in srgb, var(--pv-ink) 12%, transparent);
+    outline: none;
+}
+
+.pv-messages-page .recipient .rm:hover::after,
+.pv-messages-page .recipient .rm:focus-visible::after {
+    opacity: 1;
+    color: inherit;
+}
+
+/* ---------- Compose ---------- */
+@media (min-width: 768px) {
+    .pv-messages-page #composeModal .modal-dialog {
+        max-width: 760px;
+    }
+}
+
+.pv-messages-page #composeModal .modal-body {
+    padding: 16px 20px 8px;
+}
+
+/* the field: "An", the chips, the search */
+.pv-messages-page .pv-rcpt {
+    margin-bottom: 14px;
+}
+
+.pv-messages-page .pv-rcpt-box {
+    position: relative;
+}
+
+.pv-messages-page .pv-rcpt-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 46px;
+    padding: 6px 10px;
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-surface);
+    cursor: text;
+}
+
+.pv-messages-page .pv-rcpt-field:focus-within {
+    border-color: var(--acc-text);
+    box-shadow: 0 0 0 3px var(--acc-soft);
+}
+
+.pv-messages-page .pv-rcpt-field .pv-rcpt-label {
+    display: inline-block;
+    flex: none;
+    width: auto;
+    margin: 0 4px 0 2px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--pv-muted);
+    cursor: text;
+}
+
+.pv-messages-page .pv-rcpt-field .recipients_list {
+    display: contents;
+}
+
+.pv-messages-page .pv-rcpt-field #ti_recipients {
+    flex: 1 1 160px;
+    min-width: 120px;
+    height: 32px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.pv-messages-page .pv-rcpt-count {
+    margin: 6px 2px 0 !important;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+}
+
+/* the suggestions: a list below the field */
+.pv-messages-page .pv-rcpt .recipient-input-dropdown {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 1060;
+    max-height: min(320px, 45svh);
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-surface);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+.pv-messages-page .pv-rcpt .recipient-input-dropdown .recipient {
+    display: flex;
+    width: 100%;
+    margin: 0;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--pv-ink);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+/* teachers in the suggestions: a small mark, not a colour of their own */
+.pv-messages-page .pv-rcpt .recipient-input-dropdown .recipient.teacher::after {
+    content: "Lehrkraft";
+    margin-left: auto;
+    padding-left: 12px;
+    font-size: 0.8rem;
+    color: var(--pv-muted);
+}
+
+.pv-messages-page .pv-rcpt .recipient-input-dropdown .recipient:hover,
+.pv-messages-page .pv-rcpt .recipient-input-dropdown .recipient.pv-active {
+    background: var(--pv-hover);
+}
+
+.pv-messages-page .pv-rcpt .recipient-input-dropdown .recipient.pv-active {
+    box-shadow: inset 3px 0 0 var(--acc);
+}
+
+/* the editor: a calm frame, the few tools that remain */
+.pv-messages-page #composeModal .note-editor.note-frame {
+    margin: 0;
+    border-radius: 12px;
+}
+
+.pv-messages-page #composeModal .note-toolbar {
+    padding: 6px 8px 2px;
+}
+
+.pv-messages-page #composeModal .note-editing-area .note-editable {
+    padding: 12px 14px;
+    line-height: 1.55;
+}
+
+.pv-messages-page #composeModal .note-placeholder {
+    padding: 12px 14px;
+    color: var(--pv-muted);
+}
+
+.pv-messages-page #composeModal .note-statusbar {
+    display: none;
+}
+
+/* the buttons: delete on its own at the start, the main action at the end */
+.pv-messages-page #composeModal .modal-footer {
+    justify-content: flex-end;
+}
+
+.pv-messages-page #composeModal #bu_delete_message {
+    order: 0;
+    margin-right: auto;
+}
+
+.pv-messages-page #composeModal #bu_close_message_modal {
+    order: 1;
+}
+
+.pv-messages-page #composeModal #publish_message_btn_container {
+    order: 2;
+    display: flex;
+    gap: 6px;
+    margin: 0;
+}
+
+/* delete: a calm button with red type (red is for the confirmation) */
+.pv-messages-page #composeModal #bu_delete_message.btn-danger {
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    color: #b42318;
+}
+
+.pv-messages-page.dark #composeModal #bu_delete_message.btn-danger {
+    color: #ff8f8f;
+}
+
+.pv-messages-page #composeModal #bu_delete_message.btn-danger:hover {
+    background: color-mix(in srgb, #b42318 10%, var(--pv-surface));
+}
+
+/* "Senden" not ready yet: calm, not greyed out to unreadable */
+.pv-messages-page #composeModal #bu_send_message:disabled,
+.pv-messages-page #composeModal #bu_discard_message:disabled {
+    opacity: 0.55;
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 767px) {
+    .pv-messages-page .pv-msg-top h2 {
+        font-size: 1.45rem;
+    }
+
+    /* the switch over the whole width, two halves */
+    .pv-messages-page .btn-group:has(#bu-inbox) {
+        display: flex;
+        width: 100%;
+    }
+
+    .pv-messages-page .btn-group:has(#bu-inbox) .btn {
+        flex: 1;
+    }
+
+    .pv-messages-page .text-comment.pv-msg {
+        padding: 12px 14px 14px;
+    }
+
+    .pv-messages-page .text-comment.pv-msg .from.pv-msg-head {
+        gap: 10px;
+    }
+
+    .pv-messages-page .pv-msg-avatar {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* the text under the head over the whole width */
+    .pv-messages-page .text-comment.pv-msg > .message,
+    .pv-messages-page .pv-msg .audio-player.pv-audio {
+        margin-left: 0;
+    }
+
+    .pv-messages-page #composeModal .modal-body {
+        padding: 12px 14px 6px;
+    }
+
+    /* the editor grows with the text, the sheet scrolls */
+    .pv-messages-page #composeModal .note-editing-area .note-editable {
+        height: auto !important;
+        min-height: 150px;
+    }
+
+    .pv-messages-page #composeModal .modal-footer {
+        flex-wrap: nowrap;
+    }
+
+    .pv-messages-page #composeModal .modal-footer #publish_message_btn_container {
+        margin-right: 0;
+        margin-left: auto;
+    }
+
+    .pv-messages-page #composeModal #bu_delete_message {
+        margin-right: 0;
+    }
+}

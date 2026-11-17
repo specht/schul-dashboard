@@ -21,14 +21,50 @@
     .pal-lesson { display: flex; gap: 8px; align-items: center; background: var(--surface); border-radius: 10px; padding: 7px 9px; border-left: 4px solid var(--c); box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.2); }
     .pal-lesson b, .pal-lesson small { display: block; }
     .pal-lesson small { opacity: 0.65; }
+    .pal-marks { margin-left: 8px; }
+    .pal-marks .btn.active { font-weight: 700; }
+    .pal-row[data-mark='keep'] .pal-head b, .pal-mark-keep b { color: #1a7f37; }
+    .pal-row[data-mark='tune'] .pal-head b, .pal-mark-tune b { color: #9a6700; }
+    .pal-row[data-mark='drop'] .pal-cards { opacity: 0.45; }
+    .pal-tally { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+    .pal-by, .pal-target { font-size: 13px; opacity: 0.75; margin: -4px 0 8px; }
+    .pal-target i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 2px; vertical-align: -1px; }
+    @media (max-width: 767px) {
+        .pal-head { flex-wrap: wrap; }
+        .pal-marks { margin-left: 0; }
+    }
     .pal-subj { background: var(--c); color: var(--on-subject); border-radius: 8px; min-width: 32px; height: 30px; display: grid; place-items: center; font-weight: 800; font-size: 12px; padding: 0 5px; }
 </style>
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>
             <h2>Farbschemata im neuen Design</h2>
-            <p>Alle Farbschemata, wie das neue Design sie heute aus den drei Farben ableitet – hell und dunkel. Grundlage für die neue, kuratierte Auswahl.</p>
+            <p>Alle Farbschemata, wie das neue Design sie heute aus den drei Farben ableitet – hell und dunkel. Grundlage für die neue, kuratierte Auswahl: <b>Behalten</b> kommt so in die Auswahl, <b>Anpassen</b> kommt mit überarbeiteten Farben hinein, <b>Weg</b> wird nicht mehr angeboten – wer es nutzt, bekommt das ähnlichste behaltene Schema.</p>
+            <div class='api_messages' style='display: none;'></div>
             #{design_palettes_html}
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $('.bu_palette_mark').on('click', function(e) {
+        let button = $(e.currentTarget);
+        let code = button.closest('.pal-row').data('code');
+        button.closest('.pal-marks').find('.btn').prop('disabled', true);
+        api_call('/api/design_palette_mark', {code: code, mark: button.data('mark')}, function(data) {
+            if (data.success) {
+                // keep the place on the page
+                sessionStorage.setItem('pal_scroll', String(window.scrollY));
+                window.location.reload();
+            } else {
+                button.closest('.pal-marks').find('.btn').prop('disabled', false);
+            }
+        });
+    });
+    let y = sessionStorage.getItem('pal_scroll');
+    if (y !== null) {
+        sessionStorage.removeItem('pal_scroll');
+        window.scrollTo(0, parseInt(y, 10));
+    }
+});
+</script>

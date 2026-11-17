@@ -183,6 +183,28 @@ module DesignTokens
         hues.combination(2).map { |a, b| d = (a - b).abs; [d, 360 - d].min }.max
     end
 
+    # CIE Lab of a hex colour, and the distance of two colours (ΔE76)
+    def self.lab(hex)
+        r, g, b = hex_to_rgb(hex).map { |v| v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055)**2.4 }
+        x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047
+        y = r * 0.2126 + g * 0.7152 + b * 0.0722
+        z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883
+        f = ->(v) { v > 0.008856 ? v**(1.0 / 3) : 7.787 * v + 16.0 / 116 }
+        [116 * f.(y) - 16, 500 * (f.(x) - f.(y)), 200 * (f.(y) - f.(z))]
+    end
+
+    def self.delta_e(a, b)
+        lab(a).zip(lab(b)).sum { |p, q| (p - q)**2 }**0.5
+    end
+
+    # distance of two schemes: their three colours, in order or mirrored
+    # (the gradient direction matters little)
+    def self.scheme_distance(a, b)
+        ca = [1, 7, 13].map { |i| a.to_s[i, 6] }
+        cb = [1, 7, 13].map { |i| b.to_s[i, 6] }
+        [cb, cb.reverse].map { |c| ca.zip(c).sum { |x, y| delta_e(x, y) } }.min
+    end
+
     # make c darker or lighter (same hue) until it reaches the contrast target on bg
     def self.adjust(c, bg, target, direction)
         h, l, s = rgb_to_hls(c)

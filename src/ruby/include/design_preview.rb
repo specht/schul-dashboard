@@ -326,6 +326,30 @@ class Main < Sinatra::Base
             </script>
         END_OF_HTML
     end
+    # Marks on /design_palettes: which schemes go into the curated set
+    # ('keep' as they are, 'tune' with adjusted colours) and which go ('drop')
+    DESIGN_PALETTE_MARKS = %w(keep tune drop)
+
+    post '/api/design_palette_mark' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:code, :mark], :max_body_length => 256,
+                                  :max_value_lengths => {:code => 19, :mark => 8})
+        assert(@@color_scheme_info.include?(data[:code]))
+        assert((DESIGN_PALETTE_MARKS + ['none']).include?(data[:mark]))
+        if data[:mark] == 'none'
+            neo4j_query(<<~END_OF_QUERY, :code => data[:code])
+                MATCH (p:DesignPaletteMark {code: $code})
+                DELETE p;
+            END_OF_QUERY
+        else
+            neo4j_query(<<~END_OF_QUERY, :code => data[:code], :mark => data[:mark], :by => @session_user[:display_name], :ts => Time.now.to_i)
+                MERGE (p:DesignPaletteMark {code: $code})
+                SET p.mark = $mark, p.by = $by, p.ts = $ts;
+            END_OF_QUERY
+        end
+        respond(:ok => true)
+    end
+
     # Admin page /design_palettes: the new design in every colour scheme, light
     # and dark, sorted by how many accounts use the scheme (counts only), to
     # choose and tune the curated palettes (review/2026-11/redesign.md).
@@ -349,14 +373,50 @@ class Main < Sinatra::Base
         # COLOR_SCHEME_COLORS is rewritten at startup (main.rb); the codes and
         # names are kept in @@color_scheme_info
         schemes = @@color_scheme_info.map { |code, info| [code, info[0]] }.sort_by { |code, name| [-counts[code[1, 18]], name.to_s] }
+        names = schemes.to_h
+        marks = {}
+        neo4j_query(<<~END_OF_QUERY).each { |row| marks[row['code']] = {'mark' => row['mark'], 'by' => row['by'], 'ts' => row['ts']} }
+            MATCH (p:DesignPaletteMark)
+            RETURN p.code AS code, p.mark AS mark, p.by AS by, p.ts AS ts;
+        END_OF_QUERY
+        kept = schemes.map(&:first).select { |code| %w(keep tune).include?((marks[code] || {})['mark']) }
+        # where a dropped (or not yet marked) scheme would go: the closest kept one
+        target = lambda do |code|
+            kept.min_by { |k| DesignTokens.scheme_distance(code, k) }
+        end
         StringIO.open do |io|
+            tally = Hash.new(0)
+            accounts = Hash.new(0)
+            schemes.each do |code, _|
+                m = (marks[code] || {})['mark'] || 'none'
+                tally[m] += 1
+                accounts[m] += counts[code[1, 18]]
+            end
             io.puts "<p class='text-muted'>#{schemes.size} Farbschemata, sortiert nach Nutzung. Ohne eigenes Schema: #{random} Konten (bekommen täglich ein zufälliges).</p>"
-            schemes.each do |entry|
-                code, name = entry[0], entry[1]
-                io.puts "<div class='pal-row'>"
+            io.puts "<p class='pal-tally'>"
+            [['keep', 'Behalten'], ['tune', 'Anpassen'], ['drop', 'Weg'], ['none', 'Offen']].each do |m, label|
+                io.puts "<span class='pal-mark-#{m}'>#{label}: <b>#{tally[m]}</b> Schemata, #{accounts[m]} Konten</span>"
+            end
+            io.puts "</p>"
+            schemes.each do |code, name|
+                mark = marks[code] || {}
+                io.puts "<div class='pal-row' data-code='#{code}' data-mark='#{mark['mark'] || 'none'}'>"
                 io.puts "<div class='pal-head'><b>#{CGI.escapeHTML(name.to_s)}</b>"
                 io.puts "<span class='pal-dots'>" + [1, 7, 13].map { |i| "<i style='background: ##{code[i, 6]}'></i>" }.join + "</span>"
-                io.puts "<span class='pal-count'>#{counts[code[1, 18]]} Konten</span></div>"
+                io.puts "<span class='pal-count'>#{counts[code[1, 18]]} Konten</span>"
+                io.puts "<span class='pal-marks btn-group btn-group-sm' role='group' aria-label='Auswahl für #{CGI.escapeHTML(name.to_s)}'>"
+                [['keep', 'Behalten'], ['tune', 'Anpassen'], ['drop', 'Weg']].each do |m, label|
+                    active = mark['mark'] == m
+                    io.puts "<button type='button' class='btn btn-outline-secondary bu_palette_mark#{active ? ' active' : ''}' data-mark='#{active ? 'none' : m}' aria-pressed='#{active}'>#{label}</button>"
+                end
+                io.puts "</span></div>"
+                if mark['mark']
+                    io.puts "<div class='pal-by'>#{CGI.escapeHTML(mark['by'].to_s)}, #{Time.at(mark['ts'].to_i).strftime('%d.%m.%Y')}</div>"
+                end
+                if !%w(keep tune).include?(mark['mark']) && !kept.empty?
+                    t = target.call(code)
+                    io.puts "<div class='pal-target'>würde zu <b>#{CGI.escapeHTML(names[t].to_s)}</b> " + [1, 7, 13].map { |i| "<i style='background: ##{t[i, 6]}'></i>" }.join + "</div>"
+                end
                 io.puts "<div class='pal-cards'>"
                 [false, true].each do |dark|
                     t = DesignTokens.tokens(code, dark)

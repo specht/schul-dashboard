@@ -559,3 +559,34 @@ test('Neues Design: Stundenplan-Auswahl als Chips', async ({ page }) => {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Admins mark which colour schemes go into the curated set; unmarked and
+// dropped schemes show where they would go
+test('Neues Design: Farbschemata auswählen (Admins)', async ({ page, newUserPage }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Admin-Seite, Desktop reicht');
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/design_palettes');
+  // start without marks
+  const marked = await page.locator(".pal-row:not([data-mark='none'])").evaluateAll((els) => els.map((el) => el.getAttribute('data-code')));
+  for (const c of marked) await page.request.post('/api/design_palette_mark', { data: { code: c, mark: 'none' } });
+  await page.reload();
+  const row = (name: string) => page.locator('.pal-row').filter({ has: page.locator('.pal-head > b', { hasText: new RegExp(`^${name}$`) }) });
+  await expect(row('Sky')).toHaveCount(1);
+  const code = await row('Sky').getAttribute('data-code');
+  try {
+    await row('Sky').locator('.bu_palette_mark', { hasText: 'Behalten' }).click();
+    await expect(row('Sky').locator('.bu_palette_mark.active')).toHaveText('Behalten');
+    await expect(row('Sky')).toHaveAttribute('data-mark', 'keep');
+    // the others would go to the only kept scheme
+    await expect(row('Dreamy').locator('.pal-target')).toContainText('Sky');
+    // clicking the active mark again removes it
+    await row('Sky').locator('.bu_palette_mark.active').click();
+    await expect(row('Sky')).toHaveAttribute('data-mark', 'none');
+  } finally {
+    await page.request.post('/api/design_palette_mark', { data: { code, mark: 'none' } });
+  }
+  // only for admins
+  const teacher = await newUserPage();
+  await login(teacher, ACCOUNTS.teacher);
+  expect((await teacher.request.post('/api/design_palette_mark', { data: { code, mark: 'keep' } })).status()).not.toBe(200);
+});

@@ -4344,3 +4344,75 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .pv-nav-foot .dropdown-menu {
     z-index: 100001 !important;
 }
+
+/* other sessions: the picture stays a circle, "wechseln" on one line */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .icon {
+        flex: none !important;
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .icon > * {
+        flex: none;
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session::after {
+        flex: none;
+        white-space: nowrap;
+        hyphens: none;
+    }
+}
+
+/* every small profile picture in the new design: a circle, never stretched */
+.ui-preview .avatar-sm,
+.ui-preview .avatar-md {
+    flex: none;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+}
+
+/* ---------- No footer bar: its line sits in the navigation (preview.js) ---------- */
+.ui-preview .foot,
+.ui-preview a.github {
+    display: none !important;
+}
+
+.ui-preview .pv-legal {
+    padding: 6px 10px 2px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-legal a {
+    color: var(--pv-muted) !important;
+    text-decoration: none;
+}
+
+.ui-preview .pv-legal a:hover {
+    color: var(--pv-ink) !important;
+    text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-legal {
+        grid-column: 1 / -1;
+        padding: 14px 4px 4px;
+        text-align: center;
+    }
+}
+
+.ui-preview .pv-legal .pv-legal-icon {
+    font-size: 0.95rem;
+    vertical-align: -1px;
+}

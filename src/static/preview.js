@@ -597,7 +597,29 @@
         var before = tresor ? tresor.closest('.nav-item').nextSibling : nav.querySelector('.pv-nav-section');
         nav.insertBefore(li, before);
     }
-    function later() { more_search(); weekday_columns(); help_tile(); }
+    // the page's footer line (copyright, Impressum, GitHub) moves into the
+    // navigation: below oneself in the sidebar, at the end of "Mehr"
+    function legal_line() {
+        var collapse = document.querySelector('.ui-preview #navbarTogglerDemo02');
+        var foot = document.querySelector('.foot');
+        if (!collapse || !foot || collapse.querySelector('.pv-legal')) return;
+        var line = document.createElement('div');
+        line.className = 'pv-legal';
+        var school = foot.querySelector('a[href^="http"]');
+        var imprint = foot.querySelector('a[href="/impressum"]');
+        var github = document.querySelector('a.github');
+        var parts = [];
+        if (school) { var s = school.cloneNode(true); s.textContent = '© ' + new Date().getFullYear() + ' ' + school.textContent.replace(/\s+/g, ' ').trim(); parts.push(s); }
+        if (imprint) parts.push(imprint.cloneNode(true));
+        if (github) { var g = document.createElement('a'); g.href = github.href; g.target = '_blank'; g.rel = 'noopener'; g.className = 'pv-legal-icon'; g.setAttribute('aria-label', 'Quelltext auf GitHub'); g.title = 'Quelltext auf GitHub'; g.innerHTML = "<i class='fa fa-github'></i>"; parts.push(g); }
+        parts.forEach(function(el, i) {
+            if (i) line.appendChild(document.createTextNode(' · '));
+            line.appendChild(el);
+        });
+        var target = collapse.querySelector('.pv-nav-foot') || collapse.querySelector('.navbar-nav');
+        target.appendChild(line);
+    }
+    function later() { more_search(); weekday_columns(); help_tile(); legal_line(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });
 })();
 

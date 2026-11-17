@@ -88,6 +88,8 @@ class Main < Sinatra::Base
         "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, backdrop, ui_vividness)}</style>\n" +
             "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
             "<link href='#{preview_asset('/preview.css')}' rel='stylesheet' />\n" +
+            # one stylesheet per area of the new design (messages, polls, login …)
+            Dir[File.join('/static', 'preview', '*.css')].sort.map { |f| "<link href='#{preview_asset('/preview/' + File.basename(f))}' rel='stylesheet' />\n" }.join +
             "<script src='#{preview_asset('/preview.js')}'></script>\n" +
             # Tabler icons instead of Fork Awesome (include/tabler/fa-to-tabler.js)
             "<link href='#{preview_asset('/include/tabler/tabler-icons.css')}' rel='stylesheet' />\n" +

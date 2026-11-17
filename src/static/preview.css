@@ -714,9 +714,11 @@ html {
 
 .pv-ag-subj {
     flex: none;
-    min-width: 38px;
+    /* one width for every subject, so the titles start in one column;
+       four-letter codes (Nawi, StrA) get a smaller size to fit */
+    width: 44px;
     height: 38px;
-    padding: 0 6px;
+    padding: 0 2px;
     box-sizing: border-box;
     border-radius: 11px;
     display: grid;
@@ -730,6 +732,11 @@ html {
 
 .dark .pv-ag-subj {
     color: var(--ci, #0a1222);
+}
+
+.pv-ag-subj.pv-ag-subj-long {
+    font-size: 11.5px;
+    letter-spacing: -0.01em;
 }
 
 /* no subject colour (cancelled, events): a quiet chip */

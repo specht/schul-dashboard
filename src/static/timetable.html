@@ -765,7 +765,7 @@ function render_preview_agenda_inner() {
         let label = $('<div>').html(x.label_short || '');
         label.find('s, del, strike').remove();
         let code = label.text().trim().split(/[\s(]/)[0];
-        let chip = $('<span>').addClass('pv-ag-subj').text(code.length > 0 ? code.substr(0, 4) : '•');
+        let chip = $('<span>').addClass('pv-ag-subj').toggleClass('pv-ag-subj-long', code.length >= 4).text(code.length > 0 ? code.substr(0, 4) : '•');
         // the subject colour for chip and card (jQuery's css() ignores custom properties)
         if (color) {
             card[0].style.setProperty('--c', color);
@@ -1129,7 +1129,7 @@ function render_preview_side() {
             card[0].style.setProperty('--c', color);
             card[0].style.setProperty('--ci', preview_subject_ink(x));
         }
-        card.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
+        card.append($('<span>').addClass('pv-ag-subj').toggleClass('pv-ag-subj-long', preview_subject_code(x).length >= 4).text(preview_subject_code(x)));
         let text = $('<span>').addClass('pv-side-text');
         text.append($('<b>').html(x.label || e.title || ''));
         text.append($('<small>').html((x.raum ? 'Raum ' + x.raum + ', ' : '') + preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));

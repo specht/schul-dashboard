@@ -181,6 +181,9 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await expect(menu).toHaveClass(/\bshow\b/);
       await expect(page.locator('.pv-menu-veil')).toBeVisible();
       const sheet = (await menu.boundingBox())!;
+      // the sheet lies above the veil, not under it
+      await page.waitForTimeout(350);
+      expect(await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)!.closest('#navbarTogglerDemo02'), [sheet.x + sheet.width / 2, sheet.y + 30])).toBe(true);
       const cdp = await page.context().newCDPSession(page);
       const x = sheet.x + sheet.width / 2, y = sheet.y + 8;
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });

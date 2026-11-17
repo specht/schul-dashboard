@@ -447,6 +447,12 @@ html {
         background: rgba(0, 0, 0, 0.4);
     }
 
+    /* the navbar (with the sheet) above the veil: Bootstrap's .fixed-top
+       (z-index 1030) would otherwise win over styles.css */
+    .ui-preview .navbar {
+        z-index: 100000;
+    }
+
     /* the entries: full width, even spacing (styles.css spaces the items of
        the old horizontal bar) */
     .ui-preview .navbar .navbar-collapse .nav-item {

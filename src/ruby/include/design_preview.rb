@@ -36,6 +36,7 @@ class Main < Sinatra::Base
         "<style id='design_tokens'>#{DesignTokens.css(color_scheme, dark)}</style>\n" +
             "<link href='/include/fonts-v2/fonts.css' rel='stylesheet' />\n" +
             "<link href='/preview.css' rel='stylesheet' />\n" +
+            "<script src='/preview.js'></script>\n" +
             # Tabler icons instead of Fork Awesome (include/tabler/fa-to-tabler.js)
             "<link href='/include/tabler/tabler-icons.css' rel='stylesheet' />\n" +
             "<script src='/include/tabler/fa-to-tabler.js'></script>"

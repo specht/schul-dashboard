@@ -141,6 +141,7 @@
             </div>
             <div id='calendar' style='margin-bottom: 30px;'>
             </div>
+            <div id='pv_agenda' class='pv-agenda' aria-live='polite' hidden></div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-lg-2 col-md-12 side-panel'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
             <div class='hint weekend_events' style='display: none;'></div>
@@ -642,6 +643,158 @@ function preview_text_color(event) {
     event.classNames = (event.classNames || []).concat(['pv-subject']);
 }
 
+// Neues Design (Vorschau) on phones: the day as an agenda instead of the time
+// grid – lessons as cards, breaks and free time as narrow gaps, the current
+// lesson with its progress. Tapping a card opens the same lesson dialog.
+function preview_agenda_wanted() {
+    return document.body.classList.contains('ui-preview') && window.matchMedia('(max-width: 767px)').matches &&
+        window.calendar && window.calendar.view.type === 'timeGridDay';
+}
+
+function preview_hhmm(d) {
+    return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function render_preview_agenda() {
+    let box = $('#pv_agenda');
+    if (!preview_agenda_wanted()) {
+        document.body.classList.remove('pv-agenda-on');
+        box.attr('hidden', true);
+        return;
+    }
+    document.body.classList.add('pv-agenda-on');
+    box.removeAttr('hidden').empty();
+    install_preview_agenda_swipe();
+    let day = window.calendar.view.currentStart;
+    let same_day = function(d) { return d && d.getFullYear() === day.getFullYear() && d.getMonth() === day.getMonth() && d.getDate() === day.getDate(); };
+    let all = window.calendar.getEvents().filter(function(e) { return same_day(e.start); });
+    let all_day = all.filter(function(e) { return e.allDay; });
+    let timed = all.filter(function(e) { return !e.allDay; }).sort(function(a, b) { return a.start - b.start; });
+    let now = new Date();
+    let months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    let heading = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][day.getDay()] + ', ' + day.getDate() + '. ' + months[day.getMonth()];
+    box.append($('<h2>').addClass('pv-ag-day').text(heading).toggleClass('pv-ag-today', same_day(now)));
+    let open = function(fc_event) {
+        return function(e) {
+            window.timetable_options.eventClick({ event: fc_event, el: e.currentTarget, jsEvent: e, view: window.calendar.view });
+        };
+    };
+    for (let e of all_day) {
+        let row = $('<button type="button">').addClass('pv-ag-allday').html(e.extendedProps.label || e.title || '');
+        row.on('click', open(e));
+        box.append(row);
+    }
+    if (timed.length === 0) {
+        box.append($('<div>').addClass('pv-ag-empty').text('An diesem Tag keine Stunden.'));
+        return;
+    }
+    let last_end = null;
+    for (let e of timed) {
+        let x = e.extendedProps;
+        if (last_end && e.start - last_end >= 25 * 60 * 1000) {
+            box.append($('<div>').addClass('pv-ag-gap').text('frei bis ' + preview_hhmm(e.start)));
+        } else if (last_end && e.start - last_end >= 10 * 60 * 1000) {
+            box.append($('<div>').addClass('pv-ag-gap').text('Pause bis ' + preview_hhmm(e.start)));
+        }
+        if (!last_end || e.end > last_end) last_end = e.end;
+        if (x.pausenaufsicht) {
+            let duty = $('<button type="button">').addClass('pv-ag-duty');
+            duty.append($('<span>').addClass('pv-ag-duty-label').html(x.label || 'Aufsicht'));
+            duty.append($('<span>').addClass('pv-ag-time').text(preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
+            duty.on('click', open(e));
+            box.append(duty);
+            continue;
+        }
+        let row = $('<div>').addClass('pv-ag-row');
+        row.append($('<div>').addClass('pv-ag-when').append($('<b>').text(preview_hhmm(e.start)), $('<span>').text(preview_hhmm(e.end))));
+        let card = $('<button type="button">').addClass('pv-ag-card');
+        let color = preview_subject_color(x);
+        let label = $('<div>').html(x.label_short || '');
+        label.find('s, del, strike').remove();
+        let code = label.text().trim().split(/[\s(]/)[0];
+        let chip = $('<span>').addClass('pv-ag-subj').text(code.length > 0 ? code.substr(0, 4) : '•');
+        if (color) chip.css('--c', color);
+        let head = $('<div>').addClass('pv-ag-head').append(chip);
+        let title = $('<div>').addClass('pv-ag-title');
+        title.append($('<b>').html(x.label || e.title || ''));
+        if (x.raum) title.append($('<span>').addClass('pv-ag-room').html(x.raum));
+        head.append(title);
+        let running = now >= e.start && now < e.end;
+        if (running) head.append($('<span>').addClass('pv-ag-now').text('Jetzt'));
+        card.append(head);
+        if (x.entfall) card.addClass('pv-ag-off');
+        if (x.vertretungs_text) card.append($('<div>').addClass('pv-ag-note').html(x.vertretungs_text));
+        let data = x.data || {}, per_user = x.per_user || {};
+        let marks = $('<div>').addClass('pv-ag-marks');
+        if (data.stundenthema_text) marks.append($('<span>').addClass('pv-ag-mark pv-ag-topic').append($('<i>').addClass('fa fa-info-circle'), $('<span>').text(data.stundenthema_text)));
+        if (data.hausaufgaben_text) marks.append($('<span>').addClass('pv-ag-mark').text('HA'));
+        if (data.lesson_nc || data.homework_nc) marks.append($('<span>').addClass('pv-ag-mark').text('NC'));
+        if (data.lesson_lr || data.homework_lr) marks.append($('<span>').addClass('pv-ag-mark').text('LR'));
+        if (per_user.text_comments || per_user.audio_comments) marks.append($('<span>').addClass('pv-ag-mark').append($('<i>').addClass('fa fa-comment')));
+        if (marks.children().length > 0) card.append(marks);
+        if (running) {
+            card.addClass('pv-ag-running');
+            let total = e.end - e.start, done = now - e.start;
+            card.append($('<div>').addClass('pv-ag-progress').append($('<b>').css('width', Math.round(100 * done / total) + '%')));
+            card.append($('<div>').addClass('pv-ag-left').text('noch ' + Math.ceil((e.end - now) / 60000) + ' min'));
+        } else if (e.end <= now && same_day(now)) {
+            card.addClass('pv-ag-past');
+        }
+        card.on('click', open(e));
+        row.append(card);
+        box.append(row);
+    }
+}
+
+// swiping the agenda: it follows the finger, then the next / previous school
+// day slides in from the side
+function install_preview_agenda_swipe() {
+    let box = document.getElementById('pv_agenda');
+    if (!box || box.dataset.swipe) return;
+    box.dataset.swipe = '1';
+    box.style.touchAction = 'pan-y pinch-zoom';
+    let start = null, dragging = false;
+    let move = function(x, ms) {
+        box.style.transition = ms ? 'transform ' + ms + 'ms ease-out, opacity ' + ms + 'ms ease-out' : 'none';
+        box.style.transform = x ? 'translateX(' + x + 'px)' : '';
+        box.style.opacity = x ? String(Math.max(0.3, 1 - Math.abs(x) / window.innerWidth)) : '';
+    };
+    box.addEventListener('touchstart', function(e) {
+        start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+        dragging = false;
+    }, { passive: true });
+    box.addEventListener('touchmove', function(e) {
+        if (!start || e.touches.length !== 1) return;
+        let dx = e.touches[0].clientX - start.x, dy = e.touches[0].clientY - start.y;
+        if (!dragging) {
+            if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { start = null; return; }
+            if (Math.abs(dx) < 10) return;
+            dragging = true;
+        }
+        move(dx, 0);
+    }, { passive: true });
+    let finish = function(e) {
+        if (!start) return;
+        let s = start; start = null;
+        if (!dragging) return;
+        dragging = false;
+        let dx = (e.changedTouches[0] || {}).clientX - s.x;
+        let quick = Date.now() - s.t < 250 && Math.abs(dx) > 40;
+        if (!(Math.abs(dx) > box.offsetWidth * 0.25 || quick)) { move(0, 150); return; }
+        let dir = dx < 0 ? 1 : -1;
+        move(-dir * window.innerWidth, 120);
+        setTimeout(function() {
+            if (dir > 0) window.calendar.next(); else window.calendar.prev();
+            render_preview_agenda();
+            move(dir * window.innerWidth * 0.5, 0);
+            box.getBoundingClientRect();
+            move(0, 160);
+        }, 120);
+    };
+    box.addEventListener('touchend', finish);
+    box.addEventListener('touchcancel', function() { if (start) { start = null; dragging = false; move(0, 150); } });
+}
+
 function timetable_event_color(event) {
     let subject_color = preview_subject_color(event);
     if (subject_color) return subject_color;
@@ -1053,6 +1206,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         wrap.addEventListener('touchstart', function(e) {
+            // the agenda (new design, phones) swipes on its own
+            if (document.body.classList.contains('pv-agenda-on')) { start = null; return; }
             // a quick next swipe: the previous slide ends at once
             if (settling) settling.finish();
             start = (e.touches.length === 1) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
@@ -1988,6 +2143,10 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    // new design (preview) on phones: the agenda follows the shown day
+    options.eventsSet = function() { setTimeout(render_preview_agenda, 0); };
+    setInterval(function() { if (document.body.classList.contains('pv-agenda-on')) render_preview_agenda(); }, 60 * 1000);
+    window.addEventListener('resize', function() { if (window.calendar) render_preview_agenda(); });
     window.timetable_options = options;
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     window.calendar.render();

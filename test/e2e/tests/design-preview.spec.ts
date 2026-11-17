@@ -135,13 +135,28 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       expect(search.y).toBeGreaterThan(viewport.height / 2);
       expect(search.y).toBeLessThan(profile.y);
       expect(profile.y - (search.y + search.height)).toBeLessThan(30);
-      // menus open in place, at full length: no scroll area of their own
+      // menus open as a panel next to the sidebar, at full length (in columns
+      // if needed), above the footer; the sidebar itself never scrolls
       await page.locator('#navbarDropdownProfile').click();
       await expect(nav.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();
-      await page.locator('#navbarDropdownAdmin').click();
+      const foot = (await page.locator('.foot').boundingBox())!;
+      for (const height of [viewport.height, 420]) {
+        await page.setViewportSize({ width: viewport.width, height });
+        await page.locator('#navbarDropdownAdmin').click();
+        const adminMenu = nav.locator('[aria-labelledby="navbarDropdownAdmin"]');
+        await expect(adminMenu).toBeVisible();
+        await page.waitForTimeout(100);
+        const panel = (await adminMenu.boundingBox())!;
+        expect(panel.x).toBeGreaterThanOrEqual(box.width - 1);
+        expect(panel.y).toBeGreaterThanOrEqual(0);
+        expect(panel.y + panel.height).toBeLessThanOrEqual(height - foot.height + 1);
+        expect(await adminMenu.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+        if (height === 420) break;
+        expect(await nav.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+        await page.keyboard.press('Escape');
+        await expect(adminMenu).toBeHidden();
+      }
       const adminMenu = nav.locator('[aria-labelledby="navbarDropdownAdmin"]');
-      await expect(adminMenu).toBeVisible();
-      expect(await adminMenu.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
       // long names wrap instead of being cut off
       expect(await adminMenu.locator('.dropdown-item').evaluateAll((els) => els.every((el) => el.scrollWidth <= el.clientWidth + 1))).toBe(true);
     } else {
@@ -274,7 +289,8 @@ test('Neues Design: Fächer im Stundenplan in ihren Farben', async ({ page }, te
 });
 
 // Timetable: the grid shows the school day instead of 7:00 to 22:00
-test('Neues Design: Stundenplan zeigt nur den Schultag', async ({ page }) => {
+test('Neues Design: Stundenplan zeigt nur den Schultag', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'am Handy zeigt die Vorschau den Tag als Agenda');
   await login(page, ACCOUNTS.admin);
   const grid = async () => {
     await page.goto('/');
@@ -330,4 +346,70 @@ test('Neues Design: Schnellumschalter für Admins', async ({ page, newUserPage }
   await teacher.goto('/profil');
   await expect(teacher.locator('#ui_preview_quick_switch')).toBeHidden();
   await expect(teacher.locator('#bu_design_quick_toggle')).toHaveCount(0);
+});
+
+// Phones: the day as an agenda – lessons as cards, the grid hidden; tapping a
+// card opens the same lesson dialog. Today's design keeps the grid.
+test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Agenda nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  // a weekday of the shown week with lessons
+  const day_with_lessons = async () => {
+    for (let i = 0; i < 5; i++) {
+      const found = await page.evaluate(async (i) => {
+        const w = window as unknown as { calendar: { view: { currentStart: Date }; gotoDate: (d: Date) => void; getEvents: () => { start: Date; allDay: boolean }[] } };
+        const monday = new Date(w.calendar.view.currentStart);
+        while (monday.getDay() !== 1) monday.setDate(monday.getDate() + (monday.getDay() === 0 ? 1 : -1));
+        const d = new Date(monday);
+        d.setDate(d.getDate() + i);
+        w.calendar.gotoDate(d);
+        await new Promise((r) => setTimeout(r, 400));
+        return w.calendar.getEvents().some((e) => !e.allDay && e.start.toDateString() === d.toDateString());
+      }, i);
+      if (found) return;
+    }
+    throw new Error('no weekday with lessons');
+  };
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/');
+  await expect(page.locator('.fc-view-harness')).toBeVisible();
+  await expect(page.locator('#pv_agenda')).toBeHidden();
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('body')).toHaveClass(/pv-agenda-on/);
+    await expect(page.locator('.fc-view-harness')).toBeHidden();
+    await day_with_lessons();
+    const card = page.locator('#pv_agenda .pv-ag-card').first();
+    await expect(card).toBeVisible();
+    await expect(card.locator('.pv-ag-subj')).not.toHaveText('');
+    await expect(page.locator('#pv_agenda .pv-ag-when').first()).toHaveText(/\d:\d\d/);
+    await card.click();
+    await expect(page.locator('#lessonModal')).toBeVisible();
+    await expect(page.locator('#lessonModal .lesson-label')).not.toBeEmpty();
+    await page.locator('#lessonModal').getByRole('button', { name: 'Schließen' }).click();
+    await expect(page.locator('#lessonModal')).toBeHidden();
+    // swiping left: the next school day, its date as the heading
+    const day = () => page.evaluate(() => (window as any).moment((window as any).calendar.getDate()).format('YYYY-MM-DD'));
+    const before = await day();
+    const box = (await page.locator('#pv_agenda').boundingBox())!;
+    const y = box.y + Math.min(box.height / 2, 120);
+    const client = await page.context().newCDPSession(page);
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width * 0.85, y }] });
+    for (let i = 1; i <= 10; i++) {
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: box.x + box.width * (0.85 - 0.07 * i), y }] });
+      await page.waitForTimeout(20);
+    }
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(day).not.toBe(before);
+    const after = await day();
+    expect(after > before).toBe(true);
+    const heading = await page.evaluate(() => {
+      const d = (window as any).calendar.getDate();
+      return ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][d.getDay()] + ', ' + d.getDate() + '.';
+    });
+    await expect(page.locator('#pv_agenda .pv-ag-day')).toContainText(heading);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
 });

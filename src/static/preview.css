@@ -1,0 +1,33 @@
+/* Neues Design (Vorschau): loaded only for those who switched it on in their
+   profile (u.ui_preview). The colours come from the tokens computed from the
+   colour scheme (design_tokens.rb, <style id='design_tokens'>). */
+
+.ui-preview .btn-primary,
+.ui-preview .btn-primary:hover,
+.ui-preview .btn-primary:focus,
+.ui-preview .btn-primary:not(:disabled):not(.disabled):active {
+    background-color: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+}
+
+/* feedback while the new design is a preview */
+.design-feedback-button {
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left, 0px));
+    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+    z-index: 7000;
+    border-radius: 999px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.design-feedback-note {
+    font-size: 0.85em;
+    color: #6c757d;
+    margin: 0.75em 0 0;
+}
+
+.design-feedback-thanks {
+    margin: 0;
+    font-weight: bold;
+}

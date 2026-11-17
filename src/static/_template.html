@@ -330,12 +330,13 @@
     #{(@session_user || {})[:new_design] ? '' : '<!--'}
     <link href="/new_design.css" rel="stylesheet" />
     #{(@session_user || {})[:new_design] ? '' : '-->'}
+    #{design_preview_head(color_scheme)}
     <script defer src="/gen/js/compiled-#{compiled_js_sha1}.js"></script>
 
     #{PAGE_CSS_HERE}
 </head>
 
-<body #{(@session_user || {})[:dark] ? 'class=\' dark\'' : '' }>
+<body class='#{(@session_user || {})[:dark] ? 'dark' : ''}#{ui_preview? ? ' ui-preview' : ''}'>
 
     <script>
         var poll_run_data = null;
@@ -1217,6 +1218,7 @@
             });
         }
     </script>
+    #{design_feedback_html}
 </body>
 
 </html>

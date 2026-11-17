@@ -291,6 +291,28 @@ Lehrkraft.
   Der `mail_bot` liest die Texte vor jedem Durchlauf, ein Neustart ist nicht
   nötig.
 
+## Neues Design (Vorschau)
+
+Ein neues Design entsteht schrittweise und lässt sich vorab ausprobieren:
+im Profil unter »Helligkeit« mit dem Schalter »Neues Design (Vorschau)«.
+Vorerst steht der Schalter nur Admins zur Verfügung; wer ihn sonst sehen
+darf, legt `UI_PREVIEW_FOR` in `src/ruby/include/design_preview.rb` fest
+(`:admins`, `:teachers`, `:all`). Mit eingeschalteter Vorschau berechnet
+das Dashboard die Farben aus dem Farbschema (`design_tokens.rb`, Kontrast
+für hell und dunkel geprüft) und lädt `preview.css`.
+
+Unten links erscheint dann »Feedback zum neuen Design«. Gespeichert werden
+der Text, die Seite, Handy oder Desktop, hell oder dunkel, das Farbschema und
+die Rolle – die E-Mail-Adresse nur, wenn die Person angesprochen werden
+möchte. Wer die Vorschau wieder abschaltet, wird freiwillig nach dem Grund
+gefragt. Admins sehen alles unter `/design_feedback` (Administration →
+Seiten), dazu, wie viele die Vorschau gerade nutzen und wie viele sie wieder
+abgeschaltet haben. Die Rückmeldungen (`DesignFeedback`) werden nach der
+Vorschauphase gelöscht.
+
+Der ältere Schalter »Design: alt/neu« (`new_design.css`, seit 2024) ist davon
+unabhängig.
+
 ## Werkstatt (Entwürfe)
 
 Unter `/api/werkstatt` sehen Admins eine Seite mit Entwürfen und Ideen für

@@ -14,6 +14,7 @@ require 'jwt'
 require 'kramdown'
 require 'mail'
 require './lesson_mail_templates.rb'
+require './design_tokens.rb'
 require './mail_guard.rb'
 require './mail_text.rb'
 require './page_template.rb'
@@ -149,6 +150,7 @@ require './include/mittagessen.rb'
 require './include/monitor.rb'
 require './include/otp.rb'
 require './include/otp_nudge.rb'
+require './include/design_preview.rb'
 require './include/phishing.rb'
 require './include/poll.rb'
 require './include/pk5.rb'
@@ -2271,6 +2273,7 @@ class Main < Sinatra::Base
                                         @session_user[:font] = results.first['u'][:font]
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:new_design] = results.first['u'][:new_design]
+                                        @session_user[:ui_preview] = results.first['u'][:ui_preview]
                                         @session_user[:dark] = results.first['u'][:dark]
                                         @session_user[:hue] = results.first['u'][:hue]
                                         @session_user[:saturation] = results.first['u'][:saturation]

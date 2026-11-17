@@ -1,0 +1,19 @@
+#{this_is_a_page_for_logged_in_admins}
+<style>
+    .design-feedback-table td {
+        vertical-align: top;
+    }
+    .design-feedback-table td:nth-child(6) {
+        min-width: 16em;
+    }
+</style>
+<div class='container-fluid solid white'>
+    <div class='row'>
+        <div class='col-md-12'>
+            <h2>Feedback zum neuen Design</h2>
+            <p>Rückmeldungen aus der Vorschau des neuen Designs (Profil → »Neues Design (Vorschau)«), neueste zuerst. Gespeichert sind die Seite, das Gerät, hell oder dunkel, das Farbschema und die Rolle; einen Namen nur, wenn die Person angesprochen werden möchte.</p>
+            <div class='api_messages' style='display: none;'></div>
+            #{print_design_feedback()}
+        </div>
+    </div>
+</div>

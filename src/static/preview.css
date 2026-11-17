@@ -2039,9 +2039,16 @@ html {
         box-shadow: inset 0 0 0 2px var(--acc-text);
     }
 
+    /* the shown day: the accent's text variant – always set off from the
+       backdrop, which often has the accent's own colour (yellow on yellow) */
     .pv-strip-active {
-        background: var(--acc);
-        color: var(--acc-ink);
+        background: var(--acc-text);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+    }
+
+    .dark .pv-strip-active {
+        color: #0a1222;
     }
 
     .pv-strip-active .pv-strip-name {

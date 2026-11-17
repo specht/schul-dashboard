@@ -1044,9 +1044,26 @@ html {
         padding: 6px 10px;
     }
 
-    /* "Schließen" at the end of the row */
-    .ui-preview .pv-sheet .modal-footer [data-dismiss='modal'] {
-        margin-left: auto;
+    /* no "Schließen" on phones: the sheet closes by pulling it down or
+       tapping above it. Still there for keyboards and screen readers, and
+       shown when it gets keyboard focus. */
+    .ui-preview .pv-sheet .modal-footer [data-dismiss='modal']:not(:focus-visible) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* nothing left in the row: no row */
+    .ui-preview .pv-sheet .modal-footer:not(:has(.btn:not([data-dismiss='modal']):not([style*='display: none']), .ha-amt-container:not([style*='display: none']))) {
+        padding: 0;
+        border-top: 0;
+        min-height: 0;
     }
 }
 
@@ -1385,36 +1402,66 @@ html {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
-/* ---------- Switches (Bootstrap Toggle): a pill, "on" in the accent ---------- */
+/* ---------- Switches (Bootstrap Toggle) as real switches ----------
+   A track (accent when on) with the state text next to a round knob.
+   Bootstrap Toggle slides a group twice as wide as the switch; its knob
+   sits in the middle of that group, i.e. on the switch's edge – moved in
+   by half a knob plus the gap. */
 .ui-preview .toggle.btn {
+    width: 76px !important;
+    height: 30px !important;
+    min-height: 0 !important;
+    padding: 0;
     border: 0;
     border-radius: 999px;
-    box-shadow: inset 0 0 0 1px var(--pv-line);
+    overflow: hidden;
+    box-shadow: none;
 }
 
 .ui-preview .toggle .toggle-on,
 .ui-preview .toggle .toggle-off {
-    border: 0;
-    border-radius: 999px;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 0;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
     box-shadow: none;
 }
 
 .ui-preview .toggle .toggle-on {
-    background: var(--acc);
-    color: var(--acc-ink);
+    background: var(--acc) !important;
+    color: var(--acc-ink) !important;
+    padding: 0 28px 0 0 !important;
 }
 
 .ui-preview .toggle .toggle-off {
-    background: var(--pv-hover);
-    color: var(--pv-ink);
+    background: var(--pv-line) !important;
+    color: var(--pv-ink) !important;
+    padding: 0 0 0 28px !important;
 }
 
 .ui-preview .toggle .toggle-handle {
-    background: var(--pv-surface);
+    width: 24px !important;
+    height: 24px;
+    top: 3px;
+    padding: 0;
     border: 0;
-    border-radius: 999px;
+    border-radius: 50%;
+    background: #ffffff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transform: translateX(-15px);
+}
+
+.ui-preview .toggle.off .toggle-handle {
+    transform: translateX(15px);
+}
+
+.ui-preview .toggle:focus-within {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
 }
 
 /* ---------- Colour schemes and patterns (profile) ---------- */
@@ -1506,4 +1553,85 @@ html {
 /* the subject line in the normal font, too */
 .ui-preview .fc-timegrid-event .condensed {
     font-family: var(--pv-text);
+}
+
+/* ---------- Profile: own colour scheme (new design) ---------- */
+.ui-preview .pv-scheme-note {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.ui-preview .pv-scheme-own {
+    margin-top: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+}
+
+.ui-preview .pv-scheme-own h3 {
+    font-size: 1.15rem;
+    margin: 0 0 4px;
+}
+
+.ui-preview .pv-scheme-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 8px 0 10px;
+}
+
+.ui-preview .pv-scheme-inputs label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ui-preview .pv-scheme-inputs input[type='color'] {
+    width: 64px;
+    height: 40px;
+    padding: 2px;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    cursor: pointer;
+}
+
+.ui-preview .pv-scheme-strip {
+    height: 14px;
+    border-radius: 7px;
+    margin-bottom: 12px;
+}
+
+/* ---------- Profile: no colour sliders, compact scheme and pattern tiles ---------- */
+.ui-preview h2:has(+ #color_options_preview_note),
+.ui-preview #color_options_preview_note,
+.ui-preview #color_options_preview_note + .col-md-12 {
+    display: none !important;
+}
+
+.ui-preview .swatches,
+.ui-preview .style_swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 0 0 16px;
+}
+
+.ui-preview .swatches > [class*='col'],
+.ui-preview .style_swatches > [class*='col'] {
+    max-width: none;
+    padding: 0;
+}
+
+.ui-preview .swatches .swatch,
+.ui-preview .style_swatches .swatch {
+    margin-bottom: 0;
+    height: 72px;
+}
+
+.ui-preview .swatches .swatch .label {
+    font-size: 0.9em;
+    line-height: 1.2;
 }

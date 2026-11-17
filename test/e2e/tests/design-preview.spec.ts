@@ -96,7 +96,9 @@ test('Neues Design: ohne die Farbfilter aus den Farbeinstellungen', async ({ pag
     await page.goto('/');
     expect(await look()).toEqual({ filter: 'none', grain: '0' });
     await page.goto('/profil');
-    await expect(page.locator('#color_options_preview_note')).toBeVisible();
+    // the sliders are left out entirely
+    await expect(page.locator('#ti_hue')).toBeHidden();
+    await expect(page.locator('h2', { hasText: 'Farbeinstellungen' })).toBeHidden();
     expect(await look()).toEqual({ filter: 'none', grain: '0' });
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

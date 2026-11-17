@@ -448,4 +448,33 @@ class Main < Sinatra::Base
             io.string
         end
     end
+    # Profile, new design: the curated set comes first (profil.html filters
+    # the swatches), a note when one's own scheme is not in it, and a picker
+    # for an own scheme – three colours, the new design keeps them readable.
+    def design_preview_scheme_picker_html
+        return '' unless ui_preview?
+        code = (@session_user || {})[:color_scheme] || @@standard_color_scheme
+        note = ''
+        unless DesignTokens.curated?(code)
+            name = (@@color_scheme_info[code[0, 19]] || @@color_scheme_info['l' + code[1, 18]] || [])[0]
+            key, cname, _ = DesignTokens.closest_curated(code)
+            mine = name ? "Dein Farbschema »#{CGI.escapeHTML(name)}«" : 'Dein eigenes Farbschema'
+            note = "<p class='pv-scheme-note'>#{mine} gehört nicht zur Auswahl des neuen Designs – es bleibt dir erhalten. Ähnlich in der Auswahl: <b>#{CGI.escapeHTML(cname)}</b>.</p>"
+        end
+        colours = [1, 7, 13].map { |i| '#' + code[i, 6].to_s }
+        <<~END_OF_HTML
+            #{note}
+            <div class='pv-scheme-own'>
+                <h3>Eigenes Farbschema</h3>
+                <p class='text-muted'>Drei Farben – links, Mitte (Hauptfarbe), rechts. Das neue Design macht daraus Akzent- und Fächerfarben, die gut lesbar bleiben.</p>
+                <div class='pv-scheme-inputs'>
+                    <label>Links <input type='color' id='ti_scheme_left' value='#{colours[0]}'></label>
+                    <label>Mitte <input type='color' id='ti_scheme_main' value='#{colours[1]}'></label>
+                    <label>Rechts <input type='color' id='ti_scheme_right' value='#{colours[2]}'></label>
+                </div>
+                <div class='pv-scheme-strip' aria-hidden='true'></div>
+                <button type='button' class='btn btn-primary' id='bu_apply_own_scheme'>Übernehmen</button>
+            </div>
+        END_OF_HTML
+    end
 end

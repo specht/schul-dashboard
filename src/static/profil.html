@@ -196,6 +196,7 @@
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbschema</h2>
             <div class='row swatches' style='position: relative;'>
             </div>
+            #{design_preview_scheme_picker_html}
             
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Muster</h2>
             <div class='row style_swatches' style='position: relative;'>
@@ -537,6 +538,23 @@ window.addEventListener('load', function () {
                 $('body').css(data.css);
         });
     });
+    // new design: an own scheme from three colours
+    let pv_strip = function() {
+        $('.pv-scheme-strip').css('background', 'linear-gradient(90deg, ' + $('#ti_scheme_left').val() + ', ' + $('#ti_scheme_main').val() + ', ' + $('#ti_scheme_right').val() + ')');
+    };
+    $('#ti_scheme_left, #ti_scheme_main, #ti_scheme_right').on('input', pv_strip);
+    pv_strip();
+    $('#bu_apply_own_scheme').click(function(e) {
+        let hex = [$('#ti_scheme_left').val(), $('#ti_scheme_main').val(), $('#ti_scheme_right').val()].join('').replace(/#/g, '');
+        let new_color_scheme = color_scheme.substr(0, 1) + hex + (color_scheme.substr(19, 1) || '0');
+        $(e.currentTarget).prop('disabled', true);
+        api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
+            if (data.success)
+                location.reload();
+            else
+                $(e.currentTarget).prop('disabled', false);
+        });
+    });
     $('#dark_switch').change(function(e) {
         let dark = $(e.target).is(':checked');
         let new_color_scheme = (dark ? 'd' : 'l') + color_scheme.substr(1, 19);
@@ -585,8 +603,13 @@ window.addEventListener('load', function () {
         });
     });
     let gradients = #{get_gradients().to_json()};
+    // new design: only the curated set, and one's own current scheme
+    let pv_curated = #{ui_preview? ? DesignTokens::CURATED.map(&:first).to_json : 'null'};
     for (let x of gradients.color_schemes)
     {
+        let pv_key = x[1].join('').replace(/#/g, '');
+        if (pv_curated && pv_curated.indexOf(pv_key) < 0 && pv_key !== color_scheme.substr(1, 18))
+            continue;
         let color = x[0];
         let gradient = x[1];
         let paint_colors = x[2];

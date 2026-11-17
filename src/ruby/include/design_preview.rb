@@ -47,11 +47,29 @@ class Main < Sinatra::Base
     # In the new design the backdrop follows light / dark mode (one switch
     # instead of "Hintergrund" and "Helligkeit"): the light or dark variant
     # of the scheme's backdrop, the ground below it to match.
-    def design_preview_backdrop(color_scheme, dark)
+    def design_preview_backdrop_css(color_scheme, dark)
         code = (dark ? 'd' : 'l') + color_scheme.to_s[1..].to_s
         jpg = "/gen/bg/bg-#{code}.jpg"
         url = File.exist?(jpg) ? jpg : "/gen/bg/bg-#{code[0, code.size - 1]}0.svg"
-        [code, "<style id='design_backdrop'>body.ui-preview { background-image: url(#{url}); background-color: #{dark ? '#0e131a' : '#f3f5f8'}; }</style>\n"]
+        [code, "body.ui-preview { background-image: url(#{url}); background-color: #{dark ? '#0e131a' : '#f3f5f8'}; }"]
+    end
+
+    def design_preview_backdrop(color_scheme, dark)
+        code, css = design_preview_backdrop_css(color_scheme, dark)
+        [code, "<style id='design_backdrop'>#{css}</style>\n"]
+    end
+
+    # The colours for a scheme and Farbigkeit, for the profile to show a change
+    # at once (without loading the page again)
+    get '/api/design_tokens' do
+        require_user!
+        scheme = params['scheme'].to_s.downcase
+        assert(scheme =~ /\A[ld][0-9a-f]{18}[0-9]?\z/)
+        vivid = params['vivid'].nil? ? ui_vividness : (params['vivid'].to_i.clamp(0, 100) / 100.0)
+        dark = !!(@session_user || {})[:dark]
+        backdrop, backdrop_css = design_preview_backdrop_css(scheme, dark)
+        respond(:tokens => DesignTokens.css(DesignTokens.effective_scheme(scheme), dark, backdrop, vivid),
+                :backdrop => backdrop_css, :theme_color => '#' + backdrop[1, 6])
     end
 
     def design_preview_head(color_scheme)
@@ -67,7 +85,7 @@ class Main < Sinatra::Base
         "<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>\n" +
         "<script>(function () { var m = document.querySelector('meta[name=viewport]'); if (m) m.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover'); var t = document.querySelector('meta[name=theme-color]'); if (t) t.setAttribute('content', '#{status_colour}'); })();</script>\n" +
         backdrop_css +
-        "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, backdrop)}</style>\n" +
+        "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, backdrop, ui_vividness)}</style>\n" +
             "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
             "<link href='#{preview_asset('/preview.css')}' rel='stylesheet' />\n" +
             "<script src='#{preview_asset('/preview.js')}'></script>\n" +
@@ -334,6 +352,24 @@ class Main < Sinatra::Base
     # Quick switch between the designs, for admins who want it (setting in the
     # profile): a button on every page, in both designs, to check that today's
     # design keeps working while the new one grows.
+    # "Farbigkeit" (profile, new design): 0 calm … 100 colourful (default)
+    def ui_vividness
+        v = (@session_user || {})[:ui_vividness]
+        v.nil? ? 1.0 : (v.to_i.clamp(0, 100) / 100.0)
+    end
+
+    post '/api/set_ui_vividness' do
+        require_user!
+        data = parse_request_data(:required_keys => [:value], :types => {:value => Integer}, :max_body_length => 64)
+        value = data[:value].to_i
+        assert(value >= 0 && value <= 100)
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :value => value)
+            MATCH (u:User {email: $email})
+            SET u.ui_vividness = $value;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
     def ui_preview_quick?
         admin_logged_in? && ui_preview_allowed? && !!(@session_user || {})[:ui_preview_quick]
     end
@@ -543,6 +579,18 @@ class Main < Sinatra::Base
         colours = [1, 7, 13].map { |i| '#' + code[i, 6].to_s }
         <<~END_OF_HTML
             #{note}
+            <div class='pv-vividness'>
+                <label for='ti_ui_vividness'>Farbigkeit der Fächer und Menüs</label>
+                <div class='pv-vividness-row'>
+                    <span>ruhig</span>
+                    <input type='range' id='ti_ui_vividness' min='0' max='100' step='25' value='#{(ui_vividness * 100).round}' aria-describedby='pv_vividness_hint'>
+                    <span>bunt</span>
+                </div>
+                <div class='pv-vivid-sample' aria-hidden='true'>
+                    #{[%w(de De), %w(en En), %w(la La), %w(ma Ma), %w(bio Bio), %w(ge Ge), %w(ku Ku), %w(sp Sp)].map { |k, l| "<span style='background: var(--subj-#{k}); color: var(--subj-#{k}-ink)'>#{l}</span>" }.join}
+                </div>
+                <p class='text-muted' id='pv_vividness_hint'>Wie weit sich die Farben der Fächer über das Farbspektrum verteilen. Lesbar bleibt es in jeder Stufe.</p>
+            </div>
             <div class='pv-scheme-own'>
                 <div class='pv-scheme-own-head'>
                     <h3>Eigenes Farbschema</h3>

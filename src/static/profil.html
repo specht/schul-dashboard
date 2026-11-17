@@ -547,6 +547,16 @@ window.addEventListener('load', function () {
     };
     $('#ti_scheme_left, #ti_scheme_main, #ti_scheme_right').on('input', pv_strip);
     pv_strip();
+    // "Farbigkeit": saved when let go, the page loads again with the new colours
+    let pv_vivid_timer = null;
+    $('#ti_ui_vividness').on('input', function(e) {
+        clearTimeout(pv_vivid_timer);
+        let v = parseInt(e.currentTarget.value, 10);
+        pv_vivid_timer = setTimeout(function() { pv_apply_colours(color_scheme, v); }, 60);
+    });
+    $('#ti_ui_vividness').on('change', function(e) {
+        api_call('/api/set_ui_vividness', {value: parseInt(e.currentTarget.value, 10)}, function() {});
+    });
     // rearranging: swap two neighbours, or reverse all three
     $('.pv-scheme-swap').on('click', function(e) {
         let a = $('#ti_scheme_' + $(e.currentTarget).data('a')), b = $('#ti_scheme_' + $(e.currentTarget).data('b'));
@@ -563,10 +573,12 @@ window.addEventListener('load', function () {
         let new_color_scheme = color_scheme.substr(0, 1) + hex + (color_scheme.substr(19, 1) || '0');
         $(e.currentTarget).prop('disabled', true);
         api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
-            if (data.success)
-                pv_reload_here() || location.reload();
-            else
-                $(e.currentTarget).prop('disabled', false);
+            $(e.currentTarget).prop('disabled', false);
+            if (data.success) {
+                color_scheme = new_color_scheme;
+                $('.swatch').removeClass('active');
+                if (!pv_apply_colours(new_color_scheme)) location.reload();
+            }
         });
     });
     $('#dark_switch').change(function(e) {
@@ -632,6 +644,19 @@ window.addEventListener('load', function () {
             window.addEventListener('load', function() { window.scrollTo(0, parseInt(y, 10)); });
         }
     } catch (e) {}
+    // new design: a colour change shows at once – the server computes the
+    // colours, the page takes them over (tokens, backdrop, browser bar)
+    let pv_apply_colours = function(scheme, vivid) {
+        if (!document.body.classList.contains('ui-preview')) return false;
+        let q = 'scheme=' + encodeURIComponent(scheme) + (vivid === undefined ? '' : '&vivid=' + vivid);
+        fetch('/api/design_tokens?' + q, { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(data) {
+            if (!data.tokens) return;
+            $('#design_tokens').text(data.tokens);
+            $('#design_backdrop').text(data.backdrop);
+            $('meta[name=theme-color]').attr('content', data.theme_color);
+        });
+        return true;
+    };
     let gradients = #{get_gradients().to_json()};
     // new design: only the curated set, and one's own current scheme
     let pv_curated = #{ui_preview? ? DesignTokens::CURATED.map(&:first).to_json : 'null'};
@@ -720,7 +745,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = $(e.target.closest('.btn')).data('scheme').substr(0, 19) + color_scheme[19];
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
-                if (data.success && pv_reload_here()) return;
+                if (data.success) pv_apply_colours(new_color_scheme);
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;
@@ -772,7 +797,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = color_scheme.substr(0, 19) + style;
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
-                if (data.success && pv_reload_here()) return;
+                if (data.success) pv_apply_colours(new_color_scheme);
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;

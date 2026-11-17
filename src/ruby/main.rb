@@ -2276,6 +2276,7 @@ class Main < Sinatra::Base
                                         @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:ui_preview] = results.first['u'][:ui_preview]
                                         @session_user[:ui_preview_quick] = results.first['u'][:ui_preview_quick]
+                                        @session_user[:ui_vividness] = results.first['u'][:ui_vividness]
                                         @session_user[:dark] = results.first['u'][:dark]
                                         @session_user[:hue] = results.first['u'][:hue]
                                         @session_user[:saturation] = results.first['u'][:saturation]

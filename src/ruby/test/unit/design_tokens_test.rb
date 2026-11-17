@@ -30,6 +30,26 @@ class DesignTokensTest < Minitest::Test
 
     # every subject of the subject list (example data, mounted at /data) has a
     # colour – a lesson without one looks like a cancelled one
+    # the "Farbigkeit" setting: readable at every level, calmer means less
+    # spread across the colour wheel
+    def test_vividness
+        each_scheme do |code, name, dark|
+            [0.0, 0.5].each do |vivid|
+                t = T.tokens(code, dark, nil, vivid)
+                T::SUBJECT_SPOTS.each_key do |key|
+                    assert_operator T.contrast(rgb(t["--subj-#{key}-ink"]), rgb(t["--subj-#{key}"])), :>=, 4.5, "#{name} #{dark} #{vivid}: #{key}"
+                end
+            end
+        end
+        hue = ->(hex) { T.rgb_to_hls(rgb(hex))[0] * 360 }
+        spread = lambda do |vivid|
+            t = T.tokens('la2c6e80d60aea2c6e80', false, nil, vivid)
+            hs = %w(de ma sp).map { |k| hue.(t["--subj-#{k}"]) }
+            hs.max - hs.min
+        end
+        assert_operator spread.(0.0), :<, spread.(1.0)
+    end
+
     def test_every_subject_has_a_colour
         codes = File.readlines('/data/faecher/faecher.csv').drop(1).map { |l| l.split(',').first.to_s.strip }.reject(&:empty?)
         assert_operator codes.size, :>, 30

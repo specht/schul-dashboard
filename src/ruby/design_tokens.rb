@@ -96,8 +96,12 @@ module DesignTokens
     # backdrop: the scheme whose backdrop is shown (a curated scheme's tokens
     # come from its tuned colours, its backdrop from its own); its first
     # letter 'd' means the dark variant of the backdrop
-    def self.tokens(color_scheme, dark, backdrop = nil)
+    # vivid: how colourful the subject colours are, 0.0 (calm: close to the
+    # scheme's colours, less saturated) to 1.0 (the full spread); readable at
+    # every level
+    def self.tokens(color_scheme, dark, backdrop = nil, vivid = 1.0)
         dark = !!dark
+        vivid = vivid.to_f.clamp(0.0, 1.0)
         backdrop ||= color_scheme
         colors = [1, 7, 13].map { |i| hex_to_rgb(color_scheme.to_s[i, 6] || '000000') }
         backdrop_colors = [1, 7, 13].map { |i| hex_to_rgb(backdrop.to_s[i, 6] || '000000') }
@@ -129,7 +133,7 @@ module DesignTokens
         tokens['--band-scrim-a'] = format('%.2f', alpha)
         spread = hue_spread(colors)
         SUBJECT_SPOTS.each do |key, t|
-            colour, ink = subject_colour(colors, t, spread, dark, surface)
+            colour, ink = subject_colour(colors, t, spread, dark, surface, vivid)
             tokens["--subj-#{key}"] = rgb_to_hex(colour)
             tokens["--subj-#{key}-ink"] = ink
         end
@@ -137,8 +141,8 @@ module DesignTokens
     end
 
     # CSS for a <style> element: the tokens on :root
-    def self.css(color_scheme, dark, backdrop = nil)
-        ":root { " + tokens(color_scheme, dark, backdrop).map { |k, v| "#{k}: #{v};" }.join(' ') + " }"
+    def self.css(color_scheme, dark, backdrop = nil, vivid = 1.0)
+        ":root { " + tokens(color_scheme, dark, backdrop, vivid).map { |k, v| "#{k}: #{v};" }.join(' ') + " }"
     end
 
     # Neighbouring subjects must be told apart, also in schemes with nearly
@@ -149,12 +153,15 @@ module DesignTokens
     # floor: at least 4.5:1 for white text (light) / dark text (dark).
     LIGHTNESS_PERIOD = 0.16
     LIGHTNESS_RANGE = 5.0   # contrast added at the darkest (light mode) / lightest (dark mode) tone
-    def self.subject_colour(colors, t, spread, dark, surface)
-        c = gradient(colors, t)
+    def self.subject_colour(colors, t, spread, dark, surface, vivid = 1.0)
+        # calmer: the spots move towards the main colour, the hue spreads less,
+        # the saturation is lower; the lightness wave keeps neighbours apart
+        t_pos = 0.5 + (t - 0.5) * (0.35 + 0.65 * vivid)
+        c = gradient(colors, t_pos)
         h, l, s = rgb_to_hls(c)
-        k = [140 - spread, 0].max.clamp(0, 120)
+        k = [140 - spread, 0].max.clamp(0, 120) * vivid
         h = (h + (t - 0.5) * k / 360.0) % 1.0
-        s = [s, 0.45].max
+        s = [s, 0.45].max * (0.72 + 0.28 * vivid)
         c = hls_to_rgb(h, l, s)
         wave = 0.5 + 0.5 * Math.cos(2 * Math::PI * t / LIGHTNESS_PERIOD)
         dark_ink = '#0a1222'

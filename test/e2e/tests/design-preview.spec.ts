@@ -701,12 +701,37 @@ test('Neues Design: der Hintergrund folgt hell und dunkel', async ({ page }) => 
   }
 });
 
-// Choosing a scheme in the profile: the page loads again with the new
-// colours (they come from the server) and stays at its place
-test('Neues Design: neues Farbschema wirkt sofort überall', async ({ page }, testInfo) => {
+// Choosing a scheme or the Farbigkeit in the profile: the colours change at
+// once, without loading the page again (the server computes them)
+test('Neues Design: Farbschema und Farbigkeit wirken sofort', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Desktop reicht');
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+  try {
+    await page.goto('/profil');
+    let loads = 0;
+    page.on('load', () => loads++);
+    const tok = (k: string) => page.evaluate((k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim(), k);
+    const de = await tok('--subj-de');
+    const slider = page.locator('#ti_ui_vividness');
+    await slider.fill('0');
+    await slider.dispatchEvent('input');
+    await slider.dispatchEvent('change');
+    await expect.poll(() => tok('--subj-de')).not.toBe(de);
+    const acc = await tok('--acc');
+    await page.locator('.swatches .swatch', { hasText: 'Gryffindor' }).click();
+    await expect.poll(() => tok('--acc')).not.toBe(acc);
+    expect(loads).toBe(0);
+    // saved: a new page has the calm colours too
+    await page.reload();
+    expect(await tok('--subj-de')).not.toBe(de);
+  } finally {
+    await page.request.post('/api/set_ui_vividness', { data: { value: 100 } });
+    await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
   await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
   try {
     await page.goto('/profil');

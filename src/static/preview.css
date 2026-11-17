@@ -4067,3 +4067,47 @@ body.ui-preview:has(.container-fluid.solid)::before {
         background: color-mix(in srgb, var(--tone) 16%, var(--pv-surface));
     }
 }
+
+/* "Farbigkeit" in the profile */
+.ui-preview .pv-vividness {
+    margin: 4px 0 14px;
+}
+
+.ui-preview .pv-vividness label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.ui-preview .pv-vividness-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-vividness-row input[type='range'] {
+    flex: 1;
+    accent-color: var(--acc-text);
+}
+
+.ui-preview .pv-vividness p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+}
+
+/* the subjects at the chosen Farbigkeit, live */
+.ui-preview .pv-vivid-sample {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.ui-preview .pv-vivid-sample span {
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    font: 700 0.72rem/1 var(--pv-display);
+}

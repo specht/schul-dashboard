@@ -11,6 +11,20 @@
     color: var(--acc-ink);
 }
 
+/* The colour sliders in the profile (Farbton, Sättigung, Helligkeit, Kontrast,
+   Sepia, Analog) filter the whole page. The new design leaves them out: its
+   colours are computed per scheme to stay readable, a filter would undo that
+   (review/2026-11/redesign.md). */
+html {
+    -moz-filter: none !important;
+    -webkit-filter: none !important;
+    filter: none !important;
+}
+
+:root {
+    --analog-opacity: 0 !important;
+}
+
 /* feedback while the new design is a preview */
 .design-feedback-button {
     position: fixed;

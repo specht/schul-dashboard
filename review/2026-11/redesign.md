@@ -24,6 +24,13 @@ the server only).
   all ten patterns): on desktop behind the content, fading far down; on phones
   a larger-scale section in the header.
 - **Light and dark** for every page, independent of the colour scheme.
+- **No colour sliders in the new design.** The six sliders under
+  "Farbeinstellungen" (hue, saturation, brightness, contrast, sepia, analog
+  grain) filter the whole page, which undoes the per-scheme contrast and is
+  noisy for some. About a third of all accounts has moved at least one, so
+  they stay in today's design until the switch; the preview ignores them
+  already, and the new design does not offer them. Colour scheme, pattern and
+  light/dark remain the personal touch.
 - **Feedback during opt-in** (see phase 1).
 - **Admins first.** The preview starts with admins only; the next stages
   (teachers, everyone) are one constant (\`UI_PREVIEW_FOR\` in

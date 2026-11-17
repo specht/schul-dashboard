@@ -87,3 +87,35 @@ test('Neues Design: vorerst nur für Admins', async ({ page, newUserPage }) => {
     await expect(user).not.toHaveURL(/design_feedback/);
   }
 });
+
+// The colour sliders (Farbton, Sepia, Analog …) lay a filter over the whole
+// page. The new design computes readable colours per scheme; a filter would
+// undo that, so the preview shows the page without them.
+test('Neues Design: ohne die Farbfilter aus den Farbeinstellungen', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const reset = { hue: 0, saturation: 1.0, brightness: 1.0, contrast: 1.0, sepia: 0.0, analog: 0 };
+  const filtered = { hue: 40, saturation: 1.4, brightness: 1.0, contrast: 0.8, sepia: 0.3, analog: 0.5 };
+  expect((await page.request.post('/api/set_color_options', { data: filtered })).status()).toBe(200);
+  try {
+    const look = () => page.evaluate(() => ({
+      filter: getComputedStyle(document.documentElement).filter,
+      grain: getComputedStyle(document.documentElement).getPropertyValue('--analog-opacity').trim(),
+    }));
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    await page.goto('/');
+    const before = await look();
+    expect(before.filter).toContain('hue-rotate');
+    expect(before.grain).toBe('0.5');
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+    await page.goto('/');
+    const after = await look();
+    expect(after.filter).toBe('none');
+    expect(after.grain).toBe('0');
+    // the profile says why the sliders do nothing here
+    await page.goto('/profil');
+    await expect(page.locator('#color_options_preview_note')).toBeVisible();
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    await page.request.post('/api/set_color_options', { data: reset });
+  }
+});

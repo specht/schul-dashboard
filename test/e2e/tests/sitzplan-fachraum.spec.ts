@@ -1,11 +1,13 @@
 import type { APIRequestContext, Page } from '@playwright/test';
-import { test, expect, login, ACCOUNTS, ROLE_ACCOUNTS, dashboardDialog } from './fixtures';
+import { test, expect, login, ACCOUNTS, dashboardDialog } from './fixtures';
 
 // Example data (test/prepare_example_data.rb): class 5a has its homeroom 108,
 // where Clarke (admin, class teacher) teaches it. Both Clarke and Frieda
 // Fachraum also teach 5a in room 317 – a subject room, where each of them
 // makes an own seating plan with own desks.
 const KLASSE = '5a';
+// only in the test stack's copy of the example data
+const FACHLEHRKRAFT = 'fachraum@beispielschule.de';
 const FACHRAUM = '317';
 
 const CLARKE_DESKS = [0, 1, 3, 4].flatMap((x) => [0, 2].map((y) => [x, y])); // 8 seats
@@ -41,7 +43,7 @@ test('Sitzplan im Fachraum: eigene Tische übernehmen, eigener Plan, getrennt vo
   // the homeroom's desks, as in sitzplan.spec.ts
   await saveDesks(clarke.request, '108', CLARKE_DESKS);
 
-  await login(page, ROLE_ACCOUNTS.fachlehrkraft);
+  await login(page, FACHLEHRKRAFT);
   await removeOwnPlans(page);
   await saveDesks(page.request, FACHRAUM, OWN_DESKS);
 
@@ -124,6 +126,12 @@ test('Sitzplan im Fachraum: eigene Tische übernehmen, eigener Plan, getrennt vo
   await expect(clarke.locator(`#sph_history_body [data-id="${ownPlanId}"]`)).toHaveCount(0);
   const foreign = await clarke.request.post('/api/sph_reopen_saved_cycle', { data: { cycle_id: ownPlanId } });
   expect(foreign.status()).not.toBe(200);
+  // a plan Clarke made in another subject room before there were own plans
+  // there (test/e2e/seed.cypher) is still his and visible
+  await saveDesks(clarke.request, '323', CLARKE_DESKS);
+  await clarke.goto(`/sitzplanhelfer/${KLASSE}/323`);
+  await expect(clarke.locator('#sph_fachraum_info')).toBeVisible();
+  await expect(clarke.locator('#sph_history_body [data-id="e2efachraumalt"]')).toHaveCount(2);
   await clarke.goto(`/sitzplanhelfer/${KLASSE}/108`);
   await expect(clarke.locator('#sph_fachraum_info')).toBeHidden();
   await expect(clarke.locator('#sph_room_bar #sph_bu_wishes')).toBeVisible();

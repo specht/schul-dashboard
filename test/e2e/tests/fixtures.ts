@@ -32,7 +32,6 @@ export const ROLE_ACCOUNTS: Record<string, string> = {
   gev: 'gev@beispielschule.de', // parent council
   externe_ag: 'externe.ag@beispielschule.de', // external club leader
   sv: 'elli.mustermann@mail.beispielschule.de', // student with student council roles
-  fachlehrkraft: 'fachraum@beispielschule.de', // teacher: teaches 5a in room 317 (not the homeroom)
 };
 
 type Factor = 'email' | 'otp';

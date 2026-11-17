@@ -132,7 +132,7 @@ class Main < Sinatra::Base
         klasse, raum = sitzplan_path_params
         neo4j_query_expect_one(<<~END_OF_QUERY, :raum => raum, :lehrer => sitzplan_owner(klasse, raum) || '')['n']
             MATCH (sc:SeatingCycle {raum: $raum})
-            WHERE coalesce(sc.lehrer, '') = $lehrer
+            WHERE #{sph_scope_cond('sc')}
             RETURN COUNT(sc) AS n;
         END_OF_QUERY
     end

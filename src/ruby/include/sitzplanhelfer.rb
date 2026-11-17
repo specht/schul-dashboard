@@ -42,6 +42,15 @@ class Main < Sinatra::Base
         end
     end
 
+    # Bedingung für Abfragen nach Plänen von Klasse+Raum ($lehrer, siehe
+    # sph_scope!). Im Fachraum zählen dazu auch Pläne, die die Lehrkraft dort
+    # angelegt hat, bevor es Fachraum-Pläne gab (ohne lehrer): Sie bleiben so
+    # für sie sichtbar, verändert oder gelöscht wird dabei nichts.
+    def sph_scope_cond(var)
+        older = "#{var}.lehrer IS NULL AND EXISTS { MATCH (#{var})-[:STARTED_BY]->(:User {email: $lehrer}) }"
+        "(coalesce(#{var}.lehrer, '') = $lehrer OR ($lehrer <> '' AND #{older}))"
+    end
+
     # Vorgaben und Schalter (SeatingRules) je Klasse+Raum, im Fachraum
     # zusätzlich je Lehrkraft.
     def sph_rules_key(klasse, raum, lehrer)
@@ -158,7 +167,7 @@ class Main < Sinatra::Base
 
         existing = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer)
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-            WHERE sc.saved_at IS NULL AND coalesce(sc.lehrer, '') = $lehrer
+            WHERE sc.saved_at IS NULL AND #{sph_scope_cond('sc')}
             RETURN sc
             ORDER BY sc.created_at DESC
             LIMIT 1;
@@ -298,7 +307,7 @@ class Main < Sinatra::Base
         wishes = {}
         rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer)
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-            WHERE sc.saved_at IS NULL AND coalesce(sc.lehrer, '') = $lehrer
+            WHERE sc.saved_at IS NULL AND #{sph_scope_cond('sc')}
             OPTIONAL MATCH (sc)-[:REOPENED_FROM]->(src:SeatingCycle)
             RETURN sc, src.saved_at AS reopened_from, src.seats AS reopened_seats, src.id AS reopened_id
             ORDER BY sc.created_at DESC
@@ -421,7 +430,7 @@ class Main < Sinatra::Base
     def sph_saved_cycle_summary(klasse, raum, lehrer, saved_before, with_wishes = false)
         rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer, :before => saved_before || 2**62, :with_wishes => with_wishes)
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-            WHERE sc.saved_at IS NOT NULL AND sc.saved_at < $before AND coalesce(sc.lehrer, '') = $lehrer
+            WHERE sc.saved_at IS NOT NULL AND sc.saved_at < $before AND #{sph_scope_cond('sc')}
               AND (NOT $with_wishes OR sc.poll_run_id IS NOT NULL)
             RETURN sc
             ORDER BY sc.saved_at DESC
@@ -457,13 +466,13 @@ class Main < Sinatra::Base
         if data[:cycle_id]
             rows = neo4j_query(<<~END_OF_QUERY, :id => data[:cycle_id], :klasse => klasse, :raum => raum, :lehrer => lehrer)
                 MATCH (sc:SeatingCycle {id: $id, klasse: $klasse, raum: $raum})
-                WHERE sc.saved_at IS NOT NULL AND coalesce(sc.lehrer, '') = $lehrer
+                WHERE sc.saved_at IS NOT NULL AND #{sph_scope_cond('sc')}
                 RETURN sc;
             END_OF_QUERY
         else
             rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer)
                 MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-                WHERE sc.saved_at IS NOT NULL AND coalesce(sc.lehrer, '') = $lehrer
+                WHERE sc.saved_at IS NOT NULL AND #{sph_scope_cond('sc')}
                 RETURN sc
                 ORDER BY sc.saved_at DESC
                 LIMIT 1;
@@ -548,7 +557,7 @@ class Main < Sinatra::Base
         if source.nil? || source[:forced_pairs].nil?
             last_rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer)
                 MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-                WHERE sc.saved_at IS NOT NULL AND coalesce(sc.lehrer, '') = $lehrer
+                WHERE sc.saved_at IS NOT NULL AND #{sph_scope_cond('sc')}
                 RETURN sc
                 ORDER BY sc.saved_at DESC
                 LIMIT 1;
@@ -856,7 +865,7 @@ class Main < Sinatra::Base
         lehrer = sph_scope!(klasse, raum)
         rows = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer)
             MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
-            WHERE sc.saved_at IS NOT NULL AND coalesce(sc.lehrer, '') = $lehrer
+            WHERE sc.saved_at IS NOT NULL AND #{sph_scope_cond('sc')}
             RETURN sc
             ORDER BY sc.saved_at DESC;
         END_OF_QUERY
@@ -915,7 +924,7 @@ class Main < Sinatra::Base
         assert(sc[:saved_at], 'Nur gespeicherte Sitzpläne können erneut bearbeitet werden.')
         existing_open = neo4j_query(<<~END_OF_QUERY, :klasse => sc[:klasse], :raum => sc[:raum], :lehrer => sc[:lehrer] || '')
             MATCH (x:SeatingCycle {klasse: $klasse, raum: $raum})
-            WHERE x.saved_at IS NULL AND coalesce(x.lehrer, '') = $lehrer
+            WHERE x.saved_at IS NULL AND #{sph_scope_cond('x')}
             RETURN x
             LIMIT 1;
         END_OF_QUERY

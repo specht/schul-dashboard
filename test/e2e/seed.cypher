@@ -42,3 +42,13 @@ WITH t, u, toString(date() + duration({days: offset})) AS datum
 MERGE (b:Booking {datum: datum, start_time: '09:00', end_time: '10:30', reason: 'E2E-Buchung'})
 MERGE (b)-[:BOOKED]->(t)
 MERGE (b)-[:BOOKED_BY]->(u);
+
+// A seating plan from before there were plans of one's own in a subject room
+// (no lehrer): Clarke made it in 323, where he teaches 5a. It stays visible
+// to him there (sitzplan-fachraum.spec.ts).
+MATCH (u:User {email: 'clarke@beispielschule.de'})
+MERGE (sc:SeatingCycle {id: 'e2efachraumalt'})
+SET sc.klasse = '5a', sc.raum = '323', sc.mode = 'manual', sc.created_at = 1730000000,
+    sc.saved_at = 1730000000, sc.seats = '{}', sc.unresolved = '[]', sc.satisfied_emails = '[]',
+    sc.forced_pairs = '[]', sc.forbidden_pairs = '[]', sc.fixed_rules = '[]'
+MERGE (sc)-[:STARTED_BY]->(u);

@@ -462,6 +462,19 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
     const duty = page.locator('#pv_agenda .pv-ag-duty');
     await expect(duty).toContainText('Hof Nord');
     await expect(duty).toContainText('7:30–7:45');
+    // a changed room as a notice in the card; changes of the coming days below the day
+    await page.evaluate(() => {
+      const w = window as any;
+      const d = new Date(w.calendar.getDate());
+      const lesson = w.calendar.getEvents().find((e: any) => !e.allDay && e.extendedProps.lesson && !e.extendedProps.pausenaufsicht);
+      const a = new Date(d); a.setHours(16, 0, 0, 0);
+      w.calendar.addEvent({ start: a, end: new Date(a.getTime() + 45 * 60000), extendedProps: { ...lesson.extendedProps, raum: '<s>108</s> 211' } });
+      const b = new Date(d); b.setDate(b.getDate() + 1); b.setHours(16, 0, 0, 0);
+      w.calendar.addEvent({ start: b, end: new Date(b.getTime() + 45 * 60000), extendedProps: { ...lesson.extendedProps, entfall: true } });
+    });
+    await expect(page.locator('#pv_agenda .pv-ag-change').first()).toHaveText('Raum 211 statt 108');
+    await expect(page.locator('#pv_agenda .pv-ag-notice').first()).toContainText('Morgen 16:00');
+    await expect(page.locator('#pv_agenda .pv-ag-notice').first()).toContainText('entfällt');
     const cardColour = await card.evaluate((el) => getComputedStyle(el).borderLeftColor);
     await card.click();
     await expect(page.locator('#lessonModal')).toBeVisible();

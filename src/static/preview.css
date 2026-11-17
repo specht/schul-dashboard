@@ -2278,3 +2278,75 @@ body.ui-preview.dark::before {
     pointer-events: none;
     background: linear-gradient(180deg, rgba(14, 19, 26, 0) 0, rgba(14, 19, 26, 0.55) 260px, #0e131a 620px);
 }
+
+/* ---------- Agenda: changes and actions ---------- */
+/* "Raum 211 statt 108" – a change one should notice */
+.pv-ag-mark.pv-ag-change {
+    background: #fff1d6;
+    color: #7a4b00;
+}
+
+.dark .pv-ag-mark.pv-ag-change {
+    background: #4a3510;
+    color: #ffd58a;
+}
+
+/* the own running lesson: Kursbuch and Mail in the card */
+.pv-ag-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pv-ag-action {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink) !important;
+    font: 600 0.9rem/1 var(--pv-text);
+    text-decoration: none !important;
+}
+
+.pv-ag-action:hover {
+    background: var(--pv-hover);
+}
+
+/* coming changes of the week, below the day */
+.pv-ag-coming {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.pv-ag-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: inherit;
+    font-size: 0.92em;
+    text-align: left;
+}
+
+.pv-ag-notice i {
+    margin-top: 3px;
+    color: var(--pv-muted);
+}
+
+/* Kursbuch side pane: explanations and the labels next to its buttons are
+   fixed dark grey (#444) in styles.css – unreadable in dark mode */
+.ui-preview .lesson_pane .explanation,
+.ui-preview .lesson_pane .button-with-label span {
+    color: var(--pv-muted);
+}

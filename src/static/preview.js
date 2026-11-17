@@ -630,3 +630,447 @@
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });
 })();
 
+
+// ---------- Lists with actions (doc/Gestaltung.md, 6a) ----------
+// window.pv_list: the parts of the page type "Liste mit Aktionen" – rows,
+// sub-rows, the "•••" menu (beside its button, a sheet on phones), folding,
+// groups by school year and loading in blocks. Pages call these only in the
+// new design (body.ui-preview); styles in preview.css (".pv-lrow" …).
+(function() {
+    var PHONE = window.matchMedia('(max-width: 767px)');
+
+    function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text !== undefined && text !== null) e.textContent = text;
+        return e;
+    }
+
+    // a school year runs from 1 August to 31 July: its first year
+    // ('2025-09-01', a Date or a moment → 2025)
+    function school_year(d) {
+        var y, m;
+        if (typeof d === 'string') {
+            y = parseInt(d.substr(0, 4), 10);
+            m = parseInt(d.substr(5, 2), 10);
+        } else {
+            if (d && typeof d.toDate === 'function') d = d.toDate();
+            d = d || new Date();
+            y = d.getFullYear();
+            m = d.getMonth() + 1;
+        }
+        return m >= 8 ? y : y - 1;
+    }
+
+    function school_year_label(y) {
+        return 'Schuljahr ' + y + '/' + String((y + 1) % 100).padStart(2, '0');
+    }
+
+    // label, and on tablets a shorter one ("Neue Durchführung" → "Durchführen")
+    function label_spans(button, label, short) {
+        if (short && short !== label) {
+            button.appendChild(el('span', 'pv-l-long', label));
+            button.appendChild(el('span', 'pv-l-short', short));
+            button.setAttribute('aria-label', label);
+        } else {
+            button.appendChild(el('span', null, label));
+        }
+    }
+
+    // ---------- the "•••" menu ----------
+    var open_menu = null;   // { menu, veil, trigger, sheet }
+
+    function close_menu(animate, keep_focus) {
+        var m = open_menu;
+        if (!m) return;
+        open_menu = null;
+        m.trigger.setAttribute('aria-expanded', 'false');
+        if (m.veil) m.veil.remove();
+        document.body.classList.remove('pv-sheet-open');
+        document.removeEventListener('keydown', on_key, true);
+        document.removeEventListener('mousedown', on_outside, true);
+        window.removeEventListener('resize', on_resize);
+        window.removeEventListener('scroll', on_scroll, true);
+        if (animate && m.sheet && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            m.menu.style.transition = 'transform 0.18s ease-in';
+            m.menu.style.transform = 'translateY(100%)';
+            setTimeout(function() { m.menu.remove(); }, 180);
+        } else {
+            m.menu.remove();
+        }
+        if (!keep_focus && document.body.contains(m.trigger)) m.trigger.focus({ preventScroll: true });
+    }
+
+    function menu_items() {
+        return open_menu ? Array.prototype.slice.call(open_menu.menu.querySelectorAll('[role=menuitem]')) : [];
+    }
+
+    function on_key(e) {
+        if (!open_menu) return;
+        var items = menu_items();
+        var i = items.indexOf(document.activeElement);
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            close_menu(true);
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            var n = items.length;
+            if (n === 0) return;
+            i = e.key === 'ArrowDown' ? (i + 1) % n : (i <= 0 ? n - 1 : i - 1);
+            items[i].focus();
+        } else if (e.key === 'Home' || e.key === 'End') {
+            e.preventDefault();
+            if (items.length) items[e.key === 'Home' ? 0 : items.length - 1].focus();
+        } else if (e.key === 'Tab') {
+            close_menu(false, true);
+        }
+    }
+
+    function on_outside(e) {
+        if (!open_menu) return;
+        if (open_menu.menu.contains(e.target) || open_menu.trigger.contains(e.target)) return;
+        if (open_menu.veil && e.target === open_menu.veil) return;
+        close_menu(false, true);
+    }
+
+    function on_resize() { if (open_menu && open_menu.sheet !== PHONE.matches) close_menu(false, true); }
+
+    function on_scroll(e) {
+        if (open_menu && !open_menu.sheet && !open_menu.menu.contains(e.target)) place(open_menu.menu, open_menu.trigger);
+    }
+
+    // desktop: below the button, its right edge level with the button's;
+    // above it when there is no room below
+    function place(menu, trigger) {
+        var r = trigger.getBoundingClientRect();
+        var h = menu.offsetHeight, w = menu.offsetWidth;
+        var top = r.bottom + 4;
+        if (top + h > window.innerHeight - 8 && r.top - 4 - h > 8) top = r.top - 4 - h;
+        var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
+        menu.style.top = Math.round(top) + 'px';
+        menu.style.left = Math.round(left) + 'px';
+    }
+
+    // actions: [{label, run, danger}]; title: the item's name (at the top of
+    // the sheet, the menu's name for screen readers)
+    // focus_first: opened from the keyboard (otherwise the menu itself has
+    // the focus, the arrow keys still lead into it)
+    function show_menu(trigger, title, actions, focus_first) {
+        if (open_menu && open_menu.trigger === trigger) { close_menu(true); return; }
+        close_menu(false, true);
+        var sheet = PHONE.matches;
+        var menu = el('div', 'pv-amenu' + (sheet ? ' pv-amenu-sheet' : ''));
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', title);
+        menu.tabIndex = -1;
+        if (sheet) {
+            var head = el('div', 'pv-amenu-title', title);
+            head.setAttribute('aria-hidden', 'true');
+            menu.appendChild(head);
+        }
+        var plain = actions.filter(function(a) { return !a.danger; });
+        var danger = actions.filter(function(a) { return a.danger; });
+        plain.concat(danger).forEach(function(a, i) {
+            if (a.danger && i === plain.length && plain.length > 0) {
+                var sep = el('div', 'pv-amenu-sep');
+                sep.setAttribute('role', 'separator');
+                menu.appendChild(sep);
+            }
+            var b = el('button', 'pv-amenu-item' + (a.danger ? ' pv-amenu-danger' : '') + (a.cls ? ' ' + a.cls : ''), a.label);
+            b.type = 'button';
+            b.setAttribute('role', 'menuitem');
+            b.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // the menu closes first: a confirmation opens on its own
+                close_menu(false);
+                a.run();
+            });
+            menu.appendChild(b);
+        });
+        var veil = null;
+        if (sheet) {
+            veil = el('div', 'pv-amenu-veil');
+            veil.addEventListener('click', function() { close_menu(true); });
+            document.body.appendChild(veil);
+            document.body.classList.add('pv-sheet-open');
+        }
+        document.body.appendChild(menu);
+        if (!sheet) place(menu, trigger);
+        open_menu = { menu: menu, veil: veil, trigger: trigger, sheet: sheet };
+        trigger.setAttribute('aria-expanded', 'true');
+        document.addEventListener('keydown', on_key, true);
+        document.addEventListener('mousedown', on_outside, true);
+        window.addEventListener('resize', on_resize);
+        window.addEventListener('scroll', on_scroll, true);
+        var first = menu.querySelector('[role=menuitem]');
+        if (first && focus_first) first.focus({ preventScroll: true });
+        else menu.focus({ preventScroll: true });
+    }
+
+    // phones: pull the sheet down to close it
+    var drag = null;
+    document.addEventListener('touchstart', function(e) {
+        drag = null;
+        if (!open_menu || !open_menu.sheet || e.touches.length !== 1) return;
+        if (!open_menu.menu.contains(e.target) && e.target !== open_menu.veil) return;
+        if (open_menu.menu.scrollTop > 0) return;
+        drag = { y: e.touches[0].clientY, t: Date.now(), dy: 0, on: false };
+    }, { passive: true });
+    document.addEventListener('touchmove', function(e) {
+        if (!drag || !open_menu) return;
+        var dy = e.touches[0].clientY - drag.y;
+        if (!drag.on) {
+            if (dy < -8) { drag = null; return; }
+            if (dy < 8) return;
+            drag.on = true;
+        }
+        e.preventDefault();
+        drag.dy = Math.max(0, dy);
+        open_menu.menu.style.transition = 'none';
+        open_menu.menu.style.transform = 'translateY(' + drag.dy + 'px)';
+    }, { passive: false });
+    function drag_end() {
+        var d = drag;
+        drag = null;
+        if (!d || !d.on || !open_menu) return;
+        if (d.dy > 90 || (Date.now() - d.t < 250 && d.dy > 30)) {
+            close_menu(true);
+        } else {
+            open_menu.menu.style.transition = 'transform 160ms ease-out';
+            open_menu.menu.style.transform = '';
+        }
+    }
+    document.addEventListener('touchend', drag_end);
+    document.addEventListener('touchcancel', drag_end);
+
+    // ---------- a row ----------
+    // o: {title, facts: [..] (joined with commas), chip: {label, state},
+    //     open: fn (the title; on phones the whole row), open_label,
+    //     actions: [{label, short, run, visible, danger, cls}], sub, cls,
+    //     extra: element below the facts}
+    // Visible actions show in the row on desktop and tablet, the others in
+    // "•••"; on phones all of them are in the sheet. Delete (danger) always
+    // goes into the menu, at its end.
+    function row(o) {
+        var r = el('div', 'pv-lrow' + (o.sub ? ' pv-lrow-sub' : '') + (o.chip && o.chip.state ? ' pv-state-' + o.chip.state : '') + (o.cls ? ' ' + o.cls : ''));
+        var main = el('div', 'pv-lrow-main');
+        r.appendChild(main);
+        if (o.chip) main.appendChild(el('span', 'pv-lchip' + (o.chip.state ? ' pv-lchip-' + o.chip.state : ''), o.chip.label));
+        var text = el('div', 'pv-lrow-text');
+        main.appendChild(text);
+        var title;
+        if (o.open) {
+            title = el('button', 'pv-lrow-title', o.title);
+            title.type = 'button';
+            title.addEventListener('click', function(e) { e.stopPropagation(); o.open(); });
+        } else {
+            title = el('span', 'pv-lrow-title', o.title);
+        }
+        text.appendChild(title);
+        var facts = (o.facts || []).filter(function(f) { return f !== null && f !== undefined && f !== ''; });
+        if (facts.length) text.appendChild(el('div', 'pv-lrow-facts', facts.join(', ')));
+        if (o.extra) text.appendChild(o.extra);
+
+        var actions = o.actions || [];
+        var bar = el('div', 'pv-lrow-actions');
+        actions.forEach(function(a) {
+            if (!a.visible || a.danger) return;
+            var b = el('button', 'pv-lact' + (a.cls ? ' ' + a.cls : ''));
+            b.type = 'button';
+            label_spans(b, a.label, a.short);
+            b.addEventListener('click', function(e) { e.stopPropagation(); a.run(); });
+            bar.appendChild(b);
+        });
+        if (actions.length) {
+            var more = el('button', 'pv-lmore');
+            more.type = 'button';
+            more.setAttribute('aria-haspopup', 'menu');
+            more.setAttribute('aria-expanded', 'false');
+            more.setAttribute('aria-label', 'Weitere Aktionen für »' + o.title + '«');
+            more.setAttribute('title', 'Weitere Aktionen');
+            more.textContent = '•••';
+            // desktop: what is not in the row; phones: everything
+            var rest = function() {
+                return PHONE.matches ? actions : actions.filter(function(a) { return !a.visible || a.danger; });
+            };
+            more.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // e.detail is 0 when Enter or Space "clicked" the button
+                show_menu(more, o.title, rest(), e.detail === 0);
+            });
+            bar.appendChild(more);
+            // nothing left for the menu on larger screens: only on phones
+            if (actions.every(function(a) { return a.visible && !a.danger; })) more.classList.add('pv-lmore-phone');
+        }
+        r.appendChild(bar);
+        if (o.open) {
+            var chev = el('span', 'pv-lrow-chev', '›');
+            chev.setAttribute('aria-hidden', 'true');
+            r.appendChild(chev);
+        }
+        return r;
+    }
+
+    // ---------- folding: "2 beendete Durchführungen anzeigen" ----------
+    // render(body) fills the folded part when it is opened the first time;
+    // o: {open (start open), on_toggle(open)}
+    function fold(parent, show_label, hide_label, render, o) {
+        o = o || {};
+        var b = el('button', 'pv-lfold', show_label);
+        b.type = 'button';
+        b.setAttribute('aria-expanded', 'false');
+        var body = el('div', 'pv-lfold-body');
+        body.hidden = true;
+        var done = false;
+        function toggle(open) {
+            if (open && !done) { done = true; render(body); }
+            body.hidden = !open;
+            b.setAttribute('aria-expanded', open ? 'true' : 'false');
+            b.textContent = open ? hide_label : show_label;
+        }
+        b.addEventListener('click', function() {
+            var open = body.hidden;
+            toggle(open);
+            if (o.on_toggle) o.on_toggle(open);
+        });
+        parent.appendChild(b);
+        parent.appendChild(body);
+        if (o.open) toggle(true);
+        return { button: b, body: body };
+    }
+
+    // ---------- a group with a heading (school year), foldable ----------
+    // o: {label, count (quiet, next to the label), folded (foldable, closed
+    //     at first), open (foldable, open at first), on_toggle(open), cls,
+    //     render(body): fills the group the first time it is opened}
+    function group(parent, o) {
+        var s = el('section', 'pv-lgroup' + (o.cls ? ' ' + o.cls : ''));
+        var h = el('h3', 'pv-lgroup-head');
+        s.appendChild(h);
+        var body = el('div', 'pv-lgroup-body');
+        var done = false;
+        var api = { section: s, body: body };
+        if (o.folded) {
+            var b = el('button', 'pv-lgroup-toggle');
+            b.type = 'button';
+            b.setAttribute('aria-expanded', 'false');
+            b.appendChild(el('span', 'pv-lgroup-label', o.label));
+            if (o.count) b.appendChild(el('span', 'pv-lgroup-count', o.count));
+            var chev = el('span', 'pv-lgroup-chev', '›');
+            chev.setAttribute('aria-hidden', 'true');
+            b.appendChild(chev);
+            h.appendChild(b);
+            body.hidden = true;
+            api.open = function() {
+                if (!body.hidden) return;
+                if (!done) { done = true; if (o.render) o.render(body); }
+                body.hidden = false;
+                b.setAttribute('aria-expanded', 'true');
+            };
+            b.addEventListener('click', function() {
+                var open = body.hidden;
+                if (open) api.open();
+                else { body.hidden = true; b.setAttribute('aria-expanded', 'false'); }
+                if (o.on_toggle) o.on_toggle(open);
+            });
+        } else {
+            h.appendChild(el('span', 'pv-lgroup-label', o.label));
+            if (o.count) h.appendChild(el('span', 'pv-lgroup-count', o.count));
+            done = true;
+            api.open = function() {};
+        }
+        s.appendChild(body);
+        parent.appendChild(s);
+        if (!o.folded && o.render) o.render(body);
+        else if (o.folded && o.open) api.open();
+        return api;
+    }
+
+    // ---------- loading in blocks of 50 ----------
+    // renders items[0..49], more on scroll (a sentinel at the end) or with
+    // the button below ("Ältere Termine laden"); o.keep: a name under which
+    // the list remembers how far it was shown when it is drawn again
+    var blocks_shown = {};
+    function blocks(parent, items, render, o) {
+        o = o || {};
+        var size = o.size || 50;
+        var shown = 0;
+        var first = o.keep && blocks_shown[o.keep] > size ? blocks_shown[o.keep] : size;
+        var list = el('div', 'pv-lblocks');
+        parent.appendChild(list);
+        var foot = el('div', 'pv-lblocks-foot');
+        var b = el('button', 'pv-lblocks-more', o.more || 'Ältere laden');
+        b.type = 'button';
+        foot.appendChild(b);
+        parent.appendChild(foot);
+        var observer = null;
+        function next(n) {
+            var end = Math.min(items.length, shown + (n || size));
+            for (var i = shown; i < end; i++) list.appendChild(render(items[i], i));
+            shown = end;
+            if (o.keep) blocks_shown[o.keep] = shown;
+            foot.hidden = shown >= items.length;
+            if (shown >= items.length && observer) { observer.disconnect(); observer = null; }
+        }
+        b.addEventListener('click', function() { next(); });
+        next(first);
+        if (shown < items.length && 'IntersectionObserver' in window) {
+            observer = new IntersectionObserver(function(entries) {
+                // only while the list is in view (not in a folded group)
+                if (entries.some(function(x) { return x.isIntersecting; }) && list.offsetParent !== null) next();
+            }, { rootMargin: '200px 0px' });
+            observer.observe(foot);
+        }
+        return { list: list, next: next, count: function() { return shown; } };
+    }
+
+    // ---------- the page: type "Liste mit Aktionen" ----------
+    // container: the page's .container – at most about 980 px wide on
+    // desktop, the title and the main action in one row (on phones the main
+    // action with its short label, "Neu"); extra: quiet buttons beside it.
+    function page(container, o) {
+        o = o || {};
+        container.classList.add('pv-page-list');
+        var h2 = container.querySelector('h2');
+        var head = el('div', 'pv-lhead');
+        if (h2) {
+            h2.parentNode.insertBefore(head, h2);
+            head.appendChild(h2);
+        }
+        var side = el('div', 'pv-lhead-actions');
+        head.appendChild(side);
+        (o.extra || []).forEach(function(b) { if (b) { b.classList.add('pv-lhead-quiet'); side.appendChild(b); } });
+        if (o.main) {
+            var label = o.main.textContent.replace(/\s+/g, ' ').trim();
+            var icon = o.main.querySelector('i');
+            o.main.textContent = '';
+            if (icon) o.main.appendChild(icon);
+            label_spans(o.main, label, o.short || 'Neu');
+            o.main.classList.add('pv-lhead-main');
+            side.appendChild(o.main);
+        }
+        // the dividers of today's layout
+        Array.prototype.forEach.call(container.querySelectorAll('hr'), function(hr) {
+            if (!hr.closest('.modal')) hr.hidden = true;
+        });
+        // errors of api_call need a place on the page
+        if (!document.querySelector('.api_messages')) {
+            var msg = el('div', 'api_messages');
+            msg.style.display = 'none';
+            head.parentNode.insertBefore(msg, head.nextSibling);
+        }
+        return head;
+    }
+
+    function confirm_delete(text, on_confirm, title) {
+        dashboardConfirm(text, on_confirm, { title: title || 'Löschen', confirm: 'Löschen', danger: true });
+    }
+
+    window.pv_list = {
+        row: row, fold: fold, group: group, blocks: blocks, page: page,
+        menu: show_menu, close_menu: close_menu, confirm_delete: confirm_delete,
+        school_year: school_year, school_year_label: school_year_label,
+        phone: function() { return PHONE.matches; }
+    };
+})();

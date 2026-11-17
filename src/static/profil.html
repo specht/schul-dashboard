@@ -604,7 +604,18 @@ window.addEventListener('load', function () {
         let mode = checked ? "dark" : "light";
         api_call('/api/set_dark_css', {mode: mode}, function(data) {
             if (data.success) {
-                if (typeof pv_reload_here === 'function' && pv_reload_here()) return;
+                // new design: switched in place – the mode's class and
+                // stylesheet, its colours from the server, the tiles' backdrops
+                if (document.body.classList.contains('ui-preview')) {
+                    document.body.classList.toggle('dark', checked);
+                    $('nav.navbar').toggleClass('navbar-dark', checked).toggleClass('navbar-light', !checked);
+                    let sheet = $('link[href="/dark.css"]');
+                    if (checked && sheet.length === 0) $('head').append('<link href="/dark.css" rel="stylesheet" />');
+                    if (!checked) sheet.remove();
+                    pv_apply_colours(color_scheme);
+                    pv_refresh_tiles();
+                    return;
+                }
                 location.reload();
             }
         });
@@ -657,6 +668,23 @@ window.addEventListener('load', function () {
         });
         return true;
     };
+    // new design: the tiles show the backdrop in the current mode (light /
+    // dark) – the schemes with one's pattern, the patterns with one's scheme
+    let pv_refresh_tiles = function() {
+        if (!document.body.classList.contains('ui-preview')) return;
+        let mode = document.body.classList.contains('dark') ? 'd' : 'l';
+        let pattern = color_scheme.substr(19, 1) || '0';
+        $('.swatches .swatch').each(function(_, el) {
+            let code = $(el).data('scheme');
+            if (!code) return;
+            let key = mode + code.substr(1, 18);
+            el.style.setProperty('--pv-bg', 'url(/gen/bg/bg-' + key + pattern + '.jpg), url(/gen/bg/bg-' + key + '0.svg)');
+        });
+        $('.style_swatches .swatch').each(function(i, el) {
+            $(el).css('background-image', 'url(/gen/bg/bg-' + mode + color_scheme.substr(1, 18) + i + '.jpg)');
+        });
+    };
+    window.addEventListener('load', function() { pv_refresh_tiles(); });
     let gradients = #{get_gradients().to_json()};
     // new design: only the curated set, and one's own current scheme
     let pv_curated = #{ui_preview? ? DesignTokens::CURATED.map(&:first).to_json : 'null'};
@@ -745,7 +773,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = $(e.target.closest('.btn')).data('scheme').substr(0, 19) + color_scheme[19];
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
-                if (data.success) pv_apply_colours(new_color_scheme);
+                if (data.success) { pv_apply_colours(new_color_scheme); setTimeout(pv_refresh_tiles, 0); }
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;
@@ -797,7 +825,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = color_scheme.substr(0, 19) + style;
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
-                if (data.success) pv_apply_colours(new_color_scheme);
+                if (data.success) { pv_apply_colours(new_color_scheme); setTimeout(pv_refresh_tiles, 0); }
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;

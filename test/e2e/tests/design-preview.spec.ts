@@ -732,19 +732,26 @@ test('Neues Design: Farbschema und Farbigkeit wirken sofort', async ({ page }, t
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
-  await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+
+// Light / dark in the profile: switched in place, the tiles show the
+// backdrops of the new mode
+test('Neues Design: hell und dunkel im Profil ohne Neuladen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Desktop reicht');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
   try {
     await page.goto('/profil');
-    const acc = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim());
-    const before = await acc();
-    const tile = page.locator('.swatches .swatch', { hasText: 'Gryffindor' });
-    await tile.scrollIntoViewIfNeeded();
-    const y = await page.evaluate(() => window.scrollY);
-    await Promise.all([page.waitForEvent('load'), tile.click()]);
-    await expect.poll(acc).not.toBe(before);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y - 40);
+    await page.waitForLoadState('load');
+    let loads = 0;
+    page.on('load', () => loads++);
+    const tileBg = () => page.locator('.swatches .swatch').first().evaluate((el) => getComputedStyle(el).getPropertyValue('--pv-bg'));
+    await page.locator('.toggle:has(#dark_css_switch)').click();
+    await expect(page.locator('body')).toHaveClass(/dark/);
+    await expect.poll(tileBg).toContain('/bg-d');
+    expect(loads).toBe(0);
   } finally {
-    await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

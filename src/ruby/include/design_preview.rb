@@ -271,6 +271,7 @@ class Main < Sinatra::Base
                             menu[0].style.transform = '';
                             menu[0].style.transition = '';
                             veil.prop('hidden', true);
+                            document.body.classList.remove('pv-sheet-open');
                             $('#bu_pv_more').attr('aria-expanded', 'false');
                         };
                         let close_menu = function () {
@@ -283,6 +284,7 @@ class Main < Sinatra::Base
                             } else {
                                 menu.collapse('show');
                                 veil.prop('hidden', false);
+                                document.body.classList.add('pv-sheet-open');
                                 e.currentTarget.setAttribute('aria-expanded', 'true');
                             }
                         });

@@ -605,6 +605,25 @@ test('Neues Design: Plan wählen am Handy', async ({ page }, testInfo) => {
     await page.waitForTimeout(400);
     const box = (await menu.boundingBox())!;
     expect(Math.abs(box.y + box.height - page.viewportSize()!.height)).toBeLessThan(2);
+    // like every sheet: a veil behind it; tapping it or pulling the sheet down closes it
+    await expect(page.locator('.pv-plan-veil')).toBeVisible();
+    await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
+    await expect(menu).toHaveCount(0);
+    await button.click();
+    await expect(menu).toBeVisible();
+    await page.waitForTimeout(400);
+    const top = (await menu.boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const x = top.x + top.width / 2, y = top.y + 10;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 25 }] });
+      await page.waitForTimeout(30);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(menu).toHaveCount(0);
+    await expect(page.locator('.pv-plan-veil')).toHaveCount(0);
+    await button.click();
     await menu.locator('.pv-plan-chip', { hasText: /^5a$/ }).click();
     await expect(menu).toHaveCount(0);
     await expect(page.locator('#pv_day_band .pv-band-plan')).toContainText('Plan 5a');

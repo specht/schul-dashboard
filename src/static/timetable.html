@@ -890,7 +890,7 @@ function render_preview_day_band(day, label, is_today) {
         let plan = $('<button type="button" class="pv-band-plan pv-plan-button" aria-haspopup="dialog">')
             .append($('<span>').text('Plan ' + (active || 'wählen')), $('<i class="fa fa-caret-down">'));
         plan.on('click', function(ev) {
-            if ($('.pv-plan-menu').length) $('.pv-plan-menu').remove(); else preview_open_plan_menu(ev.currentTarget);
+            if ($('.pv-plan-menu').length) preview_close_plan_menu(true); else preview_open_plan_menu(ev.currentTarget);
         });
         text.append(plan);
     }
@@ -959,8 +959,24 @@ function preview_plan_items() {
     return items;
 }
 
+// closes the plan menu; on phones it slides down first (a sheet like the others)
+function preview_close_plan_menu(animate) {
+    let menu = $('.pv-plan-menu');
+    if (menu.length === 0) return;
+    $('.pv-plan-veil').remove();
+    document.body.classList.remove('pv-sheet-open');
+    if (animate && !window.matchMedia('(min-width: 768px)').matches) {
+        menu[0].style.transition = 'transform 0.18s ease-in';
+        menu[0].style.transform = 'translateY(100%)';
+        setTimeout(function() { menu.remove(); }, 180);
+    } else {
+        menu.remove();
+    }
+}
+window.pv_close_plan_menu = preview_close_plan_menu;
+
 function preview_open_plan_menu(button) {
-    $('.pv-plan-menu').remove();
+    $('.pv-plan-menu, .pv-plan-veil').remove();
     let phone = !window.matchMedia('(min-width: 768px)').matches;
     let items = preview_plan_items();
     let expanded = {};
@@ -980,7 +996,7 @@ function preview_open_plan_menu(button) {
             let chips = $('<div class="pv-plan-chips">');
             for (let x of found) {
                 let chip = $('<button type="button" class="pv-plan-chip">').text(x.label).toggleClass('active', x.active);
-                chip.on('click', function() { menu.remove(); x.el.click(); });
+                chip.on('click', function() { preview_close_plan_menu(false); x.el.click(); });
                 chips.append(chip);
             }
             if (more > 0) {
@@ -995,7 +1011,7 @@ function preview_open_plan_menu(button) {
     if (input) {
         input.on('input', fill);
         input.on('keydown', function(e) {
-            if (e.key === 'Escape') { menu.remove(); button.focus(); }
+            if (e.key === 'Escape') { preview_close_plan_menu(false); button.focus(); }
             if (e.key === 'Enter') { let first = list.find('.pv-plan-chip').first(); if (first.length) first.click(); }
         });
         menu.append(input);
@@ -1003,11 +1019,18 @@ function preview_open_plan_menu(button) {
     menu.append(list);
     fill();
     // phones: a sheet on the page itself (redrawing the header must not close it)
-    if (phone) $('body').append(menu); else $(button).after(menu);
+    if (phone) {
+        // a veil behind it: tap it or pull the sheet down to close (preview.js)
+        let veil = $('<div class="pv-menu-veil pv-plan-veil">').on('click', function() { preview_close_plan_menu(true); });
+        $('body').append(veil, menu);
+        document.body.classList.add('pv-sheet-open');
+    } else {
+        $(button).after(menu);
+    }
     if (input) input.focus();
     setTimeout(function() {
         $(document).one('mousedown.pvplan', function(e) {
-            if (!$(e.target).closest('.pv-plan-menu, .pv-plan-button').length) menu.remove();
+            if (!$(e.target).closest('.pv-plan-menu, .pv-plan-button, .pv-plan-veil').length) preview_close_plan_menu(false);
         });
     }, 0);
 }
@@ -1040,7 +1063,7 @@ function render_preview_week_head() {
     if (preview_plan_items().length > 1) {
         let plan = $('<button type="button" class="pv-wh-btn pv-plan-button" aria-haspopup="dialog">').append($('<span>').text('Plan ' + (active || 'wählen')), $('<i class="fa fa-caret-down">'));
         plan.on('click', function(e) {
-            if ($('.pv-plan-menu').length) $('.pv-plan-menu').remove(); else preview_open_plan_menu(e.currentTarget);
+            if ($('.pv-plan-menu').length) preview_close_plan_menu(false); else preview_open_plan_menu(e.currentTarget);
         });
         tools.append($('<div class="pv-plan-wrap">').append(plan));
     }

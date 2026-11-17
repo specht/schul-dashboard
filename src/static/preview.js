@@ -21,9 +21,18 @@
             menu.style.width = (columns * 236) + 'px';
             height = menu.scrollHeight;
         }
-        var top = toggle.getBoundingClientRect().top - 8;
+        // the first entry level with the sidebar entry that opened the panel
+        var anchor = toggle.getBoundingClientRect();
+        menu.style.setProperty('--pv-menu-top', '0px');
+        var first = menu.querySelector('.dropdown-item');
+        var offset = 8;
+        if (first) {
+            var m = menu.getBoundingClientRect(), f = first.getBoundingClientRect();
+            offset = (f.top - m.top) + (f.height - anchor.height) / 2;
+        }
+        var top = anchor.top - offset;
         top = Math.max(12, Math.min(top, bottom - Math.min(height, room) - 12));
-        menu.style.setProperty('--pv-menu-top', top + 'px');
+        menu.style.setProperty('--pv-menu-top', Math.round(top) + 'px');
     }
 
     function place_open_menus() {
@@ -71,6 +80,13 @@
     document.addEventListener('touchstart', function(e) {
         sheet = null;
         if (SIDEBAR.matches || e.touches.length !== 1 || !e.target.closest) return;
+        // the plan menu (a sheet on phones), from the sheet or its veil
+        var plan = document.querySelector('.pv-plan-menu');
+        if (plan && (plan.contains(e.target) || e.target.classList.contains('pv-plan-veil'))) {
+            if (plan.contains(e.target) && plan.scrollTop > 0) return;
+            sheet = { plan: true, content: plan, y: e.touches[0].clientY, t: Date.now(), dragging: false, dy: 0 };
+            return;
+        }
         // the "Mehr" menu (a sheet on phones), from the sheet or its veil
         var menu = document.querySelector('.ui-preview #navbarTogglerDemo02.show');
         if (menu && (menu.contains(e.target) || e.target.classList.contains('pv-menu-veil'))) {
@@ -108,9 +124,14 @@
         var quick = Date.now() - s.t < 250 && s.dy > 30;
         if (s.dy > 90 || quick) {
             sheet_move(s.content, s.content.offsetHeight + 20, 180);
+            if (s.modal) s.modal.dataset.pvSliding = '1';
             setTimeout(function() {
                 if (s.menu) {
                     if (window.pv_menu_hide_now) window.pv_menu_hide_now();
+                    return;
+                }
+                if (s.plan) {
+                    if (window.pv_close_plan_menu) window.pv_close_plan_menu(false);
                     return;
                 }
                 if (window.jQuery) window.jQuery(s.modal).modal('hide');
@@ -122,4 +143,26 @@
     }
     document.addEventListener('touchend', sheet_end);
     document.addEventListener('touchcancel', sheet_end);
+
+    // Sheets close by sliding down, however they are closed ("Schließen",
+    // the veil, Escape): the dialog hides once the slide is over.
+    function slide_sheets_down() {
+        if (!window.jQuery) return;
+        var $ = window.jQuery;
+        $(document).on('hide.bs.modal', '.ui-preview .pv-sheet', function(e) {
+            if (SIDEBAR.matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            var modal = e.currentTarget;
+            if (modal.dataset.pvSliding === '1') { delete modal.dataset.pvSliding; return; }
+            var content = modal.querySelector('.modal-content');
+            if (!content) return;
+            e.preventDefault();
+            modal.dataset.pvSliding = '1';
+            sheet_move(content, content.offsetHeight + 20, 180);
+            setTimeout(function() {
+                $(modal).modal('hide');
+                setTimeout(function() { sheet_move(content, 0, 0); }, 50);
+            }, 180);
+        });
+    }
+    if (document.readyState === 'complete') slide_sheets_down(); else window.addEventListener('load', slide_sheets_down);
 })();

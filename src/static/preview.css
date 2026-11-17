@@ -2867,8 +2867,118 @@ body.ui-preview.dark::before {
     box-shadow: inset 3px 0 0 var(--pv-muted);
 }
 
-/* dark.css paints the Kursbuch's table area and side pane black */
-.ui-preview.dark .lc_table,
-.ui-preview.dark .lesson_pane {
+
+/* the plan sheet on phones above its veil; nothing floats over an open sheet */
+@media (max-width: 767px) {
+    .pv-plan-veil {
+        z-index: 8090;
+    }
+}
+
+body.pv-sheet-open #bu_design_quick_toggle {
+    display: none;
+}
+
+/* solid pages (Kursbuch, class lists) are calm surfaces all the way down: the
+   table is positioned absolutely and can be longer than the page panel, so
+   no backdrop behind it at all */
+body.ui-preview:has(.container-fluid.solid) {
+    background-image: none !important;
     background-color: var(--pv-surface) !important;
+}
+
+body.ui-preview:has(.container-fluid.solid)::before {
+    display: none;
+}
+
+.ui-preview .lc_table,
+.ui-preview .lesson_pane {
+    background-color: var(--pv-surface) !important;
+}
+
+/* ---------- Input groups: field and button as one unit ---------- */
+.ui-preview .input-group > .form-control:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.ui-preview .input-group > .input-group-append > .btn,
+.ui-preview .input-group > .input-group-append > .input-group-text {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
+    margin-left: -1px;
+}
+
+.ui-preview .input-group > .input-group-prepend > .btn,
+.ui-preview .input-group > .input-group-prepend > .input-group-text {
+    border-radius: 10px 0 0 10px !important;
+}
+
+.ui-preview .input-group > .form-control:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* a read-only address with its copy button: one calm pill */
+.ui-preview .input-group:has(.btn-clipboard) > .form-control[readonly] {
+    border: 1px solid var(--pv-line);
+    border-right: 0;
+}
+
+.ui-preview .input-group .btn-clipboard {
+    position: relative;
+    border: 1px solid var(--pv-line) !important;
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+}
+
+/* "copied": a check in the accent over the button (code: btn-clipboard-check) */
+.ui-preview .btn-clipboard-check {
+    position: absolute;
+    inset: -1px;
+    display: grid;
+    place-items: center;
+    border-radius: inherit;
+    background: var(--acc-soft) !important;
+    color: var(--acc-text) !important;
+    border: 0 !important;
+}
+
+/* disabled main buttons (e.g. "Code zusenden" before an address): quiet,
+   not a washed-out accent */
+.ui-preview #main_container .btn-primary:disabled,
+.ui-preview #main_container .btn-success:disabled {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+/* ---------- Scrollbars: thin, rounded, in the design's colours ---------- */
+.ui-preview,
+.ui-preview * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--pv-ink) 28%, transparent) transparent;
+}
+
+.ui-preview ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.ui-preview ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ui-preview ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--pv-ink) 28%, transparent);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+}
+
+.ui-preview ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--pv-ink) 45%, transparent);
 }

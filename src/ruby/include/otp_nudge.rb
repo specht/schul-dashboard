@@ -22,8 +22,8 @@ OTP_STATS_CACHE_SECONDS = 600
 
 class Main < Sinatra::Base
     # Teachers who have used the dashboard, and how many of them have a code
-    # app – for "Schon 50 von 81 Lehrkräften …". Cached for a few minutes:
-    # the login page asks for it.
+    # app – for "Schon 50 von 81 Lehrkräften …", shown to logged-in teachers
+    # only (start page panel, /otp). Cached for a few minutes.
     @@otp_teacher_stats = nil
 
     def otp_teacher_stats
@@ -67,7 +67,8 @@ class Main < Sinatra::Base
             io.puts "<div class='otp-nudge' data-kind='#{kind}'>"
             io.puts "<div class='otp-nudge-icon'><i class='fa fa-qrcode'></i></div>"
             io.puts "<div>"
-            io.puts "<p>#{why} #{otp_stats_sentence}</p>"
+            # no usage numbers here: the login page is shown before anyone is logged in
+            io.puts "<p>#{why}</p>"
             io.puts "<a href='/otp' target='_blank' class='btn btn-sm btn-outline-secondary'>So funktioniert die Authenticator-App&nbsp;<i class='fa fa-angle-double-right'></i></a>"
             io.puts "</div>"
             io.puts "</div>"

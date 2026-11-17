@@ -257,8 +257,9 @@ die Verbindung wird getrennt und die Codes gehen wieder per E-Mail.
   gerade nicht erreichbar ist. Auf der Startseite erinnert eine Kachel
   Lehrkräfte, die SMS ohne App nutzen, und schlägt denen, die eine App
   haben, aber SMS als Standard, die Umstellung auf »Code per E-Mail« vor
-  (»Später« blendet sie 30 Tage aus). Die Zahl der Lehrkräfte mit App
-  zählt alle, die das Dashboard schon benutzt haben.
+  (»Später« blendet sie 30 Tage aus). Wie viele Lehrkräfte schon eine App
+  nutzen, sehen nur angemeldete Lehrkräfte (Kachel und `/otp`), nicht die
+  Anmeldeseite; gezählt werden alle, die das Dashboard schon benutzt haben.
 - **Gateway offline:** Lehrkräfte ohne App können sich dann nicht anmelden
   (der erste Code kommt per E-Mail, der zweite Faktor wäre die SMS). Hat
   zwei Minuten lang kein Gateway geantwortet, zeigt die Anmeldeseite allen

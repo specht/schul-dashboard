@@ -118,9 +118,7 @@
             Statt auf eine SMS zu warten, kannst du dir deinen Anmeldecode von einer App auf deinem Handy anzeigen lassen.
             Der Code ist sofort da, funktioniert auch ohne Netz – und auch dann, wenn der SMS-Versand gerade ausfällt.
         </p>
-        <div class='otp-stats' style='#{otp_stats_sentence.empty? ? 'display: none;' : ''}'>
-            <i class='fa fa-users'></i>&nbsp;&nbsp;#{otp_stats_sentence}
-        </div>
+        #{(teacher_logged_in? && !otp_stats_sentence.empty?) ? "<div class='otp-stats'><i class='fa fa-users'></i>&nbsp;&nbsp;#{otp_stats_sentence}</div>" : ''}
 
         <h3>In drei Schritten eingerichtet</h3>
         <ol class='otp-steps'>

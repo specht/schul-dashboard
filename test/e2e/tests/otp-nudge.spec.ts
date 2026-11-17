@@ -26,6 +26,9 @@ test('Authenticator-App: Erklärseite ohne Anmeldung, mit Apps und Einrichtung',
   else await expect(qr).toBeVisible();
   // the setup link only for people who are logged in
   await expect(page.locator('#bu_otp_setup')).toBeHidden();
+  // how many teachers use a code app is internal: not on the public page
+  await expect(page.locator('.otp-stats')).toHaveCount(0);
+  expect(await page.content()).not.toMatch(/von \d+ Lehrkräften/);
   await login(page, ACCOUNTS.teacher);
   await page.goto('/otp');
   await expect(page.locator('#bu_otp_setup')).toBeVisible();
@@ -48,7 +51,8 @@ test('Authenticator-App: Hinweis beim Warten auf die SMS und auf der Startseite'
     await expect(hint).toBeHidden();
     await expect(hint).toBeVisible({ timeout: 8_000 });
     await expect(hint).toContainText('Warten auf die SMS?');
-    await expect(hint).toContainText(/Schon \d+ von \d+ Lehrkräften/);
+    // not logged in yet: no internal numbers
+    await expect(hint).not.toContainText(/von \d+ Lehrkräften/);
     await expect(hint.locator('a[href="/otp"]')).toBeVisible();
 
     await page.locator('#code').fill(codeIn(await gateway.next()));
@@ -95,11 +99,13 @@ test('Authenticator-App: Hinweis, wenn der SMS-Versand nicht erreichbar ist', as
   const hint = page.locator('#login_hint');
   await expect(hint).toContainText('Der SMS-Versand ist gerade nicht erreichbar');
   await expect(hint).toContainText('diesmal per E-Mail');
+  await expect(hint).not.toContainText(/von \d+ Lehrkräften/);
 
   await page.locator('#code').fill(await waitForMailedCode(person));
   await page.locator('#submit').click();
   await expect(page.locator('#div_forced_2fa')).toBeVisible();
   await expect(hint).toContainText('keinen zweiten Code schicken');
+  await expect(hint).not.toContainText(/von \d+ Lehrkräften/);
   await expect(hint.locator('a[href="/otp"]')).toBeVisible();
   await expect(page.locator('#div_forced_2fa')).not.toContainText('keinen zweiten Faktor hinterlegt');
 });

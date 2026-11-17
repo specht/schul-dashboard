@@ -3,12 +3,11 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 // Neues Design (Vorschau): switched on in the profile – for now by admins only
 // (UI_PREVIEW_FOR in include/design_preview.rb). Then the template loads the
 // colour tokens from the colour scheme and the preview styles, and a button
-// collects feedback. Switching back asks one optional question. Admins see the
-// feedback on /design_feedback.
+// collects feedback (admins see it on /design_feedback).
 
 const toggle = '.toggle:has(#ui_preview_switch)';
 
-test('Neues Design: Admin schaltet die Vorschau ein, gibt Feedback, wechselt zurück', async ({ page }, testInfo) => {
+test('Neues Design: Admin schaltet die Vorschau ein, gibt Feedback, schaltet sie wieder aus', async ({ page }, testInfo) => {
   const marker = `Vorschau-Test ${testInfo.project.name} ${Date.now()}`;
   await login(page, ACCOUNTS.admin);
   // a leftover from an earlier run must not get in the way
@@ -39,34 +38,20 @@ test('Neues Design: Admin schaltet die Vorschau ein, gibt Feedback, wechselt zur
   await expect(dialog).toBeHidden();
   expect((await page.request.post('/api/design_feedback', { data: { text: 'x', page: '/', device: 'tablet' } })).status()).not.toBe(200);
 
-  // switching off, then thinking better of it: stays on
+  // switching back takes effect at once, without a question
   await page.goto('/profil');
   await page.locator(toggle).click();
-  const leave = page.locator('#uiPreviewLeaveModal');
-  await expect(leave).toBeVisible();
-  await leave.getByRole('button', { name: 'Abbrechen' }).click();
-  await expect(leave).toBeHidden();
-  await expect(page.locator('#ui_preview_switch')).toBeChecked();
-  await page.reload();
-  await expect(page.locator('body')).toHaveClass(/ui-preview/);
-
-  // switching back, with a reason
-  await page.locator(toggle).click();
-  await expect(leave).toBeVisible();
-  await leave.locator('#ti_ui_preview_reason').fill(`${marker} – zurück`);
-  await leave.getByRole('button', { name: 'Zurückwechseln' }).click();
   await page.waitForLoadState('load');
   await expect(page.locator('body')).not.toHaveClass(/ui-preview/);
   await expect(page.locator('#design_tokens')).toHaveCount(0);
   await expect(page.locator('#bu_design_feedback')).toHaveCount(0);
 
-  // the feedback page lists both
+  // the feedback page lists it
   await page.goto('/design_feedback');
-  const row = page.locator('.design-feedback-table tr', { hasText: marker }).filter({ hasNotText: 'zurück' });
+  const row = page.locator('.design-feedback-table tr', { hasText: marker });
   await expect(row).toContainText('Lehrkraft');
   await expect(row).toContainText('/profil');
   await expect(row).toContainText(ACCOUNTS.admin);
-  await expect(page.locator('.design-feedback-table tr', { hasText: `${marker} – zurück` })).toContainText('Zurück zum alten Design');
   await expect(page.locator('.design-feedback-counts')).toContainText('ausprobiert und wieder abgeschaltet');
 });
 
@@ -150,9 +135,15 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       expect(search.y).toBeGreaterThan(viewport.height / 2);
       expect(search.y).toBeLessThan(profile.y);
       expect(profile.y - (search.y + search.height)).toBeLessThan(30);
-      // menus open in place
+      // menus open in place, at full length: no scroll area of their own
       await page.locator('#navbarDropdownProfile').click();
       await expect(nav.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();
+      await page.locator('#navbarDropdownAdmin').click();
+      const adminMenu = nav.locator('[aria-labelledby="navbarDropdownAdmin"]');
+      await expect(adminMenu).toBeVisible();
+      expect(await adminMenu.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+      // long names wrap instead of being cut off
+      expect(await adminMenu.locator('.dropdown-item').evaluateAll((els) => els.every((el) => el.scrollWidth <= el.clientWidth + 1))).toBe(true);
     } else {
       const tabs = page.locator('.pv-tabbar');
       await expect(tabs).toBeVisible();
@@ -262,7 +253,81 @@ test('Neues Design: Fächer im Stundenplan in ihren Farben', async ({ page }, te
     }));
     expect(after.ma).toBe(hex2rgb(tokens.ma));
     expect(after.la).toBe(hex2rgb(tokens.la));
+    // readable: white text on the subject colours in light mode (they are
+    // computed for it), not the scheme's text colour
+    const text = await page.locator('.fc-event', { hasText: 'Mathematik' }).first().locator('.fc-event-main')
+      .evaluate((el) => getComputedStyle(el).color);
+    expect(text).toBe('rgb(255, 255, 255)');
+    // a substitution takes the colour of the subject that takes place
+    const swapped = await page.evaluate(() => {
+      const w = window as unknown as { preview_subject_color: (e: object) => string | null };
+      return {
+        ma: w.preview_subject_color({ lesson: true, label_short: '<s><b>La</b></s> <b>Ma</b> (9c)' }),
+        la: w.preview_subject_color({ lesson: true, label_short: '<s><b>Ma</b></s> <b>La</b> (9c)' }),
+      };
+    });
+    expect(swapped.ma).toBe(tokens.ma.trim());
+    expect(swapped.la).toBe(tokens.la.trim());
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
+});
+
+// Timetable: the grid shows the school day instead of 7:00 to 22:00
+test('Neues Design: Stundenplan zeigt nur den Schultag', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const grid = async () => {
+    await page.goto('/');
+    await expect(page.locator('.fc-event').first()).toBeVisible();
+    await page.waitForTimeout(300);
+    return page.evaluate(() => {
+      const labels = [...document.querySelectorAll('.fc-timegrid-slot-label[data-time]')].map((el) => el.getAttribute('data-time')!);
+      return { first: labels[0], last: labels[labels.length - 1], height: document.getElementById('calendar')!.offsetHeight };
+    });
+  };
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  const before = await grid();
+  expect(before.first).toBe('07:00:00');
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    const after = await grid();
+    expect(after.first > '07:00:00').toBe(true);
+    expect(after.last < '21:30:00').toBe(true);
+    expect(after.height).toBeLessThan(before.height * 0.8);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Quick switch for admins who want it: one button in both designs
+test('Neues Design: Schnellumschalter für Admins', async ({ page, newUserPage }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.request.post('/api/set_ui_preview_quick', { data: { mode: 'off' } });
+  await page.goto('/profil');
+  await expect(page.locator('#bu_design_quick_toggle')).toHaveCount(0);
+  await page.locator('.toggle:has(#ui_preview_quick_switch)').click();
+  await page.waitForLoadState('load');
+  try {
+    const quick = page.locator('#bu_design_quick_toggle');
+    await expect(quick).toHaveAttribute('aria-label', 'Zum neuen Design wechseln');
+    await quick.click();
+    await page.waitForLoadState('load');
+    await expect(page.locator('body')).toHaveClass(/ui-preview/);
+    await expect(quick).toHaveAttribute('aria-label', 'Zum bisherigen Design wechseln');
+    await quick.click();
+    await page.waitForLoadState('load');
+    await expect(page.locator('body')).not.toHaveClass(/ui-preview/);
+    await expect(quick).toHaveAttribute('aria-label', 'Zum neuen Design wechseln');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    await page.request.post('/api/set_ui_preview_quick', { data: { mode: 'off' } });
+  }
+  // others get neither the setting nor the button
+  const teacher = await newUserPage();
+  await login(teacher, ACCOUNTS.teacher);
+  expect((await teacher.request.post('/api/set_ui_preview_quick', { data: { mode: 'on' } })).status()).not.toBe(200);
+  await teacher.goto('/profil');
+  await expect(teacher.locator('#ui_preview_quick_switch')).toBeHidden();
+  await expect(teacher.locator('#bu_design_quick_toggle')).toHaveCount(0);
 });

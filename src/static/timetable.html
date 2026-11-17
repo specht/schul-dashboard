@@ -4,6 +4,11 @@
         color: #{@session_user[:dark] ? '#fff' : color_palette[:main_text]};
     }
 
+    /* new design (preview): the text colour that belongs to the subject colour */
+    .ui-preview .fc-v-event.pv-subject .fc-event-main, .ui-preview .fc-h-event.pv-subject .fc-event-main {
+        color: inherit;
+    }
+
     .cem span {
         background-color: #{color_palette[:is_light] ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)'};
         /* background-color: rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2); */
@@ -456,8 +461,34 @@ function refresh_jitsi_presence() {
     });
 }
 
+// Neues Design (Vorschau): the grid shows the school day of the week shown
+// (earliest to latest lesson, at least 8:00–14:00) instead of 7:00–22:00
+function preview_time_range(events) {
+    if (!document.body || !document.body.classList.contains('ui-preview') || !window.calendar) return;
+    let minutes = function(t) { return parseInt(t.substr(11, 2), 10) * 60 + parseInt(t.substr(14, 2), 10); };
+    let lo = 8 * 60, hi = 14 * 60;
+    for (let e of events) {
+        if (!e.lesson || !e.start || !e.end || e.start.length < 16) continue;
+        lo = Math.min(lo, Math.floor(minutes(e.start) / 30) * 30);
+        hi = Math.max(hi, Math.ceil(minutes(e.end) / 30) * 30);
+    }
+    let fmt = function(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+    let from = fmt(lo), to = fmt(Math.min(hi, 24 * 60 - 30));
+    if (window.timetable_options) {
+        window.timetable_options.slotMinTime = from;
+        window.timetable_options.slotMaxTime = to;
+    }
+    if (window.calendar.getOption('slotMinTime') !== from || window.calendar.getOption('slotMaxTime') !== to) {
+        setTimeout(function() {
+            window.calendar.setOption('slotMinTime', from);
+            window.calendar.setOption('slotMaxTime', to);
+        }, 0);
+    }
+}
+
 function render_timetable(result, successCallback) {
     events = result.events;
+    preview_time_range(events);
     $('.switch_week_panel').empty();
     if ((!tablet_logged_in) && (teacher_logged_in || '#{(schueler_logged_in? && WECHSELUNTERRICHT_KLASSENSTUFEN.include?(@session_user[:klasse].to_i))}' === 'true')) {
         if (typeof(result.switch_week) !== 'undefined' && result.switch_week !== null) {
@@ -594,14 +625,21 @@ var timetable_id = '#{timetable_id}';
 function preview_subject_color(event) {
     if (!document.body || !document.body.classList.contains('ui-preview')) return null;
     if (!event.lesson || event.is_event || event.entfall || event.pausenaufsicht) return null;
-    let code = $('<div>').html(event.label_short || '').text().trim().split(/[\s_\-(]/)[0].toLowerCase();
+    // the subject that takes place: crossed-out parts are what was planned
+    // ("<s>La</s> Ma" in a substitution is Mathematik)
+    let label = $('<div>').html(event.label_short || '');
+    label.find('s, del, strike').remove();
+    let code = label.text().trim().split(/[\s_\-(]/)[0].toLowerCase();
     if (!code) return null;
     return getComputedStyle(document.documentElement).getPropertyValue('--subj-' + code).trim() || null;
 }
 
-// light subject colours in dark mode: dark text on them
+// text on the subject colours: they are computed for white text in light
+// mode and for dark text in dark mode (design_tokens.rb)
 function preview_text_color(event) {
-    if (preview_subject_color(event) && document.body.classList.contains('dark')) event.textColor = '#0a1222';
+    if (!preview_subject_color(event)) return;
+    event.textColor = document.body.classList.contains('dark') ? '#0a1222' : '#ffffff';
+    event.classNames = (event.classNames || []).concat(['pv-subject']);
 }
 
 function timetable_event_color(event) {
@@ -1114,7 +1152,8 @@ document.addEventListener('DOMContentLoaded', function() {
         nowIndicator: true,
         expandRows: true,
         locale: 'de',
-        height: (!!window.chrome) ? 1330 : 1350,
+        // the new design (preview): only as high as the school day needs
+        height: document.body.classList.contains('ui-preview') ? 'auto' : ((!!window.chrome) ? 1330 : 1350),
         initialDate: initial_date,
         events: function(info, successCallback, failureCallback) {
             if (fixed_timetable_data !== null) {
@@ -1949,6 +1988,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    window.timetable_options = options;
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     window.calendar.render();
     // phones (day view): swipe left/right for the next/previous day, the day

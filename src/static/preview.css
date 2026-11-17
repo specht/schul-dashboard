@@ -101,6 +101,35 @@ html {
     color: var(--acc-text);
 }
 
+/* Menus in the sidebar and the "Mehr" sheet: at full length (only the
+   sidebar scrolls, no scroll area inside a scroll area), long names wrap
+   with German hyphenation instead of being cut off. */
+.ui-preview .navbar .dropdown-menu {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+.ui-preview .navbar .dropdown-item {
+    max-width: none !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    font-size: 0.92em;
+    line-height: 1.25;
+}
+
+/* many items in a menu share one icon (all courses): keep it quiet */
+.ui-preview .navbar .dropdown-item.nav-icon .icon {
+    color: var(--pv-muted);
+    opacity: 0.6;
+}
+
+.ui-preview .navbar .dropdown-divider {
+    margin: 4px 10px;
+    border-color: var(--pv-line);
+}
+
 /* the separate search button of today's phone header: in the new frame the
    sidebar (desktop) or the tab bar (phone) offers the search */
 .ui-preview .nav-quick-search-nav {
@@ -115,7 +144,7 @@ html {
 @media (min-width: 768px) {
     .ui-preview {
         padding-top: 0;
-        padding-left: 248px;
+        padding-left: 264px;
     }
 
     .ui-preview .navbar {
@@ -124,7 +153,7 @@ html {
         bottom: 0;
         left: 0;
         right: auto;
-        width: 248px;
+        width: 264px;
         flex-direction: column;
         flex-wrap: nowrap;
         align-items: stretch;
@@ -252,15 +281,14 @@ html {
         box-shadow: none;
         background: transparent;
         margin: 2px 0 6px;
-        padding: 0 0 0 20px;
+        padding: 0 0 0 12px;
         min-width: 0;
     }
 
     .ui-preview .navbar .dropdown-item {
         border-radius: 8px;
-        padding: 6px 10px;
+        padding: 5px 8px;
         color: var(--pv-ink);
-        white-space: normal;
     }
 
     .ui-preview .navbar .dropdown-item:hover {
@@ -268,11 +296,11 @@ html {
     }
 
     .ui-preview .foot {
-        left: 248px;
+        left: 264px;
     }
 
     .ui-preview .design-feedback-button {
-        left: calc(248px + 12px);
+        left: calc(264px + 12px);
     }
 }
 

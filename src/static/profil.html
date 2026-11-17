@@ -147,6 +147,15 @@
                             <input #{@session_user[:ui_preview] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="an" data-off="aus" data-onstyle="secondary" data-offstyle="secondary" id='ui_preview_switch'>
                         </div>
                     </div>
+                    <div class="col-md-12" style="margin-top: 0.75em; #{(admin_logged_in? && ui_preview_allowed?) ? '' : 'display: none;'}">
+                        <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 1em;">
+                            <div>
+                                <label for="ui_preview_quick_switch" style="margin: 0; font-weight: bold;">Schnellumschalter anzeigen</label>
+                                <div class="text-muted" style="font-size: 0.9em;">Ein Knopf unten rechts auf jeder Seite wechselt mit einem Klick zwischen bisherigem und neuem Design (nur für Admins).</div>
+                            </div>
+                            <input #{@session_user[:ui_preview_quick] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="an" data-off="aus" data-onstyle="secondary" data-offstyle="secondary" id='ui_preview_quick_switch'>
+                        </div>
+                    </div>
                 </div>
             </div>
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbeinstellungen</h2>
@@ -260,21 +269,6 @@
 </div>
 
 <div class='api_messages' style='display: none; position: fixed; left: 100px; right: 100px; top: 100px; z-index:300000;'></div>
-<div class="modal" id="uiPreviewLeaveModal" tabindex="-1" role="dialog" aria-labelledby="uiPreviewLeaveTitle">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title" id="uiPreviewLeaveTitle">Zurück zum bisherigen Design</h5></div>
-            <div class="modal-body">
-                <label for="ti_ui_preview_reason">Was hat gefehlt oder gestört? (freiwillig)</label>
-                <textarea class="form-control" id="ti_ui_preview_reason" rows="3" maxlength="2000"></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Abbrechen</button>
-                <button type="button" class="btn btn-primary" id="bu_ui_preview_leave">Zurückwechseln</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="modal" id="phone_modal" tabindex="-1" role="dialog" aria-hidden="true" style='z-index: 200000;'>
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -570,30 +564,15 @@ window.addEventListener('load', function () {
             }
         });
     });
-    // Neues Design (Vorschau): on at once; off asks one optional question first
-    let ui_preview_restoring = false, ui_preview_leaving = false;
+    // Neues Design (Vorschau): switching on and off takes effect at once
     $('#ui_preview_switch').change(function(e) {
-        if (ui_preview_restoring) return;
-        if ($(e.currentTarget).is(':checked')) {
-            api_call('/api/set_ui_preview', {mode: 'on'}, function(data) {
-                if (data.success) location.reload();
-            });
-        } else {
-            $('#uiPreviewLeaveModal').modal('show');
-        }
-    });
-    $('#uiPreviewLeaveModal').on('shown.bs.modal', function() { $('#ti_ui_preview_reason').focus(); });
-    $('#uiPreviewLeaveModal').on('hidden.bs.modal', function() {
-        if (ui_preview_leaving) return;
-        ui_preview_restoring = true;
-        $('#ui_preview_switch').bootstrapToggle('on');
-        ui_preview_restoring = false;
-    });
-    $('#bu_ui_preview_leave').click(function() {
-        ui_preview_leaving = true;
-        api_call('/api/set_ui_preview', {mode: 'off', reason: $('#ti_ui_preview_reason').val().trim()}, function(data) {
+        api_call('/api/set_ui_preview', {mode: $(e.currentTarget).is(':checked') ? 'on' : 'off'}, function(data) {
             if (data.success) location.reload();
-            else ui_preview_leaving = false;
+        });
+    });
+    $('#ui_preview_quick_switch').change(function(e) {
+        api_call('/api/set_ui_preview_quick', {mode: $(e.currentTarget).is(':checked') ? 'on' : 'off'}, function(data) {
+            if (data.success) location.reload();
         });
     });
     $('#design_css_switch').change(function(e) {

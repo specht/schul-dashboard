@@ -238,3 +238,77 @@ class Main < Sinatra::Base
         end
     end
 end
+
+class Main < Sinatra::Base
+    # Quick switch between the designs, for admins who want it (setting in the
+    # profile): a button on every page, in both designs, to check that today's
+    # design keeps working while the new one grows.
+    def ui_preview_quick?
+        admin_logged_in? && ui_preview_allowed? && !!(@session_user || {})[:ui_preview_quick]
+    end
+
+    post '/api/set_ui_preview_quick' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:mode])
+        assert(%w(on off).include?(data[:mode]))
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :on => data[:mode] == 'on')
+            MATCH (u:User {email: $email})
+            SET u.ui_preview_quick = $on;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    def design_quick_toggle_html
+        return '' unless ui_preview_quick?
+        on = ui_preview?
+        label = on ? 'Zum bisherigen Design wechseln' : 'Zum neuen Design wechseln'
+        <<~END_OF_HTML
+            <button type="button" class="design-quick-toggle#{on ? ' on' : ''}" id="bu_design_quick_toggle" title="#{label}" aria-label="#{label}"><i class="fa fa-exchange"></i></button>
+            <style>
+                .design-quick-toggle {
+                    position: fixed;
+                    right: max(12px, env(safe-area-inset-right, 0px));
+                    bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+                    z-index: 100002;
+                    width: 34px;
+                    height: 34px;
+                    display: grid;
+                    place-items: center;
+                    border: 1px solid rgba(0, 0, 0, 0.15);
+                    border-radius: 50%;
+                    padding: 0;
+                    font-size: 15px;
+                    opacity: 0.75;
+                    background: #fff;
+                    color: #131b26;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                    cursor: pointer;
+                }
+                .design-quick-toggle:hover, .design-quick-toggle:focus-visible {
+                    opacity: 1;
+                }
+                body.dark .design-quick-toggle {
+                    background: #161d27;
+                    color: #e6ebf2;
+                    border-color: rgba(255, 255, 255, 0.2);
+                }
+                @media (max-width: 767px) {
+                    .ui-preview .design-quick-toggle {
+                        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+                    }
+                }
+            </style>
+            <script>
+                window.addEventListener('load', function () {
+                    $('#bu_design_quick_toggle').on('click', function (e) {
+                        e.currentTarget.disabled = true;
+                        api_call('/api/set_ui_preview', {mode: '#{on ? 'off' : 'on'}'}, function (data) {
+                            if (data.success) location.reload();
+                            else e.currentTarget.disabled = false;
+                        });
+                    });
+                });
+            </script>
+        END_OF_HTML
+    end
+end

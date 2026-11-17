@@ -78,8 +78,7 @@ or unused here although they matter; check before retiring anything.
    "Mehr" on phones, quick search), feedback, and the test setup:
    - *Feedback:* a button in the new shell with one line of text; page,
      device, light/dark, scheme and role are saved with it, a name only if
-     the person agrees to be contacted. Switching back asks one optional
-     question ("Was hat gefehlt oder gestört?"). An admin page lists the
+     the person agrees to be contacted. An admin page lists the
      feedback by page and role and shows how many opted in and out. Feedback
      is deleted after the opt-in phase.
    - *Tests:* Playwright projects for the new shell (desktop and phone) run

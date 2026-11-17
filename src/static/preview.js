@@ -626,7 +626,46 @@
             foot_list.appendChild(li);
         } else collapse.querySelector('.navbar-nav').appendChild(line);
     }
-    function later() { more_search(); weekday_columns(); help_tile(); legal_line(); }
+    // phones, "Mehr": tiles fill their rows. The grids have six columns, a
+    // tile spans two; a row that isn't full spreads its tiles: two left over
+    // take half the width each, one left over turns the last four into two
+    // rows of two (never a lonely tile). Separators start a new group.
+    function balance_tiles() {
+        var shown = function(el) { return getComputedStyle(el).display !== 'none'; };
+        var by_order = function(a, b) { return (parseInt(getComputedStyle(a).order, 10) || 0) - (parseInt(getComputedStyle(b).order, 10) || 0); };
+        var apply = function(run, per_row) {
+            run.forEach(function(el) { el.classList.remove('pv-span-2', 'pv-span-3', 'pv-span-6'); el.classList.add(per_row === 2 ? 'pv-span-3' : 'pv-span-2'); });
+            var n = run.length, rest = n % per_row;
+            if (rest === 0) return;
+            var wide = function(list, cls) { list.forEach(function(el) { el.classList.remove('pv-span-2', 'pv-span-3'); el.classList.add(cls); }); };
+            if (per_row === 2 || n === 1) { wide([run[n - 1]], 'pv-span-6'); return; }
+            if (rest === 2) wide(run.slice(n - 2), 'pv-span-3');
+            else wide(run.slice(Math.max(0, n - 4)), 'pv-span-3');
+        };
+        var groups = function(holder, is_tile, per_row, sort) {
+            if (!holder) return;
+            var run = [];
+            var kids = Array.prototype.slice.call(holder.children).filter(shown);
+            if (sort) kids.sort(by_order);
+            kids.forEach(function(el) {
+                if (is_tile(el)) run.push(el);
+                else { if (run.length) apply(run, per_row); run = []; }
+            });
+            if (run.length) apply(run, per_row);
+        };
+        var collapse = document.querySelector('.ui-preview #navbarTogglerDemo02');
+        if (!collapse) return;
+        groups(collapse.querySelector('.navbar-nav:not(.pv-nav-foot)'), function(el) {
+            return el.classList.contains('nav-item') && !el.classList.contains('dropdown') && !el.classList.contains('pv-nav-section') && !el.classList.contains('nav-quick-search-item') && !el.classList.contains('pv-more-search');
+        }, 3, false);
+        collapse.querySelectorAll('.pv-nav-body').forEach(function(body) {
+            groups(body, function(el) { return el.classList.contains('pv-nav-entry'); }, 3, false);
+        });
+        groups(collapse.querySelector('[aria-labelledby="navbarDropdownProfile"]'), function(el) {
+            return el.classList.contains('dropdown-item') && !el.classList.contains('switch-session');
+        }, 2, true);
+    }
+    function later() { more_search(); weekday_columns(); help_tile(); legal_line(); balance_tiles(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });
 })();
 

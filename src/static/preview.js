@@ -71,6 +71,13 @@
     document.addEventListener('touchstart', function(e) {
         sheet = null;
         if (SIDEBAR.matches || e.touches.length !== 1 || !e.target.closest) return;
+        // the "Mehr" menu (a sheet on phones), from the sheet or its veil
+        var menu = document.querySelector('.ui-preview #navbarTogglerDemo02.show');
+        if (menu && (menu.contains(e.target) || e.target.classList.contains('pv-menu-veil'))) {
+            if (menu.contains(e.target) && menu.scrollTop > 0) return;
+            sheet = { menu: true, content: menu, y: e.touches[0].clientY, t: Date.now(), dragging: false, dy: 0 };
+            return;
+        }
         // on the sheet or on the veil above it
         var modal = e.target.closest('.pv-sheet.show');
         if (!modal) return;
@@ -102,6 +109,10 @@
         if (s.dy > 90 || quick) {
             sheet_move(s.content, s.content.offsetHeight + 20, 180);
             setTimeout(function() {
+                if (s.menu) {
+                    if (window.pv_menu_hide_now) window.pv_menu_hide_now();
+                    return;
+                }
                 if (window.jQuery) window.jQuery(s.modal).modal('hide');
                 setTimeout(function() { sheet_move(s.content, 0, 0); }, 50);
             }, 180);

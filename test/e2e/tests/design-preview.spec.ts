@@ -176,6 +176,21 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await expect(menu).toContainText('Administration');
       await tabs.locator('#bu_pv_more').click();
       await expect(menu).toBeHidden();
+      // like the lesson sheet: a veil behind it; pulled down, it closes
+      await tabs.locator('#bu_pv_more').click();
+      await expect(menu).toHaveClass(/\bshow\b/);
+      await expect(page.locator('.pv-menu-veil')).toBeVisible();
+      const sheet = (await menu.boundingBox())!;
+      const cdp = await page.context().newCDPSession(page);
+      const x = sheet.x + sheet.width / 2, y = sheet.y + 8;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      for (let i = 1; i <= 8; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 25 }] });
+        await page.waitForTimeout(30);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await expect(menu).toBeHidden();
+      await expect(page.locator('.pv-menu-veil')).toBeHidden();
       // "Suchen" opens the search
       await tabs.locator('#bu_pv_search').click();
       await expect(page.locator('#ti_quick_search')).toBeVisible();

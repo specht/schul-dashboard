@@ -430,6 +430,23 @@ html {
         z-index: 7500;
     }
 
+    /* slides up like the lesson sheet, down again when closing (design_preview.rb) */
+    .ui-preview .navbar .navbar-collapse.show {
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .ui-preview .navbar .navbar-collapse.show.pv-closing {
+        transform: translateY(100%);
+        transition: transform 0.18s ease-in;
+    }
+
+    .pv-menu-veil {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: rgba(0, 0, 0, 0.4);
+    }
+
     /* the entries: full width, even spacing (styles.css spaces the items of
        the old horizontal bar) */
     .ui-preview .navbar .navbar-collapse .nav-item {
@@ -1121,6 +1138,7 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .ui-preview .navbar .navbar-collapse.show,
     .ui-preview .pv-sheet.show .modal-content {
         animation: none;
     }

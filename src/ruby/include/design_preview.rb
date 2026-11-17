@@ -241,11 +241,32 @@ class Main < Sinatra::Base
                             let target = (a.getAttribute('href') || '').replace(/\\/$/, '') || '/';
                             if (target === here) a.classList.add('pv-active');
                         });
+                        // "Mehr": the menu as a sheet – slides up over a veil, slides
+                        // down again (tap on "Mehr" or the veil, or pull it down, preview.js)
+                        let menu = $('#navbarTogglerDemo02');
+                        let veil = $('<div class="pv-menu-veil" hidden></div>').appendTo('body');
+                        window.pv_menu_hide_now = function () {
+                            menu.collapse('hide');
+                            menu[0].classList.remove('pv-closing');
+                            menu[0].style.transform = '';
+                            menu[0].style.transition = '';
+                            veil.prop('hidden', true);
+                            $('#bu_pv_more').attr('aria-expanded', 'false');
+                        };
+                        let close_menu = function () {
+                            menu[0].classList.add('pv-closing');
+                            setTimeout(window.pv_menu_hide_now, 180);
+                        };
                         $('#bu_pv_more').on('click', function (e) {
-                            let open = !$('#navbarTogglerDemo02').hasClass('show');
-                            $('#navbarTogglerDemo02').collapse(open ? 'show' : 'hide');
-                            e.currentTarget.setAttribute('aria-expanded', open ? 'true' : 'false');
+                            if (menu.hasClass('show')) {
+                                close_menu();
+                            } else {
+                                menu.collapse('show');
+                                veil.prop('hidden', false);
+                                e.currentTarget.setAttribute('aria-expanded', 'true');
+                            }
                         });
+                        veil.on('click', close_menu);
                         // a native click: jQuery's trigger() skips it on links, and the
                         // search listens with addEventListener (code.js)
                         $('#bu_pv_search').on('click', function () { document.getElementById('bu_quick_search').click(); });

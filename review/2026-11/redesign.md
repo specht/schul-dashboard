@@ -41,6 +41,14 @@ the server only).
 - **Admins first.** The preview starts with admins only; the next stages
   (teachers, everyone) are one constant (\`UI_PREVIEW_FOR\` in
   \`include/design_preview.rb\`).
+- **A curated set of colour palettes (2026-11-17).** Deriving everything from
+  each of the 46 existing schemes gives uneven results (some muddy, some
+  too dark). The new design gets a small, hand-designed set of palettes
+  (each again three colours, so backdrops keep working); every existing
+  scheme maps automatically to the closest new one, and people can pick
+  again. An admin page shows all schemes and their mapping side by side to
+  tune the set before rollout. Buttons stay dark with light type (solid
+  accent); tonal buttons were tried and rejected.
 
 ## What the inventory shows
 

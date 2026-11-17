@@ -11,6 +11,56 @@
     color: var(--acc-ink);
 }
 
+/* Buttons in pages: dark (the accent, always dark enough for white text)
+   with light type. Red (btn-danger) stays red. */
+.ui-preview #main_container .btn-primary,
+.ui-preview #main_container .btn-success,
+.ui-preview #main_container .btn-info,
+.ui-preview #main_container .btn-warning {
+    background-color: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+    font-weight: 600;
+}
+
+.ui-preview #main_container .btn-primary:hover,
+.ui-preview #main_container .btn-success:hover,
+.ui-preview #main_container .btn-info:hover,
+.ui-preview #main_container .btn-warning:hover,
+.ui-preview #main_container .btn-primary:focus-visible,
+.ui-preview #main_container .btn-success:focus-visible {
+    background-color: color-mix(in srgb, var(--acc) 85%, #000);
+    border-color: color-mix(in srgb, var(--acc) 85%, #000);
+    color: var(--acc-ink);
+}
+
+.ui-preview #main_container .btn-secondary,
+.ui-preview .btn-clipboard {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn-secondary:hover,
+.ui-preview .btn-clipboard:hover {
+    background-color: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn {
+    border-radius: 10px;
+}
+
+/* the main action of a dialog: solid accent */
+.ui-preview #main_container .modal-footer .btn-primary,
+.ui-preview #main_container .modal-footer .btn-success,
+.ui-preview .modal-footer .btn-primary,
+.ui-preview .modal-footer .btn-success {
+    background-color: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+}
+
 /* The colour sliders in the profile (Farbton, Sättigung, Helligkeit, Kontrast,
    Sepia, Analog) filter the whole page. The new design leaves them out: its
    colours are computed per scheme to stay readable, a filter would undo that
@@ -1407,4 +1457,53 @@ html {
 
 .ui-preview .table-hover tbody tr:hover {
     background-color: var(--acc-soft);
+}
+
+/* ---------- Lesson blocks: time and room (timetable.html) ---------- */
+.ui-preview .pv-ev-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    opacity: 1 !important;
+    font-family: var(--pv-text);
+    font-size: 0.78em;
+    line-height: 1.5;
+}
+
+.ui-preview .pv-ev-time {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-ev-room {
+    position: static !important;
+    flex: none;
+    margin-left: auto;
+    font-family: var(--pv-text);
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 0 5px !important;
+    background-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.ui-preview.dark .pv-subject .pv-ev-room {
+    background-color: rgba(0, 0, 0, 0.14) !important;
+}
+
+.ui-preview .pv-quiet .pv-ev-room {
+    background-color: var(--pv-surface) !important;
+    box-shadow: inset 0 0 0 1px var(--pv-line);
+}
+
+.ui-preview .pv-ev-room s {
+    opacity: 0.7;
+    font-weight: normal;
+}
+
+/* the subject line in the normal font, too */
+.ui-preview .fc-timegrid-event .condensed {
+    font-family: var(--pv-text);
 }

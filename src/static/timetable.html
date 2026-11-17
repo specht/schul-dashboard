@@ -1419,6 +1419,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 raum.css('padding-left', '4px');
                 if (arg.event.extendedProps.entfall)
                     raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.disabled'});
+                // new design: time and room in a row of their own (preview.css)
+                div0.addClass('pv-ev-meta');
+                t.addClass('pv-ev-time');
+                raum.addClass('pv-ev-room');
                 div0.append(t).append(raum);
 
                 let div1 = $('<div>');

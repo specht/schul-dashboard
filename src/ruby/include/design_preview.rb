@@ -326,4 +326,57 @@ class Main < Sinatra::Base
             </script>
         END_OF_HTML
     end
+    # Admin page /design_palettes: the new design in every colour scheme, light
+    # and dark, sorted by how many accounts use the scheme (counts only), to
+    # choose and tune the curated palettes (review/2026-11/redesign.md).
+    PALETTE_SAMPLE_SUBJECTS = [['de', 'De'], ['en', 'En'], ['la', 'La'], ['frz', 'Fr'], ['ph', 'Ph'], ['ch', 'Ch'],
+                               ['ma', 'Ma'], ['bio', 'Bio'], ['in', 'Inf'], ['ge', 'Ge'], ['ek', 'Ek'], ['pw', 'PW'],
+                               ['eth', 'Eth'], ['ku', 'Ku'], ['mu', 'Mu'], ['sp', 'Sp']]
+
+    def design_palettes_html
+        require_admin!
+        counts = Hash.new(0)
+        random = 0
+        neo4j_query(<<~END_OF_QUERY).each do |row|
+            MATCH (u:User) RETURN u.color_scheme AS s, count(*) AS n
+        END_OF_QUERY
+            if row['s'].is_a?(String) && row['s'].size >= 19
+                counts[row['s'][1, 18]] += row['n']
+            else
+                random += row['n']
+            end
+        end
+        # COLOR_SCHEME_COLORS is rewritten at startup (main.rb); the codes and
+        # names are kept in @@color_scheme_info
+        schemes = @@color_scheme_info.map { |code, info| [code, info[0]] }.sort_by { |code, name| [-counts[code[1, 18]], name.to_s] }
+        StringIO.open do |io|
+            io.puts "<p class='text-muted'>#{schemes.size} Farbschemata, sortiert nach Nutzung. Ohne eigenes Schema: #{random} Konten (bekommen täglich ein zufälliges).</p>"
+            schemes.each do |entry|
+                code, name = entry[0], entry[1]
+                io.puts "<div class='pal-row'>"
+                io.puts "<div class='pal-head'><b>#{CGI.escapeHTML(name.to_s)}</b>"
+                io.puts "<span class='pal-dots'>" + [1, 7, 13].map { |i| "<i style='background: ##{code[i, 6]}'></i>" }.join + "</span>"
+                io.puts "<span class='pal-count'>#{counts[code[1, 18]]} Konten</span></div>"
+                io.puts "<div class='pal-cards'>"
+                [false, true].each do |dark|
+                    t = DesignTokens.tokens(code, dark)
+                    vars = t.map { |k, v| "#{k}: #{v}" }.join('; ')
+                    surface = '#' + DesignTokens::SURFACE[dark]
+                    paper = '#' + DesignTokens::PAPER[dark]
+                    ink = '#' + DesignTokens::INK[dark]
+                    on_subject = dark ? '#0a1222' : '#ffffff'
+                    io.puts "<div class='pal-card' style='#{vars}; --paper: #{paper}; --surface: #{surface}; --ink: #{ink}; --on-subject: #{on_subject}'>"
+                    io.puts "<div class='pal-band'><span>#{dark ? 'dunkel' : 'hell'}</span></div>"
+                    io.puts "<div class='pal-body'>"
+                    io.puts "<div class='pal-actions'><span class='pal-btn'>Speichern</span><span class='pal-chip'>Heute</span><span class='pal-link'>Alle Klassen</span></div>"
+                    io.puts "<div class='pal-subjects'>" + PALETTE_SAMPLE_SUBJECTS.map { |k, label| "<span style='background: var(--subj-#{k})'>#{label}</span>" }.join + "</div>"
+                    io.puts "<div class='pal-agenda'><div class='pal-when'><b>8:00</b><span>8:45</span></div><div class='pal-lesson' style='--c: var(--subj-ma)'><span class='pal-subj'>Ma</span><div><b>Mathematik (6a)</b><small>111</small></div></div></div>"
+                    io.puts "<div class='pal-agenda'><div class='pal-when'><b>8:50</b><span>10:20</span></div><div class='pal-lesson' style='--c: var(--subj-in)'><span class='pal-subj'>Inf</span><div><b>Informatik (11)</b><small>223</small></div></div></div>"
+                    io.puts "</div></div>"
+                end
+                io.puts "</div></div>"
+            end
+            io.string
+        end
+    end
 end

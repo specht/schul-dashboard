@@ -1,7 +1,7 @@
-import { test, expect, login, ACCOUNTS, dashboardDialog } from './fixtures';
+import { test, expect, login, ACCOUNTS, dashboardDialog, listAction } from './fixtures';
 
-// Neues Design (Vorschau): polls – the list as cards with their runs, the
-// editor's entries as cards, the run dialog's choices as cards, the answer
+// Neues Design (Vorschau): polls – the list with actions (rows, runs as
+// sub-rows, "•••" menu or sheet, preview.js pv_list), the editor's entries as cards, the run dialog's choices as cards, the answer
 // dialog as a sheet with large choices (src/static/preview/polls.css). The
 // preview is for admins only on the test stack: the admin (also a teacher)
 // creates a poll, runs it for himself and a student and answers it himself.
@@ -51,16 +51,16 @@ test('Neues Design: Umfrage anlegen, durchführen, beantworten, auswerten', asyn
     await page.locator('#bu_close_poll_modal').evaluate((b: HTMLElement) => b.click());
     await expect(editor).toBeHidden();
 
-    // ---------- the list: a card, no runs yet ----------
+    // ---------- the list: a row, no runs yet ----------
     const card = page.locator('.pv-poll', { hasText: title });
+    const pollRow = card.locator('.pv-poll-row');
     await expect(card).toBeVisible();
-    await expect(card.locator('.pv-poll-meta')).toContainText('2 Einträge');
-    await expect(card.locator('.pv-runs-empty')).toBeVisible();
+    await expect(pollRow.locator('.pv-lrow-facts')).toContainText('2 Einträge, noch nicht durchgeführt');
     // today's list is not drawn in the new design
     await expect(page.locator('.poll-div')).toHaveCount(0);
 
     // ---------- running: the choices as cards ----------
-    await card.locator('.pv-bu-new-run').click();
+    await listAction(page, pollRow, 'Neue Durchführung');
     const runModal = page.locator('#pollRunModal');
     await expect(runModal).toBeVisible();
     await expect(page.locator('#bu_poll_run_anonymous')).toContainText('Anonym');
@@ -85,9 +85,9 @@ test('Neues Design: Umfrage anlegen, durchführen, beantworten, auswerten', asyn
     const run = page.locator('.pv-poll', { hasText: title }).locator('.pv-run');
     await expect(run).toHaveCount(1);
     await expect(run).toHaveClass(/pv-run-running/);
-    await expect(run.locator('.pv-run-status')).toHaveText('läuft');
-    await expect(run.locator('.pv-run-tags')).toContainText('2 Teilnehmer');
-    await expect(run.locator('.pv-run-tags')).toContainText('mit Namen');
+    await expect(run).toHaveClass(/pv-lrow-sub/);
+    await expect(run.locator('.pv-lchip')).toHaveText('läuft');
+    await expect(run.locator('.pv-lrow-facts')).toHaveText('2 Teilnehmer, mit Namen');
     await expect(run.locator('.pv-run-count')).toHaveText('0 von 2 beantwortet (0 %)');
 
     // ---------- taking part: the hint on the start page, the answer sheet ----------
@@ -117,7 +117,16 @@ test('Neues Design: Umfrage anlegen, durchführen, beantworten, auswerten', asyn
     // ---------- results ----------
     await page.goto('/polls');
     await expect(run.locator('.pv-run-count')).toHaveText('1 von 2 beantwortet (50 %)');
-    await run.locator('.pv-bu-results').click();
+    if (testInfo.project.name === 'mobile') {
+      // phones: the row itself opens the results (with the arrow at its end)
+      await expect(run.locator('.pv-lrow-chev')).toBeVisible();
+      await expect(run.locator('.pv-lact')).toHaveCount(2);
+      await expect(run.locator('.pv-lact').first()).toBeHidden();
+      await run.locator('.pv-lrow-title').click();
+    } else {
+      await expect(run.locator('.pv-lrow-chev')).toBeHidden();
+      await listAction(page, run, 'Ergebnisse');
+    }
     const results = page.locator('#pollRunResultsModal');
     await expect(results).toBeVisible();
     await expect(results).toContainText('Tegeler See');
@@ -125,18 +134,71 @@ test('Neues Design: Umfrage anlegen, durchführen, beantworten, auswerten', asyn
     await results.locator('#bu_close_show_poll_run_results_modal').evaluate((b: HTMLElement) => b.click());
     await expect(results).toBeHidden();
 
-    // ---------- stopping and deleting: red only in the confirmation ----------
-    await run.locator('.pv-bu-stop-run').click();
+    // ---------- stopping: red only in the confirmation ----------
+    await listAction(page, run, 'Stoppen');
     const dialog = dashboardDialog(page);
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Stoppen' })).toHaveClass(/btn-danger/);
     await dialog.getByRole('button', { name: 'Stoppen' }).click();
+    await expect(dialog).toBeHidden();
+    // finished runs are folded
+    const fold = card.locator('.pv-lfold');
+    await expect(fold).toHaveText('1 beendete Durchführung anzeigen');
+    await expect(fold).toHaveAttribute('aria-expanded', 'false');
+    await expect(run).toBeHidden();
+    await fold.click();
+    await expect(fold).toHaveAttribute('aria-expanded', 'true');
+    await expect(run).toBeVisible();
     await expect(run).toHaveClass(/pv-run-complete/);
-    await expect(run.locator('.pv-run-status')).toHaveText('beendet');
+    await expect(run.locator('.pv-lchip')).toHaveText('beendet');
 
-    await page.locator('.pv-poll', { hasText: title }).locator('.pv-bu-delete-poll').click();
+    // ---------- the "•••" menu: beside the button, a sheet on phones ----------
+    const more = pollRow.locator(':scope > .pv-lrow-actions > .pv-lmore');
+    await expect(more).toHaveAttribute('aria-haspopup', 'menu');
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await more.click();
+    const menu = page.locator('.pv-amenu');
+    await expect(menu).toBeVisible();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    await expect(menu).toHaveAttribute('aria-label', title);
+    const items = menu.getByRole('menuitem');
+    if (testInfo.project.name === 'mobile') {
+      // all actions, the item's title at the top, delete at the end
+      await expect(menu).toHaveClass(/pv-amenu-sheet/);
+      await expect(menu.locator('.pv-amenu-title')).toHaveText(title);
+      await expect(items).toHaveText(['Neue Durchführung', 'Bearbeiten', 'Löschen']);
+      const box = (await menu.boundingBox())!;
+      expect(box.y + box.height).toBeGreaterThan(page.viewportSize()!.height - 2);
+    } else {
+      // only what is not in the row, next to the button
+      await expect(menu).not.toHaveClass(/pv-amenu-sheet/);
+      await expect(items).toHaveText(['Löschen']);
+      const b = (await more.boundingBox())!, m = (await menu.boundingBox())!;
+      expect(Math.abs(m.y - (b.y + b.height))).toBeLessThan(12);
+    }
+    await expect(items.last()).toHaveClass(/pv-amenu-danger/);
+    // Escape closes it and gives the focus back
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+    await expect(more).toBeFocused();
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    // from the keyboard: the first entry has the focus, the arrow keys move it
+    await page.keyboard.press('Enter');
+    await expect(menu).toBeVisible();
+    await expect(items.first()).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(items.last()).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(items.first()).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+
+    // ---------- deleting: in the menu, confirmed ----------
+    await listAction(page, pollRow, 'Löschen');
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText(title);
+    await expect(dialog.getByRole('button', { name: 'Löschen' })).toHaveClass(/btn-danger/);
+    await expect(dialog.getByRole('button', { name: 'Abbrechen' })).toBeFocused();
     const deleted = page.waitForResponse('**/api/delete_poll');
     await dialog.getByRole('button', { name: 'Löschen' }).click();
     expect((await deleted).status()).toBe(200);
@@ -159,7 +221,7 @@ test('Neues Design: Umfragen in den Farben des Designs, auch dunkel', async ({ p
     await expect(page.locator('body')).toHaveClass(/dark/);
     await expect(page.locator('.pv-poll', { hasText: title })).toBeVisible();
     // the editor's dialog on the design's surface (dark.css would paint it #222)
-    await page.locator('.pv-poll', { hasText: title }).locator('.pv-bu-edit-poll').click();
+    await listAction(page, page.locator('.pv-poll', { hasText: title }).locator('.pv-poll-row'), 'Bearbeiten');
     const content = page.locator('#composeModal .modal-content');
     await expect(content).toBeVisible();
     const [surface, background] = await content.evaluate((el) => [
@@ -194,5 +256,46 @@ test('Umfragen ohne Vorschau: die Liste und der Dialog wie bisher', async ({ pag
     await expect(page.locator('#bu_poll_run_anonymous')).toHaveText(/Anonyme Erfassung der\s+Umfrageergebnisse/);
   } finally {
     await page.request.post('/api/delete_poll', { data: { pid } });
+  }
+});
+
+test('Neues Design: Umfragen nach Schuljahr, frühere gefaltet, Seite höchstens 980 px breit', async ({ page }, testInfo) => {
+  const title = `Aktuell ${testInfo.project.name} ${Date.now().toString(36)}`;
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  const items = [{ type: 'radio', title: 'Frage', answers: ['Ja', 'Nein'] }];
+  const pid = (await (await page.request.post('/api/save_poll', { data: { title, items: JSON.stringify(items) } })).json()).poll.pid;
+  try {
+    await page.goto('/polls');
+    // this school year first, open
+    const current = page.locator('.pv-polls-current');
+    await expect(current.locator('.pv-lgroup-head')).toContainText('Aktuell');
+    await expect(current.locator('.pv-poll', { hasText: title })).toBeVisible();
+    // the seeded poll of 2023/24 (test/e2e/seed.cypher): folded under its school year
+    const year = page.locator('.pv-polls-year[data-school-year="2023"]');
+    const toggle = year.locator('.pv-lgroup-toggle');
+    await expect(toggle).toContainText('Schuljahr 2023/24');
+    await expect(toggle).toContainText('1 Umfrage');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    const archived = year.locator('.pv-poll', { hasText: 'Archiv-Umfrage Schuljahr 2023/24' });
+    await expect(archived).toHaveCount(0);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(archived).toBeVisible();
+    await expect(current.locator('.pv-poll', { hasText: 'Archiv-Umfrage' })).toHaveCount(0);
+    // the main action beside the title: short on phones
+    const main = page.locator('.pv-lhead .bu-new-poll');
+    await expect(main).toBeVisible();
+    if (testInfo.project.name === 'mobile') {
+      await expect(main).toHaveText('Neu', { useInnerText: true });
+    } else {
+      await expect(main).toHaveText('Neue Umfrage', { useInnerText: true });
+      // a list page: at most about 980 px wide
+      const width = await page.locator('#main_container > .container').evaluate((el) => el.getBoundingClientRect().width);
+      expect(width).toBeLessThanOrEqual(981);
+    }
+  } finally {
+    await page.request.post('/api/delete_poll', { data: { pid } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

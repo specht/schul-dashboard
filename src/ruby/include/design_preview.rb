@@ -6,8 +6,11 @@
 class Main < Sinatra::Base
     DESIGN_FEEDBACK_MAX_LENGTH = 2000
     # who may switch the preview on – widened stage by stage (see
-    # review/2026-11/redesign.md): :admins, then :teachers, then :all
-    UI_PREVIEW_FOR = :admins
+    # review/2026-11/redesign.md): :admins, then :teachers, then :all.
+    # Development instances: everyone, so that every role's pages can be
+    # checked in the new design (still opt-in per account; the test stack
+    # runs in production mode).
+    UI_PREVIEW_FOR = DEVELOPMENT ? :all : :admins
 
     def ui_preview_allowed?
         case UI_PREVIEW_FOR

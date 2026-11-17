@@ -880,6 +880,11 @@ html {
     font-weight: 700;
 }
 
+/* pills, also against the general button radius in pages */
+.ui-preview #main_container .ttc {
+    border-radius: 999px;
+}
+
 /* "Alle Lehrkräfte", "Alle Klassen", "Alle Räume": quiet text buttons */
 .ui-preview .ttc[class*='bu-show-alle'] {
     min-width: 0;

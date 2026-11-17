@@ -399,8 +399,77 @@
         Array.prototype.slice.call(schule.querySelectorAll('.pv-nav-entry'))
             .sort(function(a, b) { return rank(a) - rank(b); })
             .forEach(function(a) { schule.appendChild(a); });
+        // sub-groups of the larger sections, in this order
+        var SUB = {
+            schule: [
+                ['Planen & Abstimmen', /^\/(events|polls|prepare_vote|mailing_lists|groups|zufallsgruppen|kurslisten)/],
+                ['Angebote', /^\/(bibliothek|angebote|lehrbuchverein|mittagessen|klassenmemory_assign|salzh)/],
+                ['Projekte & Aktionen', /^\/(projekttage|pk5|lab8|lab9|up)(\/|_|$)/],
+                ['Gremien', /^\/(gev|agr_app)|^https:\/\/sv\./],
+            ],
+            verwaltung: [
+                ['Inhalte', /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor)/],
+                ['Geräte & Räume', /^\/(bookings|tablets|techpost|techpostadmin|school_wifi|aula_)/],
+                ['Konten & Anmeldung', /^\/(admin|show_all_login_codes|postfaecher|email_accounts|inactive_sus|anmeldungen|stats|development)/],
+            ],
+        };
+        [['schule', schule], ['verwaltung', verwaltung]].forEach(function(pair) {
+            var sec = pair[1], groups = SUB[pair[0]];
+            var entries = Array.prototype.slice.call(sec.querySelectorAll('.pv-nav-entry'));
+            if (entries.length < 8) return;
+            var which = function(a) {
+                var href = a.getAttribute('href') || '';
+                for (var i = 0; i < groups.length; i++) if (groups[i][1].test(href)) return i;
+                return groups.length;
+            };
+            entries.sort(function(a, b) { return which(a) - which(b); });
+            var last = -1;
+            entries.forEach(function(a) {
+                var g = which(a);
+                if (g !== last && g < groups.length) {
+                    var sub = document.createElement('div');
+                    sub.className = 'pv-nav-sub';
+                    sub.textContent = groups[g][0];
+                    sec.appendChild(sub);
+                }
+                last = g;
+                sec.appendChild(a);
+            });
+        });
+        // the sections fold: Unterricht open, the others closed unless the
+        // current page is in them; one's choice is remembered in this browser
+        var folds = {};
+        try { folds = JSON.parse(localStorage.getItem('pv_nav_folds') || '{}'); } catch (e) {}
+        var here_path = location.pathname.replace(/\/$/, '') || '/';
         [unterricht, schule, verwaltung].forEach(function(sec) {
-            if (sec.children.length > 1) main_nav.insertBefore(sec, anchor);
+            if (sec.children.length <= 1) return;
+            var key = sec.dataset.section;
+            var head = sec.querySelector('.pv-nav-heading');
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'pv-nav-heading';
+            button.textContent = head.textContent;
+            head.replaceWith(button);
+            var body = document.createElement('div');
+            body.className = 'pv-nav-body';
+            while (button.nextSibling) body.appendChild(button.nextSibling);
+            sec.appendChild(body);
+            var contains_here = Array.prototype.some.call(body.querySelectorAll('a[href]'), function(a) {
+                return (a.getAttribute('href') || '').replace(/\/$/, '') === here_path;
+            });
+            var open = key in folds ? folds[key] : (key === 'unterricht');
+            if (contains_here) open = true;
+            body.hidden = !open;
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                body.hidden = !body.hidden;
+                button.setAttribute('aria-expanded', body.hidden ? 'false' : 'true');
+                folds[key] = !body.hidden;
+                try { localStorage.setItem('pv_nav_folds', JSON.stringify(folds)); } catch (err) {}
+            });
+            main_nav.insertBefore(sec, anchor);
         });
         // the profile menu: its moved tools hidden, empty dividers too
         var profile = collapse.querySelector('[aria-labelledby="navbarDropdownProfile"]');
@@ -451,5 +520,53 @@
         window.addEventListener('pagehide', save);
     }
     if (document.readyState === 'complete') keep_sidebar_place(); else window.addEventListener('load', keep_sidebar_place);
+
+    // Profile pictures come from Nextcloud. Where none arrives (no picture
+    // set, Nextcloud not reachable): a circle with the initials instead of
+    // an empty grey one.
+    function initials(name) {
+        var words = (name || '').replace(/\(.*?\)/g, '').replace(/\b(Dr|Prof|Herr|Frau)\.?\s/g, '').trim().split(/\s+/).filter(Boolean);
+        if (words.length === 0) return '';
+        return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
+    }
+    function own_name() {
+        var t = document.querySelector('#navbarDropdownProfile');
+        return t ? t.textContent.trim() : '';
+    }
+    function mark_initials(el, name) {
+        if (!el || el.dataset.pvInitials) return;
+        el.dataset.pvInitials = initials(name);
+        el.classList.add('pv-avatar-initials');
+    }
+    function check_background(el, name) {
+        var m = /url\(["']?([^"')]+)["']?\)/.exec(el.style.backgroundImage || '');
+        if (!m || m[1].indexOf('data:') === 0) { mark_initials(el, name); return; }
+        var img = new Image();
+        img.onload = function() { if (img.naturalWidth <= 1) mark_initials(el, name); };
+        img.onerror = function() { mark_initials(el, name); };
+        img.src = m[1];
+    }
+    function avatars() {
+        var name = own_name();
+        document.querySelectorAll('.ui-preview img.avatar-lg').forEach(function(img) {
+            var fail = function() {
+                var d = document.createElement('div');
+                d.className = 'avatar-lg pv-avatar-initials';
+                d.dataset.pvInitials = initials(name);
+                img.replaceWith(d);
+            };
+            if (img.complete && img.naturalWidth === 0) fail(); else img.addEventListener('error', fail);
+        });
+        // the own picture in the menu and the day's header
+        document.querySelectorAll('#navbarDropdownProfile .icon > div, .pv-band-avatar > div').forEach(function(el) { check_background(el, name); });
+        // class lists: each person's picture, their initials where none arrives
+        document.querySelectorAll('tr.user_row .avatar-md').forEach(function(el) {
+            var row = el.closest('tr');
+            var person = ((row.getAttribute('data-first-name') || '') + ' ' + (row.querySelector('td:nth-child(3)') || {}).textContent).trim();
+            check_background(el, person);
+        });
+    }
+    if (document.readyState === 'complete') avatars(); else window.addEventListener('load', avatars);
+    window.pv_check_avatars = avatars;
 })();
 

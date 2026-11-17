@@ -193,7 +193,10 @@ html {
         display: flex !important;
         position: absolute;
         right: calc(10px + env(safe-area-inset-right, 0px));
-        bottom: 8px;
+        /* level with the school's name: the bar below the safe area */
+        top: env(safe-area-inset-top, 0px);
+        bottom: 0;
+        align-items: center;
         margin: 0;
     }
 
@@ -3596,4 +3599,89 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .navbar .dropdown-toggle::after {
     align-self: flex-start;
     margin-top: 0.45em;
+}
+
+/* foldable sections and their sub-groups */
+.ui-preview .navbar button.pv-nav-heading {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    border-radius: 8px;
+    text-align: left;
+}
+
+.ui-preview .navbar button.pv-nav-heading:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .navbar button.pv-nav-heading::after {
+    content: "";
+    margin-left: auto;
+    width: 7px;
+    height: 7px;
+    border: solid currentColor;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    transition: transform 0.15s;
+}
+
+.ui-preview .navbar button.pv-nav-heading[aria-expanded='true']::after {
+    transform: rotate(-135deg);
+}
+
+.ui-preview .pv-nav-sub {
+    padding: 8px 10px 2px 42px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--pv-muted);
+}
+
+/* ---------- Profile pictures ---------- */
+.ui-preview img.avatar-lg,
+.ui-preview div.avatar-lg {
+    width: 112px !important;
+    height: 112px !important;
+    max-width: none;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* no picture: the initials */
+.ui-preview .pv-avatar-initials {
+    position: relative;
+    background: var(--acc) !important;
+    background-image: none !important;
+}
+
+.ui-preview .pv-avatar-initials::after {
+    content: attr(data-pv-initials);
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--acc-ink);
+    font: 700 0.42em/1 var(--pv-text);
+    font-size: max(11px, 40cqi);
+}
+
+.ui-preview .pv-avatar-initials {
+    container-type: inline-size;
+}
+
+.ui-preview .pv-avatar-hint {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+}
+
+/* the section headings: no focus frame after a click */
+.ui-preview .pv-nav-heading:focus:not(:focus-visible),
+.ui-preview .pv-more-groups:focus:not(:focus-visible),
+.ui-preview .pv-nav-more:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
 }

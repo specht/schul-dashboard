@@ -892,6 +892,7 @@ function render_preview_day_band(day, label, is_today, subtitle) {
         band.append($('<div>').addClass('pv-band-title').append(title, corner));
     }
     band.append($('<div>').addClass('pv-band-sub').text(parts.join(' · ')));
+    if (window.pv_check_avatars) window.pv_check_avatars();
 }
 
 // The school days of the shown week as a strip: tap one to show it, the dots

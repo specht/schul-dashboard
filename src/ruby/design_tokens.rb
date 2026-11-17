@@ -17,12 +17,21 @@ module DesignTokens
     INK = { false => '131b26', true => 'e6ebf2' }
 
     # spot on the gradient (0 = left colour, 0.5 = main colour, 1 = right colour)
+    # (several codes for one subject: the school's subject list uses e.g. 'Ph',
+    # 'D', 'Fr', 'Ek'; all lessons need a colour, see design_tokens_test.rb)
     SUBJECT_SPOTS = {
-        'de' => 0.04, 'en' => 0.10, 'la' => 0.16, 'frz' => 0.22, 'agr' => 0.28, 'ngr' => 0.30,
-        'phy' => 0.38, 'nawi' => 0.42, 'ch' => 0.46, 'ma' => 0.50, 'bio' => 0.54, 'in' => 0.58,
-        'gewi' => 0.66, 'ge' => 0.70, 'geo' => 0.74, 'pb' => 0.78, 'eth' => 0.82, 'evr' => 0.86, 'katr' => 0.86,
-        'ku' => 0.92, 'mu' => 0.96, 'sp' => 1.0,
+        'de' => 0.04, 'd' => 0.04, 'en' => 0.10, 'la' => 0.16, 'frz' => 0.22, 'fr' => 0.22,
+        'agr' => 0.28, 'ngr' => 0.30,
+        'phy' => 0.38, 'ph' => 0.38, 'nawi' => 0.42, 'ch' => 0.46, 'ma' => 0.50, 'bio' => 0.54,
+        'in' => 0.58, 'inf' => 0.58, 'itg' => 0.61,
+        'gewi' => 0.66, 'ge' => 0.70, 'geo' => 0.74, 'ek' => 0.74, 'pb' => 0.78, 'pw' => 0.78,
+        'eth' => 0.82, 'pl' => 0.82, 'evr' => 0.86, 'katr' => 0.86,
+        'ku' => 0.90, 'ds' => 0.93, 'mu' => 0.96,
+        'sp' => 1.0, 'ft' => 1.0, 'gt' => 1.0, 'rud' => 1.0, 'te' => 1.0, 'tt' => 1.0,
     }
+
+    # codes in the subject list that are not taught subjects
+    NOT_SUBJECTS = %w(ber esl fsl sl)
 
     # 'EN' (LK), 'en' (GK), 'Nawi', 'La LK' → the key in SUBJECT_SPOTS (nil if unknown)
     def self.subject_key(code)

@@ -631,8 +631,10 @@ function preview_subject_color(event) {
     let label = $('<div>').html(event.label_short || '');
     label.find('s, del, strike').remove();
     let code = label.text().trim().split(/[\s_\-(]/)[0].toLowerCase();
-    if (!code) return null;
-    return getComputedStyle(document.documentElement).getPropertyValue('--subj-' + code).trim() || null;
+    // a subject without its own colour: the accent – never grey, which
+    // would look like a cancelled lesson
+    let root = getComputedStyle(document.documentElement);
+    return (code && root.getPropertyValue('--subj-' + code).trim()) || root.getPropertyValue('--acc').trim() || null;
 }
 
 // text on the subject colours: they are computed for white text in light

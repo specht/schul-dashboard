@@ -18,6 +18,9 @@ class Main < Sinatra::Base
     end
 
     def ui_preview?
+        # monitors keep their own layout, also when an admin views them
+        # (manage_monitor embeds them with the admin's session)
+        return false if ((request.path rescue '') || '').start_with?('/monitor')
         ui_preview_allowed? && !!(@session_user || {})[:ui_preview]
     end
 

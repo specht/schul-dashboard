@@ -283,6 +283,21 @@ test('Neues Design: Fächer im Stundenplan in ihren Farben', async ({ page }, te
     });
     expect(swapped.ma).toBe(tokens.ma.trim());
     expect(swapped.la).toBe(tokens.la.trim());
+    // codes of the subject list, and a subject without its own colour gets
+    // the accent (grey would look cancelled); cancelled lessons stay as today
+    const others = await page.evaluate(() => {
+      const w = window as unknown as { preview_subject_color: (e: object) => string | null };
+      const root = getComputedStyle(document.documentElement);
+      return {
+        ph: w.preview_subject_color({ lesson: true, label_short: '<b>Ph</b> (9c)' }), phToken: root.getPropertyValue('--subj-ph').trim(),
+        unknown: w.preview_subject_color({ lesson: true, label_short: '<b>Xyz</b> (9c)' }), acc: root.getPropertyValue('--acc').trim(),
+        entfall: w.preview_subject_color({ lesson: true, entfall: true, label_short: '<b>Ma</b> (9c)' }),
+      };
+    });
+    expect(others.ph).toBe(others.phToken);
+    expect(others.ph).not.toBe('');
+    expect(others.unknown).toBe(others.acc);
+    expect(others.entfall).toBeNull();
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
@@ -429,6 +444,7 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
     const day = () => page.evaluate(() => (window as any).moment((window as any).calendar.getDate()).format('YYYY-MM-DD'));
     const before = await day();
     const box = (await page.locator('#pv_agenda').boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(Math.min(320, page.viewportSize()!.height * 0.5));
     const y = box.y + Math.min(box.height / 2, 120);
     const client = await page.context().newCDPSession(page);
     await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width * 0.85, y }] });
@@ -463,6 +479,25 @@ test('Neues Design: Dateien mit Version, damit Änderungen ankommen', async ({ p
       expect(url, selector).toMatch(/\?v=\d{9,}$/);
       expect((await page.request.get(url!)).status(), selector).toBe(200);
     }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Monitors keep their own layout, also for an admin with the preview (the
+// monitor admin page embeds them with the admin's session)
+test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    for (const path of ['/monitor', '/monitor/lz']) {
+      const html = await (await page.request.get(path)).text();
+      expect(html, path).not.toContain('ui-preview');
+      expect(html, path).not.toContain('pv-tabbar');
+      expect(html, path).not.toContain('/preview.css');
+    }
+    await page.goto('/');
+    await expect(page.locator('body')).toHaveClass(/ui-preview/);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

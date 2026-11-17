@@ -26,6 +26,15 @@ class DesignTokensTest < Minitest::Test
         end
     end
 
+    # every subject of the subject list (example data, mounted at /data) has a
+    # colour – a lesson without one looks like a cancelled one
+    def test_every_subject_has_a_colour
+        codes = File.readlines('/data/faecher/faecher.csv').drop(1).map { |l| l.split(',').first.to_s.strip }.reject(&:empty?)
+        assert_operator codes.size, :>, 30
+        missing = codes.reject { |c| T.subject_key(c) || T::NOT_SUBJECTS.include?(c.downcase) }
+        assert_equal [], missing
+    end
+
     def test_subject_colours_are_readable_in_every_scheme
         each_scheme do |code, name, dark|
             t = T.tokens(code, dark)

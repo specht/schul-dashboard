@@ -430,6 +430,8 @@ html {
     color: var(--pv-ink);
     border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    /* tall enough to swipe also on a day with one card or none */
+    min-height: max(320px, 58svh);
 }
 
 .pv-ag-day {
@@ -465,6 +467,7 @@ html {
 }
 
 .pv-ag-empty {
+    margin: auto 0;
     padding: 24px 8px;
     text-align: center;
     color: var(--pv-muted);

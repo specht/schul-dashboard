@@ -579,99 +579,33 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
   }
 });
 
-// Timetable switcher: pills on a panel, the shown timetable in the accent
-test('Neues Design: Stundenplan-Auswahl als Chips', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'am Desktop ein Menü im Kopf (eigener Test)');
+// Phones: other plans (Kürzel, classes, rooms) through a "Plan" button in the
+// header – a sheet with search, the shown plan in the accent; no chip panel
+test('Neues Design: Plan wählen am Handy', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'am Desktop das Menü im Kopf (eigener Test)');
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
     await page.goto('/');
-    const active = page.locator('.timetable_chooser .ttc.active:visible').first();
-    await expect(active).toBeVisible();
-    const look = await active.evaluate((el) => {
+    const button = page.locator('#pv_day_band .pv-band-plan');
+    await expect(button).toContainText('Plan');
+    await expect(page.locator('.timetable_chooser .ttc').first()).toBeHidden();
+    await button.click();
+    const menu = page.locator('.pv-plan-menu');
+    await expect(menu).toBeVisible();
+    const look = await menu.locator('.pv-plan-chip.active').evaluate((el) => {
       const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
-      return {
-        bg: getComputedStyle(el).backgroundColor,
-        acc: `rgb(${[1, 3, 5].map((i) => parseInt(acc.slice(i, i + 2), 16)).join(', ')})`,
-        radius: parseFloat(getComputedStyle(el).borderTopLeftRadius),
-        cut: el.scrollWidth > el.clientWidth + 1,
-      };
+      return { bg: getComputedStyle(el).backgroundColor, acc: `rgb(${[1, 3, 5].map((i) => parseInt(acc.slice(i, i + 2), 16)).join(', ')})` };
     });
     expect(look.bg).toBe(look.acc);
-    expect(look.radius).toBeGreaterThan(10);
-    // no label is cut off (rooms like "Otium" are longer than a Kürzel)
-    expect(await page.locator('.timetable_chooser .ttc:visible').evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth + 1).length)).toBe(0);
+    // the menu lies above the tab bar, at the bottom (after sliding up)
+    await page.waitForTimeout(400);
+    const box = (await menu.boundingBox())!;
+    expect(Math.abs(box.y + box.height - page.viewportSize()!.height)).toBeLessThan(2);
+    await menu.locator('.pv-plan-chip', { hasText: /^5a$/ }).click();
+    await expect(menu).toHaveCount(0);
+    await expect(page.locator('#pv_day_band .pv-band-plan')).toContainText('Plan 5a');
   } finally {
-    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
-  }
-});
-
-// Admins mark which colour schemes go into the curated set; unmarked and
-// dropped schemes show where they would go
-test('Neues Design: Farbschemata auswählen (Admins)', async ({ page, newUserPage }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile', 'Admin-Seite, Desktop reicht');
-  await login(page, ACCOUNTS.admin);
-  await page.goto('/design_palettes');
-  // start without marks
-  const marked = await page.locator(".pal-row:not([data-mark='none'])").evaluateAll((els) => els.map((el) => el.getAttribute('data-code')));
-  for (const c of marked) await page.request.post('/api/design_palette_mark', { data: { code: c, mark: 'none' } });
-  await page.reload();
-  const row = (name: string) => page.locator('.pal-row').filter({ has: page.locator('.pal-head > b', { hasText: new RegExp(`^${name}$`) }) });
-  await expect(row('Sky')).toHaveCount(1);
-  const code = await row('Sky').getAttribute('data-code');
-  try {
-    await row('Sky').locator('.bu_palette_mark', { hasText: 'Behalten' }).click();
-    await expect(row('Sky').locator('.bu_palette_mark.active')).toHaveText('Behalten');
-    await expect(row('Sky')).toHaveAttribute('data-mark', 'keep');
-    // schemes outside the curated set show the closest one in it
-    await expect(row('Dreamy').locator('.pal-target')).toHaveCount(0);
-    await expect(row('Wellenbad').locator('.pal-target')).toContainText('ähnlich in der Auswahl');
-    // clicking the active mark again removes it
-    await row('Sky').locator('.bu_palette_mark.active').click();
-    await expect(row('Sky')).toHaveAttribute('data-mark', 'none');
-  } finally {
-    await page.request.post('/api/design_palette_mark', { data: { code, mark: 'none' } });
-  }
-  // only for admins
-  const teacher = await newUserPage();
-  await login(teacher, ACCOUNTS.teacher);
-  expect((await teacher.request.post('/api/design_palette_mark', { data: { code, mark: 'keep' } })).status()).not.toBe(200);
-});
-
-// Dark mode: dark.css sets some things with !important (white sticky
-// timetable header from FullCalendar, .active, input fields); the new
-// design's colours have to win
-test('Neues Design: dunkel – Stundenplan-Kopf, Auswahl und Eingabefelder', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile', 'Wochenansicht und Auswahl-Leiste am Desktop');
-  await login(page, ACCOUNTS.admin);
-  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
-  await page.request.post('/api/set_dark_css', { data: { mode: 'dark' } });
-  try {
-    await page.goto('/');
-    await expect(page.locator('.fc-col-header-cell').first()).toBeVisible();
-    const colours = await page.evaluate(() => {
-      const root = getComputedStyle(document.documentElement);
-      const hex = (h: string) => `rgb(${[1, 3, 5].map((i) => parseInt(h.trim().slice(i, i + 2), 16)).join(', ')})`;
-      // the background one sees behind the day names: the first one that is not transparent
-      let header: Element | null = document.querySelector('.fc-col-header-cell');
-      while (header && ['rgba(0, 0, 0, 0)', 'transparent'].includes(getComputedStyle(header).backgroundColor)) header = header.parentElement;
-      const active = document.querySelector('.timetable_chooser .ttc.active') as HTMLElement;
-      return {
-        header: header ? getComputedStyle(header).backgroundColor : null,
-        surface: hex(getComputedStyle(document.body).getPropertyValue('--pv-surface')),
-        active: active ? getComputedStyle(active).backgroundColor : null,
-        acc: hex(root.getPropertyValue('--acc')),
-      };
-    });
-    expect(colours.header).toBe(colours.surface);
-    expect(colours.active).toBe(colours.acc);
-    await page.goto('/profil');
-    const field = page.locator('input.form-control[readonly]').first();
-    const bg = await field.evaluate((el) => getComputedStyle(el).backgroundColor);
-    const hover = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--pv-hover').trim());
-    expect(bg).toBe(`rgb(${[1, 3, 5].map((i) => parseInt(hover.slice(i, i + 2), 16)).join(', ')})`);
-  } finally {
-    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

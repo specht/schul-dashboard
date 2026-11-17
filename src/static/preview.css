@@ -2209,59 +2209,9 @@ html {
     .pv-plan-wrap {
         position: relative;
     }
-
-    .pv-plan-menu {
-        position: absolute;
-        right: 0;
-        top: calc(100% + 6px);
-        z-index: 1000;
-        width: 340px;
-        max-height: 60vh;
-        overflow-y: auto;
-        padding: 10px;
-        background: var(--pv-surface);
-        color: var(--pv-ink);
-        border: 1px solid var(--pv-line);
-        border-radius: 14px;
-        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
-    }
-
-    .pv-plan-group {
-        margin: 10px 2px 6px;
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: var(--pv-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-
-    .pv-plan-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-    }
-
-    .pv-plan-chip {
-        border: 0;
-        border-radius: 999px;
-        padding: 4px 10px;
-        min-width: 40px;
-        background: var(--pv-hover);
-        color: var(--pv-ink);
-        font: 600 0.88rem/1.2 var(--pv-text);
-        cursor: pointer;
-    }
-
-    .pv-plan-chip:hover {
-        background: var(--acc-soft);
-        color: var(--acc-text);
-    }
-
-    .pv-plan-chip.active {
-        background: var(--acc);
-        color: var(--acc-ink);
-    }
 }
+
+
 
 /* dark mode: the backdrop fades into the dark ground further down (over the
    backdrop, under the content; scrolls with the page) */
@@ -2475,4 +2425,104 @@ body.ui-preview.dark::before {
 
 .ui-preview.pv-agenda-on #calendar {
     margin-bottom: 0 !important;
+}
+
+/* ---------- The plan menu (render_preview_week_head / _day_band) ---------- */
+.pv-plan-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 1000;
+    width: 340px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+}
+
+.pv-plan-group {
+    margin: 10px 2px 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--pv-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pv-plan-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.pv-plan-chip {
+    border: 0;
+    border-radius: 999px;
+    padding: 4px 10px;
+    min-width: 40px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    cursor: pointer;
+}
+
+.pv-plan-chip:hover {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.pv-plan-chip.active {
+    background: var(--acc);
+    color: var(--acc-ink);
+}
+
+/* phones: a sheet from below, above the tab bar */
+@media (max-width: 767px) {
+    .pv-plan-menu {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: auto;
+        bottom: 0;
+        width: auto;
+        max-height: 75vh;
+        z-index: 8100;
+        border-radius: 20px 20px 0 0;
+        padding: 14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .pv-plan-chip {
+        padding: 7px 12px;
+        font-size: 0.95rem;
+    }
+
+    /* the chips below the agenda give way to the menu */
+    .ui-preview.pv-agenda-on .timetable_chooser > div:not(.hint) {
+        display: none;
+    }
+
+    .pv-band-plan {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 5px 12px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        color: #131b26;
+        font: 600 0.9rem/1 var(--pv-text);
+        text-shadow: none;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .dark .pv-band-plan {
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+    }
 }

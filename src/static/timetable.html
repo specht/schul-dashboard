@@ -884,6 +884,16 @@ function render_preview_day_band(day, label, is_today) {
     band.empty().removeAttr('hidden');
     let text = $('<div>').addClass('pv-band-text');
     text.append($('<h1>').text(label), $('<div>').addClass('pv-band-sub').text(parts.join(' · ')));
+    // other plans (Kürzel, classes, rooms): the same menu as on larger screens
+    if (preview_plan_items().length > 1) {
+        let active = $('.timetable_chooser .ttc.active').first().text().trim();
+        let plan = $('<button type="button" class="pv-band-plan pv-plan-button" aria-haspopup="dialog">')
+            .append($('<span>').text('Plan ' + (active || 'wählen')), $('<i class="fa fa-caret-down">'));
+        plan.on('click', function(ev) {
+            if ($('.pv-plan-menu').length) $('.pv-plan-menu').remove(); else preview_open_plan_menu(ev.currentTarget);
+        });
+        text.append(plan);
+    }
     band.append(text);
     // the profile picture from the menu, as a link to the profile
     let avatar = $('#navbarDropdownProfile .icon').first().clone();
@@ -979,7 +989,8 @@ function preview_open_plan_menu(button) {
     menu.append(input, list);
     fill();
     $(button).after(menu);
-    input.focus();
+    // on phones the keyboard would cover the list: focus only with a real keyboard nearby
+    if (window.matchMedia('(min-width: 768px)').matches) input.focus();
     setTimeout(function() {
         $(document).one('mousedown.pvplan', function(e) {
             if (!$(e.target).closest('.pv-plan-menu, .pv-plan-button').length) menu.remove();

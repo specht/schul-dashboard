@@ -10,6 +10,16 @@ SET u.otp_token = 'JBSWY3DPEHPK3PXP',
     u.last_access = '2024-09-01',
     u.force_2fa_exception_deadline = 0;
 
+// Teachers who get their login code by SMS and have no code app, without
+// first-login grace period (otp-nudge.spec.ts): the number 015111111111,
+// obfuscated with SMS_PHONE_NUMBER_PASSPHRASE of credentials.template.rb.
+MATCH (u:User) WHERE u.email IN ['sms.eins@beispielschule.de', 'sms.zwei@beispielschule.de']
+SET u.telephone_number = 'aNScHygDV6X5CRWT',
+    u.telephone_number_changed = '2024-09-01',
+    u.preferred_login_method = 'sms',
+    u.last_access = '2024-09-01',
+    u.force_2fa_exception_deadline = 0;
+
 // Someone who still has the "Technikamt" role in the database but is no
 // longer in the school's data (e.g. left the school) – this happens in
 // real data and must not break the admin pages.

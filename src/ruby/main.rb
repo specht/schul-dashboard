@@ -148,6 +148,7 @@ require './include/message.rb'
 require './include/mittagessen.rb'
 require './include/monitor.rb'
 require './include/otp.rb'
+require './include/otp_nudge.rb'
 require './include/phishing.rb'
 require './include/poll.rb'
 require './include/pk5.rb'
@@ -4197,9 +4198,12 @@ class Main < Sinatra::Base
                         login_tag = parts[2]
                         login_code = parts[3]
 
-                        login_method = neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => login_tag})['method']
-                            MATCH (l:LoginCode {tag: $tag}) RETURN COALESCE(l.method, 'email') AS method;
+                        login_row = neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => login_tag})
+                            MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(u:User)
+                            RETURN COALESCE(l.method, 'email') AS method, l.sms_fallback AS sms_fallback, u.email AS email;
                         END_OF_QUERY
+                        login_method = login_row['method']
+                        login_hint = otp_login_hint(login_row['email'], login_method, login_row['sms_fallback'])
                     end
 
                     template_path = '_template'

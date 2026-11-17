@@ -1,39 +1,12 @@
 import { test, expect, login, typeEmail, clearLoginMails, waitForMailedCode, ACCOUNTS, ROLE_ACCOUNTS } from './fixtures';
 import type { Page } from '@playwright/test';
+import { SMS_GATEWAY_SECRET, fakeSmsGateway, codeIn, addTelephoneNumber } from './sms-helpers';
 import net from 'node:net';
 import crypto from 'node:crypto';
 
 // SMS codes go through a gateway that connects to /ws_sms. Every SMS is
 // recorded with recipient and purpose (no number, no text), and
 // /sms_anmeldung shows admins who still uses SMS – to move them to OTP.
-
-// src/ruby/test/credentials.rb
-const SMS_GATEWAY_SECRET = 'test-sms-gateway-secret';
-
-type Sms = { telephone_number: string; message: string };
-
-// A gateway like the real one: connects, authenticates, receives the SMS.
-async function fakeSmsGateway(baseURL: string) {
-  const ws = new WebSocket(baseURL.replace(/^http/, 'ws') + '/ws_sms');
-  const inbox: Sms[] = [];
-  ws.addEventListener('message', (e) => {
-    const data = JSON.parse(String(e.data));
-    if (data.command !== 'hello') inbox.push(data);
-  });
-  await new Promise((resolve, reject) => {
-    ws.addEventListener('open', resolve);
-    ws.addEventListener('error', reject);
-  });
-  ws.send(JSON.stringify({ hello: SMS_GATEWAY_SECRET }));
-  let read = 0;
-  return {
-    async next(): Promise<Sms> {
-      await expect.poll(() => inbox.length, { message: 'waiting for an SMS' }).toBeGreaterThan(read);
-      return inbox[read++];
-    },
-    close: () => ws.close(),
-  };
-}
 
 // A gateway whose connection is gone without the server noticing (e.g. its
 // internet is down): it connects and authenticates, then never answers the
@@ -57,7 +30,6 @@ async function silentSmsGateway(baseURL: string) {
   return { close: () => socket.destroy() };
 }
 
-const codeIn = (sms: Sms) => /(\d{6})/.exec(sms.message)![1];
 
 // the admin page, once it reports the gateway as online
 async function openUsagePage(admin: Page) {
@@ -72,15 +44,6 @@ async function smsCount(admin: Page, email: string) {
   return (await row.count()) ? Number(await row.getAttribute('data-sms90')) : 0;
 }
 
-// a number via the profile API: one SMS with the code, one confirmation
-async function addTelephoneNumber(page: Page, gateway: Awaited<ReturnType<typeof fakeSmsGateway>>) {
-  const saved = await page.request.post('/api/save_telephone_number', { data: { telephone_number: '0151 23456789' } });
-  expect(saved.status()).toBe(200);
-  const { tag } = await saved.json();
-  const confirmed = await page.request.post('/api/confirm_telephone_number', { data: { tag, code: codeIn(await gateway.next()) } });
-  expect(confirmed.status()).toBe(200);
-  expect((await gateway.next()).message).toContain('aktiviert');
-}
 
 test('SMS-Anmeldung: Admin sieht, wer SMS-Codes bekommt und wofür', async ({ page, newUserPage, baseURL }) => {
   const person = ROLE_ACCOUNTS.technikteam; // no OTP

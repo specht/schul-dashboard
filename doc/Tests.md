@@ -49,13 +49,18 @@ aus dem E-Mail-Brief an, kennt von den Mails nur das Eingangsdatum und
 protokolliert die Befehle, damit die Tests prüfen können, dass nie Inhalte
 gelesen werden.
 
-Ein SMS-Gateway gibt es im Test-Stack nicht. `tests/sms-usage.spec.ts`
+Ein SMS-Gateway gibt es im Test-Stack nicht. `tests/sms-helpers.ts`
 verbindet sich selbst wie das Gateway mit `/ws_sms` (Geheimnis aus
-`src/ruby/test/credentials.rb`) und liest die Codes aus den empfangenen SMS.
+`src/ruby/test/credentials.rb`) und liest die Codes aus den empfangenen SMS
+(`sms-usage.spec.ts`, `otp-nudge.spec.ts`). Ohne verbundenes Gateway gilt
+der SMS-Versand als nicht erreichbar.
 
 Nach dem Start richtet `test/e2e/seed.cypher` zwei Konten für die
 Anmelde-Tests ein: `torstenson@beispielschule.de` muss einen zweiten Faktor
 (OTP) verwenden, `clarke@beispielschule.de` meldet sich per OTP-App an.
+`sms.eins@` und `sms.zwei@beispielschule.de` (nur für `otp-nudge.spec.ts`,
+je eins pro Playwright-Projekt) bekommen ihren Code per SMS, haben keine
+App und keine Schonfrist nach der ersten Anmeldung.
 Das OTP-Geheimnis der Testkonten steht in `test/e2e/tests/fixtures.ts`.
 
 Playwright-Berichte liegen nach einem Lauf unter

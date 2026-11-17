@@ -3208,3 +3208,40 @@ body.dark .lesson-mail-preview {
 .lesson-mail-preview-toggle {
     font-weight: bold;
 }
+
+/* code app instead of SMS: login page (c.html) and start page */
+.otp-nudge {
+    display: flex;
+    gap: 0.8em;
+    align-items: flex-start;
+    padding: 0.9em 1em;
+    border: 1px solid rgba(128, 128, 128, 0.35);
+    border-radius: 0.5em;
+    background-color: rgba(128, 128, 128, 0.08);
+}
+
+.otp-nudge p {
+    margin-bottom: 0.6em;
+}
+
+.otp-nudge-icon {
+    font-size: 180%;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.otp-nudge-panel-title {
+    font-weight: bold;
+    margin-bottom: 0.4em;
+}
+
+.otp-nudge-panel p {
+    margin-bottom: 0.6em;
+}
+
+.otp-nudge-panel-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    align-items: center;
+}

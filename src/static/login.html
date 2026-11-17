@@ -10,6 +10,11 @@
                     Hinweis: Für die Anmeldung benötigst du eine Schul-E-Mail-Adresse #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}. Falls du Probleme bei der Anmeldung hast, melde dich bitte unter <a href='mailto:#{DASHBOARD_SUPPORT_EMAIL}'>#{DASHBOARD_SUPPORT_EMAIL}</a>.
                 </em>
             </p>
+            <div id='sms_gateway_notice' class='alert alert-warning' style='#{Main.sms_gateway_offline_notice? ? '' : 'display: none;'}'>
+                <strong>Der SMS-Versand ist gerade gestört.</strong>
+                Codes, die sonst per SMS kommen, schicken wir dir per E-Mail. Lehrkräfte ohne Authenticator-App können sich deshalb
+                gerade nicht anmelden – bitte versuch es später noch einmal. Mit einer <a href='/otp'>Authenticator-App</a> bist du davon unabhängig.
+            </div>
             <hr />
             <form id='form' autocomplete='on'>
                 <div class="input-group mb-3">
@@ -21,7 +26,7 @@
             </form>
             <div class='api_messages' style='display: none;'></div>
             <hr />
-            <em><b>Tipp:</b> Wenn du nicht jedesmal deinen Zugangscode per E-Mail bekommen möchtest, kannst du unter "Profil" einen Zugang per OTP-Code (One Time Password) einrichten. Dein Smartphone zeigt dir dann deinen Zugangscode an, ohne dass du eine E-Mail bekommst.</em>
+            <em><b>Tipp:</b> Wenn du nicht jedesmal auf einen Code per E-Mail oder SMS warten möchtest, kannst du unter »Profil« eine <a href='/otp'>Authenticator-App</a> einrichten. Dein Smartphone zeigt dir dann deinen Code sofort an.</em>
             <hr />
             <div style='padding-left: 40px; position: relative;'>
                 <i class='fa fa-question-circle' style='font-size: 150%; position: absolute; top: 0px; left: 4px;'></i>

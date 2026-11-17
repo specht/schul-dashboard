@@ -19,8 +19,14 @@ end
 # connection) no longer counts as ready, so codes go by email instead.
 SMS_GATEWAY_PING_INTERVAL = 20 unless defined?(SMS_GATEWAY_PING_INTERVAL)
 SMS_GATEWAY_STALE_AFTER = 60 unless defined?(SMS_GATEWAY_STALE_AFTER)
+# the login page says so once no gateway has answered for this long (not
+# during the short reconnect after a restart)
+SMS_GATEWAY_NOTICE_AFTER = 120 unless defined?(SMS_GATEWAY_NOTICE_AFTER)
 
 class Main < Sinatra::Base
+    # last answer of any gateway (authentication or pong); counts from the
+    # start of the server
+    @@sms_gateway_last_seen = Time.now.to_f
 
     def user_is_eligible_for_sms?
         return false unless user_logged_in?
@@ -37,6 +43,14 @@ class Main < Sinatra::Base
 
     def self.sms_gateway_ready?
         !sms_gateway.nil?
+    end
+
+    # for the notice on the login page: SMS is in use here, and no gateway
+    # has answered for a while
+    def self.sms_gateway_offline_notice?
+        return false if SMS_GATEWAY_SECRET.to_s.empty?
+        return false if sms_gateway_ready?
+        Time.now.to_f - @@sms_gateway_last_seen >= SMS_GATEWAY_NOTICE_AFTER
     end
 
     def session_user_telephone_number
@@ -306,7 +320,7 @@ class Main < Sinatra::Base
                         @@ws_clients[:authenticated_sms].delete(client_id)
                         ws.close()
                     else
-                        ws.ping('') { client[:last_seen] = Time.now.to_f }
+                        ws.ping('') { client[:last_seen] = @@sms_gateway_last_seen = Time.now.to_f }
                     end
                 end
             end
@@ -322,6 +336,7 @@ class Main < Sinatra::Base
                     if Rack::Utils.secure_compare(data['hello'].to_s, SMS_GATEWAY_SECRET.to_s)
                         @@ws_clients[:sms][client_id][:authenticated] = true
                         @@ws_clients[:authenticated_sms][client_id] = {:ws => ws, :authenticated => true, :last_seen => Time.now.to_f}
+                        @@sms_gateway_last_seen = Time.now.to_f
                     else
                         ws.close()
                     end

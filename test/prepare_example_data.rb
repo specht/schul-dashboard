@@ -50,6 +50,10 @@ end
 append_lines(File.join(target, 'lehrer', 'lehrer.csv'), [
     'zeugnis.admin@beispielschule.de,Za,w,Zeugnis,Zoe,,',
     'technik@beispielschule.de,Tk,m,Technik,Tom,,',
+    # only for otp-nudge.spec.ts: SMS login without a code app (one per
+    # Playwright project, see test/e2e/seed.cypher)
+    'sms.eins@beispielschule.de,Se,w,Eins,Sina,,',
+    'sms.zwei@beispielschule.de,Sz,m,Zwei,Sven,,',
 ])
 append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'sekretariat@beispielschule.de,w,Sekretariat,Sabine,',

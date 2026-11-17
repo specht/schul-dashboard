@@ -1,0 +1,183 @@
+<!-- public page: linked from the login page (c.html) -->
+<style>
+    .otp-page {
+        max-width: 52em;
+        margin: 0 auto;
+    }
+
+    .otp-page h2 {
+        margin-bottom: 0.4em;
+    }
+
+    .otp-page h3 {
+        font-size: 130%;
+        margin-top: 1.6em;
+        margin-bottom: 0.7em;
+    }
+
+    .otp-lead {
+        font-size: 115%;
+    }
+
+    .otp-stats {
+        margin: 1em 0;
+    }
+
+    .otp-steps {
+        counter-reset: otp-step;
+        list-style: none;
+        padding: 0;
+    }
+
+    .otp-steps li {
+        counter-increment: otp-step;
+        position: relative;
+        padding-left: 2.6em;
+        margin-bottom: 0.9em;
+    }
+
+    .otp-steps li::before {
+        content: counter(otp-step);
+        position: absolute;
+        left: 0;
+        top: -0.1em;
+        width: 1.8em;
+        height: 1.8em;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 1.8em;
+        font-weight: bold;
+        border: 1px solid rgba(128, 128, 128, 0.5);
+    }
+
+    .otp-apps {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(20em, 1fr));
+        gap: 0.8em;
+    }
+
+    .otp-app {
+        border: 1px solid rgba(128, 128, 128, 0.35);
+        border-radius: 0.5em;
+        padding: 0.8em 1em;
+        background-color: rgba(128, 128, 128, 0.06);
+    }
+
+    .otp-app-name {
+        font-weight: bold;
+    }
+
+    .otp-app-note {
+        font-size: 90%;
+        margin-bottom: 0.6em;
+    }
+
+    .otp-app-stores {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8em 1.5em;
+    }
+
+    .otp-app-store {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4em;
+        text-decoration: none !important;
+    }
+
+    .otp-app-qr svg {
+        display: block;
+        width: 96px;
+        height: 96px;
+        background-color: #fff;
+        padding: 6px;
+        border-radius: 6px;
+        box-sizing: content-box;
+    }
+
+    .otp-faq dt {
+        margin-top: 0.8em;
+    }
+
+    .otp-faq dd {
+        margin-left: 0;
+    }
+
+    /* on a phone the store buttons are enough */
+    @media (max-width: 767px) {
+        .otp-app-qr {
+            display: none;
+        }
+    }
+</style>
+<div class='container-fluid solid white'>
+    <div class='otp-page'>
+        <h2>Anmelden mit einer Authenticator-App</h2>
+        <p class='otp-lead'>
+            Statt auf eine SMS zu warten, kannst du dir deinen Anmeldecode von einer App auf deinem Handy anzeigen lassen.
+            Der Code ist sofort da, funktioniert auch ohne Netz – und auch dann, wenn der SMS-Versand gerade ausfällt.
+        </p>
+        <div class='otp-stats' style='#{otp_stats_sentence.empty? ? 'display: none;' : ''}'>
+            <i class='fa fa-users'></i>&nbsp;&nbsp;#{otp_stats_sentence}
+        </div>
+
+        <h3>In drei Schritten eingerichtet</h3>
+        <ol class='otp-steps'>
+            <li><strong>App installieren.</strong> Eine der Apps unten genügt, alle sind kostenlos.</li>
+            <li>
+                <strong>Im Dashboard verbinden.</strong> Öffne dein Profil, wähle unter »Anmeldung« den Knopf <em>OTP aktivieren</em>
+                und scanne den QR-Code mit der App. Den QR-Code siehst du nur einmal.
+                <div style='margin-top: 0.5em; #{user_logged_in? ? '' : 'display: none;'}'>
+                    <a href='/profil#anmeldung' class='btn btn-sm btn-success' id='bu_otp_setup'><i class='fa fa-qrcode'></i>&nbsp;&nbsp;Zur Einrichtung im Profil</a>
+                </div>
+            </li>
+            <li>
+                <strong>Anmelden.</strong> Wenn das Dashboard nach einem Code fragt, öffne die App und gib die sechs Ziffern ein, die dort beim Dashboard stehen.
+                Sie wechseln alle 30 Sekunden.
+            </li>
+        </ol>
+        <p class='text-muted'>
+            Tipp für Lehrkräfte: Wähle danach im Profil »Code per E-Mail erhalten« als Standard. Der zweite Code kommt dann aus der App – ganz ohne SMS.
+        </p>
+
+        <h3>Welche App?</h3>
+        #{print_otp_apps()}
+        <p class='text-muted' style='margin-top: 0.8em;'>
+            Auch der Passwort-Manager, der in iPhones eingebaut ist (App »Passwörter«), kann solche Codes erzeugen.
+        </p>
+
+        <h3>Wie funktioniert das?</h3>
+        <p>
+            Beim Einrichten erzeugt das Dashboard einen <strong>zufälligen geheimen Schlüssel</strong>. Der QR-Code bringt ihn einmalig in deine App –
+            danach kennen ihn nur das Dashboard und deine App.
+        </p>
+        <p>
+            Die App berechnet aus diesem Schlüssel und der <strong>aktuellen Uhrzeit</strong> alle 30 Sekunden einen sechsstelligen Code.
+            Das Dashboard rechnet beim Anmelden genauso und vergleicht die Ergebnisse. Das Verfahren heißt TOTP
+            (»zeitbasiertes Einmalpasswort«) und ist ein offener Standard (RFC 6238).
+        </p>
+        <p>
+            <strong>Dabei wird nichts übertragen.</strong> Die App braucht kein Internet, kein Konto und keine Telefonnummer, und sie meldet sich bei niemandem.
+            Weder der Anbieter der App noch die Schule noch sonst jemand erfährt, wann du dich anmeldest – es ist reine Mathematik mit der Uhrzeit.
+            Im QR-Code stehen nur der Schlüssel, der Name »Dashboard« und deine E-Mail-Adresse, damit du den Eintrag in der App wiedererkennst.
+        </p>
+        <p>
+            Sicherer als eine SMS ist es auch: Der Code kann unterwegs nicht abgefangen werden, weil er nie verschickt wird.
+        </p>
+        <p class='text-muted'>
+            Manche Apps (etwa von Google und Microsoft) bieten an, deine Schlüssel in deinem Konto bei ihnen zu sichern. Das ist praktisch beim Handywechsel,
+            aber freiwillig. FreeOTP und Aegis speichern nur auf deinem Gerät.
+        </p>
+
+        <h3>Und wenn …</h3>
+        <dl class='otp-faq'>
+            <dt>… ich ein neues Handy bekomme?</dt>
+            <dd>Viele Apps können ihre Einträge auf das neue Handy übertragen. Sonst erzeugst du im Profil einen neuen QR-Code und scannst ihn mit dem neuen Handy – der alte Eintrag gilt dann nicht mehr.</dd>
+            <dt>… mein Handy weg ist?</dt>
+            <dd>Dann #{otp_help_contact}. Wenn du dich wieder anmelden kannst, erzeugst du im Profil einen neuen QR-Code.</dd>
+            <dt>… der Code nicht passt?</dt>
+            <dd>Die Codes hängen von der Uhrzeit ab. Stell auf dem Handy die automatische Uhrzeit ein; kleine Abweichungen gleicht das Dashboard aus.</dd>
+        </dl>
+    </div>
+</div>

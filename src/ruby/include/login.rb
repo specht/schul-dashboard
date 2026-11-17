@@ -196,6 +196,13 @@ class Main < Sinatra::Base
             elsif available_second_methods.empty?
                 response[:sent] = :no_methods_available
             end
+            # waiting for an SMS, or no SMS possible right now: suggest a code app
+            if response[:sent] == :sms
+                response[:hint] = otp_nudge_html(:waiting_sms)
+            elsif response[:sent] == :no_methods_available && first_method != 'sms' && telephone_number && telephone_number.size > 0 && !Main.sms_gateway_ready?
+                response[:sent] = :sms_unavailable
+                response[:hint] = otp_nudge_html(:sms_down_second)
+            end
 
             respond(response)
         else
@@ -599,14 +606,18 @@ class Main < Sinatra::Base
         END_OF_QUERY
         telephone_number = result['n'][:telephone_number]
         preferred_login_method = result['n'][:preferred_login_method] || 'email'
+        # SMS preferred, but the gateway is offline: e-mail instead, and the
+        # login page says why (otp_login_hint)
+        sms_fallback = false
         if preferred_login_method == 'sms'
             unless telephone_number && telephone_number.size > 0 && Main.sms_gateway_ready?
+                sms_fallback = !!(telephone_number && telephone_number.size > 0)
                 preferred_login_method = 'email'
             end
         end
-        neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :method => preferred_login_method)
+        neo4j_query(<<~END_OF_QUERY, :email => data[:email], :tag => tag, :method => preferred_login_method, :sms_fallback => sms_fallback)
             MATCH (l:LoginCode {tag: $tag})-[:BELONGS_TO]->(n:User {email: $email})
-            SET l.method = $method;
+            SET l.method = $method, l.sms_fallback = $sms_fallback;
         END_OF_QUERY
         email_recipient = data[:email]
         begin

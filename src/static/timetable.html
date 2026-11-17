@@ -2293,6 +2293,22 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#ti_mail_reason').on('change', function(e) {
         mail_reason_changed();
     });
+    // start page: code app instead of SMS (print_otp_nudge_panel); the
+    // panels are refreshed in place, hence delegated
+    $(document).on('click', '.bu-otp-nudge-switch', function(e) {
+        let button = e.currentTarget;
+        button.disabled = true;
+        api_call('/api/set_preferred_login_method', {method: 'email'}, function(data) {
+            if (!data.success) { button.disabled = false; return; }
+            $(button).closest('.otp-nudge-panel').html("<div class='otp-nudge-panel-title'><i class='fa fa-check'></i>&nbsp;&nbsp;Umgestellt</div><p>Ab jetzt kommt dein erster Code per E-Mail, der zweite aus deiner Authenticator-App.</p>");
+        });
+    });
+    $(document).on('click', '.bu-otp-nudge-snooze', function(e) {
+        let panel = $(e.currentTarget).closest('.otp-nudge-panel').parent();
+        api_call('/api/snooze_otp_nudge', {}, function(data) {
+            if (data.success) panel.remove();
+        });
+    });
     $('#ti_mail_details').on('input', update_mail_preview);
     $('#ti_mail_preview_sus').on('change', update_mail_preview);
     // Mails are mostly sent from a phone: there the preview starts folded

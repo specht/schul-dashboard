@@ -250,6 +250,21 @@ die Verbindung wird getrennt und die Codes gehen wieder per E-Mail.
   an der Person an – ohne Telefonnummer und ohne Text. Einträge, die älter
   als 180 Tage sind, werden beim Senden gelöscht. `SmsDay` zählt weiterhin
   nur die SMS pro Tag.
+- **Weg von der SMS:** `/otp` erklärt die Anmeldung mit einer
+  Authenticator-App (ohne Anmeldung erreichbar, mit Links und QR-Codes zu
+  den Apps). Lehrkräfte sehen einen Hinweis darauf, wenn sie auf der
+  Anmeldeseite einige Sekunden auf eine SMS warten und wenn der SMS-Versand
+  gerade nicht erreichbar ist. Auf der Startseite erinnert eine Kachel
+  Lehrkräfte, die SMS ohne App nutzen, und schlägt denen, die eine App
+  haben, aber SMS als Standard, die Umstellung auf »Code per E-Mail« vor
+  (»Später« blendet sie 30 Tage aus). Die Zahl der Lehrkräfte mit App
+  zählt alle, die das Dashboard schon benutzt haben.
+- **Gateway offline:** Lehrkräfte ohne App können sich dann nicht anmelden
+  (der erste Code kommt per E-Mail, der zweite Faktor wäre die SMS). Hat
+  zwei Minuten lang kein Gateway geantwortet, zeigt die Anmeldeseite allen
+  einen Hinweis darauf (nicht schon während des kurzen Wiederverbindens
+  nach einem Neustart); die Seite zur Code-Eingabe sagt es den Betroffenen
+  ausdrücklich.
 
 ## Mails aus dem Unterricht
 

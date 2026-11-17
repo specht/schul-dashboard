@@ -491,6 +491,7 @@ class Main < Sinatra::Base
     def start_page_panels_html()
         [
             print_ad_hoc_2fa_panel(),
+            print_otp_nudge_panel(),
             print_summoned_books_panel(),
             print_tresor_countdown_panel(),
             print_current_polls(),

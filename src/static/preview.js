@@ -371,7 +371,7 @@
         links.forEach(function(a) {
             var href = a.getAttribute('href') || '';
             if (seen[href] || a.closest('[aria-labelledby="navbarDropdownKurse"], [aria-labelledby="navbarDropdownKlassen"]')) return;
-            if (href === '/tests') { unterricht.appendChild(entry(a)); seen[href] = true; }
+            if (href === '/tests') { unterricht.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
         });
         // Lerngruppen: the whole menu moves (own groups first, the rest folded)
         var groups = document.getElementById('navbarDropdownKlassen');
@@ -389,6 +389,16 @@
         if (admin_item) admin_item.closest('.nav-item').classList.add('pv-nav-hidden');
         // sections before the search / profile at the bottom
         var anchor = main_nav.querySelector('.nav-quick-search-item') || main_nav.querySelector('.nav-item.dropdown:last-child');
+        // "Schule": the most used first, the seasonal ones last
+        var ORDER = ['/events', '/polls', '/bibliothek', '/mailing_lists', '/prepare_vote', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
+        var rank = function(a) {
+            var href = a.getAttribute('href') || '';
+            for (var i = 0; i < ORDER.length; i++) if (href.indexOf(ORDER[i]) === 0) return i;
+            return ORDER.length;
+        };
+        Array.prototype.slice.call(schule.querySelectorAll('.pv-nav-entry'))
+            .sort(function(a, b) { return rank(a) - rank(b); })
+            .forEach(function(a) { schule.appendChild(a); });
         [unterricht, schule, verwaltung].forEach(function(sec) {
             if (sec.children.length > 1) main_nav.insertBefore(sec, anchor);
         });

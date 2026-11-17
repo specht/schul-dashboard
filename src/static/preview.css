@@ -3336,3 +3336,34 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .pv-week-row.pv-week-double .pv-week-room {
     padding-top: 4px;
 }
+
+/* ---------- Red only where one confirms (calm UI) ----------
+   In pages and editors a delete button is a calm button with red type;
+   the solid red stays for the confirmation dialog's button. */
+.ui-preview .btn-danger:not(.modal-footer .btn-danger) {
+    background-color: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    color: #b42318;
+}
+
+.ui-preview.dark .btn-danger:not(.modal-footer .btn-danger) {
+    color: #ff8f8f;
+}
+
+.ui-preview .btn-danger:not(.modal-footer .btn-danger):hover {
+    background-color: color-mix(in srgb, #b42318 10%, var(--pv-surface));
+    border-color: color-mix(in srgb, #b42318 35%, var(--pv-line));
+}
+
+/* dialogs: no inner shadow at the edge of the scrolling part */
+.ui-preview .modal-body {
+    box-shadow: none !important;
+}
+
+/* polls: a word when there are none yet */
+.ui-preview .polls-here:empty::after {
+    content: "Noch keine Umfragen – mit »Neue Umfrage« legen Sie eine an.";
+    display: block;
+    padding: 6px 0;
+    color: var(--pv-muted);
+}

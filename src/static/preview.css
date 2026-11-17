@@ -2559,3 +2559,201 @@ body.ui-preview.dark::before {
         max-width: min(1140px, calc(100% - 48px));
     }
 }
+
+/* ---------- Text editor (Summernote) ---------- */
+.ui-preview .note-editor.note-frame {
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.ui-preview .note-toolbar {
+    background: var(--pv-hover);
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.ui-preview .note-toolbar .btn,
+.ui-preview .note-toolbar .note-btn {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-color: var(--pv-line);
+}
+
+.ui-preview .note-toolbar .btn:hover,
+.ui-preview .note-toolbar .note-btn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .note-editing-area .note-editable {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .note-statusbar {
+    background: var(--pv-hover) !important;
+    border-top: 1px solid var(--pv-line) !important;
+}
+
+.ui-preview .note-dropdown-menu,
+.ui-preview .note-popover .popover-content {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+/* the compose dialog's buttons in one row on phones */
+@media (max-width: 767px) {
+    .ui-preview #composeModal .modal-footer {
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .ui-preview #composeModal .modal-footer #publish_message_btn_container {
+        display: flex;
+        gap: 6px;
+        margin-right: auto;
+    }
+
+    .ui-preview #composeModal .modal-footer .btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+}
+
+/* ---------- Lesson blocks in the grid: a calmer inside (timetable.html, eventContent) ---------- */
+.ui-preview .fc-timegrid-event .fc-event-main {
+    padding: 4px 6px 5px;
+}
+
+.ui-preview .pv-ev-meta {
+    margin-bottom: 1px;
+}
+
+/* the room chip at the right edge of the padded block */
+.ui-preview .fc-timegrid-event .pv-ev-room {
+    right: 4px !important;
+}
+
+.ui-preview .pv-ev-title {
+    line-height: 1.25;
+}
+
+.ui-preview .fc-timegrid-event .line2 {
+    margin-top: 2px;
+}
+
+/* markers (HA, topic, NC, LR …): small soft chips */
+.ui-preview .fc-timegrid-event .cem span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 3px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: color-mix(in srgb, currentColor 14%, transparent) !important;
+    font: 700 0.72rem/1.6 var(--pv-text);
+    opacity: 1 !important;
+}
+
+/* topic and homework below the title: space instead of a line */
+.ui-preview .pv-ev-details {
+    border-top: 0 !important;
+    margin-top: 2px !important;
+    font-family: var(--pv-text);
+}
+
+/* the markers' row: markers on the right; gone when empty */
+.ui-preview .fc-timegrid-event .line2.pv-ev-row:not(:has(.pv-ev-inline-topic, .cem > *, span:not(.cem))) {
+    display: none;
+}
+
+.ui-preview .fc-timegrid-event .line2.pv-ev-row .cem {
+    position: static;
+    flex: none;
+    margin: 0 0 0 auto;
+    padding: 0 0 0 4px;
+}
+
+.ui-preview .pv-ev-detail-text {
+    left: 6px !important;
+    right: 6px;
+    width: auto !important;
+    padding: 4px 0 0 !important;
+}
+
+.ui-preview .pv-ev-label {
+    margin-top: 4px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ui-preview .pv-ev-desc {
+    opacity: 0.92 !important;
+    border-top: 0 !important;
+    font-size: 0.9em;
+    line-height: 1.3;
+}
+
+/* the break inside a double lesson: a soft band */
+.ui-preview .fc-timegrid-event .bgdiv {
+    border-color: color-mix(in srgb, currentColor 20%, transparent) !important;
+    background-color: color-mix(in srgb, currentColor 7%, transparent) !important;
+}
+
+/* single lessons: the topic in the markers' row, shortened with …, the
+   markers (HA …) on the right */
+.ui-preview .fc-timegrid-event .line2.pv-ev-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 0;
+}
+
+.ui-preview .pv-ev-inline-topic {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font: 0.78rem/1.4 var(--pv-text);
+    opacity: 0.92;
+}
+
+.ui-preview .line2.pv-ev-row .cem {
+    flex: none;
+    font-size: 0.72rem;
+}
+
+.ui-preview .fc-timegrid-event .pv-ev-detail-text {
+    white-space: normal !important;
+}
+
+/* ---------- Behind the island / status bar (viewport-fit=cover) ----------
+   Everything fixed to the top or bottom keeps the safe areas free. */
+@media (max-width: 767px) {
+    /* pages with the white top bar: the bar reaches up, its content below the island */
+    body.ui-preview:not(.pv-agenda-on) .navbar {
+        padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+    }
+
+    body.ui-preview:not(.pv-agenda-on) {
+        padding-top: calc(56px + env(safe-area-inset-top, 0px));
+    }
+
+    /* the agenda's header has its own top padding with the inset (pv-day-band) */
+    .ui-preview .pv-plan-menu,
+    .ui-preview .navbar .navbar-collapse {
+        padding-left: calc(14px + env(safe-area-inset-left, 0px));
+        padding-right: calc(14px + env(safe-area-inset-right, 0px));
+    }
+}
+
+/* landscape on phones: content clear of the camera at the side */
+.ui-preview #main_container {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}

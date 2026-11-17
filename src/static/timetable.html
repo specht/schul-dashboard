@@ -1152,14 +1152,21 @@ function render_preview_side() {
         let what = x.entfall ? 'entfällt' : (room ? 'Raum ' + room[1] + ' statt ' + room[0] : $('<div>').html(x.vertretungs_text).text().trim());
         let item = $('<button type="button">').addClass('pv-side-change');
         item.append($('<span>').addClass('pv-side-tag').toggleClass('pv-side-tag-off', !!x.entfall).text(kind));
-        let label = $('<div>').html(x.label_short || '');
-        label.find('s, del, strike').remove();
-        item.append($('<span>').addClass('pv-side-text').append($('<b>').text(label.text().trim()), $('<small>').text(names[e.start.getDay()] + ' ' + preview_hhmm(e.start) + ' · ' + what)));
+        // the subject: the short label without what was crossed out – for a
+        // cancelled lesson that is everything, then the crossed-out part
+        let label = $('<div>').html(x.label_short || x.label || '');
+        let kept = label.clone();
+        kept.find('s, del, strike').remove();
+        let name = kept.text().trim().replace(/^\(.*\)$/, '') || label.text().trim();
+        item.append($('<span>').addClass('pv-side-text').append($('<b>').text(name), $('<small>').text(names[e.start.getDay()] + ' ' + preview_hhmm(e.start) + ' · ' + what)));
         item.on('click', open(e));
         box.append(item);
     }
     if (changes.length > 8) box.append($('<p>').addClass('pv-side-empty').text('und ' + (changes.length - 8) + ' weitere'));
     side.append(box);
+    // students: their homework (the panel next to the timetable) comes first
+    let homework = side.parent().find('.future_homework').first();
+    if (sus_logged_in && homework.length) side.insertAfter(homework); else side.parent().prepend(side);
     side.removeAttr('hidden');
 }
 
@@ -1814,6 +1821,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 div0.append(t).append(raum);
 
                 let div1 = $('<div>');
+                div1.addClass('pv-ev-title');
                 if (arg.event.extendedProps.count === 1)
                     div1.css('white-space', 'nowrap');
                 let fach = $('<div>').html(praktikum_logged_in ? `${arg.event.extendedProps.label_short}<br>${arg.event.extendedProps.klassen.map((x) => KLASSEN_TR[x] ?? x).join(', ')}` : arg.event.extendedProps.label);
@@ -1842,7 +1850,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     per_user.audio_comments = filter_events_by_timestamp(per_user.audio_comments, show_messages_from);
 
                 let markers = $('<span>').addClass('cem');
-                if (event_data.stundenthema_text)
+                // new design, single lessons: the topic as text in this row instead of the ⓘ
+                let pv_design = document.body.classList.contains('ui-preview');
+                let pv_inline_topic = pv_design && arg.event.extendedProps.count === 1 && event_data.stundenthema_text;
+                if (pv_design) {
+                    // no spacer at the start of the row; a row with markers only is laid out by CSS
+                    div1b.contents().filter(function() { return this.nodeType === 3; }).remove();
+                    div1b.addClass('pv-ev-row');
+                }
+                if (pv_inline_topic)
+                    div1b.append($('<span>').addClass('pv-ev-inline-topic').text($('<div>').html(String(event_data.stundenthema_text).replace(/<br\s*\/?>/g, ' · ')).text()));
+                // the ⓘ only where the topic is not shown (today's design; the new one shows it)
+                else if (event_data.stundenthema_text && !pv_design)
                     markers.append($('<span>').html("<i class='fa fa-info-circle'></i>"));
                 if (event_data.lesson_jitsi) {
                     if (event_data.breakout_rooms)
@@ -1890,6 +1909,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let div3 = $('<div>');
                 let div4 = $('<div>');
                 div2.addClass('condensed');
+                div2.addClass('pv-ev-details');
 
                 // div2.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
                 div2.css('border-top', '1px solid rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.5)');
@@ -1902,6 +1922,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     div3.css('white-space', 'nowrap');
                     div3.css('text-overflow', 'ellipsis');
                     div3.css('overflow', 'hidden');
+                    div3.addClass('pv-ev-detail-text');
                     div3.css('position', 'absolute');
                     div3.css('left', '0%');
                     div3.css('width', '100%');
@@ -1915,7 +1936,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //                     div3.append($('<div>').html('Stundenthema'));
                     if (arg.event.extendedProps.count > 1)
                     {
-                        let description = appendTextWithBreaks($('<div>'), (arg.event.extendedProps.data || {}).stundenthema_text);
+                        let description = appendTextWithBreaks($('<div>').addClass('pv-ev-desc pv-ev-topic'), (arg.event.extendedProps.data || {}).stundenthema_text);
                         description.css('opacity', 0.7);
                         description.css('white-space', 'normal');
 //                         description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
@@ -1925,10 +1946,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ((arg.event.extendedProps.data || {}).hausaufgaben_text)
                 {
-                    div3.append($('<div>').html('Hausaufgaben (zu heute)'));
+                    div3.append($('<div>').addClass('pv-ev-label').html('Hausaufgaben (zu heute)'));
                     if (arg.event.extendedProps.count > 1)
                     {
-                        let description = appendTextWithBreaks($('<div>'), (arg.event.extendedProps.data || {}).hausaufgaben_text);
+                        let description = appendTextWithBreaks($('<div>').addClass('pv-ev-desc'), (arg.event.extendedProps.data || {}).hausaufgaben_text);
                         description.css('opacity', 0.7);
                         description.css('white-space', 'normal');
                         // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');

@@ -58,6 +58,14 @@ class Main < Sinatra::Base
         return '' unless ui_preview?
         dark = !!(@session_user || {})[:dark]
         backdrop, backdrop_css = design_preview_backdrop(color_scheme, dark)
+        # the page reaches behind the island / status bar (safe areas in
+        # preview.css); in a browser tab the browser's own bar stays, on the
+        # home screen the backdrop shows behind the status bar
+        status_colour = '#' + backdrop.to_s[1, 6]
+        "<meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'>\n" +
+        "<meta name='apple-mobile-web-app-capable' content='yes'>\n" +
+        "<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>\n" +
+        "<script>(function () { var m = document.querySelector('meta[name=viewport]'); if (m) m.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover'); var t = document.querySelector('meta[name=theme-color]'); if (t) t.setAttribute('content', '#{status_colour}'); })();</script>\n" +
         backdrop_css +
         "<style id='design_tokens'>#{DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, backdrop)}</style>\n" +
             "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +

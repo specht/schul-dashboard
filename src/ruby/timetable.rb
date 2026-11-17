@@ -715,6 +715,8 @@ class Timetable
                         e[:raum_removed] = e[:raum].first
                     end
 
+                    # a course only in the Vertretungsplan comes as its key ('agr_22')
+                    e[:fach] = e[:fach].map { |x| FachCode.normalize(x, @@faecher, @@lessons[:lesson_keys]) }
                     fach_lang = e[:fach].map do |x|
                         @@faecher[x] || x
                     end

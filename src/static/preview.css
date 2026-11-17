@@ -2020,12 +2020,6 @@ html {
     color: inherit;
 }
 
-/* messages bring their own text colours (pasted from mails): readable in dark mode */
-.ui-preview.dark .text-comment .message,
-.ui-preview.dark .text-comment .message * {
-    color: var(--pv-ink) !important;
-    background-color: transparent !important;
-}
 
 /* error messages */
 .ui-preview .text-danger {
@@ -2321,8 +2315,25 @@ body.ui-preview.dark::before {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        /* level with the timetable below the header */
-        margin-top: 21px;
+        margin-bottom: 12px;
+    }
+
+    /* the column: level with the timetable, scrolls on its own and stays in
+       view while the page scrolls */
+    .ui-preview.pv-week-head-on .timetable_chooser:not(.pv-col-empty) {
+        position: sticky;
+        top: 12px;
+        align-self: flex-start;
+        margin-top: var(--pv-head-h, 90px);
+        max-height: calc(100vh - 12px - 40px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        padding-bottom: 12px;
+    }
+
+    .ui-preview.pv-week-head-on .timetable_chooser > .hint {
+        margin-bottom: 12px;
     }
 
     .pv-side-box {
@@ -2756,4 +2767,52 @@ body.ui-preview.dark::before {
 .ui-preview #main_container {
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* ---------- Messages: one look, whatever was pasted ----------
+   Messages often carry the fonts, sizes, colours and spacing of where they
+   were copied from; the new design shows their structure (paragraphs, bold,
+   italics, links, lists) in its own type. */
+.ui-preview .text-comment .message {
+    font-family: var(--pv-text);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--pv-ink);
+}
+
+.ui-preview .text-comment .message *:not(img):not(svg):not(svg *) {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    background-color: transparent !important;
+    text-indent: 0 !important;
+    letter-spacing: normal !important;
+}
+
+.ui-preview .text-comment .message p,
+.ui-preview .text-comment .message div,
+.ui-preview .text-comment .message ul,
+.ui-preview .text-comment .message ol {
+    margin: 0 0 0.6em !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.ui-preview .text-comment .message h1,
+.ui-preview .text-comment .message h2,
+.ui-preview .text-comment .message h3,
+.ui-preview .text-comment .message h4 {
+    font-weight: 700;
+    margin: 0.4em 0 0.4em !important;
+}
+
+.ui-preview .text-comment .message a {
+    color: var(--acc-text) !important;
+    text-decoration: underline;
+}
+
+.ui-preview .text-comment .message > :last-child,
+.ui-preview .text-comment .message p:last-child {
+    margin-bottom: 0 !important;
 }

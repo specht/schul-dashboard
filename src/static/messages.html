@@ -344,11 +344,51 @@ document.addEventListener('DOMContentLoaded', function() {
         threshold: 1.0
     });
 
+    // keeps p, br, b/strong, i/em, u, a (href), ul/ol/li and drops all styles
+    function clean_pasted_html(html) {
+        let source = new DOMParser().parseFromString(html, 'text/html').body;
+        let keep = { P: 'p', DIV: 'p', BR: 'br', B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', A: 'a', UL: 'ul', OL: 'ol', LI: 'li', H1: 'p', H2: 'p', H3: 'p', H4: 'p' };
+        let copy = function(node, target) {
+            for (let child of Array.from(node.childNodes)) {
+                if (child.nodeType === 3) { target.appendChild(document.createTextNode(child.textContent)); continue; }
+                if (child.nodeType !== 1 || /^(SCRIPT|STYLE|META|LINK|TITLE)$/.test(child.tagName)) continue;
+                let tag = keep[child.tagName];
+                // bold written as a style (Word, Google Docs)
+                if (!tag && /font-weight:\s*(bold|[6-9]00)/i.test(child.getAttribute('style') || '')) tag = 'b';
+                if (!tag) { copy(child, target); continue; }
+                let el = document.createElement(tag);
+                if (tag === 'a') {
+                    let href = child.getAttribute('href') || '';
+                    if (/^(https?:|mailto:)/i.test(href)) el.setAttribute('href', href); else { copy(child, target); continue; }
+                }
+                if (/^H[1-4]$/.test(child.tagName)) { let b = document.createElement('b'); copy(child, b); el.appendChild(b); }
+                else copy(child, el);
+                target.appendChild(el);
+            }
+        };
+        let out = document.createElement('div');
+        copy(source, out);
+        // no empty paragraphs one after another
+        out.innerHTML = out.innerHTML.replace(/(<p>\s*(<br>)?\s*<\/p>\s*){2,}/g, '<p><br></p>');
+        return out.innerHTML;
+    }
+
     $('#summernote').summernote({
         placeholder: 'Bitte geben Sie Ihre Nachricht ein',
         callbacks: {
             onChange: function() {
                 update_buttons();
+            },
+            // new design: pasted text keeps its structure (paragraphs, bold,
+            // italics, links, lists), not its fonts, sizes and colours
+            onPaste: function(e) {
+                if (!document.body.classList.contains('ui-preview')) return;
+                let data = (e.originalEvent || e).clipboardData;
+                if (!data) return;
+                let html = data.getData('text/html');
+                let text = data.getData('text/plain');
+                e.preventDefault();
+                $('#summernote').summernote('pasteHTML', html ? clean_pasted_html(html) : $('<div>').text(text).html().replace(/\n/g, '<br>'));
             }
         },
         lang: 'de-DE',

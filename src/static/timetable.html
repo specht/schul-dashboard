@@ -1058,6 +1058,8 @@ function render_preview_week_head() {
     tools.append(today, nav);
     head.append(tools);
     render_preview_side();
+    // the column beside the week starts level with the timetable (below this header)
+    document.documentElement.style.setProperty('--pv-head-h', Math.round(head.outerHeight(true)) + 'px');
     // side columns with nothing visible give their room to the timetable
     $('#calendar').closest('.row').children().not($('#calendar').parent()).each(function(_, col) {
         let visible = $(col).children().filter(function(_, c) {

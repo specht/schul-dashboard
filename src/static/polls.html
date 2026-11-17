@@ -1,5 +1,5 @@
 #{this_is_a_page_for_user_with_role(:can_create_polls)}
-<div class='container'>
+<div class='container pv-polls-page'>
     <div class='row'>
         <div class='col-md-12'>
             <h2 style='margin-bottom: 30px;'>Umfragen</h2>
@@ -12,7 +12,7 @@
     </div>
 </div>
 
-<div class="modal pv-sheet" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal pv-sheet pv-poll-editor" id="composeModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -71,7 +71,7 @@
     </div>
 </div>
 
-<div class="modal pv-sheet" id="pollRunModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal pv-sheet pv-poll-run" id="pollRunModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -96,7 +96,7 @@
                         </div>
                     </div>
                 </div>
-                <div class='row'>
+                <div class='row pv-run-anon'>
                     <div class='col-md-12'>
                         <div class="form-group" style='margin-bottom: 0;'>
                             <label><span class='float-right anonymous_hint text-danger'>Bitte wählen Sie die Art der
@@ -139,7 +139,7 @@
                         </div>
                     </div>
                 </div>
-                <div class='row'>
+                <div class='row pv-run-times'>
                     <div class='col-md-2'>
                         <div class="form-group">
                             <label>Beginn</label>
@@ -331,6 +331,123 @@
     var current_poll_run = {};
     var current_poll_run_poll = null;
     var stored_poll_run_json = null;
+    // Neues Design (Vorschau): polls and their runs as cards, the editor's
+    // entries as cards (preview/polls.css). Today's design stays as it is.
+    var PV = document.body.classList.contains('ui-preview');
+
+    // ---------- Neues Design: the list of polls ----------
+    function pv_poll_run_state(poll_run) {
+        let now = moment().unix();
+        let start = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix();
+        let end = moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).unix();
+        if (start > now) return 'planned';
+        if (end < now) return 'complete';
+        return 'running';
+    }
+
+    function pv_poll_run_when(poll_run) {
+        let a = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).locale('de');
+        let b = moment(`${poll_run.info.end_date}T${poll_run.info.end_time}:00`).locale('de');
+        let this_year = moment().year();
+        let day = function (m) { return m.format(m.year() === this_year ? 'dd, D.M.' : 'dd, D.M.YYYY'); };
+        if (poll_run.info.start_date === poll_run.info.end_date)
+            return `${day(a)}, ${a.format('HH:mm')} bis ${b.format('HH:mm')} Uhr`;
+        return `${day(a)}, ${a.format('HH:mm')} Uhr bis ${day(b)}, ${b.format('HH:mm')} Uhr`;
+    }
+
+    function pv_button(label, icon, cls) {
+        return $('<button>').attr('type', 'button').addClass(`btn btn-sm ${cls || 'btn-secondary'}`)
+            .append($('<i>').addClass(`fa fa-${icon}`)).append($('<span>').text(label));
+    }
+
+    function render_polls_preview(poll_runs_for_poll) {
+        let order = { running: 0, planned: 1, complete: 2 };
+        let labels = { running: 'läuft', planned: 'geplant', complete: 'beendet' };
+        for (let poll of stored_polls) {
+            let pid = poll.pid;
+            let runs = (poll_runs_for_poll[pid] || []).map(function (pr) {
+                return { pr: pr, state: pv_poll_run_state(pr) };
+            });
+            runs.sort(function (a, b) {
+                if (order[a.state] !== order[b.state]) return order[a.state] - order[b.state];
+                let ka = `${a.pr.info.start_date}T${a.pr.info.start_time}`;
+                let kb = `${b.pr.info.start_date}T${b.pr.info.start_time}`;
+                // planned: the next one first; otherwise the latest first
+                return (a.state === 'planned' ? 1 : -1) * (ka < kb ? -1 : ka > kb ? 1 : 0);
+            });
+            let card = $('<section>').addClass('pv-poll').attr('data-pid', pid);
+            let head = $('<div>').addClass('pv-poll-head').appendTo(card);
+            let title = $('<div>').addClass('pv-poll-title').appendTo(head);
+            title.append($('<h3>').text(poll.poll.title || '(ohne Titel)'));
+            let meta = $('<div>').addClass('pv-poll-meta').appendTo(title);
+            meta.append($('<span>').text(`Erstellt am ${moment(poll.created).locale('de').format('D.M.YYYY')}`));
+            let n_items = 0;
+            try { n_items = JSON.parse(poll.poll.items || '[]').length; } catch (err) { }
+            meta.append($('<span>').text(`${n_items} ${n_items === 1 ? 'Eintrag' : 'Einträge'}`));
+            let actions = $('<div>').addClass('pv-poll-actions').appendTo(head);
+            let bu_run = pv_button('Neue Durchführung', 'play').addClass('pv-bu-new-run').appendTo(actions);
+            let bu_edit = pv_button('Bearbeiten', 'edit').addClass('pv-bu-edit-poll').appendTo(actions);
+            let bu_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-poll').appendTo(actions);
+            bu_run.click(function () { new_poll_run(pid); });
+            bu_edit.click(function () { edit_poll(pid); });
+            bu_delete.click(function () {
+                dashboardConfirm(`Die Umfrage »${poll.poll.title || '(ohne Titel)'}« mit allen Durchführungen löschen?`,
+                    function () { delete_poll(pid); },
+                    { title: 'Umfrage löschen', confirm: 'Löschen', danger: true });
+            });
+
+            let list = $('<div>').addClass('pv-runs').appendTo(card);
+            if (runs.length === 0)
+                list.append($('<p>').addClass('pv-runs-empty').text('Noch nicht durchgeführt. Mit »Neue Durchführung« legen Sie fest, wer wann teilnimmt.'));
+            for (let { pr, state } of runs) {
+                let prid = pr.prid;
+                let total = pr.recipients.length;
+                let answered = pr.response_count || 0;
+                let percent = total > 0 ? Math.floor(answered * 100 / total) : 0;
+                let row = $('<div>').addClass(`pv-run pv-run-${state}`).attr('data-prid', prid).appendTo(list);
+                let main = $('<div>').addClass('pv-run-main').appendTo(row);
+                main.append($('<span>').addClass('pv-run-status').text(labels[state]));
+                let text = $('<div>').addClass('pv-run-text').appendTo(main);
+                text.append($('<b>').addClass('pv-run-when').text(pv_poll_run_when(pr)));
+                let tags = $('<div>').addClass('pv-run-tags').appendTo(text);
+                tags.append($('<span>').text(`${total} Teilnehmer`));
+                tags.append($('<span>').text(pr.info.anonymous ? 'anonym' : 'mit Namen'));
+                if (pr.info.limited_places)
+                    tags.append($('<span>').text('begrenzte Plätze'));
+                if (state !== 'planned') {
+                    let progress = $('<div>').addClass('pv-run-progress').appendTo(row);
+                    let bar = $('<div>').addClass('pv-bar').attr('role', 'progressbar')
+                        .attr('aria-valuemin', '0').attr('aria-valuemax', `${total}`).attr('aria-valuenow', `${answered}`)
+                        .appendTo(progress);
+                    bar.append($('<b>').css('width', `${percent}%`));
+                    progress.append($('<span>').addClass('pv-run-count').text(`${answered} von ${total} beantwortet (${percent} %)`));
+                }
+                let run_actions = $('<div>').addClass('pv-run-actions').appendTo(row);
+                if (state !== 'planned') {
+                    let bu_results = pv_button('Ergebnisse', 'bar-chart').addClass('pv-bu-results').appendTo(run_actions);
+                    bu_results.click(function () { show_poll_run_results(prid); });
+                }
+                let bu_run_edit = pv_button('Bearbeiten', 'edit').addClass('pv-bu-edit-run').appendTo(run_actions);
+                bu_run_edit.click(function () { edit_poll_run(prid); });
+                if (state === 'running') {
+                    let bu_stop = pv_button('Stoppen', 'stop', 'btn-danger').addClass('pv-bu-stop-run').appendTo(run_actions);
+                    bu_stop.click(function () {
+                        dashboardConfirm('Die Umfrage jetzt beenden? Danach kann niemand mehr antworten.',
+                            function () { stop_poll_run(prid); },
+                            { title: 'Umfrage stoppen', confirm: 'Stoppen', danger: true });
+                    });
+                } else {
+                    let bu_run_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-run').appendTo(run_actions);
+                    bu_run_delete.click(function () {
+                        dashboardConfirm('Diese Durchführung mit allen Antworten löschen?',
+                            function () { delete_poll_run(prid); },
+                            { title: 'Durchführung löschen', confirm: 'Löschen', danger: true });
+                    });
+                }
+            }
+            $('.polls-here').append(card);
+        }
+    }
 
     function _update_bold_font(e) {
         $(e).css('font-weight', ($(e).val().trim().length > 0) ? 'bold' : 'normal');
@@ -827,6 +944,10 @@
                 poll_runs_for_poll[poll_run.pid] = [];
             poll_runs_for_poll[poll_run.pid].push(poll_run);
         }
+        if (PV) {
+            render_polls_preview(poll_runs_for_poll);
+            return;
+        }
         let first_poll = true;
         for (let poll of stored_polls) {
             if (!first_poll)
@@ -1018,6 +1139,8 @@
         for (let item_index in current_poll.items) {
             item_index = parseInt(item_index);
             let item = current_poll.items[item_index];
+            // the entry's parts: in the new design inside a card of its own
+            let target = PV ? $('<div>').addClass('pv-poll-entry').attr('data-type', item.type).appendTo(div) : div;
 
             let button_div = $('<div>').addClass('float-right');//.css('margin', '10px 0');
             let bu_rm = $('<button>').attr('title', 'Eintrag löschen').addClass('ml-1').addClass('btn').addClass('btn-sm').addClass('btn-danger').html("<i class='fa fa-trash'></i>").data('item-index', item_index);
@@ -1049,11 +1172,33 @@
                 current_poll.items.splice(item_index + 1, 0, entry);
                 update_current_poll();
             });
-            div.append(button_div);
+            if (PV) {
+                // Neues Design: the entry as a card, its kind and the buttons in one row
+                let kinds = {
+                    paragraph: ['align-left', 'Text', 'zur Information'],
+                    radio: ['dot-circle-o', 'Auswahl', 'eine Antwort'],
+                    checkbox: ['check-square-o', 'Mehrfachauswahl', 'mehrere Antworten'],
+                    image: ['photo', 'Bild', ''],
+                    textarea: ['i-cursor', 'Freitext', 'eigene Antwort'],
+                }[item.type] || ['question', item.type, ''];
+                let head = $('<div>').addClass('pv-entry-head').appendTo(target);
+                head.append($('<span>').addClass('pv-entry-num').text(`${item_index + 1}`));
+                let kind = $('<span>').addClass('pv-entry-kind').appendTo(head);
+                kind.append($('<i>').addClass(`fa fa-${kinds[0]}`)).append($('<b>').text(kinds[1]));
+                if (kinds[2]) kind.append($('<span>').text(kinds[2]));
+                button_div.removeClass('float-right').addClass('pv-entry-buttons');
+                bu_rm.attr('aria-label', 'Eintrag löschen');
+                bu_up.attr('aria-label', 'Eintrag nach oben verschieben');
+                bu_down.attr('aria-label', 'Eintrag nach unten verschieben').attr('title', 'Eintrag nach unten verschieben');
+                button_div.append(bu_up).append(bu_down).append(bu_rm);
+                head.append(button_div);
+            } else {
+                target.append(button_div);
 
-            let header = $('<p>');
-            header.append($('<p>').css('margin-left', '4px').text('' + (item_index + 1) + '. ' + item_types[item.type]));
-            div.append(header);
+                let header = $('<p>');
+                header.append($('<p>').css('margin-left', '4px').text('' + (item_index + 1) + '. ' + item_types[item.type]));
+                target.append(header);
+            }
             let row = $('<div>').addClass('row');
             let ti_title = $('<input>').addClass('mb-2').addClass('form-control').attr('placeholder', ['paragraph', 'image'].indexOf(item.type) >= 0 ? 'Zwischenüberschrift (optional)' : 'Bitte geben Sie eine Frage ein').val(item.title).data('item-index', item_index);
             install_bold_font_if_not_empty(ti_title);
@@ -1079,7 +1224,7 @@
                     update_buttons();
                 });
             }
-            div.append(row);
+            target.append(row);
             if (item.type === 'radio' || item.type === 'checkbox') {
                 let bc = $('<div>').addClass('poll_radio_buttons').addClass('edit').data('item-index', item_index);
                 bc.data('poll_item_type', item.type);
@@ -1136,22 +1281,22 @@
                     input_group.append(button_div);
                     bc.append(input_group);
                 }
-                div.append(bc);
+                target.append(bc);
                 let bu_add_answer_div = $('<div>').addClass('button-with-label-relaxed');
                 let bu_add_answer = $('<button>').addClass('btn').addClass('btn-sm').addClass('btn-success').html("<i class='fa fa-plus'></i>&nbsp;&nbsp;Antwortmöglichkeit hinzufügen").data('item-index', item_index);
                 bu_add_answer.click(function (e) {
-                    let item_index = $(e.target).data('item-index');
+                    let item_index = $(e.currentTarget).data('item-index');
                     current_poll.items[item_index].answers.push('');
                     update_current_poll();
                     $('input').filter(`[data-item-index='${item_index}']`).filter(`[data-answer-index='${current_poll.items[item_index].answers.length - 1}']`).focus();
                 });
                 bu_add_answer_div.append(bu_add_answer);
-                bu_add_answer_div.append($('<span>').css('margin', '1em').text('Hinweis: Sie können mehrere Antwortmöglichkeiten auf einmal hinzufügen, indem Sie sie die einzelnen Antworten mit einem Semikolon (;) trennen.'));
-                div.append(bu_add_answer_div);
+                bu_add_answer_div.append($('<span>').addClass('pv-answer-hint').css('margin', '1em').text('Hinweis: Sie können mehrere Antwortmöglichkeiten auf einmal hinzufügen, indem Sie sie die einzelnen Antworten mit einem Semikolon (;) trennen.'));
+                target.append(bu_add_answer_div);
             } else if (item.type === 'textarea') {
                 let textarea = $('<textarea>').addClass('form-control');
                 textarea.prop('disabled', true).attr('placeholder', '(Platz für Eingaben)');
-                div.append(textarea);
+                target.append(textarea);
             } else if (item.type === 'paragraph') {
                 let p = $('<textarea>').addClass('form-control').val(item.text).data('item-index', item_index);
                 p.change(function (e) {
@@ -1159,11 +1304,11 @@
                     current_poll.items[item_index].text = $(e.target).val().trim();
                     update_buttons();
                 });
-                div.append(p);
+                target.append(p);
             } else if (item.type === 'image') {
                 if (current_poll.items[item_index].sha1 === null) {
                     let form = $(`<form action='/api/upload_poll_image' class='dropzone'></form>`);
-                    div.append(form);
+                    target.append(form);
                     window.dropzone = new Dropzone(form[0], {
                         dictDefaultMessage: 'Bitte hier klicken, um Bilder hochzuladen. Alternativ können Sie auch Bilder aus dem Datei-Browser hier hineinziehen.',
                         acceptedFiles: 'image/*',
@@ -1186,7 +1331,7 @@
                     let image = $(`<img>`).attr('src', `/api/get_poll_photo/${current_poll.items[item_index].sha1}-2048.jpg`);
                     image.css('width', '100%');
                     image.css('margin-bottom', '1em');
-                    div.append(image);
+                    target.append(image);
                 }
 
                 // let p = $('<textarea>').addClass('form-control').val(item.text).data('item-index', item_index);
@@ -1197,7 +1342,8 @@
                 // });
                 // div.append(p);
             }
-            div.append($('<hr />').addClass('poll-entry-divider'));
+            if (!PV)
+                div.append($('<hr />').addClass('poll-entry-divider'));
         }
         update_buttons();
     }
@@ -1371,6 +1517,20 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        if (PV) {
+            // Neues Design: the choices in the run dialog as cards with a line of explanation
+            let choice = function (icon, title, text) {
+                return $('<span>').append($('<i>').addClass(`fa fa-${icon}`))
+                    .append($('<span>').addClass('pv-choice-text').append($('<b>').text(title)).append($('<small>').text(text))).html();
+            };
+            $('#bu_poll_run_anonymous').html(choice('user-secret', 'Anonym',
+                'Sie sehen die Antworten, aber nicht, wer sie gegeben hat.'));
+            $('#bu_poll_run_non_anonymous').html(choice('user', 'Mit Namen',
+                'Sie sehen, wer welche Antworten gegeben hat.'));
+            $('#bu_poll_run_limited_places').html(choice('square-o', 'Begrenzte Plätze',
+                'Höchstzahl je Antwortmöglichkeit festlegen und die Reihenfolge der Anmeldungen erfassen.'));
+            $('#pollRunModal .anonymous_hint').text('Bitte wählen Sie – das lässt sich später nicht mehr ändern.');
+        }
         $('#summernote').summernote({
             placeholder: 'Bitte geben Sie die Terminbeschreibung ein',
             callbacks: {

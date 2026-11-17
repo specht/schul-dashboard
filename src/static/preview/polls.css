@@ -1,2 +1,1053 @@
 /* Neues Design (Vorschau): polls – loaded after preview.css for users with the preview
-   (include/design_preview.rb). Uses the tokens and helpers of preview.css. */
+   (include/design_preview.rb). Uses the tokens and helpers of preview.css.
+
+   Creating (polls.html: the list, the editor .pv-poll-editor), running (the run
+   dialog .pv-poll-run, the results) and taking part (the answer dialog
+   #pollResponseModal in _template.html, the hint on the start page, the
+   public page poll.html). */
+
+/* ---------- The list: polls as cards, their runs as rows ---------- */
+
+/* the title and "Neue Umfrage" in one row */
+.ui-preview .pv-polls-page > .row > .col-md-12 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.ui-preview .pv-polls-page h2 {
+    flex: 1 1 auto;
+    margin: 0 !important;
+}
+
+.ui-preview .pv-polls-page > .row > .col-md-12 > hr {
+    display: none;
+}
+
+.ui-preview .pv-polls-page .polls-here {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-top: 6px;
+}
+
+.ui-preview .pv-polls-page .btn > i + span {
+    margin-left: 6px;
+}
+
+.pv-poll {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    padding: 14px 16px 16px;
+    margin-bottom: 16px;
+}
+
+.pv-poll-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px 16px;
+}
+
+.pv-poll-title {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.ui-preview .pv-poll-title h3 {
+    font-size: 1.2rem;
+    line-height: 1.3;
+    margin: 0 0 4px;
+    overflow-wrap: anywhere;
+}
+
+.pv-poll-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+    font-size: 0.85em;
+    color: var(--pv-muted);
+}
+
+.pv-poll-actions,
+.pv-run-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ui-preview .pv-polls-page .pv-poll .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 11px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.pv-runs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.pv-runs-empty {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px dashed var(--pv-line);
+    border-radius: 12px;
+    font-size: 0.9em;
+    color: var(--pv-muted);
+}
+
+.pv-run {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "main actions" "progress actions";
+    align-items: center;
+    gap: 8px 16px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--pv-hover);
+}
+
+.pv-run-running {
+    box-shadow: inset 4px 0 0 var(--acc);
+}
+
+.pv-run-main {
+    grid-area: main;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+}
+
+/* the status chip at the top, level with the first line */
+.pv-run-status {
+    flex: none;
+    margin-top: 1px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+    border: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+}
+
+.pv-run-running .pv-run-status {
+    border-color: var(--acc-soft);
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.pv-run-planned .pv-run-status {
+    color: var(--pv-ink);
+}
+
+.pv-run-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pv-run-when {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.pv-run-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.pv-run-tags span {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    padding: 0 8px;
+    border-radius: 999px;
+    border: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+}
+
+.pv-run-progress {
+    grid-area: progress;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.pv-bar {
+    flex: 0 1 220px;
+    height: 6px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--pv-ink) 12%, var(--pv-surface));
+    overflow: hidden;
+}
+
+.pv-bar b {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--acc);
+}
+
+.pv-run-count {
+    font-size: 0.82em;
+    color: var(--pv-muted);
+}
+
+.pv-run-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+    .pv-poll {
+        padding: 12px;
+    }
+
+    .pv-run {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "main" "progress" "actions";
+    }
+
+    .pv-run-actions {
+        justify-content: flex-start;
+    }
+
+    .pv-bar {
+        flex: 1 1 auto;
+    }
+}
+
+/* ---------- The editor: the entries as cards ---------- */
+
+.ui-preview .pv-poll-editor #ti_title {
+    height: auto;
+    padding: 10px 14px;
+    font: 700 1.2rem/1.3 var(--pv-display);
+}
+
+.pv-poll-entry {
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    padding: 12px 14px 14px;
+    margin-bottom: 12px;
+    background: var(--pv-surface);
+}
+
+.pv-entry-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.pv-entry-num {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font: 700 0.85rem/1 var(--pv-display);
+}
+
+.pv-entry-kind {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 8px;
+    padding-top: 3px;
+}
+
+.pv-entry-kind i {
+    color: var(--pv-muted);
+}
+
+.pv-entry-kind > span {
+    font-size: 0.85em;
+    color: var(--pv-muted);
+}
+
+.pv-entry-buttons {
+    flex: none;
+    display: flex;
+    gap: 4px;
+}
+
+.ui-preview .pv-entry-buttons .btn {
+    margin: 0 !important;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+}
+
+/* delete a little apart from moving */
+.ui-preview .pv-entry-buttons .btn-danger {
+    margin-left: 6px !important;
+}
+
+.ui-preview .pv-poll-entry textarea.form-control {
+    min-height: 76px;
+}
+
+.ui-preview .pv-poll-entry .poll_radio_buttons {
+    margin-bottom: 0;
+}
+
+.ui-preview .pv-poll-entry .input-group + .input-group {
+    margin-top: 6px;
+}
+
+/* "Antwortmöglichkeit hinzufügen": a quiet dashed button, the hint below */
+.ui-preview .pv-poll-entry .button-with-label-relaxed {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.ui-preview #main_container .pv-poll-entry .button-with-label-relaxed .btn {
+    background: transparent;
+    border: 1.5px dashed var(--pv-line);
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+.ui-preview #main_container .pv-poll-entry .button-with-label-relaxed .btn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-poll-entry .pv-answer-hint {
+    margin: 0 !important;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-poll-entry img {
+    border-radius: 10px;
+}
+
+/* "Eintrag hinzufügen": the whole width, dashed, below the entries */
+.ui-preview .pv-poll-editor .modal-body .btn-group:has(> .dropdown-toggle) {
+    width: 100%;
+}
+
+.ui-preview #main_container .pv-poll-editor .btn-group > .dropdown-toggle {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    background: transparent;
+    border: 1.5px dashed var(--pv-line);
+    color: var(--acc-text);
+    font-weight: 700;
+}
+
+.ui-preview #main_container .pv-poll-editor .btn-group > .dropdown-toggle:hover,
+.ui-preview #main_container .pv-poll-editor .btn-group.show > .dropdown-toggle {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-poll-editor .btn-group > .dropdown-menu {
+    min-width: min(100%, 320px);
+}
+
+@media (max-width: 767px) {
+    .ui-preview .pv-poll-entry {
+        padding: 10px 10px 12px;
+    }
+
+    .ui-preview .pv-poll-entry .input-group > .input-group-append > .btn {
+        padding-left: 9px;
+        padding-right: 9px;
+    }
+}
+
+/* ---------- Running: the run dialog ---------- */
+
+/* the poll's title as the dialog's subtitle, not as a field */
+.ui-preview .pv-poll-run .form-group:has(> #ti_poll_run_poll_title) > label {
+    display: none;
+}
+
+.ui-preview .pv-poll-run #ti_poll_run_poll_title {
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--pv-ink);
+    font: 700 1.15rem/1.3 var(--pv-display);
+    white-space: normal;
+}
+
+.ui-preview .pv-poll-run .form-group label {
+    white-space: normal;
+    overflow: visible;
+}
+
+/* "Anonymität" with its hint below it (not floating beside it) */
+.ui-preview .pv-run-anon label {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.ui-preview .pv-poll-run .anonymous_hint {
+    float: none !important;
+    font-weight: normal;
+    color: var(--pv-ink) !important;
+}
+
+/* the choices (anonymous / with names, limited places): cards with a title
+   and a line of explanation */
+.ui-preview #main_container #bu_poll_run_anonymous,
+.ui-preview #main_container #bu_poll_run_non_anonymous,
+.ui-preview #main_container #bu_poll_run_limited_places {
+    height: auto;
+    min-height: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    text-align: left;
+    white-space: normal;
+    border: 1.5px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    opacity: 1;
+}
+
+.ui-preview #main_container #bu_poll_run_anonymous > i,
+.ui-preview #main_container #bu_poll_run_non_anonymous > i,
+.ui-preview #main_container #bu_poll_run_limited_places > i {
+    flex: none;
+    font-size: 1.3rem;
+    margin-top: 1px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-poll-run .pv-choice-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.ui-preview .pv-poll-run .pv-choice-text small {
+    font-size: 0.85em;
+    color: var(--pv-muted);
+}
+
+.ui-preview #main_container #bu_poll_run_anonymous.btn-primary,
+.ui-preview #main_container #bu_poll_run_non_anonymous.btn-primary,
+.ui-preview #main_container #bu_poll_run_limited_places.btn-primary {
+    border-color: var(--acc);
+    background: var(--acc-soft);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container #bu_poll_run_anonymous.btn-primary > i,
+.ui-preview #main_container #bu_poll_run_non_anonymous.btn-primary > i,
+.ui-preview #main_container #bu_poll_run_limited_places.btn-primary > i {
+    color: var(--acc-text);
+}
+
+/* after saving the choice is fixed: the other one fades */
+.ui-preview #main_container #bu_poll_run_anonymous:disabled:not(.btn-primary),
+.ui-preview #main_container #bu_poll_run_non_anonymous:disabled:not(.btn-primary),
+.ui-preview #main_container #bu_poll_run_limited_places:disabled:not(.btn-primary) {
+    background: var(--pv-hover);
+    border-color: transparent;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-poll-run .limited_places_config .alert {
+    margin-bottom: 10px;
+}
+
+/* the times: "Zeitdauer wählen" like a field */
+.ui-preview #main_container .pv-poll-run .bu-poll-run-spontaneous-dropdown {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .pv-poll-run .bu-poll-run-spontaneous-dropdown:disabled {
+    background: var(--pv-hover);
+    border-color: transparent;
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+/* phones: date and time side by side, not four rows */
+@media (max-width: 767px) {
+    .ui-preview .pv-run-times {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+        column-gap: 10px;
+        margin: 0;
+    }
+
+    .ui-preview .pv-run-times > [class*='col'] {
+        max-width: none;
+        padding: 0;
+    }
+
+    .ui-preview .pv-run-times > :last-child {
+        grid-column: 1 / -1;
+    }
+
+    .ui-preview .pv-run-anon .col-md-6 .form-group {
+        margin-bottom: 8px;
+    }
+}
+
+/* "Externe Teilnehmer…": a calm small button */
+.ui-preview #main_container .pv-poll-run .bu_open_ext_users_modal {
+    padding: 3px 10px;
+    font-size: 0.85rem;
+    border-radius: 9px;
+    background: var(--pv-hover);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* participants as pills */
+.ui-preview .pv-poll-run .recipient {
+    box-shadow: none;
+    border: 1px solid var(--pv-line);
+    border-radius: 999px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    padding: 4px 12px;
+}
+
+.ui-preview .pv-poll-run .recipient.with-rm {
+    padding-right: 30px;
+}
+
+.ui-preview .pv-poll-run .recipient.teacher {
+    background: var(--acc-soft);
+    border-color: transparent;
+    color: var(--acc-text);
+}
+
+.ui-preview .pv-poll-run .recipient .rm:after {
+    color: var(--pv-muted);
+    top: 1px;
+}
+
+.ui-preview .pv-poll-run .recipient-input-dropdown {
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+    max-width: calc(100% - 2rem);
+}
+
+.ui-preview .pv-poll-run #recipient_count {
+    color: var(--pv-muted);
+    font-size: 0.9em;
+}
+
+/* ---------- Hints in the poll dialogs: calm panels ---------- */
+.ui-preview .pv-poll-run .alert,
+.ui-preview #pollResponseModal .alert,
+.ui-preview #pollRunResultsModal .alert {
+    border: 0;
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-poll-run .alert-danger,
+.ui-preview .pv-poll-run .alert-warning,
+.ui-preview #pollResponseModal .alert-warning,
+.ui-preview #pollRunResultsModal .alert-warning {
+    box-shadow: inset 4px 0 0 #b7791f;
+}
+
+.ui-preview .pv-poll-run .alert-danger {
+    box-shadow: inset 4px 0 0 #b42318;
+}
+
+.ui-preview .pv-poll-run .alert-success {
+    box-shadow: inset 4px 0 0 var(--acc);
+}
+
+/* ---------- Taking part: the answer dialog (_template.html) ---------- */
+
+.ui-preview #pollResponseModal .modal-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.ui-preview #pollResponseModal .modal-title {
+    flex: 1 1 240px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* "Diese Umfrage ausblenden": quiet, it is rarely needed */
+.ui-preview #pollResponseModal #bu_hide_poll_run {
+    flex: none;
+    margin: 0;
+    border: 1px solid var(--pv-line);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.ui-preview #pollResponseModal #bu_hide_poll_run:hover {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+/* anonymous or not: the icon at the top, level with the first line */
+.ui-preview #pollResponseModal .poll-run-anonymous,
+.ui-preview #pollResponseModal .poll-run-non-anonymous {
+    padding: 12px 14px 12px 48px !important;
+    font-size: 0.92em;
+    line-height: 1.45;
+}
+
+.ui-preview #pollResponseModal .poll-run-anonymous > i,
+.ui-preview #pollResponseModal .poll-run-non-anonymous > i {
+    font-size: 1.3rem !important;
+    top: 12px !important;
+    left: 15px !important;
+    color: var(--pv-muted);
+}
+
+/* questions: a title in the display font, the rule for several answers below it */
+.ui-preview #pollResponseModal .poll-items > p:has(> strong) {
+    margin: 22px 0 10px;
+    line-height: 1.35;
+}
+
+.ui-preview #pollResponseModal .poll-items > p:first-child {
+    margin-top: 4px;
+}
+
+.ui-preview #pollResponseModal .poll-items > p > strong {
+    font: 700 1.08rem/1.35 var(--pv-display);
+}
+
+.ui-preview #pollResponseModal .poll-items > p > em {
+    display: block;
+    margin-top: 2px;
+    font-style: normal;
+    font-size: 0.85em;
+    color: var(--pv-muted);
+}
+
+.ui-preview #pollResponseModal .poll-items > p > em strong {
+    color: var(--pv-ink);
+}
+
+/* choices: large, easy to tap, the selection clear (not only by colour:
+   the icon changes, the text turns bold) */
+.ui-preview #pollResponseModal .poll_radio_buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.ui-preview #pollResponseModal .poll_radio_buttons p {
+    margin: 0;
+    min-height: 48px;
+    padding: 12px 14px 12px 46px;
+    border: 1.5px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    line-height: 1.35;
+    opacity: 1;
+    overflow-wrap: anywhere;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ui-preview #pollResponseModal .poll_radio_buttons p:hover {
+    border-color: color-mix(in srgb, var(--acc) 45%, var(--pv-line));
+    background: var(--pv-hover);
+}
+
+.ui-preview #pollResponseModal .poll_radio_buttons p.selected {
+    border-color: var(--acc);
+    background: var(--acc-soft);
+    font-weight: 700;
+}
+
+.ui-preview #pollResponseModal .poll_radio_buttons p .icon {
+    left: 15px;
+    top: 13px;
+    font-size: 1.2rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview #pollResponseModal .poll_radio_buttons p.selected .icon {
+    color: var(--acc-text);
+}
+
+/* a choice that is full: visibly unavailable, the text still readable */
+.ui-preview #pollResponseModal .poll_radio_buttons p.poll-answer-full {
+    opacity: 1 !important;
+    border-style: dashed;
+    color: var(--pv-muted);
+    background: repeating-linear-gradient(135deg, var(--pv-hover) 0 6px, var(--pv-surface) 6px 12px);
+}
+
+.ui-preview #pollResponseModal .poll-places-label {
+    font-size: 0.85em !important;
+    font-weight: normal;
+    color: var(--pv-muted) !important;
+}
+
+.ui-preview #pollResponseModal .poll-items textarea.form-control {
+    min-height: 96px;
+}
+
+.ui-preview #pollResponseModal .poll-items img {
+    border-radius: 12px;
+}
+
+/* the progress: a thin bar with its words above it */
+.ui-preview #pollResponseModal .modal-footer:has(.progress) {
+    position: relative;
+    padding: 28px 16px 8px;
+    border-top: 1px solid var(--pv-line);
+    min-height: 0;
+}
+
+.ui-preview #pollResponseModal .modal-footer:has(.progress) + .modal-footer {
+    border-top: 0;
+    padding-top: 6px;
+}
+
+.ui-preview #pollResponseModal .progress {
+    height: 6px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--pv-ink) 12%, var(--pv-surface));
+}
+
+.ui-preview #pollResponseModal .poll-run-progress {
+    background: var(--acc) !important;
+    background-image: none !important;
+    border-radius: 3px;
+}
+
+.ui-preview #pollResponseModal .poll-run-progress-label {
+    position: absolute;
+    left: 16px;
+    top: 7px;
+    font-size: 0.8rem;
+    color: var(--pv-muted);
+}
+
+/* "Senden": always in view; quiet until there is something to send */
+.ui-preview #pollResponseModal #bu_submit_poll_results:disabled {
+    display: inline-block;
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+.ui-preview #pollResponseModal #bu_discard_poll_results:disabled {
+    display: none;
+}
+
+.ui-preview #pollResponseModal #save_poll_response_btn_container {
+    display: inline-flex !important;
+    gap: 6px;
+}
+
+.ui-preview #pollResponseModal .poll_submit_success,
+.ui-preview #pollResponseModal .poll_submit_update_message,
+.ui-preview #pollResponseModal .poll_submit_error {
+    font-size: 0.9em;
+}
+
+@media (max-width: 767px) {
+    .ui-preview #pollResponseModal .modal-footer:has(#save_poll_response_btn_container) {
+        flex-wrap: wrap;
+        overflow: visible;
+    }
+
+    .ui-preview #pollResponseModal .modal-footer:has(#save_poll_response_btn_container) > div:not(#save_poll_response_btn_container) {
+        flex: 1 1 100%;
+        margin: 0 0 4px;
+    }
+
+    .ui-preview #pollResponseModal #save_poll_response_btn_container {
+        flex: 1 1 100%;
+    }
+
+    .ui-preview #pollResponseModal #save_poll_response_btn_container .btn {
+        padding: 12px 14px;
+        font-size: 1rem;
+    }
+
+    .ui-preview #pollResponseModal #bu_submit_poll_results {
+        flex: 1 1 auto;
+    }
+}
+
+/* ---------- Taking part: the hint on the start page (poll.rb) ---------- */
+.ui-preview .hint_poll {
+    display: flow-root;
+}
+
+.ui-preview .hint_poll > hr {
+    display: none;
+}
+
+.ui-preview .hint_poll .bu-launch-poll {
+    float: none !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 0 0 auto;
+    border-radius: 10px;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .hint_poll .bu-launch-poll {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 14px;
+    }
+}
+
+/* ---------- Results (_template.html, #pollRunResultsModal) ---------- */
+.ui-preview #pollRunResultsModal h3 {
+    font-size: 1.3rem;
+    overflow-wrap: anywhere;
+}
+
+.ui-preview #pollRunResultsModal .table td {
+    border-top-color: var(--pv-line);
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.ui-preview #pollRunResultsModal tr.noborder td {
+    padding-top: 4px;
+}
+
+.ui-preview #pollRunResultsModal .progress {
+    height: 1.15rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+}
+
+.ui-preview #pollRunResultsModal .progress-bar {
+    background: var(--acc) !important;
+    background-image: none !important;
+    color: var(--acc-ink);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+}
+
+.ui-preview #pollRunResultsModal .modal-footer .btn-primary {
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #pollRunResultsModal .modal-footer .btn-primary:hover {
+    background: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+}
+
+@media (max-width: 767px) {
+    /* no header in this dialog: room for the sheet's grab handle */
+    .ui-preview #pollRunResultsModal.pv-sheet .modal-body {
+        padding-top: 30px;
+    }
+}
+
+/* ---------- The public page for external participants (poll.html) ---------- */
+.ui-preview .pv-poll-invite .bu-launch-poll {
+    border-radius: 12px;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .pv-poll-invite .bu-launch-poll {
+        width: 100%;
+    }
+}
+
+/* ---------- Fixes found on the screenshots ---------- */
+
+/* dark mode: dark.css paints every dialog #222 with !important; the poll
+   dialogs take the design's surface, like their fields and cards */
+.ui-preview.dark .pv-poll-editor .modal-content,
+.ui-preview.dark .pv-poll-run .modal-content,
+.ui-preview.dark #pollResponseModal .modal-content,
+.ui-preview.dark #pollRunResultsModal .modal-content {
+    background-color: var(--pv-surface) !important;
+    color: var(--pv-ink);
+}
+
+/* the cards inside the editor sit on the dialog's own surface */
+.ui-preview .pv-poll-entry {
+    background: transparent;
+}
+
+/* the poll's title in the run dialog: a heading, not a greyed-out field */
+.ui-preview .pv-poll-run #ti_poll_run_poll_title,
+.ui-preview.dark .pv-poll-run #ti_poll_run_poll_title {
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--pv-ink) !important;
+    -webkit-text-fill-color: var(--pv-ink);
+    opacity: 1;
+}
+
+/* labels in the run dialog: small and quiet, like in the pages */
+.ui-preview .pv-poll-run .form-group > label {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--pv-muted);
+    margin-bottom: 4px;
+}
+
+.ui-preview .pv-poll-run .pv-run-anon label {
+    color: var(--pv-ink);
+    font-size: 0.95em;
+}
+
+/* "Verwerfen" only when there is something to throw away; the buttons of
+   the editor and the run dialog in one row */
+.ui-preview #bu_discard_poll:disabled,
+.ui-preview #bu_discard_poll_run:disabled,
+.ui-preview #bu_discard_poll_results:disabled {
+    display: none;
+}
+
+.ui-preview #save_poll_btn_container,
+.ui-preview #save_poll_run_btn_container {
+    display: flex;
+    gap: 6px;
+}
+
+/* the main action while it has nothing to do: quiet */
+.ui-preview #main_container #bu_save_poll:disabled,
+.ui-preview #main_container #bu_save_poll_run:disabled {
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+/* calm secondary buttons in the dialogs of the template (outside the page) */
+.ui-preview #pollResponseModal .modal-footer .btn-secondary,
+.ui-preview #pollRunResultsModal .modal-footer .btn-secondary {
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* styles.css lets hints on phones reach the screen's edge (-15px); in the
+   dialogs they stay inside */
+.ui-preview .pv-poll-run .alert,
+.ui-preview #pollResponseModal .alert,
+.ui-preview #pollRunResultsModal .alert {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+@media (max-width: 767px) {
+    /* card buttons share their row */
+    .pv-poll-actions .btn,
+    .pv-run-actions .btn {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .ui-preview #save_poll_btn_container,
+    .ui-preview #save_poll_run_btn_container {
+        flex: 1 1 auto;
+    }
+
+    .ui-preview .pv-sheet #save_poll_btn_container .btn,
+    .ui-preview .pv-sheet #save_poll_run_btn_container .btn {
+        flex: 1 1 auto;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+
+    /* results: the downloads wrap instead of scrolling sideways */
+    .ui-preview #pollRunResultsModal.pv-sheet .modal-footer {
+        flex-wrap: wrap;
+    }
+
+    .ui-preview #pollRunResultsModal.pv-sheet .modal-footer .btn {
+        flex: 1 1 auto;
+    }
+}
+
+/* the start page's narrow side column (desktop): picture above the text,
+   the button the whole width */
+@media (min-width: 992px) {
+    .ui-preview .side-panel .hint_poll > div:first-child {
+        float: none !important;
+        width: 28px !important;
+        height: 28px !important;
+        margin: 0 0 8px !important;
+        top: 0 !important;
+        left: 0 !important;
+    }
+
+    .ui-preview .side-panel .hint_poll {
+        hyphens: auto;
+        overflow-wrap: anywhere;
+    }
+
+    .ui-preview .side-panel .hint_poll .bu-launch-poll {
+        width: 100%;
+        justify-content: center;
+        white-space: normal !important;
+        padding: 8px 10px;
+    }
+}
+
+@media (min-width: 992px) {
+    /* words stay whole on the button in the narrow column */
+    .ui-preview .side-panel .hint_poll .bu-launch-poll {
+        overflow-wrap: normal;
+        hyphens: none;
+    }
+}

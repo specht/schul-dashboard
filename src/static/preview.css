@@ -3462,3 +3462,14 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .pv-more-groups[aria-expanded='true']::after {
     transform: rotate(-135deg);
 }
+
+/* "Mehr" on phones: only what the tab bar doesn't offer already
+   (Stundenplan → Heute/Woche, Nachrichten → tab, Planung/Lerngruppen → Kurse) */
+@media (max-width: 767px) {
+    body.ui-preview:has(.pv-tabbar a.pv-tab[href='/']) .navbar-collapse .nav-item:has(> a.nav-link[href='/']),
+    body.ui-preview:has(.pv-tabbar a.pv-tab[href='/messages']) .navbar-collapse .nav-item:has(> a.nav-link[href='/messages']),
+    body.ui-preview:has(#bu_pv_courses) .navbar-collapse .nav-item:has(> #navbarDropdownKurse),
+    body.ui-preview:has(#bu_pv_courses) .navbar-collapse .nav-item:has(> #navbarDropdownKlassen) {
+        display: none !important;
+    }
+}

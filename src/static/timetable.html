@@ -27,6 +27,7 @@
     }
 </style>
 <div class='container-fluid'>
+    <div id='pv_day_band' class='pv-day-band' hidden></div>
     <div class="row" style="#{(((@session_user || {})[:otp_token]) || ((@session_user || {})[:telephone_number]) || (!user_with_role_logged_in?(:teacher))) ? 'display: none;' : 'display: block;'}">
         <div class="container" style="margin-top: -30px; margin-bottom: 30px;">
             <p>
@@ -142,6 +143,7 @@
             </div>
             <div id='calendar' style='margin-bottom: 30px;'>
             </div>
+            <nav id='pv_day_strip' class='pv-day-strip' aria-label='Tage der Woche' hidden></nav>
             <div id='pv_agenda' class='pv-agenda' aria-live='polite' hidden></div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-lg-2 col-md-12 side-panel'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
@@ -681,6 +683,7 @@ function render_preview_agenda_inner() {
     if (!preview_agenda_wanted()) {
         document.body.classList.remove('pv-agenda-on');
         box.attr('hidden', true);
+        $('#pv_day_band, #pv_day_strip').attr('hidden', true);
         return;
     }
     document.body.classList.add('pv-agenda-on');
@@ -693,8 +696,10 @@ function render_preview_agenda_inner() {
     let timed = all.filter(function(e) { return !e.allDay; }).sort(function(a, b) { return a.start - b.start; });
     let now = new Date();
     let months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-    let heading = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][day.getDay()] + ', ' + day.getDate() + '. ' + months[day.getMonth()];
-    box.append($('<h2>').addClass('pv-ag-day').text(heading).toggleClass('pv-ag-today', same_day(now)));
+    let weekday_names = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    let months_short = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+    render_preview_day_band(day, weekday_names[day.getDay()] + ', ' + day.getDate() + '. ' + months_short[day.getMonth()], same_day(now));
+    render_preview_day_strip(day);
     let open = function(fc_event) {
         return function(e) {
             window.timetable_options.eventClick({ event: fc_event, el: e.currentTarget, jsEvent: e, view: window.calendar.view });
@@ -772,6 +777,71 @@ function render_preview_agenda_inner() {
         card.on('click', open(e));
         row.append(card);
         box.append(row);
+    }
+}
+
+// The header on the backdrop (phones, new design): the day in large type, a
+// line with what the day holds, the profile picture
+function render_preview_day_band(day, label, is_today) {
+    let band = $('#pv_day_band');
+    let same = function(d) { return d && d.toDateString() === day.toDateString(); };
+    let lessons = 0, duty = false, changes = 0;
+    for (let e of window.calendar.getEvents()) {
+        if (e.allDay || !same(e.start)) continue;
+        let x = e.extendedProps || {};
+        if (x.pausenaufsicht) { duty = true; continue; }
+        if (!x.lesson || x.is_event) continue;
+        if (x.entfall) { changes++; continue; }
+        lessons += x.count || 1;
+        if (x.vertretungs_text || /<s>/.test(x.label || '') || /<s>/.test(x.raum || '')) changes++;
+    }
+    let parts = [];
+    if (is_today) parts.push('Heute');
+    parts.push(lessons === 0 ? 'keine Stunden' : (lessons === 1 ? '1 Stunde' : lessons + ' Stunden'));
+    if (duty) parts.push('Aufsicht');
+    if (changes > 0) parts.push(changes === 1 ? '1 Änderung' : changes + ' Änderungen');
+    band.empty().removeAttr('hidden');
+    let text = $('<div>').addClass('pv-band-text');
+    text.append($('<h1>').text(label), $('<div>').addClass('pv-band-sub').text(parts.join(' · ')));
+    band.append(text);
+    // the profile picture from the menu, as a link to the profile
+    let avatar = $('#navbarDropdownProfile .icon').first().clone();
+    if (avatar.length > 0)
+        band.append($('<a>').addClass('pv-band-avatar').attr('href', '/profil').attr('aria-label', 'Profil').append(avatar.contents()));
+}
+
+// The school days of the shown week as a strip: tap one to show it, the dots
+// tell how many lessons it has (up to five)
+function render_preview_day_strip(day) {
+    let strip = $('#pv_day_strip').empty().removeAttr('hidden');
+    let monday = new Date(day);
+    monday.setHours(0, 0, 0, 0);
+    while (monday.getDay() !== 1) monday.setDate(monday.getDate() + (monday.getDay() === 0 ? 1 : -1));
+    let today = new Date().toDateString();
+    let names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    let events = window.calendar.getEvents();
+    for (let i = 0; i < 5; i++) {
+        let d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        let count = events.filter(function(e) {
+            let x = e.extendedProps || {};
+            return !e.allDay && e.start && e.start.toDateString() === d.toDateString() && x.lesson && !x.is_event && !x.pausenaufsicht && !x.entfall;
+        }).length;
+        let button = $('<button type="button">').addClass('pv-strip-day')
+            .toggleClass('pv-strip-active', d.toDateString() === day.toDateString())
+            .toggleClass('pv-strip-today', d.toDateString() === today)
+            .attr('aria-pressed', d.toDateString() === day.toDateString() ? 'true' : 'false')
+            .attr('aria-label', names[d.getDay()] + ' ' + d.getDate() + '., ' + count + (count === 1 ? ' Stunde' : ' Stunden'));
+        button.append($('<span>').addClass('pv-strip-name').text(names[d.getDay()]));
+        button.append($('<b>').text(d.getDate()));
+        let dots = $('<span>').addClass('pv-strip-dots');
+        for (let k = 0; k < Math.min(count, 5); k++) dots.append($('<i>'));
+        button.append(dots);
+        button.on('click', function() {
+            window.calendar.gotoDate(d);
+            render_preview_agenda();
+        });
+        strip.append(button);
     }
 }
 

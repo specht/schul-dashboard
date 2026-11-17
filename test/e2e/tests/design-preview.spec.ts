@@ -520,7 +520,9 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
       const d = (window as any).calendar.getDate();
       return ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][d.getDay()] + ', ' + d.getDate() + '.';
     });
-    await expect(page.locator('#pv_agenda .pv-ag-day')).toContainText(heading);
+    await expect(page.locator('#pv_day_band h1')).toContainText(heading);
+    // the day strip marks the shown day
+    await expect(page.locator('#pv_day_strip .pv-strip-active')).toContainText(String(await page.evaluate(() => (window as any).calendar.getDate().getDate())));
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

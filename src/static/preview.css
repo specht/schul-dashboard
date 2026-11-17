@@ -1262,8 +1262,22 @@ html {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
+/* the switch and "Neue Nachricht" in one row (wrapping on narrow screens),
+   the divider below them */
+.ui-preview div:has(> .btn-group #bu-inbox) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.ui-preview div:has(> .btn-group #bu-inbox) > hr {
+    flex-basis: 100%;
+    margin: 4px 0 0;
+}
+
 .ui-preview .bu-compose-message {
-    float: right;
+    margin-left: auto;
     background: var(--acc);
     border-color: var(--acc);
     color: var(--acc-ink);

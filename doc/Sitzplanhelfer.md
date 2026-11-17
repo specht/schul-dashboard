@@ -28,6 +28,30 @@ eigenes Werkzeug ohne Bezug zum Sitzplan. Die früheren Knöpfe „Editor“,
 Werkzeuge oben auf der Sitzplan-Seite (siehe unten). Die alte Adresse
 `/sitzplanverteilen/…` leitet auf die Sitzplan-Seite weiter.
 
+## Sitzplan im Fachraum
+
+Unterrichtet eine Lehrkraft die Klasse laut Stundenplan in einem anderen
+Raum als dem Klassenraum (etwa im Bio-Raum), steht für sie auf der
+Klassenseite zusätzlich „Sitzplan Raum …“ für diesen Raum. Dort macht sie
+ihren eigenen Sitzplan für ihren Unterricht, immer für die ganze Klasse:
+
+- **Eigene Tische:** Jede Lehrkraft setzt im Editor ihre eigenen Tische für
+  den Raum. Gibt es dort schon Tische (von der Schule oder von Kolleginnen
+  und Kollegen), zeigt der Editor sie klein als Vorschau mit
+  „Übernehmen“. Übernommen wird eine Kopie: Danach sind es die eigenen
+  Tische, Änderungen betreffen nur die eigenen Pläne.
+- **Eigene Pläne:** Unterrichten zwei Lehrkräfte die Klasse im selben Raum,
+  hat jede ihren eigenen Plan. Die Pläne, Vorgaben und Tische sieht nur
+  die Lehrkraft selbst.
+- **Werkzeuge:** Tische im Raum, Shuffler (ohne die Regeln der
+  Klassenleitung) und Von Hand verteilen, dazu „Plan würfeln“, die
+  Vorgaben (Paare, feste Plätze), Speichern, Bearbeiten, Anzeigen und
+  Drucken. Wunschrunde und Verteilung im Raum gibt es nur bei der
+  Klassenleitung im Klassenraum; deren Wünsche, Absprachen und Listen
+  sieht die Fachlehrkraft nicht.
+
+Der Sitzplan der Klassenleitung im Klassenraum bleibt davon unberührt.
+
 ## Ablauf für Lehrkräfte
 
 Die Seite hat zwei Ansichten. Lange Erklärungen sind zugeklappt
@@ -200,8 +224,11 @@ unvollständige letzte Zeile mittig), Namen untereinander.
   nach dem Speichern zusätzlich `seats` (E-Mail → Sitzplatz-Index),
   `unresolved` (nicht erfüllte Vorgaben mit Begründung),
   `satisfied_emails` und `saved_at`. Pro Klasse+Raum ist immer nur
-  **ein** Zyklus gleichzeitig offen (`saved_at IS NULL`).
-- **`SeatingRules`** (`key` = `<klasse>/<raum>`): die geltenden
+  **ein** Zyklus gleichzeitig offen (`saved_at IS NULL`). Pläne einer
+  Lehrkraft im Fachraum tragen zusätzlich `lehrer` (ihre E-Mail); die der
+  Klasse haben kein `lehrer`. Alle Abfragen trennen beides.
+- **`SeatingRules`** (`key` = `<klasse>/<raum>`, im Fachraum
+  `<klasse>/<raum>/<E-Mail>`): die geltenden
   Vorgaben, nach jeder Änderung aus dem offenen Zyklus übernommen. Neue
   Pläne starten von hier (fehlt der Knoten, vom zuletzt gespeicherten
   Plan).
@@ -229,6 +256,11 @@ Klassenraum.
   `require_sitzplan_klassenleitung!`), auf den Seiten und in allen
   Endpunkten. Den Editor bekommt die Klassenleitung nur für den
   Klassenraum, Admins auch für Fachräume.
+- **Fachraum**: Wer die Klasse laut Stundenplan in einem Raum außer dem
+  Klassenraum unterrichtet, bekommt dort die Sitzplan-Seite, den
+  Shuffler und den Editor für die eigenen Pläne und Tische
+  (`sitzplan_owner`, `require_sitzplan_page!`). Einen Plan einer
+  Lehrkraft öffnet und ändert nur sie selbst (`require_sph_cycle_access!`).
 - **Ansehen**: Die übrigen Lehrkräfte der Klasse sehen im Klassenbereich
   „Sitzplan Raum …“, die Ansicht ohne Wünsche (`sitzplananzeige.html`,
   `sph_can_view?`). Sie zeigt nur Namen, Fotos und Plätze, nie
@@ -293,9 +325,11 @@ eines Plans.
 **Sitzplan-Editor** (`/sitzplaneditor/<klasse>/<raum>`, auf der
 Sitzplan-Seite „Tische im Raum ändern“): Plätze per Klick setzen und
 entfernen, nebeneinanderliegende Plätze werden Tische; Modus „Längs“ für
-U-Formen (Blickrichtung als dritter Wert eines Platzes). Darf nur die
-Klassenleitung im eigenen Klassenraum, Fachräume nur Admins, weil die
-Bestuhlung für alle Klassen im Raum gilt.
+U-Formen (Blickrichtung als dritter Wert eines Platzes). Die Bestuhlung
+eines Raums gilt für alle Klassen im Raum; sie ändert die Klassenleitung im
+eigenen Klassenraum, in Fachräumen nur Admins. Lehrkräfte im eigenen
+Fachraum setzen dagegen ihre eigenen Tische (siehe „Sitzplan im
+Fachraum“) und können dabei vorhandene als Kopie übernehmen.
 
 ## Sitzdaten
 
@@ -307,6 +341,8 @@ Was das Dashboard selbst verwaltet, liegt unter `/internal/sitzplan`
 |---|---|
 | `raeume/<raum>.json` | Bestuhlung eines Raums: `[[x, y], [x, y, blickrichtung], …]` |
 | `raeume/backup/` | die letzten 10 Fassungen pro Raum |
+| `fachraeume/<raum>/<schlüssel>.json` | eigene Tische einer Lehrkraft im Fachraum: `{"email": …, "seats": […]}`; der Schlüssel ist ein Hash der E-Mail |
+| `fachraeume/<raum>/backup/` | die letzten 10 Fassungen je Lehrkraft |
 | `rules.json` | Regeln des Shufflers: `[nc_login, [x_min, x_max], [y_min, y_max]]` |
 | `bff.json` | Paare des Shufflers: `[nc_login_1, nc_login_2, häufigkeit]` |
 

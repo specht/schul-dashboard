@@ -1,4 +1,4 @@
-#{redirect_on_error { require_sitzplan_klassenleitung!(*sitzplan_path_params) }}
+#{redirect_on_error { require_sitzplan_page!(*sitzplan_path_params) }}
 <style>
 .sph-container {
     max-width: 1100px;
@@ -504,6 +504,7 @@ body.dark .sph-group {
     <h1>Sitzplan <span id='sph_label'></span></h1>
     <div class='api_messages'></div>
     <p><a class="btn btn-outline-secondary" id="sph_back_link" href="#"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></p>
+    <p id="sph_fachraum_info" class="sph-legend" style="display: none;"></p>
     <p id="sph_status" class="sph-status" role="status"></p>
 
     <!-- Ganz oben, in jeder Ansicht: die Tische im Raum (der erste Schritt,
@@ -646,6 +647,7 @@ body.dark .sph-group {
             <div class="sph-rule-list" id="sph_rules_list"><span class="none-hint">keine festen Plätze</span></div>
             <p class="sph-legend">Einen genauen Platz legen Sie im Plan fest: Person anklicken, dann „📌 Platz festhalten“. Feste Plätze sind im Plan mit 📌 markiert.</p>
 
+            <div id="sph_spread_area">
             <h5 class="sph-area-head">Verteilung im Raum
                 <span class="sph-area-switch custom-control custom-switch">
                     <input type="checkbox" class="custom-control-input" id="sph_area_spread" data-area="spread">
@@ -655,6 +657,7 @@ body.dark .sph-group {
             <p class="sph-legend">Wer auf derselben Liste steht, wird im Raum verteilt: nicht am selben Tisch, nicht direkt davor oder dahinter und nicht schräg daneben. Das wirkt auch ganz ohne Wünsche, mit „Im Raum verteilen“ oben. Gibt es Wünsche, zählen die innerhalb einer Liste nicht (🔒). „Muss zusammen“ geht vor. Die Listen sehen nur Sie.</p>
             <div id="sph_groups_list"></div>
             <button class="btn btn-sm btn-outline-primary" id="sph_bu_add_group"><i class="fa fa-plus"></i>&nbsp;&nbsp;Neue Liste</button>
+            </div>
         </details>
 
         <div id="sph_unplaced_box" style="display: none;">
@@ -742,11 +745,16 @@ var move_history = [];
 var last_cycle = null;
 // Darf die Klassenleitung hier die Tische ändern (eigener Klassenraum, keine
 // halben Positionen)? Dann gibt es den Link „Tische im Raum ändern“.
-var sph_editor_allowed = #{(sitzplan_editor_rooms(sitzplan_path_params[0]).include?(sitzplan_path_params[1]) && !SitzplanDaten.half_positions?(SitzplanDaten.room(sitzplan_path_params[1]))).to_json};
+var sph_editor_allowed = #{sitzplan_editor_allowed?.to_json};
+// Der eigene Plan einer Lehrkraft für ihren Unterricht im Fachraum: eigene
+// Tische, nur „Shuffler“ und „Von Hand verteilen“, keine Wunschrunde und
+// keine Verteilungslisten (die gehören zur Klassenleitung).
+var sph_fachraum = #{(!!sitzplan_owner(*sitzplan_path_params)).to_json};
 
-// Bestuhlung aller Räume, geteilt mit dem Sitzplan-Shuffler (siehe sitzplan_daten.rb).
-// Fehlt der Raum, erscheint unten ein erklärender Hinweis.
-#{SitzplanDaten.seats_js}
+// Bestuhlung aller Räume, geteilt mit dem Sitzplan-Shuffler (siehe sitzplan_daten.rb);
+// im eigenen Fachraum die Tische der Lehrkraft. Fehlt der Raum, erscheint
+// unten ein erklärender Hinweis.
+#{sitzplan_seats_js}
 
 function display_name(email) {
     let s = sus.find(x => x.email === email);
@@ -1622,7 +1630,8 @@ function render_start_header(data) {
     if (last_cycle) {
         let d = new Date(last_cycle.saved_at * 1000);
         let changed = last_cycle.updated_at ? `, geändert am ${new Date(last_cycle.updated_at * 1000).toLocaleDateString('de-DE')}` : '';
-        $('#sph_start_info').text(`Aktueller Sitzplan vom ${d.toLocaleDateString('de-DE')}${changed}. So sehen ihn alle Lehrkräfte der Klasse.`);
+        $('#sph_start_info').text(`Aktueller Sitzplan vom ${d.toLocaleDateString('de-DE')}${changed}. ` +
+            (sph_fachraum ? 'Diesen Plan sehen nur Sie.' : 'So sehen ihn alle Lehrkräfte der Klasse.'));
     } else {
         $('#sph_start_info').text('Für diese Klasse und diesen Raum ist noch kein Sitzplan gespeichert.');
     }
@@ -2233,7 +2242,7 @@ function render_placement_raw(editable, preview) {
         let lines = Object.keys(byEmail).map(e => esc(`${display_name(e)}: ${byEmail[e].join(', ')}`));
         $('#sph_unresolved_summary').html(rate_html + key_html + '<div class="sph-unresolved-list"><strong>Nicht erfüllt:</strong><br>' + lines.join('<br>') + '</div>');
     } else if (Object.keys(current_placement).length > 0 && !preview) {
-        $('#sph_unresolved_summary').html(rate_html + (current_satisfaction.students_with_want > 0 ? key_html : '') + '<p>Alle Wünsche und Vorgaben sind erfüllt.</p>');
+        $('#sph_unresolved_summary').html(rate_html + (current_satisfaction.students_with_want > 0 ? key_html : '') + (sph_fachraum ? '<p>Alle Vorgaben sind erfüllt.</p>' : '<p>Alle Wünsche und Vorgaben sind erfüllt.</p>'));
     } else {
         $('#sph_unresolved_summary').empty();
     }
@@ -2544,12 +2553,22 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#sph_back_link').attr('href', `/directory/${encodeURIComponent(klasse)}`);
     $('#sph_link_editor').attr('href', `/sitzplaneditor/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
     $('#sph_link_editor').toggle(sph_editor_allowed);
+    if (sph_fachraum) {
+        $('#sph_fachraum_info').text(`Ihr eigener Sitzplan für Ihren Unterricht mit der ganzen Klasse in Raum ${raum}. ` +
+            'Ihn und Ihre Tische sehen nur Sie; der Sitzplan der Klassenleitung bleibt davon unberührt.').show();
+        // Wunschrunde und Verteilungslisten gibt es nur bei der Klassenleitung im
+        // Klassenraum; den Shuffler ohne ihre Regeln.
+        $('#sph_bu_start_spread, #sph_bu_wishes, #sph_new_choice, #sph_shuffler_box, #sph_spread_area').remove();
+        $('#sph_link_shuffler').attr('title', 'Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts.');
+    }
     if (!seats) {
         // Noch keine Tische für diesen Raum - mit einer Erklärung und dem Weg
         // zum Editor stehenbleiben statt wortlos auf die Startseite zu springen.
         $('#sph_view_start, #sph_view_work, #sph_plan_area, #sph_save_row, #sph_history_section').remove();
         $('#sph_label').text(`${klasse} – Raum ${raum}`);
-        $('#sph_room_info').text(sph_editor_allowed
+        $('#sph_room_info').text(sph_fachraum
+            ? `Für Ihren Unterricht in Raum ${raum} haben Sie noch keine Tische angelegt. Bauen Sie sie auf oder übernehmen Sie vorhandene.`
+            : sph_editor_allowed
             ? `Für Raum ${raum} sind noch keine Tische angelegt. Legen Sie sie zuerst an.`
             : `Für Raum ${raum} sind noch keine Tische angelegt. Das kann nur die Administration.`);
         $('#sph_link_editor').text('Tische anlegen').removeClass('btn-outline-primary').addClass('btn-primary');
@@ -2561,9 +2580,14 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#sph_link_print').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}?print=1`);
     $('#sph_link_show').attr('href', `/sitzplananzeige/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
     $('#sph_sh_start').attr('href', `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
-    // Shuffler: erst seine Regeln zeigen, dann „Shuffler starten“
+    // Shuffler: erst seine Regeln zeigen, dann „Shuffler starten“; im
+    // Fachraum gleich los (ohne die Regeln der Klassenleitung)
     $('#sph_link_shuffler').click(function () {
         set_status('');
+        if (sph_fachraum) {
+            window.location.href = `/sitzplan/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`;
+            return;
+        }
         $('#sph_new_choice').hide();
         render_areas();
         if ($('#sph_shuffler_box').is(':visible')) {

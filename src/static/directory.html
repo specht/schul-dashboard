@@ -150,6 +150,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let klassenraeume = #{klassenraeume_for_klasse(klasse).to_json};
             let editor_rooms = #{(klassenleiter_for_klasse_or_admin_logged_in?(klasse) ? sitzplan_editor_rooms(klasse) : []).to_json};
             let is_klassenleitung = '#{klassenleiter_for_klasse_or_admin_logged_in?(klasse)}' === 'true';
+            // Fachräume, in denen diese Lehrkraft die Klasse unterrichtet: dort
+            // macht sie ihren eigenen Sitzplan mit eigenen Tischen.
+            let fachraeume = #{sitzplan_fachraeume(klasse).to_json};
+            let fachraeume_mit_tischen = #{sitzplan_fachraeume(klasse).select { |r| SitzplanDaten.teacher_room(r, @session_user[:email]) }.to_json};
             // Die Sitzdaten stehen in einem eigenen <script>; sind sie fehlerhaft, fehlt nur der Sitzplan-Bereich
             let sp_seats = (typeof seats_dict !== 'undefined') ? seats_dict : {};
             // Der Sitzplan einer Klasse gehört zu ihrem Klassenraum. Fach- und
@@ -181,6 +185,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         (can_edit_room ? 'Weitere Plätze legen Sie auf der Sitzplan-Seite unter „Tische im Raum ändern“ an.' : 'Die Tische dieses Raums kann nur die Administration ändern.');
                 if (buttons.length === 0 && !hint) continue;
                 rows.push([raum, buttons, hint]);
+            }
+            for (let raum of fachraeume) {
+                rows.push([raum, [['Sitzplan', '/sitzplanhelfer', 'btn-primary']],
+                    'Ihr eigener Sitzplan für Ihren Unterricht in diesem Raum.' +
+                    (fachraeume_mit_tischen.indexOf(raum) < 0 ? ' Die Tische legen Sie dort an oder übernehmen vorhandene.' : '')]);
             }
             if (rows.length > 0) {
                 $(`<hr>`).appendTo('#additional_teacher_content');

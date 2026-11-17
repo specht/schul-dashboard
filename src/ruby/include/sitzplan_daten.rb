@@ -1,10 +1,12 @@
+require 'digest'
 require 'fileutils'
 require 'json'
 
 # Sitzordnungen, Regeln und Freundespaare für Shuffler, Helfer und Editor.
 #
 # Das Dashboard verwaltet sie unter /internal/sitzplan: raeume/<raum>.json pro
-# Raum, dazu rules.json und bff.json. /data gehört nicht dem Dashboard (dort
+# Raum, dazu rules.json und bff.json. Im Fachraum setzt jede Lehrkraft ihre
+# eigenen Tische: fachraeume/<raum>/<schlüssel>.json. /data gehört nicht dem Dashboard (dort
 # liegt das von Hand gepflegte Datenrepo, schreibgeschützt eingebunden) und wird
 # deshalb nur gelesen: Solange migrate-sitzplan.rb nicht gelaufen ist, gelten die
 # alten seats.js, rules.js und bff.js, danach können sie aus dem Datenrepo raus.
@@ -17,6 +19,7 @@ module SitzplanDaten
     DATA_DIR = '/data/sitzplan'
     INTERNAL_DIR = '/internal/sitzplan'
     ROOMS_DIR = File.join(INTERNAL_DIR, 'raeume')
+    TEACHER_DIR = File.join(INTERNAL_DIR, 'fachraeume')
     BACKUP_DIR = File.join(ROOMS_DIR, 'backup')
     LIST_BACKUP_DIR = File.join(INTERNAL_DIR, 'backup')
     BACKUPS_KEPT = 10
@@ -244,10 +247,56 @@ module SitzplanDaten
         nil
     end
 
+    # Bestuhlung einer Lehrkraft für einen Fachraum. Der Dateiname kommt aus
+    # der E-Mail (gehasht, damit sie nicht im Dateinamen steht); die Datei
+    # selbst nennt sie, für „Raumplan von … übernehmen“.
+    def self.teacher_key(email)
+        Digest::SHA256.hexdigest(email.to_s.downcase)[0, 24]
+    end
+
+    def self.teacher_room_path(raum, email)
+        raise FormatError, 'ungültiger Raumname' unless raum =~ ROOM_NAME
+        File.join(TEACHER_DIR, raum, "#{teacher_key(email)}.json")
+    end
+
+    def self.teacher_room(raum, email)
+        path = teacher_room_path(raum, email)
+        return nil unless File.exist?(path)
+        entry = JSON.parse(read_utf8(path))
+        entry.is_a?(Hash) && valid_seats?(entry['seats']) ? entry['seats'] : nil
+    rescue FormatError, JSON::ParserError
+        nil
+    end
+
+    # Alle Bestuhlungen von Lehrkräften für diesen Raum: {email => seats}.
+    def self.teacher_rooms(raum)
+        return {} unless raum =~ ROOM_NAME
+        rooms = {}
+        Dir[File.join(TEACHER_DIR, raum, '*.json')].sort.each do |path|
+            begin
+                entry = JSON.parse(read_utf8(path))
+                raise FormatError unless entry.is_a?(Hash) && entry['email'].is_a?(String) && valid_seats?(entry['seats']) &&
+                                         File.basename(path, '.json') == teacher_key(entry['email'])
+                rooms[entry['email']] = entry['seats']
+            rescue FormatError, JSON::ParserError
+                STDERR.puts "Sitzplan: Fachraum #{raum}/#{File.basename(path)} wird ignoriert, Format ungültig"
+            end
+        end
+        rooms
+    end
+
+    def self.write_teacher_room(raum, email, seats)
+        path = teacher_room_path(raum, email)
+        write_with_backup(path, File.join(TEACHER_DIR, raum, 'backup'), teacher_key(email),
+                          {'email' => email, 'seats' => seats})
+    end
+
     # JS für die Seiten: seats.js unverändert, falls noch vorhanden, darüber die
     # verwalteten Räume. So bleibt alles lauffähig, vor und nach der Umwandlung,
     # auch wenn seats.js etwas enthält, das JsLiteral nicht versteht.
-    def self.seats_js
+    # Mit only = [raum, seats]: Für diesen Raum gelten die Tische einer
+    # Lehrkraft in ihrem Fachraum (seats nil: sie hat noch keine).
+    def self.seats_js(only = nil)
         path = File.join(DATA_DIR, 'seats.js')
         legacy = begin
             File.exist?(path) ? read_utf8(path) : nil
@@ -256,22 +305,29 @@ module SitzplanDaten
         end
         parts = [legacy || 'var seats_dict = {};']
         internal_rooms.each { |raum, seats| parts << "seats_dict[#{raum.to_json}] = #{seats.to_json};" }
+        if only
+            raum, seats = only
+            parts << (seats ? "seats_dict[#{raum.to_json}] = #{seats.to_json};" : "delete seats_dict[#{raum.to_json}];")
+        end
         parts.join("\n")
     end
 
     # Bestuhlung schreiben, vorherige Fassung als Sicherung behalten.
     def self.write_room(raum, seats)
-        path = room_path(raum)
+        write_with_backup(room_path(raum), BACKUP_DIR, raum, seats)
+    end
+
+    def self.write_with_backup(path, backup_dir, prefix, value)
         WRITE_MUTEX.synchronize do
-            FileUtils.mkdir_p(BACKUP_DIR)
+            FileUtils.mkdir_p(backup_dir)
             if File.exist?(path)
-                next if (JSON.parse(read_utf8(path)) rescue nil) == seats
+                next if (JSON.parse(read_utf8(path)) rescue nil) == value
                 stamp = Time.now.utc.strftime('%Y%m%dT%H%M%S%6NZ')
-                FileUtils.cp(path, File.join(BACKUP_DIR, "#{raum}-#{stamp}.json"))
-                backups = Dir[File.join(BACKUP_DIR, "#{raum}-[0-9]*.json")].sort
+                FileUtils.cp(path, File.join(backup_dir, "#{prefix}-#{stamp}.json"))
+                backups = Dir[File.join(backup_dir, "#{prefix}-[0-9]*.json")].sort
                 FileUtils.rm(backups[0...(backups.size - BACKUPS_KEPT)]) if backups.size > BACKUPS_KEPT
             end
-            write_atomic(path, seats)
+            write_atomic(path, value)
         end
     end
 

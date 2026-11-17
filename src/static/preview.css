@@ -3482,3 +3482,90 @@ body.ui-preview:has(.container-fluid.solid)::before {
     gap: 12px;
     padding-top: 10px;
 }
+
+/* ---------- Navigation by task (preview.js, regroup_navigation) ---------- */
+.ui-preview .pv-nav-hidden,
+.ui-preview .navbar .dropdown-item.pv-nav-moved {
+    display: none !important;
+}
+
+.ui-preview .pv-nav-section {
+    width: 100%;
+    margin-top: 10px !important;
+}
+
+.ui-preview .pv-nav-heading {
+    padding: 6px 10px 4px;
+    font: 700 0.72rem/1.2 var(--pv-text);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--pv-muted);
+}
+
+.ui-preview .navbar .pv-nav-entry {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px !important;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: var(--pv-ink) !important;
+    font-size: 0.95rem;
+    text-align: left;
+    white-space: normal;
+}
+
+.ui-preview .navbar .pv-nav-entry:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .navbar .pv-nav-entry.pv-active {
+    background: var(--acc-soft);
+    color: var(--acc-text) !important;
+    font-weight: 700;
+}
+
+.ui-preview .navbar .pv-nav-entry .icon {
+    position: static;
+    flex: none;
+    width: 22px;
+    margin: 0 !important;
+    color: var(--pv-muted);
+}
+
+.ui-preview .navbar .pv-nav-entry .label {
+    position: static;
+}
+
+.ui-preview .pv-nav-courses .pv-nav-extra {
+    display: none !important;
+}
+
+.ui-preview .pv-nav-courses.pv-nav-all .pv-nav-extra {
+    display: flex !important;
+}
+
+.ui-preview .navbar .pv-nav-more {
+    color: var(--acc-text) !important;
+    font-weight: 600;
+}
+
+/* Lerngruppen inside "Unterricht" */
+.ui-preview .pv-nav-section .nav-item {
+    margin: 0 !important;
+}
+
+/* phones: "Unterricht" is the Kurse tab */
+@media (max-width: 767px) {
+    body.ui-preview:has(#bu_pv_courses) .pv-nav-section[data-section='unterricht'] {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .pv-nav-entry {
+        min-height: 44px;
+        font-size: 1rem;
+        padding: 8px 12px !important;
+    }
+}

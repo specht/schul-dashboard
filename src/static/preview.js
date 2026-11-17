@@ -299,4 +299,116 @@
         });
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fold_group_menu); else fold_group_menu();
+
+    // ---------- The navigation by task (new design) ----------
+    // Heute · Nachrichten · Datentresor, then sections: Unterricht (my courses,
+    // Klassenarbeiten, Lerngruppen), Schule, Verwaltung; the profile menu keeps
+    // only what concerns oneself. The links are the server's own (same
+    // permissions): tools are copied into the sections, Lerngruppen is moved;
+    // the original menus stay in the page, hidden (the Kurse sheet and the
+    // search read them).
+    var SCHULE = /^\/(events|polls|prepare_vote|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
+    var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpost|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound)(\/|$)/;
+    var MAX_COURSES = 6;
+
+    function regroup_navigation() {
+        var collapse = document.getElementById('navbarTogglerDemo02');
+        if (!collapse || collapse.dataset.pvRegrouped || !document.body.classList.contains('ui-preview')) return;
+        collapse.dataset.pvRegrouped = '1';
+        var main_nav = collapse.querySelector('.navbar-nav');
+        if (!main_nav) return;
+        var seen = {};
+        var section = function(key, title) {
+            var li = document.createElement('li');
+            li.className = 'nav-item pv-nav-section';
+            li.dataset.section = key;
+            var head = document.createElement('div');
+            head.className = 'pv-nav-heading';
+            head.textContent = title;
+            li.appendChild(head);
+            return li;
+        };
+        var entry = function(a, label) {
+            var copy = a.cloneNode(true);
+            copy.classList.remove('dropdown-item');
+            copy.classList.add('nav-link', 'pv-nav-entry');
+            copy.removeAttribute('id');
+            if (label) {
+                var l = copy.querySelector('.label');
+                if (l) l.textContent = label;
+            }
+            return copy;
+        };
+        var links = Array.prototype.slice.call(collapse.querySelectorAll('.dropdown-menu a.dropdown-item[href]'));
+        var unterricht = section('unterricht', 'Unterricht');
+        var schule = section('schule', 'Schule');
+        var verwaltung = section('verwaltung', 'Verwaltung');
+
+        // my courses (Kursbuch), in class order, without team meetings
+        var courses = Array.prototype.slice.call(collapse.querySelectorAll('[aria-labelledby="navbarDropdownKurse"] a.dropdown-item[href]:not([data-meeting])'));
+        var current = courses.filter(function(a) { return !a.closest('.dropdown-menu') || true; });
+        var list = document.createElement('div');
+        list.className = 'pv-nav-courses';
+        current.forEach(function(a, i) {
+            var e = entry(a);
+            if (i >= MAX_COURSES) e.classList.add('pv-nav-extra');
+            list.appendChild(e);
+            seen[a.getAttribute('href')] = true;
+        });
+        if (current.length > MAX_COURSES) {
+            var more = document.createElement('button');
+            more.type = 'button';
+            more.className = 'nav-link pv-nav-entry pv-nav-more';
+            more.setAttribute('aria-expanded', 'false');
+            more.textContent = 'Alle Kurse (' + current.length + ')';
+            more.addEventListener('click', function() {
+                var open = list.classList.toggle('pv-nav-all');
+                more.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+            list.appendChild(more);
+        }
+        if (current.length) unterricht.appendChild(list);
+        links.forEach(function(a) {
+            var href = a.getAttribute('href') || '';
+            if (seen[href] || a.closest('[aria-labelledby="navbarDropdownKurse"], [aria-labelledby="navbarDropdownKlassen"]')) return;
+            if (href === '/tests') { unterricht.appendChild(entry(a)); seen[href] = true; }
+        });
+        // Lerngruppen: the whole menu moves (own groups first, the rest folded)
+        var groups = document.getElementById('navbarDropdownKlassen');
+        if (groups) unterricht.appendChild(groups.closest('.nav-item'));
+        links.forEach(function(a) {
+            var href = a.getAttribute('href') || '';
+            if (seen[href] || a.closest('[aria-labelledby="navbarDropdownKurse"], [aria-labelledby="navbarDropdownKlassen"]')) return;
+            if (SCHULE.test(href)) { schule.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
+            else if (VERWALTUNG.test(href)) { verwaltung.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
+        });
+        // the top level: Heute, Nachrichten, Datentresor stay; the old menus go
+        var kurse_item = (document.getElementById('navbarDropdownKurse') || {}).closest ? document.getElementById('navbarDropdownKurse').closest('.nav-item') : null;
+        if (kurse_item) kurse_item.classList.add('pv-nav-hidden');
+        var admin_item = document.getElementById('navbarDropdownAdmin');
+        if (admin_item) admin_item.closest('.nav-item').classList.add('pv-nav-hidden');
+        // sections before the search / profile at the bottom
+        var anchor = main_nav.querySelector('.nav-quick-search-item') || main_nav.querySelector('.nav-item.dropdown:last-child');
+        [unterricht, schule, verwaltung].forEach(function(sec) {
+            if (sec.children.length > 1) main_nav.insertBefore(sec, anchor);
+        });
+        // the profile menu: its moved tools hidden, empty dividers too
+        var profile = collapse.querySelector('[aria-labelledby="navbarDropdownProfile"]');
+        if (profile) {
+            Array.prototype.slice.call(profile.children).forEach(function(el, i, all) {
+                if (!el.classList.contains('dropdown-divider')) return;
+                var next = el.nextElementSibling;
+                while (next && next.classList.contains('pv-nav-moved')) next = next.nextElementSibling;
+                if (!next || next.classList.contains('dropdown-divider')) el.classList.add('pv-nav-hidden');
+            });
+        }
+        // the current page marked in the new entries too
+        var here = location.pathname.replace(/\/$/, '') || '/';
+        collapse.querySelectorAll('.pv-nav-entry[href]').forEach(function(a) {
+            if ((a.getAttribute('href') || '').replace(/\/$/, '') === here) a.classList.add('pv-active');
+        });
+        if (typeof place_open_menus === 'function') place_open_menus();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', regroup_navigation); else regroup_navigation();
 })();
+

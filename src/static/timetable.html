@@ -703,6 +703,12 @@ function render_preview_agenda_inner() {
     document.body.classList.add('pv-agenda-on');
     box.removeAttr('hidden').empty();
     install_preview_agenda_swipe();
+    // the tab "Woche": all school days of the week as compact lists
+    if (location.hash === '#woche') {
+        render_preview_week_agenda(box);
+        return;
+    }
+    box.removeClass('pv-agenda-week');
     let day = window.calendar.view.currentStart;
     let same_day = function(d) { return d && d.getFullYear() === day.getFullYear() && d.getMonth() === day.getMonth() && d.getDate() === day.getDate(); };
     let all = window.calendar.getEvents().filter(function(e) { return same_day(e.start); });
@@ -863,7 +869,7 @@ function preview_coming_changes(box, day) {
 
 // The header on the backdrop (phones, new design): the day in large type, a
 // line with what the day holds, the profile picture
-function render_preview_day_band(day, label, is_today) {
+function render_preview_day_band(day, label, is_today, subtitle) {
     let band = $('#pv_day_band');
     let same = function(d) { return d && d.toDateString() === day.toDateString(); };
     let lessons = 0, duty = false, changes = 0;
@@ -877,10 +883,13 @@ function render_preview_day_band(day, label, is_today) {
         if (x.vertretungs_text || /<s>/.test(x.label || '') || /<s>/.test(x.raum || '')) changes++;
     }
     let parts = [];
-    if (is_today) parts.push('Heute');
-    parts.push(lessons === 0 ? 'keine Stunden' : (lessons === 1 ? '1 Stunde' : lessons + ' Stunden'));
-    if (duty) parts.push('Aufsicht');
-    if (changes > 0) parts.push(changes === 1 ? '1 Änderung' : changes + ' Änderungen');
+    if (subtitle) parts.push(subtitle);
+    else if (is_today) parts.push('Heute');
+    if (!subtitle) {
+        parts.push(lessons === 0 ? 'keine Stunden' : (lessons === 1 ? '1 Stunde' : lessons + ' Stunden'));
+        if (duty) parts.push('Aufsicht');
+        if (changes > 0) parts.push(changes === 1 ? '1 Änderung' : changes + ' Änderungen');
+    }
     band.empty().removeAttr('hidden');
     let text = $('<div>').addClass('pv-band-text');
     text.append($('<h1>').text(label), $('<div>').addClass('pv-band-sub').text(parts.join(' · ')));
@@ -895,10 +904,14 @@ function render_preview_day_band(day, label, is_today) {
         text.append(plan);
     }
     band.append(text);
-    // the profile picture from the menu, as a link to the profile
+    // the search (teachers) and the profile picture, as a link to the profile
+    let corner = $('<div>').addClass('pv-band-corner');
+    if (document.getElementById('bu_quick_search'))
+        corner.append($('<button type="button" class="pv-band-search pv-search-button" aria-label="Suchen">').append($('<i class="fa fa-search">')));
     let avatar = $('#navbarDropdownProfile .icon').first().clone();
     if (avatar.length > 0)
-        band.append($('<a>').addClass('pv-band-avatar').attr('href', '/profil').attr('aria-label', 'Profil').append(avatar.contents()));
+        corner.append($('<a>').addClass('pv-band-avatar').attr('href', '/profil').attr('aria-label', 'Profil').append(avatar.contents()));
+    band.append(corner);
 }
 
 // The school days of the shown week as a strip: tap one to show it, the dots
@@ -1195,6 +1208,68 @@ function render_preview_side() {
     side.removeAttr('hidden');
 }
 
+// Phones, tab "Woche": the school days of the shown week one below the
+// other, each lesson as one line (time, subject, room); tapping a lesson
+// opens it, tapping a day shows that day
+function render_preview_week_agenda(box) {
+    box.addClass('pv-agenda-week');
+    let start = new Date(window.calendar.view.currentStart);
+    start.setHours(0, 0, 0, 0);
+    while (start.getDay() !== 1) start.setDate(start.getDate() + (start.getDay() === 0 ? 1 : -1));
+    let end = new Date(start);
+    end.setDate(start.getDate() + 4);
+    let months_short = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+    let names = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    let events = window.calendar.getEvents();
+    let total = 0;
+    let today = new Date().toDateString();
+    let days = $('<div>').addClass('pv-week-days');
+    for (let i = 0; i < 5; i++) {
+        let d = new Date(start);
+        d.setDate(start.getDate() + i);
+        let lessons = events.filter(function(e) {
+            let x = e.extendedProps || {};
+            return !e.allDay && e.start && e.start.toDateString() === d.toDateString() && x.lesson && !x.is_event && !x.pausenaufsicht;
+        }).sort(function(a, b) { return a.start - b.start; });
+        total += lessons.filter(function(e) { return !e.extendedProps.entfall; }).reduce(function(n, e) { return n + (e.extendedProps.count || 1); }, 0);
+        let section = $('<section>').addClass('pv-week-day').toggleClass('pv-week-today', d.toDateString() === today);
+        let head = $('<button type="button">').addClass('pv-week-head-day').append($('<b>').text(names[d.getDay()]), $('<span>').text(d.getDate() + '. ' + months_short[d.getMonth()]));
+        head.on('click', function() {
+            history.replaceState(null, '', location.pathname);
+            window.dispatchEvent(new HashChangeEvent('hashchange'));
+            window.calendar.gotoDate(d);
+            render_preview_agenda();
+            window.scrollTo(0, 0);
+        });
+        section.append(head);
+        if (lessons.length === 0) section.append($('<div>').addClass('pv-week-none').text('keine Stunden'));
+        for (let e of lessons) {
+            let x = e.extendedProps;
+            let row = $('<button type="button">').addClass('pv-week-row').toggleClass('pv-ag-off', !!x.entfall);
+            let color = preview_subject_color(x);
+            if (color) { row[0].style.setProperty('--c', color); row[0].style.setProperty('--ci', preview_subject_ink(x)); }
+            row.append($('<span>').addClass('pv-week-time').text(preview_hhmm(e.start)));
+            row.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
+            let label = $('<span>').addClass('pv-week-title').html(x.label || e.title || '');
+            row.append(label);
+            let room = preview_room_change(x.raum);
+            row.append($('<span>').addClass('pv-week-room').toggleClass('pv-week-room-changed', !!room).html(room ? room[1] : (x.raum || '')));
+            row.on('click', function(ev) {
+                window.timetable_options.eventClick({ event: e, el: ev.currentTarget, jsEvent: ev, view: window.calendar.view });
+            });
+            section.append(row);
+        }
+        days.append(section);
+    }
+    box.append(days);
+    // the header: the week instead of the day, no day strip
+    let label = start.getMonth() === end.getMonth()
+        ? start.getDate() + '.–' + end.getDate() + '. ' + months_short[end.getMonth()]
+        : start.getDate() + '. ' + months_short[start.getMonth()] + ' – ' + end.getDate() + '. ' + months_short[end.getMonth()];
+    render_preview_day_band(start, label, false, 'Kalenderwoche ' + moment(start).isoWeek() + ' · ' + (total === 1 ? '1 Stunde' : total + ' Stunden'));
+    $('#pv_day_strip').attr('hidden', true);
+}
+
 // swiping the agenda: it follows the finger, then the next / previous school
 // day slides in from the side
 function install_preview_agenda_swipe() {
@@ -1233,7 +1308,8 @@ function install_preview_agenda_swipe() {
         let dir = dx < 0 ? 1 : -1;
         move(-dir * window.innerWidth, 120);
         setTimeout(function() {
-            if (dir > 0) window.calendar.next(); else window.calendar.prev();
+            if (location.hash === '#woche') window.calendar.incrementDate({ weeks: dir });
+            else if (dir > 0) window.calendar.next(); else window.calendar.prev();
             render_preview_agenda();
             move(dir * window.innerWidth * 0.5, 0);
             box.getBoundingClientRect();
@@ -2620,6 +2696,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // new design (preview) on phones: the agenda follows the shown day
     options.eventsSet = function() { setTimeout(function() { render_preview_agenda(); render_preview_week_head(); }, 0); };
     options.datesSet = function() { setTimeout(render_preview_week_head, 0); };
+    // tabs "Woche" and "Aufgaben" (new design, phones)
+    let pv_hash = function() {
+        if (!document.body.classList.contains('ui-preview')) return;
+        if (window.calendar) render_preview_agenda();
+        if (location.hash === '#aufgaben') {
+            setTimeout(function() {
+                let hw = $('.future_homework:visible').first();
+                if (hw.length) hw[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
+    };
+    window.addEventListener('hashchange', pv_hash);
+    if (location.hash === '#aufgaben') window.addEventListener('load', pv_hash);
     setInterval(function() { if (document.body.classList.contains('pv-agenda-on')) render_preview_agenda(); }, 60 * 1000);
     window.addEventListener('resize', function() { if (window.calendar) render_preview_agenda(); });
     window.timetable_options = options;

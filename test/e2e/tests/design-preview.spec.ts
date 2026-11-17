@@ -197,15 +197,27 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await expect(menu).toBeHidden();
       await expect(page.locator('.pv-menu-veil')).toBeHidden();
-      // "Suchen" opens the search
-      await tabs.locator('#bu_pv_search').click();
+      // teachers: Heute · Woche · Nachrichten · Kurse · Mehr (as in the mockups)
+      await expect(tabs.locator('.pv-tab')).toHaveText(['Heute', 'Woche', 'Nachrichten', 'Kurse', 'Mehr']);
+      // the search: an icon in the top bar of other pages
+      await page.locator('.nav-quick-search-nav .nav-quick-search').click();
       await expect(page.locator('#ti_quick_search')).toBeVisible();
-      await expect(page.locator('#ti_quick_search')).toBeFocused();
       await page.locator('#ti_quick_search').press('Escape');
-      // the tabs lead where they say
-      await tabs.getByText('Profil').click();
-      await expect(page).toHaveURL(/\/profil$/);
-      await expect(page.locator('.pv-tabbar .pv-tab.pv-active')).toContainText('Profil');
+      // "Kurse": Kursbuch and class lists as a sheet
+      await tabs.locator('#bu_pv_courses').click();
+      const courses = page.locator('.pv-link-sheet');
+      await expect(courses).toContainText('Kursbuch');
+      await expect(courses.locator('a[href^="/lessons/"]').first()).toBeVisible();
+      await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
+      await expect(courses).toHaveCount(0);
+      // "Woche": the days of the week one below the other
+      await tabs.getByText('Woche').click();
+      await expect(page).toHaveURL(/\/#woche$/);
+      await expect(page.locator('#pv_agenda .pv-week-day')).toHaveCount(5);
+      await expect(page.locator('.pv-tabbar .pv-tab.pv-active')).toContainText('Woche');
+      // on the start page the search sits in the header
+      await page.locator('#pv_day_band .pv-band-search').click();
+      await expect(page.locator('#ti_quick_search')).toBeVisible();
     }
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

@@ -165,4 +165,61 @@
         });
     }
     if (document.readyState === 'complete') slide_sheets_down(); else window.addEventListener('load', slide_sheets_down);
+
+    // ---------- A sheet of links (phones), e.g. "Kurse" in the tab bar ----------
+    // groups: [[title, [[label, href], …]], …]; closes like every sheet
+    window.pv_close_plan_menu = window.pv_close_plan_menu || function(animate) {
+        var menu = document.querySelector('.pv-plan-menu');
+        if (!menu) return;
+        document.querySelectorAll('.pv-plan-veil').forEach(function(v) { v.remove(); });
+        document.body.classList.remove('pv-sheet-open');
+        if (animate) {
+            menu.style.transition = 'transform 0.18s ease-in';
+            menu.style.transform = 'translateY(100%)';
+            setTimeout(function() { menu.remove(); }, 180);
+        } else {
+            menu.remove();
+        }
+    };
+
+    window.pv_open_link_sheet = function(title, groups) {
+        window.pv_close_plan_menu(false);
+        var veil = document.createElement('div');
+        veil.className = 'pv-menu-veil pv-plan-veil';
+        veil.addEventListener('click', function() { window.pv_close_plan_menu(true); });
+        var menu = document.createElement('div');
+        menu.className = 'pv-plan-menu pv-link-sheet';
+        menu.setAttribute('role', 'dialog');
+        menu.setAttribute('aria-label', title);
+        groups.forEach(function(g) {
+            if (g[1].length === 0) return;
+            var head = document.createElement('div');
+            head.className = 'pv-plan-group';
+            head.textContent = g[0];
+            menu.appendChild(head);
+            var list = document.createElement('div');
+            list.className = 'pv-sheet-links';
+            g[1].forEach(function(item) {
+                var a = document.createElement('a');
+                a.href = item[1];
+                a.textContent = item[0];
+                if (location.pathname === item[1].split('#')[0]) a.classList.add('active');
+                list.appendChild(a);
+            });
+            menu.appendChild(list);
+        });
+        document.body.appendChild(veil);
+        document.body.appendChild(menu);
+        document.body.classList.add('pv-sheet-open');
+    };
+
+    // the entries of a menu of the navigation: [[label, href], …]
+    window.pv_menu_links = function(toggle_id) {
+        var menu = document.querySelector('[aria-labelledby="' + toggle_id + '"]');
+        if (!menu) return [];
+        return Array.prototype.map.call(menu.querySelectorAll('a.dropdown-item[href]'), function(a) {
+            var label = a.querySelector('.label');
+            return [(label || a).textContent.trim(), a.getAttribute('href')];
+        }).filter(function(x) { return x[0] && x[1] && x[1].charAt(0) === '/'; });
+    };
 })();

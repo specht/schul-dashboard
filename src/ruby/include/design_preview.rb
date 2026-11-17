@@ -235,17 +235,24 @@ class Main < Sinatra::Base
     # Also marks the current page in the menu.
     def design_preview_tabbar_html(new_messages_count)
         return '' unless ui_preview? && user_logged_in?
+        # as in the mockups: teachers Heute · Woche · Nachrichten · Kurse · Mehr,
+        # students Heute · Woche · Aufgaben · Nachrichten · Mehr; the profile is
+        # the picture in the day's header (and in "Mehr"), the search an icon there
         tabs = []
-        tabs << ['/', 'Heute', 'fa-calendar', nil] unless external_user_logged_in?
+        unless external_user_logged_in?
+            tabs << ['/', 'Heute', 'fa-calendar', nil]
+            tabs << ['/#woche', 'Woche', 'fa-th', nil]
+        end
+        tabs << ['/#aufgaben', 'Aufgaben', 'fa-check-square-o', nil] if schueler_logged_in?
         tabs << ['/messages', 'Nachrichten', 'fa-comment-o', new_messages_count] if user_with_role_logged_in?(:can_receive_messages)
-        tabs << ['#search', 'Suchen', 'fa-search', nil] if teacher_logged_in?
-        tabs << ['/profil', 'Profil', 'fa-user-o', nil]
+        tabs << ['#kurse', 'Kurse', 'fa-book', nil] if teacher_logged_in?
+        tabs << ['/profil', 'Profil', 'fa-user-o', nil] unless teacher_logged_in? || schueler_logged_in?
         StringIO.open do |io|
             io.puts "<nav class='pv-tabbar' aria-label='Hauptbereiche'>"
             tabs.each do |href, label, icon, badge|
                 badge_html = (badge.to_i > 0) ? "<span class='pv-badge'>#{badge.to_i}</span>" : ''
-                if href == '#search'
-                    io.puts "<button type='button' class='pv-tab' id='bu_pv_search'><i class='fa #{icon}'></i>#{label}</button>"
+                if href == '#kurse'
+                    io.puts "<button type='button' class='pv-tab' id='bu_pv_courses'><i class='fa #{icon}'></i>#{label}</button>"
                 else
                     io.puts "<a class='pv-tab' href='#{href}'>#{badge_html}<i class='fa #{icon}'></i>#{label}</a>"
                 end
@@ -257,9 +264,26 @@ class Main < Sinatra::Base
                     window.addEventListener('load', function () {
                         // the current page, in the sidebar and the tab bar
                         let here = location.pathname.replace(/\\/$/, '') || '/';
-                        document.querySelectorAll('.navbar .nav-link[href], .navbar .dropdown-item[href], .pv-tab[href]').forEach(function (a) {
+                        document.querySelectorAll('.navbar .nav-link[href], .navbar .dropdown-item[href]').forEach(function (a) {
                             let target = (a.getAttribute('href') || '').replace(/\\/$/, '') || '/';
                             if (target === here) a.classList.add('pv-active');
+                        });
+                        // tabs: Woche and Aufgaben are parts of the start page (#woche, #aufgaben)
+                        let mark_tabs = function () {
+                            let hash = here === '/' ? location.hash : '';
+                            document.querySelectorAll('.pv-tab[href]').forEach(function (a) {
+                                let parts = a.getAttribute('href').split('#');
+                                let target = parts[0].replace(/\\/$/, '') || '/';
+                                let wanted = parts[1] ? '#' + parts[1] : '';
+                                a.classList.toggle('pv-active', target === here && (wanted === hash || (wanted === '' && !/^#(woche|aufgaben)$/.test(hash))));
+                            });
+                        };
+                        mark_tabs();
+                        window.addEventListener('hashchange', mark_tabs);
+                        // "Kurse": Kursbuch and class lists of one's courses as a sheet
+                        $('#bu_pv_courses').on('click', function () {
+                            if (document.querySelector('.pv-link-sheet')) { window.pv_close_plan_menu(true); return; }
+                            window.pv_open_link_sheet('Kurse', [['Kursbuch', window.pv_menu_links('navbarDropdownKurse')], ['Lerngruppen', window.pv_menu_links('navbarDropdownKlassen')]]);
                         });
                         // "Mehr": the menu as a sheet – slides up over a veil, slides
                         // down again (tap on "Mehr" or the veil, or pull it down, preview.js)
@@ -289,9 +313,10 @@ class Main < Sinatra::Base
                             }
                         });
                         veil.on('click', close_menu);
-                        // a native click: jQuery's trigger() skips it on links, and the
-                        // search listens with addEventListener (code.js)
-                        $('#bu_pv_search').on('click', function () { document.getElementById('bu_quick_search').click(); });
+                        // the search (teachers): an icon in the day's header and elsewhere
+                        // at the top of "Mehr"; a native click – jQuery's trigger() skips it on
+                        // links, and the search listens with addEventListener (code.js)
+                        $(document).on('click', '.pv-search-button', function () { document.getElementById('bu_quick_search').click(); });
                     });
                 </script>
             END_OF_HTML

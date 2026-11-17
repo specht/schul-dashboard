@@ -49,6 +49,33 @@ the server only).
   again. An admin page shows all schemes and their mapping side by side to
   tune the set before rollout. Buttons stay dark with light type (solid
   accent); tonal buttons were tried and rejected.
+  As built: 17 existing schemes form the set (\`DesignTokens::CURATED\`,
+  chosen from usage and measurements; three with tuned colours). All other
+  schemes stay usable as one's own, and kids can still make their own from
+  three colours (profile, new design); the profile suggests the closest
+  scheme of the set. Light, strong colours (yellow, orange, light green) keep
+  their colour with dark text instead of being darkened for white text.
+- **One switch for light and dark (2026-11-17).** In the new design the
+  backdrop follows light / dark mode; the separate "Hintergrund" setting is
+  not shown.
+- **The timetable (2026-11-17).** Phones: the day as an agenda with a header
+  on the backdrop (date, a line with lessons / duty / changes, profile
+  picture), a day strip Mo–Fr, a "Plan" button (own Kürzel, classes and rooms
+  first, the rest behind "Alle …"). Larger screens: the week only (no day
+  view), a header with the plan menu, and on wide screens a column beside
+  the week (now / next, changes of the week; for students their homework
+  first). The topic of a lesson is visible in the block; status markers like
+  "Stundenthema fehlt" need the Kursbuch's internal topic in the timetable
+  data and are not built yet.
+- **Messages (2026-11-17).** The new design shows every message in its own
+  type, whatever was pasted (fonts, sizes, colours dropped; paragraphs,
+  bold, italics, links and lists kept); pasting into a new message keeps
+  only that structure. Stored messages are not changed.
+- **Feedback** is given from the profile (next to the switch); the floating
+  button was in the way.
+- **Development instances** offer the preview to every account (still opt-in),
+  so that every role's pages can be checked with real data; production
+  stays at the stage set in \`UI_PREVIEW_FOR\`.
 
 ## What the inventory shows
 

@@ -2694,7 +2694,7 @@ class Main < Sinatra::Base
                         io.puts "</li>"
                     end
                 elsif x == :quick_search
-                    io.puts "<li class='nav-item nav-quick-search-item'><a href='#' role='button' id='bu_quick_search' class='nav-link nav-icon nav-quick-search' title='Suchen (Taste /)'><div class='icon'><i class='fa fa-search'></i></div><span class='nav-quick-search-label'>Suchen</span></a></li>"
+                    io.puts "<li class='nav-item nav-quick-search-item'><a href='#' role='button' id='bu_quick_search' class='nav-link nav-icon nav-quick-search' title='Suchen (/ oder Strg+K)'><div class='icon'><i class='fa fa-search'></i></div><span class='nav-quick-search-label'>Suchen</span></a></li>"
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownProfile' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"

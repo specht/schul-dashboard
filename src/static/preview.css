@@ -3569,3 +3569,31 @@ body.ui-preview:has(.container-fluid.solid)::before {
         padding: 8px 12px !important;
     }
 }
+
+/* icons next to text that may wrap: at the top, level with the first line */
+.ui-preview .navbar .pv-nav-entry,
+.ui-preview .navbar .nav-link.nav-icon,
+.ui-preview .navbar .dropdown-item.nav-icon,
+.ui-preview .pv-sheet-links a {
+    align-items: flex-start !important;
+}
+
+.ui-preview .navbar .pv-nav-entry .icon,
+.ui-preview .navbar .nav-link.nav-icon .icon,
+.ui-preview .navbar .dropdown-item.nav-icon .icon {
+    height: 1.4em !important;
+    display: flex;
+    align-items: center;
+}
+
+.ui-preview .navbar .nav-link,
+.ui-preview .navbar .dropdown-item {
+    line-height: 1.4;
+}
+
+/* the chevrons stay level with the first line too */
+.ui-preview .pv-sheet-links a::after,
+.ui-preview .navbar .dropdown-toggle::after {
+    align-self: flex-start;
+    margin-top: 0.45em;
+}

@@ -1614,12 +1614,20 @@ html {
     transform: none !important;
 }
 
+.ui-preview .toggle .toggle-handle,
 .ui-preview #main_container .toggle .toggle-handle {
+    /* placed absolutely in the middle of the group (= the track's edge),
+       not on the text baseline, which put it about 2 px too low */
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
     width: 22px !important;
     height: 22px !important;
+    margin: -11px 0 0 -11px !important;
+    padding: 0 !important;
     border: 0 !important;
     border-radius: 50% !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
 }
 
 /* profile, "Darstellung": settings rows – label (and description) left,

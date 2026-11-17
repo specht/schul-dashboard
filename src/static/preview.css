@@ -3326,3 +3326,13 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .pv-week-row.pv-week-double .pv-ag-subj {
     height: 46px;
 }
+
+/* double lessons in the week: everything at the top, level with the start time */
+.pv-week-row.pv-week-double {
+    align-items: start;
+}
+
+.pv-week-row.pv-week-double .pv-week-title,
+.pv-week-row.pv-week-double .pv-week-room {
+    padding-top: 4px;
+}

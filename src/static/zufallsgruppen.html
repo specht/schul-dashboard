@@ -175,9 +175,28 @@
     row-gap: 0.15em;
     column-gap: 0.35em;
 }
+/* Kürzel als Chips mit Bild, alle gleich breit (breitestes Kürzel) */
+#zg_beamer.zg-short .zg-group .zg-members {
+    max-width: calc(var(--zg-mcols, 1) * var(--zg-chip-w, 3em) + (var(--zg-mcols, 1) - 1) * 0.35em);
+    margin: 0 auto;
+}
 #zg_beamer.zg-short .zg-group .zg-name {
-    flex: 0 0 calc((100% - (var(--zg-mcols, 1) - 1) * 0.35em) / var(--zg-mcols, 1));
-    text-align: center;
+    flex: 0 0 auto;
+    width: var(--zg-chip-w, auto);
+    max-width: 100%;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.06em 0.45em 0.06em 0.08em;
+    border-radius: 999px;
+    background: #f1f3f6;
+    border: 1px solid #dfe3e8;
+    white-space: nowrap;
+    overflow: hidden;
+}
+#zg_beamer.zg-short .zg-group .zg-name .zg-avatar {
+    margin-right: 0.28em;
+    vertical-align: 0;
 }
 #zg_beamer.zg-short .zg-group h5 {
     align-self: center;
@@ -666,11 +685,12 @@ function fit_beamer_font(font, max_font) {
             let names = members.children('.zg-name');
             let mcols = parseInt(groups_mcols(), 10) || 1;
             let cell_w = 0, cell_h = 0;
+            let chips = beamer.hasClass('zg-short');
             names.each(function () {
-                // die Breite des Textes, nicht die seiner Zelle
+                // die Breite des Textes, nicht die seiner Zelle (Chips: der Chip selbst)
                 let range = document.createRange();
                 range.selectNodeContents(this);
-                cell_w = Math.max(cell_w, range.getBoundingClientRect().width);
+                cell_w = Math.max(cell_w, chips ? this.getBoundingClientRect().width : range.getBoundingClientRect().width);
                 cell_h = Math.max(cell_h, this.getBoundingClientRect().height);
             });
             let gap = parseFloat(members.css('column-gap')) || 0;
@@ -703,13 +723,16 @@ function render_beamer() {
         probe.css('font-weight', bold ? 'bold' : 'normal').text(text);
         return probe[0].getBoundingClientRect().width / 100;
     };
-    let widest_em = Math.max(1, ...current_groups.flat().map(e => measure(label(e), false))) + (use_avatars() ? 1.45 : 0);
+    // Chips: Bild, Abstand, Innenabstand und Rand dazu
+    let widest_em = Math.max(1, ...current_groups.flat().map(e => measure(label(e), false))) + (use_avatars() ? 1.45 : 0) + (use_shorthands() ? 0.65 : 0);
+    beamer.css('--zg-chip-w', `${widest_em.toFixed(3)}em`);
     let header_em = measure(`Gruppe ${n}`, true);
     probe.remove();
     let W = beamer.innerWidth() - parseFloat(beamer.css('padding-left')) - parseFloat(beamer.css('padding-right'));
     let H = beamer.innerHeight() - parseFloat(beamer.css('padding-top')) - parseFloat(beamer.css('padding-bottom'));
     // nicht absurd groß bei wenigen Gruppen
-    let max_font = H / 6;
+    // Kürzel brauchen weniger: auch bei wenigen Gruppen nicht riesig
+    let max_font = use_shorthands() ? H / 14 : H / 6;
     // die aussichtsreichsten Aufteilungen ausprobieren und nachmessen
     let best = null;
     let sizes = current_groups.map(g => g.length);

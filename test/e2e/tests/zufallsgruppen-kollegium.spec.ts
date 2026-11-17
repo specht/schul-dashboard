@@ -135,6 +135,11 @@ test('Gruppenbildung Kollegium: Kürzel statt Namen, Beamer nutzt den ganzen Bil
     expect(a.size).toBeGreaterThanOrEqual(Math.min(512, a.px));
     expect(a.size).toBeLessThanOrEqual(Math.max(64, a.px * 2));
   }
+  // Kürzel as chips with the picture, all of the same width
+  const chipWidths = await page.locator('#zg_beamer .zg-name').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+  expect(chipWidths.length).toBeGreaterThan(1);
+  expect(Math.max(...chipWidths) - Math.min(...chipWidths)).toBeLessThanOrEqual(1);
+  expect(await page.locator('#zg_beamer .zg-name').first().evaluate((el) => getComputedStyle(el).borderRadius)).not.toBe('0px');
   // Kürzel are large, but leave room in the card
   const fill = await cards.evaluateAll((els) => Math.max(...els.map((card) => {
     const h5 = card.querySelector('h5')!.getBoundingClientRect();

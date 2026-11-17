@@ -3829,7 +3829,9 @@ class Main < Sinatra::Base
         elsif path == 'lessons'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.path.split('/')
-            show_lesson_key = CGI::unescape(parts[2])
+            show_lesson_key = CGI::unescape(parts[2] || '')
+            # no or an unknown course: to the start page, like without permission
+            redirect "#{WEB_ROOT}/", 302 unless @@lessons[:lesson_keys][show_lesson_key]
             lesson_key_id = @@lessons[:lesson_keys][show_lesson_key][:id]
             lesson_data = Main.get_lesson_data(show_lesson_key)
             unless may_edit_lessons?(show_lesson_key)

@@ -2816,3 +2816,59 @@ body.ui-preview.dark::before {
 .ui-preview .text-comment .message p:last-child {
     margin-bottom: 0 !important;
 }
+
+/* ---------- Solid pages (Kursbuch, class lists: .container-fluid.solid) ----------
+   They are meant to be calm surfaces without the backdrop. */
+.ui-preview .container-fluid.solid,
+.ui-preview .container-fluid.solid.white {
+    /* dark.css forces #000 on .white */
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink);
+    min-height: 100vh;
+}
+
+.ui-preview .container-fluid.solid table {
+    background: transparent;
+    color: var(--pv-ink);
+}
+
+/* Kursbuch and student tables: rows, week separators, selection */
+.ui-preview .lesson_table tr td,
+.ui-preview .schueler_table tr td {
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .lesson_table tr.sep td {
+    border-top: 2px solid color-mix(in srgb, var(--pv-ink) 22%, transparent);
+}
+
+.ui-preview .lesson_table tr.odd,
+.ui-preview .schueler_table tr.odd {
+    background-color: color-mix(in srgb, var(--pv-hover) 70%, transparent);
+}
+
+.ui-preview .lesson_table tr.lesson:hover,
+.ui-preview .schueler_table tr.schueler:hover {
+    outline: 0;
+    background-color: var(--pv-hover);
+}
+
+.ui-preview .lesson_table tr.selected,
+.ui-preview .lesson_table tr.odd.selected,
+.ui-preview .schueler_table tr.selected,
+.ui-preview .schueler_table tr.odd.selected {
+    background: var(--acc-soft) !important;
+    box-shadow: inset 3px 0 0 var(--acc-text);
+}
+
+.ui-preview .lesson_table tr.current,
+.ui-preview .schueler_table tr.current {
+    outline: 0 !important;
+    box-shadow: inset 3px 0 0 var(--pv-muted);
+}
+
+/* dark.css paints the Kursbuch's table area and side pane black */
+.ui-preview.dark .lc_table,
+.ui-preview.dark .lesson_pane {
+    background-color: var(--pv-surface) !important;
+}

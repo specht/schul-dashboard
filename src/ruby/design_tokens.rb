@@ -55,7 +55,6 @@ module DesignTokens
         ['788aa3e8a598b56576', 'Dreamy', nil],
         ['55beedf9b935e5185d', 'ソフトクリーム', nil],
         ['013adedf3a01f7fe2e', 'Sunset', nil],
-        ['aaaaaa777777cccccc', 'Shadows', nil],
     ]
     CURATED_TUNED = CURATED.select { |_, _, tuned| tuned }.map { |key, _, tuned| [key, tuned] }.to_h
 

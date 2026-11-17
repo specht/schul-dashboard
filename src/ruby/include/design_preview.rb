@@ -544,15 +544,22 @@ class Main < Sinatra::Base
         <<~END_OF_HTML
             #{note}
             <div class='pv-scheme-own'>
-                <h3>Eigenes Farbschema</h3>
-                <p class='text-muted'>Drei Farben – links, Mitte (Hauptfarbe), rechts. Das neue Design macht daraus Akzent- und Fächerfarben, die gut lesbar bleiben.</p>
+                <div class='pv-scheme-own-head'>
+                    <h3>Eigenes Farbschema</h3>
+                    <p class='text-muted'>Drei Farben: links, Mitte (Hauptfarbe), rechts. Antippen ändert eine Farbe, die Pfeile tauschen zwei. Das neue Design macht daraus Akzent- und Fächerfarben, die gut lesbar bleiben.</p>
+                </div>
                 <div class='pv-scheme-inputs'>
-                    <label>Links <input type='color' id='ti_scheme_left' value='#{colours[0]}'></label>
-                    <label>Mitte <input type='color' id='ti_scheme_main' value='#{colours[1]}'></label>
-                    <label>Rechts <input type='color' id='ti_scheme_right' value='#{colours[2]}'></label>
+                    <label class='pv-scheme-colour'><input type='color' id='ti_scheme_left' value='#{colours[0]}' aria-label='Linke Farbe'><span>Links</span></label>
+                    <button type='button' class='pv-scheme-swap' data-a='left' data-b='main' aria-label='Links und Mitte tauschen'><i class='fa fa-exchange'></i></button>
+                    <label class='pv-scheme-colour'><input type='color' id='ti_scheme_main' value='#{colours[1]}' aria-label='Hauptfarbe'><span>Mitte</span></label>
+                    <button type='button' class='pv-scheme-swap' data-a='main' data-b='right' aria-label='Mitte und rechts tauschen'><i class='fa fa-exchange'></i></button>
+                    <label class='pv-scheme-colour'><input type='color' id='ti_scheme_right' value='#{colours[2]}' aria-label='Rechte Farbe'><span>Rechts</span></label>
                 </div>
                 <div class='pv-scheme-strip' aria-hidden='true'></div>
-                <button type='button' class='btn btn-primary' id='bu_apply_own_scheme'>Übernehmen</button>
+                <div class='pv-scheme-actions'>
+                    <button type='button' class='btn btn-outline-secondary' id='bu_reverse_own_scheme'><i class='fa fa-retweet'></i>&nbsp;&nbsp;Umdrehen</button>
+                    <button type='button' class='btn btn-primary' id='bu_apply_own_scheme'>Übernehmen</button>
+                </div>
             </div>
         END_OF_HTML
     end

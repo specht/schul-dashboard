@@ -109,14 +109,15 @@
             
             #{print_semi_public_links()}
             
+            <div class='pv-old-only'>
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Schriftart</h2>
-            #{ui_preview? ? "<p class='text-muted' id='font_preview_note'>Im neuen Design (Vorschau) gelten eigene Schriften; die Auswahl hier betrifft das bisherige Design.</p>" : ''}
             <div class='row'>
                 #{AVAILABLE_FONTS.map do |x|
                     "<div class='col-md-3'><button class='btn " + ((@session_user[:font] || 'Alegreya') == x ? 'btn-success': 'btn-secondary') + " bu_set_font' data-font='" + x + "' style='width: 100%; font-family: " + ({'Alegreya' => 'AlegreyaSans'}[x] || x) + "; margin-bottom: 5px;'>" + x + "</button></div>"
                 end.join('')}
             </div>
             <hr />
+            </div>
             
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Helligkeit</h2>
             <div class="col-md-12">
@@ -133,7 +134,7 @@
                             <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" style="#{ui_preview? ? 'display: none;' : ''}">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Design</label>
                             <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
@@ -546,6 +547,17 @@ window.addEventListener('load', function () {
     };
     $('#ti_scheme_left, #ti_scheme_main, #ti_scheme_right').on('input', pv_strip);
     pv_strip();
+    // rearranging: swap two neighbours, or reverse all three
+    $('.pv-scheme-swap').on('click', function(e) {
+        let a = $('#ti_scheme_' + $(e.currentTarget).data('a')), b = $('#ti_scheme_' + $(e.currentTarget).data('b'));
+        let t = a.val(); a.val(b.val()); b.val(t);
+        pv_strip();
+    });
+    $('#bu_reverse_own_scheme').on('click', function() {
+        let l = $('#ti_scheme_left'), r = $('#ti_scheme_right');
+        let t = l.val(); l.val(r.val()); r.val(t);
+        pv_strip();
+    });
     $('#bu_apply_own_scheme').click(function(e) {
         let hex = [$('#ti_scheme_left').val(), $('#ti_scheme_main').val(), $('#ti_scheme_right').val()].join('').replace(/#/g, '');
         let new_color_scheme = color_scheme.substr(0, 1) + hex + (color_scheme.substr(19, 1) || '0');
@@ -623,7 +635,10 @@ window.addEventListener('load', function () {
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
-        // new design: the tile shows all three colours (preview.css)
+        // new design: the tile shows the scheme as its backdrop with one's own
+        // pattern, all three colours as fallback (preview.css)
+        let pv_bg = l_mode + gradient.join('').replace(/#/g, '') + (color_scheme.substr(19, 1) || '0');
+        swatch[0].style.setProperty('--pv-bg', 'url(/gen/bg/bg-' + pv_bg + '.jpg), url(/gen/bg/bg-' + pv_bg.substr(0, 19) + '0.svg)');
         swatch[0].style.setProperty('--g1', gradient[0]);
         swatch[0].style.setProperty('--g2', gradient[1]);
         swatch[0].style.setProperty('--g3', gradient[2]);

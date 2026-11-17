@@ -275,7 +275,8 @@ test('Neues Design: eigene Schriften', async ({ page }) => {
     const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '')));
     expect(loaded).toContain('Atkinson Hyperlegible Next');
     expect(loaded).toContain('Bricolage Grotesque');
-    await expect(page.locator('#font_preview_note')).toBeVisible();
+    // no font choice in the new design (it has its own type)
+    await expect(page.locator('.bu_set_font').first()).toBeHidden();
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

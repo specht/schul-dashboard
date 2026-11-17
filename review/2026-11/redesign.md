@@ -49,7 +49,7 @@ the server only).
   again. An admin page shows all schemes and their mapping side by side to
   tune the set before rollout. Buttons stay dark with light type (solid
   accent); tonal buttons were tried and rejected.
-  As built: 17 existing schemes form the set (\`DesignTokens::CURATED\`,
+  As built: 16 existing schemes form the set (Shadows dropped as too plain) (\`DesignTokens::CURATED\`,
   chosen from usage and measurements; three with tuned colours). All other
   schemes stay usable as one's own, and kids can still make their own from
   three colours (profile, new design); the profile suggests the closest

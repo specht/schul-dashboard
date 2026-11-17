@@ -2890,7 +2890,11 @@ class Main < Sinatra::Base
                     klassen = (@@klassen_for_shorthand[@session_user[:shorthand]] || []).dup
                     # one's own classes, and the group sizes (data-own, data-count: the
                     # new design's "Kurse" sheet shows them)
-                    own_klassen = Set.new(klassen)
+                    # in the upper school a year (11, 12) is reached through courses: the
+                    # course is one's group, the year only if one leads it
+                    own_klassen = Set.new(klassen.reject do |klasse|
+                        klasse.to_s.to_i >= 11 && !(@@klassenleiter[klasse] || []).include?(@session_user[:shorthand])
+                    end)
                     group_size = lambda { |klasse| (@@schueler_for_klasse[klasse] || []).size }
                     if user_who_can_manage_antikenfahrt_logged_in?
                         klassen << '11'

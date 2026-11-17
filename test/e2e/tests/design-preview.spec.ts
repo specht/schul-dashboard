@@ -174,6 +174,11 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await expect(menu).toContainText('Administration');
       await tabs.locator('#bu_pv_more').click();
       await expect(menu).toBeHidden();
+      // "Suchen" opens the search
+      await tabs.locator('#bu_pv_search').click();
+      await expect(page.locator('#ti_quick_search')).toBeVisible();
+      await expect(page.locator('#ti_quick_search')).toBeFocused();
+      await page.locator('#ti_quick_search').press('Escape');
       // the tabs lead where they say
       await tabs.getByText('Profil').click();
       await expect(page).toHaveURL(/\/profil$/);

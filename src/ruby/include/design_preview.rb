@@ -242,7 +242,9 @@ class Main < Sinatra::Base
                             $('#navbarTogglerDemo02').collapse(open ? 'show' : 'hide');
                             e.currentTarget.setAttribute('aria-expanded', open ? 'true' : 'false');
                         });
-                        $('#bu_pv_search').on('click', function () { $('#bu_quick_search').trigger('click'); });
+                        // a native click: jQuery's trigger() skips it on links, and the
+                        // search listens with addEventListener (code.js)
+                        $('#bu_pv_search').on('click', function () { document.getElementById('bu_quick_search').click(); });
                     });
                 </script>
             END_OF_HTML

@@ -413,19 +413,48 @@ html {
         transition: none !important;
     }
 
+    /* down to the screen's edge behind the tab bar (no gap whatever the
+       tab bar's height), the last entries above it */
     .ui-preview .navbar .navbar-collapse {
         position: fixed;
         left: 0;
         right: 0;
-        bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-        max-height: 75vh;
+        bottom: 0;
+        max-height: 85vh;
         overflow-y: auto;
         background: var(--pv-surface);
         border-top: 1px solid var(--pv-line);
         border-radius: 16px 16px 0 0;
         box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
-        padding: 10px 14px;
+        padding: 10px 12px calc(84px + env(safe-area-inset-bottom, 0px));
         z-index: 7500;
+    }
+
+    /* the entries: full width, even spacing (styles.css spaces the items of
+       the old horizontal bar) */
+    .ui-preview .navbar .navbar-collapse .nav-item {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-link {
+        display: flex !important;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px !important;
+        border-radius: 10px;
+        color: var(--pv-ink) !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-link.pv-active {
+        color: var(--acc-text) !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-link .icon {
+        position: static;
+        flex: none;
+        margin: 0 !important;
     }
 
     .pv-tabbar {
@@ -436,7 +465,10 @@ html {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 7600;
+        /* the navbar (and with it the "Mehr" sheet) has 100000 (styles.css):
+           the same here, later in the page, so the tab bar stays on top;
+           dialogs (100001) above both */
+        z-index: 100000;
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
         background: var(--pv-surface);
         border-top: 1px solid var(--pv-line);

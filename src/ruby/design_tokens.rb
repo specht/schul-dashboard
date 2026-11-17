@@ -108,10 +108,18 @@ module DesignTokens
         base = colourfulness(main) < 0.12 ? colors.max_by { |c| colourfulness(c) } : main
         surface = hex_to_rgb(SURFACE[dark])
         paper = hex_to_rgb(PAPER[dark])
-        acc = dark ? adjust(base, surface, 5.2, :lighter) : adjust(base, [1, 1, 1], 4.6, :darker)
+        # light, strong main colours (yellow, orange, light green) keep their
+        # colour with dark text on them – darkened for white text they would
+        # turn to mustard and brown
+        ink_dark = hex_to_rgb(INK[false])
+        bright = !dark && contrast(base, ink_dark) >= 7.0 && colourfulness(base) >= 0.3
+        acc = if dark then adjust(base, surface, 5.2, :lighter)
+              elsif bright then base
+              else adjust(base, [1, 1, 1], 4.6, :darker)
+              end
         tokens = {
             '--acc' => rgb_to_hex(acc),
-            '--acc-ink' => dark ? '#0a1222' : '#ffffff',
+            '--acc-ink' => (dark || bright) ? '#0a1222' : '#ffffff',
             '--acc-soft' => rgb_to_hex(mix(acc, surface, dark ? 0.78 : 0.88)),
             '--acc-text' => rgb_to_hex(dark ? adjust(acc, paper, 7.0, :lighter) : adjust(acc, paper, 5.6, :darker)),
         }
@@ -122,7 +130,9 @@ module DesignTokens
         tokens['--band-scrim-a'] = format('%.2f', alpha)
         spread = hue_spread(colors)
         SUBJECT_SPOTS.each do |key, t|
-            tokens["--subj-#{key}"] = rgb_to_hex(subject_colour(colors, t, spread, dark, surface))
+            colour, ink = subject_colour(colors, t, spread, dark, surface)
+            tokens["--subj-#{key}"] = rgb_to_hex(colour)
+            tokens["--subj-#{key}-ink"] = ink
         end
         tokens
     end
@@ -148,7 +158,14 @@ module DesignTokens
         s = [s, 0.45].max
         c = hls_to_rgb(h, l, s)
         wave = 0.5 + 0.5 * Math.cos(2 * Math::PI * t / LIGHTNESS_PERIOD)
-        dark ? fit(c, surface, 5.0 + LIGHTNESS_RANGE * wave, :lighter) : fit(c, [1, 1, 1], 4.5 + LIGHTNESS_RANGE * wave, :darker)
+        dark_ink = '#0a1222'
+        return [fit(c, surface, 5.0 + LIGHTNESS_RANGE * wave, :lighter), dark_ink] if dark
+        # light mode: a bright, colourful subject keeps its colour with dark
+        # text on it (yellow stays yellow instead of turning brown)
+        if contrast(c, hex_to_rgb(dark_ink)) >= 7.0 && colourfulness(c) >= 0.3
+            return [fit(c, hex_to_rgb(dark_ink), 7.0 + LIGHTNESS_RANGE * 0.6 * wave, :lighter), dark_ink]
+        end
+        [fit(c, [1, 1, 1], 4.5 + LIGHTNESS_RANGE * wave, :darker), '#ffffff']
     end
 
     # like adjust, but in both directions: a colour with more contrast than

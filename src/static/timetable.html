@@ -642,6 +642,16 @@ function preview_subject_color(event) {
     return (code && root.getPropertyValue('--subj-' + code).trim()) || root.getPropertyValue('--acc').trim() || null;
 }
 
+// the text colour on a subject's colour: white on dark ones, dark on bright
+// ones like yellow (design_tokens.rb, --subj-<code>-ink)
+function preview_subject_ink(event) {
+    let root = getComputedStyle(document.documentElement);
+    let label = $('<div>').html(event.label_short || '');
+    label.find('s, del, strike').remove();
+    let code = label.text().trim().split(/[\s_\-(]/)[0].toLowerCase();
+    return (code && root.getPropertyValue('--subj-' + code + '-ink').trim()) || root.getPropertyValue('--acc-ink').trim() || '#ffffff';
+}
+
 // text on the subject colours: they are computed for white text in light
 // mode and for dark text in dark mode (design_tokens.rb)
 // Everything that is not a lesson taking place (events, birthdays,
@@ -653,7 +663,7 @@ function preview_text_color(event) {
         event.classNames = (event.classNames || []).concat(['pv-quiet'], event.entfall ? ['pv-off'] : []);
         return;
     }
-    event.textColor = document.body.classList.contains('dark') ? '#0a1222' : '#ffffff';
+    event.textColor = preview_subject_ink(event);
     event.classNames = (event.classNames || []).concat(['pv-subject']);
 }
 
@@ -749,7 +759,10 @@ function render_preview_agenda_inner() {
         let code = label.text().trim().split(/[\s(]/)[0];
         let chip = $('<span>').addClass('pv-ag-subj').text(code.length > 0 ? code.substr(0, 4) : '•');
         // the subject colour for chip and card (jQuery's css() ignores custom properties)
-        if (color) card[0].style.setProperty('--c', color);
+        if (color) {
+            card[0].style.setProperty('--c', color);
+            card[0].style.setProperty('--ci', preview_subject_ink(x));
+        }
         let head = $('<div>').addClass('pv-ag-head').append(chip);
         let title = $('<div>').addClass('pv-ag-title');
         title.append($('<b>').html(x.label || e.title || ''));
@@ -1071,7 +1084,10 @@ function render_preview_side() {
         box.append($('<h3>').text(running ? 'Jetzt' : 'Als Nächstes · ' + preview_hhmm(e.start)));
         let card = $('<button type="button">').addClass('pv-side-lesson');
         let color = preview_subject_color(x);
-        if (color) card[0].style.setProperty('--c', color);
+        if (color) {
+            card[0].style.setProperty('--c', color);
+            card[0].style.setProperty('--ci', preview_subject_ink(x));
+        }
         card.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
         let text = $('<span>').addClass('pv-side-text');
         text.append($('<b>').html(x.label || e.title || ''));

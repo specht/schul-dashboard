@@ -299,7 +299,8 @@ test('Neues Design: Fächer im Stundenplan in ihren Farben', async ({ page }, te
     // computed for it), not the scheme's text colour
     const text = await page.locator('.fc-event', { hasText: 'Mathematik' }).first().locator('.fc-event-main')
       .evaluate((el) => getComputedStyle(el).color);
-    expect(text).toBe('rgb(255, 255, 255)');
+    const ink = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--subj-ma-ink').trim());
+    expect(text).toBe(hex2rgb(ink));
     // a substitution takes the colour of the subject that takes place
     const swapped = await page.evaluate(() => {
       const w = window as unknown as { preview_subject_color: (e: object) => string | null };

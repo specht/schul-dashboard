@@ -20,9 +20,11 @@ class DesignTokensTest < Minitest::Test
             t = T.tokens(code, dark)
             surface = rgb(T::SURFACE[dark])
             paper = rgb(T::PAPER[dark])
-            assert_operator T.contrast(rgb(t['--acc']), surface), :>=, 4.5, "#{name} #{dark ? 'dunkel' : 'hell'}: Akzent"
+            # the accent is a surface (buttons, chips) with --acc-ink on it; lines
+            # and text in the accent use --acc-text
+            assert_operator T.contrast(rgb(t['--acc-ink']), rgb(t['--acc'])), :>=, 4.5, "#{name} #{dark ? 'dunkel' : 'hell'}: Schrift auf dem Akzent"
             assert_operator T.contrast(rgb(t['--acc-text']), paper), :>=, 4.5, "#{name}: Akzent als Text"
-            assert_operator T.contrast(rgb(t['--acc-ink']), rgb(t['--acc'])), :>=, 3.0, "#{name}: Schrift auf dem Akzent"
+            assert_operator T.contrast(rgb(t['--acc-text']), surface), :>=, 4.5, "#{name}: Akzent als Linie und Text"
         end
     end
 
@@ -64,7 +66,7 @@ class DesignTokensTest < Minitest::Test
                 t = T.tokens('l' + tuned + '0', dark)
                 surface = rgb(T::SURFACE[dark])
                 T::SUBJECT_SPOTS.each_key do |key|
-                    assert_operator T.contrast(rgb(t["--subj-#{key}"]), surface), :>=, 4.5, "#{tuned} #{dark}: #{key}"
+                    assert_operator T.contrast(rgb(t["--subj-#{key}-ink"]), rgb(t["--subj-#{key}"])), :>=, 4.5, "#{tuned} #{dark}: #{key}"
                 end
                 assert_operator T.contrast(rgb(t['--acc']), surface), :>=, 4.5
             end
@@ -85,6 +87,14 @@ class DesignTokensTest < Minitest::Test
         end
     end
 
+    # yellow stays yellow (with dark text), blue gets white text
+    def test_bright_accents_keep_their_colour
+        soft = T.tokens('l55beedf9b935e5185d0', false)
+        assert_equal '#f9b935', soft['--acc']
+        assert_equal '#0a1222', soft['--acc-ink']
+        assert_equal '#ffffff', T.tokens('la2c6e80d60aea2c6e80', false)['--acc-ink']
+    end
+
     def test_scheme_distance
         sky = 'la2c6e80d60aea2c6e80'
         assert_in_delta 0, T.scheme_distance(sky, sky), 0.001
@@ -98,7 +108,8 @@ class DesignTokensTest < Minitest::Test
             t = T.tokens(code, dark)
             surface = rgb(T::SURFACE[dark])
             T::SUBJECT_SPOTS.each_key do |key|
-                assert_operator T.contrast(rgb(t["--subj-#{key}"]), surface), :>=, 4.5, "#{name} #{dark}: #{key}"
+                # text on the subject colour (white or dark, --subj-*-ink)
+                assert_operator T.contrast(rgb(t["--subj-#{key}-ink"]), rgb(t["--subj-#{key}"])), :>=, 4.5, "#{name} #{dark}: #{key}"
             end
         end
     end

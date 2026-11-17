@@ -101,21 +101,72 @@ test('Neues Design: ohne die Farbfilter aus den Farbeinstellungen', async ({ pag
       filter: getComputedStyle(document.documentElement).filter,
       grain: getComputedStyle(document.documentElement).getPropertyValue('--analog-opacity').trim(),
     }));
+    // today's design: the grain on every page (the other sliders only take
+    // effect on the profile page while they are being moved)
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
     await page.goto('/');
-    const before = await look();
-    expect(before.filter).toContain('hue-rotate');
-    expect(before.grain).toBe('0.5');
+    expect((await look()).grain).toBe('0.5');
+    // the preview: no filter, no grain
     await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
     await page.goto('/');
-    const after = await look();
-    expect(after.filter).toBe('none');
-    expect(after.grain).toBe('0');
-    // the profile says why the sliders do nothing here
+    expect(await look()).toEqual({ filter: 'none', grain: '0' });
     await page.goto('/profil');
     await expect(page.locator('#color_options_preview_note')).toBeVisible();
+    expect(await look()).toEqual({ filter: 'none', grain: '0' });
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
     await page.request.post('/api/set_color_options', { data: reset });
+  }
+});
+
+// The new frame: the same navigation as a sidebar on larger screens, a tab
+// bar with "Mehr" for the full menu on phones. Without the preview: as today.
+test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page }, testInfo) => {
+  const phone = testInfo.project.name === 'mobile';
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/messages');
+  await expect(page.locator('.pv-tabbar')).toHaveCount(0);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/messages');
+    const nav = page.locator('nav.navbar');
+    if (!phone) {
+      // a column along the left edge, the whole height, the page next to it
+      const box = (await nav.boundingBox())!;
+      const viewport = page.viewportSize()!;
+      expect(box.x).toBe(0);
+      expect(box.height).toBeGreaterThanOrEqual(viewport.height - 1);
+      expect(box.width).toBeLessThan(300);
+      const main = (await page.locator('#main_container').boundingBox())!;
+      expect(main.x).toBeGreaterThanOrEqual(box.width - 1);
+      await expect(page.locator('.pv-tabbar')).toBeHidden();
+      // the current page is marked, the profile sits at the bottom
+      await expect(nav.locator('.nav-link.pv-active')).toContainText('Nachrichten');
+      const profile = (await page.locator('#navbarDropdownProfile').boundingBox())!;
+      expect(profile.y).toBeGreaterThan(viewport.height / 2);
+      // menus open in place
+      await page.locator('#navbarDropdownProfile').click();
+      await expect(nav.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();
+    } else {
+      const tabs = page.locator('.pv-tabbar');
+      await expect(tabs).toBeVisible();
+      await expect(tabs.locator('.pv-tab.pv-active')).toContainText('Nachrichten');
+      await expect(page.locator('.navbar-toggler')).toBeHidden();
+      // "Mehr" opens the whole menu and closes it again
+      const menu = page.locator('#navbarTogglerDemo02');
+      await expect(menu).toBeHidden();
+      await tabs.locator('#bu_pv_more').click();
+      await expect(menu).toHaveClass(/\bshow\b/);
+      await expect(menu).toContainText('Administration');
+      await tabs.locator('#bu_pv_more').click();
+      await expect(menu).toBeHidden();
+      // the tabs lead where they say
+      await tabs.getByText('Profil').click();
+      await expect(page).toHaveURL(/\/profil$/);
+      await expect(page.locator('.pv-tabbar .pv-tab.pv-active')).toContainText('Profil');
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

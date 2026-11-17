@@ -188,3 +188,49 @@ class Main < Sinatra::Base
         end
     end
 end
+
+class Main < Sinatra::Base
+    # Phones in the new design: a tab bar at the bottom with the most used
+    # places; "Mehr" opens the full menu (the same nav_items as in the sidebar).
+    # Also marks the current page in the menu.
+    def design_preview_tabbar_html(new_messages_count)
+        return '' unless ui_preview? && user_logged_in?
+        tabs = []
+        tabs << ['/', 'Heute', 'fa-calendar', nil] unless external_user_logged_in?
+        tabs << ['/messages', 'Nachrichten', 'fa-comment-o', new_messages_count] if user_with_role_logged_in?(:can_receive_messages)
+        tabs << ['#search', 'Suchen', 'fa-search', nil] if teacher_logged_in?
+        tabs << ['/profil', 'Profil', 'fa-user-o', nil]
+        StringIO.open do |io|
+            io.puts "<nav class='pv-tabbar' aria-label='Hauptbereiche'>"
+            tabs.each do |href, label, icon, badge|
+                badge_html = (badge.to_i > 0) ? "<span class='pv-badge'>#{badge.to_i}</span>" : ''
+                if href == '#search'
+                    io.puts "<button type='button' class='pv-tab' id='bu_pv_search'><i class='fa #{icon}'></i>#{label}</button>"
+                else
+                    io.puts "<a class='pv-tab' href='#{href}'>#{badge_html}<i class='fa #{icon}'></i>#{label}</a>"
+                end
+            end
+            io.puts "<button type='button' class='pv-tab' id='bu_pv_more' aria-controls='navbarTogglerDemo02' aria-expanded='false'><i class='fa fa-bars'></i>Mehr</button>"
+            io.puts "</nav>"
+            io.puts <<~END_OF_HTML
+                <script>
+                    window.addEventListener('load', function () {
+                        // the current page, in the sidebar and the tab bar
+                        let here = location.pathname.replace(/\\/$/, '') || '/';
+                        document.querySelectorAll('.navbar .nav-link[href], .navbar .dropdown-item[href], .pv-tab[href]').forEach(function (a) {
+                            let target = (a.getAttribute('href') || '').replace(/\\/$/, '') || '/';
+                            if (target === here) a.classList.add('pv-active');
+                        });
+                        $('#bu_pv_more').on('click', function (e) {
+                            let open = !$('#navbarTogglerDemo02').hasClass('show');
+                            $('#navbarTogglerDemo02').collapse(open ? 'show' : 'hide');
+                            e.currentTarget.setAttribute('aria-expanded', open ? 'true' : 'false');
+                        });
+                        $('#bu_pv_search').on('click', function () { $('#bu_quick_search').trigger('click'); });
+                    });
+                </script>
+            END_OF_HTML
+            io.string
+        end
+    end
+end

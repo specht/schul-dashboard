@@ -45,3 +45,296 @@ html {
     margin: 0;
     font-weight: bold;
 }
+
+/* ---------- The new frame ----------
+   Same navigation (nav_items) as today, laid out differently: a sidebar on
+   larger screens, a tab bar at the bottom on phones ("Mehr" opens the full
+   menu). The pages themselves appear unchanged in the content area. */
+
+.ui-preview {
+    --pv-surface: #ffffff;
+    --pv-line: #dfe3e8;
+    --pv-ink: #131b26;
+    --pv-muted: #5b6573;
+    --pv-hover: #eef1f5;
+}
+
+.ui-preview.dark {
+    --pv-surface: #161d27;
+    --pv-line: #2a3442;
+    --pv-ink: #e6ebf2;
+    --pv-muted: #9aa5b4;
+    --pv-hover: #1f2733;
+}
+
+.ui-preview .navbar .nav-link.pv-active,
+.ui-preview .navbar .dropdown-item.pv-active {
+    background: var(--acc-soft);
+    color: var(--acc-text) !important;
+    font-weight: bold;
+}
+
+.ui-preview .navbar .nav-link.pv-active .icon,
+.ui-preview .navbar .dropdown-item.pv-active .icon {
+    color: var(--acc-text);
+}
+
+/* the separate search button of today's phone header: in the new frame the
+   sidebar (desktop) or the tab bar (phone) offers the search */
+.ui-preview .nav-quick-search-nav {
+    display: none !important;
+}
+
+/* the tab bar exists only on phones */
+.pv-tabbar {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .ui-preview {
+        padding-top: 0;
+        padding-left: 248px;
+    }
+
+    .ui-preview .navbar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: auto;
+        width: 248px;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        justify-content: flex-start !important;
+        padding: 14px 10px;
+        background: var(--pv-surface) !important;
+        border-right: 1px solid var(--pv-line);
+        box-shadow: none;
+        overflow-y: auto;
+        border-radius: 0;
+        margin: 0;
+    }
+
+    .ui-preview .navbar .navbar-brand {
+        margin: 0 0 10px;
+        padding: 6px 10px;
+        font-weight: bold;
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .navbar .ml-auto {
+        display: none;
+    }
+
+    .ui-preview .navbar .navbar-collapse {
+        display: flex !important;
+        flex: 1;
+        flex-grow: 1 !important;
+        justify-content: flex-start;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav {
+        flex-direction: column;
+        justify-content: flex-start !important;
+        flex: 1;
+        width: 100%;
+        margin: 0 !important;
+        gap: 2px;
+    }
+
+    .ui-preview .navbar .nav-item {
+        width: 100%;
+        border: 0 !important;
+    }
+
+    .ui-preview .navbar .nav-link {
+        display: flex !important;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px !important;
+        border-radius: 9px;
+        color: var(--pv-ink) !important;
+        border: 0 !important;
+        white-space: nowrap;
+    }
+
+    .ui-preview .navbar .nav-link:hover {
+        background: var(--pv-hover);
+    }
+
+    /* icons are part of the row (today they are placed absolutely) */
+    .ui-preview .navbar .nav-icon {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .ui-preview .navbar .nav-icon .icon {
+        position: static;
+        flex: none;
+        width: 22px;
+        height: 22px;
+        color: var(--pv-muted);
+        margin: 0 !important;
+    }
+
+    .ui-preview .navbar .dropdown-item.nav-icon {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ui-preview .navbar .dropdown-item.nav-icon .label {
+        position: static;
+    }
+
+    /* quick search first, as a search field */
+    .ui-preview .navbar .nav-quick-search-item {
+        order: -1;
+        margin-bottom: 8px;
+    }
+
+    .ui-preview .navbar .nav-quick-search {
+        border: 1px solid var(--pv-line) !important;
+        color: var(--pv-muted) !important;
+    }
+
+    .ui-preview .navbar .nav-quick-search-label {
+        display: inline !important;
+    }
+
+    /* the profile at the bottom */
+    .ui-preview .navbar .nav-item.dropdown:last-child {
+        margin-top: auto;
+        border-top: 1px solid var(--pv-line) !important;
+        padding-top: 8px;
+    }
+
+    /* menus open in place instead of floating */
+    .ui-preview .navbar .dropdown-menu {
+        position: static !important;
+        transform: none !important;
+        float: none;
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+        margin: 2px 0 6px;
+        padding: 0 0 0 20px;
+        min-width: 0;
+    }
+
+    .ui-preview .navbar .dropdown-item {
+        border-radius: 8px;
+        padding: 6px 10px;
+        color: var(--pv-ink);
+        white-space: normal;
+    }
+
+    .ui-preview .navbar .dropdown-item:hover {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .foot {
+        left: 248px;
+    }
+
+    .ui-preview .design-feedback-button {
+        left: calc(248px + 12px);
+    }
+}
+
+@media (max-width: 767px) {
+    /* content above the tab bar, the footer gives way to it */
+    .ui-preview #main_container {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .ui-preview .foot {
+        display: none;
+    }
+
+    .ui-preview .navbar .navbar-toggler {
+        display: none;
+    }
+
+    /* "Mehr": the full menu as a sheet above the tab bar, without the slide
+       animation (a second tap during it would be ignored) */
+    .ui-preview .navbar .collapsing {
+        transition: none !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+        max-height: 75vh;
+        overflow-y: auto;
+        background: var(--pv-surface);
+        border-top: 1px solid var(--pv-line);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+        padding: 10px 14px;
+        z-index: 7500;
+    }
+
+    .pv-tabbar {
+        display: grid;
+        grid-auto-columns: 1fr;
+        grid-auto-flow: column;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 7600;
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+        background: var(--pv-surface);
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .pv-tab {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 4px 2px;
+        border: 0;
+        background: none;
+        color: var(--pv-muted);
+        font-size: 11px;
+        text-decoration: none !important;
+    }
+
+    .pv-tab .fa {
+        font-size: 20px;
+    }
+
+    .pv-tab.pv-active,
+    .pv-tab[aria-expanded='true'] {
+        color: var(--acc-text);
+        font-weight: bold;
+    }
+
+    .pv-badge {
+        position: absolute;
+        top: 0;
+        left: calc(50% + 6px);
+        min-width: 17px;
+        height: 17px;
+        border-radius: 9px;
+        background: var(--acc);
+        color: var(--acc-ink);
+        font: bold 10px/17px sans-serif;
+        text-align: center;
+        padding: 0 4px;
+    }
+
+    /* the feedback button sits above the tab bar */
+    .design-feedback-button {
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+}

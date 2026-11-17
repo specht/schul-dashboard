@@ -489,8 +489,8 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
       w.calendar.addEvent({ start: b, end: new Date(b.getTime() + 45 * 60000), extendedProps: { ...lesson.extendedProps, entfall: true } });
     });
     await expect(page.locator('#pv_agenda .pv-ag-change').first()).toHaveText('Raum 211 statt 108');
-    await expect(page.locator('#pv_agenda .pv-ag-notice').first()).toContainText('Morgen 16:00');
-    await expect(page.locator('#pv_agenda .pv-ag-notice').first()).toContainText('entfällt');
+    // no notices of coming days below the day (the next day is a swipe away)
+    await expect(page.locator('#pv_agenda .pv-ag-notice')).toHaveCount(0);
     const cardColour = await card.evaluate((el) => getComputedStyle(el).borderLeftColor);
     await card.click();
     await expect(page.locator('#lessonModal')).toBeVisible();

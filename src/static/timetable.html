@@ -828,7 +828,6 @@ function render_preview_agenda_inner() {
         row.append(card);
         box.append(row);
     }
-    preview_coming_changes(box, day);
 }
 
 // "<s>223</s> 226" → ['223', '226'], or null if the room did not change
@@ -841,39 +840,6 @@ function preview_room_change(raum) {
     return old_room && new_room ? [old_room, new_room] : null;
 }
 
-// Below the day: changes on the next days of the loaded week (cancelled,
-// another room, a substitution) as short notices; tapping one shows that day
-function preview_coming_changes(box, day) {
-    let end_of_day = new Date(day);
-    end_of_day.setHours(23, 59, 59, 999);
-    let tomorrow = new Date(day);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    let names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-    let found = window.calendar.getEvents().filter(function(e) {
-        let x = e.extendedProps || {};
-        if (e.allDay || !e.start || e.start <= end_of_day || !x.lesson || x.is_event || x.pausenaufsicht) return false;
-        return x.entfall || preview_room_change(x.raum) || x.vertretungs_text;
-    }).sort(function(a, b) { return a.start - b.start; }).slice(0, 3);
-    if (found.length === 0) return;
-    let list = $('<div>').addClass('pv-ag-coming');
-    for (let e of found) {
-        let x = e.extendedProps;
-        let label = $('<div>').html(x.label_short || x.label || '');
-        label.find('s, del, strike').remove();
-        let what = label.text().trim();
-        let when = (e.start.toDateString() === tomorrow.toDateString() ? 'Morgen' : names[e.start.getDay()]) + ' ' + preview_hhmm(e.start);
-        let change = x.entfall ? 'entfällt' : (preview_room_change(x.raum) ? 'in Raum ' + preview_room_change(x.raum)[1] + ' statt ' + preview_room_change(x.raum)[0] : $('<div>').html(x.vertretungs_text).text().trim());
-        let item = $('<button type="button">').addClass('pv-ag-notice')
-            .append($('<i>').addClass('fa fa-calendar'), $('<span>').append($('<b>').text(when + ': ' + what), document.createTextNode(' ' + change)));
-        item.on('click', function() {
-            window.calendar.gotoDate(e.start);
-            render_preview_agenda();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        list.append(item);
-    }
-    box.append(list);
-}
 
 // The header on the backdrop (phones, new design): the day in large type, a
 // line with what the day holds, the profile picture

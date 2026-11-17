@@ -483,6 +483,7 @@ function render_timetable(result, successCallback) {
     for (let event of events)
     {
         event.color = timetable_event_color(event);
+        preview_text_color(event);
         if (event.is_event && [6, 0].indexOf(new Date(event.datum).getDay()) >= 0) {
             if (wrote_weekend_event_header == false) {
                 $('.weekend_events').append($('<p><b>Termine am Wochenende</b></p><hr />'));
@@ -588,7 +589,24 @@ function update_ha_amt_buttons() {
 
 var timetable_id = '#{timetable_id}';
 
+// Neues Design (Vorschau): each subject in its own colour from the colour
+// scheme (design_tokens.rb, --subj-<code>); Entfall, Aufsicht and Termine as today
+function preview_subject_color(event) {
+    if (!document.body || !document.body.classList.contains('ui-preview')) return null;
+    if (!event.lesson || event.is_event || event.entfall || event.pausenaufsicht) return null;
+    let code = $('<div>').html(event.label_short || '').text().trim().split(/[\s_\-(]/)[0].toLowerCase();
+    if (!code) return null;
+    return getComputedStyle(document.documentElement).getPropertyValue('--subj-' + code).trim() || null;
+}
+
+// light subject colours in dark mode: dark text on them
+function preview_text_color(event) {
+    if (preview_subject_color(event) && document.body.classList.contains('dark')) event.textColor = '#0a1222';
+}
+
 function timetable_event_color(event) {
+    let subject_color = preview_subject_color(event);
+    if (subject_color) return subject_color;
     if (event.is_event)
         return #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.5)"' : 'color_palette.shifted'};
     if (event.entfall)
@@ -664,6 +682,7 @@ function timetable_cached_events(date) {
         return (event.start || '').substr(0, 10) === date && !(tablet_logged_in && !event.lesson);
     }).map(function(event) {
         event.color = timetable_event_color(event);
+        preview_text_color(event);
         return event;
     });
 }
@@ -1169,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 raum.addClass('condensed');
 
                 raum.css('position', 'absolute').css('right', '-1px');
-                raum.css('background-color', #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.primary'});
+                raum.css('background-color', preview_subject_color(arg.event.extendedProps) || #{@session_user[:dark] ? '"rgba(0, 0, 0, 0.0)"' : 'color_palette.primary'});
                 raum.css('padding-right', '2px');
 
                 raum.css('padding-left', '4px');

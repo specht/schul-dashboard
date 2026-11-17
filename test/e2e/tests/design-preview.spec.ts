@@ -232,3 +232,37 @@ test('Neues Design: eigene Schriften', async ({ page }) => {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Timetable: each subject in its colour from the colour scheme
+test('Neues Design: Fächer im Stundenplan in ihren Farben', async ({ page }, testInfo) => {
+  // the week shows Mathematik and Latein side by side; the day view on phones
+  // uses the same colours (timetable_event_color)
+  test.skip(testInfo.project.name === 'mobile', 'Wochenansicht nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  const colours = async () => {
+    await page.goto('/');
+    const ma = page.locator('.fc-event', { hasText: 'Mathematik' }).first();
+    const la = page.locator('.fc-event', { hasText: 'Latein' }).first();
+    await expect(ma).toBeVisible();
+    await expect(la).toBeVisible();
+    const bg = (l: typeof ma) => l.evaluate((el) => getComputedStyle(el).backgroundColor);
+    return { ma: await bg(ma), la: await bg(la) };
+  };
+  const hex2rgb = (h: string) => `rgb(${[1, 3, 5].map((i) => parseInt(h.trim().slice(i, i + 2), 16)).join(', ')})`;
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  const before = await colours();
+  expect(before.ma).toBe(before.la);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    const after = await colours();
+    expect(after.ma).not.toBe(after.la);
+    const tokens = await page.evaluate(() => ({
+      ma: getComputedStyle(document.documentElement).getPropertyValue('--subj-ma'),
+      la: getComputedStyle(document.documentElement).getPropertyValue('--subj-la'),
+    }));
+    expect(after.ma).toBe(hex2rgb(tokens.ma));
+    expect(after.la).toBe(hex2rgb(tokens.la));
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

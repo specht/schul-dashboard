@@ -2875,7 +2875,8 @@ class Main < Sinatra::Base
                     end
                 elsif x == :directory
                     remaining_klassen = KLASSEN_ORDER.dup
-                    klassen = @@klassen_for_shorthand[@session_user[:shorthand]] || []
+                    # a copy: adding 11 and 12 below must not change the shared list
+                    klassen = (@@klassen_for_shorthand[@session_user[:shorthand]] || []).dup
                     # one's own classes, and the group sizes (data-own, data-count: the
                     # new design's "Kurse" sheet shows them)
                     own_klassen = Set.new(klassen)

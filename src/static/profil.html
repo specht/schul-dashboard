@@ -564,7 +564,7 @@ window.addEventListener('load', function () {
         $(e.currentTarget).prop('disabled', true);
         api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
             if (data.success)
-                location.reload();
+                pv_reload_here() || location.reload();
             else
                 $(e.currentTarget).prop('disabled', false);
         });
@@ -592,6 +592,7 @@ window.addEventListener('load', function () {
         let mode = checked ? "dark" : "light";
         api_call('/api/set_dark_css', {mode: mode}, function(data) {
             if (data.success) {
+                if (typeof pv_reload_here === 'function' && pv_reload_here()) return;
                 location.reload();
             }
         });
@@ -616,6 +617,21 @@ window.addEventListener('load', function () {
             }
         });
     });
+    // new design: colours, menu and backdrop come from the scheme on the
+    // server – after a change the page loads again, at the same place
+    let pv_reload_here = function() {
+        if (!document.body.classList.contains('ui-preview')) return false;
+        try { sessionStorage.setItem('pv_profil_scroll', String(window.scrollY)); } catch (e) {}
+        location.reload();
+        return true;
+    };
+    try {
+        let y = sessionStorage.getItem('pv_profil_scroll');
+        if (y !== null) {
+            sessionStorage.removeItem('pv_profil_scroll');
+            window.addEventListener('load', function() { window.scrollTo(0, parseInt(y, 10)); });
+        }
+    } catch (e) {}
     let gradients = #{get_gradients().to_json()};
     // new design: only the curated set, and one's own current scheme
     let pv_curated = #{ui_preview? ? DesignTokens::CURATED.map(&:first).to_json : 'null'};
@@ -704,6 +720,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = $(e.target.closest('.btn')).data('scheme').substr(0, 19) + color_scheme[19];
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
+                if (data.success && pv_reload_here()) return;
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;
@@ -755,6 +772,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = color_scheme.substr(0, 19) + style;
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
+                if (data.success && pv_reload_here()) return;
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;

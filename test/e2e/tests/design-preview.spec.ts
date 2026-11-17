@@ -700,3 +700,26 @@ test('Neues Design: der Hintergrund folgt hell und dunkel', async ({ page }) => 
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Choosing a scheme in the profile: the page loads again with the new
+// colours (they come from the server) and stays at its place
+test('Neues Design: neues Farbschema wirkt sofort überall', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Desktop reicht');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+  try {
+    await page.goto('/profil');
+    const acc = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim());
+    const before = await acc();
+    const tile = page.locator('.swatches .swatch', { hasText: 'Gryffindor' });
+    await tile.scrollIntoViewIfNeeded();
+    const y = await page.evaluate(() => window.scrollY);
+    await Promise.all([page.waitForEvent('load'), tile.click()]);
+    await expect.poll(acc).not.toBe(before);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y - 40);
+  } finally {
+    await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

@@ -283,7 +283,12 @@ class Main < Sinatra::Base
                         // "Kurse": Kursbuch and class lists of one's courses as a sheet
                         $('#bu_pv_courses').on('click', function () {
                             if (document.querySelector('.pv-link-sheet')) { window.pv_close_plan_menu(true); return; }
-                            window.pv_open_link_sheet('Kurse', [['Kursbuch', window.pv_menu_links('navbarDropdownKurse')], ['Lerngruppen', window.pv_menu_links('navbarDropdownKlassen')]]);
+                            let groups = window.pv_menu_links('navbarDropdownKlassen');
+                            window.pv_open_link_sheet('Kurse', [
+                                ['Kursbuch', window.pv_menu_links('navbarDropdownKurse')],
+                                ['Meine Lerngruppen', groups.filter(function (g) { return g[3]; })],
+                                ['Weitere Lerngruppen', groups.filter(function (g) { return !g[3]; })],
+                            ]);
                         });
                         // "Mehr": the menu as a sheet – slides up over a veil, slides
                         // down again (tap on "Mehr" or the veil, or pull it down, preview.js)

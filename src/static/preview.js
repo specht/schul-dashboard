@@ -202,7 +202,17 @@
             g[1].forEach(function(item) {
                 var a = document.createElement('a');
                 a.href = item[1];
-                a.textContent = item[0];
+                var name = document.createElement('span');
+                name.textContent = item[0];
+                a.appendChild(name);
+                // the group's size
+                if (item[2] && item[2] !== '0') {
+                    var size = document.createElement('small');
+                    size.className = 'pv-sheet-count';
+                    size.textContent = item[2];
+                    size.setAttribute('aria-label', item[2] + ' Schülerinnen und Schüler');
+                    a.appendChild(size);
+                }
                 if (location.pathname === item[1].split('#')[0]) a.classList.add('active');
                 list.appendChild(a);
             });
@@ -219,7 +229,8 @@
         if (!menu) return [];
         return Array.prototype.map.call(menu.querySelectorAll('a.dropdown-item[href]'), function(a) {
             var label = a.querySelector('.label');
-            return [(label || a).textContent.trim(), a.getAttribute('href')];
+            // [label, href, group size, one's own]
+            return [(label || a).textContent.trim(), a.getAttribute('href'), a.getAttribute('data-count'), a.getAttribute('data-own') === '1'];
         }).filter(function(x) { return x[0] && x[1] && x[1].charAt(0) === '/'; });
     };
 })();

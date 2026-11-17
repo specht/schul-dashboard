@@ -2846,7 +2846,7 @@ class Main < Sinatra::Base
                             if lesson_info
                                 fach = lesson_info[:fach]
                                 fach = @@faecher[fach] if @@faecher[fach]
-                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
                                 taken_lesson_keys << lesson_key
                             end
                         end
@@ -2865,7 +2865,7 @@ class Main < Sinatra::Base
                                     if lesson_info
                                         fach = lesson_info[:fach]
                                         fach = @@faecher[fach] if @@faecher[fach]
-                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
                                     end
                                 end
                             end
@@ -2876,6 +2876,10 @@ class Main < Sinatra::Base
                 elsif x == :directory
                     remaining_klassen = KLASSEN_ORDER.dup
                     klassen = @@klassen_for_shorthand[@session_user[:shorthand]] || []
+                    # one's own classes, and the group sizes (data-own, data-count: the
+                    # new design's "Kurse" sheet shows them)
+                    own_klassen = Set.new(klassen)
+                    group_size = lambda { |klasse| (@@schueler_for_klasse[klasse] || []).size }
                     if user_who_can_manage_antikenfahrt_logged_in?
                         klassen << '11'
                         klassen << '12'
@@ -2890,7 +2894,7 @@ class Main < Sinatra::Base
                         klassen = @@klassen_order
                     end
                     klassen.each do |klasse|
-                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}'#{own_klassen.include?(klasse) ? " data-own='1'" : ''}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         remaining_klassen.delete(klasse)
                     end
                     _first = true
@@ -2899,12 +2903,12 @@ class Main < Sinatra::Base
                     end.each do |lesson_key|
                         io.puts "<div class='dropdown-divider'></div>" if _first
                         _first = false
-                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{CGI.escape(lesson_key)}' data-own='1' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</span></a>"
                     end
                     unless remaining_klassen.empty?
                         io.puts "<div class='dropdown-divider'></div>"
                         remaining_klassen.each do |klasse|
-                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         end
                     end
                     io.puts "</div>"

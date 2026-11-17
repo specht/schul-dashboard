@@ -3345,11 +3345,11 @@ body.ui-preview:has(.container-fluid.solid)::before {
     place-items: start center;
     padding-top: 8px;
     -webkit-mask:
-        radial-gradient(circle 4.5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
-        radial-gradient(circle 4.5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+        radial-gradient(circle 3px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 3px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
     mask:
-        radial-gradient(circle 4.5px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
-        radial-gradient(circle 4.5px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+        radial-gradient(circle 3px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 3px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
 }
 
 .pv-week-row.pv-week-double .pv-ag-subj::after,
@@ -3817,4 +3817,93 @@ body.ui-preview:has(.container-fluid.solid)::before {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+}
+
+/* ---------- "Mehr" on phones: an overview, not a folded list ---------- */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* oneself first: picture, name and the personal entries, always open */
+    .ui-preview .navbar .navbar-collapse .nav-item.dropdown:has(> #navbarDropdownProfile) {
+        order: -1;
+        margin-bottom: 10px !important;
+        padding: 6px !important;
+        border-radius: 16px;
+        background: var(--pv-hover);
+    }
+
+    .ui-preview #navbarDropdownProfile {
+        pointer-events: none;
+        font-weight: 700;
+    }
+
+    .ui-preview #navbarDropdownProfile::after {
+        display: none !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        display: block !important;
+        padding: 0 0 0 6px !important;
+    }
+
+    /* the sections always open, without fold buttons */
+    .ui-preview .pv-nav-section .pv-nav-body[hidden] {
+        display: grid !important;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading {
+        pointer-events: none;
+        padding-left: 4px;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading::after {
+        display: none;
+    }
+
+    /* the entries as tiles, three in a row */
+    .ui-preview .pv-nav-section .pv-nav-body {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 4px 0 6px;
+    }
+
+    .ui-preview .pv-nav-sub {
+        grid-column: 1 / -1;
+        padding: 6px 4px 0;
+    }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry {
+        flex-direction: column;
+        align-items: center !important;
+        justify-content: center;
+        gap: 6px;
+        min-height: 82px;
+        padding: 10px 4px !important;
+        border-radius: 14px;
+        background: var(--pv-hover);
+        font-size: 0.8rem;
+        line-height: 1.2;
+        text-align: center;
+        hyphens: auto;
+    }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry .icon {
+        width: 26px;
+        height: 26px !important;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--acc-text);
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
 }

@@ -4786,8 +4786,10 @@ body.ui-preview:has(.container-fluid.solid)::before {
         order: 8;
     }
 
+    /* the profile's other entries (Meine Klasse, Mittagessen …) join the
+       first tiles, next to Datentresor */
     .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > :not(.switch-session):not(a[href='/passwoerter']):not(.nav-dark):not(.nav-light):not(a[href='/login']):not(a[onclick*='perform_logout']) {
-        order: 20;
+        order: 3;
     }
 
     /* the top-level tiles take the size of the personal ones */

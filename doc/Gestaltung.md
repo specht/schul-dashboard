@@ -43,6 +43,11 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
     Seiten durchschlagen.
 - **Skripte:** `src/static/preview.js` enthält nur Allgemeines (Navigation,
   Sheets, Menüs). Seitenlogik bleibt in der Seite.
+- **Achtung Tailwind:** Die Entwicklungsinstanz erzeugt `tailwind.css` neu,
+  sobald sich Dateien unter `src/static` ändern, und liest dabei jedes Wort
+  als möglichen Klassennamen, auch in Skripten (`if (!grid)` ergibt eine
+  Klasse `!grid`). Ändert sich `tailwind.css` unerwartet, das Wort im Code
+  umbenennen und die Datei zurücksetzen, nicht mit einchecken.
 - **Prüfen, dass das alte Design gleich bleibt:** dieselbe Seite mit
   ausgeschalteter Vorschau vor und nach der Änderung vergleichen
   (Screenshots oder DOM), am Desktop und am Handy.
@@ -61,7 +66,11 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
 - **Handy:** keine Kopfleiste. Unten eine Tab-Leiste (Lehrkräfte: Heute,
   Woche, Nachrichten, Kurse, Mehr; Schülerinnen und Schüler: Heute, Woche,
   Aufgaben, Nachrichten, Mehr). »Mehr« ist ein Sheet mit Suche oben und den
-  Einträgen als Kacheln, farbig nach Gruppe.
+  Einträgen als Kacheln, farbig nach Gruppe. Alle Kacheln folgen einem
+  Muster (Symbol mittig über der Beschriftung, gleiche Höhe), und jede
+  Reihe ist voll: Bleiben in einer Gruppe Kacheln übrig, werden die
+  letzten breiter (zwei übrig: je halbe Breite; eine übrig: die letzten
+  vier als zwei Reihen zu zwei).
 - **Suche:** überall mit `/` oder `Strg+K`. Sie findet Seiten, Kurse,
   Personen und Links nach Name und Stichwort.
 - **Die Seite selbst** steht auf einem Panel (`--pv-surface`, Radius 14 bis

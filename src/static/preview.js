@@ -420,5 +420,36 @@
         if (typeof place_open_menus === 'function') place_open_menus();
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', regroup_navigation); else regroup_navigation();
+
+    // The sidebar keeps its place across page loads (it is longer than the
+    // window for many): its scroll position per tab, and the current entry
+    // always in view; opened "Alle Kurse" / "Weitere Lerngruppen" stay open.
+    function keep_sidebar_place() {
+        var nav = document.querySelector('.ui-preview nav.navbar');
+        if (!nav || !SIDEBAR.matches) return;
+        var KEY = 'pv_sidebar';
+        var state = {};
+        try { state = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch (e) {}
+        if (state.courses) { var c = nav.querySelector('.pv-nav-courses'); var m = nav.querySelector('.pv-nav-more'); if (c && m) { c.classList.add('pv-nav-all'); m.setAttribute('aria-expanded', 'true'); } }
+        if (state.groups) { var t = nav.querySelector('.pv-more-groups'); var b = nav.querySelector('.pv-more-groups-list'); if (t && b) { b.hidden = false; t.setAttribute('aria-expanded', 'true'); } }
+        if (typeof state.top === 'number') nav.scrollTop = state.top;
+        var active = nav.querySelector('.pv-active');
+        if (active) {
+            var r = active.getBoundingClientRect(), n = nav.getBoundingClientRect();
+            if (r.top < n.top + 60 || r.bottom > n.bottom - 120) active.scrollIntoView({ block: 'center' });
+        }
+        var save = function() {
+            try {
+                sessionStorage.setItem(KEY, JSON.stringify({
+                    top: nav.scrollTop,
+                    courses: !!nav.querySelector('.pv-nav-courses.pv-nav-all'),
+                    groups: !!nav.querySelector('.pv-more-groups[aria-expanded="true"]'),
+                }));
+            } catch (e) {}
+        };
+        nav.addEventListener('click', save, true);
+        window.addEventListener('pagehide', save);
+    }
+    if (document.readyState === 'complete') keep_sidebar_place(); else window.addEventListener('load', keep_sidebar_place);
 })();
 

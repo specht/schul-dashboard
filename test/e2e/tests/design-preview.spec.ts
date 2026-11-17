@@ -566,7 +566,8 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
 });
 
 // Timetable switcher: pills on a panel, the shown timetable in the accent
-test('Neues Design: Stundenplan-Auswahl als Chips', async ({ page }) => {
+test('Neues Design: Stundenplan-Auswahl als Chips', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'am Desktop ein Menü im Kopf (eigener Test)');
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
@@ -657,6 +658,41 @@ test('Neues Design: dunkel – Stundenplan-Kopf, Auswahl und Eingabefelder', asy
     expect(bg).toBe(`rgb(${[1, 3, 5].map((i) => parseInt(hover.slice(i, i + 2), 16)).join(', ')})`);
   } finally {
     await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Desktop: a header above the timetable – week and calendar week, Tag/Woche,
+// the plan as a menu instead of the chips, Heute and arrows
+test('Neues Design: Kopf über dem Stundenplan am Desktop', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'am Handy der Kopf mit Datum und Tagesleiste');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const head = page.locator('#pv_week_head');
+    await expect(head.locator('h2')).toHaveText(/\d+\.(–\d+\.)? \S+|\d+\. \S+ – \d+\. \S+/);
+    await expect(head).toContainText('Kalenderwoche');
+    await expect(page.locator('.fc-header-toolbar')).toBeHidden();
+    await expect(page.locator('.timetable_chooser .ttc').first()).toBeHidden();
+    // Tag and Woche
+    await head.getByRole('button', { name: 'Tag', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => (window as any).calendar.view.type)).toBe('timeGridDay');
+    await page.locator('#pv_week_head').getByRole('button', { name: 'Woche', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => (window as any).calendar.view.type)).toBe('timeGridWeek');
+    // the plan menu: search and pick a class
+    await page.locator('.pv-plan-button').click();
+    await page.locator('.pv-plan-menu input').fill('5a');
+    await page.locator('.pv-plan-menu .pv-plan-chip', { hasText: /^5a$/ }).click();
+    await expect(page.locator('.pv-plan-menu')).toHaveCount(0);
+    await expect(page.locator('#pv_week_head')).toContainText('Plan 5a');
+    // the arrows move the week, Heute comes back
+    const before = await page.locator('#pv_week_head h2').textContent();
+    await page.locator('#pv_week_head').getByRole('button', { name: 'Weiter' }).click();
+    await expect(page.locator('#pv_week_head h2')).not.toHaveText(before!);
+    await page.locator('#pv_week_head').getByRole('button', { name: 'Heute' }).click();
+    await expect(page.locator('#pv_week_head h2')).toHaveText(before!);
+  } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

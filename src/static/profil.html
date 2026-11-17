@@ -622,6 +622,10 @@ window.addEventListener('load', function () {
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
+        // new design: the tile shows all three colours (preview.css)
+        swatch[0].style.setProperty('--g1', gradient[0]);
+        swatch[0].style.setProperty('--g2', gradient[1]);
+        swatch[0].style.setProperty('--g3', gradient[2]);
         if (x[1].join('').replace(/\#/g, '') === color_scheme.substr(1, 18))
             swatch.addClass('active');
         

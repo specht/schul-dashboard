@@ -2044,3 +2044,234 @@ html {
 .ui-preview .text-comment .message table {
     max-width: 100%;
 }
+
+/* colour scheme tiles: all three colours as a gradient, the name on a pill
+   (profil.html sets --g1..--g3; the circles of today's tiles are hidden) */
+.ui-preview .swatches .swatch {
+    background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)) !important;
+}
+
+.ui-preview .swatches .swatch > div:not(:has(> .label)) {
+    display: none;
+}
+
+.ui-preview .swatches .swatch > div:has(> .label) {
+    left: 8px !important;
+    right: 8px !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: center;
+}
+
+.ui-preview .swatches .swatch .label {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100%;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.88) !important;
+    color: #131b26 !important;
+    font-size: 0.82em;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    hyphens: none;
+}
+
+.ui-preview .swatches .swatch .label div {
+    margin-top: 0 !important;
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------- Desktop: the header above the timetable (render_preview_week_head) ---------- */
+.pv-week-head {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .ui-preview.pv-week-head-on #calendar .fc-header-toolbar {
+        display: none;
+    }
+
+    /* the plan menu replaces the chips; empty side columns give way */
+    .ui-preview.pv-week-head-on .timetable_chooser > div:not(.hint) {
+        display: none;
+    }
+
+    .ui-preview.pv-week-head-on .pv-col-empty {
+        display: none !important;
+    }
+
+    .ui-preview.pv-week-head-on .row > div:has(> #calendar) {
+        flex: 1 1 0;
+        max-width: none;
+    }
+
+    .ui-preview .pv-week-head:not([hidden]) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px 16px;
+        margin: 4px 0 14px;
+    }
+
+    .pv-wh-title {
+        color: var(--band-ink);
+        text-shadow: var(--band-shadow);
+        padding: 4px 12px 6px 0;
+        border-radius: 12px;
+    }
+
+    .pv-wh-title h2 {
+        margin: 0;
+        font: 800 1.7rem/1.1 var(--pv-display);
+        letter-spacing: -0.01em;
+        color: inherit;
+    }
+
+    .pv-wh-sub {
+        margin-top: 3px;
+        font-size: 0.92rem;
+        opacity: 0.92;
+    }
+
+    .pv-wh-tools {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pv-wh-seg {
+        display: inline-flex;
+        background: var(--pv-surface);
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+        overflow: hidden;
+    }
+
+    .pv-wh-seg button,
+    .pv-wh-btn {
+        border: 0;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+        font: 600 0.92rem/1 var(--pv-text);
+        padding: 9px 12px;
+        cursor: pointer;
+    }
+
+    .pv-wh-seg button + button {
+        border-left: 1px solid var(--pv-line);
+    }
+
+    .pv-wh-seg button[aria-pressed='true'] {
+        background: var(--acc);
+        color: var(--acc-ink);
+    }
+
+    .pv-wh-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+    }
+
+    .pv-wh-btn:disabled {
+        color: var(--pv-muted);
+        cursor: default;
+    }
+
+    .pv-wh-seg button:hover,
+    .pv-wh-btn:hover:not(:disabled) {
+        background: var(--pv-hover);
+    }
+
+    .pv-wh-seg button[aria-pressed='true']:hover {
+        background: var(--acc);
+    }
+
+    .pv-plan-wrap {
+        position: relative;
+    }
+
+    .pv-plan-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        z-index: 1000;
+        width: 340px;
+        max-height: 60vh;
+        overflow-y: auto;
+        padding: 10px;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+        border: 1px solid var(--pv-line);
+        border-radius: 14px;
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+    }
+
+    .pv-plan-group {
+        margin: 10px 2px 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--pv-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .pv-plan-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .pv-plan-chip {
+        border: 0;
+        border-radius: 999px;
+        padding: 4px 10px;
+        min-width: 40px;
+        background: var(--pv-hover);
+        color: var(--pv-ink);
+        font: 600 0.88rem/1.2 var(--pv-text);
+        cursor: pointer;
+    }
+
+    .pv-plan-chip:hover {
+        background: var(--acc-soft);
+        color: var(--acc-text);
+    }
+
+    .pv-plan-chip.active {
+        background: var(--acc);
+        color: var(--acc-ink);
+    }
+}
+
+/* dark mode: the backdrop fades into the dark ground further down (over the
+   backdrop, under the content; scrolls with the page) */
+body.ui-preview.dark {
+    position: relative;
+    min-height: 100vh;
+    /* the ground below the page (the scheme's light variant would be #f8f8f8) */
+    background-color: #0e131a !important;
+    /* no margin below the page: the backdrop would show there, outside the fade */
+    margin-bottom: 0;
+    padding-bottom: 24px;
+}
+
+body.ui-preview.dark::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(14, 19, 26, 0) 0, rgba(14, 19, 26, 0.55) 260px, #0e131a 620px);
+}

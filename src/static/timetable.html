@@ -141,6 +141,7 @@
                     <span class='bullet'><i class='fa fa-check'></i></span><b>Schritt #{(kurs_tablet_logged_in? || teacher_tablet_logged_in? || klassenraum_logged_in?) ? '3' : '2'}:</b> Stunde auswählen
                 </div>
             </div>
+            <div id='pv_week_head' class='pv-week-head' hidden></div>
             <div id='calendar' style='margin-bottom: 30px;'>
             </div>
             <nav id='pv_day_strip' class='pv-day-strip' aria-label='Tage der Woche' hidden></nav>
@@ -843,6 +844,126 @@ function render_preview_day_strip(day) {
         });
         strip.append(button);
     }
+}
+
+// Desktop (new design): a header above the timetable – the week (or day) and
+// its calendar week, Tag/Woche, the plan as a menu instead of the chips,
+// print, Heute and the arrows. Side columns without anything to show give
+// their room to the timetable.
+function preview_week_head_wanted() {
+    return document.body.classList.contains('ui-preview') && window.matchMedia('(min-width: 768px)').matches &&
+        window.calendar && !tablet_logged_in;
+}
+
+function preview_plan_items() {
+    let items = [], seen = {};
+    $('.timetable_chooser .ttc[data-id]').each(function(_, el) {
+        let id = el.getAttribute('data-id');
+        if (seen[id]) return;
+        seen[id] = true;
+        let group = el.classList.contains('ttc-teacher') ? 'Lehrkräfte' : el.classList.contains('ttc-klasse') ? 'Klassen' : el.classList.contains('ttc-room') ? 'Räume' : 'Pläne';
+        items.push({ el: el, label: el.textContent.trim(), group: group, active: el.classList.contains('active') });
+    });
+    return items;
+}
+
+function preview_open_plan_menu(button) {
+    $('.pv-plan-menu').remove();
+    let items = preview_plan_items();
+    let menu = $('<div class="pv-plan-menu" role="dialog" aria-label="Plan wählen">');
+    let input = $('<input type="search" class="form-control" placeholder="Kürzel, Klasse oder Raum" aria-label="Plan suchen">');
+    let list = $('<div class="pv-plan-list">');
+    let fill = function() {
+        let q = input.val().trim().toLowerCase();
+        list.empty();
+        for (let group of ['Pläne', 'Lehrkräfte', 'Klassen', 'Räume']) {
+            let found = items.filter(function(x) { return x.group === group && (q === '' || x.label.toLowerCase().indexOf(q) >= 0); });
+            if (found.length === 0) continue;
+            list.append($('<div class="pv-plan-group">').text(group));
+            let chips = $('<div class="pv-plan-chips">');
+            for (let x of found) {
+                let chip = $('<button type="button" class="pv-plan-chip">').text(x.label).toggleClass('active', x.active);
+                chip.on('click', function() { menu.remove(); x.el.click(); });
+                chips.append(chip);
+            }
+            list.append(chips);
+        }
+        if (list.children().length === 0) list.append($('<div class="pv-plan-group">').text('Nichts gefunden'));
+    };
+    input.on('input', fill);
+    input.on('keydown', function(e) {
+        if (e.key === 'Escape') { menu.remove(); button.focus(); }
+        if (e.key === 'Enter') { let first = list.find('.pv-plan-chip').first(); if (first.length) first.click(); }
+    });
+    menu.append(input, list);
+    fill();
+    $(button).after(menu);
+    input.focus();
+    setTimeout(function() {
+        $(document).one('mousedown.pvplan', function(e) {
+            if (!$(e.target).closest('.pv-plan-menu, .pv-plan-button').length) menu.remove();
+        });
+    }, 0);
+}
+
+function render_preview_week_head() {
+    let head = $('#pv_week_head');
+    if (!preview_week_head_wanted()) {
+        head.attr('hidden', true);
+        document.body.classList.remove('pv-week-head-on');
+        return;
+    }
+    document.body.classList.add('pv-week-head-on');
+    let view = window.calendar.view;
+    let start = new Date(view.currentStart), end = new Date(view.currentEnd);
+    end.setDate(end.getDate() - 1);
+    while (end > start && (end.getDay() === 0 || end.getDay() === 6)) end.setDate(end.getDate() - 1);
+    let months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    let short = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+    let weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    let day_view = view.type === 'timeGridDay';
+    let title = day_view ? weekdays[start.getDay()] + ', ' + start.getDate() + '. ' + months[start.getMonth()]
+        : (start.getMonth() === end.getMonth() ? start.getDate() + '.–' + end.getDate() + '. ' + months[start.getMonth()]
+            : start.getDate() + '. ' + short[start.getMonth()] + ' – ' + end.getDate() + '. ' + short[end.getMonth()]);
+    let active = $('.timetable_chooser .ttc.active').first().text().trim();
+    let sub = 'Kalenderwoche ' + moment(start).isoWeek() + (active ? ' · Plan ' + active : '');
+    head.empty().removeAttr('hidden');
+    head.append($('<div class="pv-wh-title">').append($('<h2>').text(title), $('<div class="pv-wh-sub">').text(sub)));
+    let tools = $('<div class="pv-wh-tools">');
+    let seg = $('<div class="pv-wh-seg" role="group" aria-label="Ansicht">');
+    [['timeGridDay', 'Tag'], ['timeGridWeek', 'Woche']].forEach(function(v) {
+        let b = $('<button type="button">').text(v[1]).attr('aria-pressed', view.type === v[0] ? 'true' : 'false');
+        b.on('click', function() { window.calendar.changeView(v[0]); });
+        seg.append(b);
+    });
+    tools.append(seg);
+    if (preview_plan_items().length > 1) {
+        let plan = $('<button type="button" class="pv-wh-btn pv-plan-button" aria-haspopup="dialog">').append($('<span>').text('Plan ' + (active || 'wählen')), $('<i class="fa fa-caret-down">'));
+        plan.on('click', function(e) {
+            if ($('.pv-plan-menu').length) $('.pv-plan-menu').remove(); else preview_open_plan_menu(e.currentTarget);
+        });
+        tools.append($('<div class="pv-plan-wrap">').append(plan));
+    }
+    if ($('.fc-print-button').length && $('.fc-print-button').css('display') !== 'none') {
+        let print = $('<button type="button" class="pv-wh-btn" aria-label="Drucken" title="Drucken">').append($('<i class="fa fa-print">'));
+        print.on('click', function() { $('.fc-print-button').trigger('click'); });
+        tools.append(print);
+    }
+    let now = new Date();
+    let today = $('<button type="button" class="pv-wh-btn">').text('Heute').prop('disabled', now >= view.currentStart && now < view.currentEnd);
+    today.on('click', function() { window.calendar.today(); });
+    let nav = $('<div class="pv-wh-seg">');
+    nav.append($('<button type="button" aria-label="Zurück">').append($('<i class="fa fa-chevron-left">')).on('click', function() { window.calendar.prev(); }));
+    nav.append($('<button type="button" aria-label="Weiter">').append($('<i class="fa fa-chevron-right">')).on('click', function() { window.calendar.next(); }));
+    tools.append(today, nav);
+    head.append(tools);
+    // side columns with nothing visible give their room to the timetable
+    $('#calendar').closest('.row').children().not($('#calendar').parent()).each(function(_, col) {
+        let visible = $(col).children().filter(function(_, c) {
+            return !$(c).hasClass('timetable_chooser') && c.offsetHeight > 0 && !$(c).is('.ttc-wrap');
+        }).filter(function(_, c) { return !(c.querySelector('.ttc') && !c.classList.contains('hint')); });
+        col.classList.toggle('pv-col-empty', visible.length === 0);
+    });
 }
 
 // swiping the agenda: it follows the finger, then the next / previous school
@@ -2254,7 +2375,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // new design (preview) on phones: the agenda follows the shown day
-    options.eventsSet = function() { setTimeout(render_preview_agenda, 0); };
+    options.eventsSet = function() { setTimeout(function() { render_preview_agenda(); render_preview_week_head(); }, 0); };
+    options.datesSet = function() { setTimeout(render_preview_week_head, 0); };
     setInterval(function() { if (document.body.classList.contains('pv-agenda-on')) render_preview_agenda(); }, 60 * 1000);
     window.addEventListener('resize', function() { if (window.calendar) render_preview_agenda(); });
     window.timetable_options = options;

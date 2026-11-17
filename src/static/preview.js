@@ -740,6 +740,45 @@
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', back_closes_layers); else back_closes_layers();
 
+    // ---------- The page stands still behind an open sheet ----------
+    // While a sheet is open ("Mehr", the plan menu, link sheets; on phones
+    // every dialog), the page behind it doesn't scroll – a swipe on the veil
+    // moved it before. Fixed at its scroll position (overflow: hidden alone
+    // isn't enough for mobile Safari); back exactly there when it closes.
+    (function() {
+        var locked = null;
+        var lock = function() {
+            if (locked !== null) return;
+            locked = window.scrollY;
+            var b = document.body.style;
+            b.position = 'fixed';
+            b.top = (-locked) + 'px';
+            b.left = '0';
+            b.right = '0';
+        };
+        var unlock = function() {
+            if (locked === null) return;
+            var y = locked;
+            locked = null;
+            var b = document.body.style;
+            b.position = '';
+            b.top = '';
+            b.left = '';
+            b.right = '';
+            window.scrollTo(0, y);
+        };
+        var check = function() {
+            var c = document.body.classList;
+            if (!c.contains('ui-preview')) return;
+            if (c.contains('pv-sheet-open') || (c.contains('modal-open') && !SIDEBAR.matches)) lock(); else unlock();
+        };
+        var watch_body = function() {
+            new MutationObserver(check).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+            check();
+        };
+        if (document.body) watch_body(); else document.addEventListener('DOMContentLoaded', watch_body);
+    })();
+
     function later() { more_search(); weekday_columns(); help_tile(); legal_line(); balance_tiles(); }
     if (document.readyState === 'complete') later(); else window.addEventListener('load', function() { later(); setTimeout(weekday_columns, 1500); });
 })();

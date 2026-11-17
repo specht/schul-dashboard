@@ -1,11 +1,12 @@
-<div class='container'>
+<div class='container pv-login'>
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
+            #{design_preview_public_brand}
             <h2 style='margin-bottom: 30px;'>Anmeldung</h2>
-            <p>
+            <p class='pv-login-intro'>
                 Die Anmeldung ist relativ einfach und funktioniert ohne Passwort. Gib einfach deine E-Mail-Adresse ein und du erhältst einen Code für die Anmeldung an diesem Gerät. Wenn du diesen eingibst, bist du ein Jahr lang angemeldet (es sei denn, du meldest dich wieder ab). Du kannst jederzeit einen neuen Code anfordern.
             </p>
-            <p class='text-muted'>
+            <p class='text-muted pv-login-note'>
                 <em>
                     Hinweis: Für die Anmeldung benötigst du eine Schul-E-Mail-Adresse #{SCHUL_NAME_AN_DATIV} #{SCHUL_NAME}. Falls du Probleme bei der Anmeldung hast, melde dich bitte unter <a href='mailto:#{DASHBOARD_SUPPORT_EMAIL}'>#{DASHBOARD_SUPPORT_EMAIL}</a>.
                 </em>
@@ -26,9 +27,9 @@
             </form>
             <div class='api_messages' style='display: none;'></div>
             <hr />
-            <em><b>Tipp:</b> Wenn du nicht jedesmal auf einen Code per E-Mail oder SMS warten möchtest, kannst du unter »Profil« eine <a href='/otp'>Authenticator-App</a> einrichten. Dein Smartphone zeigt dir dann deinen Code sofort an.</em>
+            <div class='pv-login-tip'><em><b>Tipp:</b> Wenn du nicht jedesmal auf einen Code per E-Mail oder SMS warten möchtest, kannst du unter »Profil« eine <a href='/otp'>Authenticator-App</a> einrichten. Dein Smartphone zeigt dir dann deinen Code sofort an.</em></div>
             <hr />
-            <div style='padding-left: 40px; position: relative;'>
+            <div class='pv-login-help' style='padding-left: 40px; position: relative;'>
                 <i class='fa fa-question-circle' style='font-size: 150%; position: absolute; top: 0px; left: 4px;'></i>
                 Für alle Fragen rund um deine E-Mail-Adresse schau bitte auf unserer <a href='/hilfe'>Hilfe-Seite</a> nach!
             </div>

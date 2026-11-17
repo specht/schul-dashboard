@@ -123,6 +123,55 @@ und dunkel auf Kontrast geprüft.
 - **Leere Zustände:** ein kurzer, hilfreicher Satz, was hier erscheint und
   wie man anfängt. Keine gestrichelten Kästen.
 
+## 6a. Seitentypen
+
+Die meisten Seiten gehören zu einem dieser Typen; er bestimmt Breite,
+Aktionen und das Verhalten am Handy.
+
+| Typ | Beispiele | Breite am Desktop |
+|---|---|---|
+| Liste mit Aktionen | Umfragen, Abstimmungen, Termine, Verteiler, Gruppen | höchstens etwa 980 px |
+| Tabelle | Kurslisten, Klassenlisten, Statistiken, Admin-Übersichten | volle Breite |
+| Formular und Editor | Umfrage bearbeiten, Termin anlegen, Profil | höchstens etwa 980 px |
+| Lesen und Verlauf | Nachrichten, Kursbuch, Hilfe | höchstens etwa 980 px (Nachrichten: Liste und Nachricht nebeneinander) |
+| Überblick | Stundenplan, Monitore | volle Breite |
+
+**Liste mit Aktionen**
+
+- **Desktop und Tablet:** Titel und Hauptaktion in einer Zeile, darunter
+  bei Bedarf Filter als Chips. Jede Zeile zeigt Titel und eine leise
+  Faktenzeile, rechts ein bis zwei sichtbare Aktionen als leise
+  Textknöpfe und »•••« für den Rest. Löschen, Kopieren und seltene
+  Aktionen stehen immer im »•••«-Menü, nie in der Zeile.
+- **Handy:** die Zeile selbst öffnet das Element (Pfeil »›« am Ende), alle
+  Aktionen stehen im »•••«-Sheet. Die Hauptaktion steht im Seitenkopf
+  neben dem Titel, kurz beschriftet (»Neu«); kein schwebender Knopf.
+- **Unterelemente** (Durchführungen einer Umfrage, Termine einer Reihe):
+  laufende und geplante als Zeilen unter dem Element, beendete gefaltet
+  (»2 beendete Durchführungen anzeigen«).
+
+**Formular und Editor**
+
+- Kurze Formulare in einem Dialog, am Handy als Sheet.
+- Lange Editoren als Dialog in voller Höhe, am Handy als Sheet über den
+  ganzen Bildschirm; »Speichern« bleibt immer sichtbar.
+
+**Tabelle**
+
+- Am Handy werden Zeilen zu Listenzeilen: Name und die zwei oder drei
+  wichtigsten Werte, der Rest beim Öffnen der Zeile.
+- Echte Matrizen (Noten pro Arbeit, Anwesenheit pro Tag) scrollen am Handy
+  seitlich, die erste Spalte bleibt stehen.
+
+**Lange Listen und Archiv**
+
+- Nie alles auf einmal zeigen: Aktuelles zuerst, Älteres nach Schuljahr
+  gefaltet oder nachgeladen. Lange Listen werden in Blöcken von 50 Zeilen
+  gezeigt, weitere beim Scrollen, mit einem Knopf »Ältere …« als Rückfall.
+- Eine Suche über die ganze Liste, wo Listen lang werden können.
+- Das alte Design behält seine Datenwege; Nachladen für das neue Design
+  kommt über zusätzliche, nur lesende Abfragen.
+
 ## 7. Knöpfe
 
 - **Eine Hauptaktion pro Ansicht** in vollem Akzent (dunkel mit heller

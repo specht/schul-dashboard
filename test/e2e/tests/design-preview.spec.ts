@@ -633,6 +633,49 @@ test('Neues Design: Zurück schließt Sheets am Handy', async ({ page }, testInf
   }
 });
 
+// The tab "Woche" lives in the address: a reload stays on it.
+test('Neues Design: Woche bleibt nach dem Neuladen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Tabs nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    // load the page with the preview first (a bare hash change doesn't reload)
+    await page.goto('/');
+    await page.goto('/#woche');
+    await expect(page.locator('#pv_agenda.pv-agenda-week')).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/#woche$/);
+    await expect(page.locator('#pv_agenda.pv-agenda-week')).toBeVisible();
+    await expect(page.locator('.pv-tabbar .pv-tab.pv-active')).toContainText('Woche');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Behind an open sheet the page stands still and is back at the same place
+// when it closes (preview.js).
+test('Neues Design: Seite steht hinter offenem Sheet still', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Sheets nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/hilfe');
+    await page.evaluate(() => window.scrollTo(0, 300));
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(300);
+    const top = await page.evaluate(() => Math.round(document.querySelector('#main_container')!.getBoundingClientRect().top));
+    await page.locator('#bu_pv_more').click();
+    await expect(page.locator('#navbarTogglerDemo02')).toHaveClass(/\bshow\b/);
+    // the page behind keeps its place, scrolling moves nothing
+    await page.evaluate(() => window.scrollBy(0, 400));
+    expect(await page.evaluate(() => Math.round(document.querySelector('#main_container')!.getBoundingClientRect().top))).toBe(top);
+    await page.locator('.pv-menu-veil').click({ position: { x: 20, y: 20 } });
+    await expect(page.locator('#navbarTogglerDemo02')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(300);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('Neues Design: Plan wählen am Handy', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'am Desktop das Menü im Kopf (eigener Test)');
   await login(page, ACCOUNTS.admin);

@@ -208,6 +208,11 @@ Aktionen und das Verhalten am Handy.
 - **Am Handy** sind Dialoge und Menüs Sheets von unten (`.pv-sheet` auf dem
   Modal): sie gleiten hoch, lassen sich nach unten ziehen oder über den
   Schleier schließen und liegen über der Tab-Leiste.
+- **Hinter einem offenen Sheet steht die Seite still:** sie scrollt nicht
+  mit, auch nicht beim Wischen auf dem Schleier, und steht nach dem
+  Schließen wieder genau dort, wo sie war (`preview.js`; eigene Sheets
+  setzen dafür `body.pv-sheet-open`). Scrollt ein Sheet selbst, endet das
+  an seinem Rand.
 - Ungespeicherte Änderungen werden vor dem Schließen nachgefragt.
 - **Zurück schließt, was wie ein eigener Bildschirm aufgeht.** Die
   Zurück-Geste (Wischen vom Rand, Zurück-Taste des Handys oder Browsers)

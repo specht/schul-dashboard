@@ -4820,3 +4820,19 @@ body.ui-preview:has(.container-fluid.solid)::before {
         padding-top: 16px !important;
     }
 }
+
+/* behind an open sheet the page stands still (preview.js): scrolling inside
+   a sheet stops at its edges, the veil takes no scroll gestures (a tap still
+   closes the sheet) */
+.ui-preview .pv-sheet .modal-body,
+.ui-preview .pv-sheet .modal-dialog,
+.ui-preview .pv-plan-menu,
+.ui-preview .pv-plan-list,
+.ui-preview .pv-link-sheet {
+    overscroll-behavior: contain;
+}
+
+.ui-preview .pv-menu-veil,
+.ui-preview .modal-backdrop {
+    touch-action: none;
+}

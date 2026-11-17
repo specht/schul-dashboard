@@ -36,19 +36,23 @@
 }
 
 .pv-poll {
-    background: var(--pv-surface);
+    /* a section of the page's panel, not a card of its own: one surface
+       only (doc/Gestaltung.md, "Flächen") */
     color: var(--pv-ink);
-    border: 1px solid var(--pv-line);
-    border-radius: 14px;
-    padding: 14px 16px 16px;
-    margin-bottom: 16px;
+    padding: 18px 0 14px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-poll:first-child {
+    border-top: 0;
+    padding-top: 4px;
 }
 
 .pv-poll-head {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: 10px 16px;
+    gap: 6px 16px;
 }
 
 .pv-poll-title {
@@ -59,7 +63,7 @@
 .ui-preview .pv-poll-title h3 {
     font-size: 1.2rem;
     line-height: 1.3;
-    margin: 0 0 4px;
+    margin: 0 0 2px;
     overflow-wrap: anywhere;
 }
 
@@ -75,47 +79,92 @@
 .pv-run-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    align-items: center;
+    gap: 2px;
 }
 
-.ui-preview .pv-polls-page .pv-poll .btn-sm {
+/* quiet text buttons: no frame, no fill until hovered; never stretched */
+.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm {
+    flex: 0 0 auto;
+    width: auto;
     display: inline-flex;
     align-items: center;
-    padding: 5px 11px;
-    border-radius: 9px;
-    font-size: 0.85rem;
+    gap: 6px;
+    padding: 5px 9px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--acc-text);
+    font-size: 0.88rem;
     font-weight: 600;
+}
+
+.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm:hover,
+.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm:focus-visible {
+    background: var(--pv-hover);
+}
+
+.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm.btn-danger {
+    color: #b42318;
+}
+
+.ui-preview.dark #main_container .pv-polls-page .pv-poll .btn-sm.btn-danger {
+    color: #ff8f8f;
+}
+
+.ui-preview .pv-polls-page .pv-poll .btn-sm > i {
+    margin: 0;
+}
+
+/* delete: the icon only (the name stays for screen readers) */
+.ui-preview .pv-polls-page .pv-icon-only > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm.pv-icon-only {
+    padding: 5px 8px;
 }
 
 .pv-runs {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 14px;
+    margin-top: 8px;
 }
 
 .pv-runs-empty {
-    margin: 0;
-    padding: 10px 12px;
-    border: 1px dashed var(--pv-line);
-    border-radius: 12px;
+    margin: 4px 0 0;
     font-size: 0.9em;
     color: var(--pv-muted);
 }
 
+/* the runs: rows divided by hairlines, no boxes */
 .pv-run {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "main actions" "progress actions";
     align-items: center;
-    gap: 8px 16px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: var(--pv-hover);
+    gap: 6px 16px;
+    padding: 10px 0 10px 12px;
+    border-top: 1px solid var(--pv-line);
 }
 
-.pv-run-running {
-    box-shadow: inset 4px 0 0 var(--acc);
+/* running: a slim accent line at the left edge */
+.pv-run-running::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--acc);
 }
 
 .pv-run-main {
@@ -130,19 +179,17 @@
 .pv-run-status {
     flex: none;
     margin-top: 1px;
-    padding: 2px 9px;
+    padding: 1px 8px;
     border-radius: 999px;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 700;
     line-height: 1.4;
     white-space: nowrap;
-    border: 1px solid var(--pv-line);
-    background: var(--pv-surface);
+    background: var(--pv-hover);
     color: var(--pv-muted);
 }
 
 .pv-run-running .pv-run-status {
-    border-color: var(--acc-soft);
     background: var(--acc-soft);
     color: var(--acc-text);
 }
@@ -155,7 +202,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .pv-run-when {
@@ -163,20 +210,14 @@
     overflow-wrap: anywhere;
 }
 
+/* the facts as one quiet line: "26 Teilnehmer, mit Namen" */
 .pv-run-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    font-size: 0.85em;
+    color: var(--pv-muted);
 }
 
-.pv-run-tags span {
-    font-size: 0.78rem;
-    line-height: 1.5;
-    padding: 0 8px;
-    border-radius: 999px;
-    border: 1px solid var(--pv-line);
-    background: var(--pv-surface);
-    color: var(--pv-muted);
+.pv-run-tags span + span::before {
+    content: ", ";
 }
 
 .pv-run-progress {
@@ -205,6 +246,7 @@
 .pv-run-count {
     font-size: 0.82em;
     color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
 }
 
 .pv-run-actions {
@@ -213,8 +255,9 @@
 }
 
 @media (max-width: 767px) {
-    .pv-poll {
-        padding: 12px;
+    .pv-poll-actions {
+        flex-basis: 100%;
+        margin-left: -9px;
     }
 
     .pv-run {
@@ -224,6 +267,7 @@
 
     .pv-run-actions {
         justify-content: flex-start;
+        margin-left: -9px;
     }
 
     .pv-bar {

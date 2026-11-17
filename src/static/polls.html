@@ -387,7 +387,7 @@
             let actions = $('<div>').addClass('pv-poll-actions').appendTo(head);
             let bu_run = pv_button('Neue Durchführung', 'play').addClass('pv-bu-new-run').appendTo(actions);
             let bu_edit = pv_button('Bearbeiten', 'edit').addClass('pv-bu-edit-poll').appendTo(actions);
-            let bu_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-poll').appendTo(actions);
+            let bu_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-poll pv-icon-only').attr('title', 'Umfrage löschen').attr('aria-label', 'Umfrage löschen').appendTo(actions);
             bu_run.click(function () { new_poll_run(pid); });
             bu_edit.click(function () { edit_poll(pid); });
             bu_delete.click(function () {
@@ -437,7 +437,7 @@
                             { title: 'Umfrage stoppen', confirm: 'Stoppen', danger: true });
                     });
                 } else {
-                    let bu_run_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-run').appendTo(run_actions);
+                    let bu_run_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-run pv-icon-only').attr('title', 'Durchführung löschen').attr('aria-label', 'Durchführung löschen').appendTo(run_actions);
                     bu_run_delete.click(function () {
                         dashboardConfirm('Diese Durchführung mit allen Antworten löschen?',
                             function () { delete_poll_run(prid); },

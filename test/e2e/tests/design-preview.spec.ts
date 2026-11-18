@@ -1523,3 +1523,30 @@ test('Neues Design: Tausch durchgestrichen nur im Alten', async ({ page }, testI
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// The day's title on phones: with a shade behind it, the shade's edge is
+// level with the plan button and the day tiles; without one, the text itself.
+test('Neues Design: Tagestitel bündig mit und ohne Schatten', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'the day band on phones');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('#pv_day_band .pv-band-text')).toBeVisible();
+    const measure = (alpha: string) => page.evaluate((a) => {
+      document.documentElement.style.setProperty('--band-scrim-a', a);
+      const left = (s: string) => document.querySelector(s)!.getBoundingClientRect().left;
+      const range = document.createRange();
+      range.selectNodeContents(document.querySelector('#pv_day_band h1')!);
+      return { pill: left('#pv_day_band .pv-band-text'), text: range.getBoundingClientRect().left, plan: left('#pv_day_band .pv-band-top > *'), tile: left('.pv-day-strip > *') };
+    }, alpha);
+    const plain = await measure('0.00');
+    expect(Math.abs(plain.text - plain.plan)).toBeLessThan(1.5);
+    expect(Math.abs(plain.text - plain.tile)).toBeLessThan(1.5);
+    const shaded = await measure('0.35');
+    expect(Math.abs(shaded.pill - shaded.plan)).toBeLessThan(1.5);
+    expect(shaded.text - shaded.pill).toBeGreaterThan(6);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

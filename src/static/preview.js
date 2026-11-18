@@ -193,6 +193,8 @@
         }
     };
 
+    // a group with {folded: true} as third part shows only its name with the
+    // count, its links open on a tap (e.g. "Weitere Lerngruppen")
     window.pv_open_link_sheet = function(title, groups) {
         window.pv_close_plan_menu(false);
         var veil = document.createElement('div');
@@ -204,12 +206,25 @@
         menu.setAttribute('aria-label', title);
         groups.forEach(function(g) {
             if (g[1].length === 0) return;
-            var head = document.createElement('div');
+            var folded = !!(g[2] && g[2].folded);
+            var head = document.createElement(folded ? 'button' : 'div');
             head.className = 'pv-plan-group';
             head.textContent = g[0];
             menu.appendChild(head);
             var list = document.createElement('div');
             list.className = 'pv-sheet-links';
+            if (folded) {
+                head.type = 'button';
+                head.className = 'pv-more-groups pv-sheet-fold';
+                head.textContent = g[0] + ' (' + g[1].length + ')';
+                head.setAttribute('aria-expanded', 'false');
+                list.hidden = true;
+                head.addEventListener('click', function() {
+                    list.hidden = !list.hidden;
+                    head.setAttribute('aria-expanded', list.hidden ? 'false' : 'true');
+                    if (!list.hidden) head.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                });
+            }
             g[1].forEach(function(item) {
                 var a = document.createElement('a');
                 a.href = item[1];
@@ -339,6 +354,13 @@
         });
         if (!sec) return;
         var button = sec.querySelector('button.pv-nav-heading');
+        // one panel at a time: an open menu (Lerngruppen, oneself) closes
+        if (window.jQuery) {
+            window.jQuery('.navbar .dropdown-menu.show').each(function() {
+                var t = this.parentElement && this.parentElement.querySelector('[data-toggle="dropdown"]');
+                if (t) window.jQuery(t).dropdown('hide');
+            });
+        }
         sec.classList.add('pv-rail-open');
         button.setAttribute('aria-expanded', 'true');
         place_section_panel(sec);
@@ -366,6 +388,11 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') section_panel(null);
     });
+    // and a menu opening closes an open panel
+    var close_panels_with_menus = function() {
+        if (window.jQuery) window.jQuery(document).on('show.bs.dropdown', function() { section_panel(null); });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', close_panels_with_menus); else close_panels_with_menus();
     SIDEBAR.addEventListener('change', function() { section_panel(null); });
     window.addEventListener('resize', function() {
         var open = document.querySelector('.pv-nav-section.pv-rail-open');

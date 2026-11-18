@@ -186,6 +186,9 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       const pm = (await profileMenu.boundingBox())!;
       expect(pm.x).toBeGreaterThanOrEqual(box.width - 1);
       expect(Math.abs(viewport.height - (pm.y + pm.height) - 8)).toBeLessThan(3);
+      // its icons and one's picture at full strength (only the long lists of
+      // courses and groups have quieter icons)
+      expect(await profileMenu.locator('.dropdown-item .icon').evaluateAll((els) => els.map((el) => getComputedStyle(el).opacity))).not.toContain('0.6');
       await page.keyboard.press('Escape');
       await expect(profileMenu).toBeHidden();
       // the old admin menu is gone: its tools sit in the "Verwaltung" section,
@@ -267,6 +270,13 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       const courses = page.locator('.pv-link-sheet');
       await expect(courses.locator('.pv-plan-group')).toContainText(['Mein Unterricht', 'Meine Lerngruppen']);
       await expect(courses.locator('a[href^="/lessons/"]').first()).toBeVisible();
+      // the other groups folded, open on a tap
+      const fold = courses.locator('.pv-sheet-fold');
+      await expect(fold).toHaveText(/^Weitere Lerngruppen \(\d+\)$/);
+      await expect(fold).toHaveAttribute('aria-expanded', 'false');
+      await expect(courses.locator('a[href="/directory/11"]')).toBeHidden();
+      await fold.click();
+      await expect(courses.locator('a[href="/directory/11"]')).toBeVisible();
       await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
       await expect(courses).toHaveCount(0);
       // "Woche": the days of the week one below the other
@@ -350,8 +360,19 @@ for (const [name, width, height] of [['Desktop', 1280, 900], ['Tablet', 820, 118
       const groups = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
       await expect(groups).toBeVisible();
       expect((await groups.boundingBox())!.x).toBeGreaterThanOrEqual(side.width - 1);
-      await page.keyboard.press('Escape');
+      // and the other way round: a panel closes the open menu
+      await schule.locator('button.pv-nav-heading').click();
+      await expect(sbody).toBeVisible();
       await expect(groups).toBeHidden();
+      // the groups of a section: lines across the whole panel
+      const line = sbody.locator('.pv-nav-sub:visible').first();
+      if (await line.count()) {
+        const l = (await line.boundingBox())!, p = (await sbody.boundingBox())!;
+        expect(l.height).toBeLessThanOrEqual(2);
+        expect(l.width).toBeGreaterThanOrEqual(p.width - 4);
+      }
+      await page.keyboard.press('Escape');
+      await expect(sbody).toBeHidden();
       // Escape and a click elsewhere close a panel
       await ubutton.click();
       await expect(ubody).toBeVisible();
@@ -468,22 +489,25 @@ test('Neues Design: eigene Schriften', async ({ page }) => {
   }
 });
 
-// Four font pairs in the profile ("Schrift"), all with accents and Greek
-// (with tonos; polytonic is a plus, all four have it);
-// Atkinson and Bricolage have no Greek, Fira Sans fills in behind them. The
+// Five font pairs in the profile ("Schrift"), all with accents and modern
+// Greek (with tonos) in the pair's own fonts; Atkinson and Bricolage have no
+// Greek, Fira Sans fills in behind them. Polytonic Greek is a plus: where a
+// pair lacks it, Fira Sans fills in, never a system font. The
 // names as Chrome reports the fonts drawing the text (it may add its
-// renderer, e.g. "Inter (Fontations)")
+// renderer or the variable font's default instance, e.g. "Inter
+// (Fontations)", "Manrope ExtraLight (Fontations)")
 const FONT_PAIRS = [
   { key: 'klar', text: 'Atkinson Hyperlegible Next', display: 'Bricolage Grotesque', greekText: /^Fira Sans( \(|$)/, greekDisplay: /^Fira Sans( \(|$)/ },
   { key: 'sachlich', text: 'Inter', display: 'Inter Tight', greekText: /^Inter( \(|$)/, greekDisplay: /^Inter Tight( \(|$)/ },
   { key: 'buch', text: 'Literata', display: 'Literata', greekText: /^Literata( \(|$)/, greekDisplay: /^Literata( \(|$)/ },
-  { key: 'freundlich', text: 'Ubuntu Sans', display: 'M PLUS Rounded 1c', greekText: /^Ubuntu Sans( \(|$)/, greekDisplay: /Mplus/i },
+  { key: 'freundlich', text: 'Manrope', display: 'M PLUS Rounded 1c', greekText: /^Manrope( |$)/, greekDisplay: /Mplus/i },
+  { key: 'feder', text: 'Alegreya Sans', display: 'Alegreya', greekText: /^Alegreya Sans( \(|$)/, greekDisplay: /^Alegreya( \(|$)/ },
 ];
 
 test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page, serverErrors }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_font', { data: { font: 'klar' } });
-  // only the four keys
+  // only the known keys
   for (const font of ['comic', '', 'klar; DROP', 'Inter']) {
     expect((await page.request.post('/api/set_ui_font', { data: { font } })).status()).not.toBe(200);
   }
@@ -501,7 +525,7 @@ test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page
   try {
     await page.goto('/profil');
     const tiles = page.locator('.pv-font-tile');
-    await expect(tiles).toHaveCount(4);
+    await expect(tiles).toHaveCount(FONT_PAIRS.length);
     await expect(page.locator(".pv-font-tile[aria-checked='true']")).toHaveAttribute('data-font', 'klar');
     await expect(page.locator('body')).toHaveClass(/\bpv-font-klar\b/);
     // every tile in its own fonts, with Greek
@@ -521,6 +545,12 @@ test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page
       const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
       return fonts.filter((f: { isCustomFont: boolean }) => f.isCustomFont).map((f: { familyName: string }) => f.familyName);
     };
+    const system = async (selector: string) => {
+      const { root } = await cdp.send('DOM.getDocument', { depth: 0 });
+      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+      const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+      return fonts.filter((f: { isCustomFont: boolean }) => !f.isCustomFont).map((f: { familyName: string }) => f.familyName);
+    };
     const bodyFont = () => page.evaluate(() => getComputedStyle(document.body).fontFamily);
     const headingFont = () => page.locator('h2').first().evaluate((el) => getComputedStyle(el).fontFamily);
     for (const pair of [...FONT_PAIRS.slice(1), FONT_PAIRS[0]]) {
@@ -537,19 +567,23 @@ test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page
         p.id = 'pv_greek_probe_text';
         p.className = 'pv-greek-probe';
         // Greek letters only: spaces and commas come from the Latin font
-        p.textContent = 'ΕλληνικάΑθήναἀρετήῥῆμαᾠδή';
+        p.textContent = 'ΕλληνικάΑθήνααρετήΆΈΉΊΌΎΏϊϋΐΰ';
         const h = document.createElement('h2');
         h.id = 'pv_greek_probe_heading';
         h.className = 'pv-greek-probe';
-        h.textContent = 'Ἀρετή';
+        h.textContent = 'ΑρετήΑθήνα';
+        const poly = document.createElement('p');
+        poly.id = 'pv_greek_probe_poly';
+        poly.className = 'pv-greek-probe';
+        poly.textContent = 'ἀρετήῥῆμαᾠδή';
         // next to the tiles (in view), outside them (they have fonts of their own)
-        document.querySelector('.pv-fonts')!.append(h, p);
+        document.querySelector('.pv-fonts')!.append(h, p, poly);
       });
       await page.evaluate(() => document.fonts.ready);
       await expect.poll(() => used('#pv_greek_probe_text')).toEqual([expect.stringMatching(pair.greekText)]);
       await expect.poll(() => used('#pv_greek_probe_heading')).toEqual([expect.stringMatching(pair.greekDisplay)]);
-      expect(await page.evaluate((family) => document.fonts.check(`16px "${family}"`, 'ἀρετή ῥῆμα'),
-        pair.key === 'klar' ? 'Fira Sans Fallback' : pair.text)).toBe(true);
+      await expect.poll(() => used('#pv_greek_probe_poly')).not.toEqual([]);
+      expect(await system('#pv_greek_probe_poly')).toEqual([]);
       // kept for the next page
       if (pair.key !== 'klar') {
         await page.reload();
@@ -1209,6 +1243,16 @@ test('Neues Design: eigenes Farbschema mit Palette und HSL-Reglern', async ({ pa
     // saved: the page's scheme starts with the three colours
     await own.locator('#bu_apply_own_scheme').click();
     await expect.poll(() => page.evaluate(() => (window as any).color_scheme as string)).toMatch(/^[ld]0d60ae/);
+    // changed again, then a preset chosen: everything shows the preset
+    await own.locator('.pv-cling-colour[data-hex="#4aa03f"]').click();
+    await page.locator('.swatches .swatch:not(.active)').first().click();
+    await expect.poll(() => page.evaluate(() => (window as any).color_scheme as string)).not.toMatch(/^[ld]0d60ae/);
+    const preset = '#' + (await page.evaluate(() => (window as any).color_scheme as string)).substring(1, 7);
+    await expect(own.locator('#ti_scheme_left')).toHaveValue(preset);
+    await expect(own.locator('#ti_scheme_hex')).toHaveValue(preset);
+    const rgb = 'rgb(' + [1, 3, 5].map((i) => parseInt(preset.substring(i, i + 2), 16)).join(', ') + ')';
+    await expect.poll(() => own.locator('.pv-scheme-slot[data-slot="left"] .pv-scheme-chip').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(rgb);
+    await expect(own.locator('.pv-cling-colour[data-hex="#4aa03f"]')).toHaveAttribute('aria-pressed', 'false');
   } finally {
     await page.request.post('/api/set_color_scheme', { data: { scheme: before } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

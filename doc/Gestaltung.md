@@ -121,7 +121,7 @@ und dunkel auf Kontrast geprüft.
 - Text in `--pv-text`, Überschriften in `--pv-display`, Code und Kürzel bei
   Bedarf in `--pv-mono`. Nie eine Schrift fest eintragen: die Variablen
   wechseln mit der gewählten Schrift.
-- Im Profil (»Darstellung«, »Schrift«) gibt es vier Schriftpaare
+- Im Profil (»Darstellung«, »Schrift«) gibt es fünf Schriftpaare
   (Überschrift und Text), gespeichert in `u.ui_font`, auf der Seite als
   Klasse `pv-font-…` am `body` (`preview.css`, `include/fonts-v2/fonts.css`):
   - **Klar** (Standard): Bricolage Grotesque und Atkinson Hyperlegible Next.
@@ -130,12 +130,15 @@ und dunkel auf Kontrast geprüft.
     in der Größe angeglichen (`size-adjust`).
   - **Sachlich**: Inter Tight und Inter.
   - **Buch**: Literata (Serifenschrift für das Lesen am Bildschirm).
-  - **Freundlich**: M PLUS Rounded 1c (gerundet) und Ubuntu Sans.
+  - **Freundlich**: M PLUS Rounded 1c (gerundet) und Manrope.
+  - **Feder**: Alegreya (kalligrafische Überschriften) und Alegreya Sans.
+  Manrope hat kein polytonisches Griechisch und einzelne seltene Akzente
+  nicht; dafür springt Fira Sans ein.
 - Pflicht für jede Schrift: Latin-1 und Latin Extended-A (Akzente
   europäischer Sprachen, Makron ā ē ī ō ū für Latein) und Griechisch mit
   Tonos (U+0386–U+03CE, z. B. Ελληνικά, ά έ ή ί ό ύ ώ). Polytonisches
   Griechisch (Greek Extended, z. B. ἀρετή, ῥῆμα, ᾠδή) ist erwünscht, aber
-  keine Bedingung; die vier Paare haben es alle. Eine neue Schrift kommt nur
+  keine Bedingung; Fira Sans springt ein, wo eine Schrift es nicht hat. Eine neue Schrift kommt nur
   dazu, wenn ihre Dateien das nachweislich abdecken (mit fontTools geprüft,
   nicht nach Angabe der Anbieter), unter freier Lizenz (SIL OFL o. ä.),
   selbst gehostet als woff2 in den Teilmengen latin, latin-ext, greek (und

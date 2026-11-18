@@ -1,9 +1,10 @@
 /* Fonts of the new design (preview), self-hosted - no requests to Google Fonts.
-   Four pairs to choose from in the profile (preview.css, doc/Gestaltung.md):
+   Five pairs to choose from in the profile (preview.css, doc/Gestaltung.md):
    Klar (Bricolage Grotesque, Atkinson Hyperlegible Next, Greek from Fira Sans),
    Sachlich (Inter Tight, Inter), Buch (Literata), Freundlich (M PLUS Rounded 1c,
-   Ubuntu Sans). Licences: see the LICENSE files (SIL Open Font License 1.1,
-   Ubuntu Sans: Ubuntu Font Licence 1.0), packaged by Fontsource 5.3.0.
+   Manrope), Feder (Alegreya, Alegreya Sans).
+   Licences: see the LICENSE files (all SIL Open Font License 1.1), packaged by
+   Fontsource 5.3.0.
    unicode-range: browsers only download the files a page needs. */
 
 @font-face {
@@ -446,10 +447,9 @@
 }
 
 
-/* ---------- "Freundlich": M PLUS Rounded 1c (headings), Ubuntu Sans (text) ----------
-   M PLUS Rounded 1c: SIL OFL 1.1, 700 and 800. Ubuntu Sans: Ubuntu Font
-   Licence 1.0 (free to use and embed), variable weight. */
-
+/* ---------- "Freundlich": M PLUS Rounded 1c (headings), Manrope (text) ----------
+   M PLUS Rounded 1c: SIL OFL 1.1, 700 and 800. Manrope: SIL OFL 1.1, variable
+   weight, modern Greek; Fira Sans fills in the rest (preview.css). */
 @font-face {
     font-family: 'M PLUS Rounded 1c';
     font-style: normal;
@@ -523,81 +523,315 @@
 }
 
 @font-face {
-    font-family: 'Ubuntu Sans';
+    font-family: 'Manrope';
     font-style: normal;
     font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-latin-wght-normal.woff2') format('woff2');
+    font-weight: 200 800;
+    src: url('manrope-latin-wght-normal.woff2') format('woff2');
     unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-    size-adjust: 97%;
+    size-adjust: 93%;
 }
 
 @font-face {
-    font-family: 'Ubuntu Sans';
-    font-style: italic;
+    font-family: 'Manrope';
+    font-style: normal;
     font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-latin-wght-italic.woff2') format('woff2');
+    font-weight: 200 800;
+    src: url('manrope-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 93%;
+}
+
+@font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 800;
+    src: url('manrope-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 93%;
+}
+
+/* ---------- "Feder": Alegreya (headings), Alegreya Sans (text) ----------
+   SIL OFL 1.1, one family: calligraphic headings, a humanist sans for the
+   text; both with modern and polytonic Greek. */
+
+@font-face {
+    font-family: 'Alegreya';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400 900;
+    src: url('alegreya-latin-wght-normal.woff2') format('woff2');
     unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-    size-adjust: 97%;
+    size-adjust: 106%;
 }
 
 @font-face {
-    font-family: 'Ubuntu Sans';
+    font-family: 'Alegreya';
     font-style: normal;
     font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-latin-ext-wght-normal.woff2') format('woff2');
+    font-weight: 400 900;
+    src: url('alegreya-latin-ext-wght-normal.woff2') format('woff2');
     unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-    size-adjust: 97%;
+    size-adjust: 106%;
 }
 
 @font-face {
-    font-family: 'Ubuntu Sans';
+    font-family: 'Alegreya';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400 900;
+    src: url('alegreya-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 106%;
+}
+
+@font-face {
+    font-family: 'Alegreya';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400 900;
+    src: url('alegreya-greek-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 106%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('alegreya-sans-latin-400-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 500;
+    src: url('alegreya-sans-latin-500-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('alegreya-sans-latin-700-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('alegreya-sans-latin-800-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
     font-style: italic;
     font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-latin-ext-wght-italic.woff2') format('woff2');
+    font-weight: 400;
+    src: url('alegreya-sans-latin-400-italic.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 700;
+    src: url('alegreya-sans-latin-700-italic.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('alegreya-sans-latin-ext-400-normal.woff2') format('woff2');
     unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-    size-adjust: 97%;
+    size-adjust: 108%;
 }
 
 @font-face {
-    font-family: 'Ubuntu Sans';
+    font-family: 'Alegreya Sans';
     font-style: normal;
     font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-greek-wght-normal.woff2') format('woff2');
-    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
-    size-adjust: 97%;
+    font-weight: 500;
+    src: url('alegreya-sans-latin-ext-500-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 108%;
 }
 
 @font-face {
-    font-family: 'Ubuntu Sans';
-    font-style: italic;
-    font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-greek-wght-italic.woff2') format('woff2');
-    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
-    size-adjust: 97%;
-}
-
-@font-face {
-    font-family: 'Ubuntu Sans';
+    font-family: 'Alegreya Sans';
     font-style: normal;
     font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-greek-ext-wght-normal.woff2') format('woff2');
-    unicode-range: U+1F00-1FFF;
-    size-adjust: 97%;
+    font-weight: 700;
+    src: url('alegreya-sans-latin-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 108%;
 }
 
 @font-face {
-    font-family: 'Ubuntu Sans';
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('alegreya-sans-latin-ext-800-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
     font-style: italic;
     font-display: swap;
-    font-weight: 100 800;
-    src: url('ubuntu-sans-greek-ext-wght-italic.woff2') format('woff2');
+    font-weight: 400;
+    src: url('alegreya-sans-latin-ext-400-italic.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 700;
+    src: url('alegreya-sans-latin-ext-700-italic.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('alegreya-sans-greek-400-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 500;
+    src: url('alegreya-sans-greek-500-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('alegreya-sans-greek-700-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('alegreya-sans-greek-800-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 400;
+    src: url('alegreya-sans-greek-400-italic.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 700;
+    src: url('alegreya-sans-greek-700-italic.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('alegreya-sans-greek-ext-400-normal.woff2') format('woff2');
     unicode-range: U+1F00-1FFF;
-    size-adjust: 97%;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 500;
+    src: url('alegreya-sans-greek-ext-500-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('alegreya-sans-greek-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('alegreya-sans-greek-ext-800-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 400;
+    src: url('alegreya-sans-greek-ext-400-italic.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 108%;
+}
+
+@font-face {
+    font-family: 'Alegreya Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 700;
+    src: url('alegreya-sans-greek-ext-700-italic.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 108%;
 }

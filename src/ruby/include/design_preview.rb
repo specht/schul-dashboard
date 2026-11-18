@@ -453,7 +453,7 @@ class Main < Sinatra::Base
                             window.pv_open_link_sheet('Unterricht', [
                                 ['Mein Unterricht', window.pv_menu_links('navbarDropdownKurse')],
                                 ['Meine Lerngruppen', groups.filter(function (g) { return g[3]; })],
-                                ['Weitere Lerngruppen', groups.filter(function (g) { return !g[3]; })],
+                                ['Weitere Lerngruppen', groups.filter(function (g) { return !g[3]; }), {folded: true}],
                             ]);
                         });
                         // "Mehr": the menu as a sheet – slides up over a veil, slides
@@ -520,14 +520,15 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    # "Schrift" (profile, new design): four pairs of fonts for headings and
+    # "Schrift" (profile, new design): five pairs of fonts for headings and
     # text, all with accents and Greek (preview.css, include/fonts-v2). The
     # first is the default; the old design keeps its own choice (u.font).
     UI_FONTS = [
         ['klar', 'Klar', 'Bricolage Grotesque und Atkinson Hyperlegible'],
         ['sachlich', 'Sachlich', 'Inter Tight und Inter'],
         ['buch', 'Buch', 'Literata'],
-        ['freundlich', 'Freundlich', 'M PLUS Rounded und Ubuntu Sans'],
+        ['freundlich', 'Freundlich', 'M PLUS Rounded und Manrope'],
+        ['feder', 'Feder', 'Alegreya und Alegreya Sans'],
     ]
     UI_FONT_KEYS = UI_FONTS.map(&:first)
 
@@ -548,7 +549,7 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    # four tiles, each in its own pair: a heading and a line with accents
+    # one tile per pair, each in its own fonts: a heading and a line with accents
     # and Greek; switching applies at once (profil.html, preview.js)
     def design_preview_font_picker_html
         return '' unless ui_preview?

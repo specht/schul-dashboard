@@ -102,7 +102,7 @@ html {
 }
 
 /* Fonts of the new design (include/fonts-v2): very readable text, a font
-   with character for headings. Four pairs to choose from in the profile
+   with character for headings. Five pairs to choose from in the profile
    (u.ui_font, body class pv-font-…; the old design keeps its own choice),
    every one with accents and Greek (also polytonic). "Klar" is the default:
    Atkinson and Bricolage have no Greek, Fira Sans fills in behind them. The
@@ -127,8 +127,14 @@ html {
 
 .ui-preview.pv-font-freundlich,
 .ui-preview .pv-font-tile[data-font='freundlich'] {
-    --pv-text: 'Ubuntu Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --pv-display: 'M PLUS Rounded 1c', 'Ubuntu Sans', system-ui, sans-serif;
+    --pv-text: 'Manrope', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'M PLUS Rounded 1c', 'Manrope', 'Fira Sans Fallback Display', system-ui, sans-serif;
+}
+
+.ui-preview.pv-font-feder,
+.ui-preview .pv-font-tile[data-font='feder'] {
+    --pv-text: 'Alegreya Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'Alegreya', 'Alegreya Sans', Georgia, serif;
 }
 
 .ui-preview {
@@ -221,9 +227,16 @@ html {
     line-height: 1.25;
 }
 
-/* many items in a menu share one icon (all courses): keep it quiet */
+/* menu icons in the quiet grey; where many items share one icon (courses,
+   Lerngruppen) a little quieter still. Never dimmed: the own picture and
+   the icons of the personal menu, each of them different. */
 .ui-preview .navbar .dropdown-item.nav-icon .icon {
     color: var(--pv-muted);
+}
+
+.ui-preview .navbar [aria-labelledby='navbarDropdownKlassen'] .dropdown-item.nav-icon .icon,
+.ui-preview .navbar [aria-labelledby='navbarDropdownKurse'] .dropdown-item.nav-icon .icon,
+.ui-preview .navbar .pv-nav-courses .pv-nav-entry .icon {
     opacity: 0.6;
 }
 
@@ -4886,6 +4899,27 @@ body.ui-preview:has(.container-fluid.solid)::before {
         font-size: 0.68rem;
         opacity: 0.8;
     }
+
+    /* one line with every font, the three parts spread from left to right;
+       the school's name gives way (…) */
+    .ui-preview .pv-nav-foot .pv-legal {
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        column-gap: 10px !important;
+        font-size: 0.62rem !important;
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal > * {
+        flex: none;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal > :first-child {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 }
 
 /* the icon rail: only Impressum and the icon, stacked */
@@ -6149,13 +6183,22 @@ body.ui-preview:has(.container-fluid.solid)::before {
         break-inside: avoid;
     }
 
+    /* the groups of a section: a line between them, as in the menus */
     .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-sub {
-        padding-left: 42px;
+        height: 1px;
+        margin: 6px -6px;
+        padding: 0;
+        font-size: 0;
+        background: var(--pv-line);
         break-after: avoid;
     }
 
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body > .pv-nav-sub:first-child {
+        display: none;
+    }
+
     .ui-preview .navbar .pv-rail-open > .pv-nav-body .dropdown-divider {
-        margin: 6px 12px;
+        margin: 6px -6px;
         border-top: 1px solid var(--pv-line);
     }
 
@@ -6189,4 +6232,27 @@ body.ui-preview:has(.container-fluid.solid)::before {
         height: 24px;
         font-size: 18px;
     }
+}
+
+/* the lines in the sidebar's menus and panels: across the whole width */
+@media (min-width: 768px) {
+    .ui-preview .navbar .dropdown-menu > .dropdown-divider,
+    .ui-preview .navbar .navbar-collapse .dropdown-menu > .dropdown-divider {
+        margin: 6px -6px;
+        border-top: 1px solid var(--pv-line);
+    }
+}
+
+/* "Weitere Lerngruppen" in the Unterricht sheet: folded, a row like the
+   group names, the chevron at the right */
+.ui-preview .pv-link-sheet .pv-sheet-fold {
+    min-height: 48px;
+    margin-top: 6px;
+    padding: 10px 6px;
+    border-radius: 10px;
+    font-size: 1rem;
+}
+
+.ui-preview .pv-link-sheet .pv-sheet-fold:hover {
+    background: var(--pv-hover);
 }

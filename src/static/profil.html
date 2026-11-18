@@ -880,7 +880,8 @@ window.addEventListener('load', function () {
                         $('#ti_scheme_left').val('#' + new_color_scheme.substr(1, 6));
                         $('#ti_scheme_main').val('#' + new_color_scheme.substr(7, 6));
                         $('#ti_scheme_right').val('#' + new_color_scheme.substr(13, 6));
-                        $('#ti_scheme_left').trigger('input');
+                        // chips, strip, palette and sliders show the preset
+                        pv_paint();
                     }
                 }
             });

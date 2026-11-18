@@ -107,6 +107,14 @@ test('Neues Design: Posteingang als Liste, Nachricht öffnen und schließen', as
     expect(await row.locator('.pv-mrow-dot').evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
     // (Gestern only when the test runs at midnight)
     await expect(inbox.locator('.pv-mgroup').first()).toHaveText(/^(Heute|Gestern)$/);
+    // the picture level with the heading's text; the dot takes no room
+    const pic = (await row.locator('.pv-msg-avatar').boundingBox())!;
+    const headText = await inbox.locator('.pv-mgroup').first().evaluate((el) => {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      return r.getBoundingClientRect().left;
+    });
+    expect(Math.abs(pic.x - headText)).toBeLessThanOrEqual(2);
     await expect(page.locator('#bu-inbox')).toHaveText(/^Eingang, \d+ neu$/);
     const unreadBefore = Number((await page.locator('#bu-inbox').textContent())!.match(/(\d+) neu/)![1]);
     // rows divided by hairlines, no cards; one line of preview

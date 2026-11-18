@@ -70,6 +70,88 @@ class Main < Sinatra::Base
         hide_from_sus
     end
 
+    # "heute", "vor 2 Wochen" … for the last access of a user (a date string or nil)
+    def directory_last_access_label(last_access)
+        la_label = 'noch nie angemeldet'
+        if last_access
+            days = (Date.today - Date.parse(last_access)).to_i
+            if days == 0
+                la_label = 'heute'
+            elsif days == 1
+                la_label = 'gestern'
+            elsif days == 2
+                la_label = 'vorgestern'
+            elsif days == 3
+                la_label = 'vor 3 Tagen'
+            elsif days == 4
+                la_label = 'vor 4 Tagen'
+            elsif days == 5
+                la_label = 'vor 5 Tagen'
+            elsif days == 6
+                la_label = 'vor 6 Tagen'
+            elsif days < 14
+                la_label = 'vor 1 Woche'
+            elsif days < 21
+                la_label = 'vor 2 Wochen'
+            elsif days < 28
+                la_label = 'vor 3 Wochen'
+            elsif days < 35
+                la_label = 'vor 4 Wochen'
+            else
+                la_label = 'vor mehreren Wochen'
+            end
+        end
+        la_label
+    end
+
+    # the teachers of a class: class teachers first, then by last name
+    def directory_teachers_for_klasse(klasse)
+        (@@teachers_for_klasse[klasse] || {}).keys.sort do |a, b|
+            name_comp = begin
+                @@user_info[@@shorthands[a]][:last_name].unicode_normalize(:nfd) <=> @@user_info[@@shorthands[b]][:last_name].unicode_normalize(:nfd)
+            rescue
+                a <=> b
+            end
+
+            a_kli = (@@klassenleiter[klasse] || []).index(a)
+            b_kli = (@@klassenleiter[klasse] || []).index(b)
+
+            if a_kli.nil?
+                if b_kli.nil?
+                    name_comp
+                else
+                    1
+                end
+            else
+                if b_kli.nil?
+                    -1
+                else
+                    a_kli <=> b_kli
+                end
+            end
+        end
+    end
+
+    # "Mathematik (4), Physik (2)": the subjects of a teacher in a class, with hours per week
+    def directory_teacher_hours(klasse, shorthand)
+        @@teachers_for_klasse[klasse][shorthand].keys.sort do |a, b|
+            @@teachers_for_klasse[klasse][shorthand][b] <=> @@teachers_for_klasse[klasse][shorthand][a]
+        end.map do |x|
+            fach = x.gsub('.', '')
+            fach = @@faecher[fach] if @@faecher[fach]
+            "#{fach} (#{@@teachers_for_klasse[klasse][shorthand][x]})"
+        end.join(', ')
+    end
+
+    # students by last name, then first name
+    def directory_sorted_students(schueler_liste)
+        (schueler_liste || []).sort do |a, b|
+            (@@user_info[a][:last_name].unicode_normalize(:nfd) == @@user_info[b][:last_name].unicode_normalize(:nfd)) ?
+            (@@user_info[a][:first_name].unicode_normalize(:nfd) <=> @@user_info[b][:first_name].unicode_normalize(:nfd)) :
+            (@@user_info[a][:last_name].unicode_normalize(:nfd) <=> @@user_info[b][:last_name].unicode_normalize(:nfd))
+        end
+    end
+
     def mail_addresses_table(klasse)
         assert((teacher_logged_in?) || (@session_user[:klasse] == klasse))
         klassenleiter_logged_in = (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand]) || admin_logged_in?
@@ -177,11 +259,7 @@ class Main < Sinatra::Base
                 group_ft_for_email[x['u.email']] = x['group_ft']
             end
 
-            (schueler_liste || []).sort do |a, b|
-                (@@user_info[a][:last_name].unicode_normalize(:nfd) == @@user_info[b][:last_name].unicode_normalize(:nfd)) ?
-                (@@user_info[a][:first_name].unicode_normalize(:nfd) <=> @@user_info[b][:first_name].unicode_normalize(:nfd)) :
-                (@@user_info[a][:last_name].unicode_normalize(:nfd) <=> @@user_info[b][:last_name].unicode_normalize(:nfd))
-            end.each.with_index do |email, _|
+            directory_sorted_students(schueler_liste).each.with_index do |email, _|
                 record = @@user_info[email]
                 dashboard_amt_names << record[:display_name] if dashboard_amt.include?(email)
                 io.puts "<tr class='user_row' data-email='#{email}' data-user-id='#{record[:id]}' data-display-name='#{record[:display_name]}' data-first-name='#{record[:first_name]}' data-pronoun='#{record[:geschlecht] == 'm' ? 'er' : 'sie'}'>"
@@ -268,36 +346,7 @@ class Main < Sinatra::Base
                         end
                     end
                     io.puts "<td><div class='group2-button group2-#{group2_for_email[email]}' data-email='#{email}'>#{group2_for_email[email]}</div></td>"
-                    la_label = 'noch nie angemeldet'
-                    today = Date.today.to_s
-                    if last_access[email]
-                        days = (Date.today - Date.parse(last_access[email])).to_i
-                        if days == 0
-                            la_label = 'heute'
-                        elsif days == 1
-                            la_label = 'gestern'
-                        elsif days == 2
-                            la_label = 'vorgestern'
-                        elsif days == 3
-                            la_label = 'vor 3 Tagen'
-                        elsif days == 4
-                            la_label = 'vor 4 Tagen'
-                        elsif days == 5
-                            la_label = 'vor 5 Tagen'
-                        elsif days == 6
-                            la_label = 'vor 6 Tagen'
-                        elsif days < 14
-                            la_label = 'vor 1 Woche'
-                        elsif days < 21
-                            la_label = 'vor 2 Wochen'
-                        elsif days < 28
-                            la_label = 'vor 3 Wochen'
-                        elsif days < 35
-                            la_label = 'vor 4 Wochen'
-                        else
-                            la_label = 'vor mehreren Wochen'
-                        end
-                    end
+                    la_label = directory_last_access_label(last_access[email])
                     io.puts "<td>#{la_label}</td>"
                     io.puts "<td>"
                     print_email_field(io, "eltern.#{record[:email]}")
@@ -425,30 +474,7 @@ class Main < Sinatra::Base
                     io.puts "</thead>"
                     io.puts "<tbody>"
                     old_is_klassenleiter = true
-                    (@@teachers_for_klasse[klasse] || {}).keys.sort do |a, b|
-                        name_comp = begin
-                            @@user_info[@@shorthands[a]][:last_name].unicode_normalize(:nfd) <=> @@user_info[@@shorthands[b]][:last_name].unicode_normalize(:nfd)
-                        rescue
-                            a <=> b
-                        end
-
-                        a_kli = (@@klassenleiter[klasse] || []).index(a)
-                        b_kli = (@@klassenleiter[klasse] || []).index(b)
-
-                        if a_kli.nil?
-                            if b_kli.nil?
-                                name_comp
-                            else
-                                1
-                            end
-                        else
-                            if b_kli.nil?
-                                -1
-                            else
-                                a_kli <=> b_kli
-                            end
-                        end
-                    end.each do |shorthand|
+                    directory_teachers_for_klasse(klasse).each do |shorthand|
                         lehrer = @@user_info[@@shorthands[shorthand]]
                         next if lehrer.nil?
                         is_klassenleiter = (@@klassenleiter[klasse] || []).include?(shorthand)
@@ -462,13 +488,7 @@ class Main < Sinatra::Base
                         io.puts "<td>#{shorthand}#{is_klassenleiter ? ' (KL)' : ''}</td>"
         #                 io.puts "<td>#{((lehrer[:titel] || '') + ' ' + (lehrer[:last_name] || shorthand)).strip}</td>"
                         io.puts "<td>#{lehrer[teacher_logged_in? ? :display_name : :display_name_official] || ''}</td>"
-                        hours = @@teachers_for_klasse[klasse][shorthand].keys.sort do |a, b|
-                            @@teachers_for_klasse[klasse][shorthand][b] <=> @@teachers_for_klasse[klasse][shorthand][a]
-                        end.map do |x|
-                            fach = x.gsub('.', '')
-                            fach = @@faecher[fach] if @@faecher[fach]
-                            "#{fach} (#{@@teachers_for_klasse[klasse][shorthand][x]})"
-                        end.join(', ')
+                        hours = directory_teacher_hours(klasse, shorthand)
                         io.puts "<td>#{hours}</td>"
                         if lehrer.empty?
                             io.puts "<td></td>"
@@ -499,6 +519,149 @@ class Main < Sinatra::Base
             io.puts "</div>"
             io.string
         end
+    end
+
+    # Neues Design: the names of the Antikenfahrt and Forschertage groups as
+    # words (the old table shows the icons of GROUP_AF_ICONS / GROUP_FT_ICONS)
+    DIRECTORY_GROUP_AF_NAMES = {'' => 'nicht eingeteilt', 'it' => 'Italien', 'gr' => 'Griechenland'}
+    DIRECTORY_GROUP_FT_NAMES = {'' => 'nicht eingeteilt', 'nawi' => 'Nawi', 'gewi' => 'Gewi', 'musik' => 'Musik', 'medien' => 'Medien'}
+
+    def directory_group_names(icons, names)
+        result = {'' => names['']}
+        icons.each_pair do |key, html|
+            # the words of the icon's label without markup and emoji ("🧪 Nawi" → "Nawi")
+            text = CGI.unescapeHTML(html.to_s.gsub(/<[^>]*>/, ' ')).gsub(/[\p{So}\p{Sk}\p{Cf}\p{Mn}]/, '').gsub(/\s+/, ' ').strip
+            result[key] = names[key] || (text.empty? ? key : text)
+        end
+        result
+    end
+
+    # Neues Design: the class directory (/directory/<klasse>) as data for
+    # preview/directory.js instead of today's table (mail_addresses_table
+    # above, which the old design keeps). It carries what today's page shows
+    # the same person – nothing more – and which of today's actions that
+    # person may use (the API routes check again).
+    def directory_preview_html(klasse)
+        assert((teacher_logged_in?) || (@session_user[:klasse] == klasse))
+        teacher = teacher_logged_in?
+        is_klasse = KLASSEN_ORDER.include?(klasse)
+        lesson = is_klasse ? nil : @@lessons[:lesson_keys][klasse]
+        assert(is_klasse || !lesson.nil?)
+        kl = klassenleiter_for_klasse_logged_in?(klasse)
+        schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
+        has_oberstufe = schueler_liste.any? { |email| (@@user_info[email][:klassenstufe] || 7) >= 11 }
+        show_af = teacher && ['11', '12'].include?(klasse)
+        show_ft = teacher && ['5', '6'].include?(klasse[0])
+        hide_from_sus = is_klasse ? Main.determine_hide_from_sus() : false
+        # who holds the Dashboard-Amt: today's page names them on class pages
+        # (a column for the class teacher, a sentence for everyone else)
+        dashboard_amt = Set.new()
+        if is_klasse
+            dashboard_amt = Set.new(neo4j_query(<<~END_OF_QUERY, :emails => schueler_liste).map { |x| x['u.email'] })
+                MATCH (u:User {has_dashboard_amt: TRUE})
+                WHERE u.email IN $emails
+                RETURN u.email;
+            END_OF_QUERY
+        end
+        stored = {}
+        if teacher
+            neo4j_query(<<~END_OF_QUERY, :emails => schueler_liste).each { |x| stored[x['u.email']] = x }
+                MATCH (u:User)
+                WHERE u.email IN $emails
+                RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2, COALESCE(u.group_af, '') AS group_af, COALESCE(u.group_ft, '') AS group_ft;
+            END_OF_QUERY
+        end
+        students = directory_sorted_students(schueler_liste).map.with_index do |email, i|
+            record = @@user_info[email]
+            s = {:nr => i + 1, :id => record[:id], :email => email,
+                 :last_name => record[:last_name], :first_name => record[:first_name],
+                 :pic => "#{NEXTCLOUD_URL}/index.php/avatar/#{record[:nc_login]}/128"}
+            s[:klasse] = tr_klasse(record[:klasse]) unless is_klasse
+            s[:amt] = dashboard_amt.include?(email) if is_klasse
+            if teacher
+                x = stored[email] || {}
+                s[:geburtstag] = record[:geburtstag] ? Date.parse(record[:geburtstag]).strftime('%d.%m.%Y') : nil
+                s[:geschlecht] = record[:geschlecht]
+                s[:bildungsgang] = tr_bildungsgang(record[:bildungsgang])
+                s[:stufe] = record[:klassenstufe]
+                s[:eltern] = "eltern.#{email}"
+                s[:zugriff] = directory_last_access_label(x['u.last_access'])
+                s[:group2] = x['group2'] || 'A'
+                s[:af] = x['group_af'] || '' if show_af
+                s[:ft] = x['group_ft'] || '' if show_ft
+                s[:tutor] = (record[:tutor] && @@user_info[record[:tutor]]) ? @@user_info[record[:tutor]][:display_name] : nil if has_oberstufe
+                s[:pronoun] = record[:geschlecht] == 'm' ? 'er' : 'sie' if kl
+            end
+            s
+        end
+        can = {
+            :group2 => teacher && klassenleiter_for_klasse_or_admin_logged_in?(klasse),
+            :af => show_af && user_who_can_manage_antikenfahrt_logged_in?,
+            :ft => show_ft && user_with_role_logged_in?(:can_manage_forschertage),
+            :amt => teacher && kl,
+            :letters => teacher && (kl || admin_logged_in? || user_with_role_logged_in?(:sekretariat)),
+        }
+        lists = []
+        tools = []
+        downloads = []
+        timetable = nil
+        if teacher
+            list_name = is_klasse ? klasse : lesson[:list_email]
+            lists << {:label => 'Schülerinnen und Schüler', :email => "#{is_klasse ? 'klasse.' : ''}#{list_name}@#{MAILING_LIST_DOMAIN}".downcase}
+            lists << {:label => 'Eltern', :email => "eltern.#{list_name}@#{MAILING_LIST_DOMAIN}".downcase}
+            lists << {:label => 'Lehrkräfte', :email => "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase} if is_klasse
+            if is_klasse
+                tools << {:label => 'Live-Anmeldungen der Klasse', :href => "/show_login_codes/#{klasse}", :icon => 'login'}
+                tools << {:label => 'E-Mails aus dem Unterricht', :href => "/email_overview/#{klasse}", :icon => 'mail'}
+            end
+            downloads << {:label => 'Excel-Tabelle', :href => "/api/directory_xlsx/#{klasse}", :icon => 'file-spreadsheet'}
+            downloads << {:label => 'Kursbuch-PDF', :href => "/api/directory_kursbuch_pdf/by_last_name/#{klasse}", :icon => 'file-type-pdf'}
+            downloads << {:label => 'Timetex-PDF', :href => "/api/directory_timetex_pdf/by_last_name/#{klasse}", :icon => 'file-type-pdf'}
+            downloads << {:label => 'Timetex-PDF nach Vornamen', :href => "/api/directory_timetex_pdf/by_first_name/#{klasse}", :icon => 'file-type-pdf'}
+            downloads << {:label => 'JSON', :href => "/api/directory_json/#{klasse}", :icon => 'file-code'}
+            if is_klasse
+                downloads << {:label => "Klassensatz Stundenpläne (#{(@@schueler_for_klasse[klasse] || []).size} Seiten)", :href => "/api/get_timetable_pdf_for_klasse/#{klasse}", :icon => 'calendar', :blank => true}
+                downloads << {:label => 'Alle E-Mail-Briefe (Zugangsdaten)', :letters => true, :icon => 'mail-opened'} if can[:letters]
+            end
+        elsif schueler_logged_in? && is_klasse && !hide_from_sus
+            timetable = [
+                {:label => 'Stundenplan als PDF', :href => '/api/get_single_timetable_pdf', :icon => 'file-type-pdf', :blank => true},
+                {:label => 'Stundenplan als PDF mit Symbolen', :href => '/api/get_single_timetable_with_png_addition_pdf', :icon => 'file-type-pdf', :blank => true},
+            ]
+        end
+        teachers = nil
+        if is_klasse && !(schueler_logged_in? && hide_from_sus)
+            teachers = []
+            directory_teachers_for_klasse(klasse).each do |shorthand|
+                lehrer = @@user_info[@@shorthands[shorthand]]
+                next if lehrer.nil?
+                teachers << {:shorthand => shorthand,
+                             :kl => (@@klassenleiter[klasse] || []).include?(shorthand),
+                             :name => lehrer[teacher ? :display_name : :display_name_official] || '',
+                             :faecher => directory_teacher_hours(klasse, shorthand),
+                             :email => lehrer.empty? ? nil : lehrer[:email]}
+            end
+        end
+        data = {
+            :title => is_klasse ? "Klasse #{tr_klasse(klasse)}" : lesson[:pretty_folder_name],
+            :is_klasse => is_klasse,
+            :level => is_klasse ? klasse.to_i : nil,
+            :teacher => teacher,
+            :students => students,
+            :can => can,
+            :af_names => show_af ? directory_group_names(GROUP_AF_ICONS, DIRECTORY_GROUP_AF_NAMES) : nil,
+            :ft_names => show_ft ? directory_group_names(GROUP_FT_ICONS, DIRECTORY_GROUP_FT_NAMES) : nil,
+            :lists => lists,
+            :tools => tools,
+            :downloads => downloads,
+            :timetable => timetable,
+            :teachers => teachers,
+        }
+        "<div class='api_messages' style='display: none;'></div>\n" +
+        "<div class='pv-dir-mount'>" +
+        ((teacher && is_klasse) ? "<div id='additional_teacher_content' hidden></div>" : '') +
+        "<script>var pv_directory = #{data.to_json.gsub('</', '<\\/')};</script>\n" +
+        "<script src='#{preview_asset('/preview/directory.js')}'></script></div>"
     end
 
     def self.get_all_homeschooling_users()

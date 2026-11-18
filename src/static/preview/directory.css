@@ -1,0 +1,607 @@
+/* Neues Design (Vorschau): Klassenliste (/directory/<klasse>, also for a
+   course) – loaded after preview.css for users with the preview
+   (include/design_preview.rb). The page is drawn by preview/directory.js;
+   everything here is scoped to its own classes (.pv-dir-…).
+
+   A table page (doc/Gestaltung.md, 6a): full width, one row per student
+   with number, picture, name and a quiet line of facts, the addresses as
+   copy fields (pv_copy, preview.css) and the groups; »•••«
+   for the actions. Where the page is narrow (phones, tablets upright – a
+   container query, not the device) the rows become list rows: picture,
+   name, facts, the row opens a dialog (a sheet on phones) with everything.
+   Students see name and address only, so their rows keep the address.
+   Below: sections with a heading (mailing lists, Unterricht, lists and
+   printouts, teachers), links as quiet text buttons, on phones as rows. */
+
+.pv-dir {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 4px 40px;
+    color: var(--pv-ink);
+}
+
+.pv-dir-head {
+    margin-bottom: 16px;
+}
+
+.ui-preview .container-fluid .pv-dir-head h2 {
+    margin: 0 0 2px;
+}
+
+.pv-dir-facts {
+    margin: 0;
+    color: var(--pv-muted);
+    font-size: 0.86rem;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.pv-dir-students,
+.pv-dir-sec {
+    container-type: inline-size;
+}
+
+.pv-dir-scroll {
+    overflow-x: auto;
+}
+
+/* ---------- the tables ---------- */
+.ui-preview .container-fluid.solid table.pv-dir-table,
+.ui-preview .container-fluid.solid table.pv-dir-teachers {
+    width: 100%;
+    border-collapse: collapse;
+    background: transparent;
+    color: var(--pv-ink);
+}
+
+.pv-dir-table th,
+.pv-dir-teachers th {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.pv-dir-table td,
+.pv-dir-teachers td {
+    padding: 8px;
+    border-top: 1px solid var(--pv-line);
+    vertical-align: middle;
+}
+
+.pv-dir-table tbody tr:first-child td,
+.pv-dir-teachers tbody tr:first-child td {
+    border-top: 0;
+}
+
+.pv-dir-table .pv-dir-nr {
+    width: 2.6em;
+    padding-right: 4px;
+    text-align: right;
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-dir-who {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 14rem;
+}
+
+.pv-dir-pic {
+    flex: none;
+    width: 36px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--pv-hover) center / cover no-repeat;
+}
+
+.pv-dir-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pv-dir-nameline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+}
+
+.ui-preview .pv-dir-name {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    color: var(--pv-ink);
+    font: inherit;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.pv-dir-last {
+    font-weight: 600;
+}
+
+.ui-preview button.pv-dir-name {
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ui-preview button.pv-dir-name:hover {
+        text-decoration: underline;
+        text-decoration-color: var(--pv-muted);
+        text-underline-offset: 3px;
+    }
+}
+
+.ui-preview button.pv-dir-name:focus {
+    outline: none;
+}
+
+.ui-preview button.pv-dir-name:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.pv-dir-nameline .pv-lchip {
+    min-width: 0;
+    margin-top: 0;
+}
+
+.pv-dir-amt {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.pv-dir-chev {
+    display: none;
+}
+
+/* the addresses: copy fields with a width of their own (a table cell would
+   grow to the whole address), a bit narrower than on their own; cqw: the
+   width of the list, not of the window */
+.ui-preview .pv-dir-table .pv-copy {
+    width: clamp(10rem, 21cqw, 19rem);
+}
+
+.ui-preview .pv-dir-teachers .pv-copy {
+    width: clamp(11rem, 27cqw, 21rem);
+}
+
+.ui-preview .pv-dir .pv-copy {
+    font-size: 0.86rem;
+}
+
+.ui-preview .pv-dir .pv-copy-text {
+    padding: 6px 10px;
+}
+
+.pv-dir-g {
+    white-space: nowrap;
+}
+
+/* a group: a quiet button that switches it, or plain text */
+.ui-preview .pv-dir-group {
+    display: inline-block;
+    font-size: 0.9rem;
+}
+
+.ui-preview button.pv-dir-group {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: -4px -8px;
+    padding: 4px 8px;
+    min-width: 2.2em;
+    background: transparent;
+    color: var(--acc-text);
+    font: 600 0.9rem/1.3 var(--pv-text);
+    cursor: pointer;
+}
+
+.ui-preview button.pv-dir-group:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview button.pv-dir-group:focus {
+    outline: none;
+}
+
+.ui-preview button.pv-dir-group:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview button.pv-dir-group:disabled {
+    opacity: 0.6;
+}
+
+.pv-dir-table .pv-dir-act {
+    width: 44px;
+    padding-left: 0;
+    text-align: right;
+}
+
+/* the person from the quick search (#quick=…) */
+.ui-preview .pv-dir-table tr.quick-search-highlight > td {
+    background: var(--acc-soft);
+}
+
+.ui-preview .pv-dir-table tr.quick-search-highlight > td:first-child {
+    box-shadow: inset 3px 0 0 var(--acc);
+}
+
+/* teachers: Kürzel and subjects in columns, on phones as the quiet line */
+.pv-dir-teachers .pv-dir-sh {
+    width: 4.5em;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-dir-teachers .pv-dir-subjects {
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+}
+
+.pv-dir-tfacts {
+    display: none;
+}
+
+/* ---------- narrow: list rows ---------- */
+@container (max-width: 899px) {
+    .pv-dir-table thead {
+        display: none;
+    }
+
+    .ui-preview .container-fluid.solid table.pv-dir-table,
+    .pv-dir-table tbody {
+        display: block;
+    }
+
+    .pv-dir-table tr.pv-dir-row {
+        display: block;
+        position: relative;
+        padding: 11px 0;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .pv-dir-table tbody tr.pv-dir-row:first-child {
+        border-top: 0;
+    }
+
+    .pv-dir-table td {
+        display: none;
+        padding: 0;
+        border: 0;
+    }
+
+    .pv-dir-table td.pv-dir-person {
+        display: block;
+    }
+
+    .pv-dir-who {
+        min-width: 0;
+    }
+
+    .pv-dir-pic {
+        width: 40px;
+    }
+
+    /* students see the address in the row (there is nothing more to open) */
+    .pv-dir-table:not(.pv-dir-opens) td.pv-dir-mail {
+        display: block;
+        margin: 6px 0 0 50px;
+    }
+
+    .ui-preview .pv-dir-table .pv-copy {
+        width: 100%;
+    }
+
+    /* teachers: the row opens the student, »›« at its end */
+    .pv-dir-opens .pv-dir-chev {
+        display: block;
+        flex: none;
+        margin: 2px 0 0 auto;
+        color: var(--pv-muted);
+        font-size: 1.15rem;
+    }
+
+    .pv-dir-opens button.pv-dir-name::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+    }
+
+    .pv-dir-opens tr.pv-dir-row:active {
+        background: var(--pv-hover);
+    }
+}
+
+@container (max-width: 699px) {
+    .pv-dir-teachers thead {
+        display: none;
+    }
+
+    .ui-preview .container-fluid.solid table.pv-dir-teachers,
+    .pv-dir-teachers tbody {
+        display: block;
+    }
+
+    .pv-dir-teachers tr {
+        display: block;
+        padding: 10px 0;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .pv-dir-teachers tbody tr:first-child {
+        border-top: 0;
+    }
+
+    .pv-dir-teachers td {
+        display: block;
+        padding: 0;
+        border: 0;
+    }
+
+    .pv-dir-teachers td.pv-dir-sh,
+    .pv-dir-teachers td.pv-dir-subjects {
+        display: none;
+    }
+
+    .pv-dir-tfacts {
+        display: block;
+        margin-top: 2px;
+    }
+
+    .pv-dir-teachers td.pv-dir-mail {
+        margin-top: 6px;
+    }
+
+    .ui-preview .pv-dir-teachers .pv-copy {
+        width: 100%;
+    }
+
+    .pv-dir-teachers td.pv-dir-mail:empty {
+        display: none;
+    }
+}
+
+/* ---------- sections below ---------- */
+.pv-dir-sec {
+    margin-top: 32px;
+}
+
+.ui-preview .container-fluid .pv-dir-h {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    line-height: 1.3;
+}
+
+.pv-dir-lists {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    gap: 12px 24px;
+    max-width: 66rem;
+}
+
+.pv-dir-list-label {
+    margin-bottom: 4px;
+    color: var(--pv-muted);
+    font-size: 0.82rem;
+}
+
+/* links: quiet text buttons with an icon */
+.pv-dir-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 6px;
+    margin-left: -10px;
+}
+
+.ui-preview .pv-dir-link {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    padding: 7px 10px;
+    background: transparent;
+    color: var(--acc-text);
+    font: 600 0.9rem/1.35 var(--pv-text);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.ui-preview .pv-dir-link:hover,
+.ui-preview .pv-dir-link:focus-visible {
+    background: var(--pv-hover);
+    color: var(--acc-text);
+    text-decoration: none;
+}
+
+.ui-preview .pv-dir-link:focus {
+    outline: none;
+}
+
+.ui-preview .pv-dir-link:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+/* the icon level with the first line, quieter than the text */
+.pv-dir-link > .ti {
+    flex: none;
+    font-size: 1.1em;
+    line-height: 1.35;
+    color: var(--pv-muted);
+}
+
+.pv-dir-link > .pv-dir-link-chev {
+    display: none;
+}
+
+.pv-dir-note {
+    margin: 8px 0 0;
+    max-width: 70ch;
+    color: var(--pv-muted);
+    font-size: 0.86rem;
+}
+
+@container (max-width: 599px) {
+    .pv-dir-lists {
+        grid-template-columns: 1fr;
+    }
+
+    /* phones: the links as rows with »›« */
+    .pv-dir-links {
+        display: block;
+        margin-left: 0;
+    }
+
+    .ui-preview .pv-dir-link {
+        display: flex;
+        width: 100%;
+        padding: 11px 2px;
+        border-radius: 0;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .pv-dir-link:first-child {
+        border-top: 0;
+    }
+
+    .pv-dir-link-label {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .pv-dir-link > .pv-dir-link-chev {
+        display: block;
+    }
+}
+
+/* ---------- a student: dialog, a sheet on phones ---------- */
+@media (min-width: 768px) {
+    .ui-preview .pv-dir-modal .modal-dialog {
+        max-width: 560px;
+    }
+}
+
+.pv-dir-modal-who {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+}
+
+.pv-dir-pic-lg {
+    width: 48px;
+}
+
+.pv-dir-modal-text {
+    min-width: 0;
+}
+
+.ui-preview .pv-dir-modal .modal-title {
+    overflow-wrap: anywhere;
+}
+
+.pv-dir-modal-facts {
+    margin-top: 2px;
+    color: var(--pv-muted);
+    font-size: 0.86rem;
+}
+
+.ui-preview .pv-dir-dl {
+    margin: 0;
+}
+
+.pv-dir-dl-row {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-dir-dl-row:first-child {
+    border-top: 0;
+}
+
+.ui-preview .pv-dir-dl dt {
+    color: var(--pv-muted);
+    font-size: 0.86rem;
+    font-weight: 400;
+}
+
+.ui-preview .pv-dir-dl dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.pv-dir-dd-act {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* »Wechseln«, »Vergeben«: a quiet text button (like .pv-lact, which phones
+   hide in list rows) */
+.ui-preview .pv-dir-ddbtn {
+    flex: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: -5px -8px -5px 0;
+    padding: 5px 9px;
+    min-height: 31px;
+    background: transparent;
+    color: var(--acc-text);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-preview .pv-dir-ddbtn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-dir-ddbtn:focus {
+    outline: none;
+}
+
+.ui-preview .pv-dir-ddbtn:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-dir-ddbtn:disabled {
+    opacity: 0.6;
+}
+
+@media (max-width: 479px) {
+    .pv-dir-dl-row {
+        grid-template-columns: 7rem minmax(0, 1fr);
+        gap: 2px 10px;
+    }
+
+    .pv-dir-dl-row.pv-dir-dl-wide {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

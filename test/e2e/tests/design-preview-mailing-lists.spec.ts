@@ -54,12 +54,12 @@ test('Neues Design: Verteiler suchen, Adresse kopieren, Empfänger zeigen', asyn
 
     // ---------- one click copies the address ----------
     await row.locator('.pv-ml-addr').click();
-    await expect(row.locator('.pv-ml-addr')).toHaveClass(/pv-ml-copied/);
-    await expect(row.locator('.pv-ml-addr .pv-ml-done')).toBeVisible();
+    await expect(row.locator('.pv-ml-addr')).toHaveClass(/pv-copied/);
+    await expect(row.locator('.pv-ml-addr .pv-copy-ok')).toBeVisible();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`klasse.5a@${DOMAIN}`);
     // copying does not open the list
     await expect(page.locator('#mailingListModal')).toHaveCount(0);
-    await expect(row.locator('.pv-ml-addr')).not.toHaveClass(/pv-ml-copied/, { timeout: 5000 });
+    await expect(row.locator('.pv-ml-addr')).not.toHaveClass(/pv-copied/, { timeout: 5000 });
 
     // ---------- the search over all lists ----------
     const search = page.locator('#ti_ml_search');
@@ -96,15 +96,15 @@ test('Neues Design: Verteiler suchen, Adresse kopieren, Empfänger zeigen', asyn
     // a short list needs no search
     await expect(modal.locator('.pv-ml-people-search')).toBeHidden();
     await expect(modal.locator('.pv-ml-bcc')).toContainText('BCC');
-    const addresses = await people.locator('.pv-ml-addr-text').allTextContents();
+    const addresses = await people.locator('.pv-copy-text').allTextContents();
     expect(addresses.every((a) => a.endsWith('@mail.beispielschule.de'))).toBe(true);
     // "Alle Adressen kopieren": for BCC when the list itself does not work
     await modal.locator('#bu_ml_copy_all').click();
-    await expect(modal.locator('#bu_ml_copy_all')).toHaveClass(/pv-ml-copied/);
+    await expect(modal.locator('#bu_ml_copy_all')).toHaveClass(/pv-copied/);
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(addresses.join('; '));
     // one address
     await people.first().locator('.pv-ml-addr').click();
-    await expect(people.first().locator('.pv-ml-addr')).toHaveClass(/pv-ml-copied/);
+    await expect(people.first().locator('.pv-ml-addr')).toHaveClass(/pv-copied/);
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(addresses[0]);
     // back closes the dialog and stays on the page
     await page.goBack();

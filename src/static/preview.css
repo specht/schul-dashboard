@@ -5703,3 +5703,110 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .modal-backdrop {
     touch-action: none;
 }
+
+/* ---------- Copying (doc/Gestaltung.md, 7; pv_copy in preview.js) ----------
+   .pv-copy        an address as a quiet one-line field: grey field, the copy
+                   segment at its end; a tap anywhere copies. A long address
+                   ends in "…" (the copy takes all of it, the title shows it).
+   .pv-copied      for a moment after copying: a green check (ti-check) in
+                   place of the copy icon, the same size, so nothing moves */
+.ui-preview {
+    --pv-ok: #1a7f37;
+}
+
+.ui-preview.dark {
+    --pv-ok: #4ac26b;
+}
+
+.ui-preview .pv-copy {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: 34rem;
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: inherit;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pv-copy-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 7px 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pv-copy-end {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    border-left: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+}
+
+.pv-copy-end > .ti,
+.ui-preview .pv-copied .pv-copy-ok {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+@media (hover: hover) {
+    .ui-preview .pv-copy:hover .pv-copy-end {
+        background: var(--pv-hover);
+        color: var(--pv-ink);
+    }
+}
+
+.ui-preview .pv-copy:active .pv-copy-end {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-copy:focus {
+    outline: none;
+}
+
+.ui-preview .pv-copy:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-copy-ok {
+    display: none;
+    color: var(--pv-ok);
+}
+
+.ui-preview .pv-copied .pv-copy-ok {
+    display: inline-block;
+    animation: pv-copy-snap 0.24s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.ui-preview .pv-copied .pv-copy-icon {
+    display: none;
+}
+
+@keyframes pv-copy-snap {
+    from { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-preview .pv-copied .pv-copy-ok {
+        animation: none;
+    }
+}

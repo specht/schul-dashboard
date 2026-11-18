@@ -71,3 +71,15 @@ SET sc.klasse = '5a', sc.raum = '323', sc.mode = 'manual', sc.created_at = 17300
     sc.saved_at = 1730000000, sc.seats = '{}', sc.unresolved = '[]', sc.satisfied_emails = '[]',
     sc.forced_pairs = '[]', sc.forbidden_pairs = '[]', sc.fixed_rules = '[]'
 MERGE (sc)-[:STARTED_BY]->(u);
+
+// AGs und Angebote: AGs whose responsible teacher left the school (no longer
+// in the school's data), which another teacher may take over – one per
+// Playwright project for angebote.spec.ts ('Verwaiste AG …') and for
+// design-preview-angebote.spec.ts ('Verwaiste Pv-AG …').
+MERGE (u:User {email: 'ehemalig.ag@beispielschule.de'})
+WITH u
+UNWIND [['e2everwaist', 'Verwaiste AG '], ['e2everwaistpv', 'Verwaiste Pv-AG ']] AS kind
+UNWIND ['desktop', 'mobile'] AS project
+MERGE (a:Angebot {id: kind[0] + project})
+SET a.name = kind[1] + project, a.created = 1696150800, a.updated = 1696150800
+MERGE (a)-[:DEFINED_BY]->(u);

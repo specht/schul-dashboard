@@ -162,6 +162,12 @@ Aktionen und das Verhalten am Handy.
 - **Unterelemente** (Durchführungen einer Umfrage, Termine einer Reihe):
   laufende und geplante als Zeilen unter dem Element, beendete gefaltet
   (»2 beendete Durchführungen anzeigen«).
+- **Eigenes zuerst:** Wo alle die Einträge aller sehen, stehen die eigenen
+  (und die mit einem geteilten) als Abschnitt »Meine …« oben, darunter
+  »Alle anderen« mit Suche (Beispiel: AGs und Angebote).
+- **Mitglieder** (Teilnehmer einer AG) stehen nie als Namensliste in der
+  Zeile: die Anzahl ist ein leiser Knopf in der Faktenzeile und klappt sie
+  unter der Zeile auf, eine Zeile pro Klasse, die Klasse in fester Spalte.
 
 **Formular und Editor**
 

@@ -1,0 +1,394 @@
+/* Neues Design (Vorschau): AGs und Angebote (/angebote) – loaded after
+   preview.css for users with the preview (include/design_preview.rb). Uses
+   the tokens and the list parts of preview.css (".pv-lrow", ".pv-lgroup").
+   The page is drawn by preview/angebote.js; everything here is scoped to its
+   own classes (.pv-agb-…) or to the page's .angebote-container.
+
+   A list with actions (doc/Gestaltung.md, 6a): a short line instead of the
+   long text, a search, »Meine AGs und Angebote« first, then »Alle anderen«
+   by initial letter. A row: the name, a quiet line with who is responsible
+   and how many take part; the participants fold open below it (one line
+   per class, the class in a fixed column), never a wall of names in the
+   row. Teilen and Zuweisen are dialogs, sheets on phones. */
+
+/* today's text and table: not in the new design */
+.ui-preview .col-md-12:has(> .angebote-container) > p,
+.ui-preview .col-md-12:has(> .angebote-container) > ul,
+.ui-preview .angebote-container {
+    display: none;
+}
+
+.pv-agb-intro {
+    margin: 0 0 14px;
+    color: var(--pv-muted);
+    max-width: 68ch;
+}
+
+.ui-preview .pv-agb-intro a {
+    color: var(--acc-text);
+}
+
+/* ---------- the search (the page's and the person pickers') ---------- */
+.pv-agb-search {
+    position: relative;
+    margin: 0 0 14px;
+    max-width: 420px;
+}
+
+.pv-agb-search > .ti {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--pv-muted);
+    pointer-events: none;
+}
+
+.ui-preview .pv-agb-search input {
+    height: 40px;
+    padding-left: 36px;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-agb-search input::placeholder {
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+.ui-preview .pv-agb-search input:focus {
+    border-color: var(--acc-text);
+    box-shadow: 0 0 0 3px var(--acc-soft);
+}
+
+/* ---------- the sections ---------- */
+.ui-preview .container h4.pv-agb-letter {
+    margin: 14px 0 2px;
+    padding: 0;
+    font: 700 0.78rem/1.3 var(--pv-text);
+    letter-spacing: 0.06em;
+    color: var(--pv-muted);
+}
+
+.pv-agb-empty {
+    max-width: 60ch;
+}
+
+/* ---------- a row: name, then who and how many ---------- */
+.pv-agb-extra {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.pv-agb-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 2px 14px;
+}
+
+.pv-agb-who {
+    min-width: 0;
+    padding: 2px 0;
+}
+
+/* how many take part: a quiet toggle, the chevron turns when open */
+.ui-preview .pv-agb-count {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 6px;
+    margin: 0 -6px;
+    padding: 2px 6px;
+    background: none;
+    color: var(--acc-text);
+    font: 600 1em/1.35 var(--pv-text);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+
+.ui-preview .pv-agb-count:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-agb-count:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-agb-count:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.ui-preview .pv-agb-count.pv-agb-count-none {
+    color: var(--pv-muted);
+    font-weight: 400;
+    cursor: default;
+}
+
+.ui-preview .pv-agb-count.pv-agb-count-none:hover {
+    background: none;
+}
+
+.pv-agb-count > .ti {
+    font-size: 1rem;
+    transition: transform 0.15s;
+}
+
+.pv-agb-count[aria-expanded='true'] > .ti {
+    transform: rotate(180deg);
+}
+
+/* the participants: one line per class, the classes in a column */
+.pv-agb-people {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 2px 0 2px;
+    font-size: 0.88rem;
+    color: var(--pv-ink);
+}
+
+.pv-agb-klasse {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.pv-agb-kl {
+    flex: none;
+    width: 4.5em;
+    color: var(--pv-muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.pv-agb-names {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Teilen, Zuweisen: dialogs, sheets on phones ---------- */
+@media (min-width: 768px) {
+    .ui-preview .pv-agb-modal .modal-dialog {
+        max-width: 560px;
+    }
+}
+
+.ui-preview .pv-agb-modal .modal-title {
+    overflow-wrap: anywhere;
+}
+
+.pv-agb-hint {
+    margin: 0 0 12px;
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+}
+
+.pv-agb-now {
+    margin: 0 0 14px;
+    font-size: 0.9rem;
+}
+
+.ui-preview .pv-agb-label {
+    display: block;
+    margin: 14px 0 6px;
+    font-weight: 600;
+}
+
+.pv-agb-modal .pv-agb-search {
+    max-width: none;
+    margin-bottom: 6px;
+}
+
+.pv-agb-person {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-agb-people-list > .pv-agb-person:first-child,
+.pv-agb-chosen > .pv-agb-person {
+    border-top: 0;
+}
+
+.pv-agb-person-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+}
+
+.pv-agb-person-name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.pv-agb-person-note {
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+    overflow-wrap: anywhere;
+}
+
+.ui-preview .pv-agb-remove {
+    flex: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: -4px -6px -4px 0;
+    padding: 4px 8px;
+    min-height: 31px;
+    background: none;
+    color: var(--pv-muted);
+    cursor: pointer;
+}
+
+.ui-preview .pv-agb-remove:hover {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-agb-remove:focus-visible,
+.ui-preview .pv-agb-result:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.pv-agb-remove > .ti {
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+.pv-agb-results {
+    display: flex;
+    flex-direction: column;
+}
+
+.ui-preview .pv-agb-result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 10px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: 0 -8px;
+    padding: 7px 8px;
+    background: none;
+    color: var(--pv-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-agb-result:hover {
+    background: var(--pv-hover);
+}
+
+.pv-agb-result-name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.pv-agb-result-mail,
+.pv-agb-noresult {
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+    overflow-wrap: anywhere;
+}
+
+.pv-agb-noresult {
+    margin: 4px 0;
+}
+
+.pv-agb-chosen {
+    margin-top: 4px;
+    padding: 0 10px;
+    border-radius: 10px;
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-agb-keep {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 16px 0 0;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.pv-agb-keep input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 2px 0 0;
+    accent-color: var(--acc-text);
+}
+
+@media (max-width: 767px) {
+    /* above the row's button (on phones the whole row folds open) */
+    .ui-preview .pv-agb-count {
+        position: relative;
+        z-index: 1;
+    }
+
+    .pv-agb-search {
+        max-width: none;
+    }
+
+    /* the chevron at the end of the row turns when the row is open */
+    .pv-agb-row .pv-lrow-chev {
+        transition: transform 0.15s;
+    }
+
+    .pv-agb-row.pv-agb-open .pv-lrow-chev {
+        transform: rotate(90deg);
+    }
+
+    .pv-agb-kl {
+        width: 3.5em;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pv-agb-count > .ti,
+    .pv-agb-row .pv-lrow-chev {
+        transition: none;
+    }
+}
+
+/* ---------- today's editor (#angebotModal) in the new design ----------
+   Löschen is calm (red text) and comes first in the footer; the full red
+   only in the confirmation (doc/Gestaltung.md, 7) */
+.ui-preview #angebotModal #bu_delete_angebot {
+    order: -1;
+    margin-right: auto;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: #b42318;
+}
+
+.ui-preview.dark #angebotModal #bu_delete_angebot {
+    color: #ff8f8f;
+}
+
+.ui-preview #angebotModal #bu_delete_angebot:hover,
+.ui-preview #angebotModal #bu_delete_angebot:focus-visible {
+    background: var(--pv-hover);
+}

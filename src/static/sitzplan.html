@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let request = {klasse: klasse, raum: raum, seats: JSON.stringify(placement)};
             if (replace) request.replace = 'yes';
             api_call('/api/sph_adopt_shuffle', request, function(data) {
-                if (data.success === false) {
+                if (data.success === false || data.error) {
                     dashboardAlert(data.error || 'Das Ergebnis konnte nicht übernommen werden.');
                     return;
                 }

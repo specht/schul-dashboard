@@ -312,12 +312,13 @@ function pv_full_time(ts) {
     return s + ', ' + pv_hm(d) + ' Uhr';
 }
 
-// the sender's profile picture from Nextcloud, a calm grey circle without one
+// the sender's profile picture from Nextcloud, a calm grey circle without one;
+// 128 px, so that it stays sharp at 40 px on phones (3x pixels)
 function pv_avatar(email) {
     let avatar = $('<span>').addClass('pv-msg-avatar').attr('aria-hidden', 'true');
     let nc_login = (pv_messages.nc_logins || {})[email];
     if (nc_login)
-        avatar.css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(nc_login)}/64)`);
+        avatar.css('background-image', `url(#{NEXTCLOUD_URL}/index.php/avatar/${encodeURIComponent(nc_login)}/128)`);
     return avatar;
 }
 

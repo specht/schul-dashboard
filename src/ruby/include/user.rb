@@ -367,7 +367,10 @@ class Main < Sinatra::Base
     # @param c [String] a CSS class to apply to the div (e. g. avatar-lg)
     # @return [String] the HTML string describing the <div>
     def user_icon(email, c = nil)
-        "<div style='background-image: url(#{NEXTCLOUD_URL}/index.php/avatar/#{@@user_info[email][:nc_login]}/64), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);' class='#{c}'></div>"
+        # the new design shows the pictures larger and sharp on phones (3x
+        # pixels): 128 px instead of 64, the old design stays as it was
+        size = ui_preview? ? 128 : 64
+        "<div style='background-image: url(#{NEXTCLOUD_URL}/index.php/avatar/#{@@user_info[email][:nc_login]}/#{size}), url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mO88h8AAq0B1REmZuEAAAAASUVORK5CYII=);' class='#{c}'></div>"
     end
 
     def klassen_for_session_user()

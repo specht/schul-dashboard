@@ -305,6 +305,24 @@ test('Neues Design: Abschnitte in der Symbolleiste am Tablet', async ({ page }, 
   }
 });
 
+// Profile pictures come from Nextcloud. The new design shows them larger and
+// on phones with three pixels per point: 64 px looked blurred, so it asks for
+// 128 px; the old design keeps 64.
+test('Neues Design: Profilbilder in 128 px', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const avatar = page.locator('.nav_avatar .avatar-md');
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/profil');
+  expect(await avatar.getAttribute('style')).toMatch(/\/index\.php\/avatar\/[^/)]+\/64\)/);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/profil');
+    expect(await avatar.getAttribute('style')).toMatch(/\/index\.php\/avatar\/[^/)]+\/128\)/);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Icons: in the preview Tabler instead of Fork Awesome, without changing the
 // pages – also for icons created later and when a page swaps an icon.
 test('Neues Design: Tabler-Icons statt Fork Awesome', async ({ page }) => {

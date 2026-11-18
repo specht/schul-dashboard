@@ -382,7 +382,7 @@ html {
        the sidebar itself stays short and never scrolls */
     .ui-preview .navbar .dropdown-menu {
         position: fixed !important;
-        left: var(--pv-sidebar) !important;
+        left: var(--pv-menu-left, var(--pv-sidebar)) !important;
         top: var(--pv-menu-top, 12px) !important;
         right: auto !important;
         transform: none !important;
@@ -1884,6 +1884,81 @@ html {
 
     .ui-preview .navbar .dropdown-menu {
         font-size: 1rem;
+    }
+}
+
+/* the sections in the rail: one icon each; a tap opens the section as a
+   panel beside the rail, like the menus (preview.js, rail_panel) */
+.ui-preview .navbar button.pv-nav-heading > .icon {
+    display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .navbar .pv-nav-section {
+        margin-top: 2px !important;
+    }
+
+    .ui-preview .navbar .pv-nav-section:first-of-type {
+        margin-top: 10px !important;
+        padding-top: 8px;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .navbar button.pv-nav-heading {
+        justify-content: center;
+        padding: 10px 0;
+        border-radius: 10px;
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .label,
+    .ui-preview .navbar button.pv-nav-heading::after {
+        display: none;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        font-size: 18px;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .navbar .pv-nav-section > .pv-nav-body {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > .pv-nav-body {
+        display: block !important;
+        position: fixed;
+        left: calc(var(--pv-sidebar) + 6px);
+        top: var(--pv-rail-top, 12px);
+        width: 272px;
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
+        padding: 6px;
+        background: var(--pv-surface);
+        border: 1px solid var(--pv-line);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+        z-index: 1055;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-sub {
+        padding-left: 42px;
+    }
+
+    /* Lerngruppen in the panel: a normal entry, its menu beside the panel */
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .nav-item > .nav-link {
+        font-size: 0.95rem;
+        justify-content: flex-start;
+        padding: 7px 10px !important;
+        gap: 10px;
     }
 }
 

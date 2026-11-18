@@ -246,6 +246,65 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
   }
 });
 
+// Tablets: the sidebar as an icon rail. The sections (Unterricht, Schule,
+// Verwaltung) are one icon each and open as a panel beside the rail, without
+// changing the folds the full sidebar remembers.
+test('Neues Design: Abschnitte in der Symbolleiste am Tablet', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'tablet width');
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/messages');
+    const nav = page.locator('nav.navbar');
+    const rail = (await nav.boundingBox())!;
+    expect(rail.width).toBeLessThan(100);
+    // no text sticks out of the rail or is cut off in it
+    expect(await nav.evaluate((navEl) => {
+      const right = navEl.getBoundingClientRect().right;
+      return [...navEl.querySelectorAll('*')].filter((el) => {
+        const r = el.getBoundingClientRect();
+        const text = [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent!.trim());
+        return text && r.width > 0 && r.height > 0 && (r.right > right + 1 || el.scrollWidth > el.clientWidth + 1);
+      }).length;
+    })).toBe(0);
+    const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
+    const heading = verwaltung.locator('button.pv-nav-heading');
+    const body = verwaltung.locator('.pv-nav-body');
+    await expect(body).toBeHidden();
+    await heading.click();
+    await expect(body).toBeVisible();
+    const panel = (await body.boundingBox())!;
+    expect(panel.x).toBeGreaterThanOrEqual(rail.width - 1);
+    expect(panel.y + panel.height).toBeLessThanOrEqual(1180);
+    await expect(body.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
+    // one panel at a time; Escape and a click elsewhere close it
+    await nav.locator('.pv-nav-section[data-section="unterricht"] button.pv-nav-heading').click();
+    await expect(body).toBeHidden();
+    // Lerngruppen opens beside the panel, not over it
+    const unterricht = nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body');
+    await page.locator('#navbarDropdownKlassen').click();
+    const groups = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
+    await expect(groups).toBeVisible();
+    const u = (await unterricht.boundingBox())!;
+    expect((await groups.boundingBox())!.x).toBeGreaterThanOrEqual(u.x + u.width - 1);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await expect(unterricht).toBeHidden();
+    await heading.click();
+    await expect(body).toBeVisible();
+    await page.mouse.click(600, 900);
+    await expect(body).toBeHidden();
+    // the full sidebar keeps its own folds
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(body).toBeHidden();
+    await expect(nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body')).toBeVisible();
+    await expect(heading).toContainText('Verwaltung');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Icons: in the preview Tabler instead of Fork Awesome, without changing the
 // pages – also for icons created later and when a page swaps an icon.
 test('Neues Design: Tabler-Icons statt Fork Awesome', async ({ page }) => {

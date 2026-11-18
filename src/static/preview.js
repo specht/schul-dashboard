@@ -7,6 +7,10 @@
     // entry – in several columns if it is longer than the window is high.
     function place_menu(menu, toggle) {
         if (!SIDEBAR.matches) return;
+        // opened from a section panel of the tablet rail: beside that panel
+        var rail_body = toggle.closest('.pv-rail-open > .pv-nav-body');
+        if (rail_body) menu.style.setProperty('--pv-menu-left', Math.round(rail_body.getBoundingClientRect().right) + 'px');
+        else menu.style.removeProperty('--pv-menu-left');
         menu.style.columnCount = '';
         menu.style.width = '';
         // the space above the footer
@@ -321,6 +325,35 @@
     var SCHULE = /^\/(events|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
     var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpost|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound)(\/|$)/;
     var MAX_COURSES = 6;
+    var RAIL = window.matchMedia('(min-width: 768px) and (max-width: 1199px)');
+    var RAIL_ICONS = { unterricht: 'fa-graduation-cap', schule: 'fa-building', verwaltung: 'fa-cog' };
+
+    // the tablet rail: at most one section open as a panel, level with its
+    // icon and inside the window; a click elsewhere or Escape closes it
+    function rail_panel(sec) {
+        document.querySelectorAll('.pv-nav-section.pv-rail-open').forEach(function(open) {
+            if (open === sec) return;
+            open.classList.remove('pv-rail-open');
+            open.querySelector('button.pv-nav-heading').setAttribute('aria-expanded', 'false');
+        });
+        if (!sec) return;
+        var button = sec.querySelector('button.pv-nav-heading');
+        var panel = sec.querySelector('.pv-nav-body');
+        sec.classList.add('pv-rail-open');
+        button.setAttribute('aria-expanded', 'true');
+        var room = window.innerHeight - 24;
+        var top = button.getBoundingClientRect().top - 6;
+        top = Math.max(12, Math.min(top, window.innerHeight - 12 - Math.min(panel.scrollHeight, room)));
+        panel.style.setProperty('--pv-rail-top', Math.round(top) + 'px');
+    }
+    document.addEventListener('click', function(e) {
+        var open = document.querySelector('.pv-nav-section.pv-rail-open');
+        if (open && !open.contains(e.target)) rail_panel(null);
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') rail_panel(null);
+    });
+    RAIL.addEventListener('change', function() { rail_panel(null); });
 
     function regroup_navigation() {
         var collapse = document.getElementById('navbarTogglerDemo02');
@@ -461,7 +494,17 @@
             var button = document.createElement('button');
             button.type = 'button';
             button.className = 'pv-nav-heading';
-            button.textContent = head.textContent;
+            // the icon shows only in the tablet rail (preview.css), the name
+            // everywhere else
+            var icon = document.createElement('div');
+            icon.className = 'icon';
+            icon.innerHTML = "<i class='fa " + (RAIL_ICONS[key] || 'fa-folder-o') + "'></i>";
+            var name = document.createElement('span');
+            name.className = 'label';
+            name.textContent = head.textContent;
+            button.appendChild(icon);
+            button.appendChild(name);
+            button.title = head.textContent;
             head.replaceWith(button);
             var body = document.createElement('div');
             body.className = 'pv-nav-body';
@@ -477,6 +520,12 @@
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                // the tablet rail: the section opens as a panel beside it,
+                // without touching the remembered folds of the sidebar
+                if (RAIL.matches) {
+                    rail_panel(sec.classList.contains('pv-rail-open') ? null : sec);
+                    return;
+                }
                 body.hidden = !body.hidden;
                 button.setAttribute('aria-expanded', body.hidden ? 'false' : 'true');
                 folds[key] = !body.hidden;

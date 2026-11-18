@@ -723,6 +723,9 @@
                 window.location.reload();
             } else if (data.command == 'update_time') {
                 server_time_diff = data.time - js_time();
+            } else if (data.command == 'monitor_effekte_vorschau') {
+                // nur Fenster im Folgen-Modus (?effekt=folgen) reagieren darauf
+                if (window.MonitorEffekte) MonitorEffekte.vorschauNachricht(data.effekt || '');
             } else if (data.command == 'update_monitor_messages') {
                 console.log(data);
                 ticker_messages = data.data.messages;
@@ -1170,5 +1173,17 @@
             }
         }
         window.requestAnimationFrame(animation_step);
+        // Wetter- und Festeffekte (monitor_effekte.js): Schnee, Gewitter, Weihnachtsmann, …
+        // nur auf den Monitoren im Schulhaus (Flur), nicht im Sekretariat, Lehrerzimmer
+        // oder Silentium
+        if (monitor_mode === 'public') {
+            MonitorEffekte.start({
+                buehne: $('.embed-responsive-item')[0],
+                kaesten: '.klasse',
+                kiesel: 'h3',
+                dunkel: #{color_scheme[0] == 'd'},
+            });
+        }
     });
 </script>
+<script src='#{preview_asset('/monitor_effekte.js')}'></script>

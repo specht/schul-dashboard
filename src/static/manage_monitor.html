@@ -7,6 +7,23 @@
         box-shadow: 0 0 0.5vw rgba(0,0,0,0.5);
         background-color: #000;
     }
+    .fx-warnung {
+        border-left: 6px solid #999;
+        border-radius: 4px;
+        background-color: rgba(128, 128, 128, 0.08);
+        padding: 10px 14px;
+        margin-bottom: 10px;
+    }
+    .fx-warnung.fx-stufe-2 { border-left-color: #f2c200; }
+    .fx-warnung.fx-stufe-3 { border-left-color: #f08a00; }
+    .fx-warnung.fx-stufe-4 { border-left-color: #e0201b; }
+    .fx-warnung.fx-stufe-5 { border-left-color: #8e2bb5; }
+    .fx-warnung.fx-stufe-10, .fx-warnung.fx-stufe-11 { border-left-color: #c2185b; }
+    .fx-warnung .fx-w-titel { font-size: 1.15em; font-weight: bold; }
+    .fx-warnung .fx-w-zeile { opacity: 0.85; }
+    .fx-warnung .fx-w-effekt { font-weight: bold; }
+    .fx-warnung details { margin-top: 6px; }
+    .fx-warnung summary { cursor: pointer; }
 </style>
 
 <div class='container'>
@@ -32,9 +49,69 @@
             <div style='clear: both;'></div>
             <hr />
             <h3>Monitore im Schulhaus</h3>
+            <div class='custom-control custom-switch mb-2 mt-3' style='font-size: 1.15em;'>
+                <input type='checkbox' class='custom-control-input ti_monitor_effekte' id='ti_monitor_effekte' disabled>
+                <label class='custom-control-label' for='ti_monitor_effekte'><b>Wetter- und Festeffekte auf diesen Monitoren</b></label>
+            </div>
+            <p class='small'>Bei amtlichen Warnungen des Deutschen Wetterdienstes für Berlin schneit, regnet, stürmt, blitzt, friert
+            oder glüht es auf den Monitoren im Schulhaus – ab welcher Stufe, lässt sich unten je Effekt einstellen. Dazu kommen besondere Tage:
+            Advent mit Lichterkette, Nikolaus, ab dem 16. Dezember der Weihnachtsmann, Ostern, Valentinstag, Fasching, der letzte Schultag vor und
+            der erste nach den Sommerferien sowie eigene Schultermine. Einzelne besondere Tage gehen dem Wetter vor, bei Advent und Ostern hat das
+            Wetter Vorrang. Regen, Schnee und Hitze entwickeln sich über den Schultag (7:30–14:00 Uhr), in der Vorschau im Zeitraffer. Die
+            Schrift auf den Kacheln und das Schriftband unten bleiben immer lesbar. Die Monitore im Sekretariat, Lehrerzimmer und Silentium
+            bleiben ohne Effekte.</p>
+            <p class='fx-status' data-testid='monitor-effekte-status'>Lade Stand …</p>
+            <h5 class='mt-3'>Welches Wetter welchen Effekt auslöst</h5>
+            <p class='small mb-2'>Der DWD warnt in Stufen: gelb (Wetterwarnung), orange (markantes Wetter), rot (Unwetter),
+            violett (extremes Unwetter); Hitze hat eigene Stufen. Hier legen Sie je Effekt fest, ob er erscheint und ab welcher Stufe.</p>
+            <div class='table-responsive'>
+                <table class='table table-sm fx-regeln' data-testid='monitor-effekte-regeln'>
+                    <thead><tr><th>Effekt</th><th>Zeigen</th><th>ab Stufe</th><th>Meldungen des DWD</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <p class='small text-muted fx-ohne-effekt'></p>
+            <h5 class='mt-3'>Schultermine</h5>
+            <p class='small mb-2'>An diesen Tagen zeigen die Monitore im Schulhaus statt der Fest- und Wettereffekte ein eigenes Motiv.
+            Für einen einzelnen Tag bleibt „bis“ leer; beim Forschertag wird es mit drei Tagen vorbelegt.</p>
+            <div class='form-inline mb-2 fx-termin-form' data-testid='monitor-schultermin-form'>
+                <input type='date' class='form-control form-control-sm mr-1 mb-1 ti_fx_termin_datum' aria-label='Datum (von)'>
+                <span class='mr-1 mb-1 small'>bis</span>
+                <input type='date' class='form-control form-control-sm mr-2 mb-1 ti_fx_termin_bis' aria-label='bis (optional)'>
+                <select class='form-control form-control-sm mr-2 mb-1 ti_fx_termin_motiv' aria-label='Motiv'></select>
+                <input type='text' class='form-control form-control-sm mr-2 mb-1 ti_fx_termin_titel' maxlength='80' placeholder='Bezeichnung (optional)' aria-label='Bezeichnung'>
+                <button class='btn btn-sm btn-success mb-1 bu_fx_termin_eintragen'><i class='fa fa-plus'></i>&nbsp;&nbsp;Eintragen</button>
+            </div>
+            <p class='small text-danger fx-termin-fehler' style='display: none;'></p>
+            <ul class='list-unstyled small fx-termine' data-testid='monitor-schultermine'></ul>
+            <h5 class='mt-3'>Wetterwarnungen des DWD für unser Warngebiet</h5>
+            <div class='fx-warnungen' data-testid='monitor-effekte-warnungen'></div>
+            <p class='text-muted small fx-abgerufen'></p>
+            <div class='mb-2'>
+                <span class='mr-2'>Vorschau im Monitor unten:</span>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='schnee'>Schnee</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='regen'>Starkregen</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='gewitter'>Gewitter</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='hitze'>Hitze</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='sturm'>Sturm</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='frost'>Glatteis</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='weihnachten'>Weihnachten</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='nikolaus'>Nikolaus</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='ostern'>Ostern</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='valentinstag'>Valentinstag</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='fasching'>Fasching</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='sommerferien'>Letzter Schultag</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='schulanfang'>Erster Schultag</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='adventskonzert'>Adventskonzert</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='forschertag'>Forschertag</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='rundgang'>Alle nacheinander</button>
+                <button class='btn btn-sm btn-outline-secondary mr-1 mb-1 bu_monitor_effekt_vorschau active' data-effekt=''>Wie jetzt</button>
+            </div>
+            <p class='small mb-2'>Großes Fenster: <a href='/monitor?effekt=folgen' target='_blank' class='bu_monitor_effekte_folgen'>Flur-Monitor, der dieser Vorschau folgt</a>
+            – zeigt immer den hier gewählten Effekt („Wie jetzt“ = echter Stand). Die echten Monitore im Schulhaus reagieren nicht darauf.</p>
             <div class='monitor-frame'>
                 <div class="embed-responsive embed-responsive-16by9">
-                    <iframe class="embed-responsive-item" src="/monitor"></iframe>
+                    <iframe class="embed-responsive-item if_monitor_flur" src="/monitor"></iframe>
                 </div>
             </div>
             <hr />
@@ -79,6 +156,199 @@
         $('#btn-update-monitor-messages').click(function(e) {
             api_call('/api/update_monitor_messages', {messages: $('#ta_messages').val(), images: $('#ta_images').val()}, function(data) {
             });
+        });
+        // was bei welcher Meldung auf den Monitoren zu sehen ist
+        const FX_EFFEKT_NAME = {
+            schnee: 'Schnee – über den Tag wächst ein Schneeberg, auf dem ab und zu ein Schlitten rodelt',
+            regen: 'Regen – das Wasser steigt über den Tag, eine Entenfamilie schwimmt vorbei, ab Stufe rot auch ein Forschungs-U-Boot',
+            gewitter: 'Gewitter mit Blitzen – Zeus wirft alle 1–2 Minuten seinen Blitz, dann bebt alles und bekommt für 30 Sekunden Risse',
+            hitze: 'Hitze – Sonne, die Kacheln schmelzen über den Tag, ab und zu fährt der Eiswagen vorbei',
+            sturm: 'Sturm – die Kacheln hängen an Zeltleinen und zerren in den Böen, leere Kacheln fliegen weg, der Schülertrupp bringt sie zurück',
+            frost: 'Glatteis – Eiszapfen und Eisblumen, ab und zu gleiten Eisläufer vorbei',
+        };
+        function fx_zeit(ms) {
+            return moment(ms).calendar(null, {sameDay: '[heute,] HH:mm [Uhr]', nextDay: '[morgen,] HH:mm [Uhr]', lastDay: '[gestern,] HH:mm [Uhr]', nextWeek: 'dddd, HH:mm [Uhr]', lastWeek: 'dd, D.M., HH:mm [Uhr]', sameElse: 'dd, D.M., HH:mm [Uhr]'});
+        }
+        function effekte_warnungen_zeigen(d) {
+            let ziel = $('.fx-warnungen').empty();
+            let liste = d.warnungen || [];
+            if (d.dwd_aus) {
+                ziel.append($('<p>').text('Die Abfrage beim DWD ist auf diesem Server abgeschaltet.'));
+            } else if (d.bereit === false) {
+                ziel.append($('<p>').text('Die Warnungen werden gerade beim DWD abgerufen …'));
+            } else if (liste.length === 0) {
+                ziel.append($('<p>').text('Der DWD meldet zurzeit keine Warnung für unser Warngebiet.'));
+            }
+            for (let w of liste) {
+                let box = $('<div>').addClass(`fx-warnung fx-stufe-${w.stufe}`).appendTo(ziel);
+                $('<div>').addClass('fx-w-titel').text(w.titel).appendTo(box);
+                $('<div>').addClass('fx-w-zeile').text(`${w.stufe_text}${w.gebiet ? ' · ' + w.gebiet : ''}`).appendTo(box);
+                let zeit = w.gilt_jetzt ? 'Gilt jetzt' : `Gilt ab ${fx_zeit(w.beginn)}`;
+                if (w.ende) zeit += ` bis ${fx_zeit(w.ende)}`;
+                $('<div>').addClass('fx-w-zeile').text(zeit).appendTo(box);
+                let effekt = $('<div>').addClass('fx-w-effekt').appendTo(box);
+                let regel = (d.regeln || {})[w.art];
+                if (!w.art) effekt.text('Auf den Monitoren: kein Effekt (für dieses Wetter gibt es keinen).');
+                else if (regel && !regel.an) effekt.text(`Auf den Monitoren: kein Effekt (${FX_REGEL_NAME[w.art]} ist oben ausgeschaltet).`);
+                else if (!w.effekt) effekt.text(`Auf den Monitoren: kein Effekt (${FX_REGEL_NAME[w.art]} erst ${regel ? (w.art === 'hitze' ? 'bei ' : 'ab ') + FX_STUFEN[regel.ab] : 'ab höherer Stufe'}).`);
+                else if (!d.an) effekt.text(`Auf den Monitoren: ${FX_EFFEKT_NAME[w.effekt]} – aber die Effekte sind ausgeschaltet.`);
+                else if (!w.gilt_jetzt) effekt.text(`Auf den Monitoren: ${FX_EFFEKT_NAME[w.effekt]}, sobald die Warnung gilt.`);
+                else effekt.text(`Auf den Monitoren: ${FX_EFFEKT_NAME[w.effekt]}.`);
+                if (w.beschreibung) $('<p>').addClass('mb-1 mt-2').text(w.beschreibung).appendTo(box);
+                if (w.hinweise) {
+                    let det = $('<details>').appendTo(box);
+                    $('<summary>').text('Hinweise des DWD').appendTo(det);
+                    $('<div>').css('white-space', 'pre-line').text(w.hinweise).appendTo(det);
+                }
+            }
+            $('.fx-abgerufen').text(d.abgerufen ? `Zuletzt beim DWD abgerufen: ${fx_zeit(d.abgerufen)}. Quelle: Deutscher Wetterdienst. Nur der Schulserver fragt dort an, alle zehn Minuten.` : '');
+        }
+        const FX_REGEL_NAME = {schnee: 'Schnee', regen: 'Regen', gewitter: 'Gewitter', hitze: 'Hitze (mit Eiswagen)', sturm: 'Sturm', frost: 'Glatteis und Frost'};
+        const FX_STUFEN = {2: 'gelb', 3: 'orange', 4: 'rot', 5: 'violett', 10: 'starke Hitze', 11: 'extreme Hitze'};
+        let fx_regeln_gebaut = false;
+        function effekte_regeln_zeigen(d) {
+            if (!d.regeln) return;
+            let tbody = $('.fx-regeln tbody');
+            if (!fx_regeln_gebaut) {
+                tbody.empty();
+                for (let effekt of ['schnee', 'regen', 'gewitter', 'sturm', 'frost', 'hitze']) {
+                    let tr = $('<tr>').attr('data-effekt', effekt).appendTo(tbody);
+                    $('<td>').append($('<b>').text(FX_REGEL_NAME[effekt])).appendTo(tr);
+                    let sw = $(`<div class='custom-control custom-switch'>`);
+                    $('<input type="checkbox" class="custom-control-input ti_monitor_effekt_an">').attr('id', `ti_fx_an_${effekt}`).appendTo(sw);
+                    $('<label class="custom-control-label">').attr('for', `ti_fx_an_${effekt}`).text('an').appendTo(sw);
+                    $('<td>').append(sw).appendTo(tr);
+                    let sel = $('<select class="form-control form-control-sm ti_monitor_effekt_ab">').attr('id', `ti_fx_ab_${effekt}`);
+                    for (let stufe of (effekt === 'hitze' ? [10, 11] : [2, 3, 4, 5])) {
+                        $('<option>').attr('value', stufe).text(effekt === 'hitze' ? FX_STUFEN[stufe] : `ab ${FX_STUFEN[stufe]}`).appendTo(sel);
+                    }
+                    $('<td>').append(sel).appendTo(tr);
+                    $('<td>').addClass('small').text(((d.phaenomene || {})[effekt] || []).join(', ')).appendTo(tr);
+                }
+                tbody.on('change', 'input, select', function(e) {
+                    let tr = $(e.currentTarget).closest('tr');
+                    let effekt = tr.data('effekt');
+                    tr.find('input, select').prop('disabled', true);
+                    api_call('/api/set_monitor_effekt_regel', {
+                        effekt: effekt,
+                        an: tr.find('.ti_monitor_effekt_an').prop('checked') ? 'ja' : 'nein',
+                        ab: parseInt(tr.find('.ti_monitor_effekt_ab').val()),
+                    }, function(data) {
+                        effekte_stand_laden();
+                    });
+                });
+                fx_regeln_gebaut = true;
+                $('.fx-ohne-effekt').text(`Ohne Effekt bleiben: ${(d.phaenomene_ohne_effekt || []).join(', ')}.`);
+            }
+            for (let effekt in d.regeln) {
+                let tr = tbody.find(`tr[data-effekt="${effekt}"]`);
+                tr.find('.ti_monitor_effekt_an').prop('checked', !!d.regeln[effekt].an).prop('disabled', false);
+                tr.find('.ti_monitor_effekt_ab').val(String(d.regeln[effekt].ab)).prop('disabled', !d.regeln[effekt].an);
+                tr.toggleClass('text-muted', !d.regeln[effekt].an);
+            }
+        }
+        function effekte_stand_zeigen(d) {
+            effekte_regeln_zeigen(d);
+            let teile = [];
+            if (d.wetter && d.an) {
+                teile.push(`Auf den Monitoren läuft gerade: ${FX_EFFEKT_NAME[d.wetter.effekt] || d.wetter.titel}.`);
+            } else if (d.bereit === false) {
+                setTimeout(effekte_stand_laden, 8000);
+            }
+            const FX_FEST_TEXT = {
+                weihnachten: d.fest && d.fest.nah ? 'Bald ist Weihnachten: Lichterkette, alle 1–1,5 Minuten bringt der Weihnachtsmann Geschenke, ein Wichtel sammelt sie wieder ein.' : 'Es ist Advent: Lichterkette (der Weihnachtsmann kommt ab dem 16. Dezember).',
+                nikolaus: 'Heute ist Nikolaus: geputzte Stiefel voller Süßigkeiten, im Laufe des Tages bleiben die Verpackungen übrig.',
+                ostern: 'Bald sind Osterferien: Der Osterhase hoppelt durchs Bild und versteckt Eier.',
+                valentinstag: 'Heute ist Valentinstag: Herzen, Herzballons und Amor, der jede Minute eine andere Klasse trifft.',
+                fasching: 'Fasching: Konfetti, Luftschlangen und Konfettikanonen.',
+                sommerferien: 'Letzter Schultag vor den Sommerferien: Sonne und Flugzeug mit Banner.',
+                schulanfang: 'Erster Schultag nach den Sommerferien: Flugzeug mit „Willkommen zurück!“ (bis 12 Uhr).',
+                adventskonzert: 'Heute ist Adventskonzert: goldenes Notenband und singender Kinderchor.',
+                forschertag: 'Heute ist Forschertag: Bei den Klassen 5 und 6 tauchen Glühbirnen, Experimente, Bücher, Filmrollen und mehr auf.',
+            };
+            if (d.fest && d.an) teile.push(FX_FEST_TEXT[d.fest.fest] || '');
+            if (d.an && d.ruht === 'wetter') teile.push('Die Wetterwarnung zeigt heute keinen Effekt: Der besondere Tag hat Vorrang.');
+            if (d.an && d.ruht === 'fest') teile.push('Der Festeffekt ruht, solange die Wetterwarnung gilt – danach kommt er wieder.');
+            if (!d.an) teile.push('Die Effekte sind ausgeschaltet – die Monitore im Schulhaus zeigen nur den Vertretungsplan.');
+            if (d.an && !d.wetter && !d.fest) teile.push('Zurzeit läuft kein Effekt.');
+            $('.fx-status').text(teile.join(' '));
+            $('.ti_monitor_effekte').prop('disabled', false).prop('checked', !!d.an);
+            effekte_warnungen_zeigen(d);
+            effekte_termine_zeigen(d);
+        }
+        // Schultermine: Liste der kommenden Termine, Eintragen und Löschen
+        function effekte_termine_zeigen(d) {
+            const motive = d.schultermin_motive || {};
+            const auswahl = $('.ti_fx_termin_motiv');
+            if (auswahl.children().length === 0) {
+                for (const [schluessel, name] of Object.entries(motive)) $('<option>').val(schluessel).text(name).appendTo(auswahl);
+            }
+            const liste = $('.fx-termine').empty();
+            const termine = d.schultermine || [];
+            if (termine.length === 0) $('<li>').addClass('text-muted').text('Keine Termine eingetragen.').appendTo(liste);
+            for (const t of termine) {
+                const [j, m, tag] = t.datum.split('-');
+                const li = $('<li>').addClass('mb-1').appendTo(liste);
+                $('<button>').addClass('btn btn-sm btn-outline-danger py-0 px-1 mr-2 bu_fx_termin_loeschen').attr('aria-label', 'Termin löschen').data('id', t.id)
+                    .html("<i class='fa fa-trash'></i>").appendTo(li);
+                let zeitraum = `${tag}.${m}.${j}`;
+                if (t.bis && t.bis !== t.datum) { const [j2, m2, tag2] = t.bis.split('-'); zeitraum += ` – ${tag2}.${m2}.${j2}`; }
+                $('<b>').text(zeitraum).appendTo(li);
+                $('<span>').text(` – ${motive[t.motiv] || t.motiv}${t.titel ? ': ' + t.titel : ''}`).appendTo(li);
+            }
+        }
+        $('.bu_fx_termin_eintragen').on('click', function(e) {
+            const datum = $('.ti_fx_termin_datum').val();
+            const bis = $('.ti_fx_termin_bis').val();
+            const fehler = $('.fx-termin-fehler');
+            if (!datum) { fehler.text('Bitte zuerst ein Datum wählen.').show(); return; }
+            if (bis && bis < datum) { fehler.text('„bis“ darf nicht vor dem Startdatum liegen.').show(); return; }
+            fehler.hide();
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/add_monitor_schultermin', {datum: datum, bis: bis || '', motiv: $('.ti_fx_termin_motiv').val(), titel: $('.ti_fx_termin_titel').val()}, function(data) {
+                $(e.currentTarget).prop('disabled', false);
+                $('.ti_fx_termin_titel').val('');
+                $('.ti_fx_termin_bis').val('');
+                effekte_stand_laden();
+            });
+        });
+        // Forschertage dauern drei Tage: „bis“ zwei Tage nach dem Start vorbelegen
+        function fx_termin_bis_vorbelegen() {
+            const datum = $('.ti_fx_termin_datum').val();
+            if ($('.ti_fx_termin_motiv').val() !== 'forschertag' || !datum) return;
+            const d = new Date(datum + 'T12:00:00');
+            d.setDate(d.getDate() + 2);
+            $('.ti_fx_termin_bis').val(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+        }
+        $('.ti_fx_termin_datum').on('input', function() { $('.fx-termin-fehler').hide(); fx_termin_bis_vorbelegen(); });
+        $('.ti_fx_termin_motiv').on('change', function() {
+            if ($(this).val() === 'forschertag') fx_termin_bis_vorbelegen(); else $('.ti_fx_termin_bis').val('');
+        });
+        $('.ti_fx_termin_bis').on('input', function() { $('.fx-termin-fehler').hide(); });
+        $('.fx-termine').on('click', '.bu_fx_termin_loeschen', function(e) {
+            const knopf = $(e.currentTarget).prop('disabled', true);
+            api_call('/api/delete_monitor_schultermin', {id: knopf.data('id')}, function(data) { effekte_stand_laden(); });
+        });
+        function effekte_stand_laden() {
+            fetch('/api/monitor_effekte', {credentials: 'same-origin', cache: 'no-store'})
+                .then((r) => r.json()).then(effekte_stand_zeigen)
+                .catch(() => $('.fx-status').text('Der Stand der Effekte ließ sich nicht laden.'));
+        }
+        effekte_stand_laden();
+        setInterval(effekte_stand_laden, 5 * 60 * 1000);
+        $('.ti_monitor_effekte').on('change', function(e) {
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/set_monitor_effekte', {an: $(e.currentTarget).prop('checked') ? 'ja' : 'nein'}, function(data) {
+                effekte_stand_laden();
+            });
+        });
+        $('.bu_monitor_effekt_vorschau').on('click', function(e) {
+            let effekt = $(e.currentTarget).data('effekt');
+            $('.if_monitor_flur').attr('src', effekt ? `/monitor?effekt=${effekt}` : '/monitor');
+            $('.bu_monitor_effekt_vorschau').removeClass('active');
+            $(e.currentTarget).addClass('active');
+            // große Vorschaufenster (/monitor…?effekt=folgen) zeigen dasselbe
+            api_call('/api/monitor_effekte_vorschau', {effekt: effekt || ''}, function(data) {});
         });
         api_call('/api/get_monitor_zeugniskonferenzen', {}, function(data) {
             if (data.success) {

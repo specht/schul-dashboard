@@ -1,4 +1,4 @@
-#{redirect_on_error { require_sitzplan_klassenleitung!(*sitzplan_path_params, true) }}
+#{redirect_on_error { require_sitzplan_page!(*sitzplan_path_params, true) }}
 <style>
 .spe-container {
     max-width: 900px;
@@ -43,6 +43,11 @@
 .spe-count { text-align: center; margin-top: 16px; }
 .spe-actions { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; margin-top: 1.2em; }
 .spe-help { color: #6f6b60; margin-top: 1.2em; }
+.spe-copy { margin-bottom: 16px; }
+.spe-copy-list { display: flex; flex-wrap: wrap; gap: 12px; }
+.spe-copy-item { border: 1px solid #dcd7ca; border-radius: 0.5em; padding: 8px; background: #fff; display: flex; flex-direction: column; gap: 6px; align-items: center; width: 190px; max-width: 100%; }
+.spe-copy-item svg { display: block; width: 170px; max-width: 100%; height: 90px; }
+.spe-copy-name { font-size: 0.9em; text-align: center; }
 </style>
 
 <div class="spe-container">
@@ -57,6 +62,12 @@
     </div>
 
     <div id="spe_main">
+    <!-- Im eigenen Fachraum: Tische anderer übernehmen (als Kopie) -->
+    <div id="spe_copy" class="spe-copy" style="display: none;">
+        <h5>Tische übernehmen</h5>
+        <p class="text-muted">Für diesen Raum gibt es schon Tische. Übernehmen Sie sie als Ausgangspunkt: Danach sind es Ihre eigenen, und Änderungen betreffen nur Sie.</p>
+        <div class="spe-copy-list" id="spe_copy_list"></div>
+    </div>
     <div class="spe-bar">
         <div class="spe-field">
             <span id="spe_mode_label">Neue Tische</span>
@@ -98,11 +109,14 @@
 </div>
 
 <script>
-#{SitzplanDaten.seats_js}
+#{sitzplan_seats_js}
 
 var klasse = #{sitzplan_path_params[0].to_json};
 var raum = #{sitzplan_path_params[1].to_json};
-var spe_saved_plans = #{sitzplaneditor_saved_plan_count(sitzplan_path_params[1]).to_json};
+var spe_saved_plans = #{sitzplaneditor_saved_plan_count.to_json};
+// Im eigenen Fachraum setzt die Lehrkraft ihre eigenen Tische.
+var spe_fachraum = #{(!!sitzplan_owner(*sitzplan_path_params)).to_json};
+var spe_other_layouts = #{sitzplan_other_layouts.to_json.gsub('</', '<\/')};
 
 document.addEventListener('DOMContentLoaded', function () {
     var PERSON = '<svg viewBox="0 0 20 20" aria-hidden="true"><ellipse cx="10" cy="13" rx="8" ry="4.6" fill="#56708c"/><circle cx="10" cy="8.2" r="4.4" fill="#7b93ad"/></svg>';
@@ -132,8 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#spe_mode_h').on('click', function () { set_mode('h'); });
     $('#spe_mode_v').on('click', function () { set_mode('v'); });
 
-    function load_layout() {
-        var layout = seats_dict[raum] || [];
+    function load_layout(layout) {
         if (layout.length === 0) return;
         var min_x = Math.min.apply(null, layout.map(function (s) { return s[0]; }));
         var min_y = Math.min.apply(null, layout.map(function (s) { return s[1]; }));
@@ -322,7 +335,9 @@ document.addEventListener('DOMContentLoaded', function () {
             ' an <b>' + tables + '</b> ' + (tables === 1 ? 'Tisch' : 'Tischen'));
     }
 
-    $('#spe_subtitle').text('Raum ' + raum + ' · Klasse ' + klasse);
+    $('#spe_subtitle').text(spe_fachraum
+        ? 'Raum ' + raum + ' · Klasse ' + klasse + ' · Ihre eigenen Tische für Ihren Unterricht in diesem Raum. Sie gelten nur für Ihre Sitzpläne.'
+        : 'Raum ' + raum + ' · Klasse ' + klasse);
     $('#spe_back_link').attr('href', '/sitzplanhelfer/' + encodeURIComponent(klasse) + '/' + encodeURIComponent(raum));
     $('#spe_half_back_link').attr('href', '/directory/' + encodeURIComponent(klasse));
     var half = (seats_dict[raum] || []).some(function (s) { return s[0] % 1 !== 0 || s[1] % 1 !== 0; });
@@ -331,8 +346,47 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#spe_half').show();
         return;
     }
-    load_layout();
+    load_layout(seats_dict[raum] || []);
     saved_signature = seats_dict[raum] ? JSON.stringify(normalized()) : '';
+
+    // Kleine Vorschau einer Bestuhlung: ein Kästchen je Platz.
+    function preview(layout) {
+        var w = Math.max.apply(null, layout.map(function (s) { return s[0]; })) + 1;
+        var h = Math.max.apply(null, layout.map(function (s) { return s[1]; })) + 1;
+        var svg = $('<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">')
+            .attr('viewBox', '-0.5 -0.5 ' + (w + 1) + ' ' + (h + 1));
+        var html = '';
+        layout.forEach(function (s) {
+            html += '<rect x="' + (+s[0]) + '" y="' + (+s[1]) + '" width="0.86" height="0.86" rx="0.15" fill="#d9ad76" stroke="#9a6a38" stroke-width="0.08"/>';
+        });
+        svg.html(html);
+        return svg;
+    }
+    if (spe_fachraum && spe_other_layouts.length > 0) {
+        spe_other_layouts.forEach(function (entry) {
+            var item = $('<div class="spe-copy-item">');
+            item.append(preview(entry.seats));
+            $('<div class="spe-copy-name">').text(entry.name + ' (' + entry.seats.length + ' Plätze)').appendTo(item);
+            $('<button type="button" class="btn btn-sm btn-outline-primary bu-copy-layout">').text('Übernehmen').appendTo(item)
+                .on('click', function () {
+                    var take = function () {
+                        state.seats = new Map();
+                        state.cols = 12;
+                        state.rows = 8;
+                        load_layout(entry.seats);
+                        $('#spe_cols').val(state.cols);
+                        $('#spe_rows').val(state.rows);
+                        render();
+                        set_status('Übernommen. Passen Sie die Tische bei Bedarf an und speichern Sie sie mit „Bestuhlung speichern“.');
+                    };
+                    if (state.seats.size === 0) { take(); return; }
+                    dashboardConfirm('Ihre Tische hier im Editor werden durch diese ersetzt. Gespeichert wird erst mit „Bestuhlung speichern“.',
+                        take, { title: 'Tische übernehmen', confirm: 'Ersetzen' });
+                });
+            item.appendTo('#spe_copy_list');
+        });
+        $('#spe_copy').show();
+    }
     $('#spe_cols').val(state.cols);
     $('#spe_rows').val(state.rows);
     render();

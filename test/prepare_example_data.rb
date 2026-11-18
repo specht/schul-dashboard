@@ -38,6 +38,12 @@ File.write(File.join(target, 'config.yaml'), {
     FileUtils.mv(files.last, File.join(target, dir, "#{first_school_day}.TXT"))
 end
 
+# A subject teacher with 5a in room 317, where Clarke (class teacher of 5a)
+# also teaches it; the homeroom stays 108 (sitzplan-fachraum.spec.ts).
+File.open(File.join(target, 'stundenplan', "#{first_school_day}.TXT"), 'a') do |f|
+    f.puts '7,"5a","Fr","Nawi","317",1,3,,'
+end
+
 # More accounts and roles than the example data has, so that tests and the
 # UI tour cover the role spectrum of a real school. Must match ROLE_ACCOUNTS
 # in test/e2e/tests/fixtures.ts.
@@ -50,6 +56,8 @@ end
 append_lines(File.join(target, 'lehrer', 'lehrer.csv'), [
     'zeugnis.admin@beispielschule.de,Za,w,Zeugnis,Zoe,,',
     'technik@beispielschule.de,Tk,m,Technik,Tom,,',
+    # teaches 5a in a subject room, not its homeroom (sitzplan-fachraum.spec.ts)
+    'fachraum@beispielschule.de,Fr,w,Fachraum,Frieda,,',
     # only for otp-nudge.spec.ts: SMS login without a code app (one per
     # Playwright project, see test/e2e/seed.cypher)
     'sms.eins@beispielschule.de,Se,w,Eins,Sina,,',

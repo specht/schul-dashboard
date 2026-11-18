@@ -61,3 +61,13 @@ UNWIND [
 MERGE (e:NewsEntry {timestamp: n[0]})
 SET e.date = n[1], e.title = n[2], e.content = 'Ein Beitrag aus dem Archiv.',
     e.sticky = false, e.published = true;
+
+// A seating plan from before there were plans of one's own in a subject room
+// (no lehrer): Clarke made it in 323, where he teaches 5a. It stays visible
+// to him there (sitzplan-fachraum.spec.ts).
+MATCH (u:User {email: 'clarke@beispielschule.de'})
+MERGE (sc:SeatingCycle {id: 'e2efachraumalt'})
+SET sc.klasse = '5a', sc.raum = '323', sc.mode = 'manual', sc.created_at = 1730000000,
+    sc.saved_at = 1730000000, sc.seats = '{}', sc.unresolved = '[]', sc.satisfied_emails = '[]',
+    sc.forced_pairs = '[]', sc.forbidden_pairs = '[]', sc.fixed_rules = '[]'
+MERGE (sc)-[:STARTED_BY]->(u);

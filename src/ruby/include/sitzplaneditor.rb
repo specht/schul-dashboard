@@ -1,5 +1,6 @@
 class Main < Sinatra::Base
     @@room_hours_for_klasse = {}
+    @@rooms_for_klasse_and_shorthand = {}
 
     # Laut Stundenplan der Raum der Klasse: jeder Raum mit mindestens 20
     # Wochenstunden (dieselbe Schwelle wie beim Raumplan-PDF in fragments.rb),
@@ -34,6 +35,69 @@ class Main < Sinatra::Base
         assert(rooms.include?(raum), 'Dieser Raum gehört nicht zur Klasse.')
     end
 
+    # Fachräume der Klasse, in denen die angemeldete Lehrkraft sie laut
+    # Stundenplan unterrichtet (ohne den Klassenraum). Dort macht sie ihren
+    # eigenen Sitzplan mit eigenen Tischen, für die ganze Klasse.
+    def sitzplan_fachraeume(klasse)
+        return [] unless teacher_logged_in?
+        rooms = (((@@rooms_for_klasse_and_shorthand || {})[klasse] || {})[@session_user[:shorthand]] || []).to_a
+        (rooms - klassenraeume_for_klasse(klasse)).sort
+    end
+
+    # Wessen Sitzpläne sind gemeint? nil: die der Klasse (Klassenraum, von
+    # der Klassenleitung). Sonst die E-Mail der Lehrkraft, die die Klasse in
+    # diesem Fachraum unterrichtet - ihre eigenen, getrennt von allen anderen.
+    def sitzplan_owner(klasse, raum)
+        sitzplan_fachraeume(klasse).include?(raum) ? @session_user[:email] : nil
+    end
+
+    # Die Sitzplan-Seiten: im eigenen Fachraum die Lehrkraft, sonst die
+    # Klassenleitung.
+    def require_sitzplan_page!(klasse, raum, editor = false)
+        require_teacher!
+        return if sitzplan_owner(klasse, raum)
+        require_sitzplan_klassenleitung!(klasse, raum, editor)
+    end
+
+    def sitzplan_seats_for(klasse, raum)
+        owner = sitzplan_owner(klasse, raum)
+        owner ? SitzplanDaten.teacher_room(raum, owner) : SitzplanDaten.room(raum)
+    end
+
+    # Bestuhlung für die Sitzplan-Seiten (seats_dict): im eigenen Fachraum
+    # gelten die Tische der Lehrkraft.
+    def sitzplan_seats_js
+        klasse, raum = sitzplan_path_params
+        owner = sitzplan_owner(klasse, raum)
+        SitzplanDaten.seats_js(owner ? [raum, SitzplanDaten.teacher_room(raum, owner)] : nil)
+    end
+
+    # Darf die Seite „Tische im Raum“ anbieten? Halbe Positionen kann der
+    # Editor nicht darstellen.
+    def sitzplan_editor_allowed?
+        klasse, raum = sitzplan_path_params
+        allowed = sitzplan_owner(klasse, raum) || sitzplan_editor_rooms(klasse).include?(raum)
+        !!allowed && !SitzplanDaten.half_positions?(sitzplan_seats_for(klasse, raum))
+    end
+
+    # Für „Raumplan übernehmen“ im eigenen Fachraum: die Tische der Schule
+    # für diesen Raum und die anderer Lehrkräfte. Nur, was der Editor
+    # darstellen kann (keine halben Positionen). Übernehmen ist eine Kopie.
+    def sitzplan_other_layouts
+        klasse, raum = sitzplan_path_params
+        owner = sitzplan_owner(klasse, raum)
+        return [] unless owner
+        layouts = []
+        shared = SitzplanDaten.room(raum)
+        layouts << {:name => 'Tische der Schule', :seats => shared} if shared && !SitzplanDaten.half_positions?(shared)
+        SitzplanDaten.teacher_rooms(raum).each do |email, seats|
+            info = @@user_info[email]
+            next if email == owner || info.nil? || SitzplanDaten.half_positions?(seats)
+            layouts << {:name => "Tische von #{info[:display_name_official_dativ] || info[:display_name_official]}", :seats => seats}
+        end
+        layouts
+    end
+
     def sitzplan_fail!(message)
         respond(:error => message)
         assert(false, message, true)
@@ -42,8 +106,11 @@ class Main < Sinatra::Base
     # rules und bff können geheime Absprachen enthalten. Der Shuffler rechnet im
     # Browser, deshalb kommen in den Seitenquelltext nur die Einträge der Klasse
     # aus der URL, und auch nur für Lehrkräfte dieser Klasse.
+    # Im eigenen Fachraum gibt es keine: Diese Absprachen gehören zur
+    # Klassenleitung.
     def sitzplan_logins_for_page
-        klasse = sitzplan_path_params[0]
+        klasse, raum = sitzplan_path_params
+        return [] if sitzplan_owner(klasse, raum)
         return [] unless sph_can_manage?(klasse)
         (@@schueler_for_klasse[klasse] || []).map { |e| @@user_info[e][:nc_login] }
     end
@@ -60,9 +127,12 @@ class Main < Sinatra::Base
 
     # Sitzordnungen (gespeichert oder noch offen) merken sich Plätze per Index bzw.
     # Koordinate in der Bestuhlung und passen nach einer Änderung nicht mehr.
-    def sitzplaneditor_saved_plan_count(raum)
-        neo4j_query_expect_one(<<~END_OF_QUERY, :raum => raum)['n']
+    # Im eigenen Fachraum zählen nur die eigenen Pläne der Lehrkraft.
+    def sitzplaneditor_saved_plan_count
+        klasse, raum = sitzplan_path_params
+        neo4j_query_expect_one(<<~END_OF_QUERY, :raum => raum, :lehrer => sitzplan_owner(klasse, raum) || '')['n']
             MATCH (sc:SeatingCycle {raum: $raum})
+            WHERE #{sph_scope_cond('sc')}
             RETURN COUNT(sc) AS n;
         END_OF_QUERY
     end
@@ -129,10 +199,11 @@ class Main < Sinatra::Base
     post '/api/sitzplaneditor_save' do
         data = parse_request_data(:required_keys => [:klasse, :raum, :seats],
                                   :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
-        require_sitzplan_klassenleitung!(data[:klasse], data[:raum], true)
+        require_sitzplan_page!(data[:klasse], data[:raum], true)
         assert(data[:raum] =~ SitzplanDaten::ROOM_NAME, 'Ungültiger Raumname.')
+        owner = sitzplan_owner(data[:klasse], data[:raum])
         # Der Editor zeigt halbe Positionen nicht an; Speichern würde sie verlieren.
-        if SitzplanDaten.half_positions?(SitzplanDaten.room(data[:raum]))
+        if SitzplanDaten.half_positions?(sitzplan_seats_for(data[:klasse], data[:raum]))
             sitzplan_fail!('Dieser Raum hat Plätze auf halben Positionen und kann im Editor nicht bearbeitet werden.')
         end
         seats = JSON.parse(data[:seats]) rescue nil
@@ -146,7 +217,11 @@ class Main < Sinatra::Base
         min_x = seats.map { |s| s[0] }.min
         min_y = seats.map { |s| s[1] }.min
         seats = seats.map { |s| [s[0] - min_x, s[1] - min_y] + s[2..] }.sort_by { |s| [s[1], s[0]] }
-        SitzplanDaten.write_room(data[:raum], seats)
+        if owner
+            SitzplanDaten.write_teacher_room(data[:raum], owner, seats)
+        else
+            SitzplanDaten.write_room(data[:raum], seats)
+        end
         respond(:ok => true, :seats => seats)
     end
 end

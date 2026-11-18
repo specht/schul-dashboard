@@ -150,6 +150,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let klassenraeume = #{klassenraeume_for_klasse(klasse).to_json};
             let editor_rooms = #{(klassenleiter_for_klasse_or_admin_logged_in?(klasse) ? sitzplan_editor_rooms(klasse) : []).to_json};
             let is_klassenleitung = '#{klassenleiter_for_klasse_or_admin_logged_in?(klasse)}' === 'true';
+            // Fachräume, in denen diese Lehrkraft die Klasse unterrichtet: dort
+            // macht sie ihren eigenen Sitzplan mit eigenen Tischen.
+            let fachraeume = #{sitzplan_fachraeume(klasse).to_json};
+            let fachraeume_mit_tischen = #{sitzplan_fachraeume(klasse).select { |r| SitzplanDaten.teacher_room(r, @session_user[:email]) }.to_json};
             // Die Sitzdaten stehen in einem eigenen <script>; sind sie fehlerhaft, fehlt nur der Sitzplan-Bereich
             let sp_seats = (typeof seats_dict !== 'undefined') ? seats_dict : {};
             // Der Sitzplan einer Klasse gehört zu ihrem Klassenraum. Fach- und
@@ -180,14 +184,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     hint = `Zu wenige Plätze: Raum ${raum} hat ${layout.length} Plätze, die Klasse ${n} Schülerinnen und Schüler. ` +
                         (can_edit_room ? 'Weitere Plätze #{ui_preview? ? "legst du" : "legen Sie"} auf der Sitzplan-Seite unter „Tische im Raum ändern“ an.' : 'Die Tische dieses Raums kann nur die Administration ändern.');
                 if (buttons.length === 0 && !hint) continue;
-                rows.push([raum, buttons, hint]);
+                let kind = is_klassenleitung
+                    ? 'Ihren Sitzplan hier sehen alle Lehrkräfte der Klasse.'
+                    : 'Der Sitzplan der Klassenleitung, zum Ansehen.';
+                rows.push([raum, buttons, hint, 'Klassenraum', kind]);
+            }
+            for (let raum of fachraeume) {
+                rows.push([raum, [['Sitzplan', '/sitzplanhelfer', 'btn-primary']],
+                    fachraeume_mit_tischen.indexOf(raum) < 0 ? 'Die Tische legen Sie dort an oder übernehmen vorhandene.' : null,
+                    'Fachraum', 'Ihr eigener Sitzplan für Ihren Unterricht hier. Nur Sie sehen ihn.']);
             }
             if (rows.length > 0) {
                 $(`<hr>`).appendTo('#additional_teacher_content');
                 $(`<h3>`).text('Sitzplan').appendTo('#additional_teacher_content');
+                // Was gilt für wen? Sonst wüsste die Klassenleitung nicht, ob die
+                // Pläne der Fachlehrkräfte ihren Plan betreffen, und umgekehrt.
+                $(`<p>`).attr('id', 'sitzplan_raum_info').text(
+                    'Im Klassenraum gibt es einen Sitzplan für die ganze Klasse: Ihn macht die Klassenleitung, und alle Lehrkräfte der Klasse können ihn ansehen. ' +
+                    'In einem Fachraum macht jede Lehrkraft, die die Klasse dort unterrichtet, ihren eigenen Sitzplan mit eigenen Tischen. ' +
+                    'Ihn sieht nur sie, und am Sitzplan des Klassenraums ändert er nichts.'
+                ).appendTo('#additional_teacher_content');
             }
-            for (let [raum, buttons, hint] of rows) {
-                let group = $(`<div>`).css('margin', '0 0 0.5em 0');
+            for (let [raum, buttons, hint, kind_label, kind] of rows) {
+                let group = $(`<div>`).addClass('sitzplan-raum').attr('data-raum', raum).css('margin', '0 0 0.8em 0');
+                $(`<div>`).append($(`<strong>`).text(`${kind_label}: `)).append(document.createTextNode(kind))
+                    .css('margin-bottom', '0.2em').appendTo(group);
                 for (let [label, path, cls, disabled] of buttons) {
                     let a = $(`<a>`).text(`${label} Raum ${raum}`).addClass(`btn ${cls}`).css('margin', '0 0.3em 0.3em 0');
                     if (disabled)

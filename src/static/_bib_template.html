@@ -35,7 +35,7 @@
     @tailwind components;
     @tailwind utilities;
 </style>
-<div class='api_messages'></div>
+<div class='api_messages'></div>#{bib_preview_head}
 <script>
     var KLASSEN_TR = #{ KLASSEN_TR.to_json };
     var USER_INFO = #{@@user_info.map { | email, info | [email, {:first_name => info[:first_name], :last_name => info[:last_name], :display_name => info[:display_name], :nc_login => info[:nc_login], :klasse => info[:klasse] }]}.to_h.to_json };

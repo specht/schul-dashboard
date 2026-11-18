@@ -131,6 +131,11 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] Kursbuch (bisheriges Design): „… aus dem Verlauf entfernen“ löscht
       ohne Rückfrage die Einträge und Kommentare der Stunde; das neue Design
       fragt vorher nach.
+- [ ] Bibliothek, Nutzerseite (`bib_user.html`): Hat die Person aufgehobene
+      Ausleihen, überschreibt die Tabelle dafür die Variable `table` – neu
+      gescannte Ausleihen erscheinen dann in »Aufgehobene Ausleihen« statt
+      in »Ausgeliehene Medien« (gebucht wird richtig, nur die Anzeige ist
+      falsch, bis die Seite neu geladen wird).
 - [ ] Neuigkeiten: `/api/store_news_entry` verwendet den Zeitstempel in
       Sekunden als Schlüssel; zwei Einträge in derselben Sekunde scheitern am
       Unique-Constraint. Betrifft praktisch nur Skripte.

@@ -179,6 +179,29 @@ Aktionen und das Verhalten am Handy.
   (Container-Abfrage), nicht das Gerät: Tablets hochkant zeigen schon
   Listenzeilen. Eine Listenzeile öffnet einen Dialog (am Handy ein Sheet)
   mit allen Angaben und Aktionen (Beispiel: Klassenliste).
+- Einfache Tabellen ohne eigenen Dialog (Bibliothek) werden in schmalen
+  Listen zu Listenzeilen: die erste Spalte als Titel, die übrigen als
+  leise Angaben mit ihrem Spaltennamen davor; die Zeile öffnet, was sie
+  vorher geöffnet hat.
+
+**Bereiche mit eigener Navigation** (Beispiel: Bibliothek)
+
+- Die Seiten eines Bereichs stehen als Zeile leiser Reiter oben auf dem
+  Panel, die eigenen Seiten zuerst, die Verwaltung nach einer Haarlinie;
+  der aktuelle Reiter in der leisen Akzentfläche. Am Handy scrollt jede
+  Gruppe als eigene Zeile seitlich. Links, die nur eine Seite hat
+  (»Metadaten bearbeiten«), stehen als zweite, kleinere Zeile darunter.
+- Geräte eines Bereichs (die Ausleihstation der Bibliothek) zeigen keine
+  Navigation des Dashboards, nur ihre Leiste mit der angemeldeten Person.
+
+**Scannen**
+
+- Kamera und Eingabefeld sind eine ruhige Fläche; ein Scanner tippt wie
+  eine Tastatur. Nach jedem Scan bleibt der Fokus im Feld, an Geräten der
+  Bibliothek hat es ihn schon beim Laden.
+- Ein Modus, der das Scannen ändert (Rückgabe: zurückbuchen oder nur
+  prüfen), ist ein Schalter, der seinen Zustand in Worten sagt; »nur
+  prüfen« ist leise hervorgehoben, damit man ihn nicht vergisst.
 
 **Lange Listen und Archiv**
 

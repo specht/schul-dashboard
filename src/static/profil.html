@@ -91,7 +91,7 @@
                     <p style="#{angebote_for_session_user.empty? ? 'display: none;' : 'display: block;'}">
                         Du nimmst momentan an den folgenden AGs und Angeboten teil:
                         <ul>
-                            #{angebote_for_session_user.map { |x| "<li><b>#{x[:name]}</b> (#{x[:owner]})</li>" }.join('')}
+                            #{angebote_for_session_user.map { |x| "<li><b>#{CGI.escapeHTML(x[:name].to_s)}</b> (#{CGI.escapeHTML(x[:owner].to_s)})</li>" }.join('')}
                         </ul>
                     </p>
                 </div>
@@ -381,7 +381,7 @@ var style_swatches = [];
 var omit_ical_types = #{get_omit_ical_types().to_json};
 var teacher_logged_in = #{teacher_logged_in?};
 var confirm_sms_tag = null;
-var angebote_for_session_user = #{angebote_for_session_user.to_json};
+var angebote_for_session_user = #{angebote_for_session_user.to_json.gsub('</', '<\\/')};
 
 function refresh_ical_widget() {
     if (ical_token.length == 0) {

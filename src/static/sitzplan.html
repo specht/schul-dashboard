@@ -152,7 +152,7 @@ p {
 .dropdown-item {
     cursor: pointer;
 }
-#bu_print_shuffle {
+#bu_print_shuffle, #bu_adopt_shuffle {
     display: none;
 }
 /* Ausdruck nach dem Auslosen: nur Überschrift, Tafel und Plätze, quer auf
@@ -205,6 +205,10 @@ var raum = '';
 var seats = [];
 
 #{sitzplan_seats_js}
+
+// Im eigenen Fachraum lässt sich das Ergebnis als Plan übernehmen und im
+// Sitzplanhelfer von Hand anpassen.
+var shuffle_adoptable = #{(!!sitzplan_owner(*sitzplan_path_params)).to_json};
 
 var place_for_sus = [];
 
@@ -446,13 +450,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ohne Musik gibt es kein Ende - dann ab dem ersten Auslosen.
         let shuffled = false;
         let show_print = function() {
-            setTimeout(function() { $('#bu_print_shuffle').show(); }, 1100);
+            setTimeout(function() {
+                $('#bu_print_shuffle').show();
+                if (shuffle_adoptable) $('#bu_adopt_shuffle').show();
+            }, 1100);
         };
         $('#audio').on('ended', show_print);
         $('#audio').on('error', function() { if (shuffled) show_print(); });
         $('#bu_print_shuffle').click(function(e) {
             $('#bu_print_shuffle').blur();
             window.print();
+        });
+        // Wer wo sitzt, als Plätze der eigenen Tische (nach Lage, denn „C“
+        // verschiebt die Reihenfolge der Plätze nur hier im Shuffler).
+        let adopt_shuffle = function(replace) {
+            let index_for_seat = {};
+            seats_dict[raum].forEach(function(seat, i) { index_for_seat[`${seat[0]}/${seat[1]}`] = i; });
+            let placement = {};
+            for (let i = 0; i < sus.length; i++) {
+                let seat = seats[place_for_sus[i]];
+                if (seat) placement[sus[i].email] = index_for_seat[`${seat[0]}/${seat[1]}`];
+            }
+            let request = {klasse: klasse, raum: raum, seats: JSON.stringify(placement)};
+            if (replace) request.replace = 'yes';
+            api_call('/api/sph_adopt_shuffle', request, function(data) {
+                if (data.success === false) {
+                    dashboardAlert(data.error || 'Das Ergebnis konnte nicht übernommen werden.');
+                    return;
+                }
+                if (data.needs_confirm) {
+                    dashboardConfirm('Sie haben in diesem Raum schon einen neuen Sitzplan angefangen. Soll das Ergebnis des Shufflers ihn ersetzen?',
+                        function() { adopt_shuffle(true); },
+                        {title: 'Angefangenen Plan ersetzen', confirm: 'Ersetzen', danger: true});
+                    return;
+                }
+                window.location.href = `/sitzplanhelfer/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`;
+            });
+        };
+        $('#bu_adopt_shuffle').click(function(e) {
+            $('#bu_adopt_shuffle').blur();
+            adopt_shuffle(false);
         });
         // A4 quer mit 1 cm Rand: etwa 1040 × 720 Pixel.
         window.addEventListener('beforeprint', function() { fix_scale(1040, 700); });
@@ -532,6 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <i class='fa fa-female'></i><i class='fa fa-male'></i> <span id='maleFemaleButtonLabel'></span>
     </button>
     <button class="btn btn-sm btn-success" type="button" id="bu_print_shuffle"><i class='fa fa-print'></i>&nbsp;&nbsp;Drucken</button>
+    <button class="btn btn-sm btn-primary" type="button" id="bu_adopt_shuffle" title="Im Sitzplanhelfer weiter bearbeiten und speichern"><i class='fa fa-check'></i>&nbsp;&nbsp;Als Plan übernehmen</button>
     <div style="display: inline-block; position: relative; top: 0.15em;">
         <span class="key" data-key="Space">Leer</span>
         <span class="key" data-key="KeyA">A</span>
@@ -539,4 +577,5 @@ document.addEventListener('DOMContentLoaded', function() {
         <span class="key" data-key="KeyR">R</span>
     </div>
 </div>
+<div class='api_messages' style='display: none;'></div>
 <audio id='audio'></audio>

@@ -27,16 +27,21 @@ class Main < Sinatra::Base
         teacher_logged_in? && @@schueler_for_klasse.include?(klasse) && sph_can_view?(klasse)
     end
 
-    # Wer eingeteilt werden kann: die Klasse oder alle Lehrkräfte (ohne
-    # Funktionskonten, deren Kürzel mit "_" beginnt).
+    # Wer eingeteilt werden kann: die Klasse oder das Kollegium. Zum
+    # Kollegium gehört auch das erweiterte Personal (Kürzel mit "_" vorn,
+    # siehe zg_extended_staff?); @@lehrer_order führt es am Ende.
     def zg_member_emails(klasse)
         if zg_kollegium?(klasse)
-            @@lehrer_order.select { |e| @@user_info[e] && !(@@user_info[e][:shorthand] || '').start_with?('_') }
+            @@lehrer_order.select { |e| @@user_info[e] }
         else
             (@@schueler_for_klasse[klasse] || []).sort do |a, b|
                 @@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase
             end
         end
+    end
+
+    def zg_extended_staff?(email)
+        (@@user_info[email][:shorthand] || '').start_with?('_')
     end
 
     def require_zg_access!(klasse)
@@ -67,9 +72,13 @@ class Main < Sinatra::Base
                 # Im Kollegium gibt es keine Regel nach Geschlecht. Für den
                 # Beamer zählt vor allem das Kürzel: bei vielen Lehrkräften
                 # sind ganze Namen von hinten nicht mehr lesbar.
+                # Erweitertes Personal kommt in einen eigenen Block und wird
+                # nur eingeteilt, wenn man es dort antippt.
+                extended = zg_extended_staff?(e)
                 {:email => e, :display_name => @@user_info[e][:display_name],
-                 :shorthand => @@user_info[e][:shorthand],
-                 :nc_login => @@user_info[e][:nc_login]}
+                 :shorthand => extended ? @@user_info[e][:shorthand].sub(/\A_+/, '') : @@user_info[e][:shorthand],
+                 :nc_login => @@user_info[e][:nc_login],
+                 :extended => extended}
             else
                 {:email => e,
                  :display_name => @@user_info[e][:display_name_official],

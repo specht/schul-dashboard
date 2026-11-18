@@ -69,6 +69,22 @@
     color: #aaa;
     text-decoration: line-through;
 }
+/* Erweitertes Personal, noch nicht hinzugefügt: kein Durchstreichen, es fehlt
+   ja niemand - es ist nur nicht dabei. */
+.zg-chip.zg-extra.absent {
+    background: transparent;
+    border-style: dashed;
+    color: #777;
+    text-decoration: none;
+}
+.zg-chip.zg-extra.absent::before {
+    content: '+ ';
+}
+#zg_extended h5 {
+    margin: 0.8em 0 0.2em 0;
+    font-size: 1em;
+    font-weight: bold;
+}
 .zg-groups {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(13em, 1fr));
@@ -280,6 +296,12 @@
         <p class="zg-legend">Fehlende antippen, dann werden sie nicht eingeteilt. Nochmal antippen holt sie zurück.
             <a href="#" id="zg_all_present">Alle da</a></p>
         <div id="zg_presence"></div>
+        <div id="zg_extended" style="display: none;">
+            <h5>Erweitertes Personal</h5>
+            <p class="zg-legend">Wird nur eingeteilt, wer hier angetippt ist.
+                <a href="#" id="zg_extended_all">Alle hinzufügen</a> · <a href="#" id="zg_extended_none">Keine</a></p>
+            <div id="zg_extended_list"></div>
+        </div>
         <p id="zg_preview" style="margin-top: 0.5em;"></p>
     </div>
 
@@ -399,6 +421,12 @@ function settings() {
     };
 }
 
+// Erweitertes Personal im Kollegium (eigener Block, nur auf Antippen dabei).
+function is_extended(email) {
+    let s = sus.find(x => x.email === email);
+    return !!(s && s.extended);
+}
+
 function present_emails() {
     return sus.map(s => s.email).filter(e => !absent.has(e));
 }
@@ -439,24 +467,28 @@ function update_preview() {
     let counts = {};
     for (let x of sizes) counts[x] = (counts[x] || 0) + 1;
     let parts = Object.keys(counts).sort((a, b) => b - a).map(x => `${counts[x]} × ${x}`);
-    $('#zg_preview').text(`${emails.length} von ${sus.length} da → ${sizes.length} Gruppe${sizes.length === 1 ? '' : 'n'}` +
+    // Erweitertes Personal zählt nur mit, wenn es hinzugefügt ist.
+    let all = sus.filter(s => !s.extended || !absent.has(s.email)).length;
+    $('#zg_preview').text(`${emails.length} von ${all} da → ${sizes.length} Gruppe${sizes.length === 1 ? '' : 'n'}` +
         (parts.length ? ` (${parts.join(', ')})` : ''));
     $('#zg_bu_mix').prop('disabled', emails.length === 0);
 }
 
 function render_presence() {
     let el = $('#zg_presence').empty();
+    let extra = $('#zg_extended_list').empty();
     let people = sus.slice();
     if (use_shorthands()) people.sort((a, b) => label(a.email).localeCompare(label(b.email), 'de'));
     for (let s of people) {
-        let chip = fill_name($('<span>').addClass('zg-chip').toggleClass('absent', absent.has(s.email)), s.email);
+        let chip = fill_name($('<span>').addClass('zg-chip').toggleClass('zg-extra', !!s.extended).toggleClass('absent', absent.has(s.email)), s.email);
         if (use_shorthands()) chip.attr('title', s.display_name);
         chip.on('click', function () {
             if (absent.has(s.email)) absent.delete(s.email); else absent.add(s.email);
             render_presence();
         });
-        el.append(chip);
+        (s.extended ? extra : el).append(chip);
     }
+    $('#zg_extended').toggle(sus.some(s => s.extended));
     update_preview();
 }
 
@@ -855,6 +887,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         sus = data.sus;
+        // Erweitertes Personal ist anfangs nicht dabei - außer wer bei den
+        // zuletzt gemischten Gruppen dabei war.
+        let last_members = new Set(((data.last && data.last.groups) || []).flat());
+        for (let s of sus) if (s.extended && !last_members.has(s.email)) absent.add(s.email);
         if (kollegium && data.access) {
             access_emails = data.access.emails || [];
             render_access();
@@ -893,9 +929,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
     $('input[name=zg_rest], input[name=zg_gender]').on('change', update_preview);
+    // "Alle da" betrifft nur die Hauptliste, nicht das erweiterte Personal.
     $('#zg_all_present').click(function (e) {
         e.preventDefault();
-        absent.clear();
+        absent = new Set([...absent].filter(is_extended));
+        render_presence();
+    });
+    $('#zg_extended_all, #zg_extended_none').click(function (e) {
+        e.preventDefault();
+        let add = this.id === 'zg_extended_all';
+        for (let s of sus) {
+            if (!s.extended) continue;
+            if (add) absent.delete(s.email); else absent.add(s.email);
+        }
         render_presence();
     });
     $('#zg_bu_mix').click(do_mix);

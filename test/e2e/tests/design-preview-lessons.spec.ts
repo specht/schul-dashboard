@@ -232,6 +232,31 @@ test('Neues Design: Kursbuch mit Stunde in der Adresse öffnet sie', async ({ pa
   }
 });
 
+// Wide screens: the pane reaches the window's right edge (no empty strip
+// beside it), and the admins' quick switch stays clear of its buttons.
+test('Neues Design: Kursbuch auf breiten Bildschirmen ohne Lücke rechts', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'breiter Bildschirm');
+  await page.setViewportSize({ width: 1840, height: 920 });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_ui_preview_quick', { data: { mode: 'on' } });
+  try {
+    await page.goto('/lessons/Ma_5a');
+    await weekRow(page).click();
+    const pane = (await page.locator('.lesson_pane').boundingBox())!;
+    const width = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(width - (pane.x + pane.width)).toBeLessThan(2);
+    const save = (await page.locator('.pv-kb-pane-foot .bu-save-changes').boundingBox())!;
+    const quick = (await page.locator('.design-quick-toggle').boundingBox())!;
+    const overlap = !(quick.x + quick.width <= save.x || save.x + save.width <= quick.x ||
+                      quick.y + quick.height <= save.y || save.y + save.height <= quick.y);
+    expect(overlap).toBe(false);
+  } finally {
+    await page.request.post('/api/set_ui_preview_quick', { data: { mode: 'off' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('Kursbuch ohne Vorschau: wie bisher', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

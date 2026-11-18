@@ -179,3 +179,62 @@
         max-width: none;
     }
 }
+
+/* ---------- wide screens: one line per list, aligned columns ----------
+   name | address (copy field) | count | Empfänger; the folded classes close
+   together with hairlines instead of loose headings */
+.pv-ml-page .pv-lgroup + .pv-lgroup {
+    margin-top: 0;
+}
+
+.ui-preview .container .pv-ml-page .pv-lgroup-head {
+    margin: 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-ml-page .pv-lgroup-toggle {
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+.pv-ml-page .pv-lgroup-body {
+    margin-bottom: 14px;
+}
+
+@media (min-width: 1100px) {
+    .pv-ml-page .pv-ml-row {
+        align-items: center;
+        padding-top: 7px;
+        padding-bottom: 7px;
+    }
+
+    .pv-ml-page .pv-ml-row .pv-lrow-text {
+        display: grid;
+        grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr);
+        align-items: center;
+        column-gap: 20px;
+    }
+
+    .pv-ml-page .pv-ml-line {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .ui-preview .pv-ml-page .pv-ml-line .pv-ml-addr {
+        flex: 1 1 auto;
+        max-width: 30rem;
+        margin: 0;
+    }
+
+    .pv-ml-page .pv-ml-count {
+        flex: none;
+        min-width: 7.5rem;
+        padding: 0;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pv-ml-page .pv-ml-row .pv-lrow-actions {
+        align-self: center;
+    }
+}

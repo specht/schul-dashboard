@@ -48,6 +48,13 @@ hierher übernehmen, wenn sie angegangen werden.
 
 ### Fehler
 
+- [ ] Datentresor ohne Zeugnislisten (außerhalb der Zeugniszeit,
+      `determine_zeugnislisten` kehrt früh zurück): Die Zeugnisübersicht zeigt
+      nur ihre Überschrift, der Zeugnislisten-Teil der Zeugnisformulare bleibt
+      leer, ein Klick auf eine Klasse im Zeugnisdruck bricht ab – jeweils mit
+      einem JavaScript-Fehler (`zeugnisliste_for_klasse` ist leer). Das neue
+      Design sagt stattdessen, dass es gerade keine Zeugnislisten gibt; das
+      alte Design sollte das auch.
 - [ ] Externe Nutzer:innen hinzufügen: Steht statt einer E-Mail-Adresse etwas
       anderes im Feld (z. B. ein Gruppenname wie „Eltern 10a“), endet
       `/api/add_external_users` mit HTTP 500 (`Mail::AddressList` in

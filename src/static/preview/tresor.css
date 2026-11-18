@@ -1,0 +1,599 @@
+/* Neues Design (Vorschau): the Datentresor (tresor.html and the pages with
+   _tresor_public_template.html: Übersicht, Zeugnisformulare, AT-Notizen,
+   Zeugnisdruck, Anlage Sozialverhalten). preview/tresor.js sets .pv-tresor
+   on the body; every rule here starts with it or with a class only that
+   script sets.
+
+   - Navigation: the tresor's pages as a row of quiet tabs at the top of the
+     panel, the time left and »Abmelden« at the end of the row (on phones
+     the tabs scroll sideways, the session gets its own row). The old fixed
+     bar under the top navigation is hidden.
+   - One surface: the page's panel holds everything (the conference
+     section included); tables scroll sideways inside it on narrow screens.
+   - Page type: tables (full width).
+   - The login: left aligned, the methods as one row of buttons, hints
+     quiet; »nicht erreichbar« as a calm notice with »Erneut versuchen«. */
+
+/* the template's fixed bar (its buttons moved into the panel), its padding
+   for that bar and the white of today's design */
+.pv-tresor #submenu_container {
+    display: none !important;
+}
+
+.pv-tresor #main_container > .container.pv-tresor-panel {
+    background-color: var(--pv-surface) !important;
+    color: var(--pv-ink);
+    padding-top: 18px !important;
+    padding-bottom: 24px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.14);
+}
+
+@media (min-width: 768px) {
+    .pv-tresor #main_container > .container.pv-tresor-panel {
+        max-width: min(1600px, calc(100% - 48px));
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+}
+
+.pv-tresor .pv-tresor-panel h3 {
+    font-size: 1.45rem;
+    margin: 0 0 12px;
+}
+
+.pv-tresor .pv-tresor-panel hr {
+    margin: 16px 0;
+}
+
+/* ---------- the tabs and the session ---------- */
+.pv-tresor-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.pv-tresor-nav[hidden] {
+    display: none;
+}
+
+.pv-tresor-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-width: 0;
+}
+
+.ui-preview #main_container .pv-tresor-tab {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 999px;
+    color: var(--pv-muted);
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.ui-preview #main_container .pv-tresor-tab:hover {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    text-decoration: none;
+}
+
+.ui-preview #main_container .pv-tresor-tab[aria-current] {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.ui-preview #main_container .pv-tresor-tab:focus-visible,
+.pv-tresor-session button:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+}
+
+.pv-tresor-session {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* quiet text buttons; the time in fixed figures so that the row stays put */
+.pv-tresor .pv-tresor-session .pv-tresor-time,
+.pv-tresor .pv-tresor-session .pv-tresor-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--pv-muted);
+    font-family: var(--pv-text);
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.pv-tresor .pv-tresor-session .pv-tresor-time:hover,
+.pv-tresor .pv-tresor-session .pv-tresor-logout:hover {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+.pv-tresor .pv-tresor-session .ti {
+    font-size: 1.1em;
+}
+
+.pv-tresor .pv-tresor-time-left {
+    font-variant-numeric: tabular-nums;
+    min-width: 2.8em;
+    color: var(--pv-ink);
+}
+
+.pv-tresor .pv-tresor-time-label {
+    margin-right: -2px;
+}
+
+/* the last two minutes (template: amber), the last one (red): a soft tone,
+   then calm red type */
+.pv-tresor .pv-tresor-session .pv-tresor-time.bg-amber-300 {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.pv-tresor .pv-tresor-session .pv-tresor-time.bg-amber-300 .pv-tresor-time-left {
+    color: var(--acc-text);
+}
+
+.pv-tresor .pv-tresor-session .pv-tresor-time.bg-red-400,
+.pv-tresor .pv-tresor-session .pv-tresor-time.bg-red-400 .pv-tresor-time-left {
+    background: color-mix(in srgb, #b42318 10%, var(--pv-surface));
+    color: #b42318;
+}
+
+.ui-preview.dark.pv-tresor .pv-tresor-session .pv-tresor-time.bg-red-400,
+.ui-preview.dark.pv-tresor .pv-tresor-session .pv-tresor-time.bg-red-400 .pv-tresor-time-left {
+    background: color-mix(in srgb, #ff8f8f 14%, var(--pv-surface));
+    color: #ff8f8f;
+}
+
+/* phones: the tabs scroll sideways from edge to edge of the panel, the
+   session in its own row above them, at the end */
+@media (max-width: 767px) {
+    .pv-tresor-nav {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        flex-wrap: nowrap;
+        gap: 6px;
+        margin: -6px -15px 14px;
+        padding: 0 0 8px;
+    }
+
+    .pv-tresor-tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding: 0 11px;
+    }
+
+    .pv-tresor-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pv-tresor-tabs > li {
+        flex: none;
+    }
+
+    .pv-tresor-session {
+        margin-left: 0;
+        padding: 0 11px;
+        justify-content: flex-end;
+    }
+
+    .ui-preview #main_container .pv-tresor-tab,
+    .pv-tresor .pv-tresor-session .pv-tresor-time,
+    .pv-tresor .pv-tresor-session .pv-tresor-logout {
+        padding: 6px 10px;
+        font-size: 0.88rem;
+    }
+}
+
+/* ---------- today's Zeugniskonferenzen: a section, no second panel ---------- */
+.pv-tresor .pv-tresor-konferenz {
+    padding: 0 0 16px !important;
+    margin: 0 0 18px;
+    background: transparent !important;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.pv-tresor .pv-tresor-konferenz h4 {
+    font-size: 1.1rem;
+    margin: 0 0 6px;
+}
+
+.pv-tresor .pv-tresor-konferenz #div_zeugniskonferenzen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pv-tresor .pv-tresor-konferenz .btn {
+    margin: 0 !important;
+}
+
+/* ---------- the pages ---------- */
+.pv-tresor .pv-tresor-note {
+    color: var(--pv-muted);
+    margin: 4px 0 12px;
+}
+
+/* wide tables scroll inside the panel instead of the page */
+.pv-tresor .pv-tresor-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.pv-tresor #zeugnisuebersicht-here.pv-tresor-scroll {
+    flex-wrap: wrap;
+}
+
+/* Zeugnisformulare: in a narrow panel each form is a list row, the state's
+   icon level with the first line, the missing marks below the name */
+.pv-tresor #zeugnisformulare_table_here {
+    container-type: inline-size;
+}
+
+/* the state's icon level with the first line of a wrapping text */
+.pv-tresor #zeugnisformulare_table_here tr {
+    line-height: 1.35 !important;
+}
+
+.pv-tresor #zeugnisformulare_table_here td {
+    vertical-align: top;
+}
+
+@container (max-width: 600px) {
+    .pv-tresor #zeugnisformulare_table_here table,
+    .pv-tresor #zeugnisformulare_table_here tbody {
+        display: block;
+        width: 100% !important;
+    }
+
+    .pv-tresor #zeugnisformulare_table_here tr {
+        display: grid;
+        grid-template-columns: 1.4em minmax(0, 1fr);
+        column-gap: 8px;
+        padding: 9px 2px;
+        border-top: 1px solid var(--pv-line);
+        line-height: 1.35 !important;
+    }
+
+    .pv-tresor #zeugnisformulare_table_here td {
+        display: block;
+        padding: 0;
+        border: 0;
+        white-space: normal !important;
+    }
+
+    .pv-tresor #zeugnisformulare_table_here td:nth-child(1) {
+        grid-row: 1;
+        grid-column: 2;
+        font-weight: 600;
+    }
+
+    .pv-tresor #zeugnisformulare_table_here td:nth-child(2) {
+        grid-row: 1;
+        grid-column: 1;
+    }
+
+    .pv-tresor #zeugnisformulare_table_here td:nth-child(3) {
+        grid-column: 2;
+        color: var(--pv-muted);
+        font-size: 0.92rem;
+    }
+}
+
+/* Zeugnislisten (a matrix): the class stays in view while it scrolls */
+.pv-tresor #zeugnislisten_table_here td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--pv-surface);
+}
+
+/* tables: the surface, also behind sticky columns and headers (dark.css
+   paints table heads grey) */
+.ui-preview.pv-tresor .pv-tresor-panel .table thead th {
+    background-color: var(--pv-surface) !important;
+}
+
+/* a table the page began but could not fill (no Zeugnislisten) */
+.pv-tresor .pv-tresor-panel table:empty {
+    display: none;
+}
+
+/* tables: the surface, also behind sticky columns and headers */
+.pv-tresor .pv-tresor-panel td.tdsticky,
+.pv-tresor .pv-tresor-panel th.thsticky {
+    background-color: var(--pv-surface);
+}
+
+/* the template moves the header of the grade tables down by script,
+   measured against today's top bar (in the new design the sidebar): here
+   the header simply sticks to the top of the window */
+.pv-tresor .tresor_table_container thead {
+    position: static !important;
+    top: auto !important;
+    box-shadow: none !important;
+    background-color: var(--pv-surface) !important;
+}
+
+.pv-tresor .tresor_table_container thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: var(--pv-surface);
+}
+
+.pv-tresor tr.focused,
+.pv-tresor tr.focused td {
+    background-color: var(--acc-soft);
+}
+
+/* classes, courses (AT-Notizen, Zeugnisdruck, Anlage Sozialverhalten): chips
+   to choose from, the chosen one in the accent's soft tone */
+.pv-tresor #klassen_buttons_here {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pv-tresor #klassen_buttons_here > button {
+    margin: 0 !important;
+    padding: 5px 12px !important;
+    border: 1px solid var(--pv-line) !important;
+    border-radius: 999px !important;
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink) !important;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.pv-tresor #klassen_buttons_here > button:hover {
+    background: var(--pv-hover) !important;
+}
+
+.pv-tresor #klassen_buttons_here > button.bg-amber-300 {
+    background: var(--acc-soft) !important;
+    border-color: transparent !important;
+    color: var(--acc-text) !important;
+    font-weight: 600;
+}
+
+.pv-tresor #klassen_buttons_here > button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.pv-tresor #klassen_buttons_here > button:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+}
+
+/* AT-Notizen: the date filter left aligned, under the chips */
+.pv-tresor #ti_date_filter {
+    justify-content: flex-start !important;
+    align-items: flex-end !important;
+    margin: 0 !important;
+}
+
+.pv-tresor #ti_date_filter > div {
+    flex: 0 1 10em;
+    min-width: 0;
+}
+
+.pv-tresor #ti_date_filter input {
+    min-width: 0 !important;
+    width: 100%;
+}
+
+/* the AT table: »Hausaufgaben × 2« as a quiet chip */
+.pv-tresor #noten_here .badge-secondary {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font-weight: 600;
+}
+
+/* Zeugnisdruck: the hint, then the class chips; the buttons for a class in
+   one wrapping row (one main action, the others neutral) */
+.pv-tresor .pv-tresor-hint {
+    margin: 0 0 14px;
+}
+
+.pv-tresor #button_here {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0;
+}
+
+.pv-tresor #button_here .btn {
+    font-size: 1rem;
+}
+
+.ui-preview.pv-tresor #main_container #button_here .btn-info {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.pv-tresor-nolists #klassen_buttons_here,
+.pv-tresor-nolists #klassen_buttons_here ~ hr,
+.pv-tresor-nolists #button_here {
+    display: none !important;
+}
+
+/* Anlage Sozialverhalten: the hint box without its green */
+.pv-tresor .pv-tresor-panel .alert-success.span-hl {
+    background: var(--pv-hover);
+    border: 0;
+    border-radius: 12px;
+    color: var(--pv-ink);
+}
+
+.pv-tresor .expl_table td span,
+.pv-tresor .span-hl span {
+    background-color: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+}
+
+.pv-tresor ul.legend li span {
+    background-color: var(--pv-hover);
+}
+
+/* ---------- the login (tresor.html) ---------- */
+.pv-tresor .pv-tresor-title {
+    margin-bottom: 10px;
+}
+
+.pv-tresor .pv-tresor-intro {
+    margin-bottom: 14px;
+}
+
+.pv-tresor .pv-tresor-methods {
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+    gap: 8px !important;
+}
+
+.pv-tresor .pv-tresor-methods .btn {
+    margin: 0;
+}
+
+/* a method that is not set up: calm and visibly unavailable */
+.pv-tresor .pv-tresor-methods .btn:disabled {
+    opacity: 0.55;
+}
+
+.pv-tresor .pv-tresor-quiet {
+    color: var(--pv-muted) !important;
+    font-size: 0.92rem;
+    text-align: left !important;
+    margin: 0 0 10px !important;
+}
+
+.pv-tresor #div-login > p > em {
+    font-style: normal;
+}
+
+.pv-tresor #hint-no-good-telephone-number,
+.pv-tresor #hint-no-good-otp-token {
+    margin: 0 0 12px;
+}
+
+.pv-tresor #div-login > hr {
+    margin: 14px 0;
+}
+
+/* the code: label, field and button as one group, not centred */
+.pv-tresor #div-confirm-login {
+    max-width: 360px;
+    padding: 0;
+}
+
+.pv-tresor .pv-tresor-code-label {
+    display: block;
+}
+
+.pv-tresor #div-confirm-login .input-group {
+    flex-wrap: nowrap;
+}
+
+.pv-tresor #div-confirm-login #code {
+    text-align: left !important;
+    font-variant-numeric: tabular-nums;
+}
+
+/* not reachable: a calm notice with what to do */
+.pv-tresor .pv-tresor-unreachable {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 4px 0 2px;
+}
+
+.pv-tresor .pv-tresor-unreachable > .ti {
+    flex: none;
+    font-size: 1.5rem;
+    line-height: 1.5rem;
+    color: #b42318;
+}
+
+.ui-preview.dark.pv-tresor .pv-tresor-unreachable > .ti {
+    color: #ff8f8f;
+}
+
+.pv-tresor .pv-tresor-unreachable p {
+    margin: 0 0 8px;
+}
+
+.pv-tresor .pv-tresor-unreachable .pv-tresor-unreachable-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.pv-tresor .pv-tresor-unreachable .btn {
+    margin-top: 4px;
+}
+
+/* the hotline's dialog: the photo smaller, the steps as a list of lines */
+.pv-tresor #__2fa_modal .modal-body img {
+    max-height: 140px !important;
+    border-radius: 12px !important;
+}
+
+.pv-tresor #__2fa_modal .modal-body p {
+    margin-bottom: 10px;
+}
+
+/* phones: the photo above the steps instead of beside them */
+@media (max-width: 767px) {
+    .pv-tresor #__2fa_modal .modal-body img {
+        float: none !important;
+        display: block;
+        max-height: 120px !important;
+        margin: 0 0 12px !important;
+    }
+}
+
+/* the template's messages: a calm floating card beside the sidebar */
+.pv-tresor .api_messages {
+    top: 16px;
+    left: calc(var(--pv-sidebar) + 24px);
+    right: 24px;
+    width: auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.pv-tresor .api_messages .bg-light {
+    background: var(--pv-surface) !important;
+}
+
+@media (max-width: 767px) {
+    .pv-tresor .api_messages {
+        top: calc(12px + env(safe-area-inset-top, 0px));
+        left: 12px;
+        right: 12px;
+    }
+}

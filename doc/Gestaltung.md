@@ -328,9 +328,11 @@ Umfragen, Termine, News verwalten)
 - **Feste Kacheln.** Jede Klasse hat immer ihre Kachel an derselben Stelle,
   auch ohne Änderungen (dann steht nur der Name darin, leise). Wo eine
   Klasse steht, hängt nie davon ab, welche Klassen heute Änderungen haben:
-  man findet seine Klasse jeden Tag am selben Platz. Links die Klassen 5
-  bis 10, eine Reihe pro Jahrgang, eine Spalte pro Parallelklasse; rechts
-  die Oberstufe, jede Klasse eine feste Hälfte.
+  man findet seine Klasse jeden Tag am selben Platz. Die Verteilung ist
+  die des bisherigen Monitors, mit Absicht: die Klassen in der Reihenfolge
+  von `KLASSEN_ORDER` von oben nach unten in Spalten zu je sieben, vier
+  Spalten nebeneinander, 11 und 12 höher (wie bisher 9,8 zu 6,2). Leere
+  Plätze für Klassen, die es nicht gibt, kommen nicht vor.
 - **Blättern statt Scrollen.** Was nicht in eine Kachel passt, blättert in
   der Kachel (Punkte zeigen die Seite); alle Kacheln blättern im selben
   Takt, jede Seite steht 15 Sekunden, ein Balken im Fuß zeigt die

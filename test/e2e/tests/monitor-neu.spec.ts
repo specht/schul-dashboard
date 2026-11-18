@@ -45,6 +45,21 @@ function schultag(heute: string, anzahl: Record<string, number>, uhr = '07:12') 
   };
 }
 
+// The test stack has only 5a to 5c, 11 and 12. A full school as the
+// hallway monitors show it: KLASSEN_ORDER replaced in the page (test only).
+const KLASSEN_TESTSTACK = ['5a', '5b', '5c', '11', '12'];
+const KLASSEN_SCHULE = ['5a', '5b', '5c', '5d', '6a', '6b', '6c', '6d', '7a', '7b', '7c', '7d',
+  '8a', '8b', '8c', '8d', '8o', '9a', '9b', '9c', '9d', '10a', '10b', '10c', '10d', '11', '12'];
+async function ganzeSchule(page: Page) {
+  await page.route(/\/monitor(\?|$)/, async (route) => {
+    const r = await route.fetch();
+    const html = await r.text();
+    const vorher = JSON.stringify(KLASSEN_TESTSTACK);
+    expect(html).toContain(vorher);
+    await route.fulfill({ response: r, body: html.split(vorher).join(JSON.stringify(KLASSEN_SCHULE)) });
+  });
+}
+
 async function monitorMitTag(page: Page, url: string, anzahl: Record<string, number>,
   nachrichten: string[] = ['Elternsprechtag am Mittwoch ab 16 Uhr']) {
   // 11:05 and today's date in the browser's time zone (Europe/Berlin)
@@ -66,8 +81,12 @@ async function monitorMitTag(page: Page, url: string, anzahl: Record<string, num
   });
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto(url);
-  await expect(page.getByTestId('monitor-neu')).toBeVisible();
-  await expect(page.locator('.mn-sek, .mn-zk').first()).toBeVisible();
+  if (url.includes('design=alt')) {
+    await expect(page.locator('.main .klasse').first()).toBeVisible();
+  } else {
+    await expect(page.getByTestId('monitor-neu')).toBeVisible();
+    await expect(page.locator('.mn-kachel, .mn-zk').first()).toBeVisible();
+  }
   // a new plan from the server (as when the substitution plan changes)
   return (neu: Record<string, number>, uhr: string) =>
     verbindung!.send(JSON.stringify({ command: 'update_vplan', data: schultag(heute, neu, uhr) }));
@@ -116,20 +135,20 @@ test('Flurmonitor, neues Design: Uhr, laufende Stunde, Kästen und Marken', asyn
   await expect(page.getByTestId('monitor-stunde')).toContainText('4. Stunde läuft');
   await expect(page.getByTestId('monitor-stunde')).toContainText('Pause ab');
   await expect(page.locator('.mn-datum')).toContainText('Stand 7:12 Uhr');
-  const k5a = page.locator('.mn-sek .mn-kachel[data-klasse="5a"]');
+  const k5a = page.locator('.mn-kachel[data-klasse="5a"]');
   await expect(k5a.locator('.mn-marke', { hasText: 'Vertretung' })).toHaveCount(1);
   await expect(k5a.locator('.mn-marke', { hasText: 'Entfall' })).toHaveCount(1);
   await expect(k5a.locator('.mn-marke', { hasText: 'Raum' })).toHaveCount(1);
   // every class has its tile, also without changes (then only the name)
-  const k5c = page.locator('.mn-sek .mn-kachel[data-klasse="5c"]');
+  const k5c = page.locator('.mn-kachel[data-klasse="5c"]');
   await expect(k5c).toHaveClass(/mn-still/);
   await expect(k5c).toHaveText('5c');
-  await expect(page.locator('.mn-os .mn-kachel[data-klasse="11"] .mn-anzahl')).toContainText('25 Änderungen');
+  await expect(page.locator('.mn-kachel[data-klasse="11"] .mn-zeile').first()).toContainText('1.');
   // the message of "Monitore verwalten" in the foot, the scheme of the day
   await expect(page.locator('.mn-nachricht')).toContainText('Elternsprechtag');
   await expect(page.locator('.mn-schema')).toContainText('Farbschema');
   // larger type than today (1.05vw, 20 px): at least 22 px on a full HD monitor
-  for (const sel of ['.mn-sek .mn-was', '.mn-os .mn-was']) {
+  for (const sel of ['.mn-kachel[data-klasse="5a"] .mn-was', '.mn-kachel[data-klasse="11"] .mn-was']) {
     const size = await page.locator(sel).first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
     expect(size, sel).toBeGreaterThanOrEqual(22);
   }
@@ -150,10 +169,17 @@ test('Flurmonitor, neues Design: blättert statt zu scrollen', async ({ page }) 
   expect(seiten).toBeGreaterThan(1);
   await expect(page.locator('.mn-seite')).toHaveText(`Seite 1 von ${seiten}`);
   // a tile with more than fits pages inside itself, the tiles stay where they are
-  const k11 = page.locator('.mn-os .mn-kachel[data-klasse="11"]');
-  const k5a = page.locator('.mn-sek .mn-kachel[data-klasse="5a"]');
-  await expect(k11.locator('.mn-anzahl')).toContainText('Seite 1 von');
-  await expect(k5a.locator('.mn-punkte i.mn-an')).toHaveCount(1);
+  const k11 = page.locator('.mn-kachel[data-klasse="11"]');
+  const k5a = page.locator('.mn-kachel[data-klasse="5a"]');
+  // the tile's page: dots (the current one marked), with many pages a number
+  const an = (k: typeof k11) => k.locator('.mn-punkte').evaluate((p) => {
+    const m = /^(\d+) von \d+$/.exec(p.textContent || '');
+    return m ? parseInt(m[1], 10) - 1 : Array.from(p.children).findIndex((x) => x.classList.contains('mn-an'));
+  });
+  expect(await an(k11)).toBe(0);
+  // many pages: the page as a number instead of dots
+  await expect(k5a.locator('.mn-punkte')).toHaveText(/^1 von \d+$/);
+  await expect(page.locator('.mn-kachel[data-klasse="5b"] .mn-punkte i.mn-an')).toHaveCount(1);
   await nichtsAbgeschnitten(page);
   const orte = await kachelOrte(page);
   const vorher11 = await k11.locator('.mn-zeilen').innerText();
@@ -162,7 +188,8 @@ test('Flurmonitor, neues Design: blättert statt zu scrollen', async ({ page }) 
   await blaettern(page);
   await expect(mn).toHaveAttribute('data-seite', '2');
   await expect(page.locator('.mn-seite')).toHaveText(`Seite 2 von ${seiten}`);
-  await expect(k11.locator('.mn-anzahl')).toContainText('Seite 2 von');
+  expect(await an(k11)).toBe(1);
+  await expect(k5a.locator('.mn-punkte')).toHaveText(/^2 von \d+$/);
   expect(await k11.locator('.mn-zeilen').innerText()).not.toBe(vorher11);
   expect(await k5a.locator('.mn-zeilen').innerText()).not.toBe(vorher5a);
   await nichtsAbgeschnitten(page);
@@ -179,34 +206,90 @@ test('Flurmonitor, neues Design: blättert statt zu scrollen', async ({ page }) 
 
 // The maintainer's rule: every class always in the same place, whichever
 // classes have changes today – people find their class without searching.
+// A full school, as on the hallway monitors.
 test('Flurmonitor, neues Design: jede Klasse immer am selben Platz', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
-  const senden = await monitorMitTag(page, '/monitor?design=neu', { '5a': 3, '5b': 1, '11': 25 });
+  await ganzeSchule(page);
+  const senden = await monitorMitTag(page, '/monitor?design=neu', { '5a': 3, '5b': 1, '7d': 6, '11': 25 });
   const k5c = page.locator('.mn-kachel[data-klasse="5c"]');
   await expect(k5c).toHaveClass(/mn-still/);
   const orte = await kachelOrte(page);
-  // every class of KLASSEN_ORDER has a tile
-  expect(Object.keys(orte).sort()).toEqual(['11', '12', '5a', '5b', '5c']);
+  // every class of KLASSEN_ORDER has a tile, in its order, and there is
+  // nothing else: no empty tiles for classes that don't exist
+  expect(await page.locator('.mn-kachel').evaluateAll((e) => e.map((x) => (x as HTMLElement).dataset.klasse)))
+    .toEqual(KLASSEN_SCHULE);
+  await expect(page.locator('.mn-raster .mn-kasten')).toHaveCount(KLASSEN_SCHULE.length);
+  for (const k of KLASSEN_SCHULE) {
+    await expect(page.locator(`.mn-kachel[data-klasse="${k}"] h2`)).toHaveText(k === '8o' ? /^8[oω]$/ : k);
+  }
+  await nichtsAbgeschnitten(page);
   // another day: other classes with changes, 5a and 11 without
-  senden({ '5c': 4, '12': 20 }, '07:30');
+  senden({ '5c': 4, '8o': 2, '12': 20 }, '07:30');
   await expect(page.locator('.mn-datum')).toContainText('Stand 7:30 Uhr');
   await expect(k5c).not.toHaveClass(/mn-still/);
   await expect(page.locator('.mn-kachel[data-klasse="5a"]')).toHaveClass(/mn-still/);
   await expect(page.locator('.mn-kachel[data-klasse="5a"]')).toHaveText('5a');
-  await expect(page.locator('.mn-kachel[data-klasse="11"] .mn-anzahl')).toHaveText('keine Änderungen');
+  await expect(page.locator('.mn-kachel[data-klasse="11"]')).toHaveText('11');
   expect(await kachelOrte(page)).toEqual(orte);
-  // and a day without any change
+  // and a day without any change: every tile still there, only the name
   senden({}, '07:45');
   await expect(page.locator('.mn-datum')).toContainText('Stand 7:45 Uhr');
-  await expect(page.locator('.mn-kachel.mn-still')).toHaveCount(5);
+  await expect(page.locator('.mn-kachel.mn-still')).toHaveCount(KLASSEN_SCHULE.length);
   expect(await kachelOrte(page)).toEqual(orte);
+});
+
+// The distribution of the tiles is the old monitor's (monitor.html, built
+// on purpose): KLASSEN_ORDER top to bottom in columns of seven, four columns,
+// 11 and 12 taller. Compared tile by tile with today's monitor.
+async function anordnung(page: Page, sel: string) {
+  const kacheln = await page.locator(sel).evaluateAll((e) => e.map((x) => {
+    const r = x.getBoundingClientRect();
+    const klasse = (x as HTMLElement).dataset.klasse || /(?:^| )k(\d\S*)/.exec(x.className)![1];
+    return { klasse, x: r.x, y: r.y, w: r.width, h: r.height };
+  }));
+  const xs: number[] = [];
+  for (const k of [...kacheln].sort((a, b) => a.x - b.x)) {
+    if (!xs.length || k.x - xs[xs.length - 1] > 5) xs.push(k.x);
+  }
+  const spalte = (k: { x: number }) => xs.findIndex((x) => Math.abs(k.x - x) <= 5);
+  const normal = kacheln.find((k) => k.klasse === '5a')!;
+  return Object.fromEntries(kacheln.map((k) => {
+    const reihe = kacheln.filter((o) => spalte(o) === spalte(k) && o.y < k.y - 1).length;
+    // position and size relative to a normal tile
+    return [k.klasse, { spalte: spalte(k), reihe, hoehe: Math.round((k.h / normal.h) * 10) / 10,
+      oben: Math.round(((k.y - normal.y) / normal.h) * 10) / 10, breite: Math.round((k.w / normal.w) * 100) / 100 }];
+  }));
+}
+
+test('Flurmonitor, neues Design: Kacheln verteilt wie auf dem bisherigen Monitor', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await ganzeSchule(page);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto('/monitor?design=alt');
+  await expect(page.locator('.main .klasse')).toHaveCount(KLASSEN_SCHULE.length);
+  const alt = await anordnung(page, '.main .klasse');
+  await monitorMitTag(page, '/monitor?design=neu', { '5a': 2, '9c': 3, '12': 4 });
+  const neu = await anordnung(page, '.mn-kachel');
+  expect(Object.keys(neu).sort()).toEqual([...KLASSEN_SCHULE].sort());
+  // same column and row for every class
+  for (const k of KLASSEN_SCHULE) {
+    expect([neu[k].spalte, neu[k].reihe], k).toEqual([alt[k].spalte, alt[k].reihe]);
+  }
+  expect(KLASSEN_SCHULE.map((k) => neu[k].spalte)).toEqual(KLASSEN_SCHULE.map((_, i) => Math.floor(i / 7)));
+  // same relative sizes and heights (11 and 12 taller, the columns as high as each other)
+  for (const k of KLASSEN_SCHULE) {
+    expect(Math.abs(neu[k].hoehe - alt[k].hoehe), k).toBeLessThanOrEqual(0.1);
+    expect(Math.abs(neu[k].oben - alt[k].oben), k).toBeLessThanOrEqual(0.15);
+    expect(neu[k].breite, k).toBe(1);
+  }
+  expect(neu['11'].hoehe).toBeGreaterThan(1.4);
 });
 
 test('Flurmonitor, neues Design: dunkel', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await monitorMitTag(page, '/monitor?design=neu-dunkel', { '5a': 3, '11': 4 });
   await expect(page.getByTestId('monitor-neu')).toHaveClass(/mn-dunkel/);
-  const bg = await page.locator('.mn-sek .mn-kachel').first().evaluate((e) => getComputedStyle(e).backgroundColor);
+  const bg = await page.locator('.mn-kachel').first().evaluate((e) => getComputedStyle(e).backgroundColor);
   expect(bg).toBe('rgb(22, 29, 39)');
 });
 
@@ -214,7 +297,7 @@ test('Flurmonitor, neues Design: Effekte laufen hinter den Kästen', async ({ pa
   await login(page, ACCOUNTS.admin);
   await monitorMitTag(page, '/monitor?design=neu&effekt=schnee', { '5a': 3, '11': 4 });
   await expect(page.locator('canvas.fx-hinten-ebene')).toHaveCount(1);
-  const card = page.locator('.mn-sek .mn-kachel').first();
+  const card = page.locator('.mn-kachel').first();
   const b = (await card.boundingBox())!;
   const hit = await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest('.mn-kasten'),
     [b.x + b.width / 2, b.y + b.height / 2]);

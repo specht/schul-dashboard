@@ -6,229 +6,20 @@
    #pollResponseModal in _template.html, the hint on the start page, the
    public page poll.html). */
 
-/* ---------- The list: polls as cards, their runs as rows ---------- */
+/* ---------- The list: rows with actions (preview.css, ".pv-lrow") ----------
+   polls as rows, their running and planned runs as sub-rows below, the
+   finished ones folded; here only what is special to polls: how far the
+   answers have come */
 
-/* the title and "Neue Umfrage" in one row */
-.ui-preview .pv-polls-page > .row > .col-md-12 {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-}
-
-.ui-preview .pv-polls-page h2 {
-    flex: 1 1 auto;
-    margin: 0 !important;
-}
-
-.ui-preview .pv-polls-page > .row > .col-md-12 > hr {
-    display: none;
-}
-
-.ui-preview .pv-polls-page .polls-here {
-    flex: 1 1 100%;
-    min-width: 0;
-    margin-top: 6px;
-}
-
-.ui-preview .pv-polls-page .btn > i + span {
-    margin-left: 6px;
-}
-
-.pv-poll {
-    /* a section of the page's panel, not a card of its own: one surface
-       only (doc/Gestaltung.md, "Flächen") */
-    color: var(--pv-ink);
-    padding: 18px 0 14px;
-    border-top: 1px solid var(--pv-line);
-}
-
-.pv-poll:first-child {
-    border-top: 0;
-    padding-top: 4px;
-}
-
-.pv-poll-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 6px 16px;
-}
-
-.pv-poll-title {
-    flex: 1 1 260px;
-    min-width: 0;
-}
-
-.ui-preview .pv-poll-title h3 {
-    font-size: 1.2rem;
-    line-height: 1.3;
-    margin: 0 0 2px;
-    overflow-wrap: anywhere;
-}
-
-.pv-poll-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 14px;
-    font-size: 0.85em;
-    color: var(--pv-muted);
-}
-
-.pv-poll-actions,
-.pv-run-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px;
-}
-
-/* quiet text buttons: no frame, no fill until hovered; never stretched */
-.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm {
-    flex: 0 0 auto;
-    width: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 9px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    box-shadow: none;
-    color: var(--acc-text);
-    font-size: 0.88rem;
-    font-weight: 600;
-}
-
-.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm:hover,
-.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm:focus-visible {
-    background: var(--pv-hover);
-}
-
-.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm.btn-danger {
-    color: #b42318;
-}
-
-.ui-preview.dark #main_container .pv-polls-page .pv-poll .btn-sm.btn-danger {
-    color: #ff8f8f;
-}
-
-.ui-preview .pv-polls-page .pv-poll .btn-sm > i {
-    margin: 0;
-}
-
-/* delete: the icon only (the name stays for screen readers) */
-.ui-preview .pv-polls-page .pv-icon-only > span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-}
-
-.ui-preview #main_container .pv-polls-page .pv-poll .btn-sm.pv-icon-only {
-    padding: 5px 8px;
-}
-
-.pv-runs {
-    display: flex;
-    flex-direction: column;
-    margin-top: 8px;
-}
-
-.pv-runs-empty {
-    margin: 4px 0 0;
-    font-size: 0.9em;
-    color: var(--pv-muted);
-}
-
-/* the runs: rows divided by hairlines, no boxes */
-.pv-run {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "main actions" "progress actions";
-    align-items: center;
-    gap: 6px 16px;
-    padding: 10px 0 10px 12px;
-    border-top: 1px solid var(--pv-line);
-}
-
-/* running: a slim accent line at the left edge */
-.pv-run-running::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 10px;
-    bottom: 10px;
-    width: 3px;
-    border-radius: 2px;
-    background: var(--acc);
-}
-
-.pv-run-main {
-    grid-area: main;
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    min-width: 0;
-}
-
-/* the status chip at the top, level with the first line */
-.pv-run-status {
-    flex: none;
-    margin-top: 1px;
-    padding: 1px 8px;
-    border-radius: 999px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    line-height: 1.4;
-    white-space: nowrap;
-    background: var(--pv-hover);
-    color: var(--pv-muted);
-}
-
-.pv-run-running .pv-run-status {
-    background: var(--acc-soft);
-    color: var(--acc-text);
-}
-
-.pv-run-planned .pv-run-status {
-    color: var(--pv-ink);
-}
-
-.pv-run-text {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.pv-run-when {
-    font-weight: 600;
-    overflow-wrap: anywhere;
-}
-
-/* the facts as one quiet line: "26 Teilnehmer, mit Namen" */
-.pv-run-tags {
-    font-size: 0.85em;
-    color: var(--pv-muted);
-}
-
-.pv-run-tags span + span::before {
-    content: ", ";
-}
-
-.pv-run-progress {
-    grid-area: progress;
+.pv-polls-page .pv-run-progress {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
+    margin-top: 4px;
 }
 
-.pv-bar {
+.pv-polls-page .pv-bar {
     flex: 0 1 220px;
     height: 6px;
     border-radius: 3px;
@@ -236,41 +27,26 @@
     overflow: hidden;
 }
 
-.pv-bar b {
+.pv-polls-page .pv-bar b {
     display: block;
     height: 100%;
     border-radius: 3px;
     background: var(--acc);
 }
 
-.pv-run-count {
+.pv-polls-page .pv-run-count {
     font-size: 0.82em;
     color: var(--pv-muted);
     font-variant-numeric: tabular-nums;
 }
 
-.pv-run-actions {
-    grid-area: actions;
-    justify-content: flex-end;
+/* the first poll right below the title (or a group's heading) */
+.pv-polls-page .polls-here {
+    margin-top: 4px;
 }
 
 @media (max-width: 767px) {
-    .pv-poll-actions {
-        flex-basis: 100%;
-        margin-left: -9px;
-    }
-
-    .pv-run {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas: "main" "progress" "actions";
-    }
-
-    .pv-run-actions {
-        justify-content: flex-start;
-        margin-left: -9px;
-    }
-
-    .pv-bar {
+    .pv-polls-page .pv-bar {
         flex: 1 1 auto;
     }
 }

@@ -180,7 +180,7 @@ var old_jitsi = null;
 var old_recipients_list = [];
 var old_description = '';
 var old_eid = null;
-var stored_events = #{stored_events.to_json};
+var stored_events = #{stored_events.to_json};#{events_preview_js(pv_events_archive)}
 var external_users_for_session_user = #{external_users_for_session_user.to_json};
 var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
 CAN_HANDLE_EXTERNAL_USERS = true;
@@ -747,4 +747,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, external_users_for_session_user);
 });
-</script>
+</script>#{events_preview_script(pv_events_archive)}

@@ -42,7 +42,10 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
     die nur die Seite im neuen Design setzt, damit sie nicht in andere
     Seiten durchschlagen.
 - **Skripte:** `src/static/preview.js` enthält nur Allgemeines (Navigation,
-  Sheets, Menüs). Seitenlogik bleibt in der Seite.
+  Sheets, Menüs). Seitenlogik bleibt in der Seite. Muss eine Seite im alten
+  Design Byte für Byte gleich bleiben, steht ihr Teil für das neue Design in
+  `src/static/preview/<seite>.js`, den die Seite nur im neuen Design lädt
+  (Beispiel: Termine).
 - **Achtung Tailwind:** Die Entwicklungsinstanz erzeugt `tailwind.css` neu,
   sobald sich Dateien unter `src/static` ändern, und liest dabei jedes Wort
   als möglichen Klassennamen, auch in Skripten (`if (!grid)` ergibt eine
@@ -182,6 +185,28 @@ Aktionen und das Verhalten am Handy.
 - Das alte Design behält seine Datenwege; Nachladen für das neue Design
   kommt über zusätzliche, nur lesende Abfragen.
 
+**Bausteine** (`pv_list` in `preview.js`, Styles in `preview.css`; Beispiele:
+Umfragen, Termine, News verwalten)
+
+- `pv_list.page`: setzt den Seitentyp (`.pv-page-list`, höchstens etwa
+  980 px) und stellt Titel und Hauptaktion in eine Zeile, am Handy »Neu«.
+- `pv_list.row`: eine Zeile (`.pv-lrow`) mit Titel, leiser Faktenzeile,
+  sichtbaren Aktionen und »•••«; am Handy öffnet die Zeile das Element.
+- `pv_list.row({sub: true, chip})`: eine Unterzeile, eingerückt, mit
+  Status-Chip; laufende mit Akzentlinie links.
+- `pv_list.menu`: das »•••«-Menü neben dem Knopf, am Handy ein Sheet mit dem
+  Titel oben; Pfeiltasten, Escape schließt, »Zurück« schließt das Sheet,
+  Löschen in ruhigem Rot am Ende.
+- `pv_list.confirm_delete`: Löschen immer mit `dashboardConfirm` und
+  `danger: true`.
+- `pv_list.fold`: Gefaltetes hinter »2 beendete Durchführungen anzeigen«.
+- `pv_list.group`: ein Abschnitt mit Überschrift (»Schuljahr 2025/26«) und
+  Anzahl, gefaltet oder offen, beim ersten Öffnen gefüllt oder nachgeladen.
+- `pv_list.blocks`: lange Listen in Blöcken von 50, weitere beim Scrollen,
+  »Ältere … laden« als Rückfall.
+- `pv_list.school_year`: das Schuljahr eines Datums (1. August bis
+  31. Juli), `school_year_label` die Beschriftung.
+
 ## 7. Knöpfe
 
 - **Eine Hauptaktion pro Ansicht** in vollem Akzent (dunkel mit heller
@@ -208,6 +233,11 @@ Aktionen und das Verhalten am Handy.
 - **Am Handy** sind Dialoge und Menüs Sheets von unten (`.pv-sheet` auf dem
   Modal): sie gleiten hoch, lassen sich nach unten ziehen oder über den
   Schleier schließen und liegen über der Tab-Leiste.
+- **Hinter einem offenen Sheet steht die Seite still:** sie scrollt nicht
+  mit, auch nicht beim Wischen auf dem Schleier, und steht nach dem
+  Schließen wieder genau dort, wo sie war (`preview.js`; eigene Sheets
+  setzen dafür `body.pv-sheet-open`). Scrollt ein Sheet selbst, endet das
+  an seinem Rand.
 - Ungespeicherte Änderungen werden vor dem Schließen nachgefragt.
 - **Zurück schließt, was wie ein eigener Bildschirm aufgeht.** Die
   Zurück-Geste (Wischen vom Rand, Zurück-Taste des Handys oder Browsers)

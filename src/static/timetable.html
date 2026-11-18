@@ -605,10 +605,32 @@ function render_timetable(result, successCallback) {
 // Topic, homework and notes are plain text from the course planning; the
 // timetable service joins several lessons with <br />. Insert as text and
 // turn only those joins into line breaks.
-function appendTextWithBreaks(element, text) {
+// text with line breaks into element, as text (never as HTML); with links,
+// web addresses become links that open in a new tab (the lesson dialog –
+// not inside calendar blocks, where a tap opens the lesson)
+function appendTextWithBreaks(element, text, links) {
     (text || '').split('<br />').forEach(function (part, i) {
         if (i > 0) element.append($('<br>'));
-        element.append(document.createTextNode(part));
+        if (!links) {
+            element.append(document.createTextNode(part));
+            return;
+        }
+        let at = 0;
+        part.replace(/https?:\/\/[^\s<>"']+/gi, function (url, pos) {
+            // punctuation at the end belongs to the sentence, not the address
+            let trimmed = url.replace(/[.,;:!?]+$/, '');
+            if (/\)$/.test(trimmed) && trimmed.indexOf('(') < 0) trimmed = trimmed.slice(0, -1);
+            element.append(document.createTextNode(part.slice(at, pos)));
+            let a = document.createElement('a');
+            a.href = trimmed;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = trimmed;
+            element.append(a);
+            at = pos + trimmed.length;
+            return url;
+        });
+        element.append(document.createTextNode(part.slice(at)));
     });
     return element;
 }
@@ -1886,7 +1908,10 @@ document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
     let initial_date = '#{initial_date}';
-    if (window.location.hash.length > 0)
+    // the new design's tabs live in the address (#woche, #aufgaben): a reload
+    // stays on the tab; everything else is cleared as before
+    let pv_tab_hash = document.body.classList.contains('ui-preview') && ['#woche', '#aufgaben'].indexOf(window.location.hash) >= 0;
+    if (window.location.hash.length > 0 && !pv_tab_hash)
         window.location.hash = '';
     $('.ttc[data-id="' + timetable_id + '"]').addClass('active');
     let options = {
@@ -2486,7 +2511,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Stundenthema</b></p>');
                 if (event_data.stundenthema_text)
-                    body.append(appendTextWithBreaks($("<p style='white-space: pre-line;'>"), event_data.stundenthema_text));
+                    body.append(appendTextWithBreaks($("<p style='white-space: pre-line;'>"), event_data.stundenthema_text, true));
                 wrote_something = true;
             }
             let nc_ausgabe_link = '#';
@@ -2647,7 +2672,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Hausaufgaben</b> (zu heute)</p>');
                 if (event_data.hausaufgaben_text)
-                    body.append(appendTextWithBreaks($("<p style='white-space: pre-line;'>"), event_data.hausaufgaben_text));
+                    body.append(appendTextWithBreaks($("<p style='white-space: pre-line;'>"), event_data.hausaufgaben_text, true));
                 if (event_data.homework_nc) {
                     body.append('<p><b>Nextcloud</b></p>');
                     body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
@@ -2673,7 +2698,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append('<hr>');
                 body.append('<p><b>Notizen</b> (nur für mich sichtbar)</p>');
                 if (event_data.notizen)
-                    body.append(appendTextWithBreaks($('<p>'), event_data.notizen));
+                    body.append(appendTextWithBreaks($('<p>'), event_data.notizen, true));
                 wrote_something = true;
             }
             if (per_user.text_comments || per_user.audio_comments) {

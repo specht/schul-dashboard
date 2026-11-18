@@ -788,7 +788,9 @@ html {
     color: var(--pv-muted);
 }
 
-.pv-ag-card.pv-ag-off .pv-ag-title b {
+/* cancelled: the title crossed out – unless the server marked what changed
+   itself (<s>, pv-diff in timetable.html): then only that */
+.pv-ag-card.pv-ag-off .pv-ag-title b:not(.pv-diff) {
     text-decoration: line-through;
 }
 
@@ -2134,13 +2136,14 @@ html {
     /* the shade for the text on the backdrop: only behind the day and its
        line (as on the desktop's week title), not across the whole top – a
        light shade there washed the scheme's colours out */
-    /* its edge level with the plan button and the day tiles, the text level
-       with the button's text */
+    /* with a shade: its edge level with the plan button and the day tiles,
+       the text inset; without one (--band-scrim-a 0): no inset, the text
+       itself level with them */
     .pv-band-text {
         width: fit-content;
         max-width: 100%;
         margin: 0;
-        padding: 6px 12px 8px;
+        padding: 6px calc(12px * min(1, var(--band-scrim-a, 1) * 100)) 8px;
         border-radius: 16px;
         background: rgba(var(--band-scrim), var(--band-scrim-a));
     }
@@ -3506,8 +3509,11 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .pv-week-row.pv-ag-off .pv-week-title {
-    text-decoration: line-through;
     color: var(--pv-muted);
+}
+
+.pv-week-row.pv-ag-off .pv-week-title:not(.pv-diff) {
+    text-decoration: line-through;
 }
 
 /* the "Kurse" sheet: its links as list rows */

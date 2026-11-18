@@ -1478,3 +1478,48 @@ test('Neues Design: Warten als Leiste oben statt Kasten', async ({ page }) => {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// A lesson cancelled for oneself but taught by someone else (a swap): the
+// server marks the old parts itself (<s>Mathematik</s> Latein (9c)
+// <s>Sp</s>). Only those are crossed out, the replacement stays readable; a
+// plainly cancelled lesson is crossed out as a whole.
+test('Neues Design: Tausch durchgestrichen nur im Alten', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'agenda and week list on phones');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    const add = async () => page.evaluate(() => {
+      const w = window as any;
+      const d = new Date(w.calendar.getDate());
+      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+      const a = new Date(d); a.setHours(17, 0, 0, 0);
+      const b = new Date(d); b.setHours(18, 0, 0, 0);
+      w.calendar.addEvent({ start: a, end: new Date(a.getTime() + 45 * 60000),
+        extendedProps: { lesson: true, entfall: true, label: '<s>Mathematik</s> <b>Latein</b> (9c) <s>Sp</s> Xy', label_short: '<b>La</b>', raum: '216', pv_probe: 'swap' } });
+      w.calendar.addEvent({ start: b, end: new Date(b.getTime() + 45 * 60000),
+        extendedProps: { lesson: true, entfall: true, label: '<b>Mathematik</b> (9c)', label_short: '<b>Ma</b>', raum: '216', pv_probe: 'off' } });
+    });
+    const deco = (el: Element) => getComputedStyle(el).textDecorationLine;
+    // the day
+    await page.goto('/');
+    await expect(page.locator('#pv_agenda')).toBeVisible();
+    await add();
+    const swapDay = page.locator('#pv_agenda .pv-ag-card.pv-ag-off', { hasText: 'Latein' }).locator('.pv-ag-title b').first();
+    const offDay = page.locator('#pv_agenda .pv-ag-card.pv-ag-off', { hasText: 'Mathematik (9c)' }).filter({ hasNotText: 'Latein' }).locator('.pv-ag-title b').first();
+    await expect(swapDay).toBeVisible();
+    expect(await swapDay.evaluate(deco)).not.toContain('line-through');
+    expect(await swapDay.locator('s').first().evaluate(deco)).toContain('line-through');
+    expect(await offDay.evaluate(deco)).toContain('line-through');
+    // the week
+    await page.goto('/#woche');
+    await expect(page.locator('#pv_agenda .pv-week-day').first()).toBeVisible();
+    await add();
+    const swapWeek = page.locator('.pv-week-row.pv-ag-off .pv-week-title', { hasText: 'Latein' }).first();
+    const offWeek = page.locator('.pv-week-row.pv-ag-off .pv-week-title', { hasText: 'Mathematik (9c)' }).filter({ hasNotText: 'Latein' }).first();
+    await expect(swapWeek).toBeVisible();
+    expect(await swapWeek.evaluate(deco)).not.toContain('line-through');
+    expect(await offWeek.evaluate(deco)).toContain('line-through');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

@@ -1144,8 +1144,15 @@ function preview_chip(x) {
 
 // the title of a card: a lesson's label (built by the server), otherwise the
 // Termin's title (typed by a person: as text)
+// a lesson's label is HTML from the server, its changed parts as <s>old</s>
+// new (pv-diff): a lesson cancelled for oneself but taught by someone else
+// crosses out only those parts, the replacement stays readable
 function preview_title(el, x, e) {
-    if (x.label) return el.html(x.label);
+    if (x.label) {
+        el.html(x.label);
+        if (el.find('s').length) el.addClass('pv-diff');
+        return el;
+    }
     return el.text(e.title || x.event_title || '');
 }
 

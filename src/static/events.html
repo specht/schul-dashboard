@@ -553,7 +553,7 @@ function new_event() {
 
 document.addEventListener('DOMContentLoaded', function() {
     $('#summernote').summernote({
-        placeholder: 'Bitte geben Sie die Terminbeschreibung ein',
+        placeholder: '#{ui_preview? ? 'Beschreibung des Termins (optional)' : 'Bitte geben Sie die Terminbeschreibung ein'}',
         callbacks: {
             onChange: function() {
                 update_buttons();

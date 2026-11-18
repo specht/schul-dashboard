@@ -124,6 +124,9 @@ test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern'
     await page.locator('.bu-new-event').first().click();
     const modal = page.locator('#composeModal');
     await expect(modal).toBeVisible();
+    // the editor without colours and fonts, the placeholder in »du« form
+    await expect(modal.locator('.note-color, .note-fontname, .note-fontsize').first()).toBeHidden();
+    await expect(modal.locator('.note-placeholder')).toHaveText('Beschreibung des Termins (optional)');
     const hint = modal.locator('.pv-ev-save-hint');
     // nothing changed yet: no hint, »Schließen« works
     await expect(hint).toBeHidden();

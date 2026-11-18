@@ -1605,7 +1605,7 @@
             $('#pollRunModal .anonymous_hint').text('Bitte wählen Sie – das lässt sich später nicht mehr ändern.');
         }
         $('#summernote').summernote({
-            placeholder: 'Bitte geben Sie die Terminbeschreibung ein',
+            placeholder: '#{ui_preview? ? 'Beschreibung der Umfrage (optional)' : 'Bitte geben Sie die Terminbeschreibung ein'}',
             callbacks: {
                 onChange: function () {
                     update_buttons();

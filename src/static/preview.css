@@ -5982,3 +5982,12 @@ body.ui-preview:has(.container-fluid.solid)::before {
     font-size: 1.15em;
     line-height: 1;
 }
+
+/* the text editor (Summernote): no text and highlight colours, no font
+   family and size in the new design – colours and type come from the design,
+   emphasis is bold (as in the message editor) */
+.ui-preview .note-editor .note-btn-group.note-color,
+.ui-preview .note-editor .note-btn-group.note-fontname,
+.ui-preview .note-editor .note-btn-group.note-fontsize {
+    display: none !important;
+}

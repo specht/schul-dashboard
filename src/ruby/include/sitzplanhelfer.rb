@@ -694,20 +694,29 @@ class Main < Sinatra::Base
         respond({:ok => true}.merge(counts))
     end
 
-    # Im eigenen Fachraum: Was der Shuffler ausgelost hat, wird ein offener
-    # Plan, den die Lehrkraft von Hand nachbessert und dann speichert. Ist dort
-    # schon ein neuer Plan offen, ersetzt ihn das Ergebnis erst nach
-    # Rückfrage (replace: 'yes'); eine Bearbeitung eines gespeicherten Plans
-    # bleibt unangetastet. Im Klassenraum bleibt der Shuffler, wie er ist.
+    # Wer den Shuffler eines Raums nutzt, darf sein Ergebnis als Plan
+    # übernehmen: im eigenen Fachraum die Lehrkraft, im Klassenraum die
+    # Klassenleitung (wie beim Start eines Plans, siehe sph_start_cycle).
+    def sph_can_adopt_shuffle?(klasse, raum)
+        return false unless teacher_logged_in?
+        return true if sitzplan_owner(klasse, raum)
+        sitzplan_allowed_rooms(klasse).include?(raum) && klassenleiter_for_klasse_or_admin_logged_in?(klasse)
+    end
+
+    # Was der Shuffler ausgelost hat, wird ein offener Plan, den die
+    # Lehrkraft von Hand nachbessert und dann speichert. Ist schon ein neuer
+    # Plan offen, ersetzt ihn das Ergebnis erst nach Rückfrage (replace:
+    # 'yes'); eine laufende Wunschrunde und die Bearbeitung eines
+    # gespeicherten Plans bleiben unangetastet.
     post '/api/sph_adopt_shuffle' do
         require_teacher!
         data = parse_request_data(:required_keys => [:klasse, :raum, :seats], :optional_keys => [:replace],
                                   :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
         klasse = data[:klasse]
         raum = data[:raum]
-        lehrer = sitzplan_owner(klasse, raum)
-        assert(lehrer, 'Das Ergebnis des Shufflers lässt sich nur im eigenen Fachraum übernehmen.')
-        room_seats = SitzplanDaten.teacher_room(raum, lehrer) || []
+        assert(sph_can_adopt_shuffle?(klasse, raum), 'Kein Zugriff auf diesen Sitzplan.')
+        lehrer = sitzplan_owner(klasse, raum) || ''
+        room_seats = sitzplan_seats_for(klasse, raum) || []
         begin
             seats = JSON.parse(data[:seats])
         rescue JSON::ParserError
@@ -727,7 +736,7 @@ class Main < Sinatra::Base
         END_OF_QUERY
         if open.empty?
             rules = sph_current_rules(klasse, raum, lehrer)
-            neo4j_query_expect_one(<<~END_OF_QUERY, rules.merge(:session_email => @session_user[:email], :timestamp => Time.now.to_i, :id => RandomTag.generate(12), :klasse => klasse, :raum => raum, :lehrer => lehrer, :start_seats => seats.to_json))
+            neo4j_query_expect_one(<<~END_OF_QUERY, rules.merge(:session_email => @session_user[:email], :timestamp => Time.now.to_i, :id => RandomTag.generate(12), :klasse => klasse, :raum => raum, :lehrer => lehrer.empty? ? nil : lehrer, :start_seats => seats.to_json))
                 MATCH (a:User {email: $session_email})
                 CREATE (sc:SeatingCycle {id: $id, klasse: $klasse, raum: $raum, lehrer: $lehrer, mode: 'manual', created_at: $timestamp, start_seats: $start_seats, forced_pairs: $forced_pairs, forbidden_pairs: $forbidden_pairs, fixed_rules: $fixed_rules})
                 CREATE (sc)-[:STARTED_BY]->(a)
@@ -735,6 +744,7 @@ class Main < Sinatra::Base
             END_OF_QUERY
         else
             sph_fail!('Sie bearbeiten dort gerade einen gespeicherten Sitzplan. Speichern oder verwerfen Sie ihn zuerst im Sitzplanhelfer.') if open.first['src_id']
+            sph_fail!('In diesem Raum läuft gerade eine Wunschrunde. Speichern oder verwerfen Sie deren Plan zuerst im Sitzplanhelfer.') if open.first['sc'][:poll_run_id]
             unless data[:replace] == 'yes'
                 respond(:ok => true, :needs_confirm => true)
                 return

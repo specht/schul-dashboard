@@ -206,9 +206,9 @@ var seats = [];
 
 #{sitzplan_seats_js}
 
-// Im eigenen Fachraum lässt sich das Ergebnis als Plan übernehmen und im
-// Sitzplanhelfer von Hand anpassen.
-var shuffle_adoptable = #{(!!sitzplan_owner(*sitzplan_path_params)).to_json};
+// Das Ergebnis lässt sich als Plan übernehmen und im Sitzplanhelfer von
+// Hand anpassen (eigener Fachraum, im Klassenraum die Klassenleitung).
+var shuffle_adoptable = #{sph_can_adopt_shuffle?(*sitzplan_path_params).to_json};
 
 var place_for_sus = [];
 

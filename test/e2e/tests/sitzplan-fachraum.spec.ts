@@ -208,9 +208,10 @@ test('Sitzplan im Fachraum: Klassenleitung übernimmt eigene Vorgaben aus dem Kl
   }
 });
 
-// In the own subject room, what the Shuffler drew can become a plan that is
-// then adjusted by hand and saved; in the homeroom the Shuffler stays as it is.
-test('Sitzplan im Fachraum: Ergebnis des Shufflers als Plan übernehmen', async ({ page, newUserPage }) => {
+// What the Shuffler drew can become a plan that is then adjusted by hand and
+// saved: in the own subject room by its teacher, in the homeroom by the class
+// teacher – never over a running wish round.
+test('Shuffler: Ergebnis als Plan übernehmen, im Fachraum und im Klassenraum', async ({ page, newUserPage }) => {
   // no music in the example data: play() does nothing, the file is a stand-in
   const noMusic = async (p: Page) => {
     await p.addInitScript(() => { HTMLMediaElement.prototype.play = function () { return Promise.resolve(); }; });
@@ -224,8 +225,8 @@ test('Sitzplan im Fachraum: Ergebnis des Shufflers als Plan übernehmen', async 
     await p.locator('#audio').evaluate((audio) => audio.dispatchEvent(new Event('ended')));
     await expect(p.locator('#bu_print_shuffle')).toBeVisible();
   };
-  // who sits where in the Shuffler, as seats of the own desks
-  const drawn = (p: Page) => p.evaluate((raum) => {
+  // who sits where in the Shuffler, as seats of the room's desks
+  const drawn = (p: Page, raum: string) => p.evaluate((raum) => {
     const w = window as any;
     const result: Record<string, number> = {};
     w.sus.forEach((s: any, i: number) => {
@@ -233,7 +234,7 @@ test('Sitzplan im Fachraum: Ergebnis des Shufflers als Plan übernehmen', async 
       result[s.email] = w.seats_dict[raum].findIndex((d: number[]) => d[0] === seat[0] && d[1] === seat[1]);
     });
     return result;
-  }, FACHRAUM);
+  }, raum);
 
   await noMusic(page);
   await login(page, FACHLEHRKRAFT);
@@ -243,7 +244,7 @@ test('Sitzplan im Fachraum: Ergebnis des Shufflers als Plan übernehmen', async 
   // shuffled, moved one seat further with C, then taken over as a plan
   await shuffle(page, FACHRAUM);
   await page.keyboard.press('KeyC');
-  const expected = await drawn(page);
+  const expected = await drawn(page, FACHRAUM);
   expect(Object.keys(expected)).toHaveLength(3);
   await page.locator('#bu_adopt_shuffle').click();
   await expect(page).toHaveURL(`/sitzplanhelfer/${KLASSE}/${FACHRAUM}`);
@@ -256,7 +257,7 @@ test('Sitzplan im Fachraum: Ergebnis des Shufflers als Plan übernehmen', async 
 
   // shuffled again while that plan is still open: replaced only after asking
   await shuffle(page, FACHRAUM);
-  const second = await drawn(page);
+  const second = await drawn(page, FACHRAUM);
   await page.locator('#bu_adopt_shuffle').click();
   const dialog = dashboardDialog(page);
   await expect(dialog).toContainText('schon einen neuen Sitzplan angefangen');
@@ -282,16 +283,46 @@ test('Sitzplan im Fachraum: Ergebnis des Shufflers als Plan übernehmen', async 
   expect(bad.status()).not.toBe(200);
   await removeOwnPlans(page);
 
-  // homeroom: the class teacher's Shuffler offers no plan to take over
+  // the homeroom plan is the class teacher's, not a subject teacher's
+  const notHers = await page.request.post('/api/sph_adopt_shuffle', {
+    data: { klasse: KLASSE, raum: '108', seats: JSON.stringify({ [Object.keys(second)[0]]: 0 }) },
+  });
+  expect(notHers.status()).not.toBe(200);
+
+  // homeroom: the class teacher takes over the result just the same
   const clarke = await newUserPage();
   await noMusic(clarke);
   await login(clarke, ACCOUNTS.admin);
   await saveDesks(clarke.request, '108', CLARKE_DESKS);
-  await shuffle(clarke, '108');
-  await clarke.waitForTimeout(1500);
-  await expect(clarke.locator('#bu_adopt_shuffle')).toBeHidden();
-  const homeroom = await clarke.request.post('/api/sph_adopt_shuffle', {
-    data: { klasse: KLASSE, raum: '108', seats: JSON.stringify({}) },
-  });
-  expect(homeroom.status()).not.toBe(200);
+  const homeroomState = async () =>
+    (await clarke.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: '108' } })).json();
+  const discardHomeroom = async () => {
+    const open = (await homeroomState()).open_cycle;
+    if (open) expect((await clarke.request.post('/api/sph_discard_open_cycle', { data: { cycle_id: open.id } })).status()).toBe(200);
+  };
+  await discardHomeroom();
+  try {
+    // a running wish round is never replaced
+    const round = await clarke.request.post('/api/sph_start_cycle', { data: { klasse: KLASSE, raum: '108', mode: 'wishes' } });
+    expect(round.status()).toBe(200);
+    await shuffle(clarke, '108');
+    await expect(clarke.locator('#bu_adopt_shuffle')).toBeVisible();
+    await clarke.locator('#bu_adopt_shuffle').click();
+    await expect(dashboardDialog(clarke)).toContainText('läuft gerade eine Wunschrunde');
+    await dashboardDialog(clarke).getByRole('button', { name: 'OK' }).click();
+    expect((await homeroomState()).open_cycle.poll_run_id).toBeTruthy();
+    await discardHomeroom();
+
+    await shuffle(clarke, '108');
+    const drawnHomeroom = await drawn(clarke, '108');
+    await clarke.locator('#bu_adopt_shuffle').click();
+    await expect(clarke).toHaveURL(`/sitzplanhelfer/${KLASSE}/108`);
+    await expect(clarke.locator('#sph_cycle_info')).toContainText('im Shuffler ausgelost');
+    await expect(clarke.locator('#sph_seats .place:not(.empty)')).toHaveCount(3);
+    const adopted = (await homeroomState()).open_cycle;
+    expect(adopted.seats).toEqual(drawnHomeroom);
+    expect(adopted.mode).toBe('manual');
+  } finally {
+    await discardHomeroom();
+  }
 });

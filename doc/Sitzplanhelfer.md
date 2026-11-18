@@ -49,6 +49,13 @@ ihren eigenen Sitzplan für ihren Unterricht, immer für die ganze Klasse:
   Drucken. Wunschrunde und Verteilung im Raum gibt es nur bei der
   Klassenleitung im Klassenraum; deren Wünsche, Absprachen und Listen
   sieht die Fachlehrkraft nicht.
+- **Shuffler-Ergebnis übernehmen:** Nach dem Auslosen steht im Shuffler
+  neben „Drucken“ der Knopf „Als Plan übernehmen“. Er öffnet die
+  Sitzplan-Seite mit dem ausgelosten Plan; dort lassen sich Plätze von
+  Hand tauschen, dann wird gespeichert. Ist schon ein neuer Plan
+  angefangen, fragt die Seite vorher, ob er ersetzt werden soll; die
+  Bearbeitung eines gespeicherten Plans ersetzt sie nicht. Im Klassenraum
+  gibt es den Knopf nicht.
 
 Der Sitzplan der Klassenleitung im Klassenraum bleibt davon unberührt.
 
@@ -226,7 +233,9 @@ unvollständige letzte Zeile mittig), Namen untereinander.
   `satisfied_emails` und `saved_at`. Pro Klasse+Raum ist immer nur
   **ein** Zyklus gleichzeitig offen (`saved_at IS NULL`). Pläne einer
   Lehrkraft im Fachraum tragen zusätzlich `lehrer` (ihre E-Mail); die der
-  Klasse haben kein `lehrer`. Alle Abfragen trennen beides.
+  Klasse haben kein `lehrer`. Alle Abfragen trennen beides. Ein aus dem
+  Shuffler übernommener Plan (nur im Fachraum) ist `manual` und trägt die
+  ausgeloste Sitzordnung als Ausgangspunkt in `start_seats`.
 - **`SeatingRules`** (`key` = `<klasse>/<raum>`, im Fachraum
   `<klasse>/<raum>/<E-Mail>`): die geltenden
   Vorgaben, nach jeder Änderung aus dem offenen Zyklus übernommen. Neue

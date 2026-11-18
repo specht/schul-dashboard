@@ -207,3 +207,91 @@ test('Sitzplan im Fachraum: Klassenleitung übernimmt eigene Vorgaben aus dem Kl
     await rule(FACHRAUM, '/api/sph_remove_fixed_rule', { email: max });
   }
 });
+
+// In the own subject room, what the Shuffler drew can become a plan that is
+// then adjusted by hand and saved; in the homeroom the Shuffler stays as it is.
+test('Sitzplan im Fachraum: Ergebnis des Shufflers als Plan übernehmen', async ({ page, newUserPage }) => {
+  // no music in the example data: play() does nothing, the file is a stand-in
+  const noMusic = async (p: Page) => {
+    await p.addInitScript(() => { HTMLMediaElement.prototype.play = function () { return Promise.resolve(); }; });
+    await p.route('**/api/get_music/**', (route) => route.fulfill({ status: 200, contentType: 'audio/mpeg', body: '' }));
+  };
+  const shuffle = async (p: Page, raum: string) => {
+    await p.goto(`/sitzplan/${KLASSE}/${raum}`);
+    await expect(p.locator('#seats .place')).toHaveCount(3);
+    await expect(p.locator('#bu_adopt_shuffle')).toBeHidden();
+    await p.keyboard.press('Space');
+    await p.locator('#audio').evaluate((audio) => audio.dispatchEvent(new Event('ended')));
+    await expect(p.locator('#bu_print_shuffle')).toBeVisible();
+  };
+  // who sits where in the Shuffler, as seats of the own desks
+  const drawn = (p: Page) => p.evaluate((raum) => {
+    const w = window as any;
+    const result: Record<string, number> = {};
+    w.sus.forEach((s: any, i: number) => {
+      const seat = w.seats[w.place_for_sus[i]];
+      result[s.email] = w.seats_dict[raum].findIndex((d: number[]) => d[0] === seat[0] && d[1] === seat[1]);
+    });
+    return result;
+  }, FACHRAUM);
+
+  await noMusic(page);
+  await login(page, FACHLEHRKRAFT);
+  await removeOwnPlans(page);
+  await saveDesks(page.request, FACHRAUM, OWN_DESKS);
+
+  // shuffled, moved one seat further with C, then taken over as a plan
+  await shuffle(page, FACHRAUM);
+  await page.keyboard.press('KeyC');
+  const expected = await drawn(page);
+  expect(Object.keys(expected)).toHaveLength(3);
+  await page.locator('#bu_adopt_shuffle').click();
+  await expect(page).toHaveURL(`/sitzplanhelfer/${KLASSE}/${FACHRAUM}`);
+  await expect(page.locator('#sph_cycle_info')).toContainText('im Shuffler ausgelost');
+  await expect(page.locator('#sph_seats .place:not(.empty)')).toHaveCount(3);
+  await expect(page.locator('#sph_unplaced .sph-chip')).toHaveCount(0);
+  const state = await (await page.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: FACHRAUM } })).json();
+  expect(state.open_cycle.seats).toEqual(expected);
+  expect(state.open_cycle.mode).toBe('manual');
+
+  // shuffled again while that plan is still open: replaced only after asking
+  await shuffle(page, FACHRAUM);
+  const second = await drawn(page);
+  await page.locator('#bu_adopt_shuffle').click();
+  const dialog = dashboardDialog(page);
+  await expect(dialog).toContainText('schon einen neuen Sitzplan angefangen');
+  await dialog.getByRole('button', { name: 'Ersetzen' }).click();
+  await expect(page).toHaveURL(`/sitzplanhelfer/${KLASSE}/${FACHRAUM}`);
+  const replaced = await (await page.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: FACHRAUM } })).json();
+  expect(replaced.open_cycle.id).toBe(state.open_cycle.id);
+  expect(replaced.open_cycle.seats).toEqual(second);
+
+  // saved like any plan
+  const savedPlan = page.waitForResponse('**/api/sph_save_cycle');
+  await page.locator('#sph_bu_save').click();
+  expect((await savedPlan).status()).toBe(200);
+  await expect(page.locator('#sph_view_start')).toBeVisible();
+  const after = await (await page.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: FACHRAUM } })).json();
+  expect(after.open_cycle).toBeNull();
+  expect(after.last_cycle.seats).toEqual(second);
+
+  // seats that are not the own desks, or pupils of another class, are refused
+  const bad = await page.request.post('/api/sph_adopt_shuffle', {
+    data: { klasse: KLASSE, raum: FACHRAUM, seats: JSON.stringify({ [Object.keys(second)[0]]: 99 }) },
+  });
+  expect(bad.status()).not.toBe(200);
+  await removeOwnPlans(page);
+
+  // homeroom: the class teacher's Shuffler offers no plan to take over
+  const clarke = await newUserPage();
+  await noMusic(clarke);
+  await login(clarke, ACCOUNTS.admin);
+  await saveDesks(clarke.request, '108', CLARKE_DESKS);
+  await shuffle(clarke, '108');
+  await clarke.waitForTimeout(1500);
+  await expect(clarke.locator('#bu_adopt_shuffle')).toBeHidden();
+  const homeroom = await clarke.request.post('/api/sph_adopt_shuffle', {
+    data: { klasse: KLASSE, raum: '108', seats: JSON.stringify({}) },
+  });
+  expect(homeroom.status()).not.toBe(200);
+});

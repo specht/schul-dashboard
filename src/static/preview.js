@@ -1119,7 +1119,9 @@
             more.setAttribute('aria-expanded', 'false');
             more.setAttribute('aria-label', 'Weitere Aktionen für »' + o.title + '«');
             more.setAttribute('title', 'Weitere Aktionen');
-            more.textContent = '•••';
+            var dots = el('i', 'ti ti-dots');
+            dots.setAttribute('aria-hidden', 'true');
+            more.appendChild(dots);
             // desktop: what is not in the row; phones: everything
             var rest = function() {
                 return PHONE.matches ? actions : actions.filter(function(a) { return !a.visible || a.danger; });
@@ -1135,7 +1137,7 @@
         }
         r.appendChild(bar);
         if (o.open) {
-            var chev = el('span', 'pv-lrow-chev', '›');
+            var chev = el('i', 'pv-lrow-chev ti ti-chevron-right');
             chev.setAttribute('aria-hidden', 'true');
             r.appendChild(chev);
         }
@@ -1187,8 +1189,7 @@
             b.setAttribute('aria-expanded', 'false');
             b.appendChild(el('span', 'pv-lgroup-label', o.label));
             if (o.count) b.appendChild(el('span', 'pv-lgroup-count', o.count));
-            // drawn in CSS (a text "›" is thin and odd in some fonts)
-            var chev = el('span', 'pv-lgroup-chev');
+            var chev = el('i', 'pv-lgroup-chev ti ti-chevron-right');
             chev.setAttribute('aria-hidden', 'true');
             b.appendChild(chev);
             h.appendChild(b);

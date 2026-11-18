@@ -611,7 +611,7 @@ class Main < Sinatra::Base
                 io.puts "<div class='pal-head'><b>#{CGI.escapeHTML(name.to_s)}</b>"
                 io.puts "<span class='pal-dots'>" + [1, 7, 13].map { |i| "<i style='background: ##{code[i, 6]}'></i>" }.join + "</span>"
                 if effective != code
-                    io.puts "<span class='pal-tuned'>angepasst → " + [1, 7, 13].map { |i| "<i style='background: ##{effective[i, 6]}'></i>" }.join + "</span>"
+                    io.puts "<span class='pal-tuned'>angepasst <i class='ti ti-chevron-right' aria-hidden='true'></i> " + [1, 7, 13].map { |i| "<i style='background: ##{effective[i, 6]}'></i>" }.join + "</span>"
                 end
                 io.puts "<span class='pal-count'>#{counts[code[1, 18]]} Konten</span>"
                 io.puts "<span class='pal-marks btn-group btn-group-sm' role='group' aria-label='Auswahl für #{CGI.escapeHTML(name.to_s)}'>"

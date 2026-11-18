@@ -139,8 +139,9 @@
     outline-offset: 1px;
 }
 
-/* copied: a green check in place of the copy icon, drawn in a snap (the
-   same size, so nothing moves); the label of »Alle Adressen kopieren« stays */
+/* copied: a green check (Tabler) in place of the copy icon, with a quick
+   pop (the same size, so nothing moves); the label of »Alle Adressen
+   kopieren« stays */
 .ui-preview {
     --pv-ml-ok: #1a7f37;
 }
@@ -152,13 +153,9 @@
 .pv-ml-done {
     display: none;
     flex: none;
-    width: 1.15em;
-    height: 1.15em;
-    fill: none;
-    stroke: var(--pv-ml-ok);
-    stroke-width: 3;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    color: var(--pv-ml-ok);
+    font-size: 1.15em;
+    line-height: 1;
 }
 
 .pv-ml-copied .pv-ml-done {
@@ -166,29 +163,17 @@
     animation: pv-ml-pop 0.28s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-.pv-ml-copied .pv-ml-done path {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 0;
-    animation: pv-ml-draw 0.22s ease-out;
-}
-
-.pv-ml-copied .ti {
+.pv-ml-copied .ti-copy {
     display: none;
 }
 
 @keyframes pv-ml-pop {
-    from { transform: scale(0.4); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-@keyframes pv-ml-draw {
-    from { stroke-dashoffset: 1; }
-    to { stroke-dashoffset: 0; }
+    from { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .pv-ml-copied .pv-ml-done,
-    .pv-ml-copied .pv-ml-done path {
+    .pv-ml-copied .pv-ml-done {
         animation: none;
     }
 }

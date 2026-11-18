@@ -743,8 +743,16 @@ class Main < Sinatra::Base
                 RETURN sc;
             END_OF_QUERY
         else
-            sph_fail!('Sie bearbeiten dort gerade einen gespeicherten Sitzplan. Speichern oder verwerfen Sie ihn zuerst im Sitzplanhelfer.') if open.first['src_id']
-            sph_fail!('In diesem Raum läuft gerade eine Wunschrunde. Speichern oder verwerfen Sie deren Plan zuerst im Sitzplanhelfer.') if open.first['sc'][:poll_run_id]
+            # Kein Fehler, sondern ein Hinweis: Der Shuffler zeigt ihn an.
+            blocked = if open.first['src_id']
+                'Sie bearbeiten dort gerade einen gespeicherten Sitzplan. Speichern oder verwerfen Sie ihn zuerst im Sitzplanhelfer.'
+            elsif open.first['sc'][:poll_run_id]
+                'In diesem Raum läuft gerade eine Wunschrunde. Speichern oder verwerfen Sie deren Plan zuerst im Sitzplanhelfer.'
+            end
+            if blocked
+                respond(:ok => false, :error => blocked)
+                return
+            end
             unless data[:replace] == 'yes'
                 respond(:ok => true, :needs_confirm => true)
                 return

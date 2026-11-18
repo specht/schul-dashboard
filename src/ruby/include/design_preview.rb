@@ -464,12 +464,14 @@ class Main < Sinatra::Base
                             menu[0].classList.remove('pv-closing');
                             menu[0].style.transform = '';
                             menu[0].style.transition = '';
-                            veil.prop('hidden', true);
+                            veil.prop('hidden', true).removeClass('pv-veil-out');
                             document.body.classList.remove('pv-sheet-open');
                             $('#bu_pv_more').attr('aria-expanded', 'false');
                         };
                         let close_menu = function () {
                             menu[0].classList.add('pv-closing');
+                            // the veil fades with the sheet instead of vanishing at the end
+                            veil.addClass('pv-veil-out');
                             setTimeout(window.pv_menu_hide_now, 180);
                         };
                         $('#bu_pv_more').on('click', function (e) {

@@ -1228,7 +1228,8 @@ test('Neues Design: Tageskopf am Handy bündig', async ({ page }, testInfo) => {
 
 // Phones: "Mehr" slides up once. Bootstrap marks it .collapsing for a frame
 // before .show; without the slide on that frame it stood there fully open,
-// then jumped down and slid in – a flicker. Its top edge only ever rises.
+// then jumped down and slid in – a flicker. Its top edge only ever rises,
+// and the veil behind it fades in instead of popping up.
 test('Neues Design: Mehr öffnet ohne Flackern', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'Mehr am Handy');
   await login(page, ACCOUNTS.admin);
@@ -1238,10 +1239,14 @@ test('Neues Design: Mehr öffnet ohne Flackern', async ({ page }, testInfo) => {
     await page.evaluate(() => {
       const m = document.getElementById('navbarTogglerDemo02')!;
       const tops: number[] = [];
+      const veils: number[] = [];
       (window as any).pv_tops = tops;
+      (window as any).pv_veils = veils;
       const t0 = performance.now();
       const tick = () => {
         if (getComputedStyle(m).display !== 'none') tops.push(Math.round(m.getBoundingClientRect().top));
+        const v = document.querySelector('.pv-menu-veil:not([hidden])');
+        if (v) veils.push(parseFloat(getComputedStyle(v).opacity));
         if (performance.now() - t0 < 500) requestAnimationFrame(tick);
       };
       document.getElementById('bu_pv_more')!.addEventListener('click', () => requestAnimationFrame(tick), { once: true, capture: true });
@@ -1252,6 +1257,11 @@ test('Neues Design: Mehr öffnet ohne Flackern', async ({ page }, testInfo) => {
     const tops = await page.evaluate(() => (window as any).pv_tops as number[]);
     expect(tops.length).toBeGreaterThan(3);
     for (let i = 1; i < tops.length; i++) expect(tops[i], `frame ${i}: ${tops.join(', ')}`).toBeLessThanOrEqual(tops[i - 1] + 1);
+    // the veil fades in with it (it popped up at full strength in one frame)
+    const veils = await page.evaluate(() => (window as any).pv_veils as number[]);
+    expect(veils.length).toBeGreaterThan(3);
+    expect(veils[0], veils.join(', ')).toBeLessThan(0.6);
+    for (let i = 1; i < veils.length; i++) expect(veils[i], veils.join(', ')).toBeGreaterThanOrEqual(veils[i - 1] - 0.01);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

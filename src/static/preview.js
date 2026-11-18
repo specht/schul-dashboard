@@ -732,6 +732,13 @@
         var layer = function() { return history.state && history.state.pvLayer; };
         // a reload with a layer entry on top: nothing is open any more
         if (layer()) history.replaceState(Object.assign({}, history.state, { pvLayer: null }), '');
+        // a dummy link (href="#") in an open layer must not navigate: the new
+        // history entry would count as "back" and close the layer it opens
+        // from (Termine: »Externe Teilnehmer…«); its own handler still runs
+        document.addEventListener('click', function(e) {
+            if (!open.length || !e.target.closest) return;
+            if (e.target.closest('a[href="#"]')) e.preventDefault();
+        }, true);
         window.addEventListener('popstate', function(e) {
             if (skip_pop > 0) { skip_pop--; return; }
             var want = e.state && e.state.pvLayer;

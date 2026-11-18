@@ -112,6 +112,38 @@ test('Neues Design: /events#eid öffnet auch einen älteren Termin', async ({ pa
   }
 });
 
+// The dialog: the label of the participants field is cut to one line by
+// styles.css, and its overflowing text lay over »Externe Teilnehmer…«, which
+// then took no taps. »Speichern« stays disabled without a title or
+// participants: a quiet hint says why.
+test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/events');
+    await page.locator('.bu-new-event').first().click();
+    const modal = page.locator('#composeModal');
+    await expect(modal).toBeVisible();
+    const hint = modal.locator('.pv-ev-save-hint');
+    // a new event counts as changed at once (events.html, new_event)
+    await expect(hint).toHaveText('Zum Speichern fehlen noch Titel und Teilnehmer.');
+    await page.locator('#ti_title').fill('Elternabend');
+    await expect(page.locator('#bu_save_event')).toBeDisabled();
+    await expect(hint).toHaveText('Zum Speichern fehlen noch Teilnehmer.');
+    await page.locator('#ti_title').fill('');
+    await expect(hint).toHaveText('Zum Speichern fehlen noch Titel und Teilnehmer.');
+    // the button takes the tap (not the label's text above it)
+    await page.locator('.bu_open_ext_users_modal').click({ timeout: 5000 });
+    await expect(page.locator('#externalUsersModal')).toBeVisible();
+    await page.locator('#bu_close_ext_user_modal').click();
+    await expect(page.locator('#externalUsersModal')).toBeHidden();
+    await page.locator('#bu_discard_event').click();
+    await expect(hint).toBeHidden();
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('Termine ohne Vorschau: die Tabelle mit allen Terminen wie bisher', async ({ page }, testInfo) => {
   const tag = `${testInfo.project.name} ${Date.now().toString(36)}`;
   await login(page, ACCOUNTS.admin);

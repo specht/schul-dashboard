@@ -51,6 +51,32 @@
     border-radius: 10px;
 }
 
+/* form labels wrap instead of being cut off: styles.css keeps them on one
+   line, and a button floated into the label (Termine: »Externe
+   Teilnehmer…«) then lies under the overflowing text and takes no taps */
+.ui-preview .form-group label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* a button inside a field's label is a side action: neutral, not the accent */
+.ui-preview #main_container .form-group label > .btn-success,
+.ui-preview #main_container .form-group label > .btn-primary {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+    font-weight: 500;
+    margin: 0 0 6px 12px;
+}
+
+.ui-preview #main_container .form-group label > .btn-success:hover,
+.ui-preview #main_container .form-group label > .btn-primary:hover {
+    background-color: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
 /* the main action of a dialog: solid accent */
 .ui-preview #main_container .modal-footer .btn-primary,
 .ui-preview #main_container .modal-footer .btn-success,

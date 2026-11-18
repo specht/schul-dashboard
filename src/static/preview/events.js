@@ -184,5 +184,38 @@
         first = false;
     };
 
+    // the dialog: say why »Speichern« stays disabled (a title and at least
+    // one participant are needed, can_send in events.html) – otherwise the
+    // button looks broken, and »Schließen« is disabled too while there are
+    // changes
+    function save_hint() {
+        var save = document.getElementById('bu_save_event');
+        var discard = document.getElementById('bu_discard_event');
+        var footer = save && save.closest('.modal-footer');
+        if (!footer || document.querySelector('.pv-ev-save-hint')) return;
+        var hint = document.createElement('div');
+        hint.className = 'pv-ev-save-hint';
+        hint.setAttribute('role', 'status');
+        hint.hidden = true;
+        footer.insertBefore(hint, footer.firstChild);
+        var update = function () {
+            var text = '';
+            if (save.disabled && !discard.disabled) {
+                var no_title = document.getElementById('ti_title').value.trim().length === 0;
+                var no_people = net_recipients_list.length === 0;
+                if (no_title && no_people) text = 'Zum Speichern fehlen noch Titel und Teilnehmer.';
+                else if (no_title) text = 'Zum Speichern fehlt noch der Titel.';
+                else if (no_people) text = 'Zum Speichern fehlen noch Teilnehmer.';
+            }
+            hint.textContent = text;
+            hint.hidden = !text;
+        };
+        new MutationObserver(update).observe(save, { attributes: true, attributeFilter: ['disabled'] });
+        new MutationObserver(update).observe(discard, { attributes: true, attributeFilter: ['disabled'] });
+        document.getElementById('ti_title').addEventListener('input', update);
+        update();
+    }
+
     document.addEventListener('DOMContentLoaded', setup);
+    document.addEventListener('DOMContentLoaded', save_hint);
 })();

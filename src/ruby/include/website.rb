@@ -86,14 +86,43 @@ class Main < Sinatra::Base
         respond(:result => 'yay')
     end
 
+    # Without a year: all entries, as always (the page of today's design).
+    # Neues Design: {year: 2026} gives that calendar year's entries and the
+    # years there are (with their counts) – read-only, same permission.
     post '/api/get_news' do
         require_user_who_can_manage_news!
-        results = neo4j_query(<<~END_OF_QUERY).map { |x| x }
-            MATCH (n:NewsEntry)
-            RETURN n.date AS date, n.timestamp AS timestamp, n.title AS title, n.sticky AS sticky, n.published AS published
-            ORDER BY n.timestamp DESC;
-        END_OF_QUERY
-        respond(:news => results)
+        request.body.rewind
+        body = request.body.read(512).to_s
+        request.body.rewind
+        parsed = (JSON.parse(body) rescue nil)
+        wants_year = parsed.is_a?(Hash) && parsed.include?('year')
+        if wants_year
+            data = parse_request_data(:required_keys => [:year], :types => {:year => Integer})
+            year = data[:year]
+            assert(year >= 2000 && year <= 2100)
+            # NewsEntry/timestamp is unique, so the range uses its index
+            results = neo4j_query(<<~END_OF_QUERY, :from => Time.new(year, 1, 1).to_i, :to => Time.new(year + 1, 1, 1).to_i).map { |x| x }
+                MATCH (n:NewsEntry)
+                WHERE n.timestamp >= $from AND n.timestamp < $to
+                RETURN n.date AS date, n.timestamp AS timestamp, n.title AS title, n.sticky AS sticky, n.published AS published
+                ORDER BY n.timestamp DESC;
+            END_OF_QUERY
+            counts = Hash.new(0)
+            neo4j_query(<<~END_OF_QUERY).each { |x| counts[Time.at(x['timestamp']).year] += 1 }
+                MATCH (n:NewsEntry)
+                WHERE n.timestamp IS NOT NULL
+                RETURN n.timestamp AS timestamp;
+            END_OF_QUERY
+            years = counts.keys.sort.reverse.map { |y| {:year => y, :count => counts[y]} }
+            respond(:news => results, :year => year, :years => years)
+        else
+            results = neo4j_query(<<~END_OF_QUERY).map { |x| x }
+                MATCH (n:NewsEntry)
+                RETURN n.date AS date, n.timestamp AS timestamp, n.title AS title, n.sticky AS sticky, n.published AS published
+                ORDER BY n.timestamp DESC;
+            END_OF_QUERY
+            respond(:news => results)
+        end
     end
 
     post '/api/set_news_published' do

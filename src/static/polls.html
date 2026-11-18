@@ -355,17 +355,117 @@
         return `${day(a)}, ${a.format('HH:mm')} Uhr bis ${day(b)}, ${b.format('HH:mm')} Uhr`;
     }
 
-    function pv_button(label, icon, cls) {
-        return $('<button>').attr('type', 'button').addClass(`btn btn-sm ${cls || 'btn-secondary'}`)
-            .append($('<i>').addClass(`fa fa-${icon}`)).append($('<span>').text(label));
+    // folds and groups that were opened stay open when the list is drawn again
+    var pv_open = {};
+
+    function pv_render_poll_run(pr, state, parent) {
+        let labels = { running: 'läuft', planned: 'geplant', complete: 'beendet' };
+        let prid = pr.prid;
+        let total = pr.recipients.length;
+        let answered = pr.response_count || 0;
+        let percent = total > 0 ? Math.floor(answered * 100 / total) : 0;
+        let extra = null;
+        if (state !== 'planned') {
+            extra = $('<div>').addClass('pv-run-progress');
+            let bar = $('<div>').addClass('pv-bar').attr('role', 'progressbar')
+                .attr('aria-label', 'Beantwortet')
+                .attr('aria-valuemin', '0').attr('aria-valuemax', `${total}`).attr('aria-valuenow', `${answered}`)
+                .appendTo(extra);
+            bar.append($('<b>').css('width', `${percent}%`));
+            extra.append($('<span>').addClass('pv-run-count').text(`${answered} von ${total} beantwortet (${percent} %)`));
+            extra = extra.get(0);
+        }
+        let actions = [];
+        if (state !== 'planned')
+            actions.push({ label: 'Ergebnisse', visible: true, cls: 'pv-bu-results', run: function () { show_poll_run_results(prid); } });
+        if (state === 'running')
+            actions.push({
+                label: 'Stoppen', visible: true, cls: 'pv-bu-stop-run', run: function () {
+                    dashboardConfirm('Die Umfrage jetzt beenden? Danach kann niemand mehr antworten.',
+                        function () { stop_poll_run(prid); },
+                        { title: 'Umfrage stoppen', confirm: 'Stoppen', danger: true });
+                }
+            });
+        actions.push({ label: 'Bearbeiten', visible: state === 'planned', cls: 'pv-bu-edit-run', run: function () { edit_poll_run(prid); } });
+        if (state !== 'running')
+            actions.push({
+                label: 'Löschen', danger: true, cls: 'pv-bu-delete-run', run: function () {
+                    pv_list.confirm_delete('Diese Durchführung mit allen Antworten löschen?',
+                        function () { delete_poll_run(prid); }, 'Durchführung löschen');
+                }
+            });
+        let facts = [`${total} Teilnehmer`, pr.info.anonymous ? 'anonym' : 'mit Namen'];
+        if (pr.info.limited_places)
+            facts.push('begrenzte Plätze');
+        let row = pv_list.row({
+            title: pv_poll_run_when(pr),
+            chip: { label: labels[state], state: state },
+            facts: facts,
+            extra: extra,
+            sub: true,
+            cls: `pv-run pv-run-${state}`,
+            open: state === 'planned' ? function () { edit_poll_run(prid); } : function () { show_poll_run_results(prid); },
+            actions: actions,
+        });
+        row.setAttribute('data-prid', prid);
+        parent.appendChild(row);
     }
 
+    function pv_render_poll(item) {
+        let poll = item.poll;
+        let pid = poll.pid;
+        let title = poll.poll.title || '(ohne Titel)';
+        let wrap = document.createElement('div');
+        wrap.className = 'pv-litem pv-poll';
+        wrap.setAttribute('data-pid', pid);
+        let n_items = 0;
+        try { n_items = JSON.parse(poll.poll.items || '[]').length; } catch (err) { }
+        let n_runs = item.runs.length;
+        let row = pv_list.row({
+            title: title,
+            cls: 'pv-poll-row',
+            facts: [`Erstellt am ${moment(poll.created).locale('de').format('D.M.YYYY')}`,
+                `${n_items} ${n_items === 1 ? 'Eintrag' : 'Einträge'}`,
+                n_runs === 0 ? 'noch nicht durchgeführt' : `${n_runs} ${n_runs === 1 ? 'Durchführung' : 'Durchführungen'}`],
+            open: function () { edit_poll(pid); },
+            actions: [
+                { label: 'Neue Durchführung', short: 'Durchführen', visible: true, cls: 'pv-bu-new-run', run: function () { new_poll_run(pid); } },
+                { label: 'Bearbeiten', visible: true, cls: 'pv-bu-edit-poll', run: function () { edit_poll(pid); } },
+                {
+                    label: 'Löschen', danger: true, cls: 'pv-bu-delete-poll', run: function () {
+                        pv_list.confirm_delete(`Die Umfrage »${title}« mit allen Durchführungen löschen?`,
+                            function () { delete_poll(pid); }, 'Umfrage löschen');
+                    }
+                },
+            ],
+        });
+        wrap.appendChild(row);
+        let open_runs = item.runs.filter(function (r) { return r.state !== 'complete'; });
+        let done_runs = item.runs.filter(function (r) { return r.state === 'complete'; });
+        for (let { pr, state } of open_runs)
+            pv_render_poll_run(pr, state, wrap);
+        if (done_runs.length > 0) {
+            let n = done_runs.length;
+            let key = `fold:${pid}`;
+            pv_list.fold(wrap, `${n} ${n === 1 ? 'beendete Durchführung' : 'beendete Durchführungen'} anzeigen`,
+                `${n === 1 ? 'Beendete Durchführung' : 'Beendete Durchführungen'} ausblenden`,
+                function (body) {
+                    for (let { pr, state } of done_runs)
+                        pv_render_poll_run(pr, state, body);
+                }, { open: !!pv_open[key], on_toggle: function (open) { pv_open[key] = open; } });
+        }
+        return wrap;
+    }
+
+    // Neues Design: a list with actions (preview.js, pv_list) – the polls
+    // that are running, planned or of this school year first, earlier
+    // school years folded
     function render_polls_preview(poll_runs_for_poll) {
+        let root = $('.polls-here').get(0);
         let order = { running: 0, planned: 1, complete: 2 };
-        let labels = { running: 'läuft', planned: 'geplant', complete: 'beendet' };
-        for (let poll of stored_polls) {
-            let pid = poll.pid;
-            let runs = (poll_runs_for_poll[pid] || []).map(function (pr) {
+        let this_year = pv_list.school_year(moment());
+        let items = stored_polls.map(function (poll) {
+            let runs = (poll_runs_for_poll[poll.pid] || []).map(function (pr) {
                 return { pr: pr, state: pv_poll_run_state(pr) };
             });
             runs.sort(function (a, b) {
@@ -375,77 +475,48 @@
                 // planned: the next one first; otherwise the latest first
                 return (a.state === 'planned' ? 1 : -1) * (ka < kb ? -1 : ka > kb ? 1 : 0);
             });
-            let card = $('<section>').addClass('pv-poll').attr('data-pid', pid);
-            let head = $('<div>').addClass('pv-poll-head').appendTo(card);
-            let title = $('<div>').addClass('pv-poll-title').appendTo(head);
-            title.append($('<h3>').text(poll.poll.title || '(ohne Titel)'));
-            let meta = $('<div>').addClass('pv-poll-meta').appendTo(title);
-            meta.append($('<span>').text(`Erstellt am ${moment(poll.created).locale('de').format('D.M.YYYY')}`));
-            let n_items = 0;
-            try { n_items = JSON.parse(poll.poll.items || '[]').length; } catch (err) { }
-            meta.append($('<span>').text(`${n_items} ${n_items === 1 ? 'Eintrag' : 'Einträge'}`));
-            let actions = $('<div>').addClass('pv-poll-actions').appendTo(head);
-            let bu_run = pv_button('Neue Durchführung', 'play').addClass('pv-bu-new-run').appendTo(actions);
-            let bu_edit = pv_button('Bearbeiten', 'edit').addClass('pv-bu-edit-poll').appendTo(actions);
-            let bu_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-poll pv-icon-only').attr('title', 'Umfrage löschen').attr('aria-label', 'Umfrage löschen').appendTo(actions);
-            bu_run.click(function () { new_poll_run(pid); });
-            bu_edit.click(function () { edit_poll(pid); });
-            bu_delete.click(function () {
-                dashboardConfirm(`Die Umfrage »${poll.poll.title || '(ohne Titel)'}« mit allen Durchführungen löschen?`,
-                    function () { delete_poll(pid); },
-                    { title: 'Umfrage löschen', confirm: 'Löschen', danger: true });
-            });
-
-            let list = $('<div>').addClass('pv-runs').appendTo(card);
-            if (runs.length === 0)
-                list.append($('<p>').addClass('pv-runs-empty').text('Noch nicht durchgeführt. Mit »Neue Durchführung« legen Sie fest, wer wann teilnimmt.'));
-            for (let { pr, state } of runs) {
-                let prid = pr.prid;
-                let total = pr.recipients.length;
-                let answered = pr.response_count || 0;
-                let percent = total > 0 ? Math.floor(answered * 100 / total) : 0;
-                let row = $('<div>').addClass(`pv-run pv-run-${state}`).attr('data-prid', prid).appendTo(list);
-                let main = $('<div>').addClass('pv-run-main').appendTo(row);
-                main.append($('<span>').addClass('pv-run-status').text(labels[state]));
-                let text = $('<div>').addClass('pv-run-text').appendTo(main);
-                text.append($('<b>').addClass('pv-run-when').text(pv_poll_run_when(pr)));
-                let tags = $('<div>').addClass('pv-run-tags').appendTo(text);
-                tags.append($('<span>').text(`${total} Teilnehmer`));
-                tags.append($('<span>').text(pr.info.anonymous ? 'anonym' : 'mit Namen'));
-                if (pr.info.limited_places)
-                    tags.append($('<span>').text('begrenzte Plätze'));
-                if (state !== 'planned') {
-                    let progress = $('<div>').addClass('pv-run-progress').appendTo(row);
-                    let bar = $('<div>').addClass('pv-bar').attr('role', 'progressbar')
-                        .attr('aria-valuemin', '0').attr('aria-valuemax', `${total}`).attr('aria-valuenow', `${answered}`)
-                        .appendTo(progress);
-                    bar.append($('<b>').css('width', `${percent}%`));
-                    progress.append($('<span>').addClass('pv-run-count').text(`${answered} von ${total} beantwortet (${percent} %)`));
+            // the last thing that happened: created or run
+            let last = poll.created || '';
+            for (let r of runs)
+                if (r.pr.info.start_date > last) last = r.pr.info.start_date;
+            let active = runs.some(function (r) { return r.state !== 'complete'; });
+            return { poll: poll, runs: runs, last: last, active: active, year: pv_list.school_year(last || moment().format('YYYY-MM-DD')) };
+        });
+        if (items.length === 0) {
+            $('<p>').addClass('pv-lempty').text('Noch keine Umfragen. Mit »Neue Umfrage« legen Sie die erste an.').appendTo(root);
+            return;
+        }
+        let by_last = function (a, b) { return a.last < b.last ? 1 : a.last > b.last ? -1 : 0; };
+        let current = items.filter(function (x) { return x.active || x.year >= this_year; });
+        current.sort(function (a, b) { return (a.active === b.active) ? by_last(a, b) : (a.active ? -1 : 1); });
+        let older = {};
+        for (let x of items)
+            if (!(x.active || x.year >= this_year))
+                (older[x.year] = older[x.year] || []).push(x);
+        let years = Object.keys(older).map(function (y) { return parseInt(y); }).sort(function (a, b) { return b - a; });
+        let count = function (n) { return `${n} ${n === 1 ? 'Umfrage' : 'Umfragen'}`; };
+        let render_list = function (list, keep) {
+            return function (body) {
+                if (list.length === 0) {
+                    $('<p>').addClass('pv-lempty').text('In diesem Schuljahr noch keine Umfragen.').appendTo(body);
+                    return;
                 }
-                let run_actions = $('<div>').addClass('pv-run-actions').appendTo(row);
-                if (state !== 'planned') {
-                    let bu_results = pv_button('Ergebnisse', 'bar-chart').addClass('pv-bu-results').appendTo(run_actions);
-                    bu_results.click(function () { show_poll_run_results(prid); });
-                }
-                let bu_run_edit = pv_button('Bearbeiten', 'edit').addClass('pv-bu-edit-run').appendTo(run_actions);
-                bu_run_edit.click(function () { edit_poll_run(prid); });
-                if (state === 'running') {
-                    let bu_stop = pv_button('Stoppen', 'stop', 'btn-danger').addClass('pv-bu-stop-run').appendTo(run_actions);
-                    bu_stop.click(function () {
-                        dashboardConfirm('Die Umfrage jetzt beenden? Danach kann niemand mehr antworten.',
-                            function () { stop_poll_run(prid); },
-                            { title: 'Umfrage stoppen', confirm: 'Stoppen', danger: true });
-                    });
-                } else {
-                    let bu_run_delete = pv_button('Löschen', 'trash', 'btn-danger').addClass('pv-bu-delete-run pv-icon-only').attr('title', 'Durchführung löschen').attr('aria-label', 'Durchführung löschen').appendTo(run_actions);
-                    bu_run_delete.click(function () {
-                        dashboardConfirm('Diese Durchführung mit allen Antworten löschen?',
-                            function () { delete_poll_run(prid); },
-                            { title: 'Durchführung löschen', confirm: 'Löschen', danger: true });
-                    });
-                }
-            }
-            $('.polls-here').append(card);
+                pv_list.blocks(body, list, pv_render_poll, { more: 'Ältere Umfragen laden', keep: keep });
+            };
+        };
+        if (years.length === 0) {
+            render_list(current, 'current')(root);
+            return;
+        }
+        pv_list.group(root, { label: 'Aktuell', count: count(current.length), cls: 'pv-polls-current', render: render_list(current, 'current') });
+        for (let y of years) {
+            older[y].sort(by_last);
+            let key = `year:${y}`;
+            pv_list.group(root, {
+                label: pv_list.school_year_label(y), count: count(older[y].length), folded: true,
+                open: !!pv_open[key], on_toggle: function (open) { pv_open[key] = open; },
+                cls: 'pv-polls-year', render: render_list(older[y], key),
+            }).section.setAttribute('data-school-year', `${y}`);
         }
     }
 
@@ -1518,6 +1589,8 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         if (PV) {
+            // Neues Design: a list with actions, "Neue Umfrage" beside the title
+            pv_list.page(document.querySelector('.pv-polls-page'), { main: document.querySelector('.bu-new-poll') });
             // Neues Design: the choices in the run dialog as cards with a line of explanation
             let choice = function (icon, title, text) {
                 return $('<span>').append($('<i>').addClass(`fa fa-${icon}`))

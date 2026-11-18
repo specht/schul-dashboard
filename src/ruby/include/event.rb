@@ -1,4 +1,121 @@
 class Main < Sinatra::Base
+    # The events someone organizes, as /events lists them (newest first, with
+    # their participants). Without a period: all of them – exactly the query
+    # /events has always used. Optional: from (inclusive) and to (exclusive)
+    # as 'YYYY-MM-DD', or a single event by its id. Anchored at the organizer
+    # (User/email is unique), so no index is needed for the period.
+    def organized_events(email, from = nil, to = nil, eid = nil)
+        rows = if from.nil? && to.nil? && eid.nil?
+            neo4j_query(<<~END_OF_QUERY, :email => email)
+                MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
+                WHERE COALESCE(e.deleted, false) = false
+                WITH e
+                OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
+                WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
+                RETURN e, u.email
+                ORDER BY e.date DESC, e.start_time DESC, e.id;
+            END_OF_QUERY
+        elsif eid
+            neo4j_query(<<~END_OF_QUERY, :email => email, :eid => eid)
+                MATCH (e:Event {id: $eid})-[:ORGANIZED_BY]->(ou:User {email: $email})
+                WHERE COALESCE(e.deleted, false) = false
+                WITH e
+                OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
+                WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
+                RETURN e, u.email
+                ORDER BY e.date DESC, e.start_time DESC, e.id;
+            END_OF_QUERY
+        else
+            neo4j_query(<<~END_OF_QUERY, :email => email, :from => from || '', :to => to || '9999-12-31')
+                MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
+                WHERE COALESCE(e.deleted, false) = false AND e.date >= $from AND e.date < $to
+                WITH e
+                OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
+                WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
+                RETURN e, u.email
+                ORDER BY e.date DESC, e.start_time DESC, e.id;
+            END_OF_QUERY
+        end
+        stored_events = rows.map { |x| {:info => x['e'], :recipient => x['u.email']} }
+        temp = {}
+        temp_order = []
+        stored_events.each do |x|
+            unless temp[x[:info][:id]]
+                t = Time.parse(x[:info][:date])
+                temp[x[:info][:id]] = {
+                    :recipients => [],
+                    :eid => x[:info][:id],
+                    :info => x[:info],
+                    :dow => t.wday
+                }
+                temp_order << x[:info][:id]
+            end
+            temp[x[:info][:id]][:recipients] << x[:recipient]
+        end
+        temp_order.map do |x|
+            e = temp[x]
+            e[:info][:start_time] = fix_h_to_hh(e[:info][:start_time])
+            e[:info][:end_time] = fix_h_to_hh(e[:info][:end_time])
+            e
+        end
+    end
+
+    # Neues Design: /events shows what is coming and the last four weeks
+    # first; everything older is loaded by school year (1 August to 31 July).
+    EVENTS_RECENT_DAYS = 28
+
+    def events_recent_from
+        (Date.today - EVENTS_RECENT_DAYS).strftime('%Y-%m-%d')
+    end
+
+    # the older events per school year (its first year), newest first:
+    # [{:school_year => 2024, :count => 37}, …]
+    def organized_events_archive_years(email, before)
+        counts = Hash.new(0)
+        neo4j_query(<<~END_OF_QUERY, :email => email, :before => before).each do |row|
+            MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
+            WHERE COALESCE(e.deleted, false) = false AND e.date < $before
+            RETURN substring(e.date, 0, 7) AS month, COUNT(e) AS n;
+        END_OF_QUERY
+            year, month = row['month'].to_s.split('-').map { |x| x.to_i }
+            next if year.nil? || month.nil? || year == 0
+            counts[month >= 8 ? year : year - 1] += row['n']
+        end
+        counts.keys.sort.reverse.map { |y| {:school_year => y, :count => counts[y]} }
+    end
+
+    # the script line /events adds for the new design ('' otherwise, so that
+    # the page stays exactly as it was)
+    def events_preview_js(archive)
+        return '' if archive.nil?
+        "\nvar pv_events_archive = #{archive.to_json};\nvar pv_events_recent_from = #{events_recent_from.to_json};"
+    end
+
+    # the new design's part of /events (preview/events.js), only for those
+    # who see it
+    def events_preview_script(archive)
+        return '' if archive.nil?
+        "\n<script src='#{preview_asset('/preview/events.js')}'></script>"
+    end
+
+    # Neues Design: older events of one school year (or one event by its id,
+    # for /events#eid) – read-only, the same events /events would show the
+    # organizer for that period, nobody else's.
+    post '/api/get_events_archive' do
+        assert(user_with_role_logged_in?(:can_create_events))
+        data = parse_request_data(:optional_keys => [:school_year, :eid],
+                                  :types => {:school_year => Integer},
+                                  :max_value_lengths => {:eid => 64})
+        if data[:eid]
+            events = organized_events(@session_user[:email], nil, nil, data[:eid])
+        else
+            year = data[:school_year]
+            assert(year.is_a?(Integer) && year >= 2000 && year <= 2100)
+            events = organized_events(@session_user[:email], "#{year}-08-01", "#{year + 1}-08-01")
+        end
+        respond(:events => events)
+    end
+
     post '/api/save_event' do
         assert(user_with_role_logged_in?(:can_create_events))
         data = parse_request_data(:required_keys => [:title, :jitsi, :date, :start_time,

@@ -4661,6 +4661,561 @@ body.ui-preview:has(.container-fluid.solid)::before {
     }
 }
 
+/* ---------- Lists with actions (doc/Gestaltung.md, 6a; pv_list in preview.js) ----------
+   The parts of the page type "Liste mit Aktionen", the same on every page:
+   .pv-page-list   the page: at most about 980 px wide on desktop (tables
+                   and the timetable keep the full width)
+   .pv-lhead       the title and the main action in one row; on phones the
+                   main action with its short label (»Neu«)
+   .pv-lrow        a row: title, a quiet line of facts (commas), one or two
+                   visible quiet text actions (.pv-lact) and »•••« (.pv-lmore)
+                   for the rest; on phones the row opens the item (»›«) and
+                   every action is in the sheet
+   .pv-lrow-sub    a sub-row (a poll's run) with a status chip (.pv-lchip)
+   .pv-lfold       »2 beendete Durchführungen anzeigen«
+   .pv-lgroup      a group with a heading (»Schuljahr 2024/25«), foldable
+   .pv-lblocks     a long list in blocks of 50, »Ältere … laden« below
+   .pv-amenu       the »•••« menu: beside its button, a sheet on phones;
+                   Löschen in calm red at its end */
+
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container.pv-page-list {
+        max-width: min(980px, calc(100% - 48px));
+    }
+}
+
+.ui-preview .pv-lhead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    margin-bottom: 10px;
+}
+
+.ui-preview .container .pv-lhead h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+}
+
+.pv-lhead-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.ui-preview #main_container .pv-lhead .pv-lhead-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-preview #main_container .pv-lhead .pv-lhead-main > i {
+    margin: 0;
+}
+
+/* further actions of the page: quiet text buttons */
+.ui-preview #main_container .pv-lhead .pv-lhead-quiet {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+.ui-preview #main_container .pv-lhead .pv-lhead-quiet:hover,
+.ui-preview #main_container .pv-lhead .pv-lhead-quiet:focus-visible {
+    background: var(--pv-hover);
+    color: var(--acc-text);
+}
+
+.pv-l-short {
+    display: none;
+}
+
+/* a row */
+.pv-lrow {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.pv-lrow-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.pv-lrow-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ui-preview .pv-lrow-title {
+    display: block;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    text-align: left;
+    color: var(--pv-ink);
+    font: 600 1.02rem/1.35 var(--pv-text);
+    overflow-wrap: anywhere;
+}
+
+.ui-preview button.pv-lrow-title {
+    cursor: pointer;
+}
+
+.ui-preview button.pv-lrow-title:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--pv-muted);
+    text-underline-offset: 3px;
+}
+
+.ui-preview .pv-lrow-title:focus-visible,
+.ui-preview .pv-lact:focus-visible,
+.ui-preview .pv-lmore:focus-visible,
+.ui-preview .pv-lfold:focus-visible,
+.ui-preview .pv-lgroup-toggle:focus-visible,
+.ui-preview .pv-lblocks-more:focus-visible,
+.ui-preview .pv-amenu-item:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* the focus frame for keyboards only (Bootstrap draws one on every focus) */
+.ui-preview .pv-lrow-title:focus:not(:focus-visible),
+.ui-preview .pv-lact:focus:not(:focus-visible),
+.ui-preview .pv-lmore:focus:not(:focus-visible),
+.ui-preview .pv-lfold:focus:not(:focus-visible),
+.ui-preview .pv-lgroup-toggle:focus:not(:focus-visible),
+.ui-preview .pv-lblocks-more:focus:not(:focus-visible),
+.pv-amenu:focus {
+    outline: none;
+}
+
+.pv-lrow-facts {
+    font-size: 0.85em;
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+/* the actions: level with the title's first line */
+.pv-lrow-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: -5px -6px -5px 0;
+}
+
+.ui-preview .pv-lact,
+.ui-preview .pv-lmore {
+    flex: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    padding: 5px 9px;
+    min-height: 31px;
+    background: transparent;
+    color: var(--acc-text);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-preview .pv-lmore {
+    min-width: 36px;
+    padding: 5px 8px;
+    color: var(--pv-muted);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+}
+
+.ui-preview .pv-lact:hover,
+.ui-preview .pv-lmore:hover,
+.ui-preview .pv-lmore[aria-expanded='true'] {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-lmore[aria-expanded='true'] {
+    color: var(--pv-ink);
+}
+
+.pv-lrow-chev {
+    display: none;
+}
+
+/* a sub-row: indented, the status as a chip; running ones with a slim
+   accent line at the left edge */
+.pv-lrow-sub {
+    margin-left: 16px;
+    padding-left: 12px;
+}
+
+.ui-preview .pv-lrow-sub .pv-lrow-title {
+    font-size: 0.95rem;
+}
+
+.pv-lrow-sub.pv-state-running::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--acc);
+}
+
+.pv-lchip {
+    flex: none;
+    margin-top: 1px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+    /* the same width for "läuft" and "geplant": the times form a column */
+    min-width: 4.6em;
+    text-align: center;
+}
+
+.pv-lchip-running {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.pv-lchip-planned {
+    color: var(--pv-ink);
+}
+
+/* "2 beendete Durchführungen anzeigen" */
+.ui-preview .pv-lfold {
+    display: block;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    background: none;
+    margin: 2px 0 2px 28px;
+    padding: 6px 0;
+    color: var(--acc-text);
+    font: 600 0.85rem/1.3 var(--pv-text);
+    cursor: pointer;
+}
+
+.ui-preview .pv-lfold:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* a group (school year): heading, count, folded or open */
+.pv-lgroup + .pv-lgroup {
+    margin-top: 22px;
+}
+
+.ui-preview .container .pv-lgroup-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 4px;
+    font-size: 1.02rem;
+    line-height: 1.3;
+}
+
+.ui-preview .pv-lgroup-toggle {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: 0 0 0 -8px;
+    padding: 6px 8px;
+    background: none;
+    color: var(--pv-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-lgroup-toggle:hover {
+    background: var(--pv-hover);
+}
+
+.pv-lgroup-count {
+    font: 400 0.85rem/1.3 var(--pv-text);
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-lgroup-chev {
+    display: inline-block;
+    color: var(--pv-muted);
+    transition: transform 0.15s;
+}
+
+[aria-expanded='true'] > .pv-lgroup-chev {
+    transform: rotate(90deg);
+}
+
+.pv-lempty {
+    margin: 0;
+    padding: 12px 0;
+    border-top: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.9em;
+}
+
+/* blocks of 50: "Ältere … laden" as a calm grey button */
+.pv-lblocks-foot {
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-lblocks-more {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 10px;
+    padding: 7px 14px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: 600 0.9rem/1.2 var(--pv-text);
+    cursor: pointer;
+}
+
+.ui-preview .pv-lblocks-more:hover {
+    background: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+}
+
+/* the "•••" menu: beside its button */
+.pv-amenu {
+    position: fixed;
+    z-index: 8095;
+    min-width: 200px;
+    max-width: 320px;
+    padding: 6px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+}
+
+.ui-preview .pv-amenu-item {
+    display: block;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: 0;
+    padding: 8px 12px;
+    background: none;
+    color: var(--pv-ink);
+    font: 500 0.92rem/1.3 var(--pv-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-amenu-item:hover,
+.ui-preview .pv-amenu-item:focus {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-amenu-item.pv-amenu-danger {
+    color: #b42318;
+}
+
+.ui-preview.dark .pv-amenu-item.pv-amenu-danger {
+    color: #ff8f8f;
+}
+
+.pv-amenu-sep {
+    height: 1px;
+    margin: 6px 4px;
+    background: var(--pv-line);
+}
+
+.pv-amenu-title {
+    padding: 2px 12px 10px;
+    font: 700 1rem/1.3 var(--pv-display);
+    color: var(--pv-ink);
+    overflow-wrap: anywhere;
+}
+
+/* tablets: the shorter labels in the rows */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .pv-lact .pv-l-long {
+        display: none;
+    }
+
+    .pv-lact .pv-l-short {
+        display: inline;
+    }
+}
+
+/* phones: the row opens the item, every action is in the sheet */
+@media (max-width: 767px) {
+    .pv-lhead {
+        flex-wrap: wrap;
+    }
+
+    .ui-preview .container .pv-lhead h2 {
+        flex: 1 1 0;
+        font-size: 1.4rem;
+    }
+
+    .pv-lhead-actions {
+        display: contents;
+    }
+
+    .ui-preview #main_container .pv-lhead .pv-lhead-main {
+        order: 1;
+        flex: none;
+    }
+
+    .pv-lhead::after {
+        content: "";
+        order: 2;
+        flex-basis: 100%;
+        height: 0;
+    }
+
+    .ui-preview #main_container .pv-lhead .pv-lhead-quiet {
+        order: 3;
+        margin-left: -12px;
+        margin-right: 6px;
+    }
+
+    .pv-lhead-main .pv-l-long {
+        display: none;
+    }
+
+    .pv-lhead-main .pv-l-short {
+        display: inline;
+    }
+
+    .pv-lrow {
+        gap: 4px 6px;
+        min-height: 48px;
+    }
+
+    .pv-lact {
+        display: none !important;
+    }
+
+    /* the whole row is the title's button */
+    .ui-preview button.pv-lrow-title::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+    }
+
+    .ui-preview button.pv-lrow-title:hover {
+        text-decoration: none;
+    }
+
+    .pv-lrow:has(> .pv-lrow-main button.pv-lrow-title:active) {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .pv-lmore {
+        position: relative;
+        z-index: 1;
+        min-width: 40px;
+        min-height: 36px;
+    }
+
+    .pv-lrow-chev {
+        display: block;
+        flex: none;
+        width: 12px;
+        color: var(--pv-muted);
+        font-size: 1.35rem;
+        line-height: 21px;
+        text-align: right;
+    }
+
+    .pv-lrow-sub {
+        margin-left: 8px;
+    }
+
+    .ui-preview .pv-lfold {
+        margin-left: 20px;
+    }
+
+    .pv-amenu.pv-amenu-sheet {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        min-width: 0;
+        max-width: none;
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 8110;
+        padding: 26px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+        border-radius: 20px 20px 0 0;
+        border-width: 1px 0 0;
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    /* the grab handle: pull down to close */
+    .pv-amenu.pv-amenu-sheet::before {
+        content: "";
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        margin-left: -20px;
+        border-radius: 2px;
+        background: var(--pv-line);
+    }
+
+    .ui-preview .pv-amenu-sheet .pv-amenu-item {
+        min-height: 48px;
+        padding: 13px 12px;
+        font-size: 1rem;
+    }
+
+    .pv-amenu-veil {
+        position: fixed;
+        inset: 0;
+        z-index: 8105;
+        background: rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* larger screens: "•••" only where something is left for it */
+@media (min-width: 768px) {
+    .pv-lmore.pv-lmore-phone {
+        display: none;
+    }
+}
+
 /* "Mehr" on phones, the personal tiles: settings first (Passwörter, hell /
    dunkel), then signing in and out side by side; all the same height */
 @media (max-width: 767px) {

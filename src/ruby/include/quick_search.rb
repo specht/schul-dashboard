@@ -78,6 +78,20 @@ class Main < Sinatra::Base
                 :href => "/directory/#{CGI.escape(lesson_key)}",
             }
         end
+
+        # rooms: their timetable (teachers open it through /room/<room> too);
+        # the number alone is an exact hit
+        ROOM_ORDER.each do |room|
+            next unless @@room_ids[room]
+            items << {
+                :kind => 'raum',
+                :label => "Raum #{room}",
+                :shorthand => room,
+                :sub => 'Raumplan',
+                :terms => "Raum #{room} Raumplan",
+                :href => "/timetable/#{@@room_ids[room]}",
+            }
+        end
         items
     end
 

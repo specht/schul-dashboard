@@ -132,41 +132,35 @@ body.mn-aktiv.mn-dunkel-seite {
     font-weight: 700;
 }
 
-/* ---------- Raster: feste Kacheln, Klassen 5 bis 10 links, Oberstufe rechts ----------
-   Jede Klasse hat immer ihre Kachel an derselben Stelle, auch ohne
-   Änderungen: eine Reihe pro Jahrgang, eine Spalte pro Parallelklasse
-   (--mn-reihen, --mn-spalten setzt monitor.js); die Oberstufe teilt sich die
-   rechte Spalte in feste Hälften. */
+/* ---------- Raster: feste Kacheln wie auf dem bisherigen Monitor ----------
+   KLASSEN_ORDER der Reihe nach in Spalten zu je sieben Klassen, vier Spalten
+   (--mn-spalten setzt monitor.js, mehr nur bei mehr als 28 Klassen); 11 und
+   12 höher. Jede Klasse hat immer ihre Kachel an derselben Stelle, auch ohne
+   Änderungen. Lage und Höhe jeder Kachel in Prozent der Spalte (monitor.js),
+   in denselben Verhältnissen wie bisher. */
 
 .mn-raster {
     position: absolute;
-    grid-template-rows: minmax(0, 1fr);
     left: var(--mn-rand);
     right: var(--mn-rand);
     top: 9vw;
     bottom: 5vw;
     display: grid;
-    grid-template-columns: 3fr 1.05fr;
+    grid-template-columns: repeat(var(--mn-spalten, 4), minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
     gap: 1.1vw;
 }
 
-.mn-raster.mn-ohne-os {
-    grid-template-columns: 1fr;
-}
-
-.mn-sek {
-    display: grid;
-    grid-template-columns: repeat(var(--mn-spalten, 4), minmax(0, 1fr));
-    grid-template-rows: repeat(var(--mn-reihen, 6), minmax(0, 1fr));
-    gap: 0.7vw;
+.mn-spalte {
+    position: relative;
     min-height: 0;
 }
 
-.mn-os {
-    display: grid;
-    grid-template-rows: repeat(var(--mn-reihen, 2), minmax(0, 1fr));
-    gap: 0.7vw;
-    min-height: 0;
+.mn-spalte > .mn-kachel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
 }
 
 /* ---------- Kästen und Kacheln ---------- */
@@ -196,14 +190,14 @@ body.mn-aktiv.mn-dunkel-seite {
     color: var(--mn-ink);
 }
 
-/* Klassen 5 bis 10: Name links, Einträge rechts daneben */
+/* Name links (darunter die Punkte der Seiten), Einträge rechts daneben */
 .mn-kachel {
     display: grid;
-    grid-template-columns: 3.3vw minmax(0, 1fr);
+    grid-template-columns: 3.6vw minmax(0, 1fr);
     /* die Zeile ist so hoch wie die Kachel: was nicht passt, kommt auf die nächste Seite */
     grid-template-rows: minmax(0, 1fr);
     column-gap: 0.6vw;
-    padding: 0.55vw 0.75vw;
+    padding: 0.4vw 0.75vw;
     overflow: hidden;
 }
 
@@ -214,15 +208,13 @@ body.mn-aktiv.mn-dunkel-seite {
     min-width: 0;
 }
 
-.mn-kachel .mn-anzahl:empty {
-    display: none;
-}
-
 .mn-kachel .mn-zeilen {
     min-height: 0;
     overflow: hidden;
     font-size: 1.15vw;
-    line-height: 1.25;
+    /* drei Einträge passen in eine normale Kachel */
+    line-height: 1.18;
+    row-gap: 0.1vw;
     transition: opacity 0.3s;
 }
 
@@ -234,35 +226,6 @@ body.mn-aktiv.mn-dunkel-seite {
 .mn-kachel.mn-still h2 {
     color: var(--mn-muted);
     font-weight: 700;
-}
-
-/* Oberstufe: Name und Anzahl oben, Einträge darunter, Punkte unten */
-.mn-kachel.mn-hoch {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4vw;
-    padding: 0.7vw 0.95vw 0.7vw;
-}
-
-.mn-hoch .mn-name {
-    flex: none;
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.8vw;
-}
-
-.mn-hoch .mn-anzahl {
-    font: 400 1vw/1.2 var(--mn-text);
-    color: var(--mn-muted);
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-.mn-hoch .mn-zeilen {
-    flex: 1 1 0;
-    font-size: 1.2vw;
-    line-height: 1.3;
 }
 
 .mn-zeilen {
@@ -332,9 +295,12 @@ body.mn-aktiv.mn-dunkel-seite {
     gap: 0.3vw;
 }
 
-.mn-hoch .mn-punkte {
-    flex: none;
-    min-height: 0.55vw;
+.mn-punkte.mn-viele {
+    font-size: 0.8vw;
+    line-height: 1.2;
+    color: var(--mn-muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 .mn-punkte i {

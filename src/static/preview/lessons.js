@@ -12,7 +12,9 @@
 //   - each lesson row shows date and lesson on the left, then Thema,
 //     Stundenthema, Hausaufgaben and Notiz as text (links open in a new
 //     tab) and a quiet line of facts; month headings, holidays quiet, a
-//     line for today;
+//     line for today. Wide lists (from 900 px, a container query in
+//     lessons.css) show the same elements as a table: a column each for
+//     Thema, Stundenthema and Hausaufgaben, the rest as quiet icons;
 //   - from 1024 px the pane stands beside the list (sticky); below that it
 //     opens as a sheet when a lesson is tapped (phones: the whole screen,
 //     tablets: a panel from the right). Back closes it, unsaved changes
@@ -128,13 +130,15 @@
                 tr.parentNode.insertBefore(head, tr);
             }
             var when = el('td', 'pv-kb-cell pv-kb-when');
+            // (empty for the further lessons of a day: in the table the
+            // lesson stays in its column)
+            var day = el('div', 'pv-kb-day');
             if (meta[o].first && span.datum) {
                 var d = date_label(span.datum);
-                var day = el('div', 'pv-kb-day');
                 day.appendChild(el('span', 'pv-weekday', d.weekday));
                 day.appendChild(document.createTextNode(' ' + d.date));
-                when.appendChild(day);
             }
+            when.appendChild(day);
             when.appendChild(el('div', 'pv-kb-hour', (meta[o].stunde !== '' ? meta[o].stunde + '. Stunde' : '')));
             var what = el('td', 'pv-kb-cell pv-kb-what');
             var nr = el('td', 'pv-kb-cell pv-kb-nr', String(o + 1));
@@ -145,7 +149,47 @@
             tr.tabIndex = 0;
             tr.setAttribute('aria-label', lesson_label(o));
         });
+        add_column_heads(table);
         rows_ready = true;
+    }
+
+    // wide lists (preview/lessons.css, container query): the lessons as a
+    // table with a sticky row of column headings
+    function add_column_heads(table) {
+        var thead = table.parentNode.querySelector('thead');
+        if (!thead) return;
+        var tr = el('tr', 'pv-kb-colhead');
+        [['pv-kb-h-nr', 'Nr.'], ['pv-kb-h-when', 'Datum'], ['pv-kb-h-thema', 'Thema'],
+            ['pv-kb-h-topic', 'Stundenthema'], ['pv-kb-h-hw', 'Hausaufgaben'], ['pv-kb-h-more', 'Weiteres']
+        ].forEach(function (h) {
+            var th = el('th', h[0], h[1]);
+            th.setAttribute('scope', 'col');
+            tr.appendChild(th);
+        });
+        tr.children[2].appendChild(el('span', 'pv-kb-h-who', ' intern'));
+        tr.children[3].appendChild(el('span', 'pv-kb-h-who', ' für SuS'));
+        thead.appendChild(tr);
+    }
+
+    // a quiet icon in the table's last column (or beside the homework), its
+    // meaning as tooltip and for screen readers
+    function mark(name, label, count, cls) {
+        var s = el('span', 'pv-kb-ic' + (cls ? ' ' + cls : ''));
+        s.setAttribute('role', 'img');
+        s.setAttribute('title', label);
+        s.setAttribute('aria-label', label);
+        s.appendChild(icon(name));
+        if (count !== undefined && count !== null) s.appendChild(el('span', 'pv-kb-ic-n', String(count)));
+        return s;
+    }
+
+    // a quiet icon with its label (homework: Nextcloud, Lernraum, Amt), no pill: facts stay quiet
+    function chip(name, text, label) {
+        var s = el('span', 'pv-kb-tag');
+        if (label) s.setAttribute('title', label);
+        s.appendChild(icon(name));
+        s.appendChild(el('span', null, text));
+        return s;
     }
 
     function line(cls, label, text) {
@@ -173,43 +217,83 @@
             cell.appendChild(t);
         }
         if (topic) cell.appendChild(line('pv-kb-topic', 'Stundenthema', topic));
+        var est = str(i.homework_est_time);
         if (hw || amt || i.homework_nc || i.homework_lr) {
             var where = [];
             if (i.homework_nc) where.push('in der Nextcloud');
             if (i.homework_lr) where.push('im Lernraum');
             var h = line('pv-kb-hw', 'Hausaufgaben', hw);
+            // the list: in words after the text
             var extra = [];
             if (amt) extra.push('Amt: ' + amt);
             if (where.length) extra.push(where.join(' und '));
-            if (str(i.homework_est_time) && hw) extra.push('etwa ' + str(i.homework_est_time) + ' Minuten');
+            if (est && hw) extra.push('etwa ' + est + ' Minuten');
             if (extra.length) {
                 var x = el('span', 'pv-kb-extra');
                 append_text(x, (hw ? ', ' : '') + extra.join(', '));
-                h.querySelector('.pv-kb-v').appendChild(x);
+                h.appendChild(x);
             }
+            // the table: the time quietly, the places as chips
+            var hm = el('span', 'pv-kb-hw-meta');
+            if (est && hw) hm.appendChild(el('span', 'pv-kb-min', 'etwa ' + est + ' Min.'));
+            if (i.homework_nc) hm.appendChild(chip('cloud', 'Nextcloud', 'Hausaufgaben in der Nextcloud'));
+            if (i.homework_lr) hm.appendChild(chip('school', 'Lernraum', 'Hausaufgaben im Lernraum'));
+            if (amt) hm.appendChild(chip('user', 'Amt: ' + amt));
+            if (hm.firstChild) h.appendChild(hm);
             cell.appendChild(h);
         }
         if (notes) cell.appendChild(line('pv-kb-note', 'Notiz', notes));
-        // facts in a quiet line
+        // facts in a quiet line (the list) or as icons (the table)
         var facts = [];
-        if (i.lesson_fixed) facts.push('fester Termin');
-        if (i.lesson_jitsi) facts.push(i.breakout_rooms ? 'Jitsi mit Gruppenräumen' : 'Jitsi');
-        if (i.booked_tablet) facts.push('Tablet ' + i.booked_tablet.tablet_id);
-        if (i.booked_tablet_sets) facts.push(plural(i.booked_tablet_sets_tablet_count || 0, 'Gerät gebucht', 'Geräte gebucht'));
-        if (i.lesson_nc) facts.push('Aufgaben in der Nextcloud');
-        if (i.lesson_lr) facts.push('Aufgaben im Lernraum');
+        var marks = el('div', 'pv-kb-marks');
+        if (notes) marks.appendChild(mark('note', 'Notiz: ' + notes, null, 'pv-kb-ic-note'));
+        if (i.lesson_fixed) {
+            facts.push('fester Termin');
+            marks.appendChild(mark('calendar-check', 'Fester Termin'));
+        }
+        if (i.lesson_jitsi) {
+            facts.push(i.breakout_rooms ? 'Jitsi mit Gruppenräumen' : 'Jitsi');
+            marks.appendChild(mark(i.breakout_rooms ? 'users-group' : 'video', i.breakout_rooms ? 'Jitsi mit Gruppenräumen' : 'Jitsi'));
+        }
+        if (i.booked_tablet) {
+            facts.push('Tablet ' + i.booked_tablet.tablet_id);
+            marks.appendChild(mark('device-tablet', 'Tablet ' + i.booked_tablet.tablet_id + ' gebucht'));
+        }
+        if (i.booked_tablet_sets) {
+            var devices = i.booked_tablet_sets_tablet_count || 0;
+            facts.push(plural(devices, 'Gerät gebucht', 'Geräte gebucht'));
+            marks.appendChild(mark('device-laptop', plural(devices, 'Gerät gebucht', 'Geräte gebucht'), devices));
+        }
+        if (i.lesson_nc) {
+            facts.push('Aufgaben in der Nextcloud');
+            marks.appendChild(mark('cloud', 'Aufgaben in der Nextcloud'));
+        }
+        if (i.lesson_lr) {
+            facts.push('Aufgaben im Lernraum');
+            marks.appendChild(mark('school', 'Aufgaben im Lernraum'));
+        }
         var comments = (window.lesson_data[o] || {}).comments || {};
         var text_n = 0, audio_n = 0;
         Object.keys(comments).forEach(function (email) {
             if (str(comments[email].text_comment)) text_n += 1;
             if (str(comments[email].audio_comment_tag)) audio_n += 1;
         });
-        if (text_n) facts.push(plural(text_n, 'Kommentar', 'Kommentare'));
-        if (audio_n) facts.push(plural(audio_n, 'Audiokommentar', 'Audiokommentare'));
+        if (text_n) {
+            facts.push(plural(text_n, 'Kommentar', 'Kommentare'));
+            marks.appendChild(mark('message', plural(text_n, 'Kommentar', 'Kommentare'), text_n));
+        }
+        if (audio_n) {
+            facts.push(plural(audio_n, 'Audiokommentar', 'Audiokommentare'));
+            marks.appendChild(mark('microphone', plural(audio_n, 'Audiokommentar', 'Audiokommentare'), audio_n));
+        }
         var sus = (((window.lesson_data[o] || {}).feedback || {}).sus) || {};
         var fb_n = Object.keys(sus).length;
-        if (fb_n) facts.push(plural(fb_n, 'Rückmeldung', 'Rückmeldungen'));
+        if (fb_n) {
+            facts.push(plural(fb_n, 'Rückmeldung', 'Rückmeldungen'));
+            marks.appendChild(mark('mood-smile', plural(fb_n, 'Rückmeldung', 'Rückmeldungen') + ' von Schülerinnen und Schülern', fb_n));
+        }
         if (facts.length) cell.appendChild(el('div', 'pv-kb-facts', facts.join(', ')));
+        if (marks.firstChild) cell.appendChild(marks);
         if (!cell.firstChild) cell.appendChild(el('div', 'pv-kb-empty', 'Noch nichts eingetragen'));
         tr.classList.toggle('pv-kb-blank', !thema && !topic);
     }

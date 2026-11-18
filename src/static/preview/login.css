@@ -84,7 +84,7 @@ body.ui-preview.pv-public .otp-page {
 
 /* ---------- The card ---------- */
 .ui-preview #main_container > .container.pv-login {
-    max-width: 460px;
+    max-width: 520px;
     padding: 28px 28px 22px;
     margin-left: auto;
     margin-right: auto;
@@ -93,6 +93,12 @@ body.ui-preview.pv-public .otp-page {
 @media (min-width: 768px) {
     .ui-preview #main_container > .container.pv-login {
         margin-top: max(48px, 10vh);
+    }
+
+    /* logged in (»Zusätzliche Anmeldung«, beside the sidebar): room for the
+       explanations, not a narrow column in a wide window */
+    body.ui-preview:not(.pv-public) #main_container > .container.pv-login {
+        max-width: 680px;
     }
 }
 

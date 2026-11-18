@@ -15,7 +15,12 @@
      rows become grid rows; the old cells stay in the DOM, hidden;
    - the internal Thema is the row's title (it is what teachers plan with),
      Stundenthema, Hausaufgaben and Notiz follow with a quiet label;
-   - Speichern is the one accent action of the pane, Umplanen a menu. */
+   - Speichern is the one accent action of the pane, Umplanen a menu;
+   - from 900 px of list (a container query, not the window) the lessons
+     are a table (page type "Tabelle"): Nr., Datum, Thema, Stundenthema,
+     Hausaufgaben and "Weiteres" (Notiz, Durchführung, Kommentare,
+     Rückmeldungen as quiet icons with tooltip), a sticky row of headings,
+     empty cells empty, texts at most three lines. */
 
 /* ---------- The page ---------- */
 .ui-preview .container-fluid.solid.pv-kb {
@@ -330,6 +335,247 @@
 
 .ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today + tr.lesson {
     border-top-color: transparent;
+}
+
+/* what only the table shows (below) */
+.ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead,
+.ui-preview .pv-kb .pv-kb-hw-meta,
+.ui-preview .pv-kb .pv-kb-marks {
+    display: none;
+}
+
+/* the further lessons of a day: no date (in the table an empty slot) */
+.ui-preview .pv-kb .pv-kb-day:empty {
+    display: none;
+}
+
+/* ---------- Wide lists: a table ----------
+   From 900 px of list (not of window: beside the sidebar and the pane that
+   is a window of about 1600 px) the lessons are a table: Nr., Datum, Thema,
+   Stundenthema, Hausaufgaben and a narrow column of quiet icons for the
+   rest, with a sticky row of headings. The rows keep their elements (the
+   cell with the entries becomes display: contents, its parts go into the
+   columns), so selection, hover and the tests stay the same. Empty cells
+   stay empty; long texts end after three lines (the pane shows them
+   whole). */
+.ui-preview .pv-kb .lc_table {
+    container: pv-kb-list / inline-size;
+}
+
+@container pv-kb-list (min-width: 900px) {
+    .ui-preview .pv-kb .lesson_table_table {
+        --kb-nr: 2.2rem;
+        --kb-when: 10rem;
+        --kb-more: 7rem;
+        --kb-gap: 16px;
+        --kb-cols: var(--kb-nr) var(--kb-when) minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.35fr) var(--kb-more);
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead {
+        display: block;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: var(--pv-surface);
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr {
+        display: none;
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead {
+        display: grid;
+        grid-template-columns: var(--kb-cols);
+        column-gap: var(--kb-gap);
+        padding: 0 12px 0 0;
+        border-bottom: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead th {
+        padding: 10px 0 7px;
+        border: 0;
+        background: transparent;
+        color: var(--pv-muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-align: left;
+        vertical-align: bottom;
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead th.pv-kb-h-nr {
+        text-align: right;
+    }
+
+    .ui-preview .pv-kb .pv-kb-h-who {
+        font-weight: 400;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson {
+        grid-template-columns: var(--kb-cols);
+        column-gap: var(--kb-gap);
+        align-items: baseline;
+        padding: 8px 12px 8px 0;
+        scroll-margin-top: 110px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson > td.pv-kb-what {
+        display: contents;
+    }
+
+    /* Datum: weekday and date, the lesson quietly beside */
+    .ui-preview .pv-kb .lesson_table tr.lesson > td.pv-kb-when {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        line-height: 1.4;
+    }
+
+    .ui-preview .pv-kb .pv-kb-day {
+        flex: 0 0 5.3rem;
+        padding-top: 0;
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-kb .pv-kb-day:empty {
+        display: block;
+    }
+
+    .ui-preview .pv-kb .pv-kb-hour {
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-kb .pv-kb-nr {
+        line-height: 1.4;
+    }
+
+    /* the columns */
+    .ui-preview .pv-kb .pv-kb-what > * {
+        grid-row: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-title {
+        grid-column: 3;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-topic {
+        grid-column: 4;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-hw {
+        grid-column: 5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 10px;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-marks {
+        grid-column: 6;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 10px;
+        color: var(--pv-muted);
+        font-size: 0.82rem;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-k,
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-note,
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-facts,
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-empty,
+    .ui-preview .pv-kb .pv-kb-what .pv-kb-k,
+    .ui-preview .pv-kb .pv-kb-what .pv-kb-extra {
+        display: none;
+    }
+
+    /* long texts: three lines at most */
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-title,
+    .ui-preview .pv-kb .pv-kb-topic .pv-kb-v,
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-v {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        overflow: hidden;
+    }
+
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-v {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-v:empty {
+        display: none;
+    }
+
+    /* the homework's time and places, quietly after the text */
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-hw-meta {
+        display: flex;
+        flex: 0 1 auto;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 10px;
+        min-width: 0;
+        color: var(--pv-muted);
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-kb .pv-kb-min {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .ui-preview .pv-kb .pv-kb-tag {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 3px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ui-preview .pv-kb .pv-kb-tag > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ui-preview .pv-kb .pv-kb-tag i,
+    .ui-preview .pv-kb .pv-kb-ic i {
+        position: relative;
+        top: 0.12em;
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .ui-preview .pv-kb .pv-kb-ic {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 2px;
+        cursor: default;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* holidays: their text in the column of the Thema */
+    .ui-preview .pv-kb .lesson_table tr.lesson-table-info-row td {
+        padding: 8px 0 8px calc(var(--kb-nr) + var(--kb-when) + 2 * var(--kb-gap));
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today td {
+        padding: 10px 0 6px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.pv-kb-month td {
+        padding: 22px 0 6px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.pv-kb-month:first-child td {
+        padding-top: 14px;
+    }
 }
 
 /* ---------- The pane (beside the list or in the sheet) ---------- */

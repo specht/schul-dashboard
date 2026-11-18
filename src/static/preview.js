@@ -665,6 +665,9 @@
         if (school) { var s = school.cloneNode(true); s.textContent = '© ' + new Date().getFullYear() + ' ' + school.textContent.replace(/\s+/g, ' ').trim(); parts.push(s); }
         if (imprint) parts.push(imprint.cloneNode(true));
         if (github) { var g = document.createElement('a'); g.href = github.href; g.target = '_blank'; g.rel = 'noopener'; g.className = 'pv-legal-icon'; g.setAttribute('aria-label', 'Quelltext auf GitHub'); g.title = 'Quelltext auf GitHub'; g.innerHTML = "<i class='fa fa-github'></i>"; parts.push(g); }
+        // the tablet rail has no room for words: the Impressum as one quiet
+        // icon there (preview.css), the line itself hidden
+        if (imprint) { var r = document.createElement('a'); r.href = '/impressum'; r.className = 'pv-legal-rail'; r.title = 'Impressum'; r.setAttribute('aria-label', 'Impressum'); r.innerHTML = "<i class='ti ti-info-circle' aria-hidden='true'></i>"; parts.push(r); }
         parts.forEach(function(el) { line.appendChild(el); });
         // sidebar: the very bottom, below oneself; phones: the end of "Mehr"
         var foot_list = collapse.querySelector('.pv-nav-foot');
@@ -793,6 +796,8 @@
             var label = b.querySelector('.label');
             if (label) label.textContent = dark ? 'Hell' : 'Dunkel';
         });
+        // pages with their own switch follow (the profile's »Dunkles Design«)
+        document.dispatchEvent(new CustomEvent('pv-dark-changed', { detail: { dark: dark } }));
         if (!window.color_scheme) return;
         fetch('/api/design_tokens?scheme=' + encodeURIComponent(window.color_scheme), { credentials: 'same-origin' })
             .then(function(r) { return r.json(); })

@@ -9,10 +9,10 @@
 // - Blättern statt Scrollen: Was nicht auf eine Seite passt, kommt auf die
 //   nächste; jede Seite steht STANDZEIT_S Sekunden, ein Balken im Fuß zeigt,
 //   wie lange noch.
-// - Feste Kacheln: jede Klasse immer an derselben Stelle, auch ohne
-//   Änderungen. Links die Klassen 5 bis 10 (eine Zeile pro Jahrgang), rechts
-//   die Oberstufe (jede Klasse eine feste Hälfte). Was nicht in eine Kachel
-//   passt, blättert in der Kachel; alle Kacheln im selben Takt.
+// - Feste Kacheln wie auf dem bisherigen Monitor: KLASSEN_ORDER der Reihe
+//   nach in Spalten zu je sieben Klassen (vier Spalten), 11 und 12 höher.
+//   Jede Klasse immer an derselben Stelle, auch ohne Änderungen. Was nicht in
+//   eine Kachel passt, blättert in der Kachel; alle Kacheln im selben Takt.
 // - Uhr und laufende Stunde im Kopf (Zeit des Servers, Stundenraster aus
 //   HOURS_FOR_KLASSE).
 // - Alles als Text eingesetzt (textContent), nie als HTML.
@@ -27,8 +27,7 @@
 
     let DATEN = null;
     let KLASSEN_TR = {};
-    let SEK = [];
-    let OS = [];
+    let KLASSEN = [];
 
     let serverDiff = 0;           // ms, Uhr des Servers minus Uhr des Monitors
     let plan = null;              // {heute, stand, klassen: {klasse: [Einträge]}}
@@ -58,7 +57,6 @@
     }
 
     function tr(k) { return KLASSEN_TR[k] || k; }
-    function istOS(k) { return /^\d+/.test(k) && parseInt(k, 10) >= 11; }
     function jetzt() { return new Date(Date.now() + serverDiff); }
     function zwei(n) { return (n < 10 ? '0' : '') + n; }
     function uhrzeit(d) { return `${d.getHours()}:${zwei(d.getMinutes())}`; }
@@ -66,7 +64,6 @@
     function minuten(hhmm) { const p = String(hhmm).split(':'); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); }
     function hhmmKurz(hhmm) { const p = String(hhmm).split(':'); return `${parseInt(p[0], 10)}:${p[1]}`; }
     function ausIso(iso) { const p = String(iso).split('-').map((x) => parseInt(x, 10)); return new Date(p[0], p[1] - 1, p[2]); }
-    function anzahlText(n) { return n === 1 ? '1 Änderung' : `${n} Änderungen`; }
     function nurText(html) {
         return (new DOMParser().parseFromString(String(html || ''), 'text/html').body.textContent || '').trim();
     }
@@ -141,64 +138,62 @@
     function passt(e) { return e.scrollHeight <= e.clientHeight + 1; }
 
     // ------------------------------------------------------------------
-    // Feste Kacheln: jede Klasse hat immer ihre Kachel an derselben Stelle,
-    // auch ohne Änderungen (dann nur der Name, leise). Links die Klassen 5 bis
-    // 10, eine Zeile pro Jahrgang, eine Spalte pro Parallelklasse; rechts die
-    // Oberstufe, jede Klasse eine feste Hälfte. Wer mehr hat, als in die
-    // Kachel passt, blättert in der Kachel.
+    // Feste Kacheln, verteilt wie auf dem bisherigen Monitor (monitor.html):
+    // KLASSEN_ORDER der Reihe nach von oben nach unten in Spalten zu je
+    // sieben Klassen, vier Spalten nebeneinander; 11 und 12 sind höher
+    // (9,8 statt 6,2 vw, Abstand 1 vw), mit denselben Verhältnissen wie dort.
+    // Jede Klasse hat immer ihre Kachel an derselben Stelle, auch ohne
+    // Änderungen (dann nur der Name, leise); leere Plätze gibt es nicht. Wer
+    // mehr hat, als in die Kachel passt, blättert in der Kachel.
 
-    // Jahrgänge: [['5', ['5a', '5b', …]], …] in der Reihenfolge von KLASSEN_ORDER
-    function jahrgaenge(klassen) {
-        const gruppen = [];
-        for (const k of klassen) {
-            const m = /^(\d+)/.exec(k);
-            const key = m ? m[1] : '_';
-            let g = gruppen.find((x) => x[0] === key);
-            if (!g) { g = [key, []]; gruppen.push(g); }
-            g[1].push(k);
-        }
-        return gruppen;
-    }
+    const PRO_SPALTE = 7;
+    const MIN_SPALTEN = 4;
+    // Höhen in Zehntel-vw des bisherigen Monitors; das Raster wird so
+    // gestreckt, dass die höchste Spalte (mindestens sieben normale Kacheln)
+    // den Platz zwischen Kopf und Fuß füllt
+    const HOEHE = 62, HOEHE_HOCH = 98, ABSTAND = 10;
+    // mehr Seiten zeigt eine Kachel als Zahl statt als Punkte
+    const PUNKTE_HOECHSTENS = 6;
 
-    function kachelBauen(klasse, hoch) {
-        const k = h('div', 'mn-kasten mn-kachel' + (hoch ? ' mn-hoch' : ''));
+    function istHoch(k) { return k === '11' || k === '12'; }
+
+    function kachelBauen(klasse) {
+        const k = h('div', 'mn-kasten mn-kachel' + (istHoch(klasse) ? ' mn-hoch' : ''));
         k.dataset.klasse = klasse;
         const name = h('div', 'mn-name');
         name.appendChild(h('h2', null, tr(klasse)));
-        const anzahl = name.appendChild(h('span', 'mn-anzahl', ''));
-        const punkte = h('div', 'mn-punkte');
+        const punkte = name.appendChild(h('div', 'mn-punkte'));
         const box = h('div', 'mn-zeilen');
         k.appendChild(name);
         k.appendChild(box);
-        // hoch: Punkte unten in der Kachel, sonst unter dem Namen
-        (hoch ? k : name).appendChild(punkte);
-        return {klasse: klasse, el: k, box: box, anzahl: anzahl, punkte: punkte, hoch: hoch,
+        return {klasse: klasse, el: k, box: box, punkte: punkte,
                 zeilen: [], seiten: [[0, 0]], zeigt: null};
     }
 
     function rasterAufbauen() {
-        el.sek.textContent = '';
-        el.os.textContent = '';
+        el.raster.textContent = '';
         kacheln = [];
-        const gruppen = jahrgaenge(SEK);
-        const spalten = Math.max(1, ...gruppen.map((g) => g[1].length));
-        // mindestens vier Reihen, damit wenige Klassen keine riesigen Kacheln ergeben
-        el.sek.style.setProperty('--mn-spalten', String(spalten));
-        el.sek.style.setProperty('--mn-reihen', String(Math.max(4, gruppen.length)));
-        gruppen.forEach((g, reihe) => {
-            g[1].forEach((klasse, spalte) => {
-                const kachel = kachelBauen(klasse, false);
-                kachel.el.style.gridRow = String(reihe + 1);
-                kachel.el.style.gridColumn = String(spalte + 1);
-                el.sek.appendChild(kachel.el);
-                kacheln.push(kachel);
-            });
+        const spalten = [];
+        KLASSEN.forEach((k, i) => {
+            if (i % PRO_SPALTE === 0) spalten.push([]);
+            spalten[spalten.length - 1].push(k);
         });
-        el.os.style.setProperty('--mn-reihen', String(Math.max(1, OS.length)));
-        for (const klasse of OS) {
-            const kachel = kachelBauen(klasse, true);
-            el.os.appendChild(kachel.el);
-            kacheln.push(kachel);
+        const hoehe = (s) => s.reduce((a, k) => a + (istHoch(k) ? HOEHE_HOCH : HOEHE), 0) + (s.length - 1) * ABSTAND;
+        const gesamt = Math.max(PRO_SPALTE * HOEHE + (PRO_SPALTE - 1) * ABSTAND, ...spalten.map(hoehe));
+        el.raster.style.setProperty('--mn-spalten', String(Math.max(MIN_SPALTEN, spalten.length)));
+        const prozent = (x) => `${(x * 100 / gesamt).toFixed(4)}%`;
+        for (const spalte of spalten) {
+            const sp = el.raster.appendChild(h('section', 'mn-spalte'));
+            let y = 0;
+            for (const klasse of spalte) {
+                const kachel = kachelBauen(klasse);
+                const hk = istHoch(klasse) ? HOEHE_HOCH : HOEHE;
+                kachel.el.style.top = prozent(y);
+                kachel.el.style.height = prozent(hk);
+                y += hk + ABSTAND;
+                sp.appendChild(kachel.el);
+                kacheln.push(kachel);
+            }
         }
         for (const kachel of kacheln) kachelKopf(kachel, 0);
     }
@@ -207,13 +202,12 @@
         const n = kachel.zeilen.length;
         const seiten = kachel.seiten.length;
         kachel.el.classList.toggle('mn-still', n === 0);
-        if (kachel.hoch) {
-            let text = n ? anzahlText(n) : 'keine Änderungen';
-            if (seiten > 1) text = `Seite ${seite + 1} von ${seiten}, ${text}`;
-            kachel.anzahl.textContent = text;
-        }
         kachel.punkte.textContent = '';
-        if (seiten > 1) {
+        kachel.punkte.classList.toggle('mn-viele', seiten > PUNKTE_HOECHSTENS);
+        if (seiten > PUNKTE_HOECHSTENS) {
+            // so viele Punkte passen nicht unter den Namen: die Seite als Zahl
+            kachel.punkte.textContent = `${seite + 1} von ${seiten}`;
+        } else if (seiten > 1) {
             for (let i = 0; i < seiten; i++) kachel.punkte.appendChild(h('i', i === seite ? 'mn-an' : ''));
         }
     }
@@ -441,7 +435,6 @@
         const beendet = info.beendet || [];
         el.titel.textContent = 'Zeugniskonferenzen';
         el.raster.textContent = '';
-        el.raster.classList.add('mn-ohne-os');
         const gitter = el.raster.appendChild(h('div', 'mn-zk'));
         let jetztGesetzt = false;
         for (const eintrag of (info.heute || [])) {
@@ -548,11 +541,7 @@
         stunde.setAttribute('data-testid', 'monitor-stunde');
         el.stunde1 = stunde.appendChild(h('div'));
         el.stunde2 = stunde.appendChild(h('div'));
-        el.raster = mn.appendChild(h('main', 'mn-raster' + (OS.length ? '' : ' mn-ohne-os')));
-        el.sek = el.raster.appendChild(h('section', 'mn-sek'));
-        el.os = el.raster.appendChild(h('section', 'mn-os'));
-        if (!OS.length) el.os.hidden = true;
-        if (!SEK.length) el.sek.hidden = true;
+        el.raster = mn.appendChild(h('main', 'mn-raster'));
         // „ticker“: die Effekte halten den Fuß frei (monitor_effekte.js)
         el.fuss = mn.appendChild(h('footer', 'mn-fuss ticker'));
         el.seite = el.fuss.appendChild(h('span', 'mn-seite'));
@@ -576,8 +565,7 @@
         if (!quelle) return;
         DATEN = JSON.parse(quelle.textContent);
         KLASSEN_TR = DATEN.klassen_tr || {};
-        SEK = (DATEN.klassen || []).filter((k) => !istOS(k));
-        OS = (DATEN.klassen || []).filter(istOS);
+        KLASSEN = (DATEN.klassen || []).map(String);
         zk = !!(DATEN.zeugniskonferenzen || {}).an;
         aufbauen();
         datumZeigen();

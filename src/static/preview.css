@@ -2533,6 +2533,10 @@ body.ui-preview.dark {
     /* no margin below the page: the backdrop would show there, outside the fade */
     margin-bottom: 0;
     padding-bottom: 24px;
+    /* its own layer: otherwise the body paints its backdrop over the fade
+       below (::before, z-index -1) and the backdrop stays bright all the way
+       down */
+    isolation: isolate;
 }
 
 body.ui-preview.dark::before {
@@ -4026,7 +4030,7 @@ body.ui-preview:has(.container-fluid.solid)::before {
 
 .ui-preview .pv-scheme-inputs {
     display: grid;
-    grid-template-columns: 1fr auto 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
     margin: 0;
@@ -5808,5 +5812,135 @@ body.ui-preview:has(.container-fluid.solid)::before {
 @media (prefers-reduced-motion: reduce) {
     .ui-preview .pv-copied .pv-copy-ok {
         animation: none;
+    }
+}
+
+/* ---------- The search (code.js, quick_search_open) ----------
+   It opens below the top bar of the old design; with the sidebar (tablet
+   rail, desktop) there is no top bar and "below the navigation" is the bottom
+   edge of the window. Here: centred over the page, a little below the top. */
+@media (min-width: 768px) {
+    .ui-preview #quick_search_panel {
+        top: max(48px, 10vh) !important;
+        left: calc((100vw + var(--pv-sidebar, 0px)) / 2);
+        right: auto;
+        transform: translateX(-50%);
+        width: min(36em, calc(100vw - var(--pv-sidebar, 0px) - 32px));
+        max-width: none;
+        background: var(--pv-surface);
+        border: 1px solid var(--pv-line);
+        border-radius: 14px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+    }
+}
+
+/* ---------- Allgemeiner Teil (timetable.html, #atNotesModal) ----------
+   The page's own styles give the name column a white background and the
+   hint rows a grey band; here: the surface, hairlines, quiet hints, the
+   chosen grade in the accent's soft tone, "missing" in calm red. */
+.ui-preview #atNotesModal .table {
+    color: var(--pv-ink);
+    margin-bottom: 0;
+}
+
+.ui-preview #atNotesModal .table thead th {
+    background: var(--pv-surface);
+    border-top: 0;
+    border-bottom: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ui-preview #atNotesModal .table td {
+    background: var(--pv-surface);
+    border-top: 1px solid var(--pv-line);
+    vertical-align: middle;
+}
+
+.ui-preview #atNotesModal .sticky_col {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview #atNotesModal tr.hint_row td {
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    font-style: normal;
+    opacity: 1;
+    padding: 4px 8px;
+    border-top: 1px dashed var(--pv-line);
+}
+
+.ui-preview #atNotesModal .bu-at-note.active,
+.ui-preview #atNotesModal .bu-sort-at-table-by-recency.btn-secondary {
+    background: var(--acc-soft);
+    border-color: var(--acc);
+    color: var(--acc-text);
+}
+
+.ui-preview #atNotesModal .bu-at-missing.btn-danger {
+    background: color-mix(in srgb, #b42318 12%, var(--pv-surface));
+    border-color: #b42318;
+    color: #b42318;
+}
+
+.ui-preview.dark #atNotesModal .bu-at-missing.btn-danger {
+    background: color-mix(in srgb, #ff8f8f 16%, var(--pv-surface));
+    border-color: #ff8f8f;
+    color: #ff8f8f;
+}
+
+/* the legal line in the tablet rail: only a quiet info icon for the
+   Impressum (preview.js, legal_line); elsewhere the icon is hidden */
+.ui-preview .pv-legal .pv-legal-rail {
+    display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .pv-nav-foot .pv-legal > :not(.pv-legal-rail) {
+        display: none !important;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal .pv-legal-rail {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 32px;
+        margin: 0 auto;
+        border-radius: 8px;
+        color: var(--pv-muted);
+        font-size: 18px;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal .pv-legal-rail:hover {
+        background: var(--pv-hover);
+        color: var(--pv-ink);
+    }
+}
+
+/* the profile on tablets: the whole panel, not two thirds of it in the
+   middle (profil.html: col-md-8 offset-md-2) */
+@media (min-width: 768px) and (max-width: 1199px) {
+    body.ui-preview:has(#dark_css_switch) #main_container .col-md-8.offset-md-2 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-left: 0;
+    }
+}
+
+/* ---------- Dialogs on tablets ----------
+   Bootstrap keeps them at 500 px below 992 px (modal-lg included), a narrow
+   column in a wide window: large dialogs take the room beside the rail,
+   normal ones a little more than before. Phones: sheets (above). */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .modal-dialog:not(.modal-sm) {
+        max-width: min(620px, calc(100vw - var(--pv-sidebar, 0px) - 48px));
+    }
+
+    .ui-preview .modal-dialog.modal-lg,
+    .ui-preview .modal-dialog.modal-xl {
+        max-width: min(960px, calc(100vw - var(--pv-sidebar, 0px) - 48px));
     }
 }

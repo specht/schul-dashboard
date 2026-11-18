@@ -326,6 +326,26 @@ class Main < Sinatra::Base
         !(rows.first && rows.first['aus'])
     end
 
+    # Storys (kleine Geschichten auf den Kacheln) haben einen eigenen Schalter, Standard: an
+    def monitor_storys_an?
+        rows = neo4j_query(<<~END_OF_QUERY)
+            MATCH (m:MonitorEinstellung {key: 'storys_aus'})
+            RETURN COALESCE(m.value, FALSE) AS aus;
+        END_OF_QUERY
+        !(rows.first && rows.first['aus'])
+    end
+
+    # Pausen für die Storys (Monitore verwalten); ohne Eintrag gelten Jonas' Standardzeiten
+    def monitor_story_pausen
+        rows = neo4j_query(<<~END_OF_QUERY)
+            MATCH (m:MonitorEinstellung {key: 'story_pausen'})
+            RETURN m.value AS wert;
+        END_OF_QUERY
+        wert = rows.first && rows.first['wert']
+        liste = begin; wert ? JSON.parse(wert) : nil; rescue JSON::ParserError; nil; end
+        MonitorEffekte.pausen_pruefen(liste) || MonitorEffekte::STORY_PAUSEN
+    end
+
     # Je Effekt: an/aus und ab welcher Warnstufe (MonitorEffekte::REGELN_STANDARD)
     # Schultermine für die Monitore (Adventskonzert, Forschertag …), je ein Tag
     def monitor_schultermine
@@ -405,16 +425,29 @@ class Main < Sinatra::Base
         heute = MonitorEffekte.schultermin(Date.today, termine) || MonitorEffekte.fest(Date.today, @@ferien_feiertage, Time.now)
         wetter, fest, ruht = MonitorEffekte.vorrang(MonitorEffekte.wetter(daten, MONITOR_DWD_WARNCELL, Time.now, regeln), heute)
         antwort = {:an => monitor_effekte_an?,
+                   :storys => monitor_storys_an?,
                    :wetter => wetter,
                    :fest => fest,
                    :ruht => ruht,
                    :bereit => !daten.nil? || !MONITOR_DWD_WARNCELL,
-                   :vorschau => @@monitor_effekte_vorschau}
+                   :vorschau => @@monitor_effekte_vorschau,
+                   :jetzt_ms => (Time.now.to_f * 1000).to_i}
+        # Storys: Tagesplan (nur in den Pausen, jede höchstens einmal am Tag) – aber nicht,
+        # solange ein Wettereffekt oder ein besonderer Tag zu sehen ist (Wunsch Jonas)
+        pausen = monitor_story_pausen()
+        antwort[:storys_ruhen] = !!(antwort[:an] && (wetter || fest))
+        if antwort[:storys] && !antwort[:storys_ruhen]
+            heute = Date.today
+            mitternacht = Time.local(heute.year, heute.month, heute.day)
+            antwort[:storyplan] = MonitorEffekte.story_plan(heute, MonitorEffekte::STORYS, pausen).map { |e| {:ms => ((mitternacht + e[:sekunde]).to_f * 1000).to_i, :story => e[:story]} }
+        else
+            antwort[:storyplan] = []
+        end
         # Test auf den echten Monitoren: läuft für ein paar Minuten statt des echten Stands
         test = monitor_effekte_test()
         if test
             antwort[:an] = true
-            antwort[:wetter], antwort[:fest] = MonitorEffekte.test_soll(test[:effekt])
+            antwort[:wetter], antwort[:fest], antwort[:story] = MonitorEffekte.test_soll(test[:effekt])
             antwort[:ruht] = nil
             antwort[:test] = {:effekt => test[:effekt], :rest_ms => ((test[:bis] - Time.now) * 1000).to_i, :bis => (test[:bis].to_f * 1000).to_i}
         end
@@ -423,6 +456,7 @@ class Main < Sinatra::Base
             antwort[:regeln] = regeln
             antwort[:schultermine] = termine.select { |t| (t[:bis].to_s.empty? ? t[:datum] : t[:bis]) >= Date.today.to_s }
             antwort[:schultermin_motive] = MonitorEffekte::SCHULTERMIN_MOTIVE
+            antwort[:story_pausen] = pausen
             antwort[:phaenomene] = MonitorEffekte::PHAENOMENE
             antwort[:phaenomene_ohne_effekt] = MonitorEffekte::PHAENOMENE_OHNE_EFFEKT
             antwort[:abgerufen] = daten ? @@monitor_wetter[:geholt] * 1000 : nil
@@ -446,10 +480,47 @@ class Main < Sinatra::Base
         respond(:an => !result['aus'])
     end
 
+    # Schalter für die Storys auf „Monitore verwalten“: an = 'ja' oder 'nein'
+    post '/api/set_monitor_storys' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:an], :max_string_length => 4)
+        assert(%w(ja nein).include?(data[:an]))
+        result = neo4j_query_expect_one(<<~END_OF_QUERY, {:aus => data[:an] == 'nein'})
+            MERGE (m:MonitorEinstellung {key: 'storys_aus'})
+            SET m.value = $aus
+            RETURN m.value AS aus;
+        END_OF_QUERY
+        self.class.force_reload_monitors()
+        respond(:storys => !result['aus'])
+    end
+
+    # Pausen für die Storys speichern: pausen = JSON-Text [[von, bis, anzahl], …]; '' = Standard
+    post '/api/set_monitor_story_pausen' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:pausen], :max_body_length => 4000, :max_string_length => 3000)
+        if data[:pausen] == ''
+            neo4j_query("MATCH (m:MonitorEinstellung {key: 'story_pausen'}) DETACH DELETE m;")
+        else
+            liste = begin; JSON.parse(data[:pausen]); rescue JSON::ParserError; nil; end
+            pausen = MonitorEffekte.pausen_pruefen(liste)
+            assert(!pausen.nil?, 'ungueltige_pausen')
+            neo4j_query_expect_one(<<~END_OF_QUERY, {:wert => pausen.to_json})
+                MERGE (m:MonitorEinstellung {key: 'story_pausen'})
+                SET m.value = $wert
+                RETURN m.value AS wert;
+            END_OF_QUERY
+        end
+        # die Monitore holen sich den neuen Tagesplan
+        (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
+            info[:ws].send({:command => 'monitor_effekte_neu'}.to_json)
+        end
+        respond(:story_pausen => monitor_story_pausen)
+    end
+
     # Vorschau auf „Monitore verwalten“: Fenster im Folgen-Modus (/monitor…?effekt=folgen)
     # zeigen den gewählten Effekt; die echten Monitore reagieren nicht darauf.
     @@monitor_effekte_vorschau = ''
-    MONITOR_VORSCHAU_NAMEN = (MonitorEffekte::EFFEKTE + MonitorEffekte::FESTE + %w(zeus rundgang)).freeze
+    MONITOR_VORSCHAU_NAMEN = (MonitorEffekte::EFFEKTE + MonitorEffekte::FESTE + MonitorEffekte::STORYS + %w(zeus rundgang)).freeze
 
     # Test auf den echten Monitoren im Schulhaus: Ein Klick auf „Monitore verwalten“
     # zeigt einen Effekt für ein paar Minuten auf allen Flur-Monitoren; danach (oder
@@ -466,7 +537,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_monitors!
         data = parse_request_data(:required_keys => [:effekt], :max_string_length => 16)
         effekt = data[:effekt]
-        assert(effekt == '' || MonitorEffekte::EFFEKTE.include?(effekt) || MonitorEffekte::FESTE.include?(effekt))
+        assert(effekt == '' || MonitorEffekte::EFFEKTE.include?(effekt) || MonitorEffekte::FESTE.include?(effekt) || MonitorEffekte::STORYS.include?(effekt))
         @@monitor_effekte_test = effekt == '' ? nil : {:effekt => effekt, :bis => Time.now + MonitorEffekte::TEST_MINUTEN * 60}
         # die Monitore fragen sofort neu ab
         (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|

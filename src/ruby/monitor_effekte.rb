@@ -21,6 +21,53 @@ module MonitorEffekte
 
     EFFEKTE = %w(schnee regen gewitter hitze sturm glatteis frost).freeze
     FESTE = %w(weihnachten nikolaus ostern valentinstag fasching sommerferien schulanfang adventskonzert forschertag).freeze
+    # Storys: kleine Geschichten, die die Monitore von selbst ab und zu zeigen
+    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe).freeze
+    # Storys nur in den Pausen (Jonas, 18.11.): [von, bis, wie viele]; zufällig im Zeitraum,
+    # jede Story höchstens einmal am Tag, alle Flur-Monitore nach demselben Plan
+    STORY_PAUSEN = [['07:46', '08:00', 3], ['08:45', '08:50', 1], ['10:20', '10:23', 1], ['10:35', '10:40', 2],
+                    ['12:10', '12:15', 2], ['12:45', '12:50', 2], ['13:05', '13:10', 2], ['13:35', '13:40', 2],
+                    ['14:25', '14:35', 2]].freeze
+    STORY_DAUER = 55     # Sekunden: so lange läuft die längste Story höchstens; sie endet vor dem Pausenende
+    STORY_LUECKE = 5     # Sekunden zwischen zwei Storys in derselben Pause
+
+    # Pausen aus „Monitore verwalten“ prüfen: [[von, bis, anzahl], …] mit HH:MM, von < bis,
+    # Anzahl 1–9, höchstens 20 Pausen; nach Beginn sortiert. Ungültig → nil
+    def self.pausen_pruefen(liste)
+        return nil unless liste.is_a?(Array) && liste.size <= 20
+        minuten = lambda { |z| z.is_a?(String) && z =~ /\A([01]?\d|2[0-3]):([0-5]\d)\z/ ? $1.to_i * 60 + $2.to_i : nil }
+        pausen = liste.map do |p|
+            return nil unless p.is_a?(Array) && p.size == 3
+            von, bis, anzahl = minuten.call(p[0]), minuten.call(p[1]), p[2]
+            anzahl = anzahl.to_i if anzahl.is_a?(String) && anzahl =~ /\A\d+\z/
+            return nil unless von && bis && von < bis && anzahl.is_a?(Integer) && anzahl >= 1 && anzahl <= 9
+            [format('%02d:%02d', von / 60, von % 60), format('%02d:%02d', bis / 60, bis % 60), anzahl]
+        end
+        pausen.sort_by { |p| p[0] }
+    end
+
+    # Tagesplan: [{:sekunde (seit Mitternacht), :story}], gleich für dasselbe Datum
+    def self.story_plan(datum, storys = STORYS, pausen = STORY_PAUSEN)
+        return [] if datum.saturday? || datum.sunday? || storys.empty?
+        rng = Random.new(datum.strftime('%Y%m%d').to_i * 7919 + 17)
+        reihe = storys.shuffle(random: rng)
+        plan = []
+        pausen.each do |von, bis, anzahl|
+            a = von.split(':').map(&:to_i).inject { |h, m| h * 60 + m } * 60
+            b = bis.split(':').map(&:to_i).inject { |h, m| h * 60 + m } * 60 - STORY_DAUER
+            schritt = STORY_DAUER + STORY_LUECKE
+            anzahl -= 1 while anzahl > 1 && b - a - (anzahl - 1) * schritt < 0
+            platz = b - a - (anzahl - 1) * schritt
+            next if platz < 0
+            Array.new(anzahl) { rng.rand * platz }.sort.each_with_index do |x, i|
+                plan << {:sekunde => (a + x + i * schritt).round}
+            end
+        end
+        # weniger Storys als Plätze: zufällig über alle Pausen des Tages verteilen
+        plan = plan.sample(reihe.size, random: rng).sort_by { |e| e[:sekunde] } if reihe.size < plan.size
+        plan.each_with_index { |e, i| e[:story] = reihe[i] }
+        plan
+    end
     # Treffen Wetter und Fest zusammen: Einzeltage haben Vorrang vor dem Wetter,
     # Festzeiten über mehrere Tage (Advent, Ostern) lassen dem Wetter den Vortritt.
     FESTE_EINZELTAG = %w(valentinstag fasching sommerferien nikolaus schulanfang adventskonzert forschertag).freeze
@@ -189,7 +236,8 @@ module MonitorEffekte
     end
 
     # Test auf den echten Monitoren („Monitore verwalten“): wie lange er läuft und
-    # was er zeigt – [wetter, fest] wie bei echtem Wetter bzw. einem echten Fest.
+    # was er zeigt – [wetter, fest] wie bei echtem Wetter bzw. einem echten Fest,
+    # bei einer Story [nil, nil, name].
     TEST_MINUTEN = 5
     def self.test_soll(name)
         if EFFEKTE.include?(name)
@@ -198,6 +246,7 @@ module MonitorEffekte
             return [w, nil]
         end
         return [nil, {:fest => name, :nah => true}] if FESTE.include?(name)
+        return [nil, nil, name] if STORYS.include?(name)
         [nil, nil]
     end
 

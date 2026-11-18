@@ -18,6 +18,7 @@
 
     const NS = 'http://www.w3.org/2000/svg';
     const WETTER = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost'];
+    const STORYS = ['roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe'];
     const FESTE = ['weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang', 'adventskonzert', 'forschertag'];
     const ABFRAGE_ALLE_MS = 10 * 60 * 1000;
     const RUNDGANG_MS = 40 * 1000;
@@ -194,6 +195,108 @@
     .fx-trupp.fx-geht .fx-hammerarm { animation: fx-hammer-pendel .62s ease-in-out infinite alternate; }
     @keyframes fx-hammer-pendel { from { transform: rotate(-112deg); } to { transform: rotate(-146deg); } }
     .fx-trupp.fx-haemmert .fx-hammerarm { animation: fx-hammer .32s ease-in infinite; }
+    .fx-trupp .fx-schrauberarm { transform-box: view-box; transform-origin: 23px 49px; transform: rotate(-62deg); transition: transform .35s ease-out; }
+    .fx-trupp.fx-geht .fx-schrauberarm { animation: fx-schrauber-pendel .62s ease-in-out infinite alternate; }
+    @keyframes fx-schrauber-pendel { from { transform: rotate(-52deg); } to { transform: rotate(-72deg); } }
+    .fx-trupp.fx-arbeitet .fx-schrauberarm { transform: rotate(0deg); }
+    .fx-trupp.fx-schraubt .fx-schrauberarm { animation: fx-schrauben .22s ease-in-out infinite alternate; }
+    @keyframes fx-schrauben { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+    .fx-trupp.fx-schraubt .fx-klinge { animation: fx-klinge .11s steps(2) infinite; }
+    @keyframes fx-klinge { 50% { stroke: #e6ebef; } }
+    /* Story „Röhre“: die Kachel wird dunkler (die Schrift bleibt schwarz und lesbar), Klappe mit Röhre */
+    .fx-story { position: absolute; pointer-events: none; display: block; }
+    .fx-roehre-dunkel { left: 0; top: 0; right: 0; bottom: 0; border-radius: inherit; background: #14171b; opacity: 0; }
+    .fx-roehre-fach { z-index: 3; opacity: 0; transition: opacity .4s; perspective: 9vw; }
+    .fx-roehre-fach.fx-da { opacity: 1; }
+    .fx-roehre-hohl { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #262b31; border-radius: .2vw; box-shadow: inset 0 .15vw .35vw rgba(0,0,0,.85); }
+    .fx-fassung { position: absolute; top: 22%; height: 56%; width: .32vw; background: #8a9099; border-radius: .08vw; }
+    .fx-fassung.fx-l { left: .2vw; } .fx-fassung.fx-r { right: .2vw; }
+    .fx-roehre-im-fach { position: absolute; left: .5vw; right: .5vw; top: 31%; height: 38%; border-radius: 1vw; display: none; }
+    .fx-roehre-im-fach.fx-alt { display: block; background: linear-gradient(90deg, #4d4842 0, #4d4842 8%, #cfd0c8 14%, #dadbd4 86%, #4d4842 92%); }
+    .fx-roehre-im-fach.fx-neu { display: block; background: #fff; box-shadow: 0 0 .5vw .15vw rgba(255,255,245,.95); }
+    .fx-klappe { position: absolute; left: -.05vw; top: -.05vw; right: -.05vw; bottom: -.05vw; background: linear-gradient(#f7f8f9, #dde2e7);
+        border: .08vw solid #a3abb4; border-radius: .2vw; transform-origin: 50% 100%; transition: transform .7s ease-in-out, filter .7s; }
+    .fx-klappe.fx-offen { transform: rotateX(-176deg); filter: brightness(.7); }
+    .fx-klappe i { position: absolute; top: 50%; width: .3vw; height: .3vw; margin-top: -.15vw; border-radius: 50%; background: #8d959e; }
+    .fx-klappe i:first-child { left: .3vw; } .fx-klappe i:last-child { right: .3vw; }
+    /* Story „Klassenschild per Heli“ */
+    .fx-kiesel-wackelt { animation: fx-kiesel-wackeln .13s ease-in-out infinite alternate; }
+    @keyframes fx-kiesel-wackeln { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+    .fx-kiesel-neu { animation: fx-kiesel-neu .45s ease-out; }
+    @keyframes fx-kiesel-neu { 0% { transform: scale(1.25); } 60% { transform: scale(.94); } 100% { transform: scale(1); } }
+    .fx-kiesel-kopie { pointer-events: none; will-change: transform; transform-origin: 50% 50%; }
+    .fx-heli { position: absolute; left: 0; top: 0; overflow: visible; will-change: transform; filter: drop-shadow(0 .25vw .3vw rgba(0,0,0,.3)); }
+    .fx-heli .fx-rotor { transform-box: fill-box; transform-origin: 50% 50%; animation: fx-rotor .16s linear infinite; }
+    .fx-heli .fx-rotor-b { animation-delay: -.08s; }
+    @keyframes fx-rotor { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.06); } }
+    .fx-heli .fx-heckrotor { transform-box: fill-box; transform-origin: 50% 50%; animation: fx-heckrotor .12s linear infinite; }
+    @keyframes fx-heckrotor { to { transform: rotate(360deg); } }
+    .fx-trupp.fx-seilkind { width: 3.2vw; }
+    .fx-trupp.fx-seilkind.fx-arm-l-runter .fx-tragarm-l { transform: rotate(-150deg); }
+    .fx-trupp.fx-seilkind.fx-arm-r-runter .fx-tragarm-r { transform: rotate(140deg); }
+    .fx-trupp.fx-seilkind.fx-haengt .fx-kbein-a { animation: fx-baumeln-a 1.7s ease-in-out infinite alternate; }
+    .fx-trupp.fx-seilkind.fx-haengt .fx-kbein-b { animation: fx-baumeln-b 1.9s ease-in-out infinite alternate; }
+    @keyframes fx-baumeln-a { from { transform: rotate(-3deg); } to { transform: rotate(5deg); } }
+    @keyframes fx-baumeln-b { from { transform: rotate(4deg); } to { transform: rotate(-3deg); } }
+    .fx-seil { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+    .fx-fahrzeug .fx-buerste { transform-box: fill-box; transform-origin: 50% 50%; animation: fx-buerste .35s linear infinite; }
+    @keyframes fx-buerste { to { transform: rotate(-360deg); } }
+    /* Story „Rohrbruch“ */
+    .fx-trupp.fx-helfer { width: 3.6vw; }
+    .fx-trupp.fx-helfer.fx-traegt .fx-tragarm-l { transform: rotate(-155deg); }
+    .fx-trupp.fx-helfer.fx-traegt .fx-tragarm-r { transform: rotate(150deg); }
+    .fx-trupp.fx-helfer.fx-wischt .fx-tragarm-l { transform: rotate(-138deg); }
+    .fx-trupp.fx-helfer.fx-wischt .fx-tragarm-r { transform: rotate(-142deg); }
+    .fx-warnschild { position: absolute; left: 0; top: 0; width: 2.6vw; overflow: visible; will-change: transform; filter: drop-shadow(0 .1vw .15vw rgba(0,0,0,.3)); }
+    /* Story „Fensterputzer-Gondel“ */
+    .fx-gondel { position: absolute; left: 0; top: 0; width: 7vw; overflow: visible; will-change: transform; filter: drop-shadow(0 .2vw .25vw rgba(0,0,0,.3)); }
+    .fx-trupp.fx-helfer.fx-putzt .fx-tragarm-l { transform: rotate(-62deg); }
+    .fx-trupp.fx-helfer.fx-putzt .fx-tragarm-r { transform: rotate(-48deg); }
+    .fx-schmutz { left: 0; top: 0; width: 100%; height: 100%; border-radius: inherit; }
+    .fx-glanz { left: 0; top: 0; width: 100%; height: 100%; border-radius: inherit; overflow: hidden; }
+    .fx-glanz i { position: absolute; top: -20%; bottom: -20%; width: 30%; left: -40%;
+        background: linear-gradient(100deg, rgba(255,255,255,0), rgba(255,255,255,.75) 50%, rgba(255,255,255,0)); }
+    /* Story „Spinnennetz“ */
+    .fx-trupp.fx-wedelt .fx-schrauberarm { animation: fx-wedeln .26s ease-in-out infinite alternate; }
+    @keyframes fx-wedeln { from { transform: rotate(-34deg); } to { transform: rotate(24deg); } }
+    .fx-trupp.fx-arbeitet.fx-geht .fx-schrauberarm { animation: none; transform: rotate(-6deg); }
+    /* Story „Schiefe Kachel“ */
+    .fx-trupp.fx-bohrt .fx-klinge { animation: fx-klinge .06s steps(2) infinite; }
+    .fx-trupp.fx-bohrt .fx-schrauberarm { animation: fx-schrauben .12s ease-in-out infinite alternate; }
+    /* Story „Taube baut Nest“ */
+    .fx-taube { position: absolute; left: 0; top: 0; width: 4vw; overflow: visible; will-change: transform; filter: drop-shadow(0 .1vw .15vw rgba(0,0,0,.3)); }
+    .fx-taube .fx-kopf, .fx-taube .fx-fluegel, .fx-taube .fx-tbein { transform-box: view-box; }
+    .fx-taube .fx-kopf { transform-origin: 22px 14px; }
+    .fx-taube.fx-trippelt .fx-kopf { animation: fx-nicken .38s ease-in-out infinite; }
+    @keyframes fx-nicken { 0%, 100% { transform: translateX(0); } 35% { transform: translateX(-3.2px); } 60% { transform: translateX(-3.2px); } }
+    .fx-taube.fx-pickt .fx-kopf { animation: fx-picken .5s ease-in-out infinite; }
+    @keyframes fx-picken { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-38deg) translateY(2px); } }
+    .fx-taube .fx-fluegel { transform-origin: 33px 19px; }
+    .fx-taube.fx-fliegt .fx-fluegel { animation: fx-schlagen .17s ease-in-out infinite alternate; }
+    @keyframes fx-schlagen { from { transform: rotate(-58deg); } to { transform: rotate(28deg); } }
+    .fx-taube.fx-fliegt .fx-tbeine { display: none; }
+    .fx-taube .fx-tbein { transform-origin: 30px 31px; }
+    .fx-taube.fx-trippelt .fx-tbein-a { animation: fx-gehen-a .38s ease-in-out infinite; }
+    .fx-taube.fx-trippelt .fx-tbein-b { animation: fx-gehen-b .38s ease-in-out infinite; }
+    /* Story „Maus“ */
+    .fx-maus { position: absolute; left: 0; top: 0; width: 3.3vw; overflow: visible; will-change: transform; transform-origin: 50% 80%; }
+    .fx-maus .fx-mkoerper, .fx-maus .fx-mschwanz, .fx-maus .fx-mbein, .fx-maus .fx-mnase { transform-box: view-box; }
+    .fx-maus.fx-rennt .fx-mkoerper { animation: fx-maus-hops .12s ease-in-out infinite alternate; }
+    @keyframes fx-maus-hops { from { transform: translateY(0); } to { transform: translateY(-1.2px); } }
+    .fx-maus .fx-mbein { transform-origin: 22px 17px; }
+    .fx-maus.fx-rennt .fx-mbein-a { animation: fx-maus-bein .12s linear infinite alternate; }
+    .fx-maus.fx-rennt .fx-mbein-b { animation: fx-maus-bein .12s linear infinite alternate-reverse; }
+    @keyframes fx-maus-bein { from { transform: translateX(-1.8px); } to { transform: translateX(1.8px); } }
+    .fx-maus .fx-mschwanz { transform-origin: 32px 14px; animation: fx-maus-schwanz .9s ease-in-out infinite alternate; }
+    @keyframes fx-maus-schwanz { from { transform: rotate(-8deg); } to { transform: rotate(10deg); } }
+    .fx-maus .fx-mnase { transform-origin: 8px 13px; }
+    .fx-maus.fx-schnuppert .fx-mnase { animation: fx-maus-schnuppern .16s ease-in-out infinite alternate; }
+    @keyframes fx-maus-schnuppern { from { transform: rotate(-6deg) translateX(0); } to { transform: rotate(5deg) translateX(-.8px); } }
+    .fx-falle { position: absolute; left: 0; top: 0; width: 5vw; overflow: visible; will-change: transform; filter: drop-shadow(0 .1vw .12vw rgba(0,0,0,.3)); }
+    .fx-falle .fx-falltuer { transform-box: view-box; transform-origin: 2.5px 3px; transform: rotate(-82deg); transition: transform .16s ease-in; }
+    .fx-falle.fx-zu .fx-falltuer { transform: rotate(0deg); }
+    .fx-falle .fx-kaese { opacity: 0; transition: opacity .3s; }
+    .fx-falle.fx-mit-kaese .fx-kaese { opacity: 1; }
     /* Klettern: Beine mit Knie und die Greifhand werden pro Bild berechnet (fx-ik) */
     .fx-trupp .fx-ik-glied { display: none; }
     .fx-trupp.fx-ik .fx-ik-glied { display: inline; }
@@ -1454,15 +1557,52 @@
     function kindSvgTeile(x, haar, hose, haut, art, zopf) {
         const bein = (klasse, dx) => `<g class="fx-glied ${klasse}"><path d="M${x + dx - 2.6},68 L${x + dx + 2.6},68 L${x + dx + 2.2},93 L${x + dx - 2.2},93 Z" fill="${hose}"/>
             <path d="M${x + dx - 5},92 L${x + dx + 2.6},92 L${x + dx + 2.6},96 L${x + dx - 5.5},96 Q${x + dx - 6.5},94 ${x + dx - 5},92 Z" fill="#2b2b2b"/></g>`;
-        const arme = art === 'hammer'
+        // Schraubenzieher: roter Griff mit Rillen, Metallzwinge, Klinge – waagerecht nach vorn gehalten
+        const zange = `<path d="M${x - 11.5},42.6 L${x - 19.5},42.6" stroke="#c62828" stroke-width="2.8" stroke-linecap="round"/>
+               <path d="M${x - 19},41.3 L${x - 23.6},41.3 L${x - 25.6},38.5 L${x - 23.3},37.8 L${x - 22.1},39.5" stroke="#7c858e" stroke-width="1.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+               <path d="M${x - 19},44 L${x - 24.3},44" stroke="#7c858e" stroke-width="1.6" stroke-linecap="round"/>
+               <circle cx="${x - 20.2}" cy="42.6" r="1.15" fill="#aab3bb"/>`;
+        const wedelArm = `<g class="fx-schrauberarm"><path d="M${x - 2},49 L${x - 10.5},43" stroke="#ff7a1a" stroke-width="3.6" stroke-linecap="round" fill="none"/>
+               <path d="M${x - 11.5},42.6 L${x - 19.5},42.6" stroke="#8a5a30" stroke-width="1.6" stroke-linecap="round"/>
+               <ellipse cx="${x - 22.5}" cy="40.6" rx="3.6" ry="1.3" fill="#e85d75" transform="rotate(-28 ${x - 22.5} 40.6)"/>
+               <ellipse cx="${x - 23.4}" cy="42.6" rx="4" ry="1.4" fill="#f2c94c"/>
+               <ellipse cx="${x - 22.5}" cy="44.6" rx="3.6" ry="1.3" fill="#56a3e8" transform="rotate(28 ${x - 22.5} 44.6)"/>
+               <ellipse cx="${x - 21.4}" cy="42.6" rx="2.2" ry="2.1" fill="#6cc070"/>
+               <circle class="fx-wedel-spitze" cx="${x - 25.8}" cy="41.2" r=".2" fill="none"/>
+               <circle cx="${x - 11.2}" cy="42.7" r="2.2" fill="${haut}"/></g>`;
+        const armUndHand = (innen) => `<g class="fx-schrauberarm"><path d="M${x - 2},49 L${x - 10.5},43" stroke="#ff7a1a" stroke-width="3.6" stroke-linecap="round" fill="none"/>
+               ${innen}<circle cx="${x - 11.2}" cy="42.7" r="2.2" fill="${haut}"/></g>`;
+        const bohrerArm = armUndHand(`<path d="M${x - 11.6},44 L${x - 12.8},49.6" stroke="#2b2b2b" stroke-width="2.6" stroke-linecap="round"/>
+               <rect x="${x - 19.8}" y="39.6" width="9.4" height="4.8" rx="1.5" fill="#1f8f5a"/>
+               <rect x="${x - 17.6}" y="40.6" width="4" height="1.2" rx=".4" fill="#8fd6b0"/>
+               <rect x="${x - 22}" y="40.8" width="2.4" height="2.6" rx=".5" fill="#4a4f55"/>
+               <path class="fx-klinge" d="M${x - 22},42.1 L${x - 26.6},42.1" stroke="#aab3bb" stroke-width=".9"/>
+               <circle class="fx-wedel-spitze" cx="${x - 26.6}" cy="42.1" r=".2" fill="none"/>`);
+        const spachtelArm = armUndHand(`<path d="M${x - 11.6},42.6 L${x - 16.4},42.6" stroke="#8a5a30" stroke-width="2.4" stroke-linecap="round"/>
+               <path d="M${x - 16.2},41.5 L${x - 22},40 L${x - 22},45.2 L${x - 16.2},43.7 Z" fill="#b9c1c8" stroke="#6f7881" stroke-width=".5"/>
+               <circle class="fx-wedel-spitze" cx="${x - 22}" cy="42.6" r=".2" fill="none"/>`);
+        const leerArm = armUndHand('<circle class="fx-wedel-spitze" cx="' + (x - 11.2) + '" cy="42.7" r=".2" fill="none"/>');
+        const schrauberArm = art === 'spachtel' ? spachtelArm : art === 'bohrer' ? bohrerArm : art === 'leer' ? leerArm : art === 'wedel' ? wedelArm : art === 'zange' ? `<g class="fx-zangenarm"><path class="fx-za-griff" d="" stroke="#c62828" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+               <path class="fx-za-kopf" d="" stroke="#7c858e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+               <path class="fx-za-arm" d="" stroke="#ff7a1a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+               <circle class="fx-za-hand" r="2.1" fill="${haut}"/></g>` : `<g class="fx-schrauberarm"><path d="M${x - 2},49 L${x - 10.5},43" stroke="#ff7a1a" stroke-width="3.6" stroke-linecap="round" fill="none"/>
+               <path d="M${x - 11.5},42.6 L${x - 18},42.6" stroke="#c62828" stroke-width="3" stroke-linecap="round"/>
+               <path d="M${x - 13.5},41.4 L${x - 13.5},43.8 M${x - 15.3},41.4 L${x - 15.3},43.8 M${x - 17},41.4 L${x - 17},43.8" stroke="#8e1b1b" stroke-width=".55"/>
+               <rect x="${x - 20.2}" y="41.7" width="1.8" height="1.8" rx=".3" fill="#c9ced4"/>
+               <path class="fx-klinge" d="M${x - 20},42.6 L${x - 26.5},42.6" stroke="#aab3bb" stroke-width="1" stroke-linecap="butt"/>
+               <path d="M${x - 26.5},42.1 L${x - 27.4},42.6 L${x - 26.5},43.1 Z" fill="#7c858e"/>
+               <circle cx="${x - 11.2}" cy="42.7" r="2.2" fill="${haut}"/></g>`;
+        const werkzeug = `<path d="M${x - 9.5},38.5 L${x - 16},27" stroke="#8a5a30" stroke-width="2.2" stroke-linecap="round"/>
+               <rect x="${x - 21}" y="22" width="10" height="5.5" rx="1" fill="#7d8790" transform="rotate(-30 ${x - 16} 25)"/>`;
+        const werkzeugKind = ['hammer', 'schrauber', 'zange', 'wedel', 'bohrer', 'leer', 'spachtel'].indexOf(art) >= 0;
+        const arme = werkzeugKind
             ? `<g class="fx-haltearm"><path d="M${x + 2},50 L${x + 9},44 L${x + 10.5},46.5 L${x + 3},53 Z" fill="#ff7a1a"/><circle cx="${x + 10}" cy="44.5" r="2.2" fill="${haut}"/></g>
                <g class="fx-ik-glied fx-ik-arm"><path d="" stroke="#ff7a1a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle r="2.3" fill="${haut}"/></g>
-               <g class="fx-hammerarm"><path d="M${x - 2},50 L${x - 10},40 L${x - 8},38 L${x},48 Z" fill="#ff7a1a"/><circle cx="${x - 9.5}" cy="38.5" r="2.2" fill="${haut}"/>
-               <path d="M${x - 9.5},38.5 L${x - 16},27" stroke="#8a5a30" stroke-width="2.2" stroke-linecap="round"/>
-               <rect x="${x - 21}" y="22" width="10" height="5.5" rx="1" fill="#7d8790" transform="rotate(-30 ${x - 16} 25)"/></g>`
+               ${art !== 'hammer' ? schrauberArm : `<g class="fx-hammerarm"><path d="M${x - 2},50 L${x - 10},40 L${x - 8},38 L${x},48 Z" fill="#ff7a1a"/><circle cx="${x - 9.5}" cy="38.5" r="2.2" fill="${haut}"/>
+               ${werkzeug}</g>`}`
             : `<g class="fx-tragarm fx-tragarm-l"><path d="M${x - 3},50 L${x - 6},20 L${x - 2.5},19.5 L${x},48 Z" fill="#ff7a1a"/><circle cx="${x - 4.3}" cy="18" r="2.3" fill="${haut}"/></g>
                <g class="fx-tragarm fx-tragarm-r"><path d="M${x + 3},50 L${x + 5},20 L${x + 8.5},20.5 L${x + 6},50 Z" fill="#ff7a1a"/><circle cx="${x + 6.8}" cy="18.5" r="2.3" fill="${haut}"/></g>`;
-        const ikBein = (n) => art === 'hammer' ? `<g class="fx-ik-glied fx-ik-bein-${n}"><path class="fx-ik-hose" d="" stroke="${hose}" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="fx-ik-schuh" d="" fill="#2b2b2b"/></g>` : '';
+        const ikBein = (n) => werkzeugKind ? `<g class="fx-ik-glied fx-ik-bein-${n}"><path class="fx-ik-hose" d="" stroke="${hose}" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path class="fx-ik-schuh" d="" fill="#2b2b2b"/></g>` : '';
         return `${bein('fx-kbein-b', 1)}${ikBein('b')}
             <path d="M${x - 7},48 C${x - 7},44 ${x + 7},44 ${x + 7},48 L${x + 6},70 L${x - 6},70 Z" fill="#ff7a1a"/>
             <path d="M${x - 6.6},56 L${x + 6.6},56 M${x - 6.3},62 L${x + 6.3},62" stroke="#e8edf2" stroke-width="2"/>
@@ -1494,6 +1634,21 @@
             <path d="M4,42 C4,12 96,12 96,42 Z" fill="#e8344e" stroke="#9c1f33" stroke-width="1"/>
             ${bahnen.join('')}
             <path d="M4,42 C4,12 96,12 96,42" fill="none" stroke="#9c1f33" stroke-width="1.2"/>
+        </svg>`;
+    }
+    // Junge und Mädchen kommen abwechselnd (Wunsch Jonas)
+    const MONTEURE = [
+        {haar: '#3a2416', hose: '#3b4a3a', haut: '#e9c2a0', zopf: true},
+        {haar: '#c98a3a', hose: '#2e3f5c', haut: '#f3d2b8', zopf: false},
+        {haar: '#1f1a17', hose: '#4a3b5c', haut: '#a8724f', zopf: true},
+        {haar: '#5a3a22', hose: '#3b3b46', haut: '#d9a77f', zopf: false},
+    ];
+    let monteurNr = 0;
+    function monteurkindSvg(werkzeug) {
+        const m = MONTEURE[monteurNr % MONTEURE.length];
+        monteurNr += 1;
+        return `<svg class="fx-trupp fx-hammerkind fx-monteur fx-geht" viewBox="0 0 50 100" xmlns="${NS}">
+            ${kindSvgTeile(25, m.haar, m.hose, m.haut, werkzeug || 'schrauber', m.zopf)}
         </svg>`;
     }
     function hammerkindSvg() {
@@ -2158,12 +2313,12 @@
     // Leiter am Hering p: Spitze knapp unter dem Hering, Fuß etwas weiter rechts.
     // Das Kind steht rechts der Leiter (Blick nach links); seine Hüfte bleibt
     // 1,2 vw rechts vom Holm, die Füße stehen auf den Sprossen.
-    function leiterGeometrie(p) {
+    function leiterGeometrie(p, seiteVorgabe) {
         const boden = LAUF_BODEN - 0.2 * VW;
         const kh = KIND_B * 2 * VW;
         const lehne = 0.14 * (boden - p[1] - 1.0 * VW);
         // ganz rechts am Rand lehnt die Leiter spiegelverkehrt, das Kind steht dann links
-        const seite = p[0] + 0.5 * VW + lehne + 4 * VW > W ? -1 : 1;
+        const seite = seiteVorgabe || (p[0] + 0.5 * VW + lehne + 4 * VW > W ? -1 : 1);
         const spitze = [p[0] + 0.5 * VW * seite, p[1] + 1.0 * VW];
         const fuss = [spitze[0] + lehne * seite, boden];
         const laenge = Math.hypot(fuss[0] - spitze[0], fuss[1] - spitze[1]);
@@ -2885,7 +3040,7 @@
                 if (boe && t - boe.start > boe.dauer + 0.7) boeEnde();
                 // Schülertrupp: nur zwischen den Böen losschicken, eine Kachel nach der anderen
                 if (truppAb === null) truppAb = t + (vorschau ? 0 : truppAbstand());
-                if (!trupp && !boe && t >= truppAb) {
+                if (!trupp && !boe && t >= truppAb && !storyLeiter()) {
                     for (const [el, f] of weg) {
                         if (f.fertig && f.rueckholen && t >= f.rueckholen) {
                             const k = ruhend.find((r) => r.el === el);
@@ -3545,7 +3700,7 @@
                 // das frierende Kind und der Enteisungstrupp – nie beide zugleich
                 kindNaechster -= dt;
                 truppNaechster -= dt;
-                if (!kind && !trupp && truppNaechster <= 0) {
+                if (!kind && !trupp && truppNaechster <= 0 && !storyLeiter()) {
                     truppNaechster = truppStarten(t) ? dauer(zufall(90, 120), 20) : 10;
                     if (kindNaechster < 3) kindNaechster = 3;
                 }
@@ -3711,23 +3866,6 @@
         // nach innerhalb von etwa einer halben Stunde
         const geschenke = [];
         let geschenkePruefung = null;
-        // wo in einer Kachel Schrift (oder der Kiesel mit dem Klassennamen) steht – Bühnenkoordinaten
-        function schriftFlaechen(el) {
-            const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
-            const liste = [];
-            const gang = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-            const bereich = document.createRange();
-            for (let n = gang.nextNode(); n; n = gang.nextNode()) {
-                if (!n.textContent.trim() || n.parentElement.closest('.fx-deko')) continue;
-                bereich.selectNodeContents(n);
-                for (const r of bereich.getClientRects()) {
-                    if (r.width > 0 && r.height > 0) liste.push({l: r.left - b0.left, r: r.right - b0.left, t: r.top - b0.top, b: r.bottom - b0.top});
-                }
-            }
-            const kiesel = opt.kiesel ? el.querySelector(`:scope > ${opt.kiesel}`) : el.querySelector(':scope > h3');
-            if (kiesel) { const r = kiesel.getBoundingClientRect(); liste.push({l: r.left - b0.left, r: r.right - b0.left, t: r.top - b0.top, b: r.bottom - b0.top}); }
-            return liste;
-        }
         const GESCHENK_B = 2.2;   // vw (Höhe etwa gleich)
         function geschenkFrei(k, dx, dy) {
             const x = k.x + dx, y = k.y + dy, b = GESCHENK_B * VW, rand = 0.3 * VW;
@@ -5212,12 +5350,2488 @@
     }
 
     // ==================================================================
+    // STORYS: kleine Geschichten, die ab und zu auf einer Kachel passieren –
+    // unabhängig von Wetter und Festen
+
+    // wo in einer Kachel Schrift (oder der Kiesel mit dem Klassennamen) steht – Bühnenkoordinaten
+    function schriftFlaechen(el) {
+        const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+        const liste = [];
+        const gang = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const bereich = document.createRange();
+        for (let n = gang.nextNode(); n; n = gang.nextNode()) {
+            if (!n.textContent.trim() || n.parentElement.closest('.fx-deko')) continue;
+            bereich.selectNodeContents(n);
+            for (const r of bereich.getClientRects()) {
+                if (r.width > 0 && r.height > 0) liste.push({l: r.left - b0.left, r: r.right - b0.left, t: r.top - b0.top, b: r.bottom - b0.top});
+            }
+        }
+        const kiesel = opt.kiesel ? el.querySelector(`:scope > ${opt.kiesel}`) : el.querySelector(':scope > h3');
+        if (kiesel) { const r = kiesel.getBoundingClientRect(); liste.push({l: r.left - b0.left, r: r.right - b0.left, t: r.top - b0.top, b: r.bottom - b0.top}); }
+        return liste;
+    }
+
+    // Röhre brennt durch: Das Weiß einer Kachel flackert wie eine sterbende
+    // Leuchtstoffröhre (die Schrift bleibt lesbar), dann kommt ein Kind mit Leiter,
+    // schraubt in der Kachel eine Klappe auf, tauscht die Röhre und geht wieder.
+    const ROEHRE_FACH_B = 8, ROEHRE_FACH_H = 1.5;     // vw
+    // jedes Mal eine andere Kachel, bis alle einmal dran waren (Wunsch Jonas)
+    let roehreZuletzt = [];
+    function kachelName(el) { const h = el.querySelector(':scope > h3'); return (h && h.textContent.trim()) || el.className; }
+    // Folge von [Sekunden, Dunkelheit 0…0,44]
+    function flackerFolge(sekunden, kaputt) {
+        const f = [];
+        let s = 0;
+        if (!kaputt) {
+            // erst noch ruhig, dann zweimal kurz weg
+            for (const st of [[0.15, 0], [0.05, 0.42], [0.09, 0], [0.04, 0.36], [zufall(0.7, 1.2), 0], [0.06, 0.4], [0.05, 0.05]]) { f.push(st); s += st[0]; }
+        }
+        while (s < sekunden) {
+            const r = Math.random();
+            let d, a;
+            if (r < (kaputt ? 0.55 : 0.42)) { d = zufall(0.03, kaputt ? 0.5 : 0.1); a = zufall(0.3, 0.44); }
+            else if (r < 0.85) { d = zufall(0.03, kaputt ? 0.1 : 0.22); a = zufall(0, 0.08); }
+            else { d = zufall(0.2, kaputt ? 0.4 : 0.8); a = kaputt ? zufall(0.25, 0.35) : zufall(0, 0.05); }
+            f.push([d, a]); s += d;
+        }
+        return f;
+    }
+    // so zündet eine neue Röhre: ein paar Anläufe, dann hell
+    const ZUENDEN = [[0.4, 0.44], [0.05, 0.02], [0.3, 0.44], [0.04, 0.04], [0.12, 0.4], [0.07, 0], [0.3, 0.3], [0.06, 0.02], [0.12, 0.25]];
+    // Leuchtstoffröhre auf der Leinwand: Mitte (x, y), Länge, Winkel (Grad), 'neu' oder 'alt'
+    function roehreMalen(x, y, laenge, winkel, art) {
+        const w = winkel * Math.PI / 180, dx = Math.cos(w), dy = Math.sin(w);
+        const d = 0.42 * VW;
+        const l = laenge / 2 - d / 2;
+        const ax = x - dx * l, ay = y - dy * l, bx = x + dx * l, by = y + dy * l;
+        const strich = (x1, y1, x2, y2) => { cxV.beginPath(); cxV.moveTo(x1, y1); cxV.lineTo(x2, y2); cxV.stroke(); };
+        // Kontaktstifte
+        cxV.lineCap = 'butt';
+        cxV.strokeStyle = '#8a9099'; cxV.lineWidth = 0.07 * VW;
+        for (const [ex, ey, r] of [[ax, ay, -1], [bx, by, 1]]) {
+            for (const q of [-0.1, 0.1]) strich(ex - dy * q * VW, ey + dx * q * VW, ex + r * dx * (d / 2 + 0.25 * VW) - dy * q * VW, ey + r * dy * (d / 2 + 0.25 * VW) + dx * q * VW);
+        }
+        cxV.lineCap = 'round';
+        cxV.strokeStyle = 'rgba(80,86,94,.9)'; cxV.lineWidth = d + 0.1 * VW;
+        strich(ax, ay, bx, by);
+        cxV.strokeStyle = art === 'neu' ? '#ffffff' : '#d4d4cc'; cxV.lineWidth = d;
+        strich(ax, ay, bx, by);
+        if (art === 'alt') {
+            // die Enden einer alten Röhre sind schwarz
+            cxV.strokeStyle = '#4d4842';
+            const e = Math.min(0.6 * VW, l * 0.25);
+            strich(ax, ay, ax + dx * e, ay + dy * e);
+            strich(bx, by, bx - dx * e, by - dy * e);
+        }
+    }
+    function Roehre() {
+        const fb = ROEHRE_FACH_B * VW, fh = ROEHRE_FACH_H * VW;
+        // bei Frost frieren leere Kacheln zu, bei Sturm fliegen sie weg: dann nur Kacheln mit Einträgen
+        const nurVolle = /^(frost|sturm)/.test(zustand.wetter);
+        const kandidaten = kaesten.filter((k) => k.w > fb + 4 * VW && k.h > fh + 1 * VW && k.y > 0 && k.y + k.h < UNTEN - 1 * VW
+            && !k.el.querySelector(':scope > .fx-eisscheibe') && !k.el.dataset.fxStory
+            && (!nurVolle || k.el.querySelector('table tr')));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => roehreZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { roehreZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        roehreZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+        el.dataset.fxStory = 'roehre';
+        // abdunkeln: als erstes Kind, damit der Kiesel (positioniert, später) hell bleibt
+        const dunkel = document.createElement('div');
+        dunkel.className = 'fx-story fx-roehre-dunkel';
+        el.insertBefore(dunkel, el.firstChild);
+        const fach = document.createElement('div');
+        fach.className = 'fx-story fx-roehre-fach';
+        // die Klappe sitzt in der Mitte der Kachel (Wunsch Jonas), auch wenn die Kachel ihre Größe ändert
+        Object.assign(fach.style, {left: '50%', top: '50%', width: `${fb.toFixed(1)}px`, height: `${fh.toFixed(1)}px`,
+            marginLeft: `${(-fb / 2).toFixed(1)}px`, marginTop: `${(-fh / 2).toFixed(1)}px`});
+        fach.innerHTML = '<div class="fx-roehre-hohl"><i class="fx-fassung fx-l"></i><i class="fx-fassung fx-r"></i><b class="fx-roehre-im-fach fx-alt"></b></div><div class="fx-klappe"><i></i><i></i></div>';
+        el.appendChild(fach);
+        const klappe = fach.querySelector('.fx-klappe'), imFach = fach.querySelector('.fx-roehre-im-fach');
+        // Leiter: die Hand mit dem Schraubendreher erreicht das rechte Ende der Klappe;
+        // ist rechts kein Platz (Kachel am rechten Bildrand), steht sie links davon, gespiegelt
+        const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+        const fr = fach.getBoundingClientRect();
+        const fx0 = fr.left - b0.left, fy0 = fr.top - b0.top;
+        const py = fy0 + fh / 2 - 1.25 * VW;
+        let p = [fx0 + fb - 0.4 * VW, py];
+        let g = leiterGeometrie(p);
+        if (g.seite < 0) { p = [fx0 + 0.4 * VW, py]; g = leiterGeometrie(p, -1); }
+        const LAUF = 11, TAKT = 0.3;
+        const kb = KIND_B * VW, kh = kb * 2;
+        const L = fb - 1.0 * VW;       // Länge der Röhre
+        let t0 = null, tr = null, fertig = false;
+        // das Flackern beginnt 5 Sekunden, bevor der Trupp an der Leiter ankommt (Wunsch Jonas)
+        const vonRechts = p[0] >= W / 2;
+        const gehDauer = Math.abs(standX(g, p) - (vonRechts ? W + VW : -kb - VW)) / (LAUF * VW);
+        const flackerAb = Math.max(0, gehDauer - 5), kindAb = Math.max(0, 5 - gehDauer);
+        let ruecken = ['neu'];          // Röhren auf dem Rücken des Kinds
+        let bewegt = null;              // Röhre zwischen Fach und Rücken: {art, von: 'fach'|'ruecken'}
+        // Licht
+        let folge = flackerFolge(6, false), fi = 0, frest = folge[0][0], modus = 'flackern', a = 0, aGesetzt = -1;
+        function lichtSchritt(dt) {
+            if (modus === 'an') a = 0;
+            else if (modus === 'aus') a = 0.44;
+            else {
+                frest -= dt;
+                while (frest <= 0) {
+                    fi += 1;
+                    if (fi >= folge.length) {
+                        if (modus === 'zuenden') { modus = 'an'; a = 0; break; }
+                        folge = flackerFolge(4, true); fi = 0;
+                    }
+                    frest += folge[fi][0];
+                }
+                if (modus !== 'an') a = folge[fi][1];
+            }
+            const wert = a * (opt.dunkel ? 0.7 : 1);
+            if (Math.abs(wert - aGesetzt) > 0.005) { dunkel.style.opacity = wert.toFixed(2); aGesetzt = wert; }
+        }
+        function zuenden() { folge = ZUENDEN; fi = 0; frest = folge[0][0]; modus = 'zuenden'; }
+
+        function kindStarten(t) {
+            const kindEl = svgAusText(monteurkindSvg());
+            domV.appendChild(kindEl);
+            const q = (sel) => kindEl.querySelector(sel);
+            tr = {kind: kindEl, anfang: t, kphase: 'hingehen', kstart: t, kx: vonRechts ? W + VW : -kb - VW,
+                leiterWinkel: 0, leiterLaenge: 7 * VW, hand: null, rx: 0, ry: 0, spiegel: false,
+                ik: {
+                    a: {hose: q('.fx-ik-bein-a .fx-ik-hose'), schuh: q('.fx-ik-bein-a .fx-ik-schuh')},
+                    b: {hose: q('.fx-ik-bein-b .fx-ik-hose'), schuh: q('.fx-ik-bein-b .fx-ik-schuh')},
+                    arm: q('.fx-ik-arm path'), hand: q('.fx-ik-arm circle'),
+                }};
+        }
+        // Platz einer Röhre auf dem Rücken (schräg wie ein Köcher): [x, y, Winkel]
+        function rueckenOrt(nr) {
+            const e = 0.1 * VW;
+            const lx = 31 + nr * 3.5;
+            return [tr.rx + (tr.spiegel ? 50 - lx : lx) * e, tr.ry + (54 - nr * 1.5) * e, tr.spiegel ? -112 : -68];
+        }
+        function fachMitte() {
+            const r = fach.getBoundingClientRect();
+            const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+            return [r.left - b0.left + r.width / 2, r.top - b0.top + r.height / 2];
+        }
+        function kindSchritt(dt, t) {
+            const ks = t - tr.kstart;
+            const boden = LAUF_BODEN - 0.2 * VW;
+            const weiter = (phase) => { tr.kphase = phase; tr.kstart = t; };
+            const huepf = (an) => (an ? Math.abs(Math.sin(t * 10.1)) * -0.15 * VW : 0);
+            const oben = (pose) => (g.braucht ? kletterPose(g, g.stufen) : pose);
+            let gehen = false, richtung = -1, pose = null;
+            const ph = tr.kphase;
+            if (ph === 'hingehen') {
+                const ziel = standX(g, p);
+                richtung = Math.sign(ziel - tr.kx) || -1;
+                tr.kx += richtung * LAUF * VW * dt; gehen = true;
+                if ((richtung < 0 && tr.kx <= ziel) || (richtung > 0 && tr.kx >= ziel)) {
+                    tr.kx = ziel; gehen = false; richtung = -1;
+                    weiter(g.braucht ? 'aufstellen' : 'auf');
+                }
+            } else if (ph === 'aufstellen') {
+                tr.leiterWinkel = g.winkel * glatt(ks / 0.35);
+                tr.leiterLaenge = 7 * VW + (g.laenge - 7 * VW) * glatt((ks - 0.2) / 0.4);
+                if (ks >= 0.6) weiter('hoch');
+            } else if (ph === 'hoch') {
+                pose = kletterPose(g, ks / TAKT);
+                if (ks / TAKT >= g.stufen) weiter('auf');
+            } else if (ph === 'auf') {
+                // Klappe erscheint, wird aufgeschraubt und klappt nach unten auf
+                pose = oben(null);
+                fach.classList.add('fx-da');
+                tr.kind.classList.add('fx-arbeitet');
+                tr.kind.classList.toggle('fx-schraubt', ks > 0.3);
+                if (ks > 1.5) { tr.kind.classList.remove('fx-schraubt'); klappe.classList.add('fx-offen'); weiter('klappe_auf'); }
+            } else if (ph === 'klappe_auf') {
+                pose = oben(null);
+                if (ks > 0.9) { imFach.className = 'fx-roehre-im-fach'; modus = 'aus'; bewegt = {art: 'alt', von: 'fach'}; weiter('alt_raus'); }
+            } else if (ph === 'alt_raus') {
+                pose = oben(null);
+                if (ks > 1.1) { bewegt = null; ruecken = ['neu', 'alt']; weiter('pause'); }
+            } else if (ph === 'pause') {
+                pose = oben(null);
+                if (ks > 0.4) { ruecken = ['alt']; bewegt = {art: 'neu', von: 'ruecken'}; weiter('neu_rein'); }
+            } else if (ph === 'neu_rein') {
+                pose = oben(null);
+                if (ks > 1.1) { bewegt = null; imFach.className = 'fx-roehre-im-fach fx-neu'; weiter('klappe_zu'); }
+            } else if (ph === 'klappe_zu') {
+                pose = oben(null);
+                if (ks > 0.6) klappe.classList.remove('fx-offen');
+                if (ks > 1.3) { tr.kind.classList.add('fx-schraubt'); weiter('zu'); }
+            } else if (ph === 'zu') {
+                pose = oben(null);
+                if (ks > 1.0) { tr.kind.classList.remove('fx-schraubt'); zuenden(); weiter('zuenden'); }
+            } else if (ph === 'zuenden') {
+                // das Kind schaut zu, wie die neue Röhre anspringt
+                pose = oben(null);
+                if (ks > 0.3) tr.kind.classList.remove('fx-arbeitet');
+                if (modus === 'an' && ks > 2.0) { fach.classList.remove('fx-da'); weiter(g.braucht ? 'rutschen' : 'weg'); }
+            } else if (ph === 'rutschen') {
+                const d = rutschDauer(g);
+                pose = rutschPose(g, Math.min(1, ks / d));
+                if (ks >= d) { tr.kx = standX(g, p); tr.hand = null; weiter('einfahren'); }
+            } else if (ph === 'einfahren') {
+                tr.leiterLaenge = g.laenge + (7 * VW - g.laenge) * glatt(ks / 0.3);
+                tr.leiterWinkel = g.winkel * (1 - glatt((ks - 0.2) / 0.3));
+                if (ks >= 0.5) { tr.leiterWinkel = 0; tr.leiterLaenge = 7 * VW; weiter('weg'); }
+            } else if (ph === 'weg') {
+                if (tr.rausR === undefined) tr.rausR = tr.kx + kb / 2 < W / 2 ? -1 : 1;
+                richtung = tr.rausR;
+                tr.kx += richtung * LAUF * VW * dt; gehen = true;
+                if (tr.kx < -kb - VW || tr.kx > W + VW) { fertig = true; return; }
+            }
+            tr.kind.classList.toggle('fx-geht', gehen);
+            tr.kind.classList.toggle('fx-ik', !!pose);
+            if (pose) {
+                const hx = g.huefteX(pose.hy);
+                const ziel = pose.hand || griffOrt(g, pose.hy);
+                if (!tr.hand || pose.hand) tr.hand = ziel.slice();
+                else { const r = Math.min(1, dt * 22); tr.hand[0] += (ziel[0] - tr.hand[0]) * r; tr.hand[1] += (ziel[1] - tr.hand[1]) * r; }
+                const [fx, fy] = kindPose(tr, hx, pose.hy, pose.fa, pose.fb, tr.hand, g.seite < 0);
+                tr.kx = fx; tr.rx = fx; tr.ry = fy; tr.spiegel = g.seite < 0;
+                tr.kind.style.transform = `translate(${fx.toFixed(1)}px, ${fy.toFixed(1)}px)${g.seite < 0 ? ' scale(-1, 1)' : ''}`;
+            } else {
+                const arbeit = ['aufstellen', 'einfahren'].indexOf(tr.kphase) >= 0 && g.braucht;
+                const spiegeln = gehen ? richtung > 0 : arbeit && g.seite < 0;
+                const y = boden - kh + huepf(gehen);
+                tr.rx = tr.kx; tr.ry = y; tr.spiegel = spiegeln;
+                tr.kind.style.transform = `translate(${tr.kx.toFixed(1)}px, ${y.toFixed(1)}px)${spiegeln ? ' scale(-1, 1)' : ''}`;
+            }
+            // Leiter: beim Laufen waagerecht auf der Schulter, sonst an der Kachel angelehnt
+            if (['hingehen', 'weg'].indexOf(tr.kphase) >= 0) {
+                leiterMalen(tr.kx + kb * 0.5 - 3.5 * VW, boden - kh * 0.52 + huepf(gehen), 7 * VW, 0, 0.13);
+            } else if (g.braucht) {
+                leiterMalen(g.fuss[0], g.fuss[1], tr.leiterLaenge, tr.leiterWinkel, 0.13);
+            }
+            // Röhren auf dem Rücken (hinter dem Kind) und die eine, die gerade wandert
+            ruecken.forEach((art, nr) => { const [x, y, w] = rueckenOrt(nr); roehreMalen(x, y, L, w, art); });
+            if (bewegt) {
+                const u = glatt((t - tr.kstart) / 1.1);
+                const f = fachMitte(), r = rueckenOrt(bewegt.art === 'alt' ? 1 : 0);
+                const [a0, a1] = bewegt.von === 'fach' ? [[f[0], f[1], 0], r] : [r, [f[0], f[1], 0]];
+                // im Bogen: kurz aus dem Fach nach vorn/unten, dann zum Rücken
+                const bogen = Math.sin(u * Math.PI) * 0.8 * VW;
+                roehreMalen(a0[0] + (a1[0] - a0[0]) * u, a0[1] + (a1[1] - a0[1]) * u + bogen, L, a0[2] + (a1[2] - a0[2]) * u, bewegt.art);
+            }
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() {
+                if (tr) tr.kind.remove();
+                dunkel.remove(); fach.remove();
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) t0 = t;
+                // verschwindet die Kachel (neu aufgebaut), endet die Geschichte
+                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                if (t - t0 >= flackerAb) lichtSchritt(dt);
+                if (!tr && t - t0 >= kindAb) kindStarten(t);
+                if (tr) kindSchritt(dt, t);
+            },
+        };
+    }
+
+    // Klassenschild per Heli: Der runde Kiesel mit dem Klassennamen wackelt, fällt
+    // heraus und zerspringt unten. Ein Hubschrauber bringt ein neues: Ein Kind steht
+    // auf der Kufe, seilt sich ab und hängt das Schild ein, dann geht es wieder hoch
+    // und der Hubschrauber fliegt weg. Eine Kehrmaschine kehrt die Scherben auf.
+    const HELI_B = 15, SEILKIND_B = 3.2, KEHR_B = 10;    // vw
+    const HELI_WINDE = [100, 12], HELI_KUFE = 64;         // im viewBox 160 × 72, Nase links
+    let kieselZuletzt = [];
+    function heliSvg() {
+        return `<svg class="fx-heli" viewBox="0 0 160 72" xmlns="${NS}">
+            <path d="M88,26 L148,22 L150,28 L92,40 Z" fill="#2b5fa8"/>
+            <path d="M140,23 L145,8 L153,8 L150,28 Z" fill="#2b5fa8"/>
+            <g class="fx-heckrotor"><path d="M150,11 L150,29 M141,20 L159,20" stroke="#55606b" stroke-width="1.8" stroke-linecap="round"/></g>
+            <path d="M20,36 C20,20 34,12 54,12 L84,12 C98,12 106,22 106,34 L106,44 C106,50 101,54 95,54 L40,54 C28,54 20,47 20,40 Z" fill="#2b5fa8"/>
+            <path d="M21,44 L106,44 L106,46 C106,50 101,54 95,54 L40,54 C30,54 23,50 21,44 Z" fill="#f1f3f5"/>
+            <path d="M21.5,40.5 L106,40.5 L106,44 L21,44 Z" fill="#ff8a1a"/>
+            <path d="M23,34 C24,22 34,16 48,16 L50,16 L50,34 Z" fill="#bfe3f5" stroke="#1f4a85" stroke-width=".8"/>
+            <rect x="55" y="16" width="24" height="18" rx="3" fill="#bfe3f5" stroke="#1f4a85" stroke-width=".8"/>
+            <rect x="84" y="15" width="17" height="25" rx="2" fill="#1d2630"/>
+            <path d="M88,13 L88,8 L100,8 L100,12" stroke="#55606b" stroke-width="2" fill="none" stroke-linejoin="round"/>
+            <rect x="62" y="5" width="4" height="7" fill="#55606b"/>
+            <rect class="fx-rotor" x="0" y="2.5" width="128" height="2.2" rx="1.1" fill="#3a4148"/>
+            <rect class="fx-rotor fx-rotor-b" x="0" y="2.5" width="128" height="2.2" rx="1.1" fill="#3a4148" opacity=".7"/>
+            <path d="M44,54 L40,63 M86,54 L90,63" stroke="#55606b" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M24,61 Q26,65 32,65 L106,65" stroke="#55606b" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        </svg>`;
+    }
+    // Kehrmaschine, Bürste vorn links, Boden bei y = 54
+    function kehrmaschineSvg() {
+        const borsten = [0, 30, 60, 90, 120, 150].map((w) => {
+            const r = w * Math.PI / 180, dx = Math.cos(r) * 5, dy = Math.sin(r) * 5;
+            return `M${(9 - dx).toFixed(1)},${(49 - dy).toFixed(1)} L${(9 + dx).toFixed(1)},${(49 + dy).toFixed(1)}`;
+        }).join(' ');
+        return `<svg class="fx-fahrzeug fx-kehrmaschine" viewBox="0 0 110 56" xmlns="${NS}">
+            <path d="M40,18 L100,18 Q104,18 104,22 L104,44 L40,44 Z" fill="#eef0f2" stroke="#9aa3ab" stroke-width="1"/>
+            <path d="M43,25 L101,25" stroke="#3f8f4a" stroke-width="3"/>
+            <path d="M14,44 L14,22 Q14,12 24,12 L40,12 L40,44 Z" fill="#3f8f4a"/>
+            <path d="M18,26 Q18,16 25,16 L36,16 L36,27 L18,27 Z" fill="#cfe8f5" stroke="#2c6a35" stroke-width=".8"/>
+            <rect class="fx-rundumleuchte" x="26" y="7" width="6" height="5" rx="1.5" fill="#ffa000"/>
+            <rect x="12" y="41" width="94" height="5" rx="1.5" fill="#4a4f55"/>
+            <circle cx="86" cy="48" r="6" fill="#2b2b2b"/><circle cx="86" cy="48" r="2.4" fill="#9aa3ab"/>
+            <circle cx="42" cy="48.5" r="5.5" fill="#2b2b2b"/><circle cx="42" cy="48.5" r="2.2" fill="#9aa3ab"/>
+            <path d="M18,44 L11,48" stroke="#4a4f55" stroke-width="2.2" stroke-linecap="round"/>
+            <g class="fx-buerste"><circle cx="9" cy="49" r="5" fill="#d1a84e"/><path d="${borsten}" stroke="#8a6a24" stroke-width=".7"/></g>
+        </svg>`;
+    }
+    function seilkindSvg() {
+        const m = MONTEURE[monteurNr % MONTEURE.length];
+        monteurNr += 1;
+        return `<svg class="fx-trupp fx-seilkind" viewBox="0 0 50 100" xmlns="${NS}">
+            ${kindSvgTeile(25, m.haar, m.hose, m.haut, 'tragen', m.zopf)}
+            <path d="M17.6,35 C17.6,25.2 32.4,25.2 32.4,35 Z" fill="#f4f4f4" stroke="#c62828" stroke-width="1.2"/>
+            <path d="M19,58.5 L31,58.5 M25,49 L25,58.5" stroke="#1d1d1d" stroke-width="1.6"/>
+        </svg>`;
+    }
+    function Kiesel() {
+        const sel = `:scope > ${opt.kiesel || 'h3'}`;
+        const nurVolle = /^(frost|sturm)/.test(zustand.wetter);
+        const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+        const KW = SEILKIND_B * VW, KH = KW * 2, u = HELI_B * VW / 160;
+        // der Hubschrauber schwebt ganz oben am Bildrand (Wunsch Jonas)
+        const HELI_Y = 0.6 * VW;
+        const kufeY = HELI_Y + HELI_KUFE * u;
+        const kandidaten = [];
+        for (const k of kaesten) {
+            const h = k.el.querySelector(sel);
+            if (!h || k.el.dataset.fxStory || (nurVolle && !k.el.querySelector('table tr'))) continue;
+            const r = h.getBoundingClientRect();
+            const cy = r.top - b0.top + r.height / 2;
+            // unter dem Hubschrauber muss das Kind am Seil Platz haben
+            if (r.width < 0.5 * VW || cy - 0.6 * KH < kufeY + 2 * VW || cy > UNTEN - 4 * VW) continue;
+            kandidaten.push({k: k, h: h, r: r});
+        }
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((c) => kieselZuletzt.indexOf(kachelName(c.k.el)) < 0);
+        if (!frisch.length) { kieselZuletzt = []; frisch = kandidaten; }
+        const wahl = auswahl(frisch);
+        kieselZuletzt.push(kachelName(wahl.k.el));
+        const el = wahl.k.el, h3 = wahl.h;
+        el.dataset.fxStory = 'kiesel';
+        const slot = {x: wahl.r.left - b0.left, y: wahl.r.top - b0.top, w: wahl.r.width, h: wahl.r.height};
+        slot.cx = slot.x + slot.w / 2; slot.cy = slot.y + slot.h / 2;
+        const farbe = getComputedStyle(h3).color;
+        const text = h3.textContent.trim();
+        function kopie() {
+            const c = h3.cloneNode(true);
+            c.removeAttribute('id');
+            c.classList.remove('fx-kiesel-wackelt', 'fx-kiesel-neu');
+            c.classList.add('fx-kiesel-kopie');
+            Object.assign(c.style, {position: 'absolute', left: '0', top: '0', margin: '0', visibility: 'visible', boxSizing: 'border-box',
+                width: `${slot.w.toFixed(1)}px`, height: `${slot.h.toFixed(1)}px`, color: farbe});
+            domV.appendChild(c);
+            return c;
+        }
+        function setzen(c, x, y, w, s) {
+            c.style.transform = `translate(${(x - slot.w / 2).toFixed(1)}px, ${(y - slot.h / 2).toFixed(1)}px) rotate(${(w || 0).toFixed(1)}deg) scale(${(s || 1).toFixed(3)})`;
+        }
+        // das Kind hängt neben dem Schild (meist links davon) und reicht es hinüber;
+        // die rechte Hand hält das Seil, die linke das Schild (Wunsch Jonas)
+        const seite = slot.cx - 3.3 * VW < 0.3 * VW ? -1 : 1;
+        const OX = seite > 0 ? 0.364 : 0.636, OY = 0.185;      // Seilhand im Kind (Anteil der Breite/Höhe)
+        const seilX = slot.cx - seite * 2.76 * VW;
+        const seilYUnten = slot.cy - 0.595 * KH;
+        const vonLinks = Math.random() < 0.5, richtung = vonLinks ? 1 : -1;
+        const spiegelH = vonLinks;                     // die Nase zeigt in Flugrichtung
+        const windeLx = spiegelH ? 160 - HELI_WINDE[0] : HELI_WINDE[0];
+        const heliZielX = seilX - windeLx * u;
+        // langsam heran, sanft abbremsen (Wunsch Jonas): Reisetempo, Bremszeit
+        const V = 11 * VW, BREMS = 4.2, A = V / BREMS;
+        let t0 = null, pstart = 0, phase = 'wackeln', fertig = false;
+        let faller = null, heli = null, kind = null, seil = null, neues = null, kehr = null;
+        // Rucke beim Schiefwerden: [Sekunde, Grad]; kippt nach links oder rechts
+        const kipp = Math.random() < 0.5 ? -1 : 1;
+        const RUCKE = [[0.4, 4], [2.6, 3], [4.4, 3.5], [6.1, 2.5], [7.5, 3], [8.6, 2]];
+        let hx = vonLinks ? -HELI_B * VW - 2 * VW : W + 2 * VW, hy = HELI_Y, hv = V * richtung, neigung = 0, bobAn = 0;
+        let L = null, L0 = 0, Lunten = 0, ab = 2, amp = 0, schildInHand = true, haengen = 0;
+        const scherben = [], staub = [];
+
+        // Punkt im Hubschrauber (viewBox-Einheiten, schon gespiegelt) → Bühne, mit Neigung
+        function heliPunkt(lx, ly) {
+            const w = neigung * (spiegelH ? 1 : -1) * Math.PI / 180;
+            const cx = hx + 80 * u, cy = hy + 36 * u, dx = (lx - 80) * u, dy = (ly - 36) * u;
+            return [cx + dx * Math.cos(w) - dy * Math.sin(w), cy + dx * Math.sin(w) + dy * Math.cos(w)];
+        }
+        function zerspringen(x) {
+            const boden = LAUF_BODEN;
+            for (let i = 0; i < 9; i++) {
+                scherben.push({x: x + zufall(-0.8, 0.8) * VW, y: boden - 0.5 * VW, vx: zufall(-7, 7) * VW, vy: zufall(-8, -2.5) * VW,
+                    r: zufall(0.28, 0.62) * VW, w: zufall(0, 6.28), vw: zufall(-10, 10), ecken: 3 + Math.floor(zufall(0, 2.99)),
+                    liegt: false, sprung: 0, schrift: i === 0 ? text.slice(0, Math.ceil(text.length / 2)) : (i === 1 ? text.slice(Math.ceil(text.length / 2)) : '')});
+            }
+            for (let i = 0; i < 10; i++) staubPuff(x + zufall(-1.2, 1.2) * VW, boden - zufall(0, 0.6) * VW);
+            funkenStreuen(x, boden - 0.6 * VW, 8, 'weiss');
+        }
+        function staubPuff(x, y) {
+            staub.push({x: x, y: y, vx: zufall(-1.5, 1.5) * VW, vy: zufall(-1.6, -0.4) * VW, r: zufall(0.3, 0.7) * VW, alter: 0, dauer: zufall(0.7, 1.3)});
+        }
+        function heliStarten() {
+            heli = svgAusText(heliSvg());
+            heli.style.width = `${HELI_B}vw`;
+            domV.appendChild(heli);
+            // das Seil liegt vor dem Hubschrauber und hinter dem Kind: gut sichtbar (Wunsch Jonas)
+            seil = document.createElementNS(NS, 'svg');
+            seil.setAttribute('class', 'fx-seil');
+            seil.setAttribute('width', String(Math.round(W)));
+            seil.setAttribute('height', String(Math.round(H)));
+            seil.innerHTML = `<line class="fx-seil-rand" stroke="rgba(20,20,20,.55)" stroke-width="${(0.34 * VW).toFixed(1)}" stroke-linecap="round"/>
+                <line class="fx-seil-kern" stroke="#ffc928" stroke-width="${(0.18 * VW).toFixed(1)}" stroke-linecap="round" stroke-dasharray="${(0.5 * VW).toFixed(1)} ${(0.25 * VW).toFixed(1)}"/>`;
+            domV.appendChild(seil);
+            kind = svgAusText(seilkindSvg());
+            kind.style.transformOrigin = `${(OX * 100).toFixed(1)}% ${(OY * 100).toFixed(1)}%`;
+            domV.appendChild(kind);
+            neues = kopie();
+        }
+        function kehrStarten() {
+            kehr = {el: svgAusText(kehrmaschineSvg()), richtung: Math.random() < 0.5 ? 1 : -1};
+            kehr.el.style.width = `${KEHR_B}vw`;
+            domV.appendChild(kehr.el);
+            kehr.x = kehr.richtung > 0 ? -KEHR_B * VW - VW : W + VW;
+        }
+        function kehrSchritt(dt) {
+            const bw = KEHR_B * VW, bh = bw * 56 / 110;
+            kehr.x += kehr.richtung * 7 * VW * dt;
+            const y = LAUF_BODEN - bh * 54 / 56 + 0.05 * VW + Math.abs(Math.sin(kehr.x / VW * 2.1)) * -0.05 * VW;
+            kehr.el.style.transform = `translate(${kehr.x.toFixed(1)}px, ${y.toFixed(1)}px)${kehr.richtung > 0 ? ' scale(-1, 1)' : ''}`;
+            const buerste = kehr.richtung < 0 ? kehr.x + 9 / 110 * bw : kehr.x + 101 / 110 * bw;
+            for (let i = scherben.length - 1; i >= 0; i--) {
+                const sc = scherben[i];
+                if (Math.abs(sc.x - buerste) < 0.9 * VW && sc.y > LAUF_BODEN - 3 * VW) {
+                    scherben.splice(i, 1);
+                    staubPuff(buerste, LAUF_BODEN - 0.3 * VW);
+                }
+            }
+            if (Math.random() < dt * 6) staubPuff(buerste + kehr.richtung * 0.4 * VW, LAUF_BODEN - 0.2 * VW);
+            if ((kehr.richtung > 0 && kehr.x > W + VW) || (kehr.richtung < 0 && kehr.x < -bw - VW)) { kehr.el.remove(); kehr = null; return true; }
+            return false;
+        }
+        function scherbenZeichnen(dt) {
+            const boden = LAUF_BODEN;
+            for (const sc of scherben) {
+                if (!sc.liegt) {
+                    sc.vy += 40 * VW * dt; sc.x += sc.vx * dt; sc.y += sc.vy * dt; sc.w += sc.vw * dt;
+                    if (sc.y >= boden - sc.r * 0.45) {
+                        sc.y = boden - sc.r * 0.45;
+                        if (sc.sprung < 1 && Math.abs(sc.vy) > 3 * VW) { sc.vy *= -0.3; sc.vx *= 0.5; sc.vw *= 0.5; sc.sprung += 1; }
+                        else sc.liegt = true;
+                    }
+                }
+                cxV.save();
+                cxV.translate(sc.x, sc.y); cxV.rotate(sc.w);
+                cxV.beginPath();
+                for (let e = 0; e < sc.ecken; e++) {
+                    const a = e / sc.ecken * 6.283, rr = sc.r * (0.65 + ((e * 37) % 5) / 12);
+                    if (e === 0) cxV.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); else cxV.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+                }
+                cxV.closePath();
+                cxV.fillStyle = '#ffffff';
+                cxV.shadowColor = 'rgba(0,0,0,.35)'; cxV.shadowBlur = 0.25 * VW;
+                cxV.fill();
+                cxV.shadowBlur = 0;
+                cxV.strokeStyle = 'rgba(0,0,0,.18)'; cxV.lineWidth = 0.05 * VW; cxV.stroke();
+                if (sc.schrift) {
+                    cxV.fillStyle = farbe;
+                    cxV.font = `bold ${(0.7 * VW).toFixed(1)}px sans-serif`;
+                    cxV.textAlign = 'center'; cxV.textBaseline = 'middle';
+                    cxV.fillText(sc.schrift, 0, 0);
+                }
+                cxV.restore();
+            }
+            for (let i = staub.length - 1; i >= 0; i--) {
+                const st = staub[i];
+                st.alter += dt;
+                if (st.alter > st.dauer) { staub.splice(i, 1); continue; }
+                st.x += st.vx * dt; st.y += st.vy * dt; st.vx *= 0.96;
+                const f = st.alter / st.dauer;
+                cxV.globalAlpha = 0.45 * (1 - f);
+                cxV.fillStyle = '#b9b2a8';
+                cxV.beginPath(); cxV.arc(st.x, st.y, st.r * (1 + f * 1.6), 0, 6.283); cxV.fill();
+            }
+            cxV.globalAlpha = 1;
+        }
+        // Hubschrauber, Seil und Kind für dieses Bild setzen
+        let pendelPhase = 0;
+        function heliZeichnen(t, dt) {
+            const w = neigung * (spiegelH ? 1 : -1);
+            heli.style.transform = `translate(${hx.toFixed(1)}px, ${hy.toFixed(1)}px) rotate(${w.toFixed(2)}deg)${spiegelH ? ' scale(-1, 1)' : ''}`;
+            const [wx, wy] = heliPunkt(windeLx, HELI_WINDE[1]);
+            // auf der Kufe stehend: Füße auf der Kufe, die Seilhand unter dem Rotor
+            const [kx, ky] = heliPunkt(windeLx, HELI_KUFE);
+            const eKufe = [kx - KW / 2 + OX * KW, ky - 0.96 * KH + OY * KH];
+            let e = eKufe, theta = -w * Math.PI / 180;
+            if (L !== null) {
+                // Pendel um die Winde: je länger das Seil, desto langsamer schwingt es
+                // die Phase läuft gleichmäßig weiter, auch wenn sich die Seillänge ändert (sonst zuckt es)
+                const om = Math.max(1.1, Math.min(2.8, 2.4 / Math.sqrt(Math.max(0.3, L / (10 * VW)))));
+                pendelPhase += om * dt;
+                const th = amp * Math.sin(pendelPhase);
+                const eh = [wx + L * Math.sin(th), wy + L * Math.cos(th)];
+                const m = glatt(haengen);
+                e = [eKufe[0] + (eh[0] - eKufe[0]) * m, eKufe[1] + (eh[1] - eKufe[1]) * m];
+                theta = theta + (th - theta) * m;
+            }
+            kind.style.transform = `translate(${(e[0] - OX * KW).toFixed(1)}px, ${(e[1] - OY * KH).toFixed(1)}px) rotate(${(-theta * 180 / Math.PI).toFixed(2)}deg)${seite > 0 ? ' scale(-1, 1)' : ''}`;
+            // auf der Kufe hält die Seilhand das Seil unten (weg vom Rotor), am Seil hängend oben
+            kind.classList.toggle('fx-arm-r-runter', !(L !== null && haengen > 0.3));
+            kind.classList.toggle('fx-arm-l-runter', schildInHand);
+            kind.classList.toggle('fx-haengt', L !== null && haengen > 0.5);
+            // wo die Hände wirklich sind (die Arme bewegen sich per CSS)
+            const b1 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+            const mitte = (sel) => { const r = kind.querySelector(sel).getBoundingClientRect(); return [r.left - b1.left + r.width / 2, r.top - b1.top + r.height / 2]; };
+            const seilHand = mitte('.fx-tragarm-r circle'), schildHand = mitte('.fx-tragarm-l circle');
+            for (const linie of seil.querySelectorAll('line')) {
+                linie.setAttribute('x1', wx.toFixed(1)); linie.setAttribute('y1', wy.toFixed(1));
+                linie.setAttribute('x2', seilHand[0].toFixed(1)); linie.setAttribute('y2', seilHand[1].toFixed(1));
+            }
+            // das Schild hält es am Rand, zur Lücke hin
+            return [schildHand[0] + seite * 0.36 * slot.w, schildHand[1], theta];
+        }
+
+        return {
+            leiter: false,
+            get fertig() { return fertig; },
+            stop() {
+                for (const e of [faller && faller.el, heli, seil, kind, neues, kehr && kehr.el]) if (e) e.remove();
+                h3.classList.remove('fx-kiesel-wackelt', 'fx-kiesel-neu');
+                h3.style.visibility = '';
+                h3.style.transform = ''; h3.style.transformOrigin = '';
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                let neigungZiel = 0, ampZiel = amp;
+                if (phase === 'wackeln') {
+                    // 10 Sekunden vorher wird das Schild schief (Wunsch Jonas): es rutscht ruckweise
+                    // ab, schwingt jedes Mal nach und wackelt zum Schluss immer stärker
+                    let grad = 0;
+                    for (const [ab, um] of RUCKE) {
+                        if (ps < ab) break;
+                        const d = ps - ab;
+                        grad += kipp * um * (1 - Math.exp(-d * 9)) + kipp * um * 0.9 * Math.exp(-d * 2.6) * Math.sin(d * 13);
+                    }
+                    if (ps > 8.6) grad += kipp * 5 * Math.min(1, (ps - 8.6) / 1.4) * Math.sin(ps * 31);
+                    h3.style.transformOrigin = '50% 10%';
+                    h3.style.transform = `rotate(${grad.toFixed(2)}deg)`;
+                    if (ps > 10) {
+                        h3.style.transform = '';
+                        faller = {el: kopie(), x: slot.cx, y: slot.cy, vx: zufall(-1.2, 1.2) * VW, vy: 0, w: grad, vw: kipp * zufall(140, 260), s: 1};
+                        setzen(faller.el, faller.x, faller.y, grad, 1);
+                        h3.style.visibility = 'hidden';
+                        weiter('loesen');
+                    }
+                } else if (phase === 'loesen') {
+                    // löst sich: kippt etwas nach vorn (wird größer) und sackt an
+                    const f = glatt(ps / 0.35);
+                    faller.s = 1 + 0.14 * f;
+                    setzen(faller.el, faller.x, faller.y + 0.3 * VW * f, faller.w + faller.vw * 0.02 * f, faller.s);
+                    if (ps > 0.35) { faller.y += 0.3 * VW; faller.w += faller.vw * 0.02; faller.vy = 1 * VW; weiter('fallen'); }
+                } else if (phase === 'fallen') {
+                    const f = faller;
+                    f.vy += 70 * VW * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.w += f.vw * dt;
+                    f.s = 1.14 - 0.14 * Math.min(1, ps / 0.6);
+                    setzen(f.el, f.x, f.y, f.w, f.s);
+                    if (f.y + slot.h * 0.45 >= LAUF_BODEN) { zerspringen(f.x); f.el.remove(); faller = null; weiter('scherben'); }
+                } else if (phase === 'scherben') {
+                    if (ps > 1.4) { heliStarten(); weiter('anflug'); }
+                } else if (phase === 'anflug') {
+                    // Reiseflug, dann gleichmäßig abbremsen; beim Bremsen hebt sich die Nase
+                    const rest = (heliZielX - hx) * richtung;
+                    const vBrems = Math.sqrt(2 * A * Math.max(0, rest));
+                    const v = Math.min(V, vBrems);
+                    hv = richtung * v;
+                    hx += hv * dt;
+                    if ((heliZielX - hx) * richtung <= 0.02 * VW) { hx = heliZielX; hv = 0; weiter('schweben'); }
+                    neigungZiel = vBrems < V ? -6 * Math.min(1, v / V * 1.8) : 7;
+                } else if (phase === 'schweben') {
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    if (ps > 1.0) {
+                        const [kx, ky] = heliPunkt(windeLx, HELI_KUFE);
+                        const [wx, wy] = heliPunkt(windeLx, HELI_WINDE[1]);
+                        L0 = Math.max(0.5 * VW, Math.hypot(kx - KW / 2 + OX * KW - wx, ky - 0.96 * KH + OY * KH - wy));
+                        Lunten = seilYUnten - (HELI_Y + HELI_WINDE[1] * u);
+                        haengen = 0;
+                        ab = Math.max(2.2, Math.min(6, (Lunten - L0) / (4.5 * VW)));
+                        L = L0; amp = 0;
+                        weiter('absteigen');
+                    }
+                } else if (phase === 'absteigen') {
+                    // vom Rand der Kufe lösen
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    L = L0 + 0.5 * VW * glatt(ps / 0.6);
+                    haengen = Math.min(1, ps / 0.6);
+                    ampZiel = 0.05;
+                    if (ps > 0.6) { haengen = 1; weiter('ab'); }
+                } else if (phase === 'ab') {
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    const von = L0 + 0.5 * VW;
+                    L = von + (Lunten - von) * glatt(ps / ab);
+                    ampZiel = 0.07;
+                    if (ps >= ab) weiter('ankommen');
+                } else if (phase === 'ankommen') {
+                    // das Seil federt kurz nach, das Kind beruhigt sich
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    L = Lunten + 0.18 * VW * Math.sin(ps * 11) * Math.exp(-ps * 5);
+                    ampZiel = 0.003;
+                    if (ps > 0.9) { L = Lunten; weiter('reichen'); }
+                } else if (phase === 'reichen') {
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    ampZiel = 0.002;
+                    if (ps > 1.5) {
+                        neues.remove(); neues = null; schildInHand = false;
+                        h3.style.visibility = '';
+                        h3.classList.add('fx-kiesel-neu');
+                        funkenStreuen(slot.cx, slot.cy, 10, 'gold');
+                        weiter('pause');
+                    }
+                } else if (phase === 'pause') {
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    if (ps > 0.8) { h3.classList.remove('fx-kiesel-neu'); weiter('auf'); }
+                } else if (phase === 'auf') {
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    const d = ab * 0.85;
+                    L = Lunten + (L0 + 0.5 * VW - Lunten) * glatt(ps / d);
+                    ampZiel = ps < d * 0.8 ? 0.05 : 0;
+                    if (ps >= d) weiter('aufsteigen');
+                } else if (phase === 'aufsteigen') {
+                    neigungZiel = 0.8 * Math.sin(t * 1.3);
+                    // zurück auf die Kufe
+                    haengen = Math.max(0, 1 - ps / 0.6);
+                    if (ps > 0.6) { L = null; amp = 0; haengen = 0; hv = 0; kehrStarten(); weiter('abflug'); }
+                } else if (phase === 'abflug') {
+                    if (heli) {
+                        // langsam anfahren, Nase senkt sich
+                        hv += richtung * 3.2 * VW * dt;
+                        if (Math.abs(hv) > 16 * VW) hv = richtung * 16 * VW;
+                        hx += hv * dt;
+                        neigungZiel = 9 * Math.min(1, Math.abs(hv) / (12 * VW));
+                        if (hx > W + 2 * VW || hx < -HELI_B * VW - 2 * VW) { for (const e of [heli, seil, kind]) e.remove(); heli = null; seil = null; kind = null; }
+                    }
+                    if (kehr && kehrSchritt(dt)) kehr = null;
+                    if (!heli && !kehr) { fertig = true; return; }
+                }
+                if (heli) {
+                    // sanft nachführen: Neigung und Pendel ändern sich nie ruckartig
+                    neigung += (neigungZiel - neigung) * Math.min(1, dt * 1.6);
+                    amp += (ampZiel - amp) * Math.min(1, dt * 1.2);
+                    // Schweben: leichtes Auf und Ab, erst wenn er langsam ist
+                    bobAn += ((Math.abs(hv) < 2 * VW ? 1 : 0) - bobAn) * Math.min(1, dt * 0.8);
+                    hy = HELI_Y + Math.sin(t * 2.1) * 0.18 * VW * bobAn;
+                    const [huX, huY, theta] = heliZeichnen(t, dt);
+                    if (neues) {
+                        // das neue Schild: an der Hüfte, beim Reichen hinüber zur Lücke
+                        const f = phase === 'reichen' ? glatt((ps - 0.3) / 1.0) : 0;
+                        const w = -theta * 180 / Math.PI * (1 - f);
+                        setzen(neues, huX + (slot.cx - huX) * f, huY + (slot.cy - huY) * f, w, 1);
+                    }
+                }
+                scherbenZeichnen(dt);
+            },
+        };
+    }
+
+    // Rohrbruch: Aus der Unterkante einer Kachel tropft es, unten wächst eine Pfütze.
+    // Ein Kind stellt ein gelbes Warnschild auf, ein zweites steigt mit Leiter und
+    // Rohrzange hoch und dreht zu, die Tropfen versiegen; dann wischt das erste Kind
+    // die Pfütze mit dem Mopp auf und nimmt das Schild wieder mit.
+    let rohrZuletzt = [];
+    function warnschildSvg() {
+        return `<svg class="fx-warnschild" viewBox="0 0 40 52" xmlns="${NS}">
+            <path d="M9,50 L15,5 L25,5 L31,50" stroke="#8a6d00" stroke-width="1.6" fill="none"/>
+            <path d="M5,50 L13,3 Q20,0 27,3 L35,50 Z" fill="#ffd21f" stroke="#8a6d00" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="M20,11 L31.5,31 L8.5,31 Z" fill="#ffd21f" stroke="#1d1d1d" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="16.5" cy="19.5" r="1.6" fill="#1d1d1d"/>
+            <path d="M17.5,21.5 L21,25.5 L25.5,24.5 M21,25.5 L18.5,29 M21,25.5 L24,28.8 M18.6,23 L14.8,24.6" stroke="#1d1d1d" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+            <path d="M12,29.8 Q20,28.4 28,29.8" stroke="#1d1d1d" stroke-width=".9" fill="none"/>
+            <rect x="10" y="35" width="20" height="7" rx="1.2" fill="#1d1d1d"/>
+            <text x="20" y="40.4" font-size="5" fill="#ffd21f" text-anchor="middle" font-weight="bold" font-family="sans-serif">NASS</text>
+        </svg>`;
+    }
+    function helferkindSvg() {
+        const m = MONTEURE[monteurNr % MONTEURE.length];
+        monteurNr += 1;
+        return `<svg class="fx-trupp fx-helfer" viewBox="0 0 50 100" xmlns="${NS}">
+            ${kindSvgTeile(25, m.haar, m.hose, m.haut, 'tragen', m.zopf)}
+        </svg>`;
+    }
+    function Rohrbruch() {
+        const nurVolle = /^(frost|sturm)/.test(zustand.wetter);
+        const kandidaten = kaesten.filter((k) => k.w > 8 * VW && k.y + k.h < LAUF_BODEN - 4 * VW && k.y + k.h > 6 * VW && !k.el.dataset.fxStory
+            && !k.el.querySelector(':scope > .fx-eisscheibe') && (!nurVolle || k.el.querySelector('table tr')));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => rohrZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { rohrZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        rohrZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'rohrbruch';
+        // Junge und Mädchen tauschen ihre Rollen zufällig (Wunsch Jonas)
+        if (Math.random() < 0.5) monteurNr += 1;
+        const unten = k.y + k.h;                                // Unterkante der Kachel
+        const tropfX = k.x + k.w * zufall(0.35, 0.65);
+        // hier setzt die Rohrzange an der Kachelkante an
+        const rohrY = unten + 0.15 * VW;
+        const p = [tropfX, unten - 1.0 * VW];
+        const g = leiterGeometrie(p);
+        const LAUF = 11, TAKT = 0.3;
+        const kb = KIND_B * VW, kh = kb * 2;
+        const KA = 3.6 * VW, KAH = KA * 2;
+        const SB = 2.6 * VW, SBH = SB * 52 / 40;
+        // Warnschild und Wartestelle: auf der anderen Seite der Pfütze als die Leiter
+        const klemm = (x) => Math.max(1.5 * VW, Math.min(W - 1.5 * VW, x));
+        const schildX = klemm(tropfX - g.seite * 7 * VW);
+        const warteX = klemm(schildX - g.seite * 3.2 * VW);
+        const blick = g.seite;                               // Kind A schaut zur Pfütze
+        let t0 = null, fertig = false;
+        // Wasser (mehr Wasser, Wunsch Jonas)
+        const tropfen = [], spritzer = [], wellen = [];
+        let tropfUhr = 0.3, tropfAktiv = true, tropfBremse = 0, menge = 0, pfR = 0, trocken = 0, strahl = 0;
+        // Kind A (Schild, Mopp) und Kind B (Leiter, Rohrzange)
+        let a = null, b = null;
+        const schild = svgAusText(warnschildSvg());
+        let schildLage = 'getragen';
+        function aStarten() {
+            const e = svgAusText(helferkindSvg());
+            // das Schild liegt hinter dem Kind: die vordere Hand greift sichtbar die Oberkante
+            domV.appendChild(schild);
+            domV.appendChild(e);
+            const von = blick > 0 ? -KA - 3 * VW : W + 3 * VW;
+            a = {el: e, x: von, phase: 'kommen', ps0: null, richtung: blick};
+        }
+        function bStarten(t) {
+            const e = svgAusText(monteurkindSvg('zange'));
+            domV.appendChild(e);
+            const vonRechts = p[0] >= W / 2;
+            const q = (sel) => e.querySelector(sel);
+            b = {kind: e, anfang: t, kphase: 'hingehen', kstart: t, kx: vonRechts ? W + VW : -kb - VW,
+                leiterWinkel: 0, leiterLaenge: 7 * VW, hand: null, X: 0, Y: 0, spiegel: false, zange: null, zuege: 0,
+                ik: {
+                    a: {hose: q('.fx-ik-bein-a .fx-ik-hose'), schuh: q('.fx-ik-bein-a .fx-ik-schuh')},
+                    b: {hose: q('.fx-ik-bein-b .fx-ik-hose'), schuh: q('.fx-ik-bein-b .fx-ik-schuh')},
+                    arm: q('.fx-ik-arm path'), hand: q('.fx-ik-arm circle'),
+                },
+                za: {griff: q('.fx-za-griff'), kopf: q('.fx-za-kopf'), arm: q('.fx-za-arm'), hand: q('.fx-za-hand')}};
+        }
+        const b1 = () => (opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect());
+        function handOrt(e, sel) {
+            const r = e.querySelector(sel).getBoundingClientRect(), o = b1();
+            return [r.left - o.left + r.width / 2, r.top - o.top + r.height / 2];
+        }
+        function moppKopf(x, y, w) {
+            cxV.save(); cxV.translate(x, y); cxV.rotate(w || 0);
+            cxV.fillStyle = '#6f7a85';
+            cxV.fillRect(-0.9 * VW, -0.45 * VW, 1.8 * VW, 0.25 * VW);
+            cxV.strokeStyle = '#c9ced4'; cxV.lineWidth = 0.09 * VW;
+            cxV.beginPath();
+            for (let i = 0; i < 9; i++) { const x0 = -0.85 * VW + i * 0.21 * VW; cxV.moveTo(x0, -0.22 * VW); cxV.lineTo(x0 + Math.sin(i * 1.7) * 0.08 * VW, 0); }
+            cxV.stroke();
+            cxV.restore();
+        }
+        function stiel(x1, y1, x2, y2) {
+            cxV.lineCap = 'round'; cxV.strokeStyle = '#8a5a30'; cxV.lineWidth = 0.2 * VW;
+            cxV.beginPath(); cxV.moveTo(x1, y1); cxV.lineTo(x2, y2); cxV.stroke();
+        }
+        function aSchritt(dt, t) {
+            if (a.ps0 === null) a.ps0 = t;
+            const ps = t - a.ps0;
+            const weiter = (ph) => { a.phase = ph; a.ps0 = t; };
+            let gehen = false;
+            const geheZu = (ziel, v) => {
+                const r = Math.sign(ziel - a.x);
+                if (Math.abs(ziel - a.x) < v * dt) { a.x = ziel; return true; }
+                a.x += r * v * dt; a.richtung = r; gehen = true; return false;
+            };
+            const mitte = () => a.x + KA / 2;
+            const tragen = ['kommen', 'abstellen', 'aufheben', 'gehen'].indexOf(a.phase) >= 0;
+            if (a.phase === 'kommen') {
+                if (geheZu(schildX - blick * 1.7 * VW - KA / 2, 6.5 * VW)) { a.richtung = blick; weiter('abstellen'); }
+            } else if (a.phase === 'abstellen') {
+                if (ps > 0.8) { schildLage = 'steht'; weiter('zurueck'); }
+            } else if (a.phase === 'zurueck') {
+                if (geheZu(warteX - KA / 2, 4 * VW)) { a.richtung = blick; weiter('warten'); }
+            } else if (a.phase === 'warten') {
+                a.richtung = blick;
+                if (b && ['einfahren', 'weg'].indexOf(b.kphase) >= 0 && !tropfAktiv) weiter('wischen');
+            } else if (a.phase === 'wischen') {
+                // hin und her über die Pfütze, dabei trocknet sie
+                const ziel = tropfX - blick * 3.0 * VW + Math.sin(ps * 2.0) * Math.max(1 * VW, pfR * 0.75) - KA / 2;
+                const alt = a.x;
+                a.x += (ziel - a.x) * Math.min(1, dt * 4);
+                gehen = Math.abs(a.x - alt) > 0.5 * VW * dt;
+                a.richtung = blick;
+                trocken = Math.min(1, trocken + dt / 7);
+                if (trocken >= 1) weiter('holen');
+            } else if (a.phase === 'holen') {
+                if (geheZu(schildX - blick * 1.7 * VW - KA / 2, 5 * VW)) { a.richtung = blick; weiter('aufheben'); }
+            } else if (a.phase === 'aufheben') {
+                if (ps > 0.8) { schildLage = 'getragen'; weiter('gehen'); }
+            } else if (a.phase === 'gehen') {
+                const raus = blick > 0 ? -KA - 3 * VW : W + 3 * VW;
+                if (geheZu(raus, 6.5 * VW)) { a.el.remove(); schild.remove(); a = null; return; }
+            }
+            const wipp = gehen ? Math.abs(Math.sin(t * 11)) * -0.12 * VW : 0;
+            const y = LAUF_BODEN - KAH * 0.97 + wipp;
+            const spiegel = a.richtung > 0;
+            a.el.style.transform = `translate(${a.x.toFixed(1)}px, ${y.toFixed(1)}px)${spiegel ? ' scale(-1, 1)' : ''}`;
+            a.el.classList.toggle('fx-geht', gehen);
+            const wischt = ['zurueck', 'warten', 'wischen', 'holen'].indexOf(a.phase) >= 0;
+            a.el.classList.toggle('fx-traegt', !wischt);
+            a.el.classList.toggle('fx-wischt', wischt);
+            // vorne die linke Hand (Blickrichtung), hinten die rechte
+            const vorne = handOrt(a.el, '.fx-tragarm-l circle'), hinten = handOrt(a.el, '.fx-tragarm-r circle');
+            // Schild: an der Oberkante von der vorderen Hand gehalten, sonst auf dem Boden
+            const amBoden = [schildX - SB / 2, LAUF_BODEN - SBH];
+            const inHand = [vorne[0] + a.richtung * 0.15 * SB - SB / 2, vorne[1] - 0.12 * SBH];
+            let s = amBoden;
+            if (schildLage === 'getragen' && a.phase !== 'aufheben') s = inHand;
+            if (a.phase === 'abstellen') { const f = glatt(ps / 0.8); s = [inHand[0] + (amBoden[0] - inHand[0]) * f, inHand[1] + (amBoden[1] - inHand[1]) * f]; }
+            if (a.phase === 'aufheben') { const f = glatt(ps / 0.8); s = [amBoden[0] + (inHand[0] - amBoden[0]) * f, amBoden[1] + (inHand[1] - amBoden[1]) * f]; }
+            schild.style.transform = `translate(${s[0].toFixed(1)}px, ${s[1].toFixed(1)}px)`;
+            // Mopp
+            if (tragen) {
+                // in der hinteren Hand, der Stiel schräg nach hinten oben über die Schulter
+                const d = [-a.richtung * 0.5, -0.866];
+                const oben = [hinten[0] + d[0] * 4.8 * VW, hinten[1] + d[1] * 4.8 * VW];
+                stiel(hinten[0] - d[0] * 0.8 * VW, hinten[1] - d[1] * 0.8 * VW, oben[0], oben[1]);
+                moppKopf(oben[0] + d[0] * 0.2 * VW, oben[1] + d[1] * 0.2 * VW, Math.atan2(d[1], d[0]) + Math.PI / 2);
+            } else {
+                // beide Hände am Stiel, der Stiel schräg nach vorn unten, der Wischkopf auf dem Boden
+                const d = [a.richtung * Math.cos(1.0), Math.sin(1.0)];
+                const f = Math.max(0.5 * VW, (LAUF_BODEN - 0.3 * VW - vorne[1]) / d[1]);
+                const kx = vorne[0] + d[0] * f + (a.phase === 'wischen' ? Math.sin(ps * 6.5) * 0.25 * VW : 0);
+                stiel(vorne[0] - d[0] * 2.2 * VW, vorne[1] - d[1] * 2.2 * VW, kx, LAUF_BODEN - 0.3 * VW);
+                moppKopf(kx, LAUF_BODEN);
+            }
+        }
+        // Rohrzange und Arm des Kinds B in dessen SVG-Einheiten (eine Einheit = 0,1 Kindbreite / 5)
+        function zangeSetzen(tr) {
+            const e = kb / 50;
+            const lok = (wx, wy) => { let lx = (wx - tr.X) / e; if (tr.spiegel) lx = 50 - lx; return [lx, (wy - tr.Y) / e]; };
+            const S = [23, 49];
+            let kopf, dir, hand;
+            const L = 12;
+            if (tr.zange) {
+                const n = lok(tropfX, rohrY);
+                const w = tr.zange.phi * Math.PI / 180;
+                dir = [Math.cos(w), Math.sin(w)];
+                kopf = [n[0] + dir[0] * 1.3 * tr.zange.los, n[1] + dir[1] * 1.3 * tr.zange.los - 0.9 * tr.zange.los];
+                hand = [kopf[0] + dir[0] * L, kopf[1] + dir[1] * L];
+            } else {
+                // beim Gehen und Klettern hängt die Zange in der Hand
+                hand = [S[0] - 2.5, S[1] + 14.5];
+                dir = [-0.25, 0.97];
+                kopf = [hand[0] + dir[0] * L * 0.85, hand[1] + dir[1] * L * 0.85];
+                dir = [-dir[0], -dir[1]];
+            }
+            const [ell, h] = ik2(S[0], S[1], hand[0], hand[1], 9, 9, (k1, k2) => (k1[1] >= k2[1] ? k1 : k2));
+            const z = (v) => v.toFixed(1);
+            const perp = [-dir[1], dir[0]];
+            const g0 = [kopf[0] + dir[0] * 2.4, kopf[1] + dir[1] * 2.4];
+            tr.za.griff.setAttribute('d', `M${z(g0[0])},${z(g0[1])} L${z(kopf[0] + dir[0] * L)},${z(kopf[1] + dir[1] * L)}`);
+            // Maul: umgreift die Mutter von beiden Seiten
+            const q = (a1, b1v) => [kopf[0] + perp[0] * a1 + dir[0] * b1v, kopf[1] + perp[1] * a1 + dir[1] * b1v];
+            const m = [q(2.6, -1.4), q(2.6, 0.6), q(-2.4, 0.6), q(-2.4, -0.8)];
+            tr.za.kopf.setAttribute('d', `M${z(m[0][0])},${z(m[0][1])} L${z(m[1][0])},${z(m[1][1])} L${z(m[2][0])},${z(m[2][1])} L${z(m[3][0])},${z(m[3][1])}`);
+            tr.za.arm.setAttribute('d', `M${S[0]},${S[1]} L${z(ell[0])},${z(ell[1])} L${z(h[0])},${z(h[1])}`);
+            tr.za.hand.setAttribute('cx', z(h[0])); tr.za.hand.setAttribute('cy', z(h[1]));
+        }
+        function bSchritt(dt, t) {
+            const tr = b, ks = t - tr.kstart;
+            const boden = LAUF_BODEN - 0.2 * VW;
+            const weiter = (phase) => { tr.kphase = phase; tr.kstart = t; };
+            const huepf = (an) => (an ? Math.abs(Math.sin(t * 10.1)) * -0.15 * VW : 0);
+            const oben = () => (g.braucht ? kletterPose(g, g.stufen) : null);
+            let gehen = false, richtung = -1, pose = null;
+            const ph = tr.kphase;
+            if (ph === 'hingehen') {
+                const ziel = standX(g, p);
+                richtung = Math.sign(ziel - tr.kx) || -1;
+                tr.kx += richtung * LAUF * VW * dt; gehen = true;
+                if ((richtung < 0 && tr.kx <= ziel) || (richtung > 0 && tr.kx >= ziel)) {
+                    tr.kx = ziel; gehen = false; richtung = -1;
+                    weiter(g.braucht ? 'aufstellen' : 'ansetzen');
+                }
+            } else if (ph === 'aufstellen') {
+                tr.leiterWinkel = g.winkel * glatt(ks / 0.35);
+                tr.leiterLaenge = 7 * VW + (g.laenge - 7 * VW) * glatt((ks - 0.2) / 0.4);
+                if (ks >= 0.6) weiter('hoch');
+            } else if (ph === 'hoch') {
+                pose = kletterPose(g, ks / TAKT);
+                if (ks / TAKT >= g.stufen) weiter('ansetzen');
+            } else if (ph === 'ansetzen') {
+                // die Zange an die Mutter setzen
+                pose = oben();
+                tr.zange = {phi: -20, los: 1 - glatt(ks / 0.6)};
+                if (ks > 0.6) weiter('drehen');
+            } else if (ph === 'drehen') {
+                // dreimal kräftig nach unten ziehen, loslassen, neu ansetzen; die Mutter dreht mit
+                pose = oben();
+                const ZUG = 0.9, LOS = 0.18, ZURUECK = 0.45, GREIF = 0.2, T = ZUG + LOS + ZURUECK + GREIF;
+                const n = Math.floor(ks / T), u = ks - n * T;
+                let phi = -20, los = 0;
+                if (n >= 3) { weiter('pruefen'); tropfAktiv = false; tropfBremse = 1; }
+                else if (u < ZUG) { const f = glatt(u / ZUG); phi = -20 + 55 * f; tropfBremse = (n + f) / 3; }
+                else if (u < ZUG + LOS) { phi = 35; los = (u - ZUG) / LOS; }
+                else if (u < ZUG + LOS + ZURUECK) { phi = 35 - 55 * glatt((u - ZUG - LOS) / ZURUECK); los = 1; }
+                else { phi = -20; los = 1 - (u - ZUG - LOS - ZURUECK) / GREIF; }
+                tr.zange = {phi: phi, los: los};
+            } else if (ph === 'pruefen') {
+                pose = oben();
+                tr.zange = {phi: -20 + 0, los: glatt(ks / 0.5)};
+                if (ks > 1.3) { tr.zange = null; weiter(g.braucht ? 'rutschen' : 'weg'); }
+            } else if (ph === 'rutschen') {
+                const d = rutschDauer(g);
+                pose = rutschPose(g, Math.min(1, ks / d));
+                if (ks >= d) { tr.kx = standX(g, p); tr.hand = null; weiter('einfahren'); }
+            } else if (ph === 'einfahren') {
+                tr.leiterLaenge = g.laenge + (7 * VW - g.laenge) * glatt(ks / 0.3);
+                tr.leiterWinkel = g.winkel * (1 - glatt((ks - 0.2) / 0.3));
+                if (ks >= 0.5) { tr.leiterWinkel = 0; tr.leiterLaenge = 7 * VW; weiter('weg'); }
+            } else if (ph === 'weg') {
+                if (tr.rausR === undefined) tr.rausR = tr.kx + kb / 2 < W / 2 ? -1 : 1;
+                richtung = tr.rausR;
+                tr.kx += richtung * LAUF * VW * dt; gehen = true;
+                if (tr.kx < -kb - VW || tr.kx > W + VW) { tr.kind.remove(); b = 'fertig'; return; }
+            }
+            tr.kind.classList.toggle('fx-geht', gehen);
+            tr.kind.classList.toggle('fx-ik', !!pose);
+            if (pose) {
+                const hx = g.huefteX(pose.hy);
+                const ziel = pose.hand || griffOrt(g, pose.hy);
+                if (!tr.hand || pose.hand) tr.hand = ziel.slice();
+                else { const r = Math.min(1, dt * 22); tr.hand[0] += (ziel[0] - tr.hand[0]) * r; tr.hand[1] += (ziel[1] - tr.hand[1]) * r; }
+                const [fx, fy] = kindPose(tr, hx, pose.hy, pose.fa, pose.fb, tr.hand, g.seite < 0);
+                tr.kx = fx; tr.X = fx; tr.Y = fy; tr.spiegel = g.seite < 0;
+                tr.kind.style.transform = `translate(${fx.toFixed(1)}px, ${fy.toFixed(1)}px)${g.seite < 0 ? ' scale(-1, 1)' : ''}`;
+            } else {
+                const arbeit = ['aufstellen', 'einfahren', 'ansetzen', 'drehen', 'pruefen'].indexOf(tr.kphase) >= 0;
+                const spiegeln = gehen ? richtung > 0 : arbeit && g.seite < 0;
+                const y = boden - kh + huepf(gehen);
+                tr.X = tr.kx; tr.Y = y; tr.spiegel = spiegeln;
+                tr.kind.style.transform = `translate(${tr.kx.toFixed(1)}px, ${y.toFixed(1)}px)${spiegeln ? ' scale(-1, 1)' : ''}`;
+            }
+            zangeSetzen(tr);
+            if (['hingehen', 'weg'].indexOf(tr.kphase) >= 0) {
+                leiterMalen(tr.kx + kb * 0.5 - 3.5 * VW, boden - kh * 0.52 + huepf(gehen), 7 * VW, 0, 0.13);
+            } else if (g.braucht) {
+                leiterMalen(g.fuss[0], g.fuss[1], tr.leiterLaenge, tr.leiterWinkel, 0.13);
+            }
+        }
+        function wasserZeichnen(dt, t) {
+            // das Wasser kommt direkt aus der Kachelkante (Wunsch Jonas: ohne sichtbares Rohr)
+            const quelle = unten;
+            // nasser Fleck an der Kachelkante
+            const nass = Math.min(1, menge / 6) * (1 - trocken * 0.6);
+            if (nass > 0.01) {
+                const f = cxV.createRadialGradient(tropfX, unten, 0, tropfX, unten, 2.2 * VW);
+                f.addColorStop(0, `rgba(70,120,180,${(0.34 * nass).toFixed(2)})`);
+                f.addColorStop(1, 'rgba(70,120,180,0)');
+                cxV.fillStyle = f;
+                cxV.beginPath(); cxV.ellipse(tropfX, unten - 0.1 * VW, 2.2 * VW, 0.9 * VW, 0, Math.PI, 0); cxV.fill();
+            }
+            // neue Tropfen, immer schneller, bis ein dünner Strahl daraus wird
+            const takt = Math.max(0.22, 0.9 - (t - t0) * 0.07) * (1 + 7 * tropfBremse * tropfBremse);
+            strahl += ((tropfAktiv && takt < 0.32 ? 1 : 0) - strahl) * Math.min(1, dt * 2);
+            tropfUhr -= dt;
+            if (tropfAktiv && tropfUhr <= 0 && !tropfen.some((d) => d.haengt)) {
+                tropfen.push({x: tropfX + zufall(-0.12, 0.12) * VW, y: quelle, r: 0, haengt: true, vy: 0});
+                tropfUhr = takt;
+            }
+            const boden = LAUF_BODEN - Math.max(0.15 * VW, pfR * 0.18);
+            if (strahl > 0.02) {
+                // feiner Wasserfaden von der Mutter bis in die Pfütze
+                cxV.strokeStyle = `rgba(120,180,240,${(0.65 * strahl).toFixed(2)})`;
+                cxV.lineWidth = 0.14 * VW * strahl; cxV.lineCap = 'round';
+                cxV.beginPath(); cxV.moveTo(tropfX, quelle);
+                cxV.quadraticCurveTo(tropfX + Math.sin(t * 3) * 0.08 * VW, (quelle + boden) / 2, tropfX + Math.sin(t * 2.3) * 0.12 * VW, boden); cxV.stroke();
+                if (Math.random() < dt * 14 * strahl) {
+                    menge += 0.25;
+                    for (let j = 0; j < 2; j++) spritzer.push({x: tropfX, y: boden, vx: zufall(-3.5, 3.5) * VW, vy: zufall(-5, -2) * VW, alter: 0});
+                    if (Math.random() < 0.4) wellen.push({x: tropfX, alter: 0});
+                }
+            }
+            for (let i = tropfen.length - 1; i >= 0; i--) {
+                const d = tropfen[i];
+                if (d.haengt) {
+                    d.r = Math.min(0.38 * VW, d.r + dt * 0.7 * VW);
+                    if (d.r >= 0.38 * VW) d.haengt = false;
+                } else {
+                    d.vy += 60 * VW * dt; d.y += d.vy * dt;
+                    if (d.y >= boden) {
+                        tropfen.splice(i, 1);
+                        menge += 1;
+                        wellen.push({x: d.x, alter: 0});
+                        for (let j = 0; j < 6; j++) spritzer.push({x: d.x, y: boden, vx: zufall(-3.5, 3.5) * VW, vy: zufall(-6, -2) * VW, alter: 0});
+                        continue;
+                    }
+                }
+                const r = d.r, y = d.haengt ? d.y + r : d.y;
+                cxV.fillStyle = 'rgba(110,170,235,.92)';
+                cxV.beginPath();
+                cxV.moveTo(d.x, y - r * (d.haengt ? 1.2 : 1.9));
+                cxV.quadraticCurveTo(d.x + r * 1.05, y - r * 0.2, d.x, y + r);
+                cxV.quadraticCurveTo(d.x - r * 1.05, y - r * 0.2, d.x, y - r * (d.haengt ? 1.2 : 1.9));
+                cxV.fill();
+                cxV.fillStyle = 'rgba(255,255,255,.8)';
+                cxV.beginPath(); cxV.arc(d.x - r * 0.3, y - r * 0.1, r * 0.25, 0, 6.283); cxV.fill();
+            }
+            // Pfütze: wächst mit dem Wasser, schrumpft beim Wischen
+            const ziel = menge > 0 ? Math.min(8 * VW, 1 * VW + 0.75 * VW * Math.sqrt(menge)) : 0;
+            pfR += (ziel - pfR) * Math.min(1, dt * 3);
+            const rx = pfR * (1 - glatt(trocken)), ry = Math.max(0.14 * VW, rx * 0.2);
+            if (rx > 0.1 * VW) {
+                const py = LAUF_BODEN - ry * 0.9;
+                const f = cxV.createRadialGradient(tropfX, py, 0, tropfX, py, rx);
+                f.addColorStop(0, 'rgba(120,180,240,.6)');
+                f.addColorStop(0.8, 'rgba(110,165,225,.5)');
+                f.addColorStop(1, 'rgba(110,165,225,0)');
+                cxV.fillStyle = f;
+                cxV.beginPath(); cxV.ellipse(tropfX, py, rx, ry, 0, 0, 6.283); cxV.fill();
+                cxV.fillStyle = 'rgba(255,255,255,.35)';
+                cxV.beginPath(); cxV.ellipse(tropfX - rx * 0.3, py - ry * 0.3, rx * 0.3, ry * 0.25, 0, 0, 6.283); cxV.fill();
+                for (let i = wellen.length - 1; i >= 0; i--) {
+                    const w = wellen[i];
+                    w.alter += dt;
+                    if (w.alter > 1) { wellen.splice(i, 1); continue; }
+                    const q = w.alter;
+                    cxV.strokeStyle = `rgba(255,255,255,${(0.6 * (1 - q)).toFixed(2)})`; cxV.lineWidth = 0.07 * VW;
+                    cxV.beginPath(); cxV.ellipse(w.x, py, Math.min(rx, (0.3 + q * 2) * VW), Math.min(ry, (0.06 + q * 0.4) * VW), 0, 0, 6.283); cxV.stroke();
+                }
+            }
+            cxV.fillStyle = 'rgba(130,185,240,.85)';
+            for (let i = spritzer.length - 1; i >= 0; i--) {
+                const sp = spritzer[i];
+                sp.alter += dt;
+                sp.vy += 40 * VW * dt; sp.x += sp.vx * dt; sp.y += sp.vy * dt;
+                if (sp.y > LAUF_BODEN || sp.alter > 0.8) { spritzer.splice(i, 1); continue; }
+                cxV.beginPath(); cxV.arc(sp.x, sp.y, 0.1 * VW, 0, 6.283); cxV.fill();
+            }
+            if (trocken > 0.3 && trocken < 1 && Math.random() < dt * 5) funkenStreuen(tropfX + zufall(-1, 1) * pfR, LAUF_BODEN - 0.3 * VW, 1, 'weiss');
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() {
+                if (a) a.el.remove();
+                schild.remove();
+                if (b && b !== 'fertig') b.kind.remove();
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) t0 = t;
+                if (!el.isConnected || t - t0 > 130) { fertig = true; return; }
+                wasserZeichnen(dt, t);
+                // erst läuft es eine Weile, dann kommt das Kind mit dem Schild
+                if (!a && t - t0 > 4 && b === null) aStarten();
+                if (a && !b && a.phase === 'warten' && t - a.ps0 > 0.8) bStarten(t);
+                if (b && b !== 'fertig') bSchritt(dt, t);
+                if (a) aSchritt(dt, t);
+                if (!a && b === 'fertig') fertig = true;
+            },
+        };
+    }
+
+    // Fensterputzer-Gondel: Eine Kachel wird langsam trüb und staubig (die Schrift bleibt
+    // lesbar). An zwei Seilen senkt sich eine Arbeitsgondel herab, ein Kind zieht mit dem
+    // Abzieher Bahn für Bahn von oben nach unten; hinter jeder Bahn ist die Kachel sauber.
+    // Zum Schluss läuft ein Glanz über die Kachel, und die Gondel fährt wieder hoch.
+    const GONDEL_B = 7, GONDEL_H = 7 * 24 / 70;          // vw
+    let gondelZuletzt = [];
+    function gondelSvg() {
+        return `<svg class="fx-gondel" viewBox="0 0 70 24" xmlns="${NS}">
+            <rect x="1" y="9" width="68" height="11" rx="1" fill="#f2b705" stroke="#9a7300" stroke-width="1"/>
+            <path d="M8,9 L14,20 M22,9 L28,20 M36,9 L42,20 M50,9 L56,20" stroke="#1d1d1d" stroke-width="2.4" opacity=".75"/>
+            <rect x="0" y="19.5" width="70" height="4" rx="1" fill="#5d656c"/>
+            <path d="M2,2 L68,2 M3,2 L3,10 M35,2 L35,10 M67,2 L67,10" stroke="#8d969f" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+    }
+    function Gondel() {
+        const kandidaten = kaesten.filter((k) => k.w > 8 * VW && k.y > 3 * VW && k.y + k.h < UNTEN - 6 * VW && !k.el.dataset.fxStory
+            && !k.el.querySelector(':scope > .fx-eisscheibe'));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => gondelZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { gondelZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        gondelZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'gondel';
+        if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+        const GB = GONDEL_B * VW, GH = GONDEL_H * VW, KA = 3.2 * VW, KAH = KA * 2, BW = 2.2 * VW;
+        // Schmutz: eigene Leinwand in der Kachel, als erstes Kind (der Kiesel bleibt sauber)
+        const schmutz = document.createElement('canvas');
+        schmutz.className = 'fx-story fx-schmutz';
+        schmutz.width = Math.max(1, Math.round(k.w * DPR)); schmutz.height = Math.max(1, Math.round(k.h * DPR));
+        schmutz.style.opacity = '0';
+        el.insertBefore(schmutz, el.firstChild);
+        const sg = schmutz.getContext('2d');
+        (function schmutzMalen() {
+            const w = schmutz.width, h = schmutz.height, v = VW * DPR;
+            sg.fillStyle = 'rgba(140,126,98,.62)';
+            sg.fillRect(0, 0, w, h);
+            for (let i = 0; i < 64; i++) {
+                const x = zufall(0, w), y = zufall(0, h), r = zufall(0.7, 2.8) * v;
+                const f = sg.createRadialGradient(x, y, 0, x, y, r);
+                f.addColorStop(0, `rgba(104,88,62,${zufall(0.25, 0.48).toFixed(2)})`);
+                f.addColorStop(1, 'rgba(118,102,76,0)');
+                sg.fillStyle = f; sg.beginPath(); sg.arc(x, y, r, 0, 6.283); sg.fill();
+            }
+            // Schlieren von oben (Regenspuren)
+            sg.lineCap = 'round';
+            for (let i = 0; i < 36; i++) {
+                const x = zufall(0, w), l = zufall(0.25, 1) * h;
+                sg.strokeStyle = `rgba(92,78,56,${zufall(0.16, 0.32).toFixed(2)})`; sg.lineWidth = zufall(0.1, 0.32) * v;
+                sg.beginPath(); sg.moveTo(x, 0); sg.quadraticCurveTo(x + zufall(-0.3, 0.3) * v, l / 2, x + zufall(-0.4, 0.4) * v, l); sg.stroke();
+            }
+            for (let i = 0; i < 380; i++) {
+                sg.fillStyle = `rgba(90,78,58,${zufall(0.1, 0.3).toFixed(2)})`;
+                sg.fillRect(zufall(0, w), zufall(0, h), zufall(0.03, 0.08) * v, zufall(0.03, 0.08) * v);
+            }
+        })();
+        const glanz = document.createElement('div');
+        glanz.className = 'fx-story fx-glanz';
+        glanz.innerHTML = '<i></i>';
+        glanz.style.display = 'none';
+        el.insertBefore(glanz, schmutz.nextSibling);
+        const bahnen = [];
+        const n = Math.max(1, Math.ceil((k.w - 0.6 * VW) / BW));
+        for (let i = 0; i < n; i++) bahnen.push(Math.min(0.3 * VW + BW / 2 + i * BW, k.w - 0.3 * VW - BW / 2));
+        let t0 = null, pstart = 0, phase = 'verschmutzen', fertig = false;
+        let gondel = null, kind = null, gx = 0, gy = -GH - 2 * VW, bahn = 0, kopf = null, kopfAlt = null;
+        const kachel = () => { const r = el.getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect(); return {x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height}; };
+        // die Gondel steht so, dass das Kind (rechts in der Gondel) die Bahn vor sich hat
+        const gondelX = (lx) => lx - GB * 0.38;
+        const arbeitsY = () => { const kk = kachel(); return kk.y + kk.h / 2 + 4.3 * VW - GH; };
+        function starten() {
+            gondel = svgAusText(gondelSvg());
+            gondel.style.width = `${GONDEL_B}vw`;
+            kind = svgAusText(helferkindSvg());
+            kind.classList.add('fx-putzt');
+            domV.appendChild(kind);
+            domV.appendChild(gondel);    // das Geländer verdeckt die Beine
+            const kk = kachel();
+            gx = gondelX(kk.x + bahnen[0]);
+        }
+        function hand(sel) {
+            const r = kind.querySelector(sel).getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+            return [r.left - o.left + r.width / 2, r.top - o.top + r.height / 2];
+        }
+        function wegwischen(x, y0, y1) {
+            const kk = kachel(), sx = schmutz.width / Math.max(1, kk.w), sy = schmutz.height / Math.max(1, kk.h);
+            sg.save();
+            sg.globalCompositeOperation = 'destination-out';
+            sg.fillStyle = '#000';
+            const a = Math.min(y0, y1) - 0.15 * VW, b = Math.max(y0, y1) + 0.15 * VW;
+            sg.fillRect((x - kk.x - BW / 2) * sx, (a - kk.y) * sy, BW * sx, (b - a) * sy);
+            sg.restore();
+        }
+        function zeichnen(t) {
+            gondel.style.transform = `translate(${gx.toFixed(1)}px, ${gy.toFixed(1)}px)`;
+            // das Kind steht rechts in der Gondel und schaut nach links zur Bahn
+            const kx = gx + GB * 0.72 - KA / 2, ky = gy + GH * 0.83 - KAH * 0.97;
+            kind.style.transform = `translate(${kx.toFixed(1)}px, ${ky.toFixed(1)}px)`;
+            // Seile von oben zu den Ecken der Gondel
+            cxV.strokeStyle = 'rgba(60,60,60,.85)'; cxV.lineWidth = 0.1 * VW;
+            cxV.beginPath();
+            for (const ex of [0.04, 0.96]) { cxV.moveTo(gx + GB * ex, -2); cxV.lineTo(gx + GB * ex, gy + GH * 0.08); }
+            cxV.stroke();
+            // Abzieher an der Teleskopstange
+            if (kopf) {
+                const h1 = hand('.fx-tragarm-l circle');
+                cxV.lineCap = 'round';
+                cxV.strokeStyle = '#9aa3ab'; cxV.lineWidth = 0.16 * VW;
+                cxV.beginPath(); cxV.moveTo(h1[0] + 0.3 * VW, h1[1] + 0.2 * VW); cxV.lineTo(kopf[0], kopf[1] + 0.15 * VW); cxV.stroke();
+                cxV.fillStyle = '#4a5158';
+                cxV.fillRect(kopf[0] - BW / 2, kopf[1] - 0.2 * VW, BW, 0.3 * VW);
+                cxV.strokeStyle = '#1d1d1d'; cxV.lineWidth = 0.14 * VW;
+                cxV.beginPath(); cxV.moveTo(kopf[0] - BW / 2, kopf[1] + 0.15 * VW); cxV.lineTo(kopf[0] + BW / 2, kopf[1] + 0.15 * VW); cxV.stroke();
+                if (kopf.nass) {
+                    cxV.strokeStyle = 'rgba(160,205,245,.8)'; cxV.lineWidth = 0.08 * VW;
+                    cxV.beginPath(); cxV.moveTo(kopf[0] - BW / 2, kopf[1] - 0.25 * VW); cxV.lineTo(kopf[0] + BW / 2, kopf[1] - 0.25 * VW); cxV.stroke();
+                }
+            }
+        }
+
+        return {
+            leiter: false,
+            get fertig() { return fertig; },
+            stop() {
+                for (const e of [gondel, kind, schmutz, glanz]) if (e) e.remove();
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                if (phase === 'verschmutzen') {
+                    // wird 15 Sekunden lang immer trüber (Wunsch Jonas)
+                    schmutz.style.opacity = Math.min(1, ps / 15).toFixed(3);
+                    if (ps > 15.5) { starten(); weiter('runter'); }
+                } else if (phase === 'runter') {
+                    const ziel = arbeitsY();
+                    gy += Math.min(6 * VW * dt, Math.max(0.05 * VW, (ziel - gy) * dt * 2.2));
+                    if (gy >= ziel - 0.05 * VW) { gy = ziel; weiter('ansetzen'); }
+                } else if (phase === 'ansetzen' || phase === 'wischen' || phase === 'umsetzen') {
+                    gy = arbeitsY() + Math.sin(t * 1.6) * 0.06 * VW;
+                    const kk = kachel();
+                    const lx = kk.x + bahnen[bahn];
+                    const oben = kk.y + 0.25 * VW, unten = kk.y + kk.h - 0.35 * VW;
+                    if (phase === 'ansetzen') {
+                        gx += (gondelX(lx) - gx) * Math.min(1, dt * 6);
+                        const f = glatt(ps / 0.4);
+                        kopf = [lx, oben - 0.6 * VW * (1 - f)];
+                        kopf.nass = false;
+                        if (ps > 0.4) { kopfAlt = oben; weiter('wischen'); }
+                    } else if (phase === 'wischen') {
+                        // eine Bahn von oben nach unten ziehen
+                        const y = oben + (unten - oben) * glatt(ps / 1.05);
+                        kopf = [lx, y]; kopf.nass = true;
+                        wegwischen(lx, kopfAlt, y);
+                        kopfAlt = y;
+                        if (ps > 1.05) {
+                            funkenStreuen(lx, unten - 0.5 * VW, 2, 'weiss');
+                            weiter('umsetzen');
+                        }
+                    } else {
+                        // Abzieher absetzen, Gondel zur nächsten Bahn
+                        const naechste = bahn + 1 < bahnen.length ? kk.x + bahnen[bahn + 1] : lx;
+                        const f = glatt(ps / 0.5);
+                        kopf = [lx + (naechste - lx) * f, unten + (oben - unten) * f - Math.sin(f * Math.PI) * 0.8 * VW]; kopf.nass = false;
+                        gx += (gondelX(naechste) - gx) * Math.min(1, dt * 6);
+                        if (ps > 0.5) {
+                            bahn += 1;
+                            if (bahn >= bahnen.length) { kopf = null; glanz.style.display = ''; weiter('glanz'); }
+                            else weiter('ansetzen');
+                        }
+                    }
+                } else if (phase === 'glanz') {
+                    gy = arbeitsY() + Math.sin(t * 1.6) * 0.06 * VW;
+                    // ein Glanzstreifen läuft über die saubere Kachel
+                    const f = Math.min(1, ps / 0.9);
+                    glanz.firstChild.style.left = `${(-40 + 150 * f).toFixed(1)}%`;
+                    if (Math.random() < dt * 10) { const kk = kachel(); funkenStreuen(kk.x + zufall(0.1, 0.9) * kk.w, kk.y + zufall(0.2, 0.8) * kk.h, 1, 'weiss'); }
+                    if (ps > 1.3) { glanz.remove(); schmutz.remove(); weiter('hoch'); }
+                } else if (phase === 'hoch') {
+                    gy -= Math.min(7 * VW, 1.5 * VW + ps * 5 * VW) * dt;
+                    if (gy < -GH - KAH - 2 * VW) { fertig = true; return; }
+                }
+                if (gondel) zeichnen(t);
+            },
+        };
+    }
+
+    // Spinnennetz: Eine kleine Spinne seilt sich vom oberen Rand ab und spinnt in einer
+    // Kachelecke Faden für Faden ein Netz (erst die Speichen, dann die Spirale). Ein Kind
+    // kommt mit Leiter und Staubwedel, wedelt das Netz weg, die Spinne lässt sich auf den
+    // Wedel herab und wird vorsichtig hinausgetragen.
+    let spinneZuletzt = [];
+    function spinneMalen(x, y, laeuft, t) {
+        const v = VW * 1.6;
+        cxV.strokeStyle = '#1d1a18'; cxV.lineWidth = 0.06 * v; cxV.lineCap = 'round';
+        cxV.beginPath();
+        for (let i = 0; i < 4; i++) {
+            for (const sgn of [-1, 1]) {
+                const w = (i - 1.5) * 0.42 + (laeuft ? Math.sin(t * 22 + i * 1.7 + (sgn > 0 ? 1.5 : 0)) * 0.22 : 0);
+                const kx = x + sgn * 0.28 * v, ky = y + (i - 1.5) * 0.08 * v;
+                const ex = x + sgn * 0.42 * v * Math.cos(w * 0.5), ey = y + (i - 1.5) * 0.2 * v - 0.12 * v;
+                cxV.moveTo(x + sgn * 0.08 * v, y + (i - 1.5) * 0.04 * v);
+                cxV.quadraticCurveTo(kx, ky - 0.22 * v, ex + sgn * 0.08 * v, ey + 0.26 * v);
+            }
+        }
+        cxV.stroke();
+        cxV.fillStyle = '#1d1a18';
+        cxV.beginPath(); cxV.ellipse(x, y + 0.08 * v, 0.17 * v, 0.2 * v, 0, 0, 6.283); cxV.fill();
+        cxV.beginPath(); cxV.arc(x, y - 0.14 * v, 0.1 * v, 0, 6.283); cxV.fill();
+        cxV.fillStyle = 'rgba(255,255,255,.75)';
+        cxV.beginPath(); cxV.arc(x - 0.05 * v, y + 0.02 * v, 0.04 * v, 0, 6.283); cxV.fill();
+    }
+    function Spinne() {
+        const kandidaten = kaesten.filter((k) => k.w > 9 * VW && k.h > 4 * VW && k.y > 2 * VW && k.y + k.h < LAUF_BODEN - 3 * VW
+            && !k.el.dataset.fxStory && !k.el.querySelector(':scope > .fx-eisscheibe'));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => spinneZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { spinneZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        spinneZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'spinne';
+        // Ecke oben rechts (oben links, wenn rechts kein Platz für die Leiter ist)
+        const rechts = k.x + k.w < W - 12 * VW;
+        const C = [rechts ? k.x + k.w - 0.25 * VW : k.x + 0.25 * VW, k.y + 0.25 * VW];
+        const R = Math.min(4.6 * VW, k.h * 0.92, k.w * 0.4);
+        const w0 = rechts ? Math.PI / 2 : 0, w1 = rechts ? Math.PI : Math.PI / 2;   // ins Kachelinnere
+        const SPEICHEN = 7, RINGE = 7;
+        const speichen = [];
+        for (let i = 0; i < SPEICHEN; i++) {
+            const w = w0 + (w1 - w0) * (i / (SPEICHEN - 1)) + (i > 0 && i < SPEICHEN - 1 ? zufall(-0.06, 0.06) : 0);
+            speichen.push({w: w, l: R * (i === 0 || i === SPEICHEN - 1 ? 0.92 : zufall(0.88, 1))});
+        }
+        const ringR = (j) => R * (0.2 + 0.115 * j);
+        const punkt = (i, r) => [C[0] + Math.cos(speichen[i].w) * Math.min(r, speichen[i].l), C[1] + Math.sin(speichen[i].w) * Math.min(r, speichen[i].l)];
+        // die Hand mit dem Wedel trifft die Netzmitte
+        const p = [C[0] + Math.cos((w0 + w1) / 2) * R * 0.45, C[1] + Math.sin((w0 + w1) / 2) * R * 0.45 - 1.25 * VW];
+        const g = leiterGeometrie(p);
+        const LAUF = 11, TAKT = 0.3;
+        const kb = KIND_B * VW, kh = kb * 2;
+        let t0 = null, pstart = 0, phase = 'abseilen', fertig = false;
+        let sp = [C[0], -0.5 * VW], laeuft = false, faden = null;       // Spinne und ihr Faden (von wo)
+        let speichenFertig = 0, ringFertig = 0, zerstoert = 0, tr = null, aufWedel = false;
+        const fetzen = [];
+        const lerp = (a, b, f) => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+        function netzZeichnen(t) {
+            const sichtbar = 1 - zerstoert;
+            if (sichtbar <= 0) return;
+            cxV.lineCap = 'round';
+            const glanz = 0.8 + 0.15 * Math.sin(t * 1.3);
+            cxV.beginPath();
+            // Speichen
+            const ns = Math.floor(speichenFertig), fs = speichenFertig - ns;
+            for (let i = 0; i < Math.min(SPEICHEN, ns + 1); i++) {
+                const f = i < ns ? 1 : fs;
+                if (f <= 0) continue;
+                const e = punkt(i, speichen[i].l * f);
+                cxV.moveTo(C[0], C[1]); cxV.lineTo(e[0], e[1]);
+            }
+            // Spirale: Ring für Ring, Segment für Segment (leicht durchhängend)
+            const gesamt = ringFertig * (SPEICHEN - 1);
+            let n = 0;
+            for (let j = 0; j < RINGE; j++) {
+                for (let i = 0; i < SPEICHEN - 1; i++) {
+                    if (n >= gesamt) break;
+                    const f = Math.min(1, gesamt - n);
+                    const ii = j % 2 === 0 ? i : SPEICHEN - 2 - i;
+                    const a = punkt(ii, ringR(j)), b2 = punkt(ii + 1, ringR(j));
+                    const [von, nach] = j % 2 === 0 ? [a, b2] : [b2, a];
+                    const m = [(von[0] + nach[0]) / 2, (von[1] + nach[1]) / 2];
+                    const zu = [C[0] + (m[0] - C[0]) * 0.93, C[1] + (m[1] - C[1]) * 0.93];
+                    const ende = lerp(von, nach, f);
+                    cxV.moveTo(von[0], von[1]);
+                    cxV.quadraticCurveTo(lerp(von, zu, f)[0], lerp(von, zu, f)[1], ende[0], ende[1]);
+                    n += 1;
+                }
+            }
+            // gut sichtbar: heller Saum, darauf der silbergraue Faden
+            cxV.strokeStyle = `rgba(255,255,255,${(0.6 * sichtbar).toFixed(2)})`; cxV.lineWidth = 0.17 * VW; cxV.stroke();
+            cxV.strokeStyle = opt.dunkel ? `rgba(235,240,250,${(glanz * sichtbar).toFixed(2)})` : `rgba(70,76,86,${(glanz * sichtbar).toFixed(2)})`;
+            cxV.lineWidth = 0.08 * VW; cxV.stroke();
+            // Tautropfen glitzern im fertigen Netz
+            if (ringFertig >= RINGE && sichtbar > 0.5 && Math.random() < 0.06) {
+                const e = punkt(Math.floor(zufall(1, SPEICHEN - 1)), ringR(Math.floor(zufall(1, RINGE))));
+                funkenStreuen(e[0], e[1], 1, 'weiss');
+            }
+        }
+        // die Spinne am Faden bzw. am Netz: Position entlang der Bauarbeit
+        function spinneOrt() {
+            if (speichenFertig < SPEICHEN) {
+                const i = Math.min(SPEICHEN - 1, Math.floor(speichenFertig)), f = speichenFertig - Math.floor(speichenFertig);
+                // hinaus (Faden ziehen) und schnell zurück
+                const raus = f < 0.75 ? f / 0.75 : 1 - (f - 0.75) / 0.25;
+                return punkt(i, speichen[i].l * raus);
+            }
+            const gesamt = Math.min(RINGE * (SPEICHEN - 1) - 0.001, ringFertig * (SPEICHEN - 1));
+            const j = Math.floor(gesamt / (SPEICHEN - 1)), i = Math.floor(gesamt - j * (SPEICHEN - 1)), f = gesamt - Math.floor(gesamt);
+            const ii = j % 2 === 0 ? i : SPEICHEN - 2 - i;
+            const a = punkt(ii, ringR(j)), b2 = punkt(ii + 1, ringR(j));
+            return j % 2 === 0 ? lerp(a, b2, f) : lerp(b2, a, f);
+        }
+        function wedelSpitze() {
+            const r = tr.kind.querySelector('.fx-wedel-spitze').getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+            return [r.left - o.left + r.width / 2, r.top - o.top + r.height / 2];
+        }
+        function kindStarten(t) {
+            const e = svgAusText(monteurkindSvg('wedel'));
+            domV.appendChild(e);
+            const vonRechts = p[0] >= W / 2;
+            const q = (sel) => e.querySelector(sel);
+            tr = {kind: e, anfang: t, kphase: 'hingehen', kstart: t, kx: vonRechts ? W + VW : -kb - VW,
+                leiterWinkel: 0, leiterLaenge: 7 * VW, hand: null,
+                ik: {
+                    a: {hose: q('.fx-ik-bein-a .fx-ik-hose'), schuh: q('.fx-ik-bein-a .fx-ik-schuh')},
+                    b: {hose: q('.fx-ik-bein-b .fx-ik-hose'), schuh: q('.fx-ik-bein-b .fx-ik-schuh')},
+                    arm: q('.fx-ik-arm path'), hand: q('.fx-ik-arm circle'),
+                }};
+        }
+        function kindSchritt(dt, t) {
+            const ks = t - tr.kstart;
+            const boden = LAUF_BODEN - 0.2 * VW;
+            const weiter = (ph) => { tr.kphase = ph; tr.kstart = t; };
+            const huepf = (an) => (an ? Math.abs(Math.sin(t * 10.1)) * -0.15 * VW : 0);
+            const oben = () => (g.braucht ? kletterPose(g, g.stufen) : null);
+            let gehen = false, richtung = -1, pose = null;
+            const ph = tr.kphase;
+            if (ph === 'hingehen') {
+                const ziel = standX(g, p);
+                richtung = Math.sign(ziel - tr.kx) || -1;
+                tr.kx += richtung * LAUF * VW * dt; gehen = true;
+                if ((richtung < 0 && tr.kx <= ziel) || (richtung > 0 && tr.kx >= ziel)) {
+                    tr.kx = ziel; gehen = false; richtung = -1;
+                    weiter(g.braucht ? 'aufstellen' : 'wedeln');
+                }
+            } else if (ph === 'aufstellen') {
+                tr.leiterWinkel = g.winkel * glatt(ks / 0.35);
+                tr.leiterLaenge = 7 * VW + (g.laenge - 7 * VW) * glatt((ks - 0.2) / 0.4);
+                if (ks >= 0.6) weiter('hoch');
+            } else if (ph === 'hoch') {
+                pose = kletterPose(g, ks / TAKT);
+                if (ks / TAKT >= g.stufen) weiter('wedeln');
+            } else if (ph === 'wedeln') {
+                // das Netz wegwedeln; die Spinne flüchtet in die Ecke
+                pose = oben();
+                tr.kind.classList.add('fx-arbeitet');
+                tr.kind.classList.toggle('fx-wedelt', ks > 0.2);
+                zerstoert = Math.min(1, ks / 2.6);
+                if (Math.random() < dt * 14 && zerstoert < 1) {
+                    const e = punkt(Math.floor(zufall(0, SPEICHEN)), zufall(0.2, 1) * R);
+                    fetzen.push({x: e[0], y: e[1], vx: zufall(-1, 1) * VW, vy: zufall(0.3, 1.2) * VW, w: zufall(0, 6.28), vw: zufall(-3, 3), l: zufall(0.4, 1.2) * VW, alter: 0});
+                }
+                if (ks > 2.9) { tr.kind.classList.remove('fx-wedelt'); weiter('abholen'); }
+            } else if (ph === 'abholen') {
+                // die Spinne lässt sich am Faden auf den Wedel herab
+                pose = oben();
+                if (ks > 1.8) { aufWedel = true; weiter(g.braucht ? 'rutschen' : 'weg'); }
+            } else if (ph === 'rutschen') {
+                const d = rutschDauer(g) * 1.6;      // vorsichtig, mit der Spinne
+                pose = rutschPose(g, Math.min(1, ks / d));
+                if (ks >= d) { tr.kx = standX(g, p); tr.hand = null; weiter('einfahren'); }
+            } else if (ph === 'einfahren') {
+                tr.leiterLaenge = g.laenge + (7 * VW - g.laenge) * glatt(ks / 0.3);
+                tr.leiterWinkel = g.winkel * (1 - glatt((ks - 0.2) / 0.3));
+                if (ks >= 0.5) { tr.leiterWinkel = 0; tr.leiterLaenge = 7 * VW; weiter('weg'); }
+            } else if (ph === 'weg') {
+                if (tr.rausR === undefined) tr.rausR = tr.kx + kb / 2 < W / 2 ? -1 : 1;
+                richtung = tr.rausR;
+                tr.kx += richtung * 8 * VW * dt; gehen = true;
+                if (tr.kx < -kb - 2 * VW || tr.kx > W + 2 * VW) { tr.kind.remove(); tr = null; fertig = true; return; }
+            }
+            tr.kind.classList.toggle('fx-geht', gehen);
+            tr.kind.classList.toggle('fx-ik', !!pose);
+            if (pose) {
+                const hx = g.huefteX(pose.hy);
+                const ziel = pose.hand || griffOrt(g, pose.hy);
+                if (!tr.hand || pose.hand) tr.hand = ziel.slice();
+                else { const r = Math.min(1, dt * 22); tr.hand[0] += (ziel[0] - tr.hand[0]) * r; tr.hand[1] += (ziel[1] - tr.hand[1]) * r; }
+                const [fx, fy] = kindPose(tr, hx, pose.hy, pose.fa, pose.fb, tr.hand, g.seite < 0);
+                tr.kx = fx;
+                tr.kind.style.transform = `translate(${fx.toFixed(1)}px, ${fy.toFixed(1)}px)${g.seite < 0 ? ' scale(-1, 1)' : ''}`;
+            } else {
+                const arbeit = ['aufstellen', 'einfahren', 'wedeln', 'abholen'].indexOf(tr.kphase) >= 0;
+                const spiegeln = gehen ? richtung > 0 : arbeit && g.seite < 0;
+                tr.kind.style.transform = `translate(${tr.kx.toFixed(1)}px, ${(boden - kh + huepf(gehen)).toFixed(1)}px)${spiegeln ? ' scale(-1, 1)' : ''}`;
+            }
+            if (['hingehen', 'weg'].indexOf(tr.kphase) >= 0) {
+                leiterMalen(tr.kx + kb * 0.5 - 3.5 * VW, boden - kh * 0.52 + huepf(gehen), 7 * VW, 0, 0.13);
+            } else if (g.braucht) {
+                leiterMalen(g.fuss[0], g.fuss[1], tr.leiterLaenge, tr.leiterWinkel, 0.13);
+            }
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() { if (tr) tr.kind.remove(); delete el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                laeuft = false; faden = null;
+                if (phase === 'abseilen') {
+                    // vom oberen Rand am Faden herab bis zur Ecke
+                    const f = glatt(ps / 3.5);
+                    sp = [C[0], -0.5 * VW + (C[1] + 0.5 * VW) * f];
+                    faden = [C[0], -VW];
+                    if (ps > 3.5) weiter('speichen');
+                } else if (phase === 'speichen') {
+                    speichenFertig = Math.min(SPEICHEN, ps / 0.75);
+                    sp = spinneOrt(); laeuft = true;
+                    if (speichenFertig >= SPEICHEN) weiter('spirale');
+                } else if (phase === 'spirale') {
+                    ringFertig = Math.min(RINGE, ps / 1.35);
+                    sp = spinneOrt(); laeuft = true;
+                    if (ringFertig >= RINGE) weiter('sitzen');
+                } else if (phase === 'sitzen') {
+                    // die Spinne sitzt in ihrem Netz und wartet
+                    sp = lerp(sp, [C[0] + Math.cos((w0 + w1) / 2) * R * 0.25, C[1] + Math.sin((w0 + w1) / 2) * R * 0.25], Math.min(1, dt * 2));
+                    if (ps > 2.5 && !tr) kindStarten(t);
+                    if (tr && tr.kphase === 'wedeln') weiter('flucht');
+                } else if (phase === 'flucht') {
+                    sp = lerp(sp, [C[0], C[1] + 0.3 * VW], Math.min(1, dt * 3)); laeuft = true;
+                    if (tr && tr.kphase === 'abholen') weiter('herab');
+                } else if (phase === 'herab') {
+                    // am Faden hinunter auf den Wedel
+                    const ziel = wedelSpitze();
+                    const f = glatt(ps / 1.6);
+                    sp = lerp([C[0], C[1] + 0.3 * VW], [ziel[0], ziel[1] - 0.25 * VW], f);
+                    faden = [C[0], C[1]];
+                    if (aufWedel) weiter('getragen');
+                } else if (phase === 'getragen') {
+                    if (tr) { const z = wedelSpitze(); sp = [z[0], z[1] - 0.25 * VW]; }
+                }
+                netzZeichnen(t);
+                // herunterschwebende Netzfetzen
+                cxV.strokeStyle = opt.dunkel ? 'rgba(235,240,250,.7)' : 'rgba(70,76,86,.7)'; cxV.lineWidth = 0.08 * VW;
+                for (let i = fetzen.length - 1; i >= 0; i--) {
+                    const fz = fetzen[i];
+                    fz.alter += dt;
+                    fz.x += (fz.vx + Math.sin(t * 2 + i) * 0.6 * VW) * dt; fz.y += fz.vy * dt; fz.w += fz.vw * dt;
+                    if (fz.y > LAUF_BODEN || fz.alter > 6) { fetzen.splice(i, 1); continue; }
+                    cxV.beginPath(); cxV.moveTo(fz.x, fz.y); cxV.quadraticCurveTo(fz.x + Math.cos(fz.w) * fz.l * 0.5, fz.y + 0.3 * VW, fz.x + Math.cos(fz.w) * fz.l, fz.y + Math.sin(fz.w) * fz.l * 0.4); cxV.stroke();
+                }
+                if (faden) {
+                    cxV.strokeStyle = opt.dunkel ? 'rgba(235,240,250,.8)' : 'rgba(70,76,86,.8)'; cxV.lineWidth = 0.07 * VW;
+                    cxV.beginPath(); cxV.moveTo(faden[0], faden[1]); cxV.lineTo(sp[0], sp[1] - 0.14 * VW); cxV.stroke();
+                }
+                if (tr) kindSchritt(dt, t);
+                if (phase !== 'getragen' || tr) spinneMalen(sp[0], sp[1], laeuft, t);
+            },
+        };
+    }
+
+    // Ein Kind mit Teleskopleiter, dessen Werkzeugspitze bei p arbeitet:
+    // hingehen → aufstellen → hoch → oben (bis kind.freigabe = true) → rutschen → einfahren → weg.
+    // Gemeinsam für die Storys mit Leiter (Schiefe Kachel und folgende).
+    function leiterkind(art, p, t, o) {
+        o = o || {};
+        const g = leiterGeometrie(p, o.seite);
+        const kb = KIND_B * VW, kh = kb * 2, LAUF = o.lauf || 11, TAKT = 0.3;
+        const e = svgAusText(monteurkindSvg(art));
+        domV.appendChild(e);
+        const vonRechts = o.von ? o.von > 0 : p[0] >= W / 2;
+        const q = (sel) => e.querySelector(sel);
+        const tr = {kind: e, g: g, p: p, kphase: 'hingehen', kstart: t, kx: vonRechts ? W + VW : -kb - VW,
+            leiterWinkel: 0, leiterLaenge: 7 * VW, hand: null, freigabe: false, weg: false, arm: q('.fx-schrauberarm'),
+            ik: {
+                a: {hose: q('.fx-ik-bein-a .fx-ik-hose'), schuh: q('.fx-ik-bein-a .fx-ik-schuh')},
+                b: {hose: q('.fx-ik-bein-b .fx-ik-hose'), schuh: q('.fx-ik-bein-b .fx-ik-schuh')},
+                arm: q('.fx-ik-arm path'), hand: q('.fx-ik-arm circle'),
+            }};
+        tr.spitze = () => {
+            const r = e.querySelector('.fx-wedel-spitze').getBoundingClientRect(), b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+            return [r.left - b0.left + r.width / 2, r.top - b0.top + r.height / 2];
+        };
+        tr.oben = () => tr.kphase === 'oben';
+        tr.entfernen = () => e.remove();
+        tr.schritt = (dt, tt) => {
+            if (tr.weg) return;
+            const ks = tt - tr.kstart;
+            const boden = LAUF_BODEN - 0.2 * VW;
+            const weiter = (ph) => { tr.kphase = ph; tr.kstart = tt; };
+            const huepf = (an) => (an ? Math.abs(Math.sin(tt * 10.1)) * -0.15 * VW : 0);
+            let gehen = false, richtung = -1, pose = null;
+            const ph = tr.kphase;
+            if (ph === 'hingehen') {
+                const ziel = standX(g, p);
+                richtung = Math.sign(ziel - tr.kx) || -1;
+                tr.kx += richtung * LAUF * VW * dt; gehen = true;
+                if ((richtung < 0 && tr.kx <= ziel) || (richtung > 0 && tr.kx >= ziel)) {
+                    tr.kx = ziel; gehen = false; richtung = -1;
+                    weiter(g.braucht ? 'aufstellen' : 'oben');
+                }
+            } else if (ph === 'aufstellen') {
+                tr.leiterWinkel = g.winkel * glatt(ks / 0.35);
+                tr.leiterLaenge = 7 * VW + (g.laenge - 7 * VW) * glatt((ks - 0.2) / 0.4);
+                if (ks >= 0.6) weiter('hoch');
+            } else if (ph === 'hoch') {
+                pose = kletterPose(g, ks / TAKT);
+                if (ks / TAKT >= g.stufen) weiter('oben');
+            } else if (ph === 'oben') {
+                if (g.braucht) pose = kletterPose(g, g.stufen);
+                e.classList.add('fx-arbeitet');
+                if (tr.freigabe) { if (!o.behalten) e.classList.remove('fx-arbeitet'); weiter(g.braucht ? 'rutschen' : 'weg'); }
+            } else if (ph === 'rutschen') {
+                const d = rutschDauer(g) * (o.vorsichtig ? 1.6 : 1);
+                pose = rutschPose(g, Math.min(1, ks / d));
+                if (ks >= d) { tr.kx = standX(g, p); tr.hand = null; weiter('einfahren'); }
+            } else if (ph === 'einfahren') {
+                tr.leiterLaenge = g.laenge + (7 * VW - g.laenge) * glatt(ks / 0.3);
+                tr.leiterWinkel = g.winkel * (1 - glatt((ks - 0.2) / 0.3));
+                if (ks >= 0.5) { tr.leiterWinkel = 0; tr.leiterLaenge = 7 * VW; weiter('weg'); }
+            } else if (ph === 'weg') {
+                if (tr.rausR === undefined) tr.rausR = o.raus || (tr.kx + kb / 2 < W / 2 ? -1 : 1);
+                richtung = tr.rausR;
+                tr.kx += richtung * LAUF * VW * dt; gehen = true;
+                if (tr.kx < -kb - 2 * VW || tr.kx > W + 2 * VW) { e.remove(); tr.weg = true; return; }
+            }
+            e.classList.toggle('fx-geht', gehen);
+            e.classList.toggle('fx-ik', !!pose);
+            if (pose) {
+                const hx = g.huefteX(pose.hy);
+                const ziel = pose.hand || griffOrt(g, pose.hy);
+                if (!tr.hand || pose.hand) tr.hand = ziel.slice();
+                else { const r = Math.min(1, dt * 22); tr.hand[0] += (ziel[0] - tr.hand[0]) * r; tr.hand[1] += (ziel[1] - tr.hand[1]) * r; }
+                const [fx, fy] = kindPose(tr, hx, pose.hy, pose.fa, pose.fb, tr.hand, g.seite < 0);
+                tr.kx = fx;
+                e.style.transform = `translate(${fx.toFixed(1)}px, ${fy.toFixed(1)}px)${g.seite < 0 ? ' scale(-1, 1)' : ''}`;
+            } else {
+                const arbeit = ['aufstellen', 'einfahren', 'oben'].indexOf(tr.kphase) >= 0;
+                const spiegeln = gehen ? richtung > 0 : arbeit && g.seite < 0;
+                e.style.transform = `translate(${tr.kx.toFixed(1)}px, ${(boden - kh + huepf(gehen)).toFixed(1)}px)${spiegeln ? ' scale(-1, 1)' : ''}`;
+            }
+            if (['hingehen', 'weg'].indexOf(tr.kphase) >= 0) {
+                leiterMalen(tr.kx + kb * 0.5 - 3.5 * VW, boden - kh * 0.52 + huepf(gehen), 7 * VW, 0, 0.13);
+            } else if (g.braucht) {
+                leiterMalen(g.fuss[0], g.fuss[1], tr.leiterLaenge, tr.leiterWinkel, 0.13);
+            }
+        };
+        return tr;
+    }
+
+    // Schiefe Kachel: Oben rechts springt eine Schraube heraus, die Kachel kippt an der Ecke
+    // ab und hängt schief. Zwei Kinder kommen mit Leitern: links legt eines die Wasserwaage
+    // auf die Oberkante, rechts drückt eines die Ecke hoch, bis die Blase in der Mitte steht;
+    // dann kommt mit dem Akkuschrauber eine neue Schraube hinein.
+    let schiefZuletzt = [];
+    function SchiefeKachel() {
+        if (/^sturm/.test(zustand.wetter)) return null;     // im Sturm zerren die Kacheln schon
+        const kandidaten = kaesten.filter((k) => k.w > 12 * VW && k.x > 12 * VW && k.x + k.w < W - 12 * VW && k.y > 5 * VW
+            && k.y + k.h < LAUF_BODEN - 3 * VW && !k.el.dataset.fxStory && !k.el.querySelector(':scope > .fx-eisscheibe'));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => schiefZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { schiefZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        schiefZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'schief';
+        const W0 = 3.5;                                   // so schief hängt sie (Grad)
+        const altOrigin = el.style.transformOrigin, altTransform = el.style.transform;
+        el.style.transformOrigin = '0 0';
+        let winkel = 0;
+        const setzen = () => { el.style.transform = winkel ? `rotate(${winkel.toFixed(2)}deg)` : altTransform; };
+        // Punkt in der (gedrehten) Kachel → Bühne
+        const inKachel = (dx, dy) => { const w = winkel * Math.PI / 180; return [k.x + dx * Math.cos(w) - dy * Math.sin(w), k.y + dx * Math.sin(w) + dy * Math.cos(w)]; };
+        const schraubeDx = k.w - 0.55 * VW, schraubeDy = 0.55 * VW;
+        const WAAGE_L = 6 * VW, WAAGE_D = 0.55 * VW, waageVon = 0.9 * VW;
+        let t0 = null, pstart = 0, phase = 'loesen', fertig = false;
+        let alte = null, neueDa = 0, waage = 0, passt = 0;
+        let a = null, b = null;
+        const pB = [k.x + schraubeDx, k.y + schraubeDy];
+        const pA = [k.x + waageVon + 1.6 * VW, k.y - WAAGE_D - 1.25 * VW + 0.3 * VW];
+        function schraubeMalen(x, y, w, s) {
+            cxV.save(); cxV.translate(x, y); cxV.rotate(w); cxV.scale(s, s);
+            cxV.fillStyle = '#b8bfc6'; cxV.beginPath(); cxV.arc(0, 0, 0.24 * VW, 0, 6.283); cxV.fill();
+            cxV.strokeStyle = '#5d656c'; cxV.lineWidth = 0.05 * VW; cxV.stroke();
+            cxV.beginPath(); cxV.moveTo(-0.15 * VW, 0); cxV.lineTo(0.15 * VW, 0); cxV.moveTo(0, -0.15 * VW); cxV.lineTo(0, 0.15 * VW); cxV.stroke();
+            cxV.restore();
+        }
+        function waageMalen() {
+            if (waage <= 0) return;
+            const w = winkel * Math.PI / 180;
+            const [x0, y0] = inKachel(waageVon, -WAAGE_D);
+            cxV.save(); cxV.translate(x0, y0); cxV.rotate(w); cxV.globalAlpha = waage;
+            cxV.fillStyle = '#f2b705'; cxV.strokeStyle = '#9a7300'; cxV.lineWidth = 0.05 * VW;
+            cxV.beginPath(); cxV.rect(0, 0, WAAGE_L, WAAGE_D); cxV.fill(); cxV.stroke();
+            // Libelle in der Mitte; die Blase wandert zur höheren Seite
+            const lx = WAAGE_L / 2 - 0.8 * VW, ly = 0.1 * VW, lw = 1.6 * VW, lh = WAAGE_D - 0.2 * VW;
+            cxV.fillStyle = passt > 0 ? `rgba(${Math.round(170 - 90 * passt)},${Math.round(230)},${Math.round(150 - 60 * passt)},1)` : '#c9eeb0';
+            cxV.beginPath(); cxV.rect(lx, ly, lw, lh); cxV.fill(); cxV.stroke();
+            cxV.strokeStyle = '#3d5a2a'; cxV.beginPath();
+            cxV.moveTo(WAAGE_L / 2 - 0.3 * VW, ly); cxV.lineTo(WAAGE_L / 2 - 0.3 * VW, ly + lh);
+            cxV.moveTo(WAAGE_L / 2 + 0.3 * VW, ly); cxV.lineTo(WAAGE_L / 2 + 0.3 * VW, ly + lh); cxV.stroke();
+            const versatz = -Math.max(-1, Math.min(1, winkel / W0)) * 0.55 * VW;
+            cxV.fillStyle = 'rgba(255,255,255,.95)';
+            cxV.beginPath(); cxV.ellipse(WAAGE_L / 2 + versatz, ly + lh / 2, 0.24 * VW, lh * 0.36, 0, 0, 6.283); cxV.fill();
+            cxV.restore();
+            cxV.globalAlpha = 1;
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() {
+                for (const kk of [a, b]) if (kk && !kk.weg) kk.entfernen();
+                el.style.transform = altTransform; el.style.transformOrigin = altOrigin;
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                if (phase === 'loesen') {
+                    // die Schraube springt heraus, die Kachel kippt ab und pendelt aus
+                    if (!alte && ps > 0.3) {
+                        const [x, y] = inKachel(schraubeDx, schraubeDy);
+                        alte = {x: x, y: y, vx: zufall(1, 3) * VW, vy: -3 * VW, w: 0, liegt: false, alter: 0};
+                        funkenStreuen(x, y, 3, 'weiss');
+                    }
+                    const u = Math.max(0, ps - 0.35);
+                    winkel = u <= 0 ? 0 : W0 * (1 - Math.exp(-u * 5) * Math.cos(u * 11));
+                    if (ps > 2.4) { winkel = W0; weiter('warten'); }
+                } else if (phase === 'warten') {
+                    if (!b && ps > 1.5) b = leiterkind('bohrer', pB, t, {von: 1, raus: 1});
+                    if (!a && ps > 2.6) a = leiterkind('leer', pA, t, {seite: -1, von: -1, raus: -1});
+                    if (a && b && a.oben() && b.oben()) weiter('anlegen');
+                } else if (phase === 'anlegen') {
+                    waage = Math.min(1, ps / 0.5);
+                    if (ps > 0.9) weiter('druecken');
+                } else if (phase === 'druecken') {
+                    // die Ecke hochdrücken, die Blase wandert zur Mitte (kleines Überschwingen)
+                    const f = Math.min(1, ps / 2.4);
+                    winkel = W0 * (1 - glatt(f)) - 0.35 * Math.sin(f * Math.PI) * (f > 0.6 ? 1 : 0);
+                    if (ps > 2.4) { winkel = 0; weiter('passt'); }
+                } else if (phase === 'passt') {
+                    passt = Math.min(1, ps / 0.3);
+                    if (ps < 0.05) { const [x, y] = inKachel(waageVon + WAAGE_L / 2, -WAAGE_D / 2); funkenStreuen(x, y, 6, 'weiss'); }
+                    if (ps > 0.9) { b.kind.classList.add('fx-bohrt'); weiter('schrauben'); }
+                } else if (phase === 'schrauben') {
+                    if (Math.random() < dt * 30) funkenStreuen(pB[0], pB[1], 1, 'gold');
+                    neueDa = Math.min(1, ps / 1.4);
+                    if (ps > 1.5) { b.kind.classList.remove('fx-bohrt'); weiter('fertig'); }
+                } else if (phase === 'fertig') {
+                    if (ps > 0.4) { waage = Math.max(0, waage - dt * 3); a.freigabe = true; }
+                    if (ps > 0.9) b.freigabe = true;
+                    if (a.weg && b.weg) { fertig = true; return; }
+                }
+                setzen();
+                // der Arm des rechten Kinds folgt beim Drücken der Ecke
+                if (b && b.arm) b.arm.style.transform = b.oben() && ['warten', 'anlegen', 'druecken'].indexOf(phase) >= 0 ? `rotate(${(-24 * winkel / W0).toFixed(1)}deg)` : '';
+                // alte Schraube fällt und bleibt kurz liegen
+                if (alte) {
+                    if (!alte.liegt) {
+                        alte.vy += 50 * VW * dt; alte.x += alte.vx * dt; alte.y += alte.vy * dt; alte.w += 12 * dt;
+                        if (alte.y >= LAUF_BODEN - 0.25 * VW) { alte.y = LAUF_BODEN - 0.25 * VW; alte.liegt = true; funkenStreuen(alte.x, alte.y, 3, 'weiss'); }
+                    } else alte.alter += dt;
+                    if (alte.alter < 6) { cxV.globalAlpha = Math.min(1, (6 - alte.alter) / 1.5); schraubeMalen(alte.x, alte.y, alte.w, 1); cxV.globalAlpha = 1; }
+                }
+                if (neueDa > 0) schraubeMalen(pB[0], pB[1], neueDa * 20, Math.min(1, neueDa * 1.5));
+                for (const kk of [a, b]) if (kk) kk.schritt(dt, t);
+                waageMalen();
+            },
+        };
+    }
+
+    // Taube baut Nest: Eine Taube fliegt herein, landet auf einer Kachelkante, trippelt
+    // hin und her und legt Zweig für Zweig ein Nest an. Ein Kind bringt mit der Leiter ein
+    // Vogelhäuschen und stellt es daneben, die Taube zieht um, das Kind nimmt das Nest mit.
+    let taubeZuletzt = [];
+    function taubeSvg() {
+        return `<svg class="fx-taube" viewBox="0 0 60 40" xmlns="${NS}">
+            <path d="M44,21 L59,17 L59.5,25 L45,27 Z" fill="#5f6873"/>
+            <path d="M57,17.5 L59.5,25" stroke="#2f343a" stroke-width="1.4"/>
+            <g class="fx-tbeine">
+                <g class="fx-tbein fx-tbein-b"><path d="M32,31 L33,38 M33,38 L36,38.6 M33,38 L31,39" stroke="#c9505a" stroke-width="1.3" stroke-linecap="round" fill="none"/></g>
+                <g class="fx-tbein fx-tbein-a"><path d="M28,31 L27,38 M27,38 L24,38.6 M27,38 L29,39" stroke="#d65d66" stroke-width="1.3" stroke-linecap="round" fill="none"/></g>
+            </g>
+            <ellipse cx="31" cy="24" rx="15" ry="9.5" fill="#9aa4b0"/>
+            <ellipse cx="28" cy="28" rx="10" ry="4.6" fill="#b9c1cb"/>
+            <g class="fx-fluegel"><path d="M30,18 C40,13.5 50,17 53,23.5 C45,26 37,25 30,22 Z" fill="#7a8490"/>
+                <path d="M38,19.5 L46,22 M40,22.5 L48,24.2" stroke="#3d434a" stroke-width="1.3" stroke-linecap="round"/></g>
+            <path d="M17.5,22 C15.5,16 17,12 20,10 L27,12.5 C27,16.5 26,20.5 25,23.5 Z" fill="#6c8a78"/>
+            <path d="M18,17 C20,19 23,19.5 26,18" stroke="#8a6fa8" stroke-width="2" fill="none" opacity=".8"/>
+            <g class="fx-kopf">
+                <circle cx="20" cy="9.5" r="5.2" fill="#8d97a4"/>
+                <circle cx="18.4" cy="8.6" r="1.25" fill="#e0742c"/><circle cx="18.2" cy="8.6" r=".55" fill="#1d1d1d"/>
+                <path d="M15.2,9.2 L10.8,10.8 L15.2,11.6 Z" fill="#3b3b3b"/>
+                <ellipse cx="15.6" cy="9.2" rx="1" ry=".6" fill="#f2f2f2"/>
+            </g>
+        </svg>`;
+    }
+    function Taube() {
+        const kandidaten = kaesten.filter((k) => k.w > 12 * VW && k.y > 9 * VW && k.y + k.h < LAUF_BODEN - 2 * VW
+            && !k.el.dataset.fxStory && !k.el.querySelector(':scope > .fx-eisscheibe'));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => taubeZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { taubeZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        taubeZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'taube';
+        const TB = 4 * VW, TH = TB * 40 / 60;
+        const kante = k.y;                                   // die Taube steht auf der Oberkante
+        const nestX = k.x + k.w * zufall(0.4, 0.55);
+        // das Häuschen kommt auf die Seite, auf der die Leiter Platz hat
+        const rechtsFrei = nestX + 3 * VW + 13 * VW < W;
+        const hausX = nestX + (rechtsFrei ? 3 : -3) * VW;
+        const HB = 2.2 * VW, HH = 2.1 * VW;
+        const hausZiel = [hausX, kante - HH / 2];
+        // Leiterkind: die Hand hält das Häuschen; erst die Seite bestimmen, dann genau setzen
+        let pK = [hausZiel[0], kante - 1.95 * VW];
+        const seite = leiterGeometrie(pK).seite;
+        pK = [hausZiel[0] - seite * 0.5 * VW, kante - 1.95 * VW];
+        let t0 = null, pstart = 0, phase = 'anflug', fertig = false;
+        const taube = svgAusText(taubeSvg());
+        taube.style.width = `${(TB / VW).toFixed(2)}vw`;
+        domV.appendChild(taube);
+        const vonRechts = Math.random() < 0.5;
+        let tx = vonRechts ? W + TB : -TB, ty = kante - 12 * VW, blick = vonRechts ? -1 : 1, sichtbar = true;
+        const start = [tx, ty], lande = [nestX + (vonRechts ? 1.6 : -1.6) * VW, kante];
+        let zweige = [], kind = null, haus = null, hausAlpha = 1, nest = null, guck = 0;
+        function taubeSetzen() {
+            taube.style.display = sichtbar ? '' : 'none';
+            // Füße bei (30|38.5) im viewBox; Blick nach links ist die Zeichnung, rechts gespiegelt
+            const x = tx - TB * 30 / 60, y = ty - TH * 38.5 / 40;
+            taube.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)${blick > 0 ? ' scale(-1, 1)' : ''}`;
+        }
+        function zweig() {
+            const w = zufall(-0.35, 0.35) + (zweige.length % 2 ? Math.PI : 0) * 0;
+            zweige.push({dx: zufall(-1.1, 1.1) * VW, dy: -zufall(0.05, 0.55) * VW, l: zufall(1.3, 2.2) * VW, w: w, b: zufall(-0.25, 0.25) * VW,
+                farbe: auswahl(['#7a5532', '#8a6239', '#6b4a2b', '#9a7046'])});
+        }
+        function nestMalen(x, y, a) {
+            cxV.globalAlpha = a === undefined ? 1 : a;
+            cxV.lineCap = 'round';
+            for (const z of zweige) {
+                const mx = x + z.dx, my = y + z.dy;
+                const c = Math.cos(z.w) * z.l / 2, s2 = Math.sin(z.w) * z.l / 2;
+                cxV.strokeStyle = z.farbe; cxV.lineWidth = 0.17 * VW;
+                cxV.beginPath(); cxV.moveTo(mx - c, my - s2); cxV.quadraticCurveTo(mx, my + z.b, mx + c, my + s2); cxV.stroke();
+            }
+            cxV.globalAlpha = 1;
+        }
+        function hausMalen(x, y, a) {
+            cxV.globalAlpha = a;
+            cxV.fillStyle = '#c98b4b'; cxV.strokeStyle = '#7a4f24'; cxV.lineWidth = 0.06 * VW;
+            cxV.beginPath(); cxV.rect(x - HB / 2, y - HH / 2 + 0.5 * VW, HB, HH - 0.5 * VW); cxV.fill(); cxV.stroke();
+            cxV.fillStyle = '#b23a3a';
+            cxV.beginPath(); cxV.moveTo(x - HB / 2 - 0.25 * VW, y - HH / 2 + 0.6 * VW); cxV.lineTo(x, y - HH / 2 - 0.1 * VW); cxV.lineTo(x + HB / 2 + 0.25 * VW, y - HH / 2 + 0.6 * VW); cxV.closePath(); cxV.fill();
+            cxV.fillStyle = '#3a2614';
+            cxV.beginPath(); cxV.arc(x, y + 0.15 * VW, 0.38 * VW, 0, 6.283); cxV.fill();
+            cxV.strokeStyle = '#7a4f24'; cxV.lineWidth = 0.12 * VW;
+            cxV.beginPath(); cxV.moveTo(x - 0.1 * VW, y + 0.75 * VW); cxV.lineTo(x - 0.1 * VW - blick * 0.7 * VW, y + 0.75 * VW); cxV.stroke();
+            if (guck > 0) {
+                // der Kopf der Taube schaut aus dem Loch
+                cxV.fillStyle = '#8d97a4';
+                cxV.beginPath(); cxV.arc(x, y + 0.15 * VW, 0.3 * VW * guck, 0, 6.283); cxV.fill();
+                cxV.fillStyle = '#e0742c'; cxV.beginPath(); cxV.arc(x - 0.1 * VW, y + 0.08 * VW, 0.06 * VW * guck, 0, 6.283); cxV.fill();
+            }
+            cxV.globalAlpha = 1;
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() { taube.remove(); if (kind && !kind.weg) kind.entfernen(); delete el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 100) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                taube.classList.toggle('fx-fliegt', ['anflug', 'umzug'].indexOf(phase) >= 0);
+                taube.classList.toggle('fx-trippelt', phase === 'trippeln' || phase === 'bauen');
+                if (phase === 'anflug') {
+                    // im Bogen heran, zum Landen langsamer
+                    const f = Math.min(1, ps / 2.6), e = 1 - Math.pow(1 - f, 2.2);
+                    tx = start[0] + (lande[0] - start[0]) * e;
+                    ty = start[1] + (lande[1] - start[1]) * Math.sin(e * Math.PI / 2) - Math.sin(e * Math.PI) * 2 * VW;
+                    if (f >= 1) { tx = lande[0]; ty = lande[1]; weiter('trippeln'); }
+                } else if (phase === 'trippeln' || phase === 'bauen') {
+                    // hin und her; bei jeder Wende legt sie einen Zweig ab
+                    const weite = 1.7 * VW, v = 2.4 * VW;
+                    tx += blick * v * dt;
+                    ty = kante + Math.abs(Math.sin(t * 16)) * -0.06 * VW;
+                    if ((blick > 0 && tx > nestX + weite) || (blick < 0 && tx < nestX - weite)) {
+                        blick = -blick;
+                        if (phase === 'bauen' || ps > 1.6) { if (phase === 'trippeln') weiter('bauen'); zweig(); }
+                    }
+                    if (phase === 'bauen' && zweige.length >= 8) { weiter('sitzen'); }
+                } else if (phase === 'sitzen') {
+                    // sie setzt sich neben das Nest und pickt ab und zu
+                    tx += (nestX - (hausX > nestX ? 1.4 : -1.4) * VW - tx) * Math.min(1, dt * 3);
+                    ty = kante;
+                    blick = hausX > nestX ? 1 : -1;
+                    taube.classList.toggle('fx-pickt', Math.sin(t * 1.3) > 0.6);
+                    if (!kind && ps > 0.5) { kind = leiterkind('leer', pK, t, {seite: seite}); haus = 'getragen'; }
+                    if (kind && kind.oben()) { taube.classList.remove('fx-pickt'); weiter('aufstellen'); }
+                } else if (phase === 'aufstellen') {
+                    if (ps > 1.2) { haus = 'steht'; weiter('umzug'); }
+                } else if (phase === 'umzug') {
+                    // ein kleiner Hüpfer hinüber zum Häuschen und hinein
+                    const f = Math.min(1, ps / 1.4);
+                    const vonX = nestX - (hausX > nestX ? 1.4 : -1.4) * VW;
+                    tx = vonX + (hausX - vonX) * glatt(f);
+                    ty = kante - Math.sin(f * Math.PI) * 1.6 * VW - glatt(f) * (HH - 0.5 * VW);
+                    if (f >= 1) { sichtbar = false; weiter('nest'); }
+                } else if (phase === 'nest') {
+                    guck = Math.min(1, ps / 0.4);
+                    if (ps > 1.1) { nest = 'getragen'; kind.freigabe = true; weiter('weg'); }
+                } else if (phase === 'weg') {
+                    // die Taube schaut ab und zu heraus; zum Schluss verblasst das Häuschen
+                    guck = Math.max(0, Math.sin(ps * 2.2));
+                    if (kind.weg) { hausAlpha = Math.max(0, hausAlpha - dt / 1.5); if (hausAlpha <= 0) { fertig = true; return; } }
+                }
+                taubeSetzen();
+                if (kind) kind.schritt(dt, t);
+                const hand = kind && !kind.weg ? kind.spitze() : null;
+                if (nest !== 'getragen') nestMalen(nestX, kante, 1);
+                else if (hand) nestMalen(hand[0] - seite * 0.6 * VW, hand[1] - 0.2 * VW, 1);
+                if (haus === 'getragen' && hand) {
+                    const ziel = phase === 'aufstellen' ? glatt(Math.min(1, (t - pstart) / 1.2)) : 0;
+                    const von = [hand[0] - seite * 0.9 * VW, hand[1] - 0.5 * VW];
+                    hausMalen(von[0] + (hausZiel[0] - von[0]) * ziel, von[1] + (hausZiel[1] - von[1]) * ziel, 1);
+                } else if (haus === 'steht') hausMalen(hausZiel[0], hausZiel[1], hausAlpha);
+            },
+        };
+    }
+
+    // Maus: Eine kleine Maus kommt hinter einer Kachel hervor, flitzt über die Oberkante,
+    // schnuppert und verschwindet in der Lücke zwischen den Kacheln nach unten. Ein Kind
+    // stellt unten eine Lebendfalle mit Käse auf, die Maus läuft hinein, die Klappe fällt
+    // zu, und das Kind trägt die Falle mit der Maus hinaus.
+    let mausZuletzt = [];
+    function mausSvg() {
+        return `<svg class="fx-maus" viewBox="0 0 40 20" xmlns="${NS}">
+            <path class="fx-mschwanz" d="M32,14 C37,15 39,11 39.5,6 C39.7,4 38.6,3.5 38,5" stroke="#c99aa0" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+            <g class="fx-mbein fx-mbein-b"><path d="M25,17 L26,19.5 M17,17 L16.5,19.5" stroke="#b07f86" stroke-width="1.2" stroke-linecap="round"/></g>
+            <g class="fx-mkoerper">
+                <ellipse cx="22" cy="12.5" rx="11" ry="5.8" fill="#8b9099"/>
+                <ellipse cx="21" cy="15" rx="7.5" ry="2.6" fill="#a9adb4"/>
+                <g class="fx-mnase">
+                    <path d="M14,9 C10,9.5 7,11.5 5.2,13.4 C7.5,14.6 11,15 14.5,14.5 Z" fill="#8b9099"/>
+                    <circle cx="5.4" cy="13.3" r=".9" fill="#d98c96"/>
+                    <path d="M6,13 L1.5,11.5 M6,13.4 L1.2,13.6 M6,13.8 L1.8,15.6" stroke="#4a4d52" stroke-width=".35"/>
+                    <circle cx="10.2" cy="11.4" r=".95" fill="#1d1d1d"/>
+                </g>
+                <circle cx="15.2" cy="7.2" r="3" fill="#8b9099"/><circle cx="15.2" cy="7.2" r="1.8" fill="#e5a8b0"/>
+            </g>
+            <g class="fx-mbein fx-mbein-a"><path d="M24,17 L23.5,19.5 M18,17 L18.8,19.5" stroke="#c99aa0" stroke-width="1.2" stroke-linecap="round"/></g>
+        </svg>`;
+    }
+    function falleSvg() {
+        let gitter = '';
+        for (let x = 7; x <= 55; x += 4) gitter += `M${x},3 L${x},30 `;
+        for (const y of [9, 15, 21, 27]) gitter += `M3,${y} L57,${y} `;
+        return `<svg class="fx-falle" viewBox="0 0 60 32" xmlns="${NS}">
+            <g class="fx-kaese"><path d="M40,29.5 L54,29.5 L54,19 Z" fill="#f2c94c" stroke="#c9a227" stroke-width=".8"/>
+                <circle cx="49" cy="26" r="1.2" fill="#d9ae2f"/><circle cx="52" cy="23" r=".9" fill="#d9ae2f"/><circle cx="46" cy="28" r=".8" fill="#d9ae2f"/></g>
+            <path d="${gitter}" stroke="#a3acb5" stroke-width=".7"/>
+            <rect x="3" y="3" width="54" height="27" fill="none" stroke="#6f7881" stroke-width="1.6"/>
+            <rect x="1" y="29.5" width="58" height="2.5" rx=".8" fill="#5d656c"/>
+            <path d="M24,3 Q30,-3.5 36,3" stroke="#5d656c" stroke-width="1.8" fill="none"/>
+            <g class="fx-falltuer"><rect x="1" y="3" width="3.2" height="26.5" fill="#8d969f" stroke="#5d656c" stroke-width=".6"/></g>
+        </svg>`;
+    }
+    function Maus() {
+        const kandidaten = kaesten.filter((k) => k.w > 9 * VW && k.y > 6 * VW && k.y + k.h < LAUF_BODEN - 8 * VW
+            && !k.el.dataset.fxStory && !k.el.querySelector(':scope > .fx-eisscheibe'));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => mausZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { mausZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        mausZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'maus';
+        const MB = 3.3 * VW, MH = MB / 2;
+        const FB = 5 * VW, FH = FB * 32 / 60;
+        const KA = 3.6 * VW, KAH = KA * 2;
+        // Lücke rechts neben der Kachel, dort läuft die Maus hinunter
+        const lueckeX = Math.min(W - 0.9 * VW, k.x + k.w + 0.5 * VW);
+        const seite = lueckeX < W / 2 ? 1 : -1;               // Falle und Kind zur Bildmitte hin
+        const falleX = lueckeX + seite * 8 * VW;              // Mitte der Falle
+        const eingang = falleX - seite * FB / 2;
+        // Versteck: hinter der untersten Kachel der Spalte, gleich neben der Lücke
+        const versteck = (() => {
+            const x = lueckeX - 2.4 * VW;
+            const unter = kaesten.filter((kk) => kk.x < x && kk.x + kk.w > x && kk.y + kk.h < UNTEN).sort((a, b) => (b.y + b.h) - (a.y + a.h))[0] || k;
+            return {x: x, unten: unter.y + unter.h, y: unter.y + unter.h * 0.5};
+        })();
+        let t0 = null, pstart = 0, phase = 'raus', fertig = false;
+        const maus = svgAusText(mausSvg());
+        domH.appendChild(maus);                               // erst hinter der Kachel
+        let mx = k.x + 1.6 * VW, my = k.y + 1.4 * VW, mBlick = 1, mDreh = 0, mDrehZiel = 0, ziel = null, pause = 0;
+        const falle = svgAusText(falleSvg());
+        let kind = null, fLage = 'getragen', fPos = null, mausGefangen = false;
+        function mausSetzen(ebene) {
+            if (maus.parentNode !== ebene) ebene.appendChild(maus);
+            // Bezug: Füße unten Mitte; die Zeichnung schaut nach links
+            const x = mx - MB / 2, y = my - MH * 0.97;
+            maus.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${mDreh.toFixed(1)}deg)${mBlick > 0 ? ' scale(-1, 1)' : ''}`;
+        }
+        function handOrt(sel) {
+            const r = kind.el.querySelector(sel).getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+            return [r.left - o.left + r.width / 2, r.top - o.top + r.height / 2];
+        }
+        function kindSchritt(dt, t) {
+            const ps = t - kind.ps0;
+            const weiter = (ph) => { kind.phase = ph; kind.ps0 = t; };
+            let gehen = false;
+            const geheZu = (ziel, v) => {
+                const r = Math.sign(ziel - kind.x);
+                if (Math.abs(ziel - kind.x) < v * dt) { kind.x = ziel; return true; }
+                kind.x += r * v * dt; kind.richtung = r; gehen = true; return false;
+            };
+            const nah = falleX + seite * (FB / 2 + 1.9 * VW) - KA / 2;
+            if (kind.phase === 'kommen') {
+                if (geheZu(nah, 10 * VW)) { kind.richtung = -seite; weiter('abstellen'); }
+            } else if (kind.phase === 'abstellen') {
+                if (ps > 0.8) { fLage = 'steht'; weiter('kaese'); }
+            } else if (kind.phase === 'kaese') {
+                if (ps > 0.4 && !falle.classList.contains('fx-mit-kaese')) { falle.classList.add('fx-mit-kaese'); funkenStreuen(falleX + seite * FB * 0.3, LAUF_BODEN - FH * 0.4, 3, 'gold'); }
+                if (ps > 0.9) weiter('zurueck');
+            } else if (kind.phase === 'zurueck') {
+                if (geheZu(falleX + seite * 5 * VW - KA / 2, 3.5 * VW)) { kind.richtung = -seite; weiter('warten'); }
+            } else if (kind.phase === 'warten') {
+                kind.richtung = -seite;
+                if (mausGefangen && phase === 'gefangen' && t - pstart > 0.9) weiter('holen');
+            } else if (kind.phase === 'holen') {
+                if (geheZu(nah, 6 * VW)) { kind.richtung = -seite; weiter('aufheben'); }
+            } else if (kind.phase === 'aufheben') {
+                if (ps > 0.7) { fLage = 'getragen'; weiter('gehen'); }
+            } else if (kind.phase === 'gehen') {
+                if (geheZu(kind.x + KA / 2 < W / 2 ? -KA - 3 * VW : W + 3 * VW, 9 * VW)) { kind.el.remove(); falle.remove(); maus.remove(); kind = null; fertig = true; return; }
+            }
+            const y = LAUF_BODEN - KAH * 0.97 + (gehen ? Math.abs(Math.sin(t * 11)) * -0.12 * VW : 0);
+            kind.el.style.transform = `translate(${kind.x.toFixed(1)}px, ${y.toFixed(1)}px)${kind.richtung > 0 ? ' scale(-1, 1)' : ''}`;
+            kind.el.classList.toggle('fx-geht', gehen);
+            const vorne = handOrt('.fx-tragarm-l circle');
+            // Falle: am Henkel in der vorderen Hand, sonst am Boden
+            const amBoden = [falleX - FB / 2, LAUF_BODEN - FH];
+            const inHand = [vorne[0] + kind.richtung * 0.2 * FB - FB / 2, vorne[1] - 0.05 * FH];
+            let f = 1;
+            if (kind.phase === 'abstellen') f = 1 - glatt(ps / 0.8);
+            else if (kind.phase === 'aufheben') f = glatt(ps / 0.7);
+            else if (fLage === 'steht') f = 0;
+            fPos = [amBoden[0] + (inHand[0] - amBoden[0]) * f, amBoden[1] + (inHand[1] - amBoden[1]) * f + Math.sin(t * 7) * 0.05 * VW * f];
+            falle.style.transform = `translate(${fPos[0].toFixed(1)}px, ${fPos[1].toFixed(1)}px)${seite < 0 ? ' scale(-1, 1)' : ''}`;
+        }
+        const lauf = (zielX, v, dt) => {
+            const r = Math.sign(zielX - mx);
+            if (Math.abs(zielX - mx) <= v * dt) { mx = zielX; return true; }
+            mx += r * v * dt; mBlick = r; return false;
+        };
+
+        return {
+            leiter: false,
+            get fertig() { return fertig; },
+            stop() { maus.remove(); falle.remove(); if (kind) kind.el.remove(); delete el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 90) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                // erst läuft die Maus 15 Sekunden herum, dann kommt das Kind mit der Falle (Wunsch Jonas)
+                if (!kind && t - t0 > 15 && !fertig) {
+                    const e = svgAusText(helferkindSvg());
+                    domV.appendChild(falle);
+                    domV.appendChild(e);
+                    e.classList.add('fx-traegt');
+                    // kommt vom näheren Bildrand
+                    const stand = falleX + seite * (FB / 2 + 1.9 * VW);
+                    kind = {el: e, x: stand < W / 2 ? -KA - 3 * VW : W + 3 * VW, phase: 'kommen', ps0: t, richtung: -seite};
+                }
+                let ebene = domV;
+                maus.classList.remove('fx-rennt', 'fx-schnuppert');
+                if (phase === 'raus') {
+                    // hinter der Kachel hervor nach oben auf die Kante
+                    ebene = domH; mBlick = 1;
+                    my = k.y + 1.4 * VW - 1.4 * VW * glatt(ps / 0.6);
+                    maus.classList.add('fx-rennt');
+                    if (ps > 0.6) { my = k.y; ziel = null; weiter('oben'); }
+                } else if (phase === 'oben') {
+                    // auf der Kante hin und her, mit Schnupperpausen
+                    if (pause > 0) { pause -= dt; maus.classList.add('fx-schnuppert'); }
+                    else {
+                        if (ziel === null) ziel = zufall(k.x + 1.2 * VW, k.x + k.w - 1 * VW);
+                        maus.classList.add('fx-rennt');
+                        if (lauf(ziel, 12 * VW, dt)) { ziel = null; pause = zufall(0.4, 1.2); }
+                    }
+                    if (t - t0 > 7 && pause <= 0) weiter('zurEcke');
+                } else if (phase === 'zurEcke') {
+                    maus.classList.add('fx-rennt');
+                    if (lauf(k.x + k.w - 0.6 * VW, 12 * VW, dt)) weiter('ecke');
+                } else if (phase === 'ecke') {
+                    // über die Ecke in die Lücke, Kopf nach unten
+                    const f = glatt(ps / 0.4);
+                    mx = k.x + k.w - 0.6 * VW + (lueckeX - (k.x + k.w - 0.6 * VW)) * f;
+                    my = k.y + 0.6 * VW * f;
+                    mBlick = 1; mDrehZiel = 90 * f;
+                    maus.classList.add('fx-rennt');
+                    if (ps > 0.4) weiter('runter');
+                } else if (phase === 'runter') {
+                    // in der Lücke sichtbar nach unten
+                    mBlick = 1; mDrehZiel = 90;
+                    my = Math.min(LAUF_BODEN, my + 13 * VW * dt);
+                    maus.classList.add('fx-rennt');
+                    if (my >= LAUF_BODEN - 0.01) { mDrehZiel = 0; ziel = null; weiter(kind ? 'verstecken' : 'boden'); }
+                } else if (phase === 'boden') {
+                    // unten am Boden herumhuschen, bis das Kind kommt
+                    mDrehZiel = 0;
+                    if (pause > 0) { pause -= dt; maus.classList.add('fx-schnuppert'); }
+                    else {
+                        if (ziel === null) ziel = Math.max(1.5 * VW, Math.min(W - 1.5 * VW, lueckeX + zufall(-9, 9) * VW));
+                        maus.classList.add('fx-rennt');
+                        if (lauf(ziel, 11 * VW, dt)) { ziel = null; pause = zufall(0.3, 1); }
+                    }
+                    if (kind) weiter('verstecken');
+                } else if (phase === 'verstecken') {
+                    // das Kind kommt: in die Ecke unten an der Lücke huschen und sichtbar abwarten
+                    maus.classList.add('fx-rennt'); mDrehZiel = 0;
+                    if (lauf(lueckeX - seite * 0.4 * VW, 10 * VW, dt)) weiter('unten');
+                } else if (phase === 'unten') {
+                    // sitzt in der Ecke, schaut zum Kind und schnuppert, bis die Falle steht
+                    mDrehZiel = 0; mBlick = seite;
+                    maus.classList.add('fx-schnuppert');
+                    if (kind && falle.classList.contains('fx-mit-kaese') && kind.phase === 'warten' && t - pstart > 0.6) weiter('zurFalle');
+                } else if (phase === 'zurFalle') {
+                    maus.classList.add('fx-rennt');
+                    if (lauf(eingang - seite * 2.4 * VW, 9 * VW, dt)) weiter('schnuppern2');
+                } else if (phase === 'schnuppern2') {
+                    maus.classList.add('fx-schnuppert'); mBlick = seite;
+                    if (ps > 1.4) weiter('hinein');
+                } else if (phase === 'hinein') {
+                    maus.classList.add('fx-rennt');
+                    if (lauf(falleX + seite * FB * 0.12, 7 * VW, dt)) {
+                        falle.classList.add('fx-zu'); mausGefangen = true;
+                        funkenStreuen(eingang, LAUF_BODEN - FH * 0.5, 4, 'weiss');
+                        weiter('gefangen');
+                    }
+                } else if (phase === 'gefangen') {
+                    // in der Falle: knabbert am Käse, wird mitgetragen
+                    maus.classList.add('fx-schnuppert'); mBlick = seite;
+                    if (fPos) { mx = fPos[0] + FB / 2 + seite * FB * 0.12 + Math.sin(t * 3) * 0.15 * VW; my = fPos[1] + FH * 0.93; }
+                }
+                // vor der Falle die Maus, damit das Gitter vor ihr liegt
+                if (ebene === domV && maus.nextSibling !== falle && falle.parentNode === domV) domV.insertBefore(maus, falle);
+                else if (ebene === domH && maus.parentNode !== domH) domH.appendChild(maus);
+                // nie schlagartig drehen: weich zur Zieldrehung (sonst wirkt sie unruhig)
+                mDreh += Math.max(-400 * dt, Math.min(400 * dt, (mDrehZiel - mDreh) * Math.min(1, dt * 12)));
+                mausSetzen(ebene === domV && falle.parentNode === domV ? maus.parentNode : ebene);
+                if (kind) kindSchritt(dt, t);
+            },
+        };
+    }
+
+    // Raupe wird Schmetterling: Eine Raupe kriecht kopfüber an der Unterkante einer Kachel
+    // entlang und frisst Bisse hinein, hängt sich als J hinunter und wird zur Puppe. Nach
+    // einer Weile platzt die Puppe, ein Schmetterling entfaltet die Flügel und flattert davon.
+    let raupeZuletzt = [];
+    function Raupe() {
+        const kandidaten = kaesten.filter((k) => k.w > 12 * VW && k.y + k.h < UNTEN - 5 * VW && k.y > 2 * VW
+            && !k.el.dataset.fxStory && !k.el.querySelector(':scope > .fx-eisscheibe'));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => raupeZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { raupeZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        raupeZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'raupe';
+        const kante = () => { const r = el.getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect(); return {x: r.left - o.left, y: r.bottom - o.top, w: r.width}; };
+        const kk0 = kante();
+        const richtung = Math.random() < 0.5 ? 1 : -1;
+        const startX = richtung > 0 ? kk0.x + kk0.w * 0.18 : kk0.x + kk0.w * 0.82;
+        const endeX = startX + richtung * zufall(3.6, 4.6) * VW;
+        const L = 3.2 * VW, N = 10, SEG = L / (N - 1);
+        let kopf = startX, welle = 0, t0 = null, pstart = 0, phase = 'kriechen', fertig = false;
+        const bisse = [];                                  // Bisse in der Unterkante (x relativ zur Kachel, Radius)
+        let naechsterBiss = startX + richtung * 0.5 * VW, biss = 0, kauen = 0;
+        const kruemel = [];
+        let jAnteil = 0, puppe = 0, pendel = 0, auf = 0, flug = null, huelle = 1, heilen = 0, trupp = null;
+        const altMaske = {m: el.style.maskImage, w: el.style.webkitMaskImage, mc: el.style.maskComposite, wc: el.style.webkitMaskComposite,
+            cl: el.style.maskClip, wcl: el.style.webkitMaskClip, r: el.style.maskRepeat, wr: el.style.webkitMaskRepeat};
+        const maskeZurueck = () => {
+            el.style.maskImage = altMaske.m; el.style.webkitMaskImage = altMaske.w;
+            el.style.maskComposite = altMaske.mc; el.style.webkitMaskComposite = altMaske.wc;
+            el.style.maskClip = altMaske.cl; el.style.webkitMaskClip = altMaske.wcl;
+            el.style.maskRepeat = altMaske.r; el.style.webkitMaskRepeat = altMaske.wr;
+            el.style.maskPosition = ''; el.style.webkitMaskPosition = ''; el.style.maskSize = ''; el.style.webkitMaskSize = '';
+        };
+        function maskeSetzen() {
+            const r0 = el.getBoundingClientRect();
+            // die Maske ist größer als die Kachel, damit der herausragende Kiesel sicher sichtbar bleibt
+            const RX = 4 * VW, RY = 2 * VW, MW = r0.width + 2 * RX, MHh = r0.height + 2 * RY;
+            const loch = bisse.map((b) => {
+                const r = b.r * (1 - heilen);
+                return `radial-gradient(${(r * 1.15).toFixed(1)}px ${r.toFixed(1)}px at ${(b.x + RX).toFixed(1)}px ${(r0.height + RY).toFixed(1)}px, #000 98%, transparent 100%)`;
+            });
+            if (!loch.length || heilen >= 1) { maskeZurueck(); return; }
+            const bild = loch.concat(['linear-gradient(#000, #000)']).join(', ');
+            el.style.webkitMaskImage = bild; el.style.maskImage = bild;
+            el.style.webkitMaskComposite = loch.map(() => 'xor').concat(['xor']).join(', ');
+            el.style.maskComposite = 'exclude';
+            el.style.maskClip = 'no-clip'; el.style.webkitMaskClip = 'no-clip';
+            el.style.maskRepeat = 'no-repeat'; el.style.webkitMaskRepeat = 'no-repeat';
+            const pos = `${-RX}px ${-RY}px`, gr = `${MW.toFixed(0)}px ${MHh.toFixed(0)}px`;
+            el.style.maskPosition = pos; el.style.webkitMaskPosition = pos;
+            el.style.maskSize = gr; el.style.webkitMaskSize = gr;
+        }
+        // Raupe: Segmente hängen kopfüber an der Kante; Kriechen als Welle von hinten nach vorn
+        function raupeMalen(t) {
+            const kk = kante();
+            const punkte = [];
+            for (let i = 0; i < N; i++) {
+                let x, y;
+                if (jAnteil <= 0) {
+                    x = kopf - richtung * i * SEG;
+                    const hub = Math.max(0, Math.sin(welle - i * 0.75)) * 0.32 * VW;
+                    x += richtung * Math.max(0, Math.sin(welle - i * 0.75)) * 0.08 * VW;
+                    y = kk.y + 0.38 * VW + hub;
+                } else {
+                    // als J hinunterhängen: hinten festgeklebt, Kopf nach unten gekrümmt
+                    const anker = [kopf - richtung * (N - 1) * SEG, kk.y + 0.38 * VW];
+                    const gerade = [kopf - richtung * i * SEG, kk.y + 0.38 * VW + Math.max(0, Math.sin(welle - i * 0.75)) * 0.32 * VW];
+                    const u = (N - 1 - i) / (N - 1);
+                    const winkel = u * Math.PI * 0.55;
+                    const haengen = [anker[0] + Math.sin(winkel) * 0.5 * VW * richtung * (1 - u * 0.3), anker[1] + u * L * 0.95 - Math.max(0, u - 0.75) * 1.2 * VW];
+                    const f = glatt(jAnteil);
+                    x = gerade[0] + (haengen[0] - gerade[0]) * f; y = gerade[1] + (haengen[1] - gerade[1]) * f;
+                }
+                punkte.push([x, y]);
+            }
+            // vom Schwanz zum Kopf malen, Kopf zuletzt
+            for (let i = N - 1; i >= 0; i--) {
+                const [x, y] = punkte[i];
+                const r = (i === 0 ? 0.36 : 0.33 - Math.max(0, i - 6) * 0.03) * VW;
+                cxV.fillStyle = i % 2 ? '#6fb83a' : '#7cc744';
+                cxV.beginPath(); cxV.arc(x, y, r, 0, 6.283); cxV.fill();
+                cxV.fillStyle = 'rgba(40,90,20,.35)';
+                cxV.beginPath(); cxV.arc(x, y - r * 0.35, r * 0.55, Math.PI, 0); cxV.fill();
+                if (i > 0 && i % 2 === 0) { cxV.fillStyle = '#f2d43c'; cxV.beginPath(); cxV.arc(x, y + r * 0.3, r * 0.2, 0, 6.283); cxV.fill(); }
+                // Beinchen oben an der Kante
+                if (jAnteil < 0.5 && i > 0) { cxV.strokeStyle = '#3f7a1f'; cxV.lineWidth = 0.07 * VW; cxV.beginPath(); cxV.moveTo(x, y - r * 0.8); cxV.lineTo(x, y - r * 1.15); cxV.stroke(); }
+            }
+            const [hx, hy] = punkte[0];
+            cxV.fillStyle = '#1d1d1d';
+            cxV.beginPath(); cxV.arc(hx + richtung * 0.13 * VW, hy + 0.05 * VW, 0.07 * VW, 0, 6.283); cxV.fill();
+            cxV.strokeStyle = '#2e5c16'; cxV.lineWidth = 0.06 * VW; cxV.beginPath();
+            cxV.moveTo(hx + richtung * 0.12 * VW, hy - 0.25 * VW); cxV.lineTo(hx + richtung * 0.3 * VW, hy - 0.5 * VW + (kauen > 0 ? Math.sin(t * 30) * 0.05 * VW : 0)); cxV.stroke();
+            return punkte;
+        }
+        // Puppe: grün-goldener Tropfen, hängt an einem Fädchen von der Kante und pendelt leicht
+        function puppeMalen(ax, ay, a, offen) {
+            const w = Math.sin(pendel) * 0.08;
+            cxV.save(); cxV.translate(ax, ay); cxV.rotate(w); cxV.globalAlpha = a;
+            cxV.strokeStyle = 'rgba(80,80,80,.6)'; cxV.lineWidth = 0.05 * VW;
+            cxV.beginPath(); cxV.moveTo(0, 0); cxV.lineTo(0, 0.35 * VW); cxV.stroke();
+            const h = 2.3 * VW, b = 0.75 * VW;
+            cxV.fillStyle = offen ? 'rgba(200,215,170,.55)' : '#5fbf7a';
+            cxV.beginPath(); cxV.moveTo(0, 0.35 * VW);
+            cxV.bezierCurveTo(b, 0.6 * VW, b * 1.05, h * 0.75, 0, h);
+            cxV.bezierCurveTo(-b * 1.05, h * 0.75, -b, 0.6 * VW, 0, 0.35 * VW); cxV.fill();
+            if (!offen) {
+                cxV.fillStyle = '#e8c547';
+                for (const [x, y] of [[-0.35, 0.95], [0, 0.85], [0.35, 0.95], [-0.2, 1.9], [0.2, 1.9]]) { cxV.beginPath(); cxV.arc(x * VW, y * VW, 0.07 * VW, 0, 6.283); cxV.fill(); }
+                cxV.strokeStyle = 'rgba(30,90,50,.45)'; cxV.lineWidth = 0.05 * VW;
+                cxV.beginPath(); cxV.moveTo(-b * 0.7, h * 0.45); cxV.quadraticCurveTo(0, h * 0.55, b * 0.7, h * 0.45); cxV.stroke();
+            } else {
+                // aufgeplatzt: Riss vorne
+                cxV.strokeStyle = 'rgba(90,90,60,.8)'; cxV.lineWidth = 0.06 * VW;
+                cxV.beginPath(); cxV.moveTo(0, h * 0.35); cxV.lineTo(0.1 * VW, h * 0.6); cxV.lineTo(-0.05 * VW, h * 0.85); cxV.stroke();
+            }
+            cxV.restore(); cxV.globalAlpha = 1;
+        }
+        // Schmetterling von vorn: s = Größe (0…1, beim Entfalten), o = Öffnung der Flügel (−1…1)
+        function falterMalen(x, y, s, o, w) {
+            cxV.save(); cxV.translate(x, y); cxV.rotate(w || 0);
+            const auf = Math.abs(o) * 0.85 + 0.15;
+            for (const sgn of [-1, 1]) {
+                cxV.save(); cxV.scale(sgn * auf, 1);
+                cxV.fillStyle = '#f08a24'; cxV.strokeStyle = '#2b1d12'; cxV.lineWidth = 0.08 * VW;
+                cxV.beginPath(); cxV.moveTo(0, -0.1 * VW);
+                cxV.bezierCurveTo(1.2 * VW * s, -1.4 * VW * s, 2.1 * VW * s, -0.6 * VW * s, 1.6 * VW * s, 0.2 * VW * s);
+                cxV.closePath(); cxV.fill(); cxV.stroke();
+                cxV.fillStyle = '#f5a742';
+                cxV.beginPath(); cxV.moveTo(0, 0.1 * VW);
+                cxV.bezierCurveTo(1.3 * VW * s, 0.3 * VW * s, 1.2 * VW * s, 1.4 * VW * s, 0.3 * VW * s, 1.1 * VW * s);
+                cxV.closePath(); cxV.fill(); cxV.stroke();
+                cxV.fillStyle = '#ffffff';
+                for (const [a, b] of [[1.45, -0.35], [1.25, -0.75], [0.75, 0.95]]) { cxV.beginPath(); cxV.arc(a * VW * s, b * VW * s, 0.09 * VW * s, 0, 6.283); cxV.fill(); }
+                cxV.strokeStyle = 'rgba(43,29,18,.7)'; cxV.lineWidth = 0.05 * VW;
+                cxV.beginPath(); cxV.moveTo(0.1 * VW, -0.1 * VW); cxV.lineTo(1.3 * VW * s, -0.55 * VW * s); cxV.moveTo(0.1 * VW, 0.1 * VW); cxV.lineTo(0.8 * VW * s, 0.8 * VW * s); cxV.stroke();
+                cxV.restore();
+            }
+            cxV.fillStyle = '#2b1d12';
+            cxV.beginPath(); cxV.ellipse(0, 0.15 * VW, 0.14 * VW, 0.75 * VW * Math.max(0.6, s), 0, 0, 6.283); cxV.fill();
+            cxV.beginPath(); cxV.arc(0, -0.65 * VW * Math.max(0.6, s), 0.16 * VW, 0, 6.283); cxV.fill();
+            cxV.strokeStyle = '#2b1d12'; cxV.lineWidth = 0.05 * VW;
+            cxV.beginPath(); cxV.moveTo(-0.05 * VW, -0.75 * VW * s); cxV.quadraticCurveTo(-0.3 * VW, -1.3 * VW * s, -0.45 * VW, -1.35 * VW * s);
+            cxV.moveTo(0.05 * VW, -0.75 * VW * s); cxV.quadraticCurveTo(0.3 * VW, -1.3 * VW * s, 0.45 * VW, -1.35 * VW * s); cxV.stroke();
+            cxV.restore();
+        }
+
+        return {
+            leiter: false,
+            get fertig() { return fertig; },
+            stop() { maskeZurueck(); if (trupp && !trupp.weg) trupp.entfernen(); delete el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 90) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                const kk = kante();
+                let anker = null;
+                if (phase === 'kriechen') {
+                    // Welle läuft durch den Körper; nur wenn der Kopf vorne aufsetzt, kommt er voran
+                    if (kauen > 0) { kauen -= dt; }
+                    else {
+                        welle += dt * 8;
+                        kopf += richtung * Math.max(0, Math.sin(welle)) * 2.2 * VW * dt;
+                        if ((richtung > 0 && kopf >= naechsterBiss) || (richtung < 0 && kopf <= naechsterBiss)) {
+                            // abbeißen: ein Bogen aus der Kante, Krümel fallen
+                            bisse.push({x: kopf + richtung * 0.35 * VW - kk.x, r: zufall(0.3, 0.42) * VW});
+                            maskeSetzen();
+                            for (let i = 0; i < 5; i++) kruemel.push({x: kopf + richtung * 0.35 * VW, y: kk.y, vx: zufall(-0.6, 0.6) * VW, vy: zufall(0, 1) * VW, alter: 0});
+                            naechsterBiss += richtung * zufall(0.85, 1.05) * VW;
+                            kauen = 0.6;
+                        }
+                    }
+                    if ((richtung > 0 && kopf >= endeX) || (richtung < 0 && kopf <= endeX)) weiter('haengen');
+                } else if (phase === 'haengen') {
+                    jAnteil = Math.min(1, ps / 2);
+                    welle += dt * 1.5;
+                    if (ps > 2.4) weiter('verpuppen');
+                } else if (phase === 'verpuppen') {
+                    puppe = Math.min(1, ps / 2.5);
+                    if (ps > 2.6) weiter('puppe');
+                } else if (phase === 'puppe') {
+                    pendel += dt * 1.6;
+                    if (ps > 4) { weiter('schluepfen'); funkenStreuen(kopf - richtung * (N - 1) * SEG, kk.y + 1.4 * VW, 5, 'gold'); }
+                } else if (phase === 'schluepfen') {
+                    // der Falter schlüpft und entfaltet langsam die Flügel
+                    pendel += dt * 1.6;
+                    auf = Math.min(1, ps / 3.2);
+                    if (ps > 3.4) weiter('trocknen');
+                } else if (phase === 'trocknen') {
+                    pendel += dt * 1.6;
+                    if (ps > 2.6) {
+                        const a0 = kopf - richtung * (N - 1) * SEG;
+                        flug = {x: a0, y: kk.y + 1.3 * VW, vx: (a0 < W / 2 ? 1 : -1) * 8 * VW, t: 0};
+                        weiter('fliegen');
+                    }
+                } else if (phase === 'fliegen') {
+                    // der Falter fliegt davon; gleich kommt ein Kind mit Leiter und Spachtel (Wunsch Jonas)
+                    if (flug) {
+                        flug.t += dt;
+                        flug.x += flug.vx * dt + Math.sin(flug.t * 3.1) * 2.5 * VW * dt;
+                        flug.y += (-6 * VW + Math.sin(flug.t * 4.3) * 4 * VW) * dt;
+                        if (flug.y < -3 * VW || flug.x < -3 * VW || flug.x > W + 3 * VW) flug = null;
+                    }
+                    if (!trupp) {
+                        const mitte = bisse.length ? kk.x + bisse.reduce((a, b) => a + b.x, 0) / bisse.length : kopf;
+                        trupp = leiterkind('spachtel', [mitte, kk.y - 1.0 * VW], t);
+                    }
+                    if (trupp.oben()) weiter('reste');
+                } else if (phase === 'reste') {
+                    // erst die leere Puppenhülle abnehmen
+                    huelle = Math.max(0, 1 - ps / 0.8);
+                    if (ps > 1) { trupp.kind.classList.add('fx-schraubt'); weiter('spachteln'); }
+                } else if (phase === 'spachteln') {
+                    // die Bisse zuspachteln, bis die Kante wieder glatt ist
+                    heilen = Math.min(1, ps / 2.6);
+                    maskeSetzen();
+                    if (Math.random() < dt * 14) { const z = trupp.spitze(); kruemel.push({x: z[0], y: z[1], vx: zufall(-0.5, 0.5) * VW, vy: zufall(0, 0.6) * VW, alter: 0}); }
+                    if (ps > 2.8) { trupp.kind.classList.remove('fx-schraubt'); funkenStreuen(trupp.spitze()[0], kk.y, 5, 'weiss'); trupp.freigabe = true; weiter('abgang'); }
+                } else if (phase === 'abgang') {
+                    if (trupp.weg && !flug) { fertig = true; return; }
+                }
+                if (flug && phase !== 'fliegen') {
+                    flug.t += dt;
+                    flug.x += flug.vx * dt + Math.sin(flug.t * 3.1) * 2.5 * VW * dt;
+                    flug.y += (-6 * VW + Math.sin(flug.t * 4.3) * 4 * VW) * dt;
+                    if (flug.y < -3 * VW || flug.x < -3 * VW || flug.x > W + 3 * VW) flug = null;
+                }
+                // zeichnen
+                const ax = kopf - richtung * (N - 1) * SEG, ay = kk.y;
+                if (puppe < 1) {
+                    cxV.globalAlpha = 1 - puppe;
+                    raupeMalen(t);
+                    cxV.globalAlpha = 1;
+                }
+                if (puppe > 0) {
+                    const offen = ['schluepfen', 'trocknen', 'fliegen', 'reste', 'spachteln', 'abgang'].indexOf(phase) >= 0;
+                    if (!offen || huelle > 0) puppeMalen(ax, ay, offen ? huelle : puppe, offen);
+                }
+                if (phase === 'schluepfen' || phase === 'trocknen') {
+                    // hängt unter der Hülle, die Flügel werden groß und klappen auf und zu
+                    const w = Math.sin(pendel) * 0.08;
+                    const o = phase === 'trocknen' ? Math.sin(ps * 2.4) : 0.2;
+                    falterMalen(ax + Math.sin(w) * 2.4 * VW, ay + 2.6 * VW, 0.25 + 0.75 * glatt(auf), o, -w);
+                }
+                if (flug && phase !== 'schluepfen' && phase !== 'trocknen') falterMalen(flug.x, flug.y, 1, Math.sin(flug.t * 16), Math.sin(flug.t * 2) * 0.2);
+                if (trupp) trupp.schritt(dt, t);
+                cxV.fillStyle = 'rgba(255,255,255,.9)';
+                for (let i = kruemel.length - 1; i >= 0; i--) {
+                    const c = kruemel[i];
+                    c.alter += dt; c.vy += 20 * VW * dt; c.x += c.vx * dt; c.y += c.vy * dt;
+                    if (c.y > LAUF_BODEN || c.alter > 3) { kruemel.splice(i, 1); continue; }
+                    cxV.fillRect(c.x, c.y, 0.12 * VW, 0.12 * VW);
+                }
+            },
+        };
+    }
+
+    // ==================================================================
     // Steuerung
 
     const BAUER = {schnee: Schnee, regen: Regen, gewitter: Gewitter, hitze: Hitze, sturm: Sturm, glatteis: Glatteis, frost: Frost};
+    const STORY_BAUER = {roehre: Roehre, kiesel: Kiesel, rohrbruch: Rohrbruch, gondel: Gondel, spinne: Spinne, schief: SchiefeKachel, taube: Taube, maus: Maus, raupe: Raupe};
+    // Im Schulhaus kommen die Storys nur in den Pausen, nach dem Tagesplan des Servers
+    // (alle Flur-Monitore gleich, jede Story höchstens einmal am Tag). In der Vorschau
+    // und im Test läuft die gewählte Story immer wieder.
+    let story = null, storyUhr = null, storyArt = '';   // storyArt: '' | 'plan' | Name (Vorschau/Test: wiederholen)
+    let storyPlan = [], storyVersatz = 0, storyEintrag = null, storyVersuche = 0;
+    const storyGespielt = new Set();
+    function storyLeiter() { return !!(story && story.leiter); }
+    function storyUhrAus() { if (storyUhr) { clearTimeout(storyUhr); storyUhr = null; } }
+    function storyPlanen(sek) {
+        storyUhrAus();
+        storyUhr = setTimeout(storyStarten, sek * 1000);
+    }
+    // der nächste Eintrag aus dem Tagesplan (bis 20 s verspätet zählt noch)
+    function planWecker() {
+        storyUhrAus();
+        if (storyArt !== 'plan' || story) return;
+        const jetzt = Date.now() + storyVersatz;
+        const e = storyPlan.find((x) => !storyGespielt.has(x.ms) && x.ms > jetzt - 20000);
+        if (!e) return;
+        storyUhr = setTimeout(() => {
+            storyUhr = null;
+            storyGespielt.add(e.ms);
+            storyEintrag = e; storyVersuche = 0;
+            storyStarten();
+        }, Math.max(0, e.ms - jetzt));
+    }
+    function planSetzen(plan, serverJetzt) {
+        if (serverJetzt) storyVersatz = serverJetzt - Date.now();
+        const neu = JSON.stringify(plan || []);
+        if (neu === JSON.stringify(storyPlan)) return;
+        storyPlan = (plan || []).slice().sort((a, b) => a.ms - b.ms);
+        planWecker();
+    }
+    function storysSetzen(art) {
+        if (art === storyArt) return;
+        storyArt = art;
+        storyUhrAus();
+        if (story) { story.stop(); story = null; }
+        if (art === 'plan') planWecker();
+        else if (art) storyPlanen(1.5);
+    }
+    function storyStarten() {
+        storyUhr = null;
+        if (!storyArt || story) return;
+        const name = storyArt === 'plan' ? (storyEintrag && storyEintrag.story) : storyArt;
+        const nochmal = (sek) => {
+            // im Plan nur kurz nachversuchen, die Pause ist sonst vorbei
+            if (storyArt !== 'plan') { storyPlanen(sek); return; }
+            storyVersuche += 1;
+            if (storyVersuche <= 4) storyPlanen(Math.min(sek, 10)); else planWecker();
+        };
+        // im Schulhaus keine Story, solange ein Wettereffekt oder ein besonderer Tag läuft
+        if (storyArt === 'plan' && (wetter || fest)) { planWecker(); return; }
+        // nie zugleich mit dem Leitertrupp von Sturm oder Frost
+        if (document.querySelector('.fx-hammerkind:not(.fx-monteur)')) { nochmal(10); return; }
+        kaestenMessen(performance.now() / 1000);
+        const s = name && STORY_BAUER[name] ? STORY_BAUER[name]() : null;
+        if (!s) { nochmal(3); return; }
+        story = s;
+        schleifeStarten();
+    }
 
     function schleife(ts) {
-        if (!wetter && !fest) { laeuft = false; return; }
+        if (!wetter && !fest && !story) {
+            laeuft = false;
+            if (cxH) { cxH.clearRect(0, 0, W, H); cxV.clearRect(0, 0, W, H); }
+            return;
+        }
         requestAnimationFrame(schleife);
         const t = ts / 1000;
         let dt = t - letzte;
@@ -5232,6 +7846,10 @@
             cxV.clearRect(0, 0, W, H);
             if (wetter) wetter.schritt(dt, t);
             if (fest) fest.schritt(dt, t);
+            if (story) {
+                story.schritt(dt, t);
+                if (story.fertig) { story.stop(); story = null; if (storyArt === 'plan') planWecker(); else if (storyArt) storyPlanen(4); }
+            }
             funkenZeichnen(dt);
         } catch (e) {
             // ein Fehler in den Effekten darf den Monitor nie stören
@@ -5252,6 +7870,9 @@
         wetter = null;
         fest = null;
         zustand = {wetter: '', fest: ''};
+        if (story) { try { story.stop(); } catch (x) { console.error(x); } }
+        story = null; storyArt = '';
+        storyUhrAus();
         if (cxH) { cxH.clearRect(0, 0, W, H); cxV.clearRect(0, 0, W, H); }
         funken = [];
     }
@@ -5274,6 +7895,8 @@
             if (soll.fest && festBauer[soll.fest.fest]) fest = festBauer[soll.fest.fest](!!soll.fest.nah);
             zustand.fest = f;
         }
+        // Storys: in der Vorschau und im Test die gewählte immer wieder, im Schulhaus ab und zu
+        storysSetzen(soll.story || (soll.storysPlan ? 'plan' : ''));
         // kein zusätzlicher Hinweis am Monitor (Wunsch Jonas): die Effekte sprechen für sich
         if (wetter || fest) schleifeStarten();
     }
@@ -5295,10 +7918,11 @@
     function sollAus(text, staerke) {
         const soll = {wetter: null, fest: null};
         if (text.trim().toLowerCase() === 'rundgang') {
-            const namen = WETTER.concat(FESTE);
+            const namen = WETTER.concat(FESTE, STORYS);
             // Zeus kommt bei jedem Gewitter
             soll.rundgang = namen.map((name) => (WETTER.indexOf(name) >= 0
                 ? {wetter: {effekt: name, staerke: staerke, titel: VORSCHAU_TITEL[name], bis: null, zeus: name === 'gewitter'}, fest: null}
+                : STORYS.indexOf(name) >= 0 ? {wetter: null, fest: null, story: name}
                 : {wetter: null, fest: {fest: name, nah: true}}));
             return soll;
         }
@@ -5306,6 +7930,7 @@
             if (WETTER.indexOf(name) >= 0) soll.wetter = {effekt: name, staerke: staerke, titel: VORSCHAU_TITEL[name], bis: null, zeus: name === 'gewitter'};
             if (name === 'zeus') soll.wetter = {effekt: 'gewitter', staerke: staerke, titel: 'Schweres Gewitter mit Zeus', bis: null, zeus: true};
             if (FESTE.indexOf(name) >= 0) soll.fest = {fest: name, nah: true};
+            if (STORYS.indexOf(name) >= 0) soll.story = name;
         }
         return soll;
     }
@@ -5364,8 +7989,10 @@
                 if (folgen && vorschau) return;
                 if (testUhr) { clearTimeout(testUhr); testUhr = null; }
                 if (d.test && d.test.rest_ms > 0) testUhr = setTimeout(abfragen, d.test.rest_ms + 1500);
-                if (d.an === false) { alles_stoppen(); return; }
-                anwenden({wetter: d.wetter || null, fest: d.fest || null});
+                // Effekte und Storys haben je einen eigenen Schalter
+                const an = d.an !== false;
+                planSetzen(d.storyplan || [], d.jetzt_ms);
+                anwenden({wetter: an ? d.wetter || null : null, fest: an ? d.fest || null : null, story: d.story || null, storysPlan: d.storys !== false});
                 // direkt nach dem Start des Servers sind die Warnungen evtl. noch unterwegs
                 if (d.bereit === false) setTimeout(abfragen, 30 * 1000);
             })

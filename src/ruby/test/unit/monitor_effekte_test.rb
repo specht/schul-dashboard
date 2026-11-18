@@ -198,6 +198,38 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal true, MonitorEffekte.test_soll('gewitter')[0][:zeus]
         assert_equal [nil, {:fest => 'nikolaus', :nah => true}], MonitorEffekte.test_soll('nikolaus')
         assert_equal [nil, nil], MonitorEffekte.test_soll('rundgang')
+        assert_equal [nil, nil, 'roehre'], MonitorEffekte.test_soll('roehre')
+    end
+
+    def test_story_plan_only_in_breaks
+        montag = Date.new(2026, 11, 16)
+        plan = MonitorEffekte.story_plan(montag)
+        assert_equal [MonitorEffekte::STORYS.size, 17].min, plan.size
+        assert_equal plan.size, plan.map { |e| e[:story] }.uniq.size, 'jede Story höchstens einmal am Tag'
+        assert_equal plan, MonitorEffekte.story_plan(montag), 'gleicher Plan für dasselbe Datum'
+        pausen = MonitorEffekte::STORY_PAUSEN.map { |v, b, _| [v, b].map { |z| h, m = z.split(':').map(&:to_i); (h * 60 + m) * 60 } }
+        plan.each do |e|
+            assert pausen.any? { |a, b| e[:sekunde] >= a && e[:sekunde] + MonitorEffekte::STORY_DAUER <= b }, "#{e[:sekunde]} liegt nicht in einer Pause"
+        end
+        plan.each_cons(2) { |x, y| assert y[:sekunde] - x[:sekunde] >= MonitorEffekte::STORY_DAUER }
+        assert_equal [], MonitorEffekte.story_plan(Date.new(2026, 11, 21)), 'samstags keine Storys'
+        # mit genug Storys sind alle 17 Plätze belegt: 3 + 1 + 1 + 2 · 6
+        viele = (1..20).map { |i| "s#{i}" }
+        voll = MonitorEffekte.story_plan(montag, viele)
+        assert_equal 17, voll.size
+        assert_equal 3, voll.count { |e| e[:sekunde] < 8 * 3600 }
+        # eingestellte Pausen werden geprüft und genutzt
+        assert_equal [['09:00', '09:10', 2], ['11:00', '11:05', 1]], MonitorEffekte.pausen_pruefen([['11:00', '11:05', '1'], ['9:00', '09:10', 2]])
+        assert_nil MonitorEffekte.pausen_pruefen([['10:00', '09:00', 1]])
+        assert_nil MonitorEffekte.pausen_pruefen([['10:00', '10:05', 0]])
+        assert_nil MonitorEffekte.pausen_pruefen([['25:00', '25:05', 1]])
+        assert_nil MonitorEffekte.pausen_pruefen('kaputt')
+        eigene = MonitorEffekte.story_plan(montag, viele, [['09:00', '09:10', 2]])
+        assert_equal 2, eigene.size
+        assert eigene.all? { |e| e[:sekunde] >= 9 * 3600 && e[:sekunde] + MonitorEffekte::STORY_DAUER <= 9 * 3600 + 600 }
+        # wenige Storys verteilen sich über den Tag, nicht nur auf die ersten Pausen
+        tage = (0..20).map { |i| MonitorEffekte.story_plan(montag + i * 7, %w(a b c d e f)) }
+        assert tage.any? { |tp| tp.last[:sekunde] > 12 * 3600 }
     end
 
     def test_easter_sunday

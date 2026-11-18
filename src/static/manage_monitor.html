@@ -142,6 +142,38 @@
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='rundgang'>Alle nacheinander</button>
                 <button class='btn btn-sm btn-outline-secondary mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='' style='display: none;'>Vorschau schließen</button>
             </div>
+            <div class='mb-2 mt-3 fx-storys'>
+                <div class='custom-control custom-switch mb-1'>
+                    <input type='checkbox' class='custom-control-input ti_monitor_storys' id='ti_monitor_storys' disabled>
+                    <label class='custom-control-label' for='ti_monitor_storys'><b>Storys auf den Monitoren im Schulhaus</b></label>
+                </div>
+                <p class='small mb-1'>Kleine Geschichten auf einer Kachel. Sie kommen nur in den Pausen (unten einstellbar), zufällig im
+                Zeitraum verteilt, jede höchstens einmal am Tag und auf allen Flur-Monitoren gleichzeitig; am Wochenende keine. Solange ein
+                Wettereffekt oder ein besonderer Tag zu sehen ist, ruhen sie. Die Schrift bleibt dabei lesbar.
+                <span class='fx-storys-status' data-testid='monitor-storys-status'></span></p>
+                <p class='small text-muted mb-1 fx-storys-plan' data-testid='monitor-storys-plan'></p>
+                <div class='fx-story-pausen mb-2' data-testid='monitor-story-pausen'>
+                    <span class='small'><b>Pausen für die Storys</b> (Beginn, Ende, wie viele Storys in dieser Pause):</span>
+                    <table class='table table-sm small mb-1 mt-1' style='max-width: 26em;'>
+                        <thead><tr><th>von</th><th>bis</th><th>Anzahl</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                    <button class='btn btn-sm btn-outline-secondary mr-1 bu_fx_pause_neu'><i class='fa fa-plus'></i>&nbsp;&nbsp;Pause hinzufügen</button>
+                    <button class='btn btn-sm btn-outline-secondary mr-1 bu_fx_pausen_standard'>Standardzeiten</button>
+                    <button class='btn btn-sm btn-success mr-2 bu_fx_pausen_speichern'><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
+                    <span class='small fx-pausen-status' data-testid='monitor-story-pausen-status'></span>
+                </div>
+                <span class='mr-2'>Vorschau einer Story:</span>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='roehre'>Röhre tauschen</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='kiesel'>Klassenschild per Heli</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='rohrbruch'>Rohrbruch</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='gondel'>Fensterputzer</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='spinne'>Spinnennetz</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='schief'>Schiefe Kachel</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='taube'>Taube baut Nest</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='maus'>Maus</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='raupe'>Raupe wird Schmetterling</button>
+            </div>
             <div class='fx-vorschau' data-testid='monitor-effekt-vorschau' style='display: none;'>
                 <p class='small mb-2'><span class='badge badge-secondary'>VORSCHAU</span>&nbsp; <b class='fx-vorschau-name'></b> – nur hier zu sehen, die Monitore im Schulhaus bleiben unverändert.
                 <button class='btn btn-sm btn-warning ml-2 bu_fx_test_starten'><i class='fa fa-desktop'></i>&nbsp;&nbsp;Im Schulhaus zeigen (5&nbsp;Min.)</button></p>
@@ -290,6 +322,15 @@
             if (d.an && !d.wetter && !d.fest) teile.push('Zurzeit läuft kein Effekt.');
             $('.fx-status').text(teile.join(' '));
             $('.ti_monitor_effekte').prop('disabled', false).prop('checked', !!d.an);
+            $('.ti_monitor_storys').prop('disabled', false).prop('checked', d.storys !== false);
+            $('.fx-storys-status').text(d.storys === false ? 'Zurzeit ausgeschaltet.' : '');
+            // heutiger Plan: Uhrzeit und Story
+            const fx_story_name = (n) => $(`.bu_monitor_effekt_vorschau[data-effekt="${n}"]`).first().text() || n;
+            const plan = (d.storyplan || []).map((e) => `${new Date(e.ms).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})} ${fx_story_name(e.story)}`);
+            let plan_text = plan.length ? `Heute: ${plan.join(' · ')}` : 'Heute keine Storys.';
+            if (d.storys_ruhen) plan_text = 'Gerade keine Storys: Es läuft ein Wettereffekt oder ein besonderer Tag.';
+            $('.fx-storys-plan').text(d.storys === false ? '' : plan_text);
+            if (!fx_pausen_geladen && d.story_pausen) { fx_pausen_zeigen(d.story_pausen); fx_pausen_geladen = true; }
             effekte_warnungen_zeigen(d);
             effekte_termine_zeigen(d);
         }
@@ -383,6 +424,45 @@
         $('.ti_monitor_effekte').on('change', function(e) {
             $(e.currentTarget).prop('disabled', true);
             api_call('/api/set_monitor_effekte', {an: $(e.currentTarget).prop('checked') ? 'ja' : 'nein'}, function(data) {
+                effekte_stand_laden();
+            });
+        });
+        // Pausen für die Storys: Tabelle bearbeiten und speichern
+        let fx_pausen_geladen = false;
+        function fx_pause_zeile(von, bis, anzahl) {
+            return $('<tr>').append(
+                $('<td>').append($(`<input type='time' class='form-control form-control-sm fx-p-von'>`).val(von)),
+                $('<td>').append($(`<input type='time' class='form-control form-control-sm fx-p-bis'>`).val(bis)),
+                $('<td>').append($(`<input type='number' min='1' max='9' class='form-control form-control-sm fx-p-n' style='width: 5em;'>`).val(anzahl)),
+                $('<td>').append($(`<button class='btn btn-sm btn-link text-danger bu_fx_pause_weg' title='Pause entfernen'>`).html('<i class="fa fa-trash"></i>')));
+        }
+        function fx_pausen_zeigen(pausen) {
+            const tbody = $('.fx-story-pausen tbody').empty();
+            for (const [von, bis, anzahl] of pausen) tbody.append(fx_pause_zeile(von, bis, anzahl));
+        }
+        $('.bu_fx_pause_neu').on('click', function() { $('.fx-story-pausen tbody').append(fx_pause_zeile('', '', 1)); $('.fx-pausen-status').text(''); });
+        $('.fx-story-pausen').on('click', '.bu_fx_pause_weg', function(e) { $(e.currentTarget).closest('tr').remove(); $('.fx-pausen-status').text(''); });
+        $('.bu_fx_pausen_speichern').on('click', function() {
+            const liste = [];
+            let fehler = false;
+            $('.fx-story-pausen tbody tr').each(function(_, tr) {
+                const von = $(tr).find('.fx-p-von').val(), bis = $(tr).find('.fx-p-bis').val(), n = parseInt($(tr).find('.fx-p-n').val(), 10);
+                if (!von || !bis || von >= bis || !(n >= 1 && n <= 9)) fehler = true;
+                liste.push([von, bis, n]);
+            });
+            if (fehler) { $('.fx-pausen-status').text('Bitte bei jeder Pause Beginn vor Ende und eine Anzahl von 1 bis 9 eintragen.'); return; }
+            api_call('/api/set_monitor_story_pausen', {pausen: JSON.stringify(liste)}, function(data) {
+                if (data.success) { fx_pausen_zeigen(data.story_pausen); $('.fx-pausen-status').text('Gespeichert.'); effekte_stand_laden(); }
+            });
+        });
+        $('.bu_fx_pausen_standard').on('click', function() {
+            api_call('/api/set_monitor_story_pausen', {pausen: ''}, function(data) {
+                if (data.success) { fx_pausen_zeigen(data.story_pausen); $('.fx-pausen-status').text('Standardzeiten wiederhergestellt.'); effekte_stand_laden(); }
+            });
+        });
+        $('.ti_monitor_storys').on('change', function(e) {
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/set_monitor_storys', {an: $(e.currentTarget).prop('checked') ? 'ja' : 'nein'}, function(data) {
                 effekte_stand_laden();
             });
         });

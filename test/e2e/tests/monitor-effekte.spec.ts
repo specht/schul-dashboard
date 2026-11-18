@@ -7,7 +7,7 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 
 const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost',
   'weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang',
-  'adventskonzert', 'forschertag', 'rundgang'];
+  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'rundgang'];
 
 for (const effekt of EFFEKTE) {
   test(`Monitor-Effekt ${effekt}: läuft hinter den Kästen, die Einträge bleiben lesbar`, async ({ page }) => {
@@ -79,6 +79,30 @@ test('Monitor-Effekte: Stand abfragen und auf „Monitore verwalten“ ab- und e
   await page.locator('label[for="ti_monitor_effekte"]').click();
   await expect(schalter).toBeChecked();
   await expect(page.getByTestId('monitor-effekte-status')).not.toContainText('ausgeschaltet');
+  // the stories have a switch of their own
+  const storys = page.locator('.ti_monitor_storys');
+  await expect(storys).toBeEnabled();
+  await expect(storys).toBeChecked();
+  await page.locator('label[for="ti_monitor_storys"]').click();
+  await expect(page.getByTestId('monitor-storys-status')).toContainText('ausgeschaltet');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).storys).toBe(false);
+  await page.goto('/manage_monitor');
+  await expect(storys).toBeEnabled();
+  await expect(storys).not.toBeChecked();
+  await page.locator('label[for="ti_monitor_storys"]').click();
+  await expect(storys).toBeChecked();
+  await expect(page.getByTestId('monitor-storys-status')).toHaveText('');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).storys).toBe(true);
+  // the breaks for the stories can be edited; 'Standardzeiten' restores Jonas' defaults
+  const pausen = page.getByTestId('monitor-story-pausen').locator('tbody tr');
+  await expect(pausen).toHaveCount(9);
+  await pausen.first().locator('.fx-p-n').fill('2');
+  await page.locator('.bu_fx_pausen_speichern').click();
+  await expect(page.getByTestId('monitor-story-pausen-status')).toContainText('Gespeichert');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).story_pausen[0]).toEqual(['07:46', '08:00', 2]);
+  await page.locator('.bu_fx_pausen_standard').click();
+  await expect(page.getByTestId('monitor-story-pausen-status')).toContainText('Standardzeiten');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).story_pausen[0]).toEqual(['07:46', '08:00', 3]);
 
   // the hallway monitor at the top always shows the live picture
   await expect(page.locator('.if_monitor_flur')).toHaveAttribute('src', '/monitor');
@@ -129,6 +153,8 @@ test('Monitor-Effekte: nur für Monitore und Monitor-Verwaltung', async ({ page 
   await login(page, ACCOUNTS.schueler);
   expect((await page.request.get('/api/monitor_effekte')).status()).not.toBe(200);
   expect((await page.request.post('/api/set_monitor_effekte', { data: { an: 'nein' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/set_monitor_storys', { data: { an: 'nein' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/set_monitor_story_pausen', { data: { pausen: '' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/add_monitor_schultermin', { data: { datum: '2099-01-01', motiv: 'adventskonzert' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/delete_monitor_schultermin', { data: { id: 'x' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/monitor_effekte_test', { data: { effekt: 'sturm' } })).status()).not.toBe(200);

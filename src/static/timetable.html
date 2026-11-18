@@ -797,10 +797,7 @@ function preview_agenda_fill_day(box, day, all, now, open) {
         row.append($('<div>').addClass('pv-ag-when').append($('<b>').text(preview_hhmm(e.start)), $('<span>').text(preview_hhmm(e.end))));
         let card = $('<button type="button">').addClass('pv-ag-card');
         let color = preview_subject_color(x);
-        let label = $('<div>').html(x.label_short || '');
-        label.find('s, del, strike').remove();
-        let code = label.text().trim().split(/[\s(]/)[0];
-        let chip = $('<span>').addClass('pv-ag-subj').toggleClass('pv-ag-subj-long', code.length >= 4).text(code.length > 0 ? code.substr(0, 4) : '•');
+        let chip = preview_chip(x);
         // the subject colour for chip and card (jQuery's css() ignores custom properties)
         if (color) {
             card[0].style.setProperty('--c', color);
@@ -808,12 +805,12 @@ function preview_agenda_fill_day(box, day, all, now, open) {
         }
         let head = $('<div>').addClass('pv-ag-head').append(chip);
         let title = $('<div>').addClass('pv-ag-title');
-        title.append($('<b>').html(x.label || e.title || ''));
+        title.append(preview_title($('<b>'), x, e));
         // the length in words too: "Doppelstunde" (the card is also taller)
         let length_label = (x.count || 1) === 2 ? 'Doppelstunde' : ((x.count || 1) > 2 ? x.count + ' Stunden' : '');
-        if (x.raum || length_label) {
+        if (x.raum || x.room_name || length_label) {
             let meta = $('<span>').addClass('pv-ag-room');
-            if (x.raum) meta.append($('<span>').html(x.raum));
+            if (x.raum || x.room_name) meta.append(preview_room($('<span>'), x));
             if (length_label) meta.append($('<span>').addClass('pv-ag-length').text(length_label));
             title.append(meta);
         }
@@ -1131,7 +1128,30 @@ function preview_subject_code(x) {
     let label = $('<div>').html(x.label_short || '');
     label.find('s, del, strike').remove();
     let code = label.text().trim().split(/[\s(]/)[0];
-    return code.length > 0 ? code.substr(0, 4) : '•';
+    return code.length > 0 ? code.substr(0, 4) : '';
+}
+
+// the chip of a card: the subject's code, or a Tabler icon where there is
+// none (a Termin: a calendar)
+function preview_chip(x) {
+    let code = preview_subject_code(x);
+    let chip = $('<span>').addClass('pv-ag-subj');
+    if (code.length > 0) return chip.toggleClass('pv-ag-subj-long', code.length >= 4).text(code);
+    return chip.addClass('pv-ag-subj-icon').append($('<i>').addClass('ti').addClass(x.is_event ? 'ti-calendar-event' : 'ti-clock').attr('aria-hidden', 'true'));
+}
+
+// the title of a card: a lesson's label (built by the server), otherwise the
+// Termin's title (typed by a person: as text)
+function preview_title(el, x, e) {
+    if (x.label) return el.html(x.label);
+    return el.text(e.title || x.event_title || '');
+}
+
+// the room of a card: a lesson's room (HTML from the server: <s>108</s> 211)
+// or a Termin's room (as text)
+function preview_room(el, x) {
+    if (x.raum) return el.html(x.raum);
+    return el.text(x.room_name || '');
 }
 
 // Desktop, wide screens (new design): a column beside the week – the lesson
@@ -1167,10 +1187,13 @@ function render_preview_side() {
             card[0].style.setProperty('--c', color);
             card[0].style.setProperty('--ci', preview_subject_ink(x));
         }
-        card.append($('<span>').addClass('pv-ag-subj').toggleClass('pv-ag-subj-long', preview_subject_code(x).length >= 4).text(preview_subject_code(x)));
+        card.append(preview_chip(x));
         let text = $('<span>').addClass('pv-side-text');
-        text.append($('<b>').html(x.label || e.title || ''));
-        text.append($('<small>').html((x.raum ? 'Raum ' + x.raum + ', ' : '') + preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
+        text.append(preview_title($('<b>'), x, e));
+        let small = $('<small>');
+        if (x.raum || x.room_name) small.append('Raum ', preview_room($('<span>'), x), ', ');
+        small.append(document.createTextNode(preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
+        text.append(small);
         card.append(text);
         card.on('click', open(e));
         box.append(card);
@@ -1284,11 +1307,13 @@ function preview_week_fill(box, start, events) {
             if (color) { row[0].style.setProperty('--c', color); row[0].style.setProperty('--ci', preview_subject_ink(x)); }
             // start and end: a double lesson reads as one at a glance
             row.append($('<span>').addClass('pv-week-time').append($('<b>').text(preview_hhmm(e.start)), $('<span>').text(preview_hhmm(e.end))));
-            row.append($('<span>').addClass('pv-ag-subj').text(preview_subject_code(x)));
-            let label = $('<span>').addClass('pv-week-title').html(x.label || e.title || '');
+            row.append(preview_chip(x));
+            let label = preview_title($('<span>').addClass('pv-week-title'), x, e);
             row.append(label);
             let room = preview_room_change(x.raum);
-            row.append($('<span>').addClass('pv-week-room').toggleClass('pv-week-room-changed', !!room).html(room ? room[1] : (x.raum || '')));
+            let room_el = $('<span>').addClass('pv-week-room').toggleClass('pv-week-room-changed', !!room);
+            if (room) room_el.html(room[1]); else preview_room(room_el, x);
+            row.append(room_el);
             row.on('click', function(ev) {
                 window.timetable_options.eventClick({ event: e, el: ev.currentTarget, jsEvent: ev, view: window.calendar.view });
             });

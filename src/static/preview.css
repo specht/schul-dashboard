@@ -5944,3 +5944,14 @@ body.ui-preview:has(.container-fluid.solid)::before {
         max-width: min(960px, calc(100vw - var(--pv-sidebar, 0px) - 48px));
     }
 }
+
+/* a card without a subject (a Termin): a Tabler icon in a quiet chip */
+.ui-preview .pv-ag-subj.pv-ag-subj-icon {
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-ag-subj.pv-ag-subj-icon .ti {
+    font-size: 1.15em;
+    line-height: 1;
+}

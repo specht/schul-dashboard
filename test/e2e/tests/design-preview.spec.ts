@@ -1139,3 +1139,35 @@ test('Neues Design: Schalter im Profil folgt hell und dunkel aus dem Menü', asy
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Termine in the day's agenda (phones): they have a title of their own
+// (event_title) and no subject. They showed as empty cards with a dot; now
+// the title, the room and a calendar icon in the chip – no text glyph.
+test('Neues Design: Termine in der Agenda mit Titel und Symbol', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Agenda am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  // the day the agenda shows first: today, on weekends the next Monday
+  const day = new Date();
+  while (day.getDay() === 0 || day.getDay() === 6) day.setDate(day.getDate() + 1);
+  const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+  const title = `Sprechstunde Probe ${Date.now().toString(36)}`;
+  const saved = await page.request.post('/api/save_event', {
+    data: { title, jitsi: 'no', date, start_time: '15:00', end_time: '15:45', recipients: [ACCOUNTS.admin], description: '' },
+  });
+  expect(saved.status()).toBe(200);
+  const eid = (await saved.json()).event.eid;
+  try {
+    await page.route('**/gen/**', (route) => route.continue());
+    const card = page.locator('#pv_agenda .pv-ag-card', { hasText: title });
+    await expect(async () => {
+      await page.goto('/');
+      await expect(card).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 30_000 });
+    await expect(card.locator('.pv-ag-subj .ti-calendar-event')).toHaveCount(1);
+    expect(await page.locator('#pv_agenda').innerText()).not.toMatch(/[•·]/);
+  } finally {
+    await page.request.post('/api/delete_event', { data: { eid } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

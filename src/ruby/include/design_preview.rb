@@ -401,8 +401,8 @@ class Main < Sinatra::Base
     # Also marks the current page in the menu.
     def design_preview_tabbar_html(new_messages_count)
         return '' unless ui_preview? && user_logged_in?
-        # as in the mockups: teachers Heute · Woche · Nachrichten · Kurse · Mehr,
-        # students Heute · Woche · Aufgaben · Nachrichten · Mehr; the profile is
+        # as in the mockups: teachers Heute, Woche, Nachrichten, Unterricht, Mehr,
+        # students Heute, Woche, Aufgaben, Nachrichten, Mehr; the profile is
         # the picture in the day's header (and in "Mehr"), the search an icon there
         tabs = []
         unless external_user_logged_in?
@@ -411,7 +411,7 @@ class Main < Sinatra::Base
         end
         tabs << ['/#aufgaben', 'Aufgaben', 'fa-check-square-o', nil] if schueler_logged_in?
         tabs << ['/messages', 'Nachrichten', 'fa-comment-o', new_messages_count] if user_with_role_logged_in?(:can_receive_messages)
-        tabs << ['#kurse', 'Kurse', 'fa-book', nil] if teacher_logged_in?
+        tabs << ['#kurse', 'Unterricht', 'fa-book', nil] if teacher_logged_in?
         tabs << ['/profil', 'Profil', 'fa-user-o', nil] unless teacher_logged_in? || schueler_logged_in?
         StringIO.open do |io|
             io.puts "<nav class='pv-tabbar' aria-label='Hauptbereiche'>"
@@ -446,12 +446,12 @@ class Main < Sinatra::Base
                         };
                         mark_tabs();
                         window.addEventListener('hashchange', mark_tabs);
-                        // "Kurse": Kursbuch and class lists of one's courses as a sheet
+                        // "Unterricht": the Kursbuch of one's courses and the class lists as a sheet
                         $('#bu_pv_courses').on('click', function () {
                             if (document.querySelector('.pv-link-sheet')) { window.pv_close_plan_menu(true); return; }
                             let groups = window.pv_menu_links('navbarDropdownKlassen');
-                            window.pv_open_link_sheet('Kurse', [
-                                ['Kursbuch', window.pv_menu_links('navbarDropdownKurse')],
+                            window.pv_open_link_sheet('Unterricht', [
+                                ['Mein Unterricht', window.pv_menu_links('navbarDropdownKurse')],
                                 ['Meine Lerngruppen', groups.filter(function (g) { return g[3]; })],
                                 ['Weitere Lerngruppen', groups.filter(function (g) { return !g[3]; })],
                             ]);

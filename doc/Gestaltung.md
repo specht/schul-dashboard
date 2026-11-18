@@ -58,16 +58,20 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
 ## 3. Der Rahmen
 
 - **Desktop:** eine Seitenleiste links. Oben die Schule, dann Stundenplan,
-  Nachrichten und Datentresor, darunter aufklappbare Abschnitte (Unterricht,
-  Schule, Verwaltung) mit Untergruppen nur als Abstand. Unten fest: Suche,
+  Nachrichten und Datentresor, darunter nach einer Linie je ein Eintrag für
+  Unterricht, Lerngruppen, Schule und Verwaltung. Jeder öffnet sich wie ein
+  Menü als Feld rechts daneben, nicht nach unten in der Leiste;
+  Untergruppen darin nur als kleine Überschrift. Der Eintrag, in dem die
+  aktuelle Seite liegt, ist in der Akzentfarbe markiert. Klassenarbeiten
+  gehören zu »Schule«. Unten fest: Suche,
   die eigene Person (das Menü öffnet sich nach oben, unten bündig) und ganz
   unten eine leise Zeile mit ©, Impressum und dem GitHub-Symbol. Nur die
   Liste darüber scrollt. Menüs öffnen sich als Feld neben der Leiste, auf
   Höhe ihres Eintrags; sind sie länger als das Fenster, in Spalten.
 - **Tablet:** dieselbe Leiste als schmale Symbolleiste, die Namen als
-  Tooltip.
+  Tooltip; die Felder öffnen sich genauso daneben.
 - **Handy:** keine Kopfleiste. Unten eine Tab-Leiste (Lehrkräfte: Heute,
-  Woche, Nachrichten, Kurse, Mehr; Schülerinnen und Schüler: Heute, Woche,
+  Woche, Nachrichten, Unterricht, Mehr; Schülerinnen und Schüler: Heute, Woche,
   Aufgaben, Nachrichten, Mehr). »Mehr« ist ein Sheet mit Suche oben und den
   Einträgen als Kacheln, farbig nach Gruppe. Alle Kacheln folgen einem
   Muster (Symbol mittig über der Beschriftung, gleiche Höhe, die Symbole
@@ -75,7 +79,7 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
   Reihe ist voll: Bleiben in einer Gruppe Kacheln übrig, werden die
   letzten breiter (zwei übrig: je halbe Breite; eine übrig: die letzten
   vier als zwei Reihen zu zwei).
-- **Suche:** überall mit `/` oder `Strg+K`. Sie findet Seiten, Kurse,
+- **Suche:** überall mit `/` oder `Strg+K`. Sie findet Seiten, Lerngruppen,
   Personen und Links nach Name und Stichwort.
 - **Die Seite selbst** steht auf einem Panel (`--pv-surface`, Radius 14 bis
   16 px) über dem Hintergrund des Farbschemas.
@@ -337,6 +341,10 @@ Umfragen, Termine, News verwalten)
 - Die Oberfläche ist deutsch. Das Dashboard spricht alle mit »du« an,
   Schülerinnen und Schüler, Eltern und Lehrkräfte. Alte Texte mit »Sie«
   werden angepasst, wenn eine Seite ins neue Design kommt.
+- **Feste Begriffe:** Gruppen von Schülerinnen und Schülern (Klassen und
+  Kurse) heißen als Bereich »Lerngruppen«, die einzelne Gruppe bleibt
+  »Klasse 6a« oder »Informatik LK (11, 12)«. Der eigene Unterricht (die
+  Kursbücher) heißt »Unterricht«, nicht »Kurse«.
 - **Kein Mittelpunkt »·« als Trenner**, nirgends in sichtbarem Text. Statt
   dessen Kommas, kurze Wörter (»um«, »statt«, »bis«) oder Abstand.
 - Kurz, sachlich, freundlich. Keine Ausrufezeichen-Kaskaden, keine

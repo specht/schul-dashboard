@@ -189,15 +189,16 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await page.keyboard.press('Escape');
       await expect(profileMenu).toBeHidden();
       // the old admin menu is gone: its tools sit in the "Verwaltung" section,
-      // folded (unless the current page is one of them), and it remembers
+      // one entry that opens as a panel beside the sidebar, like the menus
       await expect(page.locator('#navbarDropdownAdmin')).toBeHidden();
       const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
       await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
       await verwaltung.locator('button.pv-nav-heading').click();
       await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
-      await page.reload();
-      await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
-      await verwaltung.locator('button.pv-nav-heading').click();
+      const vp = (await verwaltung.locator('.pv-nav-body').boundingBox())!;
+      expect(vp.x).toBeGreaterThanOrEqual(box.width - 1);
+      expect(vp.y + vp.height).toBeLessThanOrEqual(viewport.height);
+      await page.keyboard.press('Escape');
       await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
       // menus open as a panel next to the sidebar, inside the window above
       // the footer (in columns, or scrolling where even that is too long);
@@ -253,18 +254,18 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await expect(menu).toBeHidden();
       await expect(page.locator('.pv-menu-veil')).toBeHidden();
-      // teachers: Heute · Woche · Nachrichten · Kurse · Mehr (as in the mockups)
-      await expect(tabs.locator('.pv-tab')).toHaveText(['Heute', 'Woche', 'Nachrichten', 'Kurse', 'Mehr']);
+      // teachers: Heute, Woche, Nachrichten, Unterricht, Mehr (as in the mockups)
+      await expect(tabs.locator('.pv-tab')).toHaveText(['Heute', 'Woche', 'Nachrichten', 'Unterricht', 'Mehr']);
       // the search: at the top of "Mehr" (no icon in the top bar)
       await expect(page.locator('.nav-quick-search-nav .nav-quick-search')).toBeHidden();
       await tabs.locator('#bu_pv_more').click();
       await page.locator('.pv-more-search').click();
       await expect(page.locator('#ti_quick_search')).toBeVisible();
       await page.locator('#ti_quick_search').press('Escape');
-      // "Kurse": Kursbuch and class lists as a sheet
+      // "Unterricht": one's courses (Kursbuch) and the class lists as a sheet
       await tabs.locator('#bu_pv_courses').click();
       const courses = page.locator('.pv-link-sheet');
-      await expect(courses).toContainText('Kursbuch');
+      await expect(courses.locator('.pv-plan-group')).toContainText(['Mein Unterricht', 'Meine Lerngruppen']);
       await expect(courses.locator('a[href^="/lessons/"]').first()).toBeVisible();
       await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
       await expect(courses).toHaveCount(0);
@@ -282,64 +283,94 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
   }
 });
 
-// Tablets: the sidebar as an icon rail. The sections (Unterricht, Schule,
-// Verwaltung) are one icon each and open as a panel beside the rail, without
-// changing the folds the full sidebar remembers.
-test('Neues Design: Abschnitte in der Symbolleiste am Tablet', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile', 'tablet width');
-  await page.setViewportSize({ width: 820, height: 1180 });
-  await login(page, ACCOUNTS.admin);
-  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
-  try {
-    await page.goto('/messages');
-    const nav = page.locator('nav.navbar');
-    const rail = (await nav.boundingBox())!;
-    expect(rail.width).toBeLessThan(100);
-    // no text sticks out of the rail or is cut off in it
-    expect(await nav.evaluate((navEl) => {
-      const right = navEl.getBoundingClientRect().right;
-      return [...navEl.querySelectorAll('*')].filter((el) => {
-        const r = el.getBoundingClientRect();
-        const text = [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent!.trim());
-        return text && r.width > 0 && r.height > 0 && (r.right > right + 1 || el.scrollWidth > el.clientWidth + 1);
-      }).length;
-    })).toBe(0);
-    const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
-    const heading = verwaltung.locator('button.pv-nav-heading');
-    const body = verwaltung.locator('.pv-nav-body');
-    await expect(body).toBeHidden();
-    await heading.click();
-    await expect(body).toBeVisible();
-    const panel = (await body.boundingBox())!;
-    expect(panel.x).toBeGreaterThanOrEqual(rail.width - 1);
-    expect(panel.y + panel.height).toBeLessThanOrEqual(1180);
-    await expect(body.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
-    // one panel at a time; Escape and a click elsewhere close it
-    await nav.locator('.pv-nav-section[data-section="unterricht"] button.pv-nav-heading').click();
-    await expect(body).toBeHidden();
-    // Lerngruppen opens beside the panel, not over it
-    const unterricht = nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body');
-    await page.locator('#navbarDropdownKlassen').click();
-    const groups = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
-    await expect(groups).toBeVisible();
-    const u = (await unterricht.boundingBox())!;
-    expect((await groups.boundingBox())!.x).toBeGreaterThanOrEqual(u.x + u.width - 1);
-    await page.keyboard.press('Escape');
-    await page.keyboard.press('Escape');
-    await expect(unterricht).toBeHidden();
-    await heading.click();
-    await expect(body).toBeVisible();
-    await page.mouse.click(600, 900);
-    await expect(body).toBeHidden();
-    // the full sidebar keeps its own folds
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await expect(body).toBeHidden();
-    await expect(nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body')).toBeVisible();
-    await expect(heading).toContainText('Verwaltung');
-  } finally {
-    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
-  }
-});
+// The sidebar's sections: Unterricht, Lerngruppen, Schule and Verwaltung are
+// one entry each and open as a panel to the right, like the menus (on
+// tablets the sidebar is an icon rail, the panels the same). Klassenarbeiten
+// belong to Schule; the entry of the current page's section is marked.
+for (const [name, width, height] of [['Desktop', 1280, 900], ['Tablet', 820, 1180]] as const) {
+  test(`Neues Design: Abschnitte der Seitenleiste als Menüs nach rechts (${name})`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'mobile', 'sidebar widths');
+    await page.setViewportSize({ width, height });
+    await login(page, ACCOUNTS.admin);
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+    try {
+      await page.goto('/tests');
+      const nav = page.locator('nav.navbar');
+      const side = (await nav.boundingBox())!;
+      if (name === 'Tablet') {
+        expect(side.width).toBeLessThan(100);
+        // no text sticks out of the rail or is cut off in it
+        expect(await nav.evaluate((navEl) => {
+          const right = navEl.getBoundingClientRect().right;
+          return [...navEl.querySelectorAll('*')].filter((el) => {
+            const r = el.getBoundingClientRect();
+            const text = [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent!.trim());
+            return text && r.width > 0 && r.height > 0 && (r.right > right + 1 || el.scrollWidth > el.clientWidth + 1);
+          }).length;
+        })).toBe(0);
+      }
+      // one entry each, in this order, below the pages
+      const order = await nav.locator('.navbar-nav > .pv-nav-section, .navbar-nav > .pv-nav-groups').evaluateAll((els) =>
+        els.map((el) => (el as HTMLElement).dataset.section || 'lerngruppen'));
+      expect(order).toEqual(['unterricht', 'lerngruppen', 'schule', 'verwaltung']);
+      if (name === 'Desktop') {
+        await expect(nav.locator('.navbar-nav > .pv-nav-section > button.pv-nav-heading')).toHaveText(['Unterricht', 'Schule', 'Verwaltung']);
+        await expect(nav.locator('#navbarDropdownKlassen')).toHaveText('Lerngruppen');
+      }
+      // the bodies stay closed until one opens them
+      for (const key of ['unterricht', 'schule', 'verwaltung']) {
+        await expect(nav.locator(`.pv-nav-section[data-section="${key}"] .pv-nav-body`)).toBeHidden();
+      }
+      const unterricht = nav.locator('.pv-nav-section[data-section="unterricht"]');
+      const schule = nav.locator('.pv-nav-section[data-section="schule"]');
+      // Klassenarbeiten: in Schule, not in Unterricht; the page lies in Schule
+      await expect(unterricht.locator('a[href="/tests"]')).toHaveCount(0);
+      await expect(schule.locator('button.pv-nav-heading')).toHaveClass(/pv-here/);
+      await expect(unterricht.locator('button.pv-nav-heading')).not.toHaveClass(/pv-here/);
+      // Unterricht: the courses, as a panel to the right, level with its entry
+      const ubutton = unterricht.locator('button.pv-nav-heading');
+      await ubutton.click();
+      const ubody = unterricht.locator('.pv-nav-body');
+      await expect(ubody).toBeVisible();
+      await expect(ubody.locator('a.pv-nav-entry[href^="/lessons/"]').first()).toBeVisible();
+      const ub = (await ubody.boundingBox())!, uh = (await ubutton.boundingBox())!;
+      expect(ub.x).toBeGreaterThanOrEqual(side.width - 1);
+      expect(Math.abs(ub.y - uh.y)).toBeLessThan(20);
+      // one panel at a time
+      await schule.locator('button.pv-nav-heading').click();
+      await expect(ubody).toBeHidden();
+      const sbody = schule.locator('.pv-nav-body');
+      await expect(sbody.locator('a.pv-nav-entry[href="/tests"]')).toBeVisible();
+      await expect(sbody.locator('a.pv-nav-entry[href="/tests"]')).toHaveClass(/pv-active/);
+      const sb = (await sbody.boundingBox())!;
+      expect(sb.y + sb.height).toBeLessThanOrEqual(height);
+      // Lerngruppen closes it and opens its own menu to the right
+      await page.locator('#navbarDropdownKlassen').click();
+      await expect(sbody).toBeHidden();
+      const groups = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
+      await expect(groups).toBeVisible();
+      expect((await groups.boundingBox())!.x).toBeGreaterThanOrEqual(side.width - 1);
+      await page.keyboard.press('Escape');
+      await expect(groups).toBeHidden();
+      // Escape and a click elsewhere close a panel
+      await ubutton.click();
+      await expect(ubody).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(ubody).toBeHidden();
+      await ubutton.click();
+      await expect(ubody).toBeVisible();
+      await page.mouse.click(width - 40, height - 40);
+      await expect(ubody).toBeHidden();
+      // a link in the panel leads there
+      await ubutton.click();
+      await ubody.locator('a.pv-nav-entry[href^="/lessons/"]').first().click();
+      await expect(page).toHaveURL(/\/lessons\//);
+      await expect(nav.locator('.pv-nav-section[data-section="unterricht"] button.pv-nav-heading')).toHaveClass(/pv-here/);
+    } finally {
+      await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    }
+  });
+}
 
 // Profile pictures come from Nextcloud. The new design shows them larger and
 // on phones with three pixels per point: 64 px looked blurred, so it asks for

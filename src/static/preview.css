@@ -1953,81 +1953,6 @@ html {
     }
 }
 
-/* the sections in the rail: one icon each; a tap opens the section as a
-   panel beside the rail, like the menus (preview.js, rail_panel) */
-.ui-preview .navbar button.pv-nav-heading > .icon {
-    display: none;
-}
-
-@media (min-width: 768px) and (max-width: 1199px) {
-    .ui-preview .navbar .pv-nav-section {
-        margin-top: 2px !important;
-    }
-
-    .ui-preview .navbar .pv-nav-section:first-of-type {
-        margin-top: 10px !important;
-        padding-top: 8px;
-        border-top: 1px solid var(--pv-line);
-    }
-
-    .ui-preview .navbar button.pv-nav-heading {
-        justify-content: center;
-        padding: 10px 0;
-        border-radius: 10px;
-        color: var(--pv-ink);
-    }
-
-    .ui-preview .navbar button.pv-nav-heading > .label,
-    .ui-preview .navbar button.pv-nav-heading::after {
-        display: none;
-    }
-
-    .ui-preview .navbar button.pv-nav-heading > .icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        font-size: 18px;
-    }
-
-    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading {
-        background: var(--pv-hover);
-    }
-
-    .ui-preview .navbar .pv-nav-section > .pv-nav-body {
-        display: none !important;
-    }
-
-    .ui-preview .navbar .pv-nav-section.pv-rail-open > .pv-nav-body {
-        display: block !important;
-        position: fixed;
-        left: calc(var(--pv-sidebar) + 6px);
-        top: var(--pv-rail-top, 12px);
-        width: 272px;
-        max-height: calc(100vh - 24px);
-        overflow-y: auto;
-        padding: 6px;
-        background: var(--pv-surface);
-        border: 1px solid var(--pv-line);
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
-        z-index: 1055;
-    }
-
-    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-sub {
-        padding-left: 42px;
-    }
-
-    /* Lerngruppen in the panel: a normal entry, its menu beside the panel */
-    .ui-preview .navbar .pv-rail-open > .pv-nav-body .nav-item > .nav-link {
-        font-size: 0.95rem;
-        justify-content: flex-start;
-        padding: 7px 10px !important;
-        gap: 10px;
-    }
-}
-
 /* ---------- Kursbuch (lessons.html): the side pane ----------
    styles.css fixes the pane to the right with 25 % of the window, sized
    for today's top bar; next to the sidebar that is more than its column
@@ -3925,19 +3850,6 @@ body.ui-preview:has(.container-fluid.solid)::before {
     position: static;
 }
 
-.ui-preview .pv-nav-courses .pv-nav-extra {
-    display: none !important;
-}
-
-.ui-preview .pv-nav-courses.pv-nav-all .pv-nav-extra {
-    display: flex !important;
-}
-
-.ui-preview .navbar .pv-nav-more {
-    color: var(--acc-text) !important;
-    font-weight: 600;
-}
-
 /* Lerngruppen inside "Unterricht" */
 .ui-preview .pv-nav-section .nav-item {
     margin: 0 !important;
@@ -4014,9 +3926,6 @@ body.ui-preview:has(.container-fluid.solid)::before {
     transition: transform 0.15s;
 }
 
-.ui-preview .navbar button.pv-nav-heading[aria-expanded='true']::after {
-    transform: rotate(180deg);
-}
 
 .ui-preview .pv-nav-sub {
     padding: 8px 10px 2px 42px;
@@ -4044,8 +3953,7 @@ body.ui-preview:has(.container-fluid.solid)::before {
 
 /* the section headings: no focus frame after a click */
 .ui-preview .pv-nav-heading:focus:not(:focus-visible),
-.ui-preview .pv-more-groups:focus:not(:focus-visible),
-.ui-preview .pv-nav-more:focus:not(:focus-visible) {
+.ui-preview .pv-more-groups:focus:not(:focus-visible) {
     outline: none;
     box-shadow: none;
 }
@@ -6135,4 +6043,150 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .note-editor .note-btn-group.note-fontname,
 .ui-preview .note-editor .note-btn-group.note-fontsize {
     display: none !important;
+}
+
+/* ---------- The sidebar's sections (preview.js, regroup_navigation) ----------
+   Unterricht, Lerngruppen, Schule, Verwaltung: one entry each, like the
+   other entries; a click opens the section as a panel beside the sidebar
+   (in the tablet rail: only the icon). Phones show them as tiles in "Mehr". */
+@media (max-width: 767px) {
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        display: none;
+    }
+}
+
+@media (min-width: 768px) {
+    .ui-preview .navbar .pv-nav-section {
+        margin: 0 !important;
+    }
+
+    /* a line between the pages and the sections */
+    .ui-preview .navbar .navbar-nav > .pv-nav-first {
+        margin-top: 8px !important;
+        padding-top: 8px !important;
+        border-top: 1px solid var(--pv-line) !important;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 9px;
+        font: inherit;
+        line-height: 1.4;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--pv-ink);
+        white-space: nowrap;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        position: static;
+        display: flex;
+        align-items: center;
+        flex: none;
+        width: 22px;
+        height: 1.4em;
+        margin: 0;
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .navbar button.pv-nav-heading::after {
+        content: "\ea61";
+        align-self: flex-start;
+        margin-top: 0.17em;
+        font-size: 1.05em;
+        color: var(--pv-muted);
+        transition: none;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading::after {
+        color: var(--pv-ink);
+    }
+
+    /* the current page lies in the section */
+    .ui-preview .navbar button.pv-nav-heading.pv-here,
+    .ui-preview .navbar .nav-link.pv-here {
+        color: var(--acc-text) !important;
+        font-weight: 700;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading.pv-here > .icon,
+    .ui-preview .navbar .nav-link.pv-here .icon {
+        color: var(--acc-text);
+    }
+
+    .ui-preview .navbar .pv-nav-section > .pv-nav-body {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > .pv-nav-body {
+        display: block !important;
+        position: fixed;
+        left: calc(var(--pv-sidebar) + 6px);
+        top: var(--pv-rail-top, 12px);
+        width: 272px;
+        max-width: calc(100vw - var(--pv-sidebar) - 24px);
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
+        column-gap: 4px;
+        padding: 6px;
+        background: var(--pv-surface);
+        border: 1px solid var(--pv-line);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+        z-index: 1055;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body > *,
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-courses > * {
+        break-inside: avoid;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-sub {
+        padding-left: 42px;
+        break-after: avoid;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .dropdown-divider {
+        margin: 6px 12px;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .navbar .pv-more-lessons {
+        padding: 7px 10px;
+        border-radius: 9px;
+        font-size: 0.95rem;
+    }
+
+    .ui-preview .navbar .pv-more-lessons:hover {
+        background: var(--pv-hover);
+    }
+}
+
+/* the tablet rail: the sections as icons too */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .navbar button.pv-nav-heading {
+        justify-content: center;
+        padding: 10px 0;
+        border-radius: 10px;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .label,
+    .ui-preview .navbar button.pv-nav-heading::after {
+        display: none;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        font-size: 18px;
+    }
 }

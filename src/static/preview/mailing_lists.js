@@ -78,9 +78,10 @@
         }
     }
 
-    // the confirmation: a green check in place of the copy icon, drawn in a
-    // snap (preview/mailing_lists.css); screen readers hear the live region
-    var CHECK = "<svg class='pv-ml-done' viewBox='0 0 24 24' aria-hidden='true' focusable='false'><path pathLength='1' d='M5 12.5l4.5 4.5L19 7.5'/></svg>";
+    // the confirmation: a green Tabler check in place of the copy icon, with
+    // a quick pop (preview/mailing_lists.css); screen readers hear the live
+    // region
+    var CHECK = "<i class='pv-ml-done ti ti-check' aria-hidden='true'></i>";
     function check_mark() {
         var holder = document.createElement('span');
         holder.innerHTML = CHECK;

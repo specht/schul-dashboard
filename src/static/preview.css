@@ -319,19 +319,22 @@ html {
 
     /* menus open to the side: a chevron pointing there, at the right edge */
     .ui-preview .navbar .navbar-collapse .dropdown-toggle::after {
-        content: "";
+        content: "\ea61";
+        font-family: "tabler-icons" !important;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
         margin-left: auto;
-        width: 7px;
-        height: 7px;
-        border: solid var(--pv-muted);
-        border-width: 0 2px 2px 0;
-        transform: rotate(-45deg);
+        border: 0;
+        font-size: 1.05em;
+        color: var(--pv-muted);
         vertical-align: middle;
         flex: none;
     }
 
     .ui-preview .navbar .nav-item.dropdown.show > .dropdown-toggle::after {
-        border-color: var(--pv-ink);
+        color: var(--pv-ink);
     }
 
     .ui-preview .navbar .nav-link {
@@ -3470,13 +3473,15 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .pv-sheet-links a::after {
-    content: "";
+    content: "\ea61";
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
     flex: none;
-    width: 7px;
-    height: 7px;
-    border: solid var(--pv-muted);
-    border-width: 0 2px 2px 0;
-    transform: rotate(-45deg);
+    font-size: 1.05em;
+    color: var(--pv-muted);
 }
 
 .pv-sheet-links a.active {
@@ -3656,19 +3661,22 @@ body.ui-preview:has(.container-fluid.solid)::before {
 
     /* chevrons instead of the triangles; turned while the part is open */
     .ui-preview .navbar .navbar-collapse .dropdown-toggle::after {
-        content: "";
+        content: "\ea5f";
+        font-family: "tabler-icons" !important;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
         margin-left: auto;
-        width: 8px;
-        height: 8px;
-        border: solid var(--pv-muted);
-        border-width: 0 2px 2px 0;
-        transform: rotate(45deg);
+        border: 0;
+        font-size: 1.1em;
+        color: var(--pv-muted);
         transition: transform 0.15s;
         flex: none;
     }
 
     .ui-preview .navbar .navbar-collapse .nav-item.show > .dropdown-toggle::after {
-        transform: rotate(-135deg);
+        transform: rotate(180deg);
     }
 }
 
@@ -3685,18 +3693,19 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .ui-preview .pv-more-groups::after {
-    content: "";
+    content: "\ea5f";
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
     margin-left: auto;
-    width: 7px;
-    height: 7px;
-    border: solid currentColor;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    font-size: 1.05em;
     transition: transform 0.15s;
 }
 
 .ui-preview .pv-more-groups[aria-expanded='true']::after {
-    transform: rotate(-135deg);
+    transform: rotate(180deg);
 }
 
 /* "Mehr" on phones: only what the tab bar doesn't offer already
@@ -3827,11 +3836,12 @@ body.ui-preview:has(.container-fluid.solid)::before {
     line-height: 1.4;
 }
 
-/* the chevrons stay level with the first line too */
+/* the chevrons (Tabler, 1.05em in a 1.4 line) stay level with the first
+   line too */
 .ui-preview .pv-sheet-links a::after,
 .ui-preview .navbar .dropdown-toggle::after {
     align-self: flex-start;
-    margin-top: 0.45em;
+    margin-top: 0.17em;
 }
 
 /* foldable sections and their sub-groups */
@@ -3851,18 +3861,20 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .ui-preview .navbar button.pv-nav-heading::after {
-    content: "";
+    content: "\ea5f";
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
     margin-left: auto;
-    width: 7px;
-    height: 7px;
-    border: solid currentColor;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    font-size: 1.15em;
+    letter-spacing: 0;
     transition: transform 0.15s;
 }
 
 .ui-preview .navbar button.pv-nav-heading[aria-expanded='true']::after {
-    transform: rotate(-135deg);
+    transform: rotate(180deg);
 }
 
 .ui-preview .pv-nav-sub {
@@ -4705,13 +4717,16 @@ body.ui-preview:has(.container-fluid.solid)::before {
         grid-column: 2;
         grid-row: 1 / 3;
         align-self: center;
-        content: "";
-        width: 8px;
-        height: 8px;
-        margin: 0 6px 0 0;
-        border: solid var(--pv-muted);
-        border-width: 0 2px 2px 0;
-        transform: rotate(-45deg);
+        content: "\ea61";
+        font-family: "tabler-icons" !important;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        margin: 0 4px 0 0;
+        border: 0;
+        font-size: 1.1em;
+        color: var(--pv-muted);
     }
 
     /* other accounts: plain rows with a hairline, "wechseln" at the end */
@@ -4945,8 +4960,11 @@ body.ui-preview:has(.container-fluid.solid)::before {
     min-width: 36px;
     padding: 5px 8px;
     color: var(--pv-muted);
-    font-size: 0.72rem;
-    letter-spacing: 1px;
+}
+
+.ui-preview .pv-lmore > .ti {
+    font-size: 1.2rem;
+    vertical-align: middle;
 }
 
 .ui-preview .pv-lact:hover,
@@ -5070,22 +5088,17 @@ body.ui-preview:has(.container-fluid.solid)::before {
     font-variant-numeric: tabular-nums;
 }
 
-/* the fold chevron: drawn, pointing right when folded, down when open */
+/* the fold chevron (Tabler): pointing right when folded, down when open */
 .pv-lgroup-chev {
     flex: none;
     align-self: center;
-    width: 8px;
-    height: 8px;
-    margin: 0 4px 0 2px;
-    border: solid var(--pv-ink);
-    border-width: 0 2px 2px 0;
-    opacity: 0.7;
-    transform: rotate(-45deg);
+    color: var(--pv-muted);
+    font-size: 1.1rem;
     transition: transform 0.15s;
 }
 
 [aria-expanded='true'] > .pv-lgroup-chev {
-    transform: translateY(-2px) rotate(45deg);
+    transform: rotate(90deg);
 }
 
 /* phones: the whole heading is the button, the chevron at the right edge */
@@ -5274,11 +5287,10 @@ body.ui-preview:has(.container-fluid.solid)::before {
     .pv-lrow-chev {
         display: block;
         flex: none;
-        width: 12px;
         color: var(--pv-muted);
-        font-size: 1.35rem;
-        line-height: 21px;
-        text-align: right;
+        font-size: 1.15rem;
+        line-height: 1;
+        margin-top: 2px;
     }
 
     .pv-lrow-sub {

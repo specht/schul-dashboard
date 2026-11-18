@@ -683,7 +683,11 @@
 }
 
 .pv-messages-page .recipient .rm::after {
-    content: '×';
+    content: "\eb55";
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: normal;
+    -webkit-font-smoothing: antialiased;
     position: absolute;
     inset: 0;
     margin: 0;

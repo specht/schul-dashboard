@@ -226,7 +226,7 @@ Umfragen, Termine, News verwalten)
 - Reihenfolge in Fußzeilen: Löschen am Anfang, die Hauptaktion am Ende.
 - **Kopieren:** Was man oft kopiert (eine Verteileradresse), ist selbst ein
   leiser Knopf mit Kopier-Symbol; ein Klick kopiert, an Stelle des Symbols
-  erscheint kurz ein grüner Haken (schnell gezeichnet, gleich groß, damit
+  erscheint kurz ein grüner Haken (Tabler, springt kurz auf, gleich groß, damit
   nichts verrutscht; Screenreader hören »kopiert«). Kein Dialog, kein
   eigenes Eingabefeld.
 
@@ -287,6 +287,13 @@ Umfragen, Termine, News verwalten)
 - **Symbole:** Tabler Icons (selbst gehostet). Im neuen Design werden
   Fork-Awesome-Symbole im Browser ersetzt; neue Stellen schreiben gleich
   Tabler-Symbole. Ein Symbol neben Text ist leiser als der Text.
+- **Nur Tabler, keine eigenen Zeichen:** Pfeile, Haken, Kreuze und Menüpunkte
+  sind immer Tabler-Symbole (`ti-chevron-right`, `ti-chevron-down`,
+  `ti-check`, `ti-x`, `ti-dots`). Nie mit CSS gezeichnet (gedrehte Rahmen,
+  eigene SVG-Pfade) und nie Schriftzeichen als Symbol (»›«, »×«, »✓«,
+  »•••«, »▾«): sie sehen in jeder Schrift anders aus. Im CSS (`::after`)
+  geht ein Tabler-Symbol mit seinem Zeichencode und
+  `font-family: "tabler-icons"`. Aufgeklappt dreht sich der Pfeil.
 
 ## 12. Stundenplan
 

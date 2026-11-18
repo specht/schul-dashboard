@@ -133,7 +133,9 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   inside a button would yield the icon).
 - Stable selectors for tests: `bu_…` (buttons), `ti_…` (inputs), `…Modal`;
   add `data-testid` where needed.
-- The UI is German; students are addressed with "du".
+- The UI is German; the dashboard addresses everyone with "du" (students,
+  parents, teachers). Old texts saying "Sie" are adapted when a page comes
+  into the new design.
 - Pages must work with custom color schemes, in dark mode (`body.dark`) and
   on phones.
 

@@ -764,6 +764,62 @@
         };
     })();
     window.pv_back = pv_back;
+
+    // Light and dark in place (no reload): the mode's class and stylesheet,
+    // the colours from the server (they differ per mode), the menu entry
+    // turning into the other one (Hell / Dunkel). Pages that bake colours
+    // into what they draw listen to "pv-colours-changed" (the timetable).
+    // The old design keeps reloading (_template.html).
+    function apply_dark(dark) {
+        document.body.classList.toggle('dark', dark);
+        var nav = document.querySelector('nav.navbar');
+        if (nav) {
+            nav.classList.toggle('navbar-dark', dark);
+            nav.classList.toggle('navbar-light', !dark);
+        }
+        var sheet = document.querySelector('link[href="/dark.css"]');
+        if (dark && !sheet) {
+            sheet = document.createElement('link');
+            sheet.rel = 'stylesheet';
+            sheet.href = '/dark.css';
+            document.head.appendChild(sheet);
+        }
+        if (!dark && sheet) sheet.remove();
+        document.querySelectorAll('.nav-dark, .nav-light').forEach(function(b) {
+            b.classList.toggle('nav-dark', !dark);
+            b.classList.toggle('nav-light', dark);
+            var i = b.querySelector('.icon i');
+            if (i) i.className = dark ? 'fa fa-sun-o' : 'fa fa-moon';
+            var label = b.querySelector('.label');
+            if (label) label.textContent = dark ? 'Hell' : 'Dunkel';
+        });
+        if (!window.color_scheme) return;
+        fetch('/api/design_tokens?scheme=' + encodeURIComponent(window.color_scheme), { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.tokens) return;
+                var tokens = document.getElementById('design_tokens');
+                var backdrop = document.getElementById('design_backdrop');
+                if (tokens) tokens.textContent = data.tokens;
+                if (backdrop) backdrop.textContent = data.backdrop;
+                var meta = document.querySelector('meta[name=theme-color]');
+                if (meta) meta.setAttribute('content', data.theme_color);
+                document.dispatchEvent(new CustomEvent('pv-colours-changed', { detail: { dark: dark } }));
+            });
+    }
+    window.pv_apply_dark = apply_dark;
+    // the menu entry: before _template.html's handler, which reloads
+    document.addEventListener('click', function(e) {
+        if (!document.body.classList.contains('ui-preview') || !e.target.closest) return;
+        var b = e.target.closest('.nav-dark, .nav-light');
+        if (!b || !window.api_call) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var dark = b.classList.contains('nav-dark');
+        api_call('/api/set_dark_css', { mode: dark ? 'dark' : 'light' }, function(data) {
+            if (data.success) apply_dark(dark);
+        });
+    }, true);
     function back_closes_layers() {
         if (!window.jQuery) return;
         var $ = window.jQuery;

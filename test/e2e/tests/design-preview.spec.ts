@@ -28,7 +28,7 @@ test('Neues Design: Admin schaltet die Vorschau ein, gibt Feedback, schaltet sie
   await page.locator('#bu_profile_design_feedback').click();
   const dialog = page.locator('#designFeedbackModal');
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator('#ti_design_feedback')).toHaveAttribute('placeholder', /Ihnen/);
+  await expect(dialog.locator('#ti_design_feedback')).toHaveAttribute('placeholder', /gefällt dir/);
   // nothing is sent without text
   await dialog.locator('#bu_send_design_feedback').click();
   await expect(dialog.locator('.design-feedback-thanks')).toBeHidden();
@@ -319,6 +319,26 @@ test('Neues Design: Profilbilder in 128 px', async ({ page }) => {
     await page.goto('/profil');
     expect(await avatar.getAttribute('style')).toMatch(/\/index\.php\/avatar\/[^/)]+\/128\)/);
   } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// A scheme outside the curated set stays one's own scheme of three colours;
+// the profile says so and names the closest scheme of the set.
+test('Neues Design: eigenes Farbschema bleibt, mit Hinweis im Profil', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.goto('/profil');
+  const before = await page.evaluate(() => (window as any).color_scheme as string);
+  try {
+    await page.request.post('/api/set_color_scheme', { data: { scheme: 'l1122334455667788990' } });
+    await page.goto('/profil');
+    const note = page.locator('.pv-scheme-note');
+    await expect(note).toContainText('Dein eigenes Farbschema besteht aus drei Farben, du kannst sie unten anpassen.');
+    await expect(note).toContainText('Ähnlich in der Auswahl:');
+    await expect(note).not.toContainText('gehört nicht');
+  } finally {
+    await page.request.post('/api/set_color_scheme', { data: { scheme: before } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
@@ -928,6 +948,95 @@ test('Neues Design: hell und dunkel im Profil ohne Neuladen', async ({ page }, t
     expect(loads).toBe(0);
   } finally {
     await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// »Dunkel« / »Hell« in the menu (desktop: the own menu, phones: a tile in
+// »Mehr«) switches in place too: colours from the server, the entry turns
+// into the other one, the timetable draws its lessons again in the new
+// colours. The old design still loads the page again.
+test('Neues Design: hell und dunkel aus dem Menü ohne Neuladen', async ({ page }, testInfo) => {
+  const phone = testInfo.project.name === 'mobile';
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+  const open = async () => {
+    if (phone) {
+      if (!(await page.locator('#navbarTogglerDemo02.show').count())) await page.locator('#bu_pv_more').click();
+    } else if (!(await page.locator('[aria-labelledby="navbarDropdownProfile"].show').count())) {
+      await page.locator('#navbarDropdownProfile').click();
+    }
+  };
+  try {
+    await page.goto('/');
+    await page.waitForLoadState('load');
+    let loads = 0;
+    page.on('load', () => loads++);
+    const tokens = () => page.locator('#design_tokens').evaluate((el) => el.textContent);
+    const before = await tokens();
+    await open();
+    await page.locator('.nav-dark').click();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+    await expect.poll(tokens).not.toBe(before);
+    await expect(page.locator('link[href="/dark.css"]')).toHaveCount(1);
+    await open();
+    await expect(page.locator('.nav-light .label')).toHaveText('Hell');
+    await expect(page.locator('.nav-dark')).toHaveCount(0);
+    await page.locator('.nav-light').click();
+    await expect(page.locator('body')).not.toHaveClass(/\bdark\b/);
+    await expect.poll(tokens).toBe(before);
+    await expect(page.locator('link[href="/dark.css"]')).toHaveCount(0);
+    expect(loads).toBe(0);
+    // stored: a reload keeps it
+    await open();
+    await page.locator('.nav-dark').click();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+    await page.reload();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// One's own scheme: three colours to select, the Cling palette (as in the
+// Hackschule sprite editor) and HSL sliders for the selected one, in view at
+// once – no system colour dialog.
+test('Neues Design: eigenes Farbschema mit Palette und HSL-Reglern', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.goto('/profil');
+  const before = await page.evaluate(() => (window as any).color_scheme as string);
+  try {
+    const own = page.locator('.pv-scheme-own');
+    await expect(own.locator('input[type="color"]')).toHaveCount(0);
+    await expect(own.locator('.pv-cling-colour')).toHaveCount(42);
+    await expect(own.locator('.pv-cling-colour').first()).toBeVisible();
+    await expect(own.locator('#ti_hsl_h')).toBeVisible();
+    // the middle one is selected at first; select the left one
+    await expect(own.locator('.pv-scheme-slot[data-slot="main"]')).toHaveAttribute('aria-checked', 'true');
+    await own.locator('.pv-scheme-slot[data-slot="left"]').click();
+    await expect(own.locator('.pv-scheme-slot[data-slot="left"]')).toHaveAttribute('aria-checked', 'true');
+    // a colour of the palette
+    await own.locator('.pv-cling-colour[data-hex="#4aa03f"]').click();
+    await expect(own.locator('#ti_scheme_left')).toHaveValue('#4aa03f');
+    await expect(own.locator('.pv-cling-colour[data-hex="#4aa03f"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(own.locator('#ti_scheme_hex')).toHaveValue('#4aa03f');
+    expect(await own.locator('.pv-scheme-slot[data-slot="left"] .pv-scheme-chip').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(74, 160, 63)');
+    // the sliders follow it and change it
+    expect(Number(await own.locator('#ti_hsl_h').inputValue())).toBeGreaterThan(100);
+    await own.locator('#ti_hsl_h').fill('0');
+    expect(await own.locator('#ti_scheme_left').inputValue()).not.toBe('#4aa03f');
+    await expect(own.locator('.pv-cling-colour[data-hex="#4aa03f"]')).toHaveAttribute('aria-pressed', 'false');
+    // a code typed in
+    await own.locator('#ti_scheme_hex').fill('#0d60ae');
+    await expect(own.locator('#ti_scheme_left')).toHaveValue('#0d60ae');
+    // saved: the page's scheme starts with the three colours
+    await own.locator('#bu_apply_own_scheme').click();
+    await expect.poll(() => page.evaluate(() => (window as any).color_scheme as string)).toMatch(/^[ld]0d60ae/);
+  } finally {
+    await page.request.post('/api/set_color_scheme', { data: { scheme: before } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

@@ -111,7 +111,7 @@
                 if (upcoming.length === 0) {
                     var p = document.createElement('p');
                     p.className = 'pv-lempty';
-                    p.textContent = 'Keine anstehenden Termine. Mit »Neuer Termin« laden Sie zu einem ein.';
+                    p.textContent = 'Keine anstehenden Termine. Mit »Neuer Termin« lädst du zu einem ein.';
                     body.appendChild(p);
                     return;
                 }

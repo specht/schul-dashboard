@@ -483,7 +483,7 @@
             return { poll: poll, runs: runs, last: last, active: active, year: pv_list.school_year(last || moment().format('YYYY-MM-DD')) };
         });
         if (items.length === 0) {
-            $('<p>').addClass('pv-lempty').text('Noch keine Umfragen. Mit »Neue Umfrage« legen Sie die erste an.').appendTo(root);
+            $('<p>').addClass('pv-lempty').text('Noch keine Umfragen. Mit »Neue Umfrage« legst du die erste an.').appendTo(root);
             return;
         }
         let by_last = function (a, b) { return a.last < b.last ? 1 : a.last > b.last ? -1 : 0; };

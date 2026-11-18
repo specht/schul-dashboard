@@ -1424,7 +1424,7 @@ class Main < Sinatra::Base
             end
             {:label => section[:label], :open => mine.include?(section[:klasse]), :lists => lists}
         end.reject { |section| section[:lists].empty? }
-        data = {:sections => sections, :recipients => mailing_list_recipients_visible?, :du => schueler_logged_in?}
+        data = {:sections => sections, :recipients => mailing_list_recipients_visible?}
         "<script>var pv_mailing_lists = #{data.to_json.gsub('</', '<\\/')};</script>\n" +
         "<script src='#{preview_asset('/preview/mailing_lists.js')}'></script>"
     end

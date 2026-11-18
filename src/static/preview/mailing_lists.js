@@ -192,10 +192,8 @@
     mount.parentNode.insertBefore(root, mount.nextSibling);
     mount.hidden = true;
     var intro = el('p', 'pv-ml-intro', data.recipients
-        ? (data.du ? 'Alle E-Mail-Verteiler, die du verwenden kannst, und wer darüber erreicht wird.'
-                   : 'Alle E-Mail-Verteiler, die Sie verwenden können, und wer darüber erreicht wird.')
-        : (data.du ? 'Alle E-Mail-Verteiler, die du verwenden kannst, und wie viele Adressen darüber erreicht werden.'
-                   : 'Alle E-Mail-Verteiler, die Sie verwenden können, und wie viele Adressen darüber erreicht werden.'));
+        ? 'Alle E-Mail-Verteiler, die du verwenden kannst, und wer darüber erreicht wird.'
+        : 'Alle E-Mail-Verteiler, die du verwenden kannst, und wie viele Adressen darüber erreicht werden.');
     root.appendChild(intro);
 
     var search_box = el('div', 'pv-ml-search');

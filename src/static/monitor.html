@@ -723,6 +723,9 @@
                 window.location.reload();
             } else if (data.command == 'update_time') {
                 server_time_diff = data.time - js_time();
+            } else if (data.command == 'monitor_effekte_neu') {
+                // Test auf den echten Monitoren gestartet oder beendet
+                if (window.MonitorEffekte) MonitorEffekte.neuAbfragen();
             } else if (data.command == 'monitor_effekte_vorschau') {
                 // nur Fenster im Folgen-Modus (?effekt=folgen) reagieren darauf
                 if (window.MonitorEffekte) MonitorEffekte.vorschauNachricht(data.effekt || '');

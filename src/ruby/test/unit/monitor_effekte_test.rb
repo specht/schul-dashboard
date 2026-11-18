@@ -22,7 +22,8 @@ class MonitorEffekteTest < Minitest::Test
     end
 
     def test_only_strong_weather_gets_an_effect
-        assert_nil MonitorEffekte.wetter(daten(warnung('SCHNEEFALL', 2)), '111000000', JETZT)
+        # Schnee schon ab gelb (Wunsch Jonas 18.11.)
+        assert_equal 'schnee', MonitorEffekte.wetter(daten(warnung('SCHNEEFALL', 2)), '111000000', JETZT)[:effekt]
         assert_nil MonitorEffekte.wetter(daten(warnung('GEWITTER', 2)), '111000000', JETZT)
         assert_nil MonitorEffekte.wetter(daten(warnung('STURMBÖEN', 3)), '111000000', JETZT)
         assert_nil MonitorEffekte.wetter(daten(warnung('SCHWERE STURMBÖEN', 3)), '111000000', JETZT)
@@ -32,7 +33,11 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal 'regen', MonitorEffekte.wetter(daten(warnung('STARKREGEN', 3)), '111000000', JETZT)[:effekt]
         assert_equal 'gewitter', MonitorEffekte.wetter(daten(warnung('STARKES GEWITTER', 3)), '111000000', JETZT)[:effekt]
         assert_equal 'sturm', MonitorEffekte.wetter(daten(warnung('ORKANARTIGE BÖEN', 4)), '111000000', JETZT)[:effekt]
-        assert_equal 'frost', MonitorEffekte.wetter(daten(warnung('GLATTEIS', 4)), '111000000', JETZT)[:effekt]
+        assert_equal 'glatteis', MonitorEffekte.wetter(daten(warnung('GLATTEIS', 4)), '111000000', JETZT)[:effekt]
+        assert_equal 'frost', MonitorEffekte.wetter(daten(warnung('STRENGER FROST', 3)), '111000000', JETZT)[:effekt]
+        assert_nil MonitorEffekte.wetter(daten(warnung('FROST', 2)), '111000000', JETZT)
+        # die DWD-Stufe geht mit (Schnee: Streufahrzeug ab orange, Pistenraupen ab rot)
+        assert_equal 4, MonitorEffekte.wetter(daten(warnung('STARKER SCHNEEFALL', 4)), '111000000', JETZT)[:stufe]
         assert_equal 'hitze', MonitorEffekte.wetter(daten(warnung('STARKE HITZE', 10)), '111000000', JETZT)[:effekt]
     end
 
@@ -71,7 +76,7 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal 'hitze', MonitorEffekte.wetter(daten(warnung('EXTREME HITZE', 11)), '111000000', JETZT, regeln)[:effekt]
         # unbekannte Stufe → Standard (orange)
         assert_equal 3, regeln['frost'][:ab]
-        assert_equal({:an => true, :ab => 3}, MonitorEffekte.regeln({})['schnee'])
+        assert_equal({:an => true, :ab => 2}, MonitorEffekte.regeln({})['schnee'])
     end
 
     def test_warning_list_for_the_admin_page
@@ -160,8 +165,10 @@ class MonitorEffekteTest < Minitest::Test
         art = ->(ereignis) { MonitorEffekte.effekt_art('event' => ereignis) }
         %w(STARKREGEN DAUERREGEN).each { |e| assert_equal 'regen', art.call(e) }
         assert_equal 'regen', art.call('EXTREM ERGIEBIGER DAUERREGEN')
-        assert_equal 'frost', art.call('GEFRIERENDER REGEN')
-        assert_equal 'frost', art.call('GLATTEIS')
+        assert_equal 'glatteis', art.call('GEFRIERENDER REGEN')
+        assert_equal 'glatteis', art.call('GLATTEIS')
+        assert_equal 'glatteis', art.call('GLÄTTE')
+        assert_equal 'frost', art.call('STRENGER FROST')
         assert_equal 'schnee', art.call('SCHNEEREGEN')
         %w(ORKANBÖEN STURMBÖEN WINDBÖEN STARKWIND).each { |e| assert_equal 'sturm', art.call(e) }
         assert_equal 'sturm', art.call('EXTREME ORKANBÖEN')
@@ -184,6 +191,13 @@ class MonitorEffekteTest < Minitest::Test
         assert_nil MonitorEffekte.schultermin(Date.new(2027, 6, 17), drei)
         assert_equal [nil, {:fest => 'adventskonzert', :nah => true}, 'wetter'],
                      MonitorEffekte.vorrang({:effekt => 'schnee', :staerke => 2}, {:fest => 'adventskonzert', :nah => true})
+    end
+
+    def test_test_on_real_monitors
+        assert_equal [{:effekt => 'sturm', :staerke => 2, :titel => 'Test', :bis => nil}, nil], MonitorEffekte.test_soll('sturm')
+        assert_equal true, MonitorEffekte.test_soll('gewitter')[0][:zeus]
+        assert_equal [nil, {:fest => 'nikolaus', :nah => true}], MonitorEffekte.test_soll('nikolaus')
+        assert_equal [nil, nil], MonitorEffekte.test_soll('rundgang')
     end
 
     def test_easter_sunday

@@ -49,6 +49,35 @@
             <div style='clear: both;'></div>
             <hr />
             <h3>Monitore im Schulhaus</h3>
+            <p class='small mb-2'><span class='badge badge-danger'>LIVE</span>&nbsp; So sieht es gerade auf den Monitoren im Schulhaus aus.</p>
+            <div class='monitor-frame mb-3'>
+                <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item if_monitor_flur" src="/monitor"></iframe>
+                </div>
+            </div>
+            <hr />
+            <h3>Monitor im Sekretariat</h3>
+            <div class='monitor-frame'>
+                <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="/monitor/sek"></iframe>
+                </div>
+            </div>
+            <hr />
+            <h3>Monitor im Lehrerzimmer</h3>
+            <div class='monitor-frame'>
+                <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="/monitor/lz"></iframe>
+                </div>
+            </div>
+            <hr />
+            <h3>Monitor im Silentium</h3>
+            <div class='monitor-frame'>
+                <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="/monitor/silentium"></iframe>
+                </div>
+            </div>
+            <hr />
+            <h3>Wetter- und Festeffekte im Schulhaus</h3>
             <div class='custom-control custom-switch mb-2 mt-3' style='font-size: 1.15em;'>
                 <input type='checkbox' class='custom-control-input ti_monitor_effekte' id='ti_monitor_effekte' disabled>
                 <label class='custom-control-label' for='ti_monitor_effekte'><b>Wetter- und Festeffekte auf diesen Monitoren</b></label>
@@ -57,7 +86,7 @@
             oder glüht es auf den Monitoren im Schulhaus – ab welcher Stufe, lässt sich unten je Effekt einstellen. Dazu kommen besondere Tage:
             Advent mit Lichterkette, Nikolaus, ab dem 16. Dezember der Weihnachtsmann, Ostern, Valentinstag, Fasching, der letzte Schultag vor und
             der erste nach den Sommerferien sowie eigene Schultermine. Einzelne besondere Tage gehen dem Wetter vor, bei Advent und Ostern hat das
-            Wetter Vorrang. Regen, Schnee und Hitze entwickeln sich über den Schultag (7:30–14:00 Uhr), in der Vorschau im Zeitraffer. Die
+            Wetter Vorrang. Regen, Schnee und Hitze entwickeln sich über den Schultag (7:30–14:00 Uhr), in der Vorschau im Zeitraffer; Frost ist gleich voll da. Die
             Schrift auf den Kacheln und das Schriftband unten bleiben immer lesbar. Die Monitore im Sekretariat, Lehrerzimmer und Silentium
             bleiben ohne Effekte.</p>
             <p class='fx-status' data-testid='monitor-effekte-status'>Lade Stand …</p>
@@ -87,14 +116,20 @@
             <h5 class='mt-3'>Wetterwarnungen des DWD für unser Warngebiet</h5>
             <div class='fx-warnungen' data-testid='monitor-effekte-warnungen'></div>
             <p class='text-muted small fx-abgerufen'></p>
+            <div class='alert alert-warning py-2 fx-test-laeuft' data-testid='monitor-effekt-test' style='display: none;'>
+                <b>Test im Schulhaus:</b> <span class='fx-test-name'></span> läuft gerade auf allen Flur-Monitoren –
+                noch <span class='fx-test-rest'></span>, danach zeigen sie wieder den echten Stand.
+                <button class='btn btn-sm btn-outline-dark ml-2 bu_fx_test_beenden'>Test beenden</button>
+            </div>
             <div class='mb-2'>
-                <span class='mr-2'>Vorschau im Monitor unten:</span>
+                <span class='mr-2'>Vorschau eines Effekts:</span>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='schnee'>Schnee</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='regen'>Starkregen</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='gewitter'>Gewitter</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='hitze'>Hitze</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='sturm'>Sturm</button>
-                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='frost'>Glatteis</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='glatteis'>Glatteis</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='frost'>Frost</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='weihnachten'>Weihnachten</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='nikolaus'>Nikolaus</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='ostern'>Ostern</button>
@@ -105,34 +140,15 @@
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='adventskonzert'>Adventskonzert</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='forschertag'>Forschertag</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='rundgang'>Alle nacheinander</button>
-                <button class='btn btn-sm btn-outline-secondary mr-1 mb-1 bu_monitor_effekt_vorschau active' data-effekt=''>Wie jetzt</button>
+                <button class='btn btn-sm btn-outline-secondary mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='' style='display: none;'>Vorschau schließen</button>
             </div>
-            <p class='small mb-2'>Großes Fenster: <a href='/monitor?effekt=folgen' target='_blank' class='bu_monitor_effekte_folgen'>Flur-Monitor, der dieser Vorschau folgt</a>
-            – zeigt immer den hier gewählten Effekt („Wie jetzt“ = echter Stand). Die echten Monitore im Schulhaus reagieren nicht darauf.</p>
-            <div class='monitor-frame'>
-                <div class="embed-responsive embed-responsive-16by9">
-                    <iframe class="embed-responsive-item if_monitor_flur" src="/monitor"></iframe>
-                </div>
-            </div>
-            <hr />
-            <h3>Monitor im Sekretariat</h3>
-            <div class='monitor-frame'>
-                <div class="embed-responsive embed-responsive-16by9">
-                    <iframe class="embed-responsive-item" src="/monitor/sek"></iframe>
-                </div>
-            </div>
-            <hr />
-            <h3>Monitor im Lehrerzimmer</h3>
-            <div class='monitor-frame'>
-                <div class="embed-responsive embed-responsive-16by9">
-                    <iframe class="embed-responsive-item" src="/monitor/lz"></iframe>
-                </div>
-            </div>
-            <hr />
-            <h3>Monitor im Silentium</h3>
-            <div class='monitor-frame'>
-                <div class="embed-responsive embed-responsive-16by9">
-                    <iframe class="embed-responsive-item" src="/monitor/silentium"></iframe>
+            <div class='fx-vorschau' data-testid='monitor-effekt-vorschau' style='display: none;'>
+                <p class='small mb-2'><span class='badge badge-secondary'>VORSCHAU</span>&nbsp; <b class='fx-vorschau-name'></b> – nur hier zu sehen, die Monitore im Schulhaus bleiben unverändert.
+                <button class='btn btn-sm btn-warning ml-2 bu_fx_test_starten'><i class='fa fa-desktop'></i>&nbsp;&nbsp;Im Schulhaus zeigen (5&nbsp;Min.)</button></p>
+                <div class='monitor-frame'>
+                    <div class="embed-responsive embed-responsive-16by9">
+                        <iframe class="embed-responsive-item if_monitor_vorschau"></iframe>
+                    </div>
                 </div>
             </div>
         </div>
@@ -159,12 +175,13 @@
         });
         // was bei welcher Meldung auf den Monitoren zu sehen ist
         const FX_EFFEKT_NAME = {
-            schnee: 'Schnee – über den Tag wächst ein Schneeberg, auf dem ab und zu ein Schlitten rodelt',
+            schnee: 'Schnee – über den Tag wächst ein Schneeberg; etwa alle 90 Sekunden fährt darüber bei gelb ein Schlitten, bei orange ein Streufahrzeug, ab rot Pistenraupen',
             regen: 'Regen – das Wasser steigt über den Tag, eine Entenfamilie schwimmt vorbei, ab Stufe rot auch ein Forschungs-U-Boot',
             gewitter: 'Gewitter mit Blitzen – Zeus wirft alle 1–2 Minuten seinen Blitz, dann bebt alles und bekommt für 30 Sekunden Risse',
             hitze: 'Hitze – Sonne, die Kacheln schmelzen über den Tag, ab und zu fährt der Eiswagen vorbei',
             sturm: 'Sturm – die Kacheln hängen an Zeltleinen und zerren in den Böen, leere Kacheln fliegen weg, der Schülertrupp bringt sie zurück',
-            frost: 'Glatteis – Eiszapfen und Eisblumen, ab und zu gleiten Eisläufer vorbei',
+            glatteis: 'Glatteis – Eiszapfen und Eisblumen, ab und zu gleiten Eisläufer vorbei',
+            frost: 'Frost – Raureif am Rand, leere Kacheln frieren zu, Eisstaub glitzert, alle 3–4 Minuten stapft ein frierendes Kind mit Atemwolken vorbei',
         };
         function fx_zeit(ms) {
             return moment(ms).calendar(null, {sameDay: '[heute,] HH:mm [Uhr]', nextDay: '[morgen,] HH:mm [Uhr]', lastDay: '[gestern,] HH:mm [Uhr]', nextWeek: 'dddd, HH:mm [Uhr]', lastWeek: 'dd, D.M., HH:mm [Uhr]', sameElse: 'dd, D.M., HH:mm [Uhr]'});
@@ -203,7 +220,7 @@
             }
             $('.fx-abgerufen').text(d.abgerufen ? `Zuletzt beim DWD abgerufen: ${fx_zeit(d.abgerufen)}. Quelle: Deutscher Wetterdienst. Nur der Schulserver fragt dort an, alle zehn Minuten.` : '');
         }
-        const FX_REGEL_NAME = {schnee: 'Schnee', regen: 'Regen', gewitter: 'Gewitter', hitze: 'Hitze (mit Eiswagen)', sturm: 'Sturm', frost: 'Glatteis und Frost'};
+        const FX_REGEL_NAME = {schnee: 'Schnee', regen: 'Regen', gewitter: 'Gewitter', hitze: 'Hitze (mit Eiswagen)', sturm: 'Sturm', glatteis: 'Glatteis', frost: 'Frost'};
         const FX_STUFEN = {2: 'gelb', 3: 'orange', 4: 'rot', 5: 'violett', 10: 'starke Hitze', 11: 'extreme Hitze'};
         let fx_regeln_gebaut = false;
         function effekte_regeln_zeigen(d) {
@@ -211,7 +228,7 @@
             let tbody = $('.fx-regeln tbody');
             if (!fx_regeln_gebaut) {
                 tbody.empty();
-                for (let effekt of ['schnee', 'regen', 'gewitter', 'sturm', 'frost', 'hitze']) {
+                for (let effekt of ['schnee', 'regen', 'gewitter', 'sturm', 'glatteis', 'frost', 'hitze']) {
                     let tr = $('<tr>').attr('data-effekt', effekt).appendTo(tbody);
                     $('<td>').append($('<b>').text(FX_REGEL_NAME[effekt])).appendTo(tr);
                     let sw = $(`<div class='custom-control custom-switch'>`);
@@ -329,9 +346,36 @@
             const knopf = $(e.currentTarget).prop('disabled', true);
             api_call('/api/delete_monitor_schultermin', {id: knopf.data('id')}, function(data) { effekte_stand_laden(); });
         });
+        // Test auf den echten Monitoren: Hinweis mit Restzeit
+        let fx_test_bis = null;
+        function fx_test_zeigen(test) {
+            fx_test_bis = test ? Date.now() + test.rest_ms : null;
+            if (test) $('.fx-test-name').text($(`.bu_monitor_effekt_vorschau[data-effekt="${test.effekt}"]`).first().text() || test.effekt);
+            fx_test_uhr();
+        }
+        function fx_test_uhr() {
+            let rest = fx_test_bis ? Math.round((fx_test_bis - Date.now()) / 1000) : 0;
+            if (rest <= 0) { fx_test_bis = null; $('.fx-test-laeuft').hide(); return; }
+            $('.fx-test-rest').text(`${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, '0')} Min.`);
+            $('.fx-test-laeuft').show();
+        }
+        setInterval(fx_test_uhr, 1000);
+        $('.bu_fx_test_starten').on('click', function(e) {
+            let effekt = $('.bu_monitor_effekt_vorschau.active').data('effekt');
+            if (!effekt) return;
+            api_call('/api/monitor_effekte_test', {effekt: effekt}, function(data) {
+                if (data.success) effekte_stand_laden();
+            });
+        });
+        $('.bu_fx_test_beenden').on('click', function(e) {
+            api_call('/api/monitor_effekte_test', {effekt: ''}, function(data) {
+                fx_test_zeigen(null);
+                effekte_stand_laden();
+            });
+        });
         function effekte_stand_laden() {
             fetch('/api/monitor_effekte', {credentials: 'same-origin', cache: 'no-store'})
-                .then((r) => r.json()).then(effekte_stand_zeigen)
+                .then((r) => r.json()).then((d) => { fx_test_zeigen(d.test || null); effekte_stand_zeigen(d); })
                 .catch(() => $('.fx-status').text('Der Stand der Effekte ließ sich nicht laden.'));
         }
         effekte_stand_laden();
@@ -344,9 +388,20 @@
         });
         $('.bu_monitor_effekt_vorschau').on('click', function(e) {
             let effekt = $(e.currentTarget).data('effekt');
-            $('.if_monitor_flur').attr('src', effekt ? `/monitor?effekt=${effekt}` : '/monitor');
             $('.bu_monitor_effekt_vorschau').removeClass('active');
-            $(e.currentTarget).addClass('active');
+            if (effekt) {
+                $(e.currentTarget).addClass('active');
+                $('.if_monitor_vorschau').attr('src', `/monitor?effekt=${effekt}`);
+                $('.fx-vorschau-name').text($(e.currentTarget).text());
+                $('.fx-vorschau').show();
+                $('.bu_fx_test_starten').toggle(effekt !== 'rundgang');
+                $('.bu_monitor_effekt_vorschau[data-effekt=""]').show();
+            } else {
+                // Vorschau schließen: das Fenster verschwindet, das Live-Bild oben bleibt
+                $('.if_monitor_vorschau').attr('src', 'about:blank');
+                $('.fx-vorschau').hide();
+                $(e.currentTarget).hide();
+            }
             // große Vorschaufenster (/monitor…?effekt=folgen) zeigen dasselbe
             api_call('/api/monitor_effekte_vorschau', {effekt: effekt || ''}, function(data) {});
         });

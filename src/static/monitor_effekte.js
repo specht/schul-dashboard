@@ -17,7 +17,7 @@
     'use strict';
 
     const NS = 'http://www.w3.org/2000/svg';
-    const WETTER = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'frost'];
+    const WETTER = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost'];
     const FESTE = ['weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang', 'adventskonzert', 'forschertag'];
     const ABFRAGE_ALLE_MS = 10 * 60 * 1000;
     const RUNDGANG_MS = 40 * 1000;
@@ -81,6 +81,23 @@
     .ticker { z-index: 62; }
     canvas.fx-vorne-ebene { z-index: 59; }
     .fx-deko { position: absolute; pointer-events: none; display: block; overflow: visible; }
+    /* Strenger Frost: dick eingepacktes Kind; Schnee: Streufahrzeug und Pistenraupen */
+    .fx-frierkind { position: absolute; left: 0; top: 0; width: 4.2vw; will-change: transform; overflow: visible; filter: drop-shadow(0 .15vw .2vw rgba(0,0,0,.3)); }
+    .fx-frierkind .fx-wb-bein { transform-box: fill-box; transform-origin: 50% 5%; }
+    .fx-frierkind.fx-geht .fx-wb-a { animation: fx-gehen-a .5s ease-in-out infinite; }
+    .fx-frierkind.fx-geht .fx-wb-b { animation: fx-gehen-b .5s ease-in-out infinite; }
+    .fx-frierkind .fx-fk-haende { transform-box: fill-box; transform-origin: 50% 50%; }
+    .fx-frierkind.fx-reibt .fx-fk-haende { animation: fx-reiben .14s ease-in-out infinite alternate; }
+    .fx-frierkind.fx-reibt .fx-fk-koerper { animation: fx-bibbern .07s linear infinite alternate; }
+    @keyframes fx-reiben { from { transform: translateX(-1.6px) rotate(-6deg); } to { transform: translateX(1.6px) rotate(6deg); } }
+    @keyframes fx-bibbern { from { transform: translateX(-.6px); } to { transform: translateX(.6px); } }
+    .fx-fahrzeug { position: absolute; left: 0; top: 0; will-change: transform; overflow: visible; filter: drop-shadow(0 .15vw .2vw rgba(40,60,90,.35)); }
+    .fx-fahrzeug .fx-rundumleuchte { animation: fx-blinken .5s steps(2) infinite; }
+    @keyframes fx-blinken { 50% { opacity: .25; } }
+    .fx-fahrzeug .fx-kette { animation: fx-kette .35s linear infinite; }
+    @keyframes fx-kette { to { stroke-dashoffset: -8; } }
+    .fx-fahrzeug .fx-streuteller { transform-box: fill-box; transform-origin: 50% 50%; animation: fx-teller .2s linear infinite; }
+    @keyframes fx-teller { 50% { transform: scaleX(.15); } }
     .fx-wachsen { transform-origin: 50% 100%; transform: scaleY(0.15); transition-property: transform; transition-timing-function: cubic-bezier(.2,.7,.3,1); }
     .fx-wachsen.fx-hangend { transform-origin: 50% 0%; }
     .fx-wachsen.fx-gewachsen { transform: scaleY(1); }
@@ -237,7 +254,7 @@
     .fx-flugzeug .fx-banner { transform-box: fill-box; transform-origin: 100% 50%; animation: fx-banner .7s ease-in-out infinite alternate; }
     @keyframes fx-banner { from { transform: skewY(-1.2deg) scaleY(.98); } to { transform: skewY(1.2deg) scaleY(1.02); } }
 
-    /* Weihnachten: Geschenke hinter den Kacheln */
+    /* Weihnachten: Geschenke vor den Kacheln (wo keine Schrift ist) oder halb dahinter */
     .fx-geschenk { position: absolute; left: 0; top: 0; width: 2.2vw; will-change: transform; transition: opacity 2s; }
     .fx-geschenk svg { display: block; width: 100%; height: auto; overflow: visible; animation: fx-ei-auftauchen .8s cubic-bezier(.3,1.6,.5,1) both; transform-origin: 50% 90%; }
 
@@ -531,7 +548,58 @@
         </svg>`;
     }
 
-    function Schnee(staerke) {
+    // Streufahrzeug des Winterdiensts (orange, ohne Aufschrift): Streuer-Aufbau mit
+    // Streuteller hinten, Fahrerhaus mit Rundumleuchte, gelber Räumschild vorne.
+    // viewBox 110 × 56, Boden bei y = 54, fährt nach rechts.
+    function streuwagenSvg() {
+        return `<svg class="fx-fahrzeug" viewBox="0 0 110 56" xmlns="${NS}">
+            <rect x="4" y="40" width="96" height="6" rx="2" fill="#3b3b46"/>
+            <path d="M14,14 L58,14 L55,8 L17,8 Z" fill="#7d6a55"/>
+            <path d="M18,10 C26,7 38,8 46,7 C50,7 54,8 55,9" stroke="#a8957a" stroke-width="1.6" fill="none"/>
+            <rect x="8" y="14" width="54" height="26" rx="3" fill="#f08a24" stroke="#b35d10" stroke-width="1.4"/>
+            <rect x="8" y="31" width="54" height="3" fill="#ffffff" opacity=".85"/>
+            <path d="M12,18 L58,18" stroke="#c96b14" stroke-width="1"/>
+            <rect x="1" y="35" width="9" height="6" rx="1.5" fill="#4d5560"/>
+            <ellipse class="fx-streuteller" cx="5" cy="44" rx="5" ry="1.4" fill="#2b2b2b"/>
+            <path d="M64,40 L64,12 Q64,8 68,8 L84,8 Q88,8 90,13 L97,26 L99,40 Z" fill="#f08a24" stroke="#b35d10" stroke-width="1.4"/>
+            <path d="M68,12 L84,12 L91,26 L68,26 Z" fill="#bfe3f7" stroke="#5a6470" stroke-width="1"/>
+            <circle cx="78" cy="20" r="3.6" fill="#f2c9a8"/>
+            <path d="M74.3,19 C74.5,14.8 81.5,14.8 81.7,19 Z" fill="#f08a24"/>
+            <rect x="64" y="31" width="35" height="3" fill="#ffffff" opacity=".85"/>
+            <rect class="fx-rundumleuchte" x="72" y="3" width="9" height="5" rx="2" fill="#ffb300"/>
+            <path d="M99,28 L109,34 L109,53 L100,51 Z" fill="#f2c14e" stroke="#a8842a" stroke-width="1.2"/>
+            <path d="M101,33 L108,39 M101,40 L108,46 M101,47 L105,50" stroke="#2b2b2b" stroke-width="2"/>
+            ${[24, 44, 82].map((x) => `<circle cx="${x}" cy="47" r="7" fill="#222"/><circle cx="${x}" cy="47" r="2.8" fill="#9aa0a8"/>`).join('')}
+        </svg>`;
+    }
+
+    // Pistenraupe (rot): Kettenlaufwerk, Kabine mit Rundumleuchte, Räumschild vorne,
+    // Fräse mit Finisher hinten. viewBox 110 × 56, Boden bei y = 54, fährt nach rechts.
+    function pistenraupeSvg() {
+        return `<svg class="fx-fahrzeug" viewBox="0 0 110 56" xmlns="${NS}">
+            <path d="M15,42 L3,44 L0,52 L13,54 Z" fill="#6b7078" stroke="#4d5560" stroke-width="1"/>
+            <path d="M1,53 L13,54" stroke="#d8dde3" stroke-width="1.4" stroke-dasharray="1.2 1"/>
+            <rect x="12" y="37" width="74" height="17" rx="8.5" fill="#2b2b2b"/>
+            <rect class="fx-kette" x="13" y="38" width="72" height="15" rx="7.5" fill="none" stroke="#5a5a62" stroke-width="2.2" stroke-dasharray="3 5"/>
+            ${[22, 36, 50, 64, 76].map((x) => `<circle cx="${x}" cy="45.5" r="4.6" fill="#4a4a52" stroke="#2b2b2b" stroke-width="1"/>`).join('')}
+            <path d="M18,38 L21,21 Q22,17 27,17 L64,17 Q70,17 74,23 L83,38 Z" fill="#d6303c" stroke="#8f1f27" stroke-width="1.4"/>
+            <path d="M27,21 L63,21 Q67,21 70,25 L74,32 L27,32 Z" fill="#bfe3f7" stroke="#5a6470" stroke-width="1"/>
+            <path d="M45,21 L45,32" stroke="#5a6470" stroke-width="1.4"/>
+            <circle cx="58" cy="27" r="3.4" fill="#f2c9a8"/>
+            <path d="M54.6,26 C54.8,22 61.2,22 61.4,26 Z" fill="#2f6fb3"/>
+            <rect x="18" y="34" width="65" height="2.6" fill="#ffffff" opacity=".8"/>
+            <rect class="fx-rundumleuchte" x="40" y="11" width="9" height="6" rx="2" fill="#ffb300"/>
+            <path d="M84,30 L90,30 L90,44 L84,44 Z" fill="#4d5560"/>
+            <path d="M90,24 L101,20 L106,30 L104,53 L92,53 L90,40 Z" fill="#c9ccd1" stroke="#6b7078" stroke-width="1.2"/>
+            <path d="M93,26 L103,23" stroke="#ffffff" stroke-width="1.2" opacity=".8"/>
+        </svg>`;
+    }
+
+    // Schnee: Über den Schneeberg fährt etwa alle 90 Sekunden genau eine Sorte, je
+    // nach DWD-Stufe (stufe): gelb ein Schlitten, orange ein Streufahrzeug, rot
+    // Pistenraupen (zwei, bei violett drei). Ohne Stufe (Vorschau, Test) wechseln
+    // sich Schlitten, Streufahrzeug und Pistenraupen ab.
+    function Schnee(staerke, _zeus, stufe) {
         const anzahl = [0, 180, 270, 380][staerke] || 270;
         const flocken = [];
         const nah = [];
@@ -556,9 +624,85 @@
         // Schneeberg: wächst von 7:30 Uhr unten bis 14:00 Uhr auf drei Viertel
         let t0 = null, berg = 0, bergGesetzt = false;
         const huegel = [0, 1, 2].map(() => ({f: zufall(0.7, 1.6), p: zufall(0, 6.28), a: zufall(0.5, 1.1)}));
-        // alle 60–90 Sekunden rodelt ein Kind über den Schneeberg
-        let rodel = null, rodelNaechster = vorschau ? 2 : zufall(20, 60);
+        // Schlitten bzw. Winterdienst: einer nach dem anderen, etwa alle 90 Sekunden
+        let rodel = null, naechster = vorschau ? 2 : zufall(20, 60), gastNr = 0;
         const staub = [];
+        let fahrzeuge = [];
+        const spuren = [];
+        function gastArt() {
+            if (stufe === null || stufe === undefined) return ['rodel', 'streuer', 'raupe'][gastNr++ % 3];
+            if (stufe >= 4) return 'raupe';
+            if (stufe === 3) return 'streuer';
+            return 'rodel';
+        }
+        function fahrzeugStarten(art) {
+            const richtung = Math.random() < 0.5 ? 1 : -1;
+            const n = art === 'raupe' ? (stufe >= 5 ? 3 : 2) : 1;
+            const b = art === 'raupe' ? 10 : 11;
+            for (let i = 0; i < n; i++) {
+                const el = svgAusText(art === 'raupe' ? pistenraupeSvg() : streuwagenSvg());
+                el.style.width = `${b}vw`;
+                domV.appendChild(el);
+                const x = richtung > 0 ? -b * VW * 0.6 - i * 14 * VW : W + b * VW * 0.6 + i * 14 * VW;
+                const spur = {art: art, von: x, bis: x, ende: null};
+                spuren.push(spur);
+                fahrzeuge.push({el: el, art: art, richtung: richtung, x: x, b: b, v: (art === 'raupe' ? 4.6 : 6.5) * VW, spur: spur});
+            }
+        }
+        function fahrzeugSchritt(f, dt) {
+            const bw = f.b * VW, bh = bw * 56 / 110;
+            const steigung = (bergHoehe(f.x + VW) - bergHoehe(f.x - VW)) / (2 * VW);
+            f.x += f.richtung * f.v * (1 - Math.max(-0.25, Math.min(0.25, f.richtung * -steigung))) * dt;
+            const y = bergHoehe(f.x) - bh * 54 / 56 + 0.25 * VW;
+            const w = Math.atan(steigung) * 180 / Math.PI;
+            f.el.style.transform = `translate(${(f.x - bw / 2).toFixed(1)}px, ${y.toFixed(1)}px) rotate(${w.toFixed(1)}deg)${f.richtung < 0 ? ' scale(-1, 1)' : ''}`;
+            // Spur hinter dem Fahrzeug
+            const hinten = f.x - f.richtung * bw * 0.45;
+            if (f.richtung > 0) f.spur.bis = Math.max(f.spur.bis, hinten); else f.spur.bis = Math.min(f.spur.bis, hinten);
+            const boden = bergHoehe(hinten);
+            if (f.art === 'streuer') {
+                // Streugut fliegt fächerförmig nach hinten
+                if (Math.random() < dt * 45) staub.push({x: hinten, y: boden - 1.2 * VW, vx: -f.richtung * zufall(3, 9) * VW, vy: -zufall(0.5, 3) * VW,
+                    r: zufall(0.08, 0.16) * VW, alter: 0, farbe: auswahl(['#8a7356', '#a8957a', '#6e5d48', '#c9bfb2'])});
+            } else if (Math.random() < dt * 25) {
+                // Pulverschnee hinter der Fräse
+                staub.push({x: hinten, y: boden - 0.3 * VW, vx: -f.richtung * zufall(1, 3) * VW, vy: -zufall(1, 2.5) * VW, r: zufall(0.15, 0.32) * VW, alter: 0});
+            }
+            // vorne schiebt der Räumschild Schnee zur Seite
+            const vorne = f.x + f.richtung * bw * 0.48;
+            if (Math.random() < dt * 22) staub.push({x: vorne, y: bergHoehe(vorne) - 0.5 * VW, vx: f.richtung * zufall(2, 5) * VW, vy: -zufall(2, 4.5) * VW, r: zufall(0.14, 0.3) * VW, alter: 0});
+            const raus = (f.richtung > 0 && f.x - bw / 2 > W + VW) || (f.richtung < 0 && f.x + bw / 2 < -VW);
+            if (raus) { f.el.remove(); f.spur.ende = performance.now() / 1000; }
+            return !raus;
+        }
+        // Streugut-Spur bzw. Rillen der Pistenraupe auf dem Berg, verblassen langsam
+        function spurenZeichnen() {
+            const jetzt = performance.now() / 1000;
+            const haltbar = dauer(60, 14);
+            for (let i = spuren.length - 1; i >= 0; i--) {
+                const sp = spuren[i];
+                const alter = sp.ende ? jetzt - sp.ende : 0;
+                if (alter > haltbar) { spuren.splice(i, 1); continue; }
+                const a = 1 - alter / haltbar;
+                const x0 = Math.max(0, Math.min(sp.von, sp.bis)), x1 = Math.min(W, Math.max(sp.von, sp.bis));
+                if (sp.art === 'streuer') {
+                    cxH.fillStyle = `rgba(125,104,80,${(0.55 * a).toFixed(3)})`;
+                    for (let x = x0; x < x1; x += 0.28 * VW) {
+                        const r = ((x * 7.3) % 1.7);
+                        cxH.fillRect(x + r, bergHoehe(x) + 0.15 * VW + r * 0.25 * VW, 0.12 * VW, 0.12 * VW);
+                    }
+                } else {
+                    cxH.strokeStyle = `rgba(140,168,205,${(0.55 * a).toFixed(3)})`;
+                    cxH.lineWidth = 0.08 * VW;
+                    cxH.beginPath();
+                    for (let x = x0; x < x1; x += 0.35 * VW) {
+                        const y = bergHoehe(x);
+                        cxH.moveTo(x, y + 0.2 * VW); cxH.lineTo(x, y + 1.0 * VW);
+                    }
+                    cxH.stroke();
+                }
+            }
+        }
         // gelandete Flocken bleiben kurz auf der Bergkante liegen und verschmelzen dann mit ihr
         const gelandet = [];
         function landen(x, y, r, z) {
@@ -590,7 +734,7 @@
             if ((r.richtung > 0 && links > W + VW) || (r.richtung < 0 && links < -bw - VW)) { r.el.remove(); rodel = null; }
         }
         return {
-            stop() { clearInterval(hauben); dekoEntfernen(); uhrWeg(); if (rodel) { rodel.el.remove(); rodel = null; } },
+            stop() { clearInterval(hauben); dekoEntfernen(); uhrWeg(); if (rodel) { rodel.el.remove(); rodel = null; } for (const f of fahrzeuge) f.el.remove(); fahrzeuge = []; },
             schritt(dt, t) {
                 if (t0 === null) t0 = t;
                 const zielBerg = Math.max(0.03, tagAnteil(t0, t) * FLUT_MAX);
@@ -690,22 +834,31 @@
                     cxV.drawImage(bokeh, f.x - s, f.y - s, 2 * s, 2 * s);
                 }
                 cxV.globalAlpha = 1;
-                // Rodelschlitten, sobald der Berg hoch genug ist
-                rodelNaechster -= dt;
-                if (!rodel && rodelNaechster <= 0 && berg > 0.08) {
-                    const el = svgAusText(rodelSvg());
-                    domV.appendChild(el);
-                    const richtung = Math.random() < 0.5 ? 1 : -1;
-                    rodel = {el: el, richtung: richtung, x: richtung > 0 ? -4 * VW : W + 4 * VW, v: 9 * VW};
-                    rodelNaechster = dauer(zufall(60, 90), 12);
+                // Schlitten oder Winterdienst, sobald der Berg hoch genug ist – immer nur einer
+                naechster -= dt;
+                spurenZeichnen();
+                if (!rodel && !fahrzeuge.length && naechster <= 0 && berg > 0.08) {
+                    const art = gastArt();
+                    if (art === 'rodel') {
+                        const el = svgAusText(rodelSvg());
+                        domV.appendChild(el);
+                        const richtung = Math.random() < 0.5 ? 1 : -1;
+                        rodel = {el: el, richtung: richtung, x: richtung > 0 ? -4 * VW : W + 4 * VW, v: 9 * VW};
+                    } else {
+                        fahrzeugStarten(art);
+                    }
+                    naechster = dauer(zufall(80, 100), 14);
                 }
+                if (fahrzeuge.length) fahrzeuge = fahrzeuge.filter((f) => fahrzeugSchritt(f, dt));
                 if (rodel) rodelSchritt(dt, t);
-                cxV.fillStyle = '#ffffff';
                 for (let i = staub.length - 1; i >= 0; i--) {
                     const p = staub[i];
                     p.alter += dt;
                     if (p.alter > 0.9) { staub.splice(i, 1); continue; }
                     p.vy += 9 * VW * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+                    // Streugut bleibt auf dem Berg liegen
+                    if (p.farbe && p.y > bergHoehe(p.x)) { staub.splice(i, 1); continue; }
+                    cxV.fillStyle = p.farbe || '#ffffff';
                     cxV.globalAlpha = 0.9 * (1 - p.alter / 0.9);
                     cxV.beginPath(); cxV.arc(p.x, p.y, p.r, 0, 6.283); cxV.fill();
                 }
@@ -1995,6 +2148,173 @@
     }
 
     // ==================================================================
+    // Kind mit Teleskopleiter (Sturm: Heringe festschlagen, Frost: Kacheln enteisen).
+    // p ist der Punkt, an dem der Hammer arbeitet; die Leiter lehnt knapp darunter.
+
+    const KIND_B = 5;                                    // Breite des Hammerkinds in vw (Höhe · 2)
+    const SPROSSE = 1.5, SPROSSE_ERSTE = 0.75;           // vw, entlang der Leiter
+    const glatt = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+
+    // Leiter am Hering p: Spitze knapp unter dem Hering, Fuß etwas weiter rechts.
+    // Das Kind steht rechts der Leiter (Blick nach links); seine Hüfte bleibt
+    // 1,2 vw rechts vom Holm, die Füße stehen auf den Sprossen.
+    function leiterGeometrie(p) {
+        const boden = LAUF_BODEN - 0.2 * VW;
+        const kh = KIND_B * 2 * VW;
+        const lehne = 0.14 * (boden - p[1] - 1.0 * VW);
+        // ganz rechts am Rand lehnt die Leiter spiegelverkehrt, das Kind steht dann links
+        const seite = p[0] + 0.5 * VW + lehne + 4 * VW > W ? -1 : 1;
+        const spitze = [p[0] + 0.5 * VW * seite, p[1] + 1.0 * VW];
+        const fuss = [spitze[0] + lehne * seite, boden];
+        const laenge = Math.hypot(fuss[0] - spitze[0], fuss[1] - spitze[1]);
+        const winkel = Math.atan2(boden - spitze[1], spitze[0] - fuss[0]) * 180 / Math.PI;
+        const ux = (spitze[0] - fuss[0]) / laenge, uy = (spitze[1] - fuss[1]) / laenge;
+        const holmX = (y) => fuss[0] + (spitze[0] - fuss[0]) * (boden - y) / Math.max(1, boden - spitze[1]);
+        const sprosse = (i) => [fuss[0] + ux * (SPROSSE_ERSTE + i * SPROSSE) * VW, fuss[1] + uy * (SPROSSE_ERSTE + i * SPROSSE) * VW];
+        const anzahl = Math.max(0, Math.floor((laenge - 0.3 * VW - SPROSSE_ERSTE * VW) / (SPROSSE * VW)) + 1);
+        const huefteX = (y) => holmX(y) + 1.2 * VW * seite;
+        const stehY = boden - 3.2 * VW;          // Hüfte im Stehen (wie die gezeichneten Beine)
+        const g = {boden, kh, seite, spitze, fuss, laenge, winkel, holmX, sprosse, anzahl, huefteX, stehY};
+        // oben: der Hammerkopf (25 % der Kindhöhe) ist auf Höhe des Herings
+        g.huefteOben = p[1] + (0.68 - 0.25) * kh;
+        g.braucht = g.huefteOben < stehY - 0.5 * VW;   // ganz unten geht es ohne Leiter
+        g.stufen = 0;
+        if (g.braucht) while (g.stufen < anzahl && huefteNach(g, g.stufen) > g.huefteOben) g.stufen++;
+        return g;
+    }
+    // auf welcher Sprosse steht Fuß a bzw. b nach n Schritten (-1 = Boden)?
+    // Fuß a steigt bei den Schritten 1, 3, 5 …, Fuß b bei 2, 4, 6 …; jeder Fuß
+    // nimmt dabei die übernächste Sprosse, die Hüfte steigt je Schritt eine Sprosse.
+    function fussIndex(seite, n) {
+        if (seite === 'a') return n < 1 ? -1 : (n % 2 ? n : n - 1) - 1;
+        return n < 2 ? -1 : (n % 2 ? n - 1 : n) - 1;
+    }
+    // Knöchel auf der Sprosse: der Fußballen steht auf der Sprosse
+    function fussOrt(g, i, seite) {
+        if (i < 0) return [g.huefteX(g.stehY) + (seite === 'a' ? -0.1 : 0.1) * VW * g.seite, g.boden - 0.7 * VW];
+        const sp = g.sprosse(i);
+        return [sp[0] + 0.3 * VW * g.seite, sp[1] - 0.36 * VW];
+    }
+    function huefteNach(g, n) {
+        const unten = Math.max(fussOrt(g, fussIndex('a', n), 'a')[1], fussOrt(g, fussIndex('b', n), 'b')[1]);
+        return Math.min(g.stehY, unten - 2.35 * VW);
+    }
+    function kletterPose(g, c) {
+        if (g.stufen === 0) return {hy: g.stehY, fa: fussOrt(g, -1, 'a'), fb: fussOrt(g, -1, 'b')};
+        c = Math.max(0, Math.min(g.stufen, c));
+        const j = Math.min(g.stufen, Math.floor(c) + 1);
+        const u = c - (j - 1);
+        const bewegt = j % 2 ? 'a' : 'b';
+        const pose = {};
+        for (const seite of ['a', 'b']) {
+            const von = fussOrt(g, fussIndex(seite, j - 1), seite);
+            if (seite !== bewegt) { pose['f' + seite] = von; continue; }
+            // Fuß lösen, im Bogen etwas von der Leiter weg und auf die nächste Sprosse setzen
+            const nach = fussOrt(g, fussIndex(seite, j), seite);
+            const uf = glatt(u / 0.6);
+            const bogen = Math.sin(uf * Math.PI);
+            pose['f' + seite] = [von[0] + (nach[0] - von[0]) * uf + bogen * 0.45 * VW, von[1] + (nach[1] - von[1]) * uf - bogen * 0.35 * VW];
+        }
+        // erst steht der Fuß, dann drückt sich das Kind hoch
+        const h0 = huefteNach(g, j - 1), h1 = huefteNach(g, j);
+        pose.hy = h0 + (h1 - h0) * glatt((u - 0.3) / 0.7);
+        return pose;
+    }
+    function rutschDauer(g) {
+        const h = g.stehY - huefteNach(g, g.stufen);
+        return Math.max(0.45, Math.min(1.1, Math.sqrt(2 * h / (90 * VW)) + 0.15));
+    }
+    // Herunterrutschen: Füße außen an den Holmen, Hand am Holm, schneller werdend
+    function rutschPose(g, u) {
+        const oben = huefteNach(g, g.stufen);
+        const hy = oben + (g.stehY - oben) * u * u;
+        const m = glatt((u - 0.7) / 0.3);
+        const pose = {hy: hy};
+        for (const [seite, ab] of [['a', 2.05], ['b', 2.3]]) {
+            const y = Math.min(hy + ab * VW, g.boden - 0.7 * VW);
+            const amHolm = [g.holmX(y) + 0.35 * VW * g.seite, y];
+            const steh = fussOrt(g, -1, seite);
+            pose['f' + seite] = [amHolm[0] + (steh[0] - amHolm[0]) * m, amHolm[1] + (steh[1] - amHolm[1]) * m];
+        }
+        const hyHand = hy - 3.1 * VW;
+        pose.hand = [g.holmX(hyHand) + 0.15 * VW * g.seite, hyHand];
+        return pose;
+    }
+    // die freie Hand greift die höchste Sprosse, die sie gut erreicht
+    function griffOrt(g, hy) {
+        const schulter = hy - 1.95 * VW;
+        let i = 0;
+        while (i + 1 < g.anzahl && g.sprosse(i + 1)[1] >= schulter - 1.5 * VW) i++;
+        const sp = g.sprosse(i);
+        return [sp[0] + 0.15 * VW * g.seite, sp[1]];
+    }
+    function standX(g, p) {
+        return g.braucht ? g.huefteX(g.stehY) - 2.5 * VW : p[0] - KIND_B * VW * 0.18;
+    }
+    // Teleskopleiter: Fuß (x, y), Länge, Winkel (0 = waagerecht nach rechts, 90 = senkrecht)
+    function leiterMalen(x, y, laenge, winkel, breite) {
+        const w = winkel * Math.PI / 180;
+        const dx = Math.cos(w), dy = -Math.sin(w);
+        const b = (breite === undefined ? 0.32 : breite) * VW;
+        const nx = -dy * b, ny = dx * b;
+        const ueber = 0.16 * VW;   // Sprossen stehen in der Seitenansicht etwas über
+        cxV.lineCap = 'round';
+        cxV.strokeStyle = 'rgba(70,78,88,.95)';
+        cxV.lineWidth = 0.22 * VW;
+        cxV.beginPath();
+        cxV.moveTo(x - nx, y - ny); cxV.lineTo(x - nx + dx * laenge, y - ny + dy * laenge);
+        cxV.moveTo(x + nx, y + ny); cxV.lineTo(x + nx + dx * laenge, y + ny + dy * laenge);
+        cxV.stroke();
+        cxV.strokeStyle = 'rgba(190,200,210,1)';
+        cxV.lineWidth = 0.1 * VW;
+        cxV.stroke();
+        cxV.strokeStyle = 'rgba(120,130,140,1)';
+        cxV.lineWidth = 0.12 * VW;
+        cxV.beginPath();
+        const ux = -dy, uy = dx;
+        for (let d = SPROSSE_ERSTE * VW; d < laenge - 0.2 * VW; d += SPROSSE * VW) {
+            cxV.moveTo(x - nx - ux * ueber + dx * d, y - ny - uy * ueber + dy * d);
+            cxV.lineTo(x + nx + ux * ueber + dx * d, y + ny + uy * ueber + dy * d);
+        }
+        cxV.stroke();
+    }
+    // zweigliedriges Glied (Hüfte–Knie–Knöchel, Schulter–Ellbogen–Hand), in SVG-Einheiten
+    function ik2(hx, hy, ax, ay, a, b, waehle) {
+        let dx = ax - hx, dy = ay - hy;
+        let d = Math.hypot(dx, dy);
+        const max = a + b - 0.01;
+        if (d > max) { ax = hx + dx / d * max; ay = hy + dy / d * max; d = max; }
+        d = Math.max(d, Math.abs(a - b) + 0.01);
+        const w = Math.atan2(ay - hy, ax - hx);
+        const alpha = Math.acos(Math.max(-1, Math.min(1, (a * a + d * d - b * b) / (2 * a * d))));
+        const k1 = [hx + Math.cos(w + alpha) * a, hy + Math.sin(w + alpha) * a];
+        const k2 = [hx + Math.cos(w - alpha) * a, hy + Math.sin(w - alpha) * a];
+        return [waehle(k1, k2), [ax, ay]];
+    }
+    // Kind in Kletterhaltung: Hüfte (Welt), Knöchel a/b und Hand (Welt) → SVG
+    function kindPose(tr, hx, hy, fa, fb, hand, spiegel) {
+        const e = 0.1 * VW;                       // eine SVG-Einheit in px
+        const fx = hx - 2.5 * VW, fy = hy - 6.8 * VW;
+        const lokal = (pt) => { const lx = (pt[0] - fx) / e; return [spiegel ? 50 - lx : lx, (pt[1] - fy) / e]; };
+        const zahl = (v) => v.toFixed(1);
+        for (const [seite, f, dx] of [['a', fa, -1], ['b', fb, 1]]) {
+            const [ax, ay] = lokal(f);
+            // das Knie zeigt nach vorn zur Leiter (nach links)
+            const [knie, k] = ik2(25 + dx, 68, ax, ay, 12.5, 12.5, (k1, k2) => (k1[0] <= k2[0] ? k1 : k2));
+            const g = tr.ik[seite];
+            g.hose.setAttribute('d', `M${25 + dx},68 L${zahl(knie[0])},${zahl(knie[1])} L${zahl(k[0])},${zahl(k[1])}`);
+            const [x, y] = k;
+            g.schuh.setAttribute('d', `M${zahl(x - 5)},${zahl(y - 1)} L${zahl(x + 2.6)},${zahl(y - 1)} L${zahl(x + 2.6)},${zahl(y + 3)} L${zahl(x - 5.5)},${zahl(y + 3)} Q${zahl(x - 6.5)},${zahl(y + 1)} ${zahl(x - 5)},${zahl(y - 1)} Z`);
+        }
+        const [hx2, hy2] = lokal(hand);
+        // der Ellbogen hängt nach unten
+        const [ell, h] = ik2(25.5, 48.5, hx2, hy2, 10, 10, (k1, k2) => (k1[1] >= k2[1] ? k1 : k2));
+        tr.ik.arm.setAttribute('d', `M25.5,48.5 L${zahl(ell[0])},${zahl(ell[1])} L${zahl(h[0])},${zahl(h[1])}`);
+        tr.ik.hand.setAttribute('cx', zahl(h[0]));
+        tr.ik.hand.setAttribute('cy', zahl(h[1]));
+        return [fx, fy];
+    }
+    // ==================================================================
     // STURM: Die Kacheln sind mit Zeltleinen an Heringen festgespannt. Meist
     // ist es ruhig; ab und zu kommt eine Böe von links, dann zerren die Kacheln,
     // als wollten sie wegfliegen, die Leinen spannen sich, und ein Schwall
@@ -2069,111 +2389,14 @@
         // der Schülertrupp kommt bei Orange alle 60–80 s, bei Rot und Violett alle 40–55 s
         const truppAbstand = () => dauer(staerke >= 2 ? zufall(40, 55) : zufall(60, 80), zufall(10, 15));
         let truppAb = null;
-        const TRAEGER_B = 10.5, KIND_B = 5;   // Breite in vw; Höhe = Breite · 100/105 bzw. · 2
+        const TRAEGER_B = 10.5;   // Breite in vw; Höhe = Breite · 100/105 (Kind: KIND_B, oben)
         // Ein Einsatz dauert höchstens etwa 22 Sekunden (Jonas: 15 s war zu hektisch): der Trupp kommt
         // von der näheren Seite und läuft zügig; das Hammerkind steigt flink hoch, rutscht
         // an den Holmen herunter und schiebt die Leiter zum zweiten Hering. Je höher die
         // Kachel hängt, desto flinker steigt es.
         const EINSATZ_MAX = 31, LAUF = 12, SCHIEBEN = 8.8;   // s, vw/s, vw/s (19.11.: 20 % ruhiger; +5 s Seilarbeit)
-        const SPROSSE = 1.5, SPROSSE_ERSTE = 0.75;           // vw, entlang der Leiter
         const glatt = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
 
-        // Leiter am Hering p: Spitze knapp unter dem Hering, Fuß etwas weiter rechts.
-        // Das Kind steht rechts der Leiter (Blick nach links); seine Hüfte bleibt
-        // 1,2 vw rechts vom Holm, die Füße stehen auf den Sprossen.
-        function leiterGeometrie(p) {
-            const boden = LAUF_BODEN - 0.2 * VW;
-            const kh = KIND_B * 2 * VW;
-            const lehne = 0.14 * (boden - p[1] - 1.0 * VW);
-            // ganz rechts am Rand lehnt die Leiter spiegelverkehrt, das Kind steht dann links
-            const seite = p[0] + 0.5 * VW + lehne + 4 * VW > W ? -1 : 1;
-            const spitze = [p[0] + 0.5 * VW * seite, p[1] + 1.0 * VW];
-            const fuss = [spitze[0] + lehne * seite, boden];
-            const laenge = Math.hypot(fuss[0] - spitze[0], fuss[1] - spitze[1]);
-            const winkel = Math.atan2(boden - spitze[1], spitze[0] - fuss[0]) * 180 / Math.PI;
-            const ux = (spitze[0] - fuss[0]) / laenge, uy = (spitze[1] - fuss[1]) / laenge;
-            const holmX = (y) => fuss[0] + (spitze[0] - fuss[0]) * (boden - y) / Math.max(1, boden - spitze[1]);
-            const sprosse = (i) => [fuss[0] + ux * (SPROSSE_ERSTE + i * SPROSSE) * VW, fuss[1] + uy * (SPROSSE_ERSTE + i * SPROSSE) * VW];
-            const anzahl = Math.max(0, Math.floor((laenge - 0.3 * VW - SPROSSE_ERSTE * VW) / (SPROSSE * VW)) + 1);
-            const huefteX = (y) => holmX(y) + 1.2 * VW * seite;
-            const stehY = boden - 3.2 * VW;          // Hüfte im Stehen (wie die gezeichneten Beine)
-            const g = {boden, kh, seite, spitze, fuss, laenge, winkel, holmX, sprosse, anzahl, huefteX, stehY};
-            // oben: der Hammerkopf (25 % der Kindhöhe) ist auf Höhe des Herings
-            g.huefteOben = p[1] + (0.68 - 0.25) * kh;
-            g.braucht = g.huefteOben < stehY - 0.5 * VW;   // ganz unten geht es ohne Leiter
-            g.stufen = 0;
-            if (g.braucht) while (g.stufen < anzahl && huefteNach(g, g.stufen) > g.huefteOben) g.stufen++;
-            return g;
-        }
-        // auf welcher Sprosse steht Fuß a bzw. b nach n Schritten (-1 = Boden)?
-        // Fuß a steigt bei den Schritten 1, 3, 5 …, Fuß b bei 2, 4, 6 …; jeder Fuß
-        // nimmt dabei die übernächste Sprosse, die Hüfte steigt je Schritt eine Sprosse.
-        function fussIndex(seite, n) {
-            if (seite === 'a') return n < 1 ? -1 : (n % 2 ? n : n - 1) - 1;
-            return n < 2 ? -1 : (n % 2 ? n - 1 : n) - 1;
-        }
-        // Knöchel auf der Sprosse: der Fußballen steht auf der Sprosse
-        function fussOrt(g, i, seite) {
-            if (i < 0) return [g.huefteX(g.stehY) + (seite === 'a' ? -0.1 : 0.1) * VW * g.seite, g.boden - 0.7 * VW];
-            const sp = g.sprosse(i);
-            return [sp[0] + 0.3 * VW * g.seite, sp[1] - 0.36 * VW];
-        }
-        function huefteNach(g, n) {
-            const unten = Math.max(fussOrt(g, fussIndex('a', n), 'a')[1], fussOrt(g, fussIndex('b', n), 'b')[1]);
-            return Math.min(g.stehY, unten - 2.35 * VW);
-        }
-        function kletterPose(g, c) {
-            if (g.stufen === 0) return {hy: g.stehY, fa: fussOrt(g, -1, 'a'), fb: fussOrt(g, -1, 'b')};
-            c = Math.max(0, Math.min(g.stufen, c));
-            const j = Math.min(g.stufen, Math.floor(c) + 1);
-            const u = c - (j - 1);
-            const bewegt = j % 2 ? 'a' : 'b';
-            const pose = {};
-            for (const seite of ['a', 'b']) {
-                const von = fussOrt(g, fussIndex(seite, j - 1), seite);
-                if (seite !== bewegt) { pose['f' + seite] = von; continue; }
-                // Fuß lösen, im Bogen etwas von der Leiter weg und auf die nächste Sprosse setzen
-                const nach = fussOrt(g, fussIndex(seite, j), seite);
-                const uf = glatt(u / 0.6);
-                const bogen = Math.sin(uf * Math.PI);
-                pose['f' + seite] = [von[0] + (nach[0] - von[0]) * uf + bogen * 0.45 * VW, von[1] + (nach[1] - von[1]) * uf - bogen * 0.35 * VW];
-            }
-            // erst steht der Fuß, dann drückt sich das Kind hoch
-            const h0 = huefteNach(g, j - 1), h1 = huefteNach(g, j);
-            pose.hy = h0 + (h1 - h0) * glatt((u - 0.3) / 0.7);
-            return pose;
-        }
-        function rutschDauer(g) {
-            const h = g.stehY - huefteNach(g, g.stufen);
-            return Math.max(0.45, Math.min(1.1, Math.sqrt(2 * h / (90 * VW)) + 0.15));
-        }
-        // Herunterrutschen: Füße außen an den Holmen, Hand am Holm, schneller werdend
-        function rutschPose(g, u) {
-            const oben = huefteNach(g, g.stufen);
-            const hy = oben + (g.stehY - oben) * u * u;
-            const m = glatt((u - 0.7) / 0.3);
-            const pose = {hy: hy};
-            for (const [seite, ab] of [['a', 2.05], ['b', 2.3]]) {
-                const y = Math.min(hy + ab * VW, g.boden - 0.7 * VW);
-                const amHolm = [g.holmX(y) + 0.35 * VW * g.seite, y];
-                const steh = fussOrt(g, -1, seite);
-                pose['f' + seite] = [amHolm[0] + (steh[0] - amHolm[0]) * m, amHolm[1] + (steh[1] - amHolm[1]) * m];
-            }
-            const hyHand = hy - 3.1 * VW;
-            pose.hand = [g.holmX(hyHand) + 0.15 * VW * g.seite, hyHand];
-            return pose;
-        }
-        // die freie Hand greift die höchste Sprosse, die sie gut erreicht
-        function griffOrt(g, hy) {
-            const schulter = hy - 1.95 * VW;
-            let i = 0;
-            while (i + 1 < g.anzahl && g.sprosse(i + 1)[1] >= schulter - 1.5 * VW) i++;
-            const sp = g.sprosse(i);
-            return [sp[0] + 0.15 * VW * g.seite, sp[1]];
-        }
-        function standX(g, p) {
-            return g.braucht ? g.huefteX(g.stehY) - 2.5 * VW : p[0] - KIND_B * VW * 0.18;
-        }
         // Schritttakt so wählen, dass der ganze Einsatz in EINSATZ_MAX passt
         function kletterTakt(tr) {
             const [g1, g2] = tr.geo;
@@ -2234,69 +2457,6 @@
             reparatur.delete(trupp.el);
             if (trupp.schirm) trupp.schirm.el.remove();
             trupp = null;
-        }
-        // Teleskopleiter: Fuß (x, y), Länge, Winkel (0 = waagerecht nach rechts, 90 = senkrecht)
-        function leiterMalen(x, y, laenge, winkel, breite) {
-            const w = winkel * Math.PI / 180;
-            const dx = Math.cos(w), dy = -Math.sin(w);
-            const b = (breite === undefined ? 0.32 : breite) * VW;
-            const nx = -dy * b, ny = dx * b;
-            const ueber = 0.16 * VW;   // Sprossen stehen in der Seitenansicht etwas über
-            cxV.lineCap = 'round';
-            cxV.strokeStyle = 'rgba(70,78,88,.95)';
-            cxV.lineWidth = 0.22 * VW;
-            cxV.beginPath();
-            cxV.moveTo(x - nx, y - ny); cxV.lineTo(x - nx + dx * laenge, y - ny + dy * laenge);
-            cxV.moveTo(x + nx, y + ny); cxV.lineTo(x + nx + dx * laenge, y + ny + dy * laenge);
-            cxV.stroke();
-            cxV.strokeStyle = 'rgba(190,200,210,1)';
-            cxV.lineWidth = 0.1 * VW;
-            cxV.stroke();
-            cxV.strokeStyle = 'rgba(120,130,140,1)';
-            cxV.lineWidth = 0.12 * VW;
-            cxV.beginPath();
-            const ux = -dy, uy = dx;
-            for (let d = SPROSSE_ERSTE * VW; d < laenge - 0.2 * VW; d += SPROSSE * VW) {
-                cxV.moveTo(x - nx - ux * ueber + dx * d, y - ny - uy * ueber + dy * d);
-                cxV.lineTo(x + nx + ux * ueber + dx * d, y + ny + uy * ueber + dy * d);
-            }
-            cxV.stroke();
-        }
-        // zweigliedriges Glied (Hüfte–Knie–Knöchel, Schulter–Ellbogen–Hand), in SVG-Einheiten
-        function ik2(hx, hy, ax, ay, a, b, waehle) {
-            let dx = ax - hx, dy = ay - hy;
-            let d = Math.hypot(dx, dy);
-            const max = a + b - 0.01;
-            if (d > max) { ax = hx + dx / d * max; ay = hy + dy / d * max; d = max; }
-            d = Math.max(d, Math.abs(a - b) + 0.01);
-            const w = Math.atan2(ay - hy, ax - hx);
-            const alpha = Math.acos(Math.max(-1, Math.min(1, (a * a + d * d - b * b) / (2 * a * d))));
-            const k1 = [hx + Math.cos(w + alpha) * a, hy + Math.sin(w + alpha) * a];
-            const k2 = [hx + Math.cos(w - alpha) * a, hy + Math.sin(w - alpha) * a];
-            return [waehle(k1, k2), [ax, ay]];
-        }
-        // Kind in Kletterhaltung: Hüfte (Welt), Knöchel a/b und Hand (Welt) → SVG
-        function kindPose(tr, hx, hy, fa, fb, hand, spiegel) {
-            const e = 0.1 * VW;                       // eine SVG-Einheit in px
-            const fx = hx - 2.5 * VW, fy = hy - 6.8 * VW;
-            const lokal = (pt) => { const lx = (pt[0] - fx) / e; return [spiegel ? 50 - lx : lx, (pt[1] - fy) / e]; };
-            const zahl = (v) => v.toFixed(1);
-            for (const [seite, f, dx] of [['a', fa, -1], ['b', fb, 1]]) {
-                const [ax, ay] = lokal(f);
-                // das Knie zeigt nach vorn zur Leiter (nach links)
-                const [knie, k] = ik2(25 + dx, 68, ax, ay, 12.5, 12.5, (k1, k2) => (k1[0] <= k2[0] ? k1 : k2));
-                const g = tr.ik[seite];
-                g.hose.setAttribute('d', `M${25 + dx},68 L${zahl(knie[0])},${zahl(knie[1])} L${zahl(k[0])},${zahl(k[1])}`);
-                const [x, y] = k;
-                g.schuh.setAttribute('d', `M${zahl(x - 5)},${zahl(y - 1)} L${zahl(x + 2.6)},${zahl(y - 1)} L${zahl(x + 2.6)},${zahl(y + 3)} L${zahl(x - 5.5)},${zahl(y + 3)} Q${zahl(x - 6.5)},${zahl(y + 1)} ${zahl(x - 5)},${zahl(y - 1)} Z`);
-            }
-            const [hx2, hy2] = lokal(hand);
-            // der Ellbogen hängt nach unten
-            const [ell, h] = ik2(25.5, 48.5, hx2, hy2, 10, 10, (k1, k2) => (k1[1] >= k2[1] ? k1 : k2));
-            tr.ik.arm.setAttribute('d', `M25.5,48.5 L${zahl(ell[0])},${zahl(ell[1])} L${zahl(h[0])},${zahl(h[1])}`);
-            tr.ik.hand.setAttribute('cx', zahl(h[0]));
-            tr.ik.hand.setAttribute('cy', zahl(h[1]));
-            return [fx, fy];
         }
         function truppSchritt(dt, t) {
             const tr = trupp;
@@ -2804,11 +2964,43 @@
     }
 
     // ==================================================================
-    // FROST / GLATTEIS: Eiszapfen, vereiste Ränder, Eisblumen in den Ecken
+    // GLATTEIS (Glätte, Glatteis, gefrierender Regen): Eiszapfen, vereiste Ränder,
+    // Eisblumen in den Ecken, ab und zu Eisläufer; einmal in 5 Minuten fährt das
+    // Streufahrzeug knapp auf dem Schriftband durch (nie zugleich mit den Eisläufern)
 
-    function Frost(staerke) {
+    function Glatteis(staerke) {
         const laeufer = [];
         let naechsteGruppe = vorschau ? 2 : zufall(40, 150);
+        let streuer = null, streuerNaechster = vorschau ? 26 : zufall(60, 300);
+        const splitt = [];
+        function streuerSchritt(dt) {
+            const f = streuer, bw = 9 * VW, bh = bw * 56 / 110;
+            f.x += f.richtung * 7 * VW * dt;
+            const y = LAUF_BODEN - bh * 54 / 56;
+            f.el.style.transform = `translate(${(f.x - bw / 2).toFixed(1)}px, ${y.toFixed(1)}px)${f.richtung < 0 ? ' scale(-1, 1)' : ''}`;
+            // Splitt fliegt fächerförmig nach hinten und bleibt eine Weile liegen
+            if (Math.random() < dt * 40) {
+                const hinten = f.x - f.richtung * bw * 0.45;
+                splitt.push({x: hinten, y: LAUF_BODEN - bh * 0.3, vx: -f.richtung * zufall(3, 9) * VW, vy: -zufall(0.5, 3) * VW,
+                    r: zufall(0.08, 0.15) * VW, alter: 0, liegt: false, farbe: auswahl(['#8a7356', '#a8957a', '#6e5d48', '#c9bfb2'])});
+            }
+            if ((f.richtung > 0 && f.x - bw / 2 > W + VW) || (f.richtung < 0 && f.x + bw / 2 < -VW)) { f.el.remove(); streuer = null; }
+        }
+        function splittZeichnen(dt) {
+            const liegen = dauer(20, 6);
+            for (let i = splitt.length - 1; i >= 0; i--) {
+                const p = splitt[i];
+                p.alter += dt;
+                if (!p.liegt) {
+                    p.vy += 9 * VW * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+                    if (p.y >= LAUF_BODEN - p.r) { p.y = LAUF_BODEN - p.r; p.liegt = true; p.alter = 0; }
+                } else if (p.alter > liegen) { splitt.splice(i, 1); continue; }
+                cxV.globalAlpha = p.liegt ? Math.min(1, 2 * (1 - p.alter / liegen)) : 1;
+                cxV.fillStyle = p.farbe;
+                cxV.beginPath(); cxV.arc(p.x, p.y, p.r, 0, 6.283); cxV.fill();
+            }
+            cxV.globalAlpha = 1;
+        }
         let eisblumen = null;
         let deckkraft = 0;
         const zapfen = setInterval(() => dekorieren('frost', eiszapfen), 2000);
@@ -2847,12 +3039,24 @@
             return c;
         }
         return {
-            stop() { clearInterval(zapfen); for (const l of laeufer) l.el.remove(); dekoEntfernen(); },
+            stop() { clearInterval(zapfen); for (const l of laeufer) l.el.remove(); if (streuer) { streuer.el.remove(); streuer = null; } dekoEntfernen(); },
             groesse() { eisblumen = null; },
             schritt(dt, t) {
                 // alle 4 bis 5 Minuten gleiten ein paar Eisläufer unten durchs Bild
                 naechsteGruppe -= dt;
-                if (laeufer.length === 0 && naechsteGruppe <= 0) {
+                streuerNaechster -= dt;
+                if (!streuer && laeufer.length === 0 && streuerNaechster <= 0) {
+                    const el = svgAusText(streuwagenSvg());
+                    el.style.width = '9vw';
+                    domV.appendChild(el);
+                    const richtung = Math.random() < 0.5 ? 1 : -1;
+                    streuer = {el: el, richtung: richtung, x: richtung > 0 ? -6 * VW : W + 6 * VW};
+                    streuerNaechster = dauer(5 * 60, 30);
+                    if (naechsteGruppe < 3) naechsteGruppe = 3;
+                }
+                if (streuer) streuerSchritt(dt);
+                splittZeichnen(dt);
+                if (!streuer && laeufer.length === 0 && naechsteGruppe <= 0) {
                     naechsteGruppe = dauer(zufall(4, 5) * 60, 24);
                     const n = 2 + Math.floor(Math.random() * 2);
                     for (let i = 0; i < n; i++) {
@@ -3000,6 +3204,458 @@
     }
 
     // ==================================================================
+    // FROST (Frost, strenger Frost): Raureif vom Bildrand her (hinter den Kacheln,
+    // gleich voll – kein Zeitraffer), Reifkanten auf den Kacheln, leere Kacheln frieren
+    // ganz zu (Eisblumen) – alle 90–120 Sekunden kommt ein Kind mit Leiter und Hammer
+    // und schlägt das Eis von einer leeren Kachel, die danach langsam wieder zufriert –,
+    // glitzernder Eisstaub in der Luft; alle 3–4 Minuten stapft ein dick eingepacktes Kind mit Atemwolken
+    // knapp auf dem Schriftband durchs Bild, bleibt einmal stehen und reibt die Hände.
+
+    // Kind in Seitenansicht, Blick nach rechts; viewBox 50 × 80, Füße bei y = 78,
+    // Mund bei (36|25).
+    const FRIERKIND_MUND = [36, 25];
+    function frierkindSvg() {
+        return `<svg class="fx-frierkind fx-geht" viewBox="0 0 50 80" xmlns="${NS}">
+            <g class="fx-fk-koerper">
+                <path d="M19,32 C14,38 10,44 8,50" stroke="#f2c14e" stroke-width="5" stroke-linecap="round" fill="none"/>
+                <g class="fx-wb-bein fx-wb-b"><rect x="17" y="56" width="7" height="18" rx="3" fill="#24364e"/><ellipse cx="22" cy="75" rx="6.2" ry="3.4" fill="#5e3b1e"/></g>
+                <rect x="11" y="29" width="28" height="31" rx="12" fill="#d64545"/>
+                <path d="M13,40 C20,42 30,42 37,40 M12,50 C20,52 30,52 38,50" stroke="#b33434" stroke-width="1.4" fill="none"/>
+                <g class="fx-wb-bein fx-wb-a"><rect x="26" y="56" width="7" height="18" rx="3" fill="#2c3e57"/><ellipse cx="31" cy="75" rx="6.2" ry="3.4" fill="#6b4423"/></g>
+                <circle cx="27" cy="19" r="9" fill="#f2c9a8"/>
+                <rect x="15" y="26" width="23" height="7" rx="3.5" fill="#f2c14e"/>
+                <path d="M18,27 L18,32 M23,27 L23,32 M28,27 L28,32 M33,27 L33,32" stroke="#e0a92e" stroke-width="1.2"/>
+                <path d="M17.5,18 Q18,5.5 27,5.5 Q36,5.5 36.5,18 Z" fill="#3a86d4"/>
+                <rect x="17" y="15.5" width="20.5" height="4.5" rx="2.2" fill="#2c6fb0"/>
+                <circle cx="27" cy="4.5" r="3.6" fill="#ffffff"/>
+                <circle cx="31" cy="20.5" r="1.05" fill="#2a1a14"/>
+                <path d="M29.2,18.4 L32.6,18.8" stroke="#8a6a50" stroke-width=".8"/>
+                <circle cx="35.2" cy="22.6" r="1.9" fill="#e88a8a"/>
+                <circle cx="30.5" cy="23.6" r="1.9" fill="#f19a9a" opacity=".55"/>
+                <path d="M23,35 C27,38 31,40 35,41" stroke="#c53a3a" stroke-width="6" stroke-linecap="round" fill="none"/>
+                <g class="fx-fk-haende"><ellipse cx="35.5" cy="41" rx="3.6" ry="3" fill="#3a86d4"/><ellipse cx="38.5" cy="43" rx="3.6" ry="3" fill="#2c6fb0"/></g>
+            </g>
+        </svg>`;
+    }
+
+    function Frost(staerke) {
+        let t0 = null;
+        let reif = null, reifAnteil = -1, reifStellen = null;
+        let deckkraft = 0;
+        const kanten = setInterval(() => { dekorieren('reif', reifkante); leereZufrieren(); }, 2000);
+        dekorieren('reif', reifkante);
+        leereZufrieren();
+        // Eisstaub: winzige Kristalle, die langsam schweben und kurz aufglitzern
+        const staub = [];
+        for (let i = 0; i < [0, 50, 70, 95][staerke]; i++) {
+            staub.push({x: zufall(0, 100), y: zufall(0, 100), vx: zufall(0.15, 0.6), vy: zufall(-0.12, 0.18), r: zufall(0.05, 0.12),
+                p: zufall(0, 6.28), v: zufall(0.6, 1.8), vorne: Math.random() < 0.15});
+        }
+        let kind = null, kindNaechster = vorschau ? 3 : zufall(30, 120);
+        const atem = [];
+        // Enteisen: ein Kind mit Leiter schlägt das Eis von einer leeren Kachel
+        let trupp = null, truppNaechster = vorschau ? 12 : zufall(30, 90);
+        const splitter = [];
+        const LAUF_E = 11, TAKT_E = 0.3;      // vw/s, s je Sprosse
+        function truppStarten(t) {
+            // eine zugefrorene, leere Kachel aussuchen
+            const kandidaten = kaesten.filter((k) => {
+                const eis = k.el.querySelector(':scope > .fx-eisscheibe');
+                return eis && !k.el.querySelector('table tr') && !eis.dataset.fxTaut && k.w > 4 * VW;
+            });
+            if (!kandidaten.length) return false;
+            const k = auswahl(kandidaten);
+            // der Hammer trifft die Kachel unten links, am rechten Bildrand unten rechts
+            const links = k.x + k.w / 2 < W * 0.8;
+            const p = [links ? k.x + 1.2 * VW : k.x + k.w - 1.2 * VW, k.y + k.h * 0.62];
+            const g = leiterGeometrie(p);
+            const kindEl = svgAusText(hammerkindSvg());
+            domV.appendChild(kindEl);
+            const kb = KIND_B * VW;
+            const vonRechts = p[0] >= W / 2;
+            const q = (sel) => kindEl.querySelector(sel);
+            trupp = {k: k, el: k.el, p: p, g: g, kind: kindEl, anfang: t, kphase: 'hingehen', kstart: t,
+                kx: vonRechts ? W + VW : -kb - VW, vonRechts: vonRechts, leiterWinkel: 0, leiterLaenge: 7 * VW,
+                schlaege: 0, hand: null, fy: 0,
+                ik: {
+                    a: {hose: q('.fx-ik-bein-a .fx-ik-hose'), schuh: q('.fx-ik-bein-a .fx-ik-schuh')},
+                    b: {hose: q('.fx-ik-bein-b .fx-ik-hose'), schuh: q('.fx-ik-bein-b .fx-ik-schuh')},
+                    arm: q('.fx-ik-arm path'), hand: q('.fx-ik-arm circle'),
+                }};
+            k.el.querySelector(':scope > .fx-eisscheibe').dataset.fxTaut = '1';
+            return true;
+        }
+        function eisSplitter(x, y, n, breit) {
+            for (let i = 0; i < n; i++) {
+                splitter.push({x: x + zufall(-breit, breit) / 2, y: y + zufall(-0.4, 0.4) * VW, vx: zufall(-4, 4) * VW, vy: zufall(-5, 0.5) * VW,
+                    r: zufall(0.15, 0.45) * VW, w: zufall(0, 6.28), vw: zufall(-9, 9), alter: 0, liegt: false, ecken: 3 + Math.floor(zufall(0, 2.99))});
+            }
+        }
+        // das Eis platzt ab: Splitter über die ganze Kachel, die Scheibe wird durchsichtig;
+        // danach friert die Kachel langsam wieder zu
+        function eisAb(tr) {
+            const eis = tr.el.querySelector(':scope > .fx-eisscheibe');
+            const k = tr.k;
+            for (let i = 0; i < Math.round(k.w / VW * 2.2); i++) {
+                eisSplitter(k.x + zufall(0, k.w), k.y + zufall(0.1, 0.95) * k.h, 1, 0);
+            }
+            if (!eis) return;
+            eis.style.transition = 'opacity .45s ease-out';
+            eis.style.opacity = '0';
+            const neu = dauer(zufall(45, 60), 8);
+            setTimeout(() => {
+                if (!eis.isConnected) return;
+                eis.style.transition = `opacity ${neu}s linear`;
+                eis.style.opacity = '1';
+                setTimeout(() => { delete eis.dataset.fxTaut; }, neu * 1000);
+            }, 1500);
+        }
+        function truppSchritt(dt, t) {
+            const tr = trupp, g = tr.g, p = tr.p;
+            const kb = KIND_B * VW, kh = kb * 2;
+            const boden = LAUF_BODEN - 0.2 * VW;
+            const ks = t - tr.kstart;
+            const weiter = (phase) => { tr.kphase = phase; tr.kstart = t; };
+            const huepf = (an) => (an ? Math.abs(Math.sin(t * 10.1)) * -0.15 * VW : 0);
+            let gehen = false, richtung = -1, pose = null;
+            if (tr.kphase === 'hingehen') {
+                const ziel = standX(g, p);
+                richtung = Math.sign(ziel - tr.kx) || -1;
+                tr.kx += richtung * LAUF_E * VW * dt; gehen = true;
+                if ((richtung < 0 && tr.kx <= ziel) || (richtung > 0 && tr.kx >= ziel)) {
+                    tr.kx = ziel; gehen = false; richtung = -1;
+                    weiter(g.braucht ? 'aufstellen' : 'haemmern');
+                }
+            } else if (tr.kphase === 'aufstellen') {
+                tr.leiterWinkel = g.winkel * glatt(ks / 0.35);
+                tr.leiterLaenge = 7 * VW + (g.laenge - 7 * VW) * glatt((ks - 0.2) / 0.4);
+                if (ks >= 0.6) weiter('hoch');
+            } else if (tr.kphase === 'hoch') {
+                pose = kletterPose(g, ks / TAKT_E);
+                if (ks / TAKT_E >= g.stufen) weiter('haemmern');
+            } else if (tr.kphase === 'haemmern') {
+                if (g.braucht) pose = kletterPose(g, g.stufen);
+                tr.kind.classList.add('fx-haemmert');
+                // vier Schläge gegen das Eis, bei jedem fliegen Splitter
+                if (ks > 0.2 + tr.schlaege * 0.32 && tr.schlaege < 4) {
+                    tr.schlaege += 1;
+                    funkenStreuen(p[0], p[1], 5, 'weiss');
+                    eisSplitter(p[0], p[1], 5, 1.5 * VW);
+                    if (tr.schlaege === 4) eisAb(tr);
+                }
+                if (ks > 0.2 + 4 * 0.32 + 0.5) {
+                    tr.kind.classList.remove('fx-haemmert'); tr.schlaege = 0;
+                    weiter(g.braucht ? 'rutschen' : 'raus');
+                }
+            } else if (tr.kphase === 'rutschen') {
+                const d = rutschDauer(g);
+                pose = rutschPose(g, Math.min(1, ks / d));
+                if (ks >= d) { tr.kx = standX(g, p); tr.hand = null; weiter('einfahren'); }
+            } else if (tr.kphase === 'einfahren') {
+                tr.leiterLaenge = g.laenge + (7 * VW - g.laenge) * glatt(ks / 0.3);
+                tr.leiterWinkel = g.winkel * (1 - glatt((ks - 0.2) / 0.3));
+                if (ks >= 0.5) { tr.leiterWinkel = 0; tr.leiterLaenge = 7 * VW; weiter('raus'); }
+            } else if (tr.kphase === 'raus') {
+                if (tr.rausK === undefined) tr.rausK = tr.kx + kb / 2 < W / 2 ? -1 : 1;
+                richtung = tr.rausK;
+                tr.kx += richtung * LAUF_E * VW * dt; gehen = true;
+                if (tr.kx < -kb - VW || tr.kx > W + VW || t - tr.anfang > 40) { truppEnde(); return; }
+            }
+            tr.kind.classList.toggle('fx-geht', gehen);
+            tr.kind.classList.toggle('fx-ik', !!pose);
+            if (pose) {
+                const hx = g.huefteX(pose.hy);
+                const ziel = pose.hand || griffOrt(g, pose.hy);
+                if (!tr.hand || pose.hand) tr.hand = ziel.slice();
+                else { const r = Math.min(1, dt * 22); tr.hand[0] += (ziel[0] - tr.hand[0]) * r; tr.hand[1] += (ziel[1] - tr.hand[1]) * r; }
+                const [fx, fy] = kindPose(tr, hx, pose.hy, pose.fa, pose.fb, tr.hand, g.seite < 0);
+                tr.kx = fx; tr.fy = fy;
+                tr.kind.style.transform = `translate(${fx.toFixed(1)}px, ${fy.toFixed(1)}px)${g.seite < 0 ? ' scale(-1, 1)' : ''}`;
+            } else {
+                const arbeit = ['aufstellen', 'haemmern', 'einfahren'].indexOf(tr.kphase) >= 0 && g.braucht;
+                const spiegeln = gehen ? richtung > 0 : arbeit && g.seite < 0;
+                tr.kind.style.transform = `translate(${tr.kx.toFixed(1)}px, ${(boden - kh + huepf(gehen)).toFixed(1)}px)${spiegeln ? ' scale(-1, 1)' : ''}`;
+            }
+            // Leiter: beim Laufen waagerecht auf der Schulter, sonst an der Kachel angelehnt
+            if (['hingehen', 'raus'].indexOf(tr.kphase) >= 0) {
+                leiterMalen(tr.kx + kb * 0.5 - 3.5 * VW, boden - kh * 0.52 + huepf(gehen), 7 * VW, 0, 0.13);
+            } else if (g.braucht) {
+                leiterMalen(g.fuss[0], g.fuss[1], tr.leiterLaenge, tr.leiterWinkel, 0.13);
+            }
+        }
+        function truppEnde() {
+            if (!trupp) return;
+            trupp.kind.remove();
+            trupp = null;
+        }
+        function splitterZeichnen(dt) {
+            const liegen = dauer(6, 3);
+            for (let i = splitter.length - 1; i >= 0; i--) {
+                const sp = splitter[i];
+                sp.alter += dt;
+                if (!sp.liegt) {
+                    sp.vy += 22 * VW * dt; sp.x += sp.vx * dt; sp.y += sp.vy * dt; sp.w += sp.vw * dt;
+                    if (sp.y >= LAUF_BODEN - sp.r * 0.4) { sp.y = LAUF_BODEN - sp.r * 0.4; sp.liegt = true; sp.alter = 0; }
+                } else if (sp.alter > liegen) { splitter.splice(i, 1); continue; }
+                cxV.globalAlpha = sp.liegt ? Math.max(0, 1 - sp.alter / liegen) : 0.95;
+                cxV.save();
+                cxV.translate(sp.x, sp.y); cxV.rotate(sp.w);
+                cxV.beginPath();
+                for (let e = 0; e < sp.ecken; e++) {
+                    const a = e / sp.ecken * 6.283, rr = sp.r * (0.6 + ((e * 37) % 5) / 10);
+                    if (e === 0) cxV.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); else cxV.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+                }
+                cxV.closePath();
+                cxV.fillStyle = 'rgba(232,244,255,.95)';
+                cxV.fill();
+                cxV.strokeStyle = 'rgba(120,160,205,.9)';
+                cxV.lineWidth = 0.05 * VW;
+                cxV.stroke();
+                cxV.restore();
+            }
+            cxV.globalAlpha = 1;
+        }
+
+        // Raureif-Farne: wachsen von allen Rändern (außer unten) nach innen.
+        // Jedes Stück hat d0..d1 = wie weit (0..1) der Tag sein muss, bis es da ist.
+        function reifAnlegen() {
+            const stuecke = [];
+            const tiefe = 13 * VW;
+            function zweig(x, y, w, l, tiefeStufe, d0, dGesamt) {
+                if (tiefeStufe <= 0 || l < 0.3 * VW) return;
+                const x2 = x + Math.cos(w) * l, y2 = y + Math.sin(w) * l;
+                const d1 = d0 + l / dGesamt;
+                stuecke.push({x1: x, y1: y, x2: x2, y2: y2, d0: d0, d1: d1, b: Math.max(0.5, tiefeStufe * 0.05 * VW), a: 0.2 + tiefeStufe * 0.09});
+                for (let i = 1; i <= 3; i++) {
+                    const f = i / 4;
+                    const px = x + (x2 - x) * f, py = y + (y2 - y) * f;
+                    const dd = d0 + (d1 - d0) * f;
+                    zweig(px, py, w - zufall(0.7, 1.1), l * zufall(0.3, 0.45), tiefeStufe - 1, dd, dGesamt);
+                    zweig(px, py, w + zufall(0.7, 1.1), l * zufall(0.3, 0.45), tiefeStufe - 1, dd, dGesamt);
+                }
+                zweig(x2, y2, w + zufall(-0.35, 0.35), l * zufall(0.5, 0.7), tiefeStufe - 1, d1, dGesamt);
+            }
+            const unten = UNTEN - 1.5 * VW;
+            const saat = [];
+            for (let x = zufall(0, 3) * VW; x < W; x += zufall(2.5, 4.5) * VW) saat.push([x, 0, Math.PI / 2]);
+            for (let y = zufall(2, 4) * VW; y < unten; y += zufall(2.5, 4.5) * VW) { saat.push([0, y, 0]); saat.push([W, y + zufall(-1, 1) * VW, Math.PI]); }
+            for (const [x, y, w0] of saat) {
+                // nahe den Ecken länger, in der Mitte der Ränder kürzer
+                const ecke = Math.min(Math.hypot(x, y), Math.hypot(W - x, y), Math.hypot(x, unten - y), Math.hypot(W - x, unten - y)) / (40 * VW);
+                const l = tiefe * zufall(0.35, 0.6) * (1.25 - Math.min(0.6, ecke));
+                zweig(x, y, w0 + zufall(-0.5, 0.5), l, 4, 0, l * 1.9);
+            }
+            return stuecke;
+        }
+        function reifZeichnen(anteil) {
+            if (!reifStellen) reifStellen = reifAnlegen();
+            if (!reif) reif = leinwand(W * DPR, H * DPR);
+            const g = reif.getContext('2d');
+            g.setTransform(1, 0, 0, 1, 0, 0);
+            g.clearRect(0, 0, reif.width, reif.height);
+            g.setTransform(DPR, 0, 0, DPR, 0, 0);
+            g.lineCap = 'round';
+            if (!opt.dunkel) { g.shadowColor = 'rgba(70,110,160,.7)'; g.shadowBlur = 2; }
+            for (const st of reifStellen) {
+                if (st.d0 >= anteil) continue;
+                const f = Math.min(1, (anteil - st.d0) / Math.max(0.001, st.d1 - st.d0));
+                g.lineWidth = st.b;
+                g.strokeStyle = `rgba(255,255,255,${st.a.toFixed(2)})`;
+                g.beginPath(); g.moveTo(st.x1, st.y1); g.lineTo(st.x1 + (st.x2 - st.x1) * f, st.y1 + (st.y2 - st.y1) * f); g.stroke();
+            }
+            // ein Hauch Kälte vom Rand her
+            g.shadowBlur = 0;
+            const rand = 6 * VW * anteil;
+            for (const [x0, y0, x1, y1] of [[0, 0, 0, rand], [0, 0, rand, 0], [W, 0, W - rand, 0]]) {
+                const v = g.createLinearGradient(x0, y0, x1, y1);
+                v.addColorStop(0, `rgba(225,240,255,${(0.35 * anteil).toFixed(2)})`);
+                v.addColorStop(1, 'rgba(225,240,255,0)');
+                g.fillStyle = v;
+                g.fillRect(0, 0, W, UNTEN);
+            }
+        }
+
+        function kindStarten() {
+            const el = svgAusText(frierkindSvg());
+            domV.appendChild(el);
+            const richtung = Math.random() < 0.5 ? 1 : -1;
+            const b = 4.2 * VW;
+            kind = {el: el, richtung: richtung, x: richtung > 0 ? -b : W + b, b: b,
+                halt: zufall(0.3, 0.7) * W, gehalten: false, steht: 0, atemUhr: 0};
+        }
+        function kindSchritt(dt, t) {
+            const k = kind, bw = k.b, bh = bw * 80 / 50;
+            if (k.steht > 0) {
+                k.steht -= dt;
+                if (k.steht <= 0) { k.el.classList.remove('fx-reibt'); k.el.classList.add('fx-geht'); }
+            } else {
+                k.x += k.richtung * 6 * VW * dt;
+                const mitte = k.x + bw / 2;
+                if (!k.gehalten && ((k.richtung > 0 && mitte > k.halt) || (k.richtung < 0 && mitte < k.halt))) {
+                    k.gehalten = true; k.steht = 2.6;
+                    k.el.classList.remove('fx-geht'); k.el.classList.add('fx-reibt');
+                }
+            }
+            const wipp = k.steht > 0 ? 0 : Math.abs(Math.sin(t * 12.5)) * -0.12 * VW;
+            const y = LAUF_BODEN - bh * 0.975 + wipp;
+            k.el.style.transform = `translate(${k.x.toFixed(1)}px, ${y.toFixed(1)}px)${k.richtung < 0 ? ' scale(-1, 1)' : ''}`;
+            // Atemwolken aus dem Mund, im Stehen häufiger
+            k.atemUhr -= dt;
+            if (k.atemUhr <= 0) {
+                k.atemUhr = k.steht > 0 ? 0.55 : 1.1;
+                const mx = k.richtung > 0 ? k.x + FRIERKIND_MUND[0] / 50 * bw : k.x + (1 - FRIERKIND_MUND[0] / 50) * bw;
+                atem.push({x: mx, y: y + FRIERKIND_MUND[1] / 80 * bh, vx: k.richtung * zufall(1.2, 2) * VW, alter: 0});
+            }
+            if ((k.richtung > 0 && k.x > W + VW) || (k.richtung < 0 && k.x < -bw - VW)) { k.el.remove(); kind = null; }
+        }
+
+        return {
+            stop() { clearInterval(kanten); dekoEntfernen(); if (kind) { kind.el.remove(); kind = null; } truppEnde(); },
+            groesse() { reif = null; reifStellen = null; reifAnteil = -1; },
+            schritt(dt, t) {
+                if (t0 === null) t0 = t;
+                // Raureif gleich in voller Stärke (Wunsch Jonas: kein Zeitraffer)
+                const anteil = 1;
+                if (!reif || reifAnteil !== anteil) { reifZeichnen(anteil); reifAnteil = anteil; }
+                deckkraft = Math.min(1, deckkraft + dt / dauer(30, 2));
+                cxH.globalAlpha = deckkraft * (opt.dunkel ? 0.85 : 1);
+                cxH.drawImage(reif, 0, 0, W, H);
+                cxH.globalAlpha = 1;
+                // Eisstaub
+                const sternBild = sprite('stern-weiss', () => stern(1.2 * VW * DPR, 'rgba(210,230,255,1)'));
+                const punkt = sprite('flocke', () => flockeSprite(0.5 * VW * DPR, opt.dunkel, false));
+                for (const e of staub) {
+                    e.x += (e.vx + Math.sin(t * 0.3 + e.p) * 0.2) * dt;
+                    e.y += (e.vy + Math.sin(t * 0.5 + e.p) * 0.1) * dt * 100 / (UNTEN / VW);
+                    if (e.x > 102) e.x = -2;
+                    if (e.y > 100) e.y = 0;
+                    if (e.y < 0) e.y = 100;
+                    const x = e.x * VW, y = e.y / 100 * UNTEN;
+                    const g = e.vorne ? cxV : cxH;
+                    const glanz = Math.max(0, Math.sin(t * e.v + e.p));
+                    g.globalAlpha = 0.35 * deckkraft;
+                    const r = e.r * VW * 1.5;
+                    g.drawImage(punkt, x - r, y - r, 2 * r, 2 * r);
+                    if (glanz > 0.85) {
+                        g.globalAlpha = (glanz - 0.85) * 6 * deckkraft;
+                        g.drawImage(sternBild, x - 0.5 * VW, y - 0.5 * VW, VW, VW);
+                    }
+                }
+                cxH.globalAlpha = 1; cxV.globalAlpha = 1;
+                // das frierende Kind und der Enteisungstrupp – nie beide zugleich
+                kindNaechster -= dt;
+                truppNaechster -= dt;
+                if (!kind && !trupp && truppNaechster <= 0) {
+                    truppNaechster = truppStarten(t) ? dauer(zufall(90, 120), 20) : 10;
+                    if (kindNaechster < 3) kindNaechster = 3;
+                }
+                if (!kind && !trupp && kindNaechster <= 0) { kindStarten(); kindNaechster = dauer(zufall(180, 240), 18); }
+                if (kind) kindSchritt(dt, t);
+                if (trupp) truppSchritt(dt, t);
+                splitterZeichnen(dt);
+                cxV.fillStyle = '#ffffff';
+                for (let i = atem.length - 1; i >= 0; i--) {
+                    const a = atem[i];
+                    a.alter += dt;
+                    if (a.alter > 1.6) { atem.splice(i, 1); continue; }
+                    a.x += a.vx * dt; a.y -= 0.6 * VW * dt;
+                    const f = a.alter / 1.6;
+                    cxV.globalAlpha = 0.75 * (1 - f);
+                    cxV.beginPath(); cxV.arc(a.x, a.y, (0.25 + f * 0.9) * VW, 0, 6.283); cxV.fill();
+                    cxV.beginPath(); cxV.arc(a.x + a.vx * 0.15, a.y - 0.2 * VW, (0.15 + f * 0.6) * VW, 0, 6.283); cxV.fill();
+                }
+                cxV.globalAlpha = 1;
+            },
+        };
+    }
+
+    // Leere Kacheln (keine Vertretung) frieren ganz zu: Eisschicht mit Eisblumen aus
+    // den Ecken und vom unteren Rand. Bekommt die Kachel Einträge, taut sie sofort auf.
+    function leereZufrieren() {
+        for (const el of document.querySelectorAll(opt.kaesten)) {
+            const leer = !el.querySelector('table tr');
+            const eis = el.querySelector(':scope > .fx-eisscheibe');
+            if (!leer) { if (eis) eis.remove(); continue; }
+            if (eis) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 * VW || r.height < 1.5 * VW) continue;
+            if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+            el.insertBefore(eisscheibe(r.width / VW, r.height / VW, getComputedStyle(el).borderRadius), el.firstChild);
+        }
+    }
+    function eisscheibe(wVw, hVw, rundung) {
+        const s = svg('svg', {viewBox: `0 0 ${wVw.toFixed(2)} ${hVw.toFixed(2)}`, preserveAspectRatio: 'none', class: 'fx-deko fx-eisscheibe'});
+        Object.assign(s.style, {left: '0', top: '0', width: '100%', height: '100%', borderRadius: rundung, overflow: 'hidden',
+            opacity: '0', transition: 'opacity 2.5s ease-in'});
+        const id = neueId('eisscheibe');
+        s.appendChild(svg('defs', {}, [svg('linearGradient', {id: id, x1: 0, y1: 0, x2: 1, y2: 1}, [
+            svg('stop', {offset: 0, 'stop-color': '#eef6ff', 'stop-opacity': 0.85}),
+            svg('stop', {offset: 0.5, 'stop-color': '#d2e5f8', 'stop-opacity': 0.72}),
+            svg('stop', {offset: 1, 'stop-color': '#b8d3f0', 'stop-opacity': 0.82}),
+        ])]));
+        s.appendChild(svg('rect', {x: 0, y: 0, width: wVw, height: hVw, fill: `url(#${id})`}));
+        // Eisblumen: verzweigte Farne aus den Ecken und vom unteren Rand
+        let d = '';
+        const m = Math.min(wVw, hVw);
+        function farn(x, y, w, l, stufe) {
+            if (stufe <= 0 || l < 0.12) return;
+            const x2 = x + Math.cos(w) * l, y2 = y + Math.sin(w) * l;
+            d += `M ${x.toFixed(2)} ${y.toFixed(2)} L ${x2.toFixed(2)} ${y2.toFixed(2)} `;
+            for (let i = 1; i <= 3; i++) {
+                const f = i / 4;
+                const px = x + (x2 - x) * f, py = y + (y2 - y) * f;
+                farn(px, py, w - zufall(0.75, 1.05), l * zufall(0.28, 0.42), stufe - 1);
+                farn(px, py, w + zufall(0.75, 1.05), l * zufall(0.28, 0.42), stufe - 1);
+            }
+            farn(x2, y2, w + zufall(-0.3, 0.3), l * zufall(0.5, 0.65), stufe - 1);
+        }
+        for (const [x, y, w] of [[0, 0, 0.8], [wVw, 0, Math.PI - 0.8], [0, hVw, -0.8], [wVw, hVw, Math.PI + 0.8]]) {
+            farn(x, y, w + zufall(-0.25, 0.25), m * zufall(0.45, 0.65), 4);
+        }
+        for (let x = zufall(2, 4); x < wVw - 2; x += zufall(3, 5)) farn(x, hVw, -Math.PI / 2 + zufall(-0.5, 0.5), m * zufall(0.3, 0.5), 3);
+        for (let x = zufall(3, 5); x < wVw - 3; x += zufall(4, 6)) farn(x, 0, Math.PI / 2 + zufall(-0.5, 0.5), m * zufall(0.2, 0.35), 3);
+        s.appendChild(svg('path', {d: d, stroke: '#ffffff', 'stroke-width': 0.06, 'stroke-linecap': 'round', fill: 'none', opacity: 0.95,
+            style: 'filter: drop-shadow(0 0 .07vw rgba(50,90,140,.85))'}));
+        // ein paar glitzernde Punkte
+        for (let i = 0; i < Math.max(2, Math.round(wVw / 4)); i++) {
+            const g = svg('circle', {cx: zufall(0.5, wVw - 0.5), cy: zufall(0.3, hVw - 0.3), r: 0.1, fill: '#fff', class: 'fx-zapfen-glitzer'});
+            g.style.setProperty('--d', `${zufall(3, 7).toFixed(1)}s`);
+            g.style.setProperty('--v', `-${zufall(0, 7).toFixed(1)}s`);
+            g.style.transformBox = 'fill-box';
+            g.style.transformOrigin = '50% 50%';
+            s.appendChild(g);
+        }
+        requestAnimationFrame(() => { s.style.opacity = '1'; });
+        setTimeout(() => { s.style.opacity = '1'; }, 50);
+        return s;
+    }
+
+    // Reifkante: feine, aufrecht stehende Eisnadeln auf der Oberkante der Kachel
+    function reifkante(el, wVw) {
+        const h = 0.75;
+        const s = svg('svg', {viewBox: `0 0 ${wVw} ${h}`, preserveAspectRatio: 'none', class: 'fx-deko'});
+        Object.assign(s.style, {left: '0', top: `-${h - 0.12}vw`, width: `${wVw}vw`, height: `${h}vw`,
+            filter: 'drop-shadow(0 0 .05vw rgba(60,100,150,.7))'});
+        let x = 0.3;
+        let d = '';
+        while (x < wVw - 0.3) {
+            const l = zufall(0.2, h - 0.05);
+            const w = zufall(-0.25, 0.25);
+            const xs = x + Math.sin(w) * l, ys = h - Math.cos(w) * l;
+            d += `M ${x.toFixed(2)} ${h} L ${xs.toFixed(2)} ${ys.toFixed(2)} `;
+            if (l > 0.4) {
+                const mx = x + (xs - x) * 0.55, my = h + (ys - h) * 0.55;
+                d += `M ${mx.toFixed(2)} ${my.toFixed(2)} l -0.12 -0.1 M ${mx.toFixed(2)} ${my.toFixed(2)} l 0.12 -0.1 `;
+            }
+            x += zufall(0.12, 0.35);
+        }
+        s.appendChild(svg('path', {d: d, stroke: '#ffffff', 'stroke-width': 0.05, 'stroke-linecap': 'round', fill: 'none'}));
+        s.appendChild(svg('rect', {x: 0, y: h - 0.1, width: wVw, height: 0.1, fill: 'rgba(255,255,255,.9)'}));
+        el.insertBefore(s, el.firstChild);
+        wachsenLassen(s, dauer(zufall(600, 1200), zufall(4, 8)));
+    }
+
+    // ==================================================================
     // WEIHNACHTEN: Lichterkette oben (ganzer Advent), ab dem 16. Dezember fliegt
     // der Weihnachtsmann vorbei
 
@@ -3050,26 +3706,62 @@
         // der Weihnachtsmann fliegt erst ab dem 16. Dezember („nah“), davor nur die
         // Lichterkette; dann alle 60–90 Sekunden
         const abstand = () => dauer(zufall(60, 90), 26);   // alle 60–90 Sekunden (Wunsch Jonas)
-        // Geschenke, die er im Vorbeifliegen verteilt: halb hinter den Kacheln,
-        // sie verschwinden nach und nach innerhalb von etwa einer halben Stunde
+        // Geschenke, die er im Vorbeifliegen verteilt: vor den Kacheln, wo keine Schrift
+        // ist (Wunsch Jonas), sonst halb hinter den Kacheln; sie verschwinden nach und
+        // nach innerhalb von etwa einer halben Stunde
         const geschenke = [];
+        let geschenkePruefung = null;
+        // wo in einer Kachel Schrift (oder der Kiesel mit dem Klassennamen) steht – Bühnenkoordinaten
+        function schriftFlaechen(el) {
+            const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+            const liste = [];
+            const gang = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            const bereich = document.createRange();
+            for (let n = gang.nextNode(); n; n = gang.nextNode()) {
+                if (!n.textContent.trim() || n.parentElement.closest('.fx-deko')) continue;
+                bereich.selectNodeContents(n);
+                for (const r of bereich.getClientRects()) {
+                    if (r.width > 0 && r.height > 0) liste.push({l: r.left - b0.left, r: r.right - b0.left, t: r.top - b0.top, b: r.bottom - b0.top});
+                }
+            }
+            const kiesel = opt.kiesel ? el.querySelector(`:scope > ${opt.kiesel}`) : el.querySelector(':scope > h3');
+            if (kiesel) { const r = kiesel.getBoundingClientRect(); liste.push({l: r.left - b0.left, r: r.right - b0.left, t: r.top - b0.top, b: r.bottom - b0.top}); }
+            return liste;
+        }
+        const GESCHENK_B = 2.2;   // vw (Höhe etwa gleich)
+        function geschenkFrei(k, dx, dy) {
+            const x = k.x + dx, y = k.y + dy, b = GESCHENK_B * VW, rand = 0.3 * VW;
+            if (y + b > UNTEN - 0.2 * VW) return false;
+            const feld = {l: x - rand, r: x + b + rand, t: y - rand, b: y + b + rand};
+            return !schriftFlaechen(k.el).some((f) => f.l < feld.r && f.r > feld.l && f.t < feld.b && f.b > feld.t);
+        }
         function geschenkAblegen(t, nahX) {
             // eine Kachel in der Nähe der Stelle, an der der Schlitten gerade ist
             const nahe = kaesten.filter((k) => Math.abs(k.x + k.w / 2 - nahX) < 14 * VW);
             const liste = nahe.length ? nahe : kaesten;
             if (!liste.length) return;
             const k = auswahl(liste);
-            const seite = auswahl(['rechts', 'links', 'unten', 'rechts']);
-            let dx, dy;
-            if (seite === 'unten') { dx = zufall(0.25, 0.8) * k.w; dy = k.h - 1.1 * VW; }
-            else if (seite === 'rechts') { dx = k.w - 0.9 * VW; dy = zufall(0.2, 0.65) * k.h; }
-            else { dx = -1.3 * VW; dy = zufall(0.3, 0.7) * k.h; }
+            const b = GESCHENK_B * VW;
+            // erst vorne auf der Kachel suchen: unten auf der Kante stehend oder frei in der Kachel
+            let dx = null, dy = null;
+            for (let versuch = 0; versuch < 14 && dx === null; versuch++) {
+                const x = zufall(0.4 * VW, Math.max(0.5 * VW, k.w - b - 0.4 * VW));
+                const y = versuch % 2 === 0 ? k.h - b * 0.92 : zufall(0.25 * k.h, Math.max(0.3 * k.h, k.h - b));
+                if (geschenkFrei(k, x, y)) { dx = x; dy = y; }
+            }
+            const vorne = dx !== null;
+            if (!vorne) {
+                const seite = auswahl(['rechts', 'links', 'unten', 'rechts']);
+                if (seite === 'unten') { dx = zufall(0.25, 0.8) * k.w; dy = k.h - 1.1 * VW; }
+                else if (seite === 'rechts') { dx = k.w - 0.9 * VW; dy = zufall(0.2, 0.65) * k.h; }
+                else { dx = -1.3 * VW; dy = zufall(0.3, 0.7) * k.h; }
+            }
             const box = document.createElement('div');
             box.className = 'fx-geschenk';
             box.innerHTML = geschenkSvg();
             box.firstChild.style.setProperty('--r', `${zufall(-18, 18).toFixed(0)}deg`);
-            domH.appendChild(box);
-            const g = {el: k.el, dx: dx / VW, dy: dy / VW, box: box, ende: t + dauer(zufall(20, 32) * 60, zufall(20, 40))};
+            (vorne ? domV : domH).appendChild(box);
+            const g = {el: k.el, k: k, dx: dx / VW, dy: dy / VW, box: box, vorne: vorne, ende: t + dauer(zufall(20, 32) * 60, zufall(20, 40))};
             geschenke.push(g);
             if (geschenke.length > 18) geschenke.shift().box.remove();
             geschenkSetzen(g);
@@ -3204,9 +3896,16 @@
                     cxH.restore();
                 }
                 cxH.globalAlpha = 1;
-                // Geschenke folgen ihren Kacheln; abgelaufene verblassen nacheinander
+                // Geschenke folgen ihren Kacheln; abgelaufene verblassen nacheinander.
+                // Steht unter einem Geschenk vorne inzwischen Schrift, kommt es nach hinten.
+                const pruefen = t - (geschenkePruefung || 0) > 3;
+                if (pruefen) geschenkePruefung = t;
                 for (let i = geschenke.length - 1; i >= 0; i--) {
                     const g = geschenke[i];
+                    if (pruefen && g.vorne && g.el.isConnected) {
+                        const k = kaesten.find((kk) => kk.el === g.el);
+                        if (k && !geschenkFrei(k, g.dx * VW, g.dy * VW)) { g.vorne = false; domH.appendChild(g.box); }
+                    }
                     geschenkSetzen(g);
                     if (t >= g.ende && !g.weg) {
                         g.weg = true;
@@ -4515,7 +5214,7 @@
     // ==================================================================
     // Steuerung
 
-    const BAUER = {schnee: Schnee, regen: Regen, gewitter: Gewitter, hitze: Hitze, sturm: Sturm, frost: Frost};
+    const BAUER = {schnee: Schnee, regen: Regen, gewitter: Gewitter, hitze: Hitze, sturm: Sturm, glatteis: Glatteis, frost: Frost};
 
     function schleife(ts) {
         if (!wetter && !fest) { laeuft = false; return; }
@@ -4559,12 +5258,12 @@
 
     // Wendet an, was gerade gelten soll – startet und stoppt nur, was sich ändert
     function anwenden(soll) {
-        const w = soll.wetter ? `${soll.wetter.effekt}:${soll.wetter.staerke}:${soll.wetter.zeus ? 'zeus' : ''}` : '';
+        const w = soll.wetter ? `${soll.wetter.effekt}:${soll.wetter.staerke}:${soll.wetter.zeus ? 'zeus' : ''}:${soll.wetter.stufe || ''}` : '';
         const f = soll.fest ? `${soll.fest.fest}:${soll.fest.nah ? 1 : 0}` : '';
         if (w !== zustand.wetter) {
             if (wetter) wetter.stop();
             wetter = null;
-            if (soll.wetter && BAUER[soll.wetter.effekt]) wetter = BAUER[soll.wetter.effekt](Math.max(1, Math.min(3, soll.wetter.staerke || 2)), !!soll.wetter.zeus);
+            if (soll.wetter && BAUER[soll.wetter.effekt]) wetter = BAUER[soll.wetter.effekt](Math.max(1, Math.min(3, soll.wetter.staerke || 2)), !!soll.wetter.zeus, soll.wetter.stufe || null);
             zustand.wetter = w;
         }
         if (f !== zustand.fest) {
@@ -4581,7 +5280,7 @@
 
     const VORSCHAU_TITEL = {
         schnee: 'Starker Schneefall', regen: 'Heftiger Starkregen', gewitter: 'Schweres Gewitter',
-        hitze: 'Extreme Hitze', sturm: 'Orkanartige Böen', frost: 'Glatteis',
+        hitze: 'Extreme Hitze', sturm: 'Orkanartige Böen', glatteis: 'Glatteis', frost: 'Strenger Frost',
     };
 
     function vorschauLesen() {
@@ -4643,6 +5342,13 @@
         vorschauZeigen(name);
     }
 
+    // Test auf den echten Monitoren: zum Ende des Tests von selbst neu abfragen
+    let testUhr = null;
+    function neuAbfragen() {
+        if (vorschau) return;   // Vorschaufenster (?effekt=…) bleiben bei ihrem Effekt
+        abfragen();
+    }
+
     function abfragen() {
         // Monitore mit geheimem Monitor-Link (/monitor/<link>) haben keine
         // Sitzung und weisen sich mit dem Link aus
@@ -4656,6 +5362,8 @@
                 // im Folgen-Modus beim Start: die gerade gewählte Vorschau übernehmen
                 if (folgen && letzteVorschau === null) { letzteVorschau = d.vorschau || ''; if (d.vorschau) { vorschauZeigen(d.vorschau); return; } }
                 if (folgen && vorschau) return;
+                if (testUhr) { clearTimeout(testUhr); testUhr = null; }
+                if (d.test && d.test.rest_ms > 0) testUhr = setTimeout(abfragen, d.test.rest_ms + 1500);
                 if (d.an === false) { alles_stoppen(); return; }
                 anwenden({wetter: d.wetter || null, fest: d.fest || null});
                 // direkt nach dem Start des Servers sind die Warnungen evtl. noch unterwegs
@@ -4697,5 +5405,5 @@
         }
     }
 
-    window.MonitorEffekte = {start: start, stop: alles_stoppen, vorschauNachricht: vorschauNachricht};
+    window.MonitorEffekte = {start: start, stop: alles_stoppen, vorschauNachricht: vorschauNachricht, neuAbfragen: neuAbfragen};
 })();

@@ -410,6 +410,14 @@ class Main < Sinatra::Base
                    :ruht => ruht,
                    :bereit => !daten.nil? || !MONITOR_DWD_WARNCELL,
                    :vorschau => @@monitor_effekte_vorschau}
+        # Test auf den echten Monitoren: läuft für ein paar Minuten statt des echten Stands
+        test = monitor_effekte_test()
+        if test
+            antwort[:an] = true
+            antwort[:wetter], antwort[:fest] = MonitorEffekte.test_soll(test[:effekt])
+            antwort[:ruht] = nil
+            antwort[:test] = {:effekt => test[:effekt], :rest_ms => ((test[:bis] - Time.now) * 1000).to_i, :bis => (test[:bis].to_f * 1000).to_i}
+        end
         if verwaltung
             antwort[:warnungen] = MonitorEffekte.warnungen(daten, MONITOR_DWD_WARNCELL, Time.now, regeln)
             antwort[:regeln] = regeln
@@ -442,6 +450,31 @@ class Main < Sinatra::Base
     # zeigen den gewählten Effekt; die echten Monitore reagieren nicht darauf.
     @@monitor_effekte_vorschau = ''
     MONITOR_VORSCHAU_NAMEN = (MonitorEffekte::EFFEKTE + MonitorEffekte::FESTE + %w(zeus rundgang)).freeze
+
+    # Test auf den echten Monitoren im Schulhaus: Ein Klick auf „Monitore verwalten“
+    # zeigt einen Effekt für ein paar Minuten auf allen Flur-Monitoren; danach (oder
+    # mit „Test beenden“) kehren sie von selbst zum echten Stand zurück. Gilt nur bis
+    # zum nächsten Neustart des Servers.
+    @@monitor_effekte_test = nil
+
+    def monitor_effekte_test
+        t = @@monitor_effekte_test
+        t && t[:bis] > Time.now ? t : nil
+    end
+
+    post '/api/monitor_effekte_test' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:effekt], :max_string_length => 16)
+        effekt = data[:effekt]
+        assert(effekt == '' || MonitorEffekte::EFFEKTE.include?(effekt) || MonitorEffekte::FESTE.include?(effekt))
+        @@monitor_effekte_test = effekt == '' ? nil : {:effekt => effekt, :bis => Time.now + MonitorEffekte::TEST_MINUTEN * 60}
+        # die Monitore fragen sofort neu ab
+        (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
+            info[:ws].send({:command => 'monitor_effekte_neu'}.to_json)
+        end
+        test = monitor_effekte_test()
+        respond(:test => test ? {:effekt => test[:effekt], :bis => (test[:bis].to_f * 1000).to_i} : nil)
+    end
 
     post '/api/monitor_effekte_vorschau' do
         require_user_who_can_manage_monitors!

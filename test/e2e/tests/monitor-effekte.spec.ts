@@ -5,7 +5,7 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 // is nil in test/credentials.rb), so every effect is checked through the
 // preview parameter ?effekt=… – the same one "Monitore verwalten" uses.
 
-const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'frost',
+const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost',
   'weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang',
   'adventskonzert', 'forschertag', 'rundgang'];
 
@@ -80,9 +80,29 @@ test('Monitor-Effekte: Stand abfragen und auf „Monitore verwalten“ ab- und e
   await expect(schalter).toBeChecked();
   await expect(page.getByTestId('monitor-effekte-status')).not.toContainText('ausgeschaltet');
 
-  // preview buttons load the hallway monitor with the effect
+  // the hallway monitor at the top always shows the live picture
+  await expect(page.locator('.if_monitor_flur')).toHaveAttribute('src', '/monitor');
+  // preview buttons open a second window below, the live one stays untouched
+  const vorschau = page.getByTestId('monitor-effekt-vorschau');
+  await expect(vorschau).toBeHidden();
   await page.locator('.bu_monitor_effekt_vorschau[data-effekt="gewitter"]').click();
-  await expect(page.locator('.if_monitor_flur')).toHaveAttribute('src', '/monitor?effekt=gewitter');
+  await expect(vorschau).toBeVisible();
+  await expect(page.locator('.if_monitor_vorschau')).toHaveAttribute('src', '/monitor?effekt=gewitter');
+  await expect(page.locator('.if_monitor_flur')).toHaveAttribute('src', '/monitor');
+  // from the preview, the effect can be shown on the real monitors for a few minutes
+  await page.locator('.bu_fx_test_starten').click();
+  await expect(page.getByTestId('monitor-effekt-test')).toContainText('Gewitter');
+  const mitTest = await (await page.request.get('/api/monitor_effekte')).json();
+  expect(mitTest.test.effekt).toBe('gewitter');
+  expect(mitTest.wetter.effekt).toBe('gewitter');
+  expect(mitTest.test.rest_ms).toBeGreaterThan(4 * 60 * 1000);
+  await page.locator('.bu_fx_test_beenden').click();
+  await expect(page.getByTestId('monitor-effekt-test')).toBeHidden();
+  const ohneTest = await (await page.request.get('/api/monitor_effekte')).json();
+  expect(ohneTest.test).toBeUndefined();
+  expect(ohneTest.wetter).toBeNull();
+  await page.locator('.bu_monitor_effekt_vorschau[data-effekt=""]').click();
+  await expect(vorschau).toBeHidden();
 });
 
 test('Monitor-Effekte: Schultermin eintragen, Forschertag mit drei Tagen, wieder löschen', async ({ page }) => {
@@ -111,4 +131,5 @@ test('Monitor-Effekte: nur für Monitore und Monitor-Verwaltung', async ({ page 
   expect((await page.request.post('/api/set_monitor_effekte', { data: { an: 'nein' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/add_monitor_schultermin', { data: { datum: '2099-01-01', motiv: 'adventskonzert' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/delete_monitor_schultermin', { data: { id: 'x' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/monitor_effekte_test', { data: { effekt: 'sturm' } })).status()).not.toBe(200);
 });

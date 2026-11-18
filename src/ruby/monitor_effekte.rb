@@ -19,7 +19,7 @@ module MonitorEffekte
     # (falls der DWD eine Warnung vorzeitig aufhebt und wir ihn nicht erreichen).
     HOECHSTALTER = 2 * 60 * 60
 
-    EFFEKTE = %w(schnee regen gewitter hitze sturm frost).freeze
+    EFFEKTE = %w(schnee regen gewitter hitze sturm glatteis frost).freeze
     FESTE = %w(weihnachten nikolaus ostern valentinstag fasching sommerferien schulanfang adventskonzert forschertag).freeze
     # Treffen Wetter und Fest zusammen: Einzeltage haben Vorrang vor dem Wetter,
     # Festzeiten über mehrere Tage (Advent, Ostern) lassen dem Wetter den Vortritt.
@@ -29,7 +29,7 @@ module MonitorEffekte
 
     # Reihenfolge, wenn mehrere Warnungen gleichzeitig gelten: das, was man
     # draußen am deutlichsten merkt, gewinnt.
-    VORRANG = %w(gewitter schnee regen sturm frost hitze).freeze
+    VORRANG = %w(gewitter schnee regen sturm glatteis frost hitze).freeze
 
     # Level im warnings.json des DWD: 1 Vorabinformation, 2 Wetterwarnung (gelb),
     # 3 markantes Wetter (orange), 4 Unwetter (rot), 5 extremes Unwetter (violett),
@@ -37,11 +37,13 @@ module MonitorEffekte
     #
     # Je Effekt lässt sich auf „Monitore verwalten“ einstellen, ob er erscheint
     # und ab welcher Stufe. Ohne Einstellung gilt das hier. Sturm erst ab rot,
-    # weil Sturmböen (orange) in Berlin häufig sind.
+    # weil Sturmböen (orange) in Berlin häufig sind; Schnee schon ab gelb (beim
+    # Schnee zeigt die Stufe sich am Monitor: Streufahrzeug ab orange, Pistenraupen ab rot).
     REGELN_STANDARD = {
-        'schnee' => {:an => true, :ab => 3}, 'regen' => {:an => true, :ab => 3},
+        'schnee' => {:an => true, :ab => 2}, 'regen' => {:an => true, :ab => 3},
         'gewitter' => {:an => true, :ab => 3}, 'sturm' => {:an => true, :ab => 4},
-        'frost' => {:an => true, :ab => 3}, 'hitze' => {:an => true, :ab => 10},
+        'glatteis' => {:an => true, :ab => 3}, 'frost' => {:an => true, :ab => 3},
+        'hitze' => {:an => true, :ab => 10},
     }.freeze
     STUFEN_WAEHLBAR = [2, 3, 4, 5].freeze
     STUFEN_HITZE = [10, 11].freeze
@@ -53,7 +55,8 @@ module MonitorEffekte
         'regen' => ['Starkregen', 'Heftiger Starkregen', 'Extrem heftiger Starkregen', 'Dauerregen', 'Ergiebiger Dauerregen', 'Extrem ergiebiger Dauerregen'],
         'gewitter' => ['Gewitter', 'Starkes Gewitter', 'Schweres Gewitter (mit Orkanböen, Starkregen oder Hagel)', 'Extremes Gewitter'],
         'sturm' => ['Windböen', 'Sturmböen', 'Schwere Sturmböen', 'Orkanartige Böen', 'Orkanböen', 'Extreme Orkanböen', 'Sturm, Starkwind'],
-        'frost' => ['Frost', 'Strenger Frost', 'Glätte', 'Glatteis', 'Gefrierender Regen'],
+        'glatteis' => ['Glätte', 'Glatteis', 'Gefrierender Regen'],
+        'frost' => ['Frost', 'Strenger Frost'],
         'hitze' => ['Starke Hitze', 'Extreme Hitze'],
     }.freeze
     PHAENOMENE_OHNE_EFFEKT = ['Nebel', 'Tauwetter', 'UV-Strahlung', 'Leiterseilschwingungen'].freeze
@@ -91,7 +94,8 @@ module MonitorEffekte
         elsif event.include?('GEWITTER') then 'gewitter'
         elsif event.include?('SCHNEE') then 'schnee'
         # gefrierender Regen ist Glatteis (vor „Regen“ prüfen)
-        elsif event.include?('GEFRIER') || event.include?('GLATTEIS') || event.include?('GLÄTTE') || event.include?('FROST') then 'frost'
+        elsif event.include?('GEFRIER') || event.include?('GLATTEIS') || event.include?('GLÄTTE') then 'glatteis'
+        elsif event.include?('FROST') then 'frost'
         elsif event.include?('REGEN') then 'regen'
         elsif event.include?('ORKAN') || event.include?('STURM') || event.include?('BÖEN') || event.include?('STARKWIND') then 'sturm'
         end
@@ -134,6 +138,7 @@ module MonitorEffekte
                 :staerke => e[1],
                 :titel => titel(w['event']),
                 :bis => ende ? ende.to_i : nil,
+                :stufe => w['level'].to_i,
             }
             k[:zeus] = true if e[0] == 'gewitter'   # Zeus kommt bei jedem Gewitter (Wunsch Jonas)
             kandidaten << k
@@ -181,6 +186,19 @@ module MonitorEffekte
     def self.titel(event)
         woerter = event.to_s.downcase.split(' ')
         woerter.each_with_index.map { |w, i| (i == 0 || NOMEN.include?(w)) ? w.capitalize : w }.join(' ')
+    end
+
+    # Test auf den echten Monitoren („Monitore verwalten“): wie lange er läuft und
+    # was er zeigt – [wetter, fest] wie bei echtem Wetter bzw. einem echten Fest.
+    TEST_MINUTEN = 5
+    def self.test_soll(name)
+        if EFFEKTE.include?(name)
+            w = {:effekt => name, :staerke => 2, :titel => 'Test', :bis => nil}
+            w[:zeus] = true if name == 'gewitter'
+            return [w, nil]
+        end
+        return [nil, {:fest => name, :nah => true}] if FESTE.include?(name)
+        [nil, nil]
     end
 
     # Ostersonntag nach dem gregorianischen Kalender (Algorithmus von Meeus,

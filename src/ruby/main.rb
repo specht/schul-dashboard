@@ -4038,6 +4038,8 @@ class Main < Sinatra::Base
                             :dow => t.wday,
                             :mid => x[:info][:id]
                         }
+                        # new design: the time in the list of sent messages
+                        temp[x[:info][:id]][:timestamp] = x[:info][:created] if ui_preview?
                         temp_order << x[:info][:id]
                     end
                     temp[x[:info][:id]][:recipients] << x[:recipient]

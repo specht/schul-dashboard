@@ -88,6 +88,14 @@ in [doc/Gestaltung.md](../../doc/Gestaltung.md).
   type, whatever was pasted (fonts, sizes, colours dropped; paragraphs,
   bold, italics, links and lists kept); pasting into a new message keeps
   only that structure. Stored messages are not changed.
+- **Messages as an inbox (2026-11-18).** A list like a mail app (picture,
+  sender, first line, time, unread dot; headings Heute, Gestern, Diese
+  Woche, then months), 50 rows at a time, a search over the list; "Eingang"
+  and "Gesendet" use the same list. From 840 px content width the opened
+  message stands beside the list, below that it replaces the list (tablets)
+  or covers the screen (phones); the address (`#nachricht/…`,
+  `#gesendet/…`) keeps it on reload, back closes it. Received messages say
+  "an mich": recipients of others' messages are not shown to recipients.
 - **Feedback** is given from the profile (next to the switch); the floating
   button was in the way.
 - **Development instances** offer the preview to every account (still opt-in),

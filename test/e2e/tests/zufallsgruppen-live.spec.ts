@@ -19,7 +19,8 @@ test('Gruppenbildung: live am Beamer auslosen, Name für Name aus dem Topf', asy
   await expect(beamer).toHaveClass(/zg-live/);
   const pool = page.locator('#zg_live_pool .zg-pool-chip');
   const total = await pool.count();
-  expect(total).toBeGreaterThan(10);
+  // the example class 5a of the test stack has only a few students
+  expect(total).toBeGreaterThan(1);
   await expect(page.locator('#zg_beamer_groups .zg-name.zg-hidden')).toHaveCount(total);
   // no settings on the projector
   await expect(beamer.locator('input, select')).toHaveCount(0);

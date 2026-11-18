@@ -102,12 +102,37 @@ html {
 }
 
 /* Fonts of the new design (include/fonts-v2): very readable text, a font
-   with character for headings. The font choice in the profile belongs to
-   today's design. */
+   with character for headings. Four pairs to choose from in the profile
+   (u.ui_font, body class pv-font-…; the old design keeps its own choice),
+   every one with accents and Greek (also polytonic). "Klar" is the default:
+   Atkinson and Bricolage have no Greek, Fira Sans fills in behind them. The
+   tiles in the profile show each pair whatever the current choice. */
+.ui-preview,
+.ui-preview .pv-font-tile[data-font='klar'] {
+    --pv-text: 'Atkinson Hyperlegible Next', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'Bricolage Grotesque', 'Fira Sans Fallback Display', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+}
+
+.ui-preview.pv-font-sachlich,
+.ui-preview .pv-font-tile[data-font='sachlich'] {
+    --pv-text: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+}
+
+.ui-preview.pv-font-buch,
+.ui-preview .pv-font-tile[data-font='buch'] {
+    --pv-text: 'Literata', Georgia, 'Times New Roman', serif;
+    --pv-display: 'Literata', Georgia, serif;
+}
+
+.ui-preview.pv-font-freundlich,
+.ui-preview .pv-font-tile[data-font='freundlich'] {
+    --pv-text: 'Ubuntu Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'M PLUS Rounded 1c', 'Ubuntu Sans', system-ui, sans-serif;
+}
+
 .ui-preview {
-    --pv-text: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --pv-display: 'Bricolage Grotesque', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
-    --pv-mono: 'Atkinson Hyperlegible Mono', ui-monospace, Menlo, Consolas, monospace;
+    --pv-mono: 'Atkinson Hyperlegible Mono', 'Fira Sans Fallback', ui-monospace, Menlo, Consolas, monospace;
     font-family: var(--pv-text) !important;
     letter-spacing: normal !important;
 }
@@ -4523,6 +4548,97 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .pv-vividness p {
     margin: 4px 0 0;
     font-size: 0.85rem;
+}
+
+/* "Schrift" in the profile ("Darstellung"): one tile per font pair, each in
+   its own fonts (the pair's variables above); the chosen one ringed */
+.ui-preview .pv-fonts {
+    padding-top: 12px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-fonts-label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-font-tiles {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+}
+
+@media (min-width: 576px) {
+    .ui-preview .pv-font-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.ui-preview .pv-font-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    margin: 0;
+    padding: 10px 14px 12px;
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    font-family: var(--pv-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-font-tile:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-font-tile[aria-checked='true'] {
+    border-color: var(--pv-ink);
+    box-shadow: inset 0 0 0 1px var(--pv-ink);
+}
+
+.ui-preview .pv-font-tile:focus {
+    outline: none;
+}
+
+.ui-preview .pv-font-tile:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+}
+
+.ui-preview .pv-font-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ui-preview .pv-font-name {
+    font: 700 1.2rem/1.3 var(--pv-display);
+    letter-spacing: -0.01em;
+}
+
+.ui-preview .pv-font-head .ti {
+    margin-top: 0.2em;
+    font-size: 1.1rem;
+    visibility: hidden;
+}
+
+.ui-preview .pv-font-tile[aria-checked='true'] .pv-font-head .ti {
+    visibility: visible;
+}
+
+.ui-preview .pv-font-sample {
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.ui-preview .pv-font-families {
+    font-size: 0.8rem;
+    color: var(--pv-muted);
 }
 
 /* the subjects at the chosen Farbigkeit, live */

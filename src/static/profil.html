@@ -161,6 +161,7 @@
                     </div>
                 </div>
             </div>
+            #{design_preview_font_picker_html}
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbeinstellungen</h2>
             #{ui_preview? ? "<p class='text-muted' id='color_options_preview_note'>Im neuen Design (Vorschau) gelten diese Einstellungen nicht – dort bleiben die Farben bei jedem Schema gut lesbar.</p>" : ''}
             <div class="col-md-12">
@@ -628,6 +629,16 @@ window.addEventListener('load', function () {
     });
     $('#ti_ui_vividness').on('change', function(e) {
         api_call('/api/set_ui_vividness', {value: parseInt(e.currentTarget.value, 10)}, function() {});
+    });
+    // "Schrift": four pairs, the choice applies at once
+    $('.pv-font-tile').on('click', function(e) {
+        let font = $(e.currentTarget).data('font');
+        api_call('/api/set_ui_font', {font: font}, function(data) {
+            if (!data.success) return;
+            $('.pv-font-tile').attr('aria-checked', 'false');
+            $(e.currentTarget).attr('aria-checked', 'true');
+            if (window.pv_apply_font) window.pv_apply_font(font);
+        });
     });
     // rearranging: swap two neighbours, or reverse all three
     $('.pv-scheme-swap').on('click', function(e) {

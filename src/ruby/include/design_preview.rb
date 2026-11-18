@@ -92,7 +92,8 @@ class Main < Sinatra::Base
     # body classes of the new design; pv-public: logged out (no navigation)
     def design_preview_body_class
         return '' unless ui_preview?
-        user_logged_in? ? ' ui-preview' : ' ui-preview pv-public'
+        # the font pair (UI_FONTS, preview.css); logged out the default
+        user_logged_in? ? " ui-preview pv-font-#{ui_font}" : ' ui-preview pv-public'
     end
 
     # the login pages logged out (no navigation): the school's name and icon
@@ -515,6 +516,55 @@ class Main < Sinatra::Base
             SET u.ui_vividness = $value;
         END_OF_QUERY
         respond(:ok => true)
+    end
+
+    # "Schrift" (profile, new design): four pairs of fonts for headings and
+    # text, all with accents and Greek (preview.css, include/fonts-v2). The
+    # first is the default; the old design keeps its own choice (u.font).
+    UI_FONTS = [
+        ['klar', 'Klar', 'Bricolage Grotesque und Atkinson Hyperlegible'],
+        ['sachlich', 'Sachlich', 'Inter Tight und Inter'],
+        ['buch', 'Buch', 'Literata'],
+        ['freundlich', 'Freundlich', 'M PLUS Rounded und Ubuntu Sans'],
+    ]
+    UI_FONT_KEYS = UI_FONTS.map(&:first)
+
+    def ui_font
+        f = (@session_user || {})[:ui_font]
+        UI_FONT_KEYS.include?(f) ? f : UI_FONT_KEYS.first
+    end
+
+    post '/api/set_ui_font' do
+        require_user!
+        data = parse_request_data(:required_keys => [:font], :max_body_length => 64,
+                                  :max_value_lengths => {:font => 16})
+        assert(UI_FONT_KEYS.include?(data[:font]))
+        neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :font => data[:font])
+            MATCH (u:User {email: $email})
+            SET u.ui_font = $font;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    # four tiles, each in its own pair: a heading and a line with accents
+    # and Greek; switching applies at once (profil.html, preview.js)
+    def design_preview_font_picker_html
+        return '' unless ui_preview?
+        current = ui_font
+        tiles = UI_FONTS.map do |key, name, fonts|
+            active = key == current
+            "<button type='button' class='pv-font-tile' data-font='#{key}' role='radio' aria-checked='#{active}'>" +
+                "<span class='pv-font-head'><span class='pv-font-name'>#{name}</span><i class='ti ti-check' aria-hidden='true'></i></span>" +
+                "<span class='pv-font-sample' lang='de'>Größe, café, <span lang='el'>Ελληνικά, Αθήνα</span></span>" +
+                "<span class='pv-font-families'>#{fonts}</span>" +
+            "</button>"
+        end.join
+        <<~END_OF_HTML
+            <div class='pv-fonts'>
+                <div class='pv-fonts-label' id='pv_fonts_label'>Schrift</div>
+                <div class='pv-font-tiles' role='radiogroup' aria-labelledby='pv_fonts_label'>#{tiles}</div>
+            </div>
+        END_OF_HTML
     end
 
     def ui_preview_quick?

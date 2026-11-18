@@ -813,6 +813,15 @@
             });
     }
     window.pv_apply_dark = apply_dark;
+    // the font pair (profile, "Schrift"): a class on the body, preview.css
+    // sets the fonts for it
+    window.pv_apply_font = function(font) {
+        var body = document.body;
+        Array.prototype.slice.call(body.classList).forEach(function(c) {
+            if (c.indexOf('pv-font-') === 0) body.classList.remove(c);
+        });
+        body.classList.add('pv-font-' + font);
+    };
     // the menu entry: before _template.html's handler, which reloads
     document.addEventListener('click', function(e) {
         if (!document.body.classList.contains('ui-preview') || !e.target.closest) return;

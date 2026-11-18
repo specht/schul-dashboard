@@ -437,6 +437,102 @@ test('Neues Design: eigene Schriften', async ({ page }) => {
   }
 });
 
+// Four font pairs in the profile ("Schrift"), all with accents and Greek
+// (with tonos; polytonic is a plus, all four have it);
+// Atkinson and Bricolage have no Greek, Fira Sans fills in behind them. The
+// names as Chrome reports the fonts drawing the text (it may add its
+// renderer, e.g. "Inter (Fontations)")
+const FONT_PAIRS = [
+  { key: 'klar', text: 'Atkinson Hyperlegible Next', display: 'Bricolage Grotesque', greekText: /^Fira Sans( \(|$)/, greekDisplay: /^Fira Sans( \(|$)/ },
+  { key: 'sachlich', text: 'Inter', display: 'Inter Tight', greekText: /^Inter( \(|$)/, greekDisplay: /^Inter Tight( \(|$)/ },
+  { key: 'buch', text: 'Literata', display: 'Literata', greekText: /^Literata( \(|$)/, greekDisplay: /^Literata( \(|$)/ },
+  { key: 'freundlich', text: 'Ubuntu Sans', display: 'M PLUS Rounded 1c', greekText: /^Ubuntu Sans( \(|$)/, greekDisplay: /Mplus/i },
+];
+
+test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page, serverErrors }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_font', { data: { font: 'klar' } });
+  // only the four keys
+  for (const font of ['comic', '', 'klar; DROP', 'Inter']) {
+    expect((await page.request.post('/api/set_ui_font', { data: { font } })).status()).not.toBe(200);
+  }
+  serverErrors.splice(0, serverErrors.length, ...serverErrors.filter((e) => !e.includes('/api/set_ui_font')));
+  // the old design: no tiles, its own fonts, whatever the choice
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  expect((await page.request.post('/api/set_ui_font', { data: { font: 'sachlich' } })).status()).toBe(200);
+  await page.goto('/profil');
+  await expect(page.locator('.pv-font-tile')).toHaveCount(0);
+  expect(await page.evaluate(() => document.body.className)).not.toMatch(/pv-font-/);
+  expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).not.toMatch(/Inter|Atkinson/);
+  await page.request.post('/api/set_ui_font', { data: { font: 'klar' } });
+
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/profil');
+    const tiles = page.locator('.pv-font-tile');
+    await expect(tiles).toHaveCount(4);
+    await expect(page.locator(".pv-font-tile[aria-checked='true']")).toHaveAttribute('data-font', 'klar');
+    await expect(page.locator('body')).toHaveClass(/\bpv-font-klar\b/);
+    // every tile in its own fonts, with Greek
+    for (const pair of FONT_PAIRS) {
+      const tile = page.locator(`.pv-font-tile[data-font='${pair.key}']`);
+      await expect(tile.locator('.pv-font-sample')).toContainText('Ελληνικά');
+      expect(await tile.locator('.pv-font-sample').evaluate((el) => getComputedStyle(el).fontFamily)).toContain(pair.text);
+      expect(await tile.locator('.pv-font-name').evaluate((el) => getComputedStyle(el).fontFamily)).toContain(pair.display);
+    }
+    // the fonts that really draw the Greek (Chrome's DevTools protocol)
+    const cdp = await page.context().newCDPSession(page);
+    const used = async (selector: string) => {
+      await cdp.send('DOM.enable');
+      await cdp.send('CSS.enable');
+      const { root } = await cdp.send('DOM.getDocument', { depth: 0 });
+      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+      const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+      return fonts.filter((f: { isCustomFont: boolean }) => f.isCustomFont).map((f: { familyName: string }) => f.familyName);
+    };
+    const bodyFont = () => page.evaluate(() => getComputedStyle(document.body).fontFamily);
+    const headingFont = () => page.locator('h2').first().evaluate((el) => getComputedStyle(el).fontFamily);
+    for (const pair of [...FONT_PAIRS.slice(1), FONT_PAIRS[0]]) {
+      // at once, without loading the page again
+      await page.locator(`.pv-font-tile[data-font='${pair.key}']`).click();
+      await expect(page.locator(".pv-font-tile[aria-checked='true']")).toHaveAttribute('data-font', pair.key);
+      await expect(page.locator('body')).toHaveClass(new RegExp(`\\bpv-font-${pair.key}\\b`));
+      await expect.poll(bodyFont).toMatch(new RegExp(`^"?${pair.text}"?,`));
+      await expect.poll(headingFont).toMatch(new RegExp(`^"?${pair.display}"?,`));
+      // Greek text in the page (a message, a Kursbuch entry …): in the pair's fonts
+      await page.evaluate(() => {
+        document.querySelectorAll('.pv-greek-probe').forEach((el) => el.remove());
+        const p = document.createElement('p');
+        p.id = 'pv_greek_probe_text';
+        p.className = 'pv-greek-probe';
+        // Greek letters only: spaces and commas come from the Latin font
+        p.textContent = 'ΕλληνικάΑθήναἀρετήῥῆμαᾠδή';
+        const h = document.createElement('h2');
+        h.id = 'pv_greek_probe_heading';
+        h.className = 'pv-greek-probe';
+        h.textContent = 'Ἀρετή';
+        // next to the tiles (in view), outside them (they have fonts of their own)
+        document.querySelector('.pv-fonts')!.append(h, p);
+      });
+      await page.evaluate(() => document.fonts.ready);
+      await expect.poll(() => used('#pv_greek_probe_text')).toEqual([expect.stringMatching(pair.greekText)]);
+      await expect.poll(() => used('#pv_greek_probe_heading')).toEqual([expect.stringMatching(pair.greekDisplay)]);
+      expect(await page.evaluate((family) => document.fonts.check(`16px "${family}"`, 'ἀρετή ῥῆμα'),
+        pair.key === 'klar' ? 'Fira Sans Fallback' : pair.text)).toBe(true);
+      // kept for the next page
+      if (pair.key !== 'klar') {
+        await page.reload();
+        await expect(page.locator(".pv-font-tile[aria-checked='true']")).toHaveAttribute('data-font', pair.key);
+        await expect(page.locator('body')).toHaveClass(new RegExp(`\\bpv-font-${pair.key}\\b`));
+        expect(await bodyFont()).toMatch(new RegExp(`^"?${pair.text}"?,`));
+      }
+    }
+  } finally {
+    await page.request.post('/api/set_ui_font', { data: { font: 'klar' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Timetable: each subject in its colour from the colour scheme
 test('Neues Design: Fächer im Stundenplan in ihren Farben', async ({ page }, testInfo) => {
   // the week shows Mathematik and Latein side by side; the day view on phones

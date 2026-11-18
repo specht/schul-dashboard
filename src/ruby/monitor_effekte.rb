@@ -22,7 +22,7 @@ module MonitorEffekte
     EFFEKTE = %w(schnee regen gewitter hitze sturm glatteis frost).freeze
     FESTE = %w(weihnachten nikolaus ostern valentinstag fasching sommerferien schulanfang adventskonzert forschertag).freeze
     # Storys: kleine Geschichten, die die Monitore von selbst ab und zu zeigen
-    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug brand kran bienen diebstahl).freeze
+    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug brand kran bienen diebstahl brom ballspiel).freeze
     # Storys nur in den Pausen (Jonas, 18.11.): [von, bis, wie viele]; zufällig im Zeitraum,
     # jede Story höchstens einmal am Tag, alle Flur-Monitore nach demselben Plan
     STORY_PAUSEN = [['07:46', '08:00', 3], ['08:45', '08:50', 1], ['10:20', '10:23', 1], ['10:35', '10:40', 2],
@@ -54,6 +54,13 @@ module MonitorEffekte
             [format('%02d:%02d', von / 60, von % 60), format('%02d:%02d', bis / 60, bis % 60), anzahl]
         end
         pausen.sort_by { |p| p[0] }
+    end
+
+    # Einzeln ausgeschaltete Storys aus „Monitore verwalten“ prüfen (Wunsch Jonas, 18.11.):
+    # nur bekannte Namen, jeder einmal, in der Reihenfolge von STORYS. Ungültig → nil
+    def self.storys_aus_pruefen(liste)
+        return nil unless liste.is_a?(Array) && liste.size <= STORYS.size * 2 && liste.all? { |x| x.is_a?(String) }
+        STORYS.select { |s| liste.include?(s) }
     end
 
     # Tagesplan: [{:sekunde (seit Mitternacht), :story}], gleich für dasselbe Datum

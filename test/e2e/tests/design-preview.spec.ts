@@ -142,30 +142,50 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       expect(search.y).toBeGreaterThan(viewport.height / 2);
       expect(search.y).toBeLessThan(profile.y);
       expect(profile.y - (search.y + search.height)).toBeLessThan(30);
-      // menus open as a panel next to the sidebar, at full length (in columns
-      // if needed), above the footer; the sidebar itself never scrolls
+      // the profile menu opens upwards, its bottom level with the sidebar's
       await page.locator('#navbarDropdownProfile').click();
-      await expect(nav.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();
-      const foot = (await page.locator('.foot').boundingBox())!;
+      const profileMenu = nav.locator('[aria-labelledby="navbarDropdownProfile"]');
+      await expect(profileMenu).toBeVisible();
+      await page.waitForTimeout(100);
+      const pm = (await profileMenu.boundingBox())!;
+      expect(pm.x).toBeGreaterThanOrEqual(box.width - 1);
+      expect(Math.abs(viewport.height - (pm.y + pm.height) - 8)).toBeLessThan(3);
+      await page.keyboard.press('Escape');
+      await expect(profileMenu).toBeHidden();
+      // the old admin menu is gone: its tools sit in the "Verwaltung" section,
+      // folded (unless the current page is one of them), and it remembers
+      await expect(page.locator('#navbarDropdownAdmin')).toBeHidden();
+      const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
+      await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
+      await verwaltung.locator('button.pv-nav-heading').click();
+      await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
+      await page.reload();
+      await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
+      await verwaltung.locator('button.pv-nav-heading').click();
+      await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
+      // menus open as a panel next to the sidebar, inside the window above
+      // the footer (in columns, or scrolling where even that is too long);
+      // the sidebar itself never scrolls
+      // (the old footer is hidden in the new design; its line is in the sidebar)
+      const footHeight = (await page.locator('.foot').boundingBox())?.height ?? 0;
+      const groupsMenu = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
       for (const height of [viewport.height, 420]) {
         await page.setViewportSize({ width: viewport.width, height });
-        await page.locator('#navbarDropdownAdmin').click();
-        const adminMenu = nav.locator('[aria-labelledby="navbarDropdownAdmin"]');
-        await expect(adminMenu).toBeVisible();
+        await page.locator('#navbarDropdownKlassen').click();
+        await expect(groupsMenu).toBeVisible();
         await page.waitForTimeout(100);
-        const panel = (await adminMenu.boundingBox())!;
+        const panel = (await groupsMenu.boundingBox())!;
         expect(panel.x).toBeGreaterThanOrEqual(box.width - 1);
         expect(panel.y).toBeGreaterThanOrEqual(0);
-        expect(panel.y + panel.height).toBeLessThanOrEqual(height - foot.height + 1);
-        expect(await adminMenu.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+        expect(panel.y + panel.height).toBeLessThanOrEqual(height - footHeight + 1);
+        expect(await groupsMenu.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 || ['auto', 'scroll'].includes(getComputedStyle(el).overflowY))).toBe(true);
         if (height === 420) break;
         expect(await nav.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
         await page.keyboard.press('Escape');
-        await expect(adminMenu).toBeHidden();
+        await expect(groupsMenu).toBeHidden();
       }
-      const adminMenu = nav.locator('[aria-labelledby="navbarDropdownAdmin"]');
       // long names wrap instead of being cut off
-      expect(await adminMenu.locator('.dropdown-item').evaluateAll((els) => els.every((el) => el.scrollWidth <= el.clientWidth + 1))).toBe(true);
+      expect(await groupsMenu.locator('.dropdown-item').evaluateAll((els) => els.every((el) => el.scrollWidth <= el.clientWidth + 1))).toBe(true);
     } else {
       const tabs = page.locator('.pv-tabbar');
       await expect(tabs).toBeVisible();

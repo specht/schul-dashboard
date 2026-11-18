@@ -244,14 +244,13 @@ class Main < Sinatra::Base
 end
 
 class Main < Sinatra::Base
-    # feedback button and dialog in the template (preview only); teachers are
-    # addressed with "Sie", everyone else with "du"
+    # feedback button and dialog in the template (preview only); the
+    # dashboard addresses everyone with "du"
     def design_feedback_html
         return '' unless ui_preview? && user_logged_in?
-        sie = teacher_logged_in?
-        placeholder = sie ? 'Was gefällt Ihnen, was fehlt, was klappt nicht?' : 'Was gefällt dir, was fehlt, was klappt nicht?'
-        contact = sie ? 'Sie dürfen mich dazu ansprechen.' : 'Ihr dürft mich dazu ansprechen.'
-        thanks = sie ? 'Danke für Ihre Rückmeldung!' : 'Danke für deine Rückmeldung!'
+        placeholder = 'Was gefällt dir, was fehlt, was klappt nicht?'
+        contact = 'Du darfst mich dazu ansprechen.'
+        thanks = 'Danke für deine Rückmeldung!'
         <<~END_OF_HTML
             <button type="button" class="btn btn-sm btn-secondary design-feedback-button" id="bu_design_feedback"><i class="fa fa-comment-o"></i>&nbsp;&nbsp;Feedback zum neuen Design</button>
             <div class="modal" id="designFeedbackModal" tabindex="-1" role="dialog" aria-labelledby="designFeedbackTitle">
@@ -652,6 +651,33 @@ class Main < Sinatra::Base
     # Profile, new design: the curated set comes first (profil.html filters
     # the swatches), a note when one's own scheme is not in it, and a picker
     # for an own scheme – three colours, the new design keeps them readable.
+    # colours to pick for one's own scheme: the Cling palette, as in the
+    # Hackschule sprite editor (http://clingeverything.com/color-palette),
+    # without black and white (weak as scheme colours): 42, six rows of seven
+    # on phones
+    CLING_COLOURS = [
+        ['#ffe617', 'Narzisse'], ['#fad31c', 'Sonnengelb'], ['#fdb717', 'Senf'],
+        ['#faaa21', 'Zirkusorange'], ['#f1753f', 'Kürbis'], ['#ed5724', 'Mandarine'],
+        ['#ef4538', 'Lachs'], ['#ea2830', 'Kaki'], ['#bc2326', 'Rubin'],
+        ['#8c0c03', 'Scharlach'], ['#e5185d', 'Pink'], ['#f384ae', 'Rosa'],
+        ['#fac6d2', 'Zartrosa'], ['#b296c7', 'Flieder'], ['#7b67ae', 'Lavendel'],
+        ['#5f3577', 'Violett'], ['#c1d18a', 'Seladon'], ['#799155', 'Olive'],
+        ['#80bc42', 'Bambus'], ['#4aa03f', 'Gras'], ['#16884a', 'Kleegrün'],
+        ['#003f2e', 'Wald'], ['#c3def1', 'Wolke'], ['#55beed', 'Traumblau'],
+        ['#31a8e0', 'Golf'], ['#238acc', 'Azur'], ['#0d60ae', 'Himmel'],
+        ['#143b86', 'Indigo'], ['#001b4a', 'Marine'], ['#7dcdc2', 'Meerschaum'],
+        ['#00a8a8', 'Blaugrün'], ['#12959f', 'Pfau'], ['#094e54', 'Tiefsee'],
+        ['#381e11', 'Schokolade'], ['#c05c20', 'Terrakotta'], ['#bf9b6b', 'Kamel'],
+        ['#e9d4a7', 'Leinen'], ['#e7e6e1', 'Stein'], ['#cfd0d2', 'Rauch'],
+        ['#8a8b8f', 'Stahl'], ['#778590', 'Schiefer'], ['#474d4d', 'Anthrazit'],
+    ]
+
+    # light colours get a dark check mark, dark ones a white one
+    def cling_light?(hex)
+        r, g, b = hex[1, 6].scan(/../).map { |x| x.to_i(16) / 255.0 }
+        0.299 * r + 0.587 * g + 0.114 * b > 0.6
+    end
+
     def design_preview_scheme_picker_html
         return '' unless ui_preview?
         code = (@session_user || {})[:color_scheme] || @@standard_color_scheme
@@ -659,8 +685,9 @@ class Main < Sinatra::Base
         unless DesignTokens.curated?(code)
             name = (@@color_scheme_info[code[0, 19]] || @@color_scheme_info['l' + code[1, 18]] || [])[0]
             key, cname, _ = DesignTokens.closest_curated(code)
-            mine = name ? "Dein Farbschema »#{CGI.escapeHTML(name)}«" : 'Dein eigenes Farbschema'
-            note = "<p class='pv-scheme-note'>#{mine} gehört nicht zur Auswahl des neuen Designs – es bleibt dir erhalten. Ähnlich in der Auswahl: <b>#{CGI.escapeHTML(cname)}</b>.</p>"
+            # kept as one's own scheme of three colours (adjustable below)
+            mine = name ? "Dein eigenes Farbschema »#{CGI.escapeHTML(name)}«" : 'Dein eigenes Farbschema'
+            note = "<p class='pv-scheme-note'>#{mine} besteht aus drei Farben, du kannst sie unten anpassen. Ähnlich in der Auswahl: <b>#{CGI.escapeHTML(cname)}</b>.</p>"
         end
         colours = [1, 7, 13].map { |i| '#' + code[i, 6].to_s }
         <<~END_OF_HTML
@@ -680,16 +707,32 @@ class Main < Sinatra::Base
             <div class='pv-scheme-own'>
                 <div class='pv-scheme-own-head'>
                     <h3>Eigenes Farbschema</h3>
-                    <p class='text-muted'>Drei Farben: links, Mitte (Hauptfarbe), rechts. Antippen ändert eine Farbe, die Pfeile tauschen zwei. Das neue Design macht daraus Akzent- und Fächerfarben, die gut lesbar bleiben.</p>
+                    <p class='text-muted'>Drei Farben: links, Mitte (Hauptfarbe), rechts. Wähle eine aus und tippe eine Farbe an oder stelle sie mit den Reglern ein; die Pfeile tauschen zwei. Das neue Design macht daraus Akzent- und Fächerfarben, die gut lesbar bleiben.</p>
                 </div>
-                <div class='pv-scheme-inputs'>
-                    <label class='pv-scheme-colour'><input type='color' id='ti_scheme_left' value='#{colours[0]}' aria-label='Linke Farbe'><span>Links</span></label>
-                    <button type='button' class='pv-scheme-swap' data-a='left' data-b='main' aria-label='Links und Mitte tauschen'><i class='fa fa-exchange'></i></button>
-                    <label class='pv-scheme-colour'><input type='color' id='ti_scheme_main' value='#{colours[1]}' aria-label='Hauptfarbe'><span>Mitte</span></label>
-                    <button type='button' class='pv-scheme-swap' data-a='main' data-b='right' aria-label='Mitte und rechts tauschen'><i class='fa fa-exchange'></i></button>
-                    <label class='pv-scheme-colour'><input type='color' id='ti_scheme_right' value='#{colours[2]}' aria-label='Rechte Farbe'><span>Rechts</span></label>
+                <div class='pv-scheme-inputs' role='radiogroup' aria-label='Welche Farbe du änderst'>
+                    <button type='button' class='pv-scheme-slot' data-slot='left' role='radio' aria-checked='false'><span class='pv-scheme-chip' style='background: #{colours[0]}'></span><span class='pv-scheme-slot-name'>Links</span></button>
+                    <button type='button' class='pv-scheme-swap' data-a='left' data-b='main' aria-label='Links und Mitte tauschen'><i class='ti ti-arrows-exchange'></i></button>
+                    <button type='button' class='pv-scheme-slot' data-slot='main' role='radio' aria-checked='true'><span class='pv-scheme-chip' style='background: #{colours[1]}'></span><span class='pv-scheme-slot-name'>Mitte</span></button>
+                    <button type='button' class='pv-scheme-swap' data-a='main' data-b='right' aria-label='Mitte und rechts tauschen'><i class='ti ti-arrows-exchange'></i></button>
+                    <button type='button' class='pv-scheme-slot' data-slot='right' role='radio' aria-checked='false'><span class='pv-scheme-chip' style='background: #{colours[2]}'></span><span class='pv-scheme-slot-name'>Rechts</span></button>
                 </div>
+                <input type='hidden' id='ti_scheme_left' value='#{colours[0]}'>
+                <input type='hidden' id='ti_scheme_main' value='#{colours[1]}'>
+                <input type='hidden' id='ti_scheme_right' value='#{colours[2]}'>
                 <div class='pv-scheme-strip' aria-hidden='true'></div>
+                <div class='pv-cling' role='group' aria-label='Farben zur Auswahl'>
+                    #{CLING_COLOURS.map { |hex, name| "<button type='button' class='pv-cling-colour#{cling_light?(hex) ? ' pv-cling-light' : ''}' data-hex='#{hex}' style='background: #{hex}' title='#{name}' aria-label='#{name}' aria-pressed='false'><i class='ti ti-check' aria-hidden='true'></i></button>" }.join}
+                </div>
+                <div class='pv-hsl'>
+                    <label for='ti_hsl_h'>Farbton</label>
+                    <input type='range' id='ti_hsl_h' class='pv-hsl-h' min='0' max='359' step='1'>
+                    <label for='ti_hsl_s'>Sättigung</label>
+                    <input type='range' id='ti_hsl_s' class='pv-hsl-s' min='0' max='100' step='1'>
+                    <label for='ti_hsl_l'>Helligkeit</label>
+                    <input type='range' id='ti_hsl_l' class='pv-hsl-l' min='0' max='100' step='1'>
+                    <label for='ti_scheme_hex'>Farbcode</label>
+                    <input type='text' id='ti_scheme_hex' class='form-control pv-hsl-hex' maxlength='7' spellcheck='false' autocomplete='off' inputmode='text'>
+                </div>
                 <div class='pv-scheme-actions'>
                     <button type='button' class='btn btn-outline-secondary' id='bu_reverse_own_scheme'><i class='fa fa-retweet'></i>&nbsp;&nbsp;Umdrehen</button>
                     <button type='button' class='btn btn-primary' id='bu_apply_own_scheme'>Übernehmen</button>

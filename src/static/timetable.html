@@ -666,6 +666,12 @@ function preview_subject_color(event) {
 
 // the text colour on a subject's colour: white on dark ones, dark on bright
 // ones like yellow (design_tokens.rb, --subj-<code>-ink)
+// light / dark switched in place (preview.js): the subject colours differ per
+// mode and are baked into the events – draw them again (from the cache)
+document.addEventListener('pv-colours-changed', function() {
+    if (window.calendar) window.calendar.refetchEvents();
+});
+
 function preview_subject_ink(event) {
     let root = getComputedStyle(document.documentElement);
     let label = $('<div>').html(event.label_short || '');

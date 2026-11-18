@@ -1293,6 +1293,10 @@ html {
    grid itself makes it re-measure endlessly) */
 .ui-preview .fc .fc-timegrid-divider {
     padding-bottom: 12px;
+    /* air, not a shaded band: the surface, a hairline below the day's events */
+    background: var(--pv-surface);
+    border-top: 1px solid var(--pv-line);
+    border-bottom: 0;
 }
 
 .ui-preview .fc-timegrid-event-harness {
@@ -1809,22 +1813,6 @@ html {
     margin: 8px 0 10px;
 }
 
-.ui-preview .pv-scheme-inputs label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.ui-preview .pv-scheme-inputs input[type='color'] {
-    width: 64px;
-    height: 40px;
-    padding: 2px;
-    border: 1px solid var(--pv-line);
-    border-radius: 10px;
-    background: var(--pv-surface);
-    cursor: pointer;
-}
-
 .ui-preview .pv-scheme-strip {
     height: 14px;
     border-radius: 7px;
@@ -2263,6 +2251,74 @@ html {
 .ui-preview .btn-outline-secondary:hover {
     background-color: var(--pv-hover);
     color: var(--pv-ink);
+}
+
+/* the other outline buttons (Bootstrap green, blue, cyan): calm like the
+   grey ones (doc/Gestaltung.md, "Knöpfe"); a selected one (.active, e.g. the
+   chosen sign-in method) in the accent's soft tone. Outline-danger: calm red
+   type, full red only in the confirmation. */
+.ui-preview #main_container .btn-outline-primary,
+.ui-preview #main_container .btn-outline-success,
+.ui-preview #main_container .btn-outline-info,
+.ui-preview #main_container .btn-outline-warning,
+.ui-preview .modal .btn-outline-primary,
+.ui-preview .modal .btn-outline-success,
+.ui-preview .modal .btn-outline-info,
+.ui-preview .modal .btn-outline-warning {
+    background-color: transparent;
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn-outline-primary:hover,
+.ui-preview #main_container .btn-outline-success:hover,
+.ui-preview #main_container .btn-outline-info:hover,
+.ui-preview #main_container .btn-outline-warning:hover,
+.ui-preview .modal .btn-outline-primary:hover,
+.ui-preview .modal .btn-outline-success:hover,
+.ui-preview .modal .btn-outline-info:hover,
+.ui-preview .modal .btn-outline-warning:hover {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn-outline-primary.active,
+.ui-preview #main_container .btn-outline-success.active,
+.ui-preview #main_container .btn-outline-info.active,
+.ui-preview #main_container .btn-outline-warning.active,
+.ui-preview .modal .btn-outline-primary.active,
+.ui-preview .modal .btn-outline-success.active,
+.ui-preview .modal .btn-outline-info.active,
+.ui-preview .modal .btn-outline-warning.active {
+    background-color: var(--acc-soft);
+    border-color: var(--acc);
+    color: var(--acc-text);
+}
+
+.ui-preview #main_container .btn-outline-danger,
+.ui-preview .modal .btn-outline-danger {
+    background-color: transparent;
+    border-color: var(--pv-line);
+    color: #b42318;
+}
+
+.ui-preview.dark #main_container .btn-outline-danger,
+.ui-preview.dark .modal .btn-outline-danger {
+    color: #ff8f8f;
+}
+
+.ui-preview #main_container .btn-outline-danger:hover,
+.ui-preview .modal .btn-outline-danger:hover {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+}
+
+/* a button with a menu, and buttons in table cells: on one line (a count
+   like »839 Nutzer« with its chevron must not wrap) */
+.ui-preview #main_container .btn.dropdown-toggle,
+.ui-preview #main_container td .btn {
+    white-space: nowrap;
 }
 
 /* grey hints: the template fixes .text-muted at #666 */
@@ -3957,7 +4013,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
     background-position: 50% 30% !important;
 }
 
-/* own scheme: three large colours with swap buttons between them */
+/* own scheme: three colours to select (with swap buttons between them),
+   a palette and HSL sliders for the selected one */
 .ui-preview .pv-scheme-own {
     display: grid;
     gap: 12px;
@@ -3975,39 +4032,157 @@ body.ui-preview:has(.container-fluid.solid)::before {
     margin: 0;
 }
 
-.ui-preview .pv-scheme-colour {
-    display: flex !important;
+.ui-preview .pv-scheme-slot {
+    display: flex;
     flex-direction: column;
     gap: 4px;
     margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pv-muted);
     cursor: pointer;
 }
 
-.ui-preview .pv-scheme-colour input[type='color'] {
+.ui-preview .pv-scheme-chip {
+    display: block;
     width: 100%;
-    height: 64px;
-    padding: 0;
+    height: 56px;
     border: 1px solid var(--pv-line);
     border-radius: 14px;
-    background: none;
-    overflow: hidden;
 }
 
-.ui-preview .pv-scheme-colour input[type='color']::-webkit-color-swatch-wrapper {
-    padding: 0;
+/* the colour being changed: a ring around it, its name in ink */
+.ui-preview .pv-scheme-slot[aria-checked='true'] .pv-scheme-chip {
+    outline: 2px solid var(--pv-ink);
+    outline-offset: 2px;
 }
 
-.ui-preview .pv-scheme-colour input[type='color']::-webkit-color-swatch,
-.ui-preview .pv-scheme-colour input[type='color']::-moz-color-swatch {
-    border: 0;
-    border-radius: 13px;
-}
-
-.ui-preview .pv-scheme-colour span {
+.ui-preview .pv-scheme-slot-name {
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--pv-muted);
     text-align: center;
+}
+
+.ui-preview .pv-scheme-slot[aria-checked='true'] .pv-scheme-slot-name {
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-scheme-slot:focus {
+    outline: none;
+}
+
+.ui-preview .pv-scheme-slot:focus-visible .pv-scheme-chip {
+    outline: 2px solid var(--acc);
+}
+
+/* the palette (Cling, as in the Hackschule sprite editor): always in view */
+.ui-preview .pv-cling {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+/* wider: two rows of the phone's in one, three rows in all */
+@media (min-width: 576px) {
+    .ui-preview .pv-cling {
+        grid-template-columns: repeat(14, 1fr);
+    }
+}
+
+.ui-preview .pv-cling-colour {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    min-height: 36px;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+}
+
+.ui-preview .pv-cling-colour.pv-cling-light {
+    color: #1b2430;
+}
+
+.ui-preview .pv-cling-colour > .ti {
+    font-size: 1.2rem;
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 0.12s, transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.ui-preview .pv-cling-colour.active > .ti {
+    opacity: 1;
+    transform: none;
+}
+
+.ui-preview .pv-cling-colour.active {
+    box-shadow: 0 0 0 2px var(--pv-surface), 0 0 0 4px var(--pv-ink);
+}
+
+/* fine-tuning: hue, saturation, lightness and the code */
+.ui-preview .pv-hsl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px 14px;
+}
+
+.ui-preview .pv-hsl label {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-hsl input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 14px;
+    margin: 0;
+    border: 1px solid var(--pv-line);
+    border-radius: 7px;
+    background: var(--pv-hsl-track);
+    cursor: pointer;
+}
+
+.ui-preview .pv-hsl .pv-hsl-h {
+    --pv-hsl-track: linear-gradient(90deg, hsl(0 85% 50%), hsl(60 85% 50%), hsl(120 85% 50%), hsl(180 85% 50%), hsl(240 85% 50%), hsl(300 85% 50%), hsl(359 85% 50%));
+}
+
+.ui-preview .pv-hsl .pv-hsl-s {
+    --pv-hsl-track: var(--pv-hsl-s);
+}
+
+.ui-preview .pv-hsl .pv-hsl-l {
+    --pv-hsl-track: var(--pv-hsl-l);
+}
+
+.ui-preview .pv-hsl input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ui-preview .pv-hsl input[type='range']::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ui-preview .pv-hsl .pv-hsl-hex {
+    max-width: 9rem;
+    font-family: var(--pv-mono, ui-monospace, monospace);
 }
 
 .ui-preview .pv-scheme-swap {
@@ -5419,6 +5594,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
         justify-content: center;
         font-size: 20px;
         color: var(--acc-text) !important;
+        /* as strong as the other tiles (menu icons elsewhere are quieter) */
+        opacity: 1;
     }
 
     .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) .label {

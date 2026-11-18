@@ -271,9 +271,9 @@ Umfragen, Termine, News verwalten)
 
 ## 10. Sprache
 
-- Die Oberfläche ist deutsch. Schülerinnen und Schüler werden mit »du«
-  angesprochen, Lehrkräfte mit »Sie« dort, wo sich ein Text nur an sie
-  richtet.
+- Die Oberfläche ist deutsch. Das Dashboard spricht alle mit »du« an,
+  Schülerinnen und Schüler, Eltern und Lehrkräfte. Alte Texte mit »Sie«
+  werden angepasst, wenn eine Seite ins neue Design kommt.
 - **Kein Mittelpunkt »·« als Trenner**, nirgends in sichtbarem Text. Statt
   dessen Kommas, kurze Wörter (»um«, »statt«, »bis«) oder Abstand.
 - Kurz, sachlich, freundlich. Keine Ausrufezeichen-Kaskaden, keine

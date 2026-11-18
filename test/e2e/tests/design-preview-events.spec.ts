@@ -125,13 +125,13 @@ test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern'
     const modal = page.locator('#composeModal');
     await expect(modal).toBeVisible();
     const hint = modal.locator('.pv-ev-save-hint');
-    // a new event counts as changed at once (events.html, new_event)
+    // nothing changed yet: no hint, »Schließen« works
+    await expect(hint).toBeHidden();
+    await page.locator('#ti_start_time').fill('17:00');
     await expect(hint).toHaveText('Zum Speichern fehlen noch Titel und Teilnehmer.');
     await page.locator('#ti_title').fill('Elternabend');
     await expect(page.locator('#bu_save_event')).toBeDisabled();
     await expect(hint).toHaveText('Zum Speichern fehlen noch Teilnehmer.');
-    await page.locator('#ti_title').fill('');
-    await expect(hint).toHaveText('Zum Speichern fehlen noch Titel und Teilnehmer.');
     // the button takes the tap (not the label's text above it)
     await page.locator('.bu_open_ext_users_modal').click({ timeout: 5000 });
     await expect(page.locator('#externalUsersModal')).toBeVisible();

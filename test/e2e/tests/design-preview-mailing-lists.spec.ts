@@ -21,7 +21,7 @@ test('Neues Design: Verteiler suchen, Adresse kopieren, Empfänger zeigen', asyn
 
     // ---------- the page: a title, a quiet line, no yellow box, no table ----------
     await expect(page.locator('.pv-lhead h2')).toHaveText('E-Mail-Verteiler');
-    await expect(page.locator('.pv-ml-intro')).toContainText('die Sie verwenden können');
+    await expect(page.locator('.pv-ml-intro')).toContainText('die du verwenden kannst');
     await expect(page.locator('.alert-warning', { hasText: 'Hier sehen Sie alle E-Mail-Verteiler' })).toBeHidden();
     await expect(page.locator('.ml-table table')).toHaveCount(0);
     await expect(page.locator('.list_email_emails')).toHaveCount(0);

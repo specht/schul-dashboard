@@ -250,7 +250,7 @@
             body.textContent = '';
             let list = pv_news[year] || [];
             if (list.length === 0) {
-                $('<p>').addClass('pv-lempty').text(year === this_year ? 'In diesem Jahr noch keine Beiträge. Mit »Artikel schreiben« legen Sie einen an.' : 'Keine Beiträge.').appendTo(body);
+                $('<p>').addClass('pv-lempty').text(year === this_year ? 'In diesem Jahr noch keine Beiträge. Mit »Artikel schreiben« legst du einen an.' : 'Keine Beiträge.').appendTo(body);
                 return;
             }
             pv_list.blocks(body, list, function (entry) { return pv_news_row(entry, year); }, { more: 'Ältere Beiträge laden', keep: `year:${year}` });

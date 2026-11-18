@@ -77,8 +77,24 @@
     color: #777;
     text-decoration: none;
 }
-.zg-chip.zg-extra.absent::before {
+/* das Plus: mit Bild mittig in dessen Kreis, ohne Bild vor dem Namen */
+.zg-chip.zg-extra.absent:not(:has(.zg-avatar))::before {
     content: '+ ';
+}
+.zg-chip.zg-extra.absent .zg-avatar {
+    position: relative;
+    opacity: 0.75;
+}
+.zg-chip.zg-extra.absent .zg-avatar::after {
+    content: '+';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1em;
+    line-height: 1;
+    color: #333;
 }
 #zg_extended h5 {
     margin: 0.8em 0 0.2em 0;
@@ -257,6 +273,74 @@
 #zg_beamer .zg-beamer-buttons:hover {
     opacity: 1;
 }
+/* Live am Beamer: unten der Topf mit allen Namen, darüber die Gruppen mit
+   noch leeren Plätzen; die Namen fliegen einzeln aus dem Topf an ihren Platz. */
+#zg_beamer.zg-live {
+    padding-bottom: 24vh;
+}
+#zg_live_pool {
+    display: none;
+    position: absolute;
+    left: 1.5vw;
+    right: 1.5vw;
+    bottom: 1.5vh;
+    height: 20vh;
+    border-top: 2px solid #dfe3e8;
+    padding-top: 1vh;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 0.3em;
+    overflow: hidden;
+}
+#zg_beamer.zg-live #zg_live_pool {
+    display: flex;
+}
+.zg-pool-chip, .zg-fly {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1em 0.6em;
+    border-radius: 999px;
+    background: #f1f3f6;
+    border: 1px solid #dfe3e8;
+    color: #212529;
+    white-space: nowrap;
+}
+.zg-pool-chip.zg-hl, .zg-fly {
+    background: #fff3cd;
+    border-color: #e0b84a;
+}
+.zg-fly {
+    position: fixed;
+    z-index: 2100;
+    pointer-events: none;
+    transform-origin: top left;
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(.3, .7, .3, 1);
+}
+/* der Topf braucht den unteren Rand: die Knöpfe wandern nach oben */
+#zg_beamer.zg-live .zg-beamer-buttons {
+    top: 1.5vh;
+    bottom: auto;
+}
+#zg_beamer .zg-name.zg-hidden {
+    visibility: hidden;
+}
+#zg_live_go {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 24vh;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+#zg_live_go .btn {
+    font-size: 4vh;
+    padding: 0.5em 1.5em;
+}
 </style>
 <div class="zg-container">
     <h1>Gruppenbildung <span id="zg_label"></span></h1>
@@ -277,6 +361,20 @@
             <label class="zg-choice"><input type="radio" name="zg_labels" value="shorthand" checked> Kürzel</label>
             <label class="zg-choice"><input type="radio" name="zg_labels" value="name"> Name</label>
             <div class="zg-legend">Mit Kürzeln bleibt der Beamer auch bei vielen Gruppen gut lesbar.</div>
+        </div>
+        <div class="zg-row" id="zg_live_row">
+            <span class="zg-label">Live am Beamer</span>
+            <label class="zg-choice"><input type="radio" name="zg_live_order" value="reihum" checked> reihum</label>
+            <label class="zg-choice"><input type="radio" name="zg_live_order" value="einzeln"> Gruppe für Gruppe</label>
+            <select id="zg_live_speed" class="form-control" style="width: auto; display: inline-block;">
+                <option value="1">gemütlich</option>
+                <option value="2">mittel</option>
+                <option value="3">zügig</option>
+                <option value="4">schnell</option>
+                <option value="5" selected>sehr schnell</option>
+                <option value="6">rasant</option>
+                <option value="7">blitzschnell</option>
+            </select>
         </div>
         <div class="zg-row" id="zg_gender_row">
             <span class="zg-label">Jungen und Mädchen</span>
@@ -306,7 +404,8 @@
     </div>
 
     <div class="zg-section">
-        <button class="btn btn-lg btn-primary" id="zg_bu_mix" disabled><i class="fa fa-random"></i>&nbsp;&nbsp;Gruppen mischen</button>
+        <button class="btn btn-lg btn-primary" id="zg_bu_mix" disabled><i class="fa fa-random"></i>&nbsp;&nbsp;Jetzt auslosen</button>
+        <button class="btn btn-lg btn-outline-primary" id="zg_bu_live" disabled><i class="fa fa-desktop"></i>&nbsp;&nbsp;Live am Beamer auslosen</button>
         <button class="btn btn-lg btn-outline-secondary" id="zg_bu_beamer" style="display: none;"><i class="fa fa-desktop"></i>&nbsp;&nbsp;Beamer-Ansicht</button>
         <p id="zg_result_info" class="zg-legend" style="margin-top: 0.8em; margin-bottom: 0.3em;"></p>
         <div id="zg_warnings"></div>
@@ -324,7 +423,10 @@
 
 <div id="zg_beamer">
     <div class="zg-groups" id="zg_beamer_groups"></div>
+    <div id="zg_live_pool"></div>
+    <div id="zg_live_go"><button class="btn btn-primary" id="zg_bu_live_start"><i class="fa fa-play"></i>&nbsp;&nbsp;Jetzt auslosen</button></div>
     <div class="zg-beamer-buttons">
+        <button class="btn btn-outline-secondary" id="zg_bu_live_finish" style="display: none;"><i class="fa fa-forward"></i>&nbsp;&nbsp;Sofort fertig</button>
         <button class="btn btn-outline-secondary" id="zg_bu_beamer_mix"><i class="fa fa-random"></i>&nbsp;&nbsp;Neu mischen</button>
         <button class="btn btn-outline-secondary" id="zg_bu_beamer_close"><i class="fa fa-times"></i>&nbsp;&nbsp;Schließen</button>
     </div>
@@ -471,7 +573,7 @@ function update_preview() {
     let all = sus.filter(s => !s.extended || !absent.has(s.email)).length;
     $('#zg_preview').text(`${emails.length} von ${all} da → ${sizes.length} Gruppe${sizes.length === 1 ? '' : 'n'}` +
         (parts.length ? ` (${parts.join(', ')})` : ''));
-    $('#zg_bu_mix').prop('disabled', emails.length === 0);
+    $('#zg_bu_mix, #zg_bu_live').prop('disabled', emails.length === 0);
 }
 
 function render_presence() {
@@ -632,7 +734,7 @@ function group_cards(groups) {
         card.append($('<h5>').append($('<span>').addClass('zg-gword').text('Gruppe '), $('<span>').addClass('zg-gnum').text(i + 1)));
         let members = $('<div>').addClass('zg-members');
         for (let e of sort_group(g)) {
-            let name = fill_name($('<div>').addClass('zg-name'), e);
+            let name = fill_name($('<div>').addClass('zg-name'), e).attr('data-email', e);
             if (use_shorthands()) name.attr('title', display_name(e));
             members.append(name);
         }
@@ -679,9 +781,14 @@ function animate_and_show(result) {
 }
 
 function do_mix() {
+    live.mode = false;
     let result = mix_groups();
     current_groups = result.groups;
     animate_and_show(result);
+    store_result(result);
+}
+
+function store_result(result) {
     render_warnings(result);
     $('#zg_result_info').text(`Gemischt am ${new Date().toLocaleString('de-DE')}. Nur Sie sehen diese Gruppen, wenn Sie die Seite wieder öffnen.`);
     api_call('/api/zg_save_last', {klasse: klasse, groups: JSON.stringify(result.groups), settings: JSON.stringify(result.settings)}, function (data) {
@@ -822,7 +929,169 @@ function render_beamer() {
     size_avatars(beamer);
 }
 
+// --- Live am Beamer -------------------------------------------------------
+// Die Einteilung steht vorher fest (mit allen Regeln); die Auslosung am
+// Beamer zeigt sie nur Name für Name.
+var live = {id: 0, mode: false, revealed: new Set()};
+const LIVE_SPEED = [1.5, 1, 0.6, 0.35, 0.2, 0.1, 0.04];
+
+function live_factor() {
+    return LIVE_SPEED[(parseInt($('#zg_live_speed').val(), 10) || 5) - 1];
+}
+
+function live_wait(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+function save_live_prefs() {
+    try {
+        localStorage.setItem('zg_live', JSON.stringify({order: $('input[name=zg_live_order]:checked').val(), speed: $('#zg_live_speed').val()}));
+    } catch (e) {}
+}
+
+function load_live_prefs() {
+    try {
+        let p = JSON.parse(localStorage.getItem('zg_live') || '{}');
+        if (p.order === 'reihum' || p.order === 'einzeln') $(`input[name=zg_live_order][value=${p.order}]`).prop('checked', true);
+        if (/^[1-7]$/.test(p.speed || '')) $('#zg_live_speed').val(p.speed);
+    } catch (e) {}
+}
+
+// Beamer neu aufbauen; während der Auslosung bleiben noch nicht geloste
+// Plätze leer.
+function refresh_beamer() {
+    render_beamer();
+    if ($('#zg_beamer').hasClass('zg-live')) {
+        $('#zg_beamer_groups .zg-name').each(function () {
+            $(this).toggleClass('zg-hidden', !live.revealed.has($(this).attr('data-email')));
+        });
+        fit_pool();
+    }
+}
+
+function fit_pool() {
+    let pool = $('#zg_live_pool');
+    let font = window.innerHeight * 0.05;
+    for (let i = 0; i < 30 && font > 8; i++) {
+        pool.css('font-size', `${font.toFixed(1)}px`);
+        if (pool[0].scrollHeight <= pool[0].clientHeight + 1) break;
+        font *= 0.9;
+    }
+    size_avatars(pool);
+}
+
+function start_live() {
+    live.id++;
+    live.mode = true;
+    live.revealed = new Set();
+    let result = mix_groups();
+    current_groups = result.groups;
+    render_groups(result.groups);
+    store_result(result);
+    $('.zg-fly').remove();
+    let beamer = $('#zg_beamer');
+    let was_open = beamer.is(':visible');
+    beamer.addClass('zg-live').show();
+    let pool = $('#zg_live_pool').empty();
+    for (let e of shuffle_array(current_groups.flat())) {
+        pool.append(fill_name($('<span>').addClass('zg-pool-chip'), e).attr('data-email', e));
+    }
+    refresh_beamer();
+    $('#zg_live_go').css('display', 'flex');
+    $('#zg_bu_live_finish').hide();
+    let el = document.getElementById('zg_beamer');
+    if (!was_open && el.requestFullscreen) el.requestFullscreen().catch(function () {});
+}
+
+// Reihenfolge, in der die Plätze gefüllt werden: reihum (jede Gruppe ihre
+// erste Person, dann ihre zweite ...) oder Gruppe für Gruppe.
+function live_order() {
+    let groups = current_groups.map(g => sort_group(g));
+    let order = [];
+    if ($('input[name=zg_live_order]:checked').val() === 'einzeln') {
+        for (let g of groups) order = order.concat(g);
+    } else {
+        let max = Math.max(0, ...groups.map(g => g.length));
+        for (let k = 0; k < max; k++) for (let g of groups) if (k < g.length) order.push(g[k]);
+    }
+    return order;
+}
+
+async function run_live() {
+    let id = ++live.id;
+    $('#zg_live_go').hide();
+    $('#zg_bu_live_finish').show();
+    for (let e of live_order()) {
+        if (id !== live.id) return;
+        if (!live.revealed.has(e)) await live_draw(e, id);
+    }
+    if (id === live.id) setTimeout(function () { if (id === live.id) live_done(); }, 700);
+}
+
+async function live_draw(email, id) {
+    let f = live_factor();
+    let chips = $('#zg_live_pool .zg-pool-chip');
+    let chip = chips.filter(function () { return $(this).attr('data-email') === email; }).first();
+    if (!chip.length) return;
+    let flicker = Math.round(6 * f) + 2;
+    for (let i = 0; i < flicker; i++) {
+        if (id !== live.id) return;
+        let c = chips.eq(Math.floor(Math.random() * chips.length)).addClass('zg-hl');
+        await live_wait(70 * f);
+        c.removeClass('zg-hl');
+    }
+    if (id !== live.id) return;
+    chip.addClass('zg-hl');
+    await live_wait(250 * f);
+    if (id !== live.id) return;
+    let target = $('#zg_beamer_groups .zg-name').filter(function () { return $(this).attr('data-email') === email; }).first();
+    let from = chip[0].getBoundingClientRect();
+    let to = target.length ? target[0].getBoundingClientRect() : from;
+    let d = Math.max(120, 560 * f);
+    let fly = fill_name($('<div>').addClass('zg-fly'), email)
+        .css({left: `${from.left}px`, top: `${from.top}px`, fontSize: chip.css('font-size'), transitionDuration: `${d}ms`});
+    $('#zg_beamer').append(fly);
+    size_avatars(fly);
+    chip.remove();
+    let scale = to.height / Math.max(1, from.height);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        fly.css('transform', `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${scale.toFixed(3)})`);
+    }));
+    setTimeout(function () {
+        fly.remove();
+        if (id !== live.id) return;
+        live.revealed.add(email);
+        target.removeClass('zg-hidden');
+    }, d);
+    await live_wait(Math.min(d, d * 0.5 + 60) + 120 * f);
+}
+
+function live_finish() {
+    live.id++;
+    $('.zg-fly').remove();
+    live_done();
+}
+
+// Alle Namen stehen: der Topf verschwindet, die Gruppen bekommen den
+// ganzen Bildschirm.
+function live_done() {
+    $('#zg_bu_live_finish, #zg_live_go').hide();
+    $('#zg_live_pool').empty();
+    $('#zg_beamer').removeClass('zg-live');
+    if ($('#zg_beamer').is(':visible')) render_beamer();
+}
+
+function stop_live() {
+    live.id++;
+    $('.zg-fly').remove();
+    $('#zg_live_go, #zg_bu_live_finish').hide();
+    $('#zg_live_pool').empty();
+    $('#zg_beamer').removeClass('zg-live');
+}
+
 function open_beamer() {
+    live.mode = false;
+    stop_live();
     $('#zg_beamer').show();
     render_beamer();
     let el = document.getElementById('zg_beamer');
@@ -830,6 +1099,7 @@ function open_beamer() {
 }
 
 function close_beamer() {
+    stop_live();
     if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
     $('#zg_beamer').hide();
 }
@@ -896,7 +1166,7 @@ document.addEventListener('DOMContentLoaded', function () {
             render_access();
         }
         // Erst jetzt kennt die Seite die Klasse; vorher gäbe Mischen leere Gruppen.
-        $('#zg_bu_mix').prop('disabled', false);
+        $('#zg_bu_mix, #zg_bu_live').prop('disabled', false);
         is_klassenleitung = !!data.is_klassenleitung;
         distribution = data.distribution;
         if (is_klassenleitung) {
@@ -950,16 +1220,23 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e) save_access(access_emails.concat([e]));
     });
     $('#zg_bu_beamer').click(open_beamer);
-    $('#zg_bu_beamer_mix').click(do_mix);
+    $('#zg_bu_beamer_mix').click(function () {
+        if (live.mode) start_live(); else do_mix();
+    });
+    $('#zg_bu_live').click(start_live);
+    $('#zg_bu_live_start').click(run_live);
+    $('#zg_bu_live_finish').click(live_finish);
+    load_live_prefs();
+    $('input[name=zg_live_order], #zg_live_speed').on('change', save_live_prefs);
     $('#zg_bu_beamer_close').click(close_beamer);
     $(document).on('keydown', function (e) {
         if (e.key === 'Escape' && $('#zg_beamer').is(':visible')) close_beamer();
     });
     document.addEventListener('fullscreenchange', function () {
-        if (!document.fullscreenElement && $('#zg_beamer').is(':visible')) $('#zg_beamer').hide();
+        if (!document.fullscreenElement && $('#zg_beamer').is(':visible')) close_beamer();
     });
     $(window).on('resize', function () {
-        if ($('#zg_beamer').is(':visible')) render_beamer();
+        if ($('#zg_beamer').is(':visible')) refresh_beamer();
     });
 });
 </script>

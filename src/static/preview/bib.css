@@ -1,0 +1,1490 @@
+/* Neues Design (Vorschau): the library pages (bibliothek.html, bib_*.html) –
+   loaded after preview.css for users with the preview; the library's pages
+   are drawn by preview/bib.js (include/bib_preview.rb puts .pv-bib and
+   .pv-bib-<page> on the body). Every rule here starts with .pv-bib or a
+   class that only bib.js sets.
+
+   - Navigation: the library's own links as a row of quiet tabs at the top
+     of the panel (one's own, then the management), the page's extra links
+     (a book: Metadaten bearbeiten …) as a second, smaller row.
+   - Page types (doc/Gestaltung.md, 6a): Meine Bücher, Katalog, Bestellungen,
+     Bücher bestätigen and a book are lists or reading pages (at most about
+     980 px); the staff pages are tables (full width). Tables become list
+     rows where the list is narrow (container query): the first cell as the
+     title, the others as labelled facts.
+   - Books: list rows with a small cover (no cards), facts in one quiet
+     line, a single state as a chip (»Bitte zurückbringen«).
+   - The scanner area: one calm surface with the camera and the field;
+     the order steps of a book in a dialog, a sheet on phones. */
+
+.pv-bib-gone {
+    display: none !important;
+}
+
+/* the template's own submenu and its white bands */
+.pv-bib #main_container > .container:has(> section > ul.submenu:not(#subsubmenu ul)),
+.pv-bib .pv-bib-oldnav {
+    display: none !important;
+}
+
+.pv-bib .sandbox-hint {
+    display: none !important;
+}
+
+/* the template's white page and fixed widths */
+.pv-bib .container.bg-white {
+    background-color: var(--pv-surface) !important;
+}
+
+@media (min-width: 768px) {
+    .ui-preview.pv-bib #main_container > .container.pv-bib-list,
+    .ui-preview.pv-bib #main_container > .container.pv-bib-read {
+        max-width: min(980px, calc(100% - 48px));
+    }
+
+    .ui-preview.pv-bib #main_container > .container.pv-bib-table {
+        max-width: min(1500px, calc(100% - 48px));
+    }
+}
+
+.pv-bib #main_container > .container:not(#device_navbar):not(#subsubmenu) {
+    padding-top: 20px;
+    padding-bottom: 28px;
+}
+
+/* ---------- library devices (station, phone at the shelves) ----------
+   no navigation of the dashboard: the device's bar with the person who is
+   signed in, and the library's tabs */
+.ui-preview.pv-bib-device {
+    padding-left: 0 !important;
+}
+
+.pv-bib-device .navbar,
+.pv-bib-device .pv-tabbar {
+    display: none !important;
+}
+
+/* _bib_template.html (Medien, Regal scannen) hides the navigation of the
+   old design; the sidebar of the new one stays */
+@media (min-width: 768px) {
+    .ui-preview.pv-bib:not(.pv-bib-device) .navbar {
+        display: flex;
+    }
+}
+
+.pv-bib.pv-bib-device #device_navbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    margin-bottom: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.14);
+}
+
+.pv-bib.pv-bib-device #device_navbar .avatar-md {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.pv-bib.pv-bib-device #device_navbar > span {
+    flex: 1 1 auto;
+    min-width: 0;
+    top: 0 !important;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pv-bib.pv-bib-device #device_navbar #bu_logout {
+    float: none;
+    margin-left: auto;
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* ---------- the library's tabs ---------- */
+.pv-bib-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 18px;
+    margin: -4px 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.pv-bib-tabs {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-width: 0;
+}
+
+.pv-bib-tabs-staff {
+    position: relative;
+}
+
+/* the management after a hairline (desktop) */
+.pv-bib-tabs + .pv-bib-tabs-staff::before {
+    content: "";
+    align-self: stretch;
+    width: 1px;
+    margin: 4px 10px 4px -8px;
+    background: var(--pv-line);
+}
+
+.ui-preview .pv-bib-tab {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 999px;
+    color: var(--pv-muted);
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.25;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.ui-preview .pv-bib-tab:hover {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    text-decoration: none;
+}
+
+.ui-preview .pv-bib-tab[aria-current] {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.ui-preview .pv-bib-tab:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+}
+
+/* phones: one row that scrolls sideways (the management after its
+   hairline), from edge to edge of the panel */
+@media (max-width: 767px) {
+    .pv-bib-nav {
+        flex-wrap: nowrap;
+        gap: 0;
+        margin: -6px -15px 14px;
+        padding: 0 11px 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .pv-bib-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pv-bib-tabs {
+        flex: none;
+    }
+
+    .pv-bib-tabs + .pv-bib-tabs-staff::before {
+        margin: 6px 8px 6px 6px;
+    }
+
+    .ui-preview .pv-bib-tab {
+        padding: 6px 10px;
+        font-size: 0.88rem;
+    }
+}
+
+/* the page's extra links: a second, smaller row */
+.pv-bib #subsubmenu.pv-bib-subnav {
+    max-width: none;
+    margin: -8px 0 16px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.pv-bib #subsubmenu.pv-bib-subnav section {
+    height: auto !important;
+}
+
+.pv-bib #subsubmenu.pv-bib-subnav ul.submenu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 4px;
+    margin: 0;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    overflow: visible;
+}
+
+.pv-bib #subsubmenu.pv-bib-subnav li {
+    margin: 0 !important;
+    color: var(--pv-muted);
+    font-size: 0.86rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib #subsubmenu.pv-bib-subnav #sub_menu_extra {
+    display: none;
+}
+
+.ui-preview.pv-bib #subsubmenu.pv-bib-subnav a,
+.pv-bib #subsubmenu.pv-bib-subnav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    color: var(--acc-text) !important;
+    font-weight: 600 !important;
+    font-size: 0.86rem;
+    text-decoration: none;
+}
+
+.pv-bib #subsubmenu.pv-bib-subnav a:hover {
+    background: var(--pv-hover) !important;
+}
+
+/* the current one (fix_subsubmenu marks it with outline classes) */
+.pv-bib #subsubmenu.pv-bib-subnav a.outline {
+    background: var(--pv-hover) !important;
+    color: var(--pv-ink) !important;
+}
+
+.pv-bib #subsubmenu.pv-bib-subnav li > .ti,
+.pv-bib #subsubmenu.pv-bib-subnav a > .ti,
+.pv-bib #subsubmenu.pv-bib-subnav a > .fa {
+    color: var(--pv-muted);
+}
+
+/* ---------- the head: title, facts, main action ---------- */
+.pv-bib-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px 16px;
+    margin-bottom: 14px;
+}
+
+.pv-bib-head-text {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+.ui-preview .container .pv-bib-head h2.pv-bib-title {
+    margin: 0 !important;
+    overflow-wrap: anywhere;
+}
+
+.pv-bib-facts {
+    margin: 4px 0 0;
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.pv-bib-head-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.pv-bib-head-actions:empty {
+    display: none;
+}
+
+.ui-preview #main_container .pv-bib-head-actions .btn {
+    white-space: nowrap;
+}
+
+/* ---------- sections, hints, empty states ---------- */
+.ui-preview .container h3.pv-bib-section {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 26px 0 8px;
+    font-size: 1.08rem;
+    line-height: 1.3;
+}
+
+.pv-bib-count-inline {
+    color: var(--pv-muted);
+    font-family: var(--pv-text);
+    font-weight: 600;
+    font-size: 0.86rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 14px;
+    color: var(--pv-muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.pv-bib-hint > .ti {
+    flex: none;
+    margin-top: 0.12em;
+    font-size: 1.1em;
+}
+
+.pv-bib-hint-acc,
+.pv-bib-hint-acc > .ti {
+    color: var(--acc-text);
+}
+
+.pv-bib-hint-ok > .ti {
+    color: #2f7d32;
+}
+
+.ui-preview.dark .pv-bib-hint-ok > .ti {
+    color: #7fd18a;
+}
+
+.pv-bib-hint-ok {
+    color: var(--pv-ink);
+}
+
+.pv-bib-hint-danger,
+.pv-bib-hint-danger > .ti {
+    color: #b42318;
+}
+
+.ui-preview.dark .pv-bib-hint-danger,
+.ui-preview.dark .pv-bib-hint-danger > .ti {
+    color: #ff8f8f;
+}
+
+.pv-bib-hint-small {
+    font-size: 0.84rem;
+}
+
+.pv-bib-foot-hint {
+    margin-top: 22px;
+}
+
+.pv-bib-empty {
+    margin: 6px 0 14px;
+    color: var(--pv-muted);
+    font-size: 0.95rem;
+}
+
+.pv-bib-note {
+    margin: 4px 0 10px;
+    color: var(--pv-muted);
+    font-size: 0.84rem;
+}
+
+.pv-bib-text {
+    margin: 0 0 10px;
+}
+
+.pv-bib-count {
+    margin: 0 0 4px;
+    color: var(--pv-muted);
+    font-size: 0.86rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib-count:empty {
+    display: none;
+}
+
+.pv-bib-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0 6px;
+}
+
+/* the pages' yellow boxes that stay (staff pages): a calm band */
+.pv-bib .alert.pv-bib-alert,
+.pv-bib .alert-warning.pv-bib-alert {
+    background: var(--pv-hover);
+    border: 0;
+    border-radius: 10px;
+    color: var(--pv-ink);
+}
+
+.pv-bib .alert-danger.pv-bib-alert {
+    color: #b42318;
+}
+
+.ui-preview.dark.pv-bib .alert-danger.pv-bib-alert {
+    color: #ff8f8f;
+}
+
+/* a single state */
+.pv-bib-chip {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.45;
+    white-space: nowrap;
+}
+
+.pv-bib-chip-warn {
+    background: color-mix(in srgb, #c2410c 14%, var(--pv-surface));
+    color: #9a3412;
+}
+
+.ui-preview.dark .pv-bib-chip-warn {
+    background: color-mix(in srgb, #fb923c 18%, var(--pv-surface));
+    color: #fdba74;
+}
+
+.pv-bib-chip-danger {
+    color: #b42318;
+}
+
+.ui-preview.dark .pv-bib-chip-danger {
+    color: #ff8f8f;
+}
+
+.pv-bib-shelf {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib-tag {
+    margin-left: 6px;
+    color: var(--pv-muted);
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.pv-bib-email {
+    color: var(--pv-muted);
+    overflow-wrap: anywhere;
+}
+
+.pv-bib-state {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 5px;
+    color: var(--pv-muted);
+}
+
+.pv-bib-state > .ti {
+    margin-top: 0.15em;
+}
+
+.ui-preview .pv-bib-link {
+    margin-left: 10px;
+    color: var(--acc-text);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ---------- books: list rows ---------- */
+.pv-bib #book_list,
+.pv-bib #book_here.grid {
+    display: block !important;
+    margin-bottom: 8px;
+}
+
+.pv-book {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.pv-book:first-child {
+    border-top: 0;
+}
+
+.pv-book:last-child {
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.pv-book-link {
+    cursor: pointer;
+}
+
+.pv-book-link:hover .pv-book-title {
+    text-decoration: underline;
+    text-decoration-color: var(--pv-muted);
+    text-underline-offset: 3px;
+}
+
+/* a request to bring it back: a slim accent line at the left edge */
+.pv-book-summoned::before {
+    content: "";
+    position: absolute;
+    left: -12px;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 2px;
+    background: #c2410c;
+}
+
+.pv-book-cover {
+    flex: none;
+    width: 56px;
+    aspect-ratio: 5 / 7;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.pv-book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.pv-book-cover > .ti {
+    font-size: 1.5rem;
+    opacity: 0.7;
+}
+
+.pv-book-compact .pv-book-cover {
+    width: 40px;
+}
+
+.pv-book-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ui-preview .pv-book-title {
+    color: var(--pv-ink);
+    font-weight: 700;
+    font-size: 1.02rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.ui-preview .container a.pv-book-title,
+.ui-preview a.pv-book-title:hover,
+.ui-preview a.pv-book-title:focus {
+    color: var(--pv-ink);
+}
+
+.ui-preview a.pv-book-title:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.pv-book-sub {
+    font-weight: 500;
+    color: var(--pv-ink);
+}
+
+.pv-book-facts {
+    color: var(--pv-muted);
+    font-size: 0.86rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.pv-book-sig {
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-book-states {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    margin-top: 4px;
+}
+
+.pv-book-chev {
+    flex: none;
+    margin-top: 0.15em;
+    color: var(--pv-muted);
+    font-size: 1.1rem;
+}
+
+/* ---------- tables (SortableTable): calm, list rows where narrow ---------- */
+.pv-bib .pv-st-wrap {
+    container-type: inline-size;
+    overflow-x: auto;
+    margin-bottom: 6px;
+}
+
+.pv-bib table.pv-st {
+    width: 100%;
+    margin-bottom: 0;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib table.pv-st th {
+    border-top: 0;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+.pv-bib table.pv-st th[tabindex]:hover {
+    background: var(--pv-hover) !important;
+}
+
+.pv-bib table.pv-st th[tabindex]:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: -2px;
+}
+
+.pv-bib table.pv-st td {
+    vertical-align: middle;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.pv-bib table.pv-st tr.pv-st-link {
+    cursor: pointer;
+}
+
+.pv-bib table.pv-st tr.pv-st-link:hover td {
+    background: var(--pv-hover);
+}
+
+/* rows that were just added (a scan): a soft accent for a moment */
+.pv-bib table.pv-st tr.hl td {
+    background: var(--acc-soft) !important;
+}
+
+/* students of the 12th grade who brought everything back (bib_users) */
+.pv-bib table.pv-st tr.row-green td {
+    background-color: color-mix(in srgb, #2f7d32 12%, var(--pv-surface)) !important;
+}
+
+.pv-bib table.pv-st .btn-xs,
+.pv-bib .pv-bib-summon {
+    border-radius: 8px !important;
+    padding: 3px 9px !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap;
+}
+
+.ui-preview #main_container .pv-bib-summon,
+.ui-preview #main_container .pv-bib-summon:hover {
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--acc-text) !important;
+}
+
+.ui-preview #main_container .pv-bib-summon:hover {
+    background: var(--pv-hover) !important;
+}
+
+.ui-preview #main_container .pv-bib-summon[aria-pressed='true'] {
+    background: color-mix(in srgb, #c2410c 14%, var(--pv-surface)) !important;
+    color: #9a3412 !important;
+}
+
+.ui-preview.dark #main_container .pv-bib-summon[aria-pressed='true'] {
+    background: color-mix(in srgb, #fb923c 18%, var(--pv-surface)) !important;
+    color: #fdba74 !important;
+}
+
+/* deleting in a row (Ausleihe aufheben): calm red text */
+.ui-preview .pv-bib-danger-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    padding: 3px 8px;
+    background: transparent;
+    color: #b42318;
+    font-weight: 600;
+    font-size: 0.84rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-preview .pv-bib-danger-btn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview.dark .pv-bib-danger-btn {
+    color: #ff8f8f;
+}
+
+/* where the list is narrow: each row a list row – the first cell as the
+   title, the others as small labelled facts */
+@container (max-width: 620px) {
+    /* (SortableTable sets display: table on the table itself) */
+    .pv-bib table.pv-st,
+    .pv-bib table.pv-st tbody {
+        display: block !important;
+        width: auto !important;
+    }
+
+    /* (rows hidden by a filter keep their display: none) */
+    .pv-bib table.pv-st tr {
+        display: block;
+    }
+
+    .pv-bib table.pv-st thead {
+        display: none;
+    }
+
+    .pv-bib table.pv-st tr {
+        position: relative;
+        padding: 10px 0;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .pv-bib table.pv-st tr.pv-st-link {
+        padding-right: 26px;
+    }
+
+    .pv-bib table.pv-st tr.pv-st-link::after {
+        content: "\ea61";
+        font-family: "tabler-icons";
+        position: absolute;
+        right: 2px;
+        top: 10px;
+        color: var(--pv-muted);
+        font-size: 1.05rem;
+        line-height: 1.4;
+    }
+
+    .pv-bib table.pv-st tr.pv-st-link:hover td {
+        background: transparent;
+    }
+
+    .pv-bib table.pv-st td {
+        display: inline;
+        white-space: normal !important;
+        max-width: none !important;
+        padding: 0;
+        border: 0 !important;
+        background: transparent !important;
+        color: var(--pv-muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+    }
+
+    .pv-bib table.pv-st td:not(.pv-st-first)::after {
+        content: "  ";
+        white-space: pre;
+    }
+
+    .pv-bib table.pv-st td[data-label]:not(.pv-st-first):not(:empty)::before {
+        content: attr(data-label) " ";
+        color: var(--pv-muted);
+        font-weight: 600;
+        font-size: 0.78rem;
+    }
+
+    /* names in two columns (Nachname, Vorname): one title »Nachname, Vorname« */
+    .pv-bib table.pv-st td.pv-st-first:has(+ td.pv-st-name2) {
+        display: inline;
+    }
+
+    .pv-bib table.pv-st td.pv-st-first + td.pv-st-name2 {
+        color: var(--pv-ink);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .pv-bib table.pv-st td.pv-st-first + td.pv-st-name2::before {
+        content: ", " !important;
+        font: inherit !important;
+        color: inherit !important;
+    }
+
+    .pv-bib table.pv-st td.pv-st-first + td.pv-st-name2::after {
+        content: "\A" !important;
+        white-space: pre;
+    }
+
+    /* a book's signature and its title: one title line */
+    .pv-bib table.pv-st td.pv-st-first:has(+ td[data-label='Titel']) {
+        display: inline;
+    }
+
+    .pv-bib table.pv-st td.pv-st-first + td[data-label='Titel'] {
+        color: var(--pv-ink);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .pv-bib table.pv-st td.pv-st-first + td[data-label='Titel']::before {
+        content: "  " !important;
+        white-space: pre;
+    }
+
+    .pv-bib table.pv-st td.pv-st-first + td[data-label='Titel']::after {
+        content: "\A" !important;
+        white-space: pre;
+    }
+
+    .pv-bib table.pv-st td.pv-st-none {
+        display: none;
+    }
+
+    .pv-bib table.pv-st td[data-label='']::before {
+        content: none !important;
+    }
+
+    .pv-bib table.pv-st td.pv-st-first {
+        display: block;
+        color: var(--pv-ink);
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 2px;
+    }
+
+    .pv-bib table.pv-st td .btn,
+    .pv-bib table.pv-st td .pv-bib-danger-btn {
+        margin: 4px 0 0;
+    }
+}
+
+/* ---------- search and filters ---------- */
+.pv-bib .pv-bib-search {
+    max-width: 560px;
+    margin-bottom: 12px !important;
+}
+
+.pv-bib .pv-bib-search .btn {
+    font-weight: 600;
+}
+
+.pv-bib-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px !important;
+}
+
+.pv-bib-filters-label {
+    margin-right: 4px;
+    color: var(--pv-muted);
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.ui-preview #main_container .pv-bib-filters .bu-label {
+    margin: 0 !important;
+    padding: 3px 11px;
+    border: 1px solid var(--pv-line) !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: var(--pv-ink) !important;
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.35;
+    box-shadow: none !important;
+}
+
+.ui-preview #main_container .pv-bib-filters .bu-label:hover {
+    background: var(--pv-hover) !important;
+}
+
+.ui-preview #main_container .pv-bib-filters .bu-label.btn-success,
+.ui-preview #main_container .pv-bib-filters .bu-label[aria-pressed='true'] {
+    background: var(--acc-soft) !important;
+    border-color: transparent !important;
+    color: var(--acc-text) !important;
+}
+
+/* ---------- the scanner area (BarcodeWidget) ---------- */
+.pv-bib ._barcode_widget {
+    margin-bottom: 16px !important;
+    padding: 12px !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: var(--pv-hover) !important;
+    box-shadow: none !important;
+    color: var(--pv-ink);
+}
+
+.pv-bib ._barcode_widget video {
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+
+.pv-bib ._barcode_widget > div:first-child {
+    border-radius: 10px;
+}
+
+.pv-bib ._barcode_widget .text-muted {
+    color: var(--pv-muted) !important;
+}
+
+.pv-bib ._barcode_widget .input-group .form-control {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+/* scanner pages: the scanner beside the text on wide screens, above it
+   on phones */
+.pv-bib .pv-bib-scanrow {
+    align-items: flex-start;
+}
+
+@media (max-width: 575px) {
+    .pv-bib ._barcode_widget {
+        margin: 0 0 16px !important;
+        border-radius: 14px !important;
+    }
+
+    .pv-bib ._barcode_widget > div:first-child {
+        height: 180px !important;
+    }
+}
+
+/* ---------- Meine Bücher ---------- */
+.pv-bib-confirm-hint {
+    margin-top: -6px;
+}
+
+/* ---------- Bücher bestätigen ---------- */
+.pv-bib-confirm .pv-bib-progress {
+    font-size: 1rem !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 14px !important;
+    padding: 14px 16px !important;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    text-align: left !important;
+    font-weight: 600;
+}
+
+.pv-bib-confirm .pv-bib-progress .odometer {
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib-confirm .pv-bib-progress .text-grass-500 {
+    color: inherit !important;
+}
+
+/* ---------- a book ---------- */
+.pv-bib .pv-bib-bookhead {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    column-gap: 22px;
+    align-items: start;
+}
+
+.pv-bib .pv-bib-bookhead #book_cover_container {
+    grid-row: 1 / span 8;
+    float: none !important;
+    width: 140px !important;
+    margin: 0 !important;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--pv-hover) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18) !important;
+}
+
+.pv-bib .pv-bib-bookhead #book_cover_container.pv-bib-nocover {
+    display: flex !important;
+    aspect-ratio: 5 / 7;
+    align-items: center;
+    justify-content: center;
+    color: var(--pv-muted);
+    font-size: 2.4rem;
+}
+
+.pv-bib .pv-bib-bookhead #book_cover_container img {
+    display: block;
+}
+
+.pv-bib .pv-bib-bookhead > *:not(#book_cover_container) {
+    grid-column: 2;
+}
+
+.ui-preview .container .pv-bib-bookhead #book_title {
+    margin: 0 0 2px !important;
+    font-size: 1.55rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.ui-preview .container .pv-bib-bookhead #book_subtitle {
+    margin: 0 0 4px;
+    font-family: var(--pv-text);
+    font-style: normal;
+    font-weight: 500;
+    font-size: 1.05rem;
+    color: var(--pv-ink);
+}
+
+.ui-preview .container .pv-bib-bookhead #book_subtitle:empty,
+.ui-preview .container .pv-bib-bookhead #book_author:empty {
+    display: none;
+}
+
+.ui-preview .container .pv-bib-bookhead #book_author {
+    margin: 0 0 4px;
+    font-family: var(--pv-text);
+    font-weight: 600;
+    font-size: 0.98rem;
+    color: var(--pv-ink);
+}
+
+.pv-bib .pv-bib-bookhead #book_details {
+    margin: 0 0 8px;
+}
+
+.pv-bib .pv-bib-bookhead #book_details .pv-bib-facts {
+    margin: 0;
+}
+
+.pv-bib .pv-bib-bookhead #book_description {
+    margin: 4px 0 0;
+    font-size: 0.95rem;
+    color: var(--pv-ink);
+}
+
+.pv-bib .pv-bib-bookhead #book_description:empty {
+    display: none;
+}
+
+.pv-bib-labels {
+    float: none !important;
+    justify-content: flex-start;
+    justify-self: start;
+    margin-left: 0 !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    margin: 2px 0 10px;
+}
+
+.pv-bib-labels:empty {
+    display: none;
+}
+
+.pv-bib-labels .pv-bib-chip {
+    margin: 0 !important;
+}
+
+@media (max-width: 575px) {
+    .pv-bib .pv-bib-bookhead {
+        grid-template-columns: 88px minmax(0, 1fr);
+        column-gap: 14px;
+    }
+
+    .pv-bib .pv-bib-bookhead #book_cover_container {
+        width: 88px !important;
+        grid-row: 1 / span 3;
+    }
+
+    .ui-preview .container .pv-bib-bookhead #book_title {
+        font-size: 1.25rem;
+    }
+
+    /* the facts below the cover use the whole width */
+    .pv-bib .pv-bib-bookhead #book_details,
+    .pv-bib .pv-bib-bookhead .pv-bib-labels,
+    .pv-bib .pv-bib-bookhead #book_description {
+        grid-column: 1 / -1;
+        margin-top: 8px;
+    }
+}
+
+.pv-bib .pv-bib-bookpage .bib_teacher_only > hr,
+.pv-bib .pv-bib-bookpage > div[style*='clear'] {
+    display: none;
+}
+
+/* staff part of a book: no grey gradient box, a section like the others */
+.pv-bib .bib_management_only.pv-bib-manage {
+    min-height: 0;
+    margin: 26px 0 0;
+    padding: 8px 0 0;
+    background: transparent !important;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .container .bib_management_only.pv-bib-manage > h3 {
+    margin-top: 14px;
+}
+
+/* the order dialog */
+.pv-bib-choice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.ui-preview #main_container .pv-bib-choice .btn,
+.ui-preview .pv-bib-modal .pv-bib-choice .btn {
+    margin: 0 !important;
+    border-radius: 999px !important;
+    padding: 6px 14px;
+    font-weight: 600;
+    border: 1px solid var(--pv-line) !important;
+    background: transparent !important;
+    color: var(--pv-ink) !important;
+}
+
+.ui-preview .pv-bib-modal .pv-bib-choice .btn.btn-success {
+    background: var(--acc-soft) !important;
+    border-color: transparent !important;
+    color: var(--acc-text) !important;
+}
+
+.ui-preview .pv-bib-modal .pv-bib-choice .btn:disabled {
+    opacity: 0.5;
+}
+
+.ui-preview .pv-bib-modal .modal-body .btn-success,
+.ui-preview .pv-bib-modal .modal-body .btn-primary {
+    background: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+    font-weight: 600;
+}
+
+.ui-preview .pv-bib-modal #bu_plus_teacher,
+.ui-preview .pv-bib-modal #bu_plus_teacher_impersonate {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--pv-ink) !important;
+    font-weight: 600;
+    box-shadow: none !important;
+}
+
+.ui-preview .pv-bib-modal #bu_plus_teacher > .ti,
+.ui-preview .pv-bib-modal #bu_plus_teacher_impersonate > .ti {
+    font-size: 1.25rem;
+    color: var(--acc-text);
+}
+
+.pv-bib-modal #order_kurs_div .row,
+.pv-bib-modal #order_impersonate_div .row {
+    row-gap: 12px;
+}
+
+.pv-bib-modal #order_kurs_div_table {
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib-modal #order_kurs_div_table em {
+    color: var(--pv-muted);
+    font-style: normal;
+    font-size: 0.86rem;
+}
+
+.pv-bib-modal #kurs_impersonate_list_div {
+    max-height: 46vh;
+    overflow: auto;
+}
+
+@media (max-width: 767px) {
+    .pv-bib-modal #kurs_impersonate_list_div {
+        max-height: none;
+    }
+}
+
+/* ---------- Bestellungen ---------- */
+.pv-bib-orders {
+    margin-top: 4px;
+}
+
+.pv-bib-orders .pv-lrow:first-child {
+    border-top: 0;
+}
+
+/* ---------- a person (staff) ---------- */
+.pv-bib .pv-bib-checkout {
+    margin: 0 0 8px;
+    padding: 0 0 6px;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.ui-preview .container .pv-bib-checkout h3.pv-bib-section {
+    margin-top: 6px;
+}
+
+.pv-bib .pv-bib-checkout .form-group.row {
+    margin-bottom: 10px;
+}
+
+/* ---------- Rückgabe ---------- */
+.ui-preview #main_container .pv-bib-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px !important;
+    padding: 6px 14px 6px 10px;
+    font-weight: 600;
+}
+
+.ui-preview #main_container .pv-bib-mode > .ti {
+    font-size: 1.4rem;
+}
+
+.ui-preview #main_container .pv-bib-mode.btn-success {
+    background: var(--acc-soft) !important;
+    border-color: transparent !important;
+    color: var(--acc-text) !important;
+}
+
+.ui-preview #main_container .pv-bib-mode.btn-secondary {
+    background: color-mix(in srgb, #c2410c 14%, var(--pv-surface)) !important;
+    border-color: transparent !important;
+    color: #9a3412 !important;
+}
+
+.ui-preview.dark #main_container .pv-bib-mode.btn-secondary {
+    background: color-mix(in srgb, #fb923c 18%, var(--pv-surface)) !important;
+    color: #fdba74 !important;
+}
+
+/* ---------- Bücher scannen ---------- */
+.ui-preview #main_container .pv-bib-inline-btn {
+    float: right;
+    margin-left: 8px;
+    padding: 3px 10px;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.pv-bib-scanpage #info_div > div {
+    padding: 6px 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-bib-scanpage #title_div {
+    font-size: 1.05rem;
+}
+
+.pv-bib-scanpage #author_div {
+    color: var(--pv-muted);
+}
+
+.pv-bib-scanpage #stem_div {
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bib-scanpage #cover,
+.pv-bib-scanpage #no_cover {
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18) !important;
+}
+
+.pv-bib-scanpage #no_cover {
+    background: var(--pv-hover);
+}
+
+/* ---------- the staff pages that keep their own layout ---------- */
+.pv-bib .bib_management_only:not(.pv-bib-manage) {
+    background: transparent !important;
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-bib .bg-stone-700.text-stone-300,
+.pv-bib .bg-amber-200 {
+    background: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+}
+
+.pv-bib .text-grass-500 {
+    color: #2f7d32 !important;
+}
+
+.ui-preview.dark.pv-bib .text-grass-500 {
+    color: #7fd18a !important;
+}
+
+.pv-bib .text-persimmon-500,
+.pv-bib .text-scarlet-500 {
+    color: #b42318 !important;
+}
+
+.ui-preview.dark.pv-bib .text-persimmon-500,
+.ui-preview.dark.pv-bib .text-scarlet-500 {
+    color: #ff8f8f !important;
+}
+
+/* the template's api messages: a calm floating card */
+.pv-bib .api_messages {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.pv-bib .api_messages .bg-light {
+    background: var(--pv-surface) !important;
+}
+
+/* ---------- the station's scanner pages: no motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .pv-bib .pv-bib-modal .modal-content {
+        animation: none !important;
+    }
+}
+
+/* buttons in the staff tables (Alle Bestellungen: zurückstellen, löschen):
+   quiet text buttons; deleting in calm red, a paused order as a state */
+.ui-preview.pv-bib #main_container table.pv-st .btn-outline-secondary,
+.ui-preview.pv-bib #main_container table.pv-st .btn-outline-danger {
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--acc-text) !important;
+}
+
+.ui-preview.pv-bib #main_container table.pv-st .btn-outline-danger {
+    color: #b42318 !important;
+}
+
+.ui-preview.pv-bib.dark #main_container table.pv-st .btn-outline-danger {
+    color: #ff8f8f !important;
+}
+
+.ui-preview.pv-bib #main_container table.pv-st .btn-outline-secondary:hover,
+.ui-preview.pv-bib #main_container table.pv-st .btn-outline-danger:hover {
+    background: var(--pv-hover) !important;
+}
+
+.ui-preview.pv-bib #main_container table.pv-st .btn-danger {
+    background: color-mix(in srgb, #c2410c 14%, var(--pv-surface)) !important;
+    border: 0 !important;
+    color: #9a3412 !important;
+}
+
+/* copies in stock (a book, staff): their signatures as a flowing list of
+   quiet chips instead of a long one-column table */
+.pv-bib .pv-st-sigs table.pv-st thead {
+    display: none;
+}
+
+.pv-bib .pv-st-sigs table.pv-st,
+.pv-bib .pv-st-sigs table.pv-st tbody {
+    display: block !important;
+    width: auto !important;
+}
+
+.pv-bib .pv-st-sigs table.pv-st tbody {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pv-bib .pv-st-sigs table.pv-st tr {
+    display: block;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+.pv-bib .pv-st-sigs table.pv-st tr::after {
+    content: none !important;
+}
+
+.pv-bib .pv-st-sigs table.pv-st td {
+    display: block !important;
+    padding: 3px 10px !important;
+    border: 0 !important;
+    border-radius: 999px;
+    background: var(--pv-hover) !important;
+    color: var(--pv-ink) !important;
+    font-size: 0.86rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+}
+
+.pv-bib .pv-st-sigs table.pv-st td::before {
+    content: none !important;
+}
+
+.pv-bib .pv-st-sigs table.pv-st tr.pv-st-link:hover td {
+    background: var(--acc-soft) !important;
+    color: var(--acc-text) !important;
+}
+
+/* a table without rows yet (Rückgabe before the first scan): no header */
+.pv-bib .pv-st-wrap:has(tbody:empty) {
+    display: none;
+}
+
+/* Rückgabe: the scanner alone in its row */
+.pv-bib-returnpage .pv-bib-scanrow > #barcode_widget {
+    flex: 0 0 100%;
+    max-width: 560px;
+}
+
+/* Alle Bestellungen: the done ones below a hairline, not a dashed line */
+.pv-bib #recent_order_table {
+    margin-top: 22px !important;
+    padding-top: 4px !important;
+    border-top: 1px solid var(--pv-line) !important;
+}
+
+/* Bücher scannen on phones: the scanner across the width, the cover below */
+@media (max-width: 575px) {
+    .pv-bib-scanpage #barcode_div,
+    .pv-bib-scanpage #cover_div {
+        display: block;
+        width: 100%;
+        left: 0;
+        margin: 0;
+    }
+
+    .pv-bib-scanpage #cover_div {
+        max-width: 160px;
+    }
+}
+
+/* the dialogs' »Schließen«: neutral, like everywhere */
+.ui-preview .pv-bib-modal .modal-footer .btn-secondary {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* the course chosen in the order dialog */
+.pv-bib table.pv-st tr.pv-st-selected td {
+    background: var(--acc-soft) !important;
+    color: var(--acc-text);
+}

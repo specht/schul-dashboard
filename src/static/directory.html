@@ -6,7 +6,7 @@
 </style>
 <div class='container-fluid solid white'>
     <div>
-        #{mail_addresses_table(klasse)}
+        #{ui_preview? ? directory_preview_html(klasse) : mail_addresses_table(klasse)}
     </div>
 </div>
 

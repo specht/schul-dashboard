@@ -1305,3 +1305,106 @@
         phone: function() { return PHONE.matches; }
     };
 })();
+
+
+// ---------- Copying (doc/Gestaltung.md, 7: »Kopieren«) ----------
+// window.pv_copy: what people copy often (an address) as a quiet one-line
+// field with a copy segment at its end. One click copies; a green check
+// (ti-check) takes the place of the copy icon for a moment, the same size,
+// so nothing moves; screen readers hear »… kopiert«. A long text ends in
+// »…«, the title shows all of it. Styles: ".pv-copy" in preview.css.
+//   pv_copy.field(text, {what, cls})  the field (a <button>); what: for
+//                                     screen readers (»Adresse kopiert«)
+//   pv_copy.run(button, text, {what})  copy from any other button
+//                                          (with pv_copy.icons() in it)
+(function() {
+    var live = null;
+
+    function announce(text) {
+        if (!live) {
+            live = document.createElement('div');
+            live.className = 'sr-only';
+            live.setAttribute('aria-live', 'polite');
+            document.body.appendChild(live);
+        }
+        live.textContent = text;
+    }
+
+    function write(text, near, done) {
+        function fallback() {
+            // inside an open dialog, so that it keeps the focus
+            var host = (near && near.closest('.modal')) || document.body;
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '0';
+            ta.style.left = '0';
+            ta.style.opacity = '0';
+            host.appendChild(ta);
+            ta.select();
+            var ok = false;
+            try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+            ta.remove();
+            if (near) near.focus({ preventScroll: true });
+            return ok;
+        }
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(function() { done(true); }, function() { done(fallback()); });
+        } else {
+            done(fallback());
+        }
+    }
+
+    function run(button, text, o) {
+        o = o || {};
+        write(text, button, function(ok) {
+            if (!ok) {
+                dashboardAlert('Das ließ sich nicht in die Zwischenablage kopieren. Du kannst den Text markieren und selbst kopieren.', 'Kopieren');
+                return;
+            }
+            button.classList.add('pv-copied');
+            announce((o.what || 'Adresse') + ' kopiert');
+            clearTimeout(button.pv_copy_timer);
+            button.pv_copy_timer = setTimeout(function() { button.classList.remove('pv-copied'); }, 1600);
+        });
+    }
+
+    // the copy icon and, in its place after copying, the check
+    function icons() {
+        var frag = document.createDocumentFragment();
+        ['copy', 'check'].forEach(function(name) {
+            var i = document.createElement('i');
+            i.className = 'ti ti-' + name + (name === 'check' ? ' pv-copy-ok' : ' pv-copy-icon');
+            i.setAttribute('aria-hidden', 'true');
+            frag.appendChild(i);
+        });
+        return frag;
+    }
+
+    function field(text, o) {
+        o = o || {};
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pv-copy' + (o.cls ? ' ' + o.cls : '');
+        b.setAttribute('title', text + ' kopieren');
+        b.setAttribute('aria-label', text + ' kopieren');
+        b.setAttribute('data-copy', text);
+        var t = document.createElement('span');
+        t.className = 'pv-copy-text';
+        t.textContent = text;
+        b.appendChild(t);
+        var end = document.createElement('span');
+        end.className = 'pv-copy-end';
+        end.appendChild(icons());
+        b.appendChild(end);
+        b.addEventListener('click', function(e) {
+            // a field in a row that opens something: a click only copies
+            e.stopPropagation();
+            run(e.currentTarget, text, o);
+        });
+        return b;
+    }
+
+    window.pv_copy = { field: field, run: run, icons: icons };
+})();

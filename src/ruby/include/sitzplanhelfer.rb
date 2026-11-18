@@ -376,6 +376,7 @@ class Main < Sinatra::Base
         # Im eigenen Fachraum plant die Lehrkraft für sich: ohne Wünsche und
         # ohne die Verteilungslisten der Klassenleitung.
         respond(:ok => true, :klasse => klasse, :raum => raum, :sus => sus, :fachraum => fachraum,
+                :can_copy_class_rules => fachraum && sph_is_klassenleitung?(klasse),
                 :can_start_cycle => can_start_cycle, :klassenleiter_names => klassenleiter_names,
                 :open_cycle => open_cycle, :wishes => wishes, :last_cycle => last_cycle,
                 :previous_cycle => previous_cycle, :priority_cycle => priority_cycle,
@@ -590,6 +591,105 @@ class Main < Sinatra::Base
     end
 
     SPH_RULE_PROPS = [:forced_pairs, :forbidden_pairs, :fixed_rules]
+
+    # Klassenleitung dieser Klasse - selbst, nicht nur als Admin.
+    def sph_is_klassenleitung?(klasse)
+        teacher_logged_in? && (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand])
+    end
+
+    # Die Bereiche „vorne“, „hinten“, „links“, „rechts“ in einer Bestuhlung,
+    # wie sie area_for_rule in sitzplanhelfer.html berechnet.
+    def sph_named_areas(seats)
+        return {} unless seats.is_a?(Array) && !seats.empty?
+        w = [seats.map { |s| s[0] + 1 }.max, 1].max
+        h = [seats.map { |s| s[1] + 1 }.max, 1].max
+        mid_x = (w - 1) / 2.0
+        mid_y = (h - 1) / 2.0
+        rows = seats.map { |s| s[1] }.uniq.sort
+        areas = {
+            'front' => [[0, w - 1], [rows[0], rows[[1, rows.size - 1].min]]],
+            'back' => [[0, w - 1], [mid_y.ceil, h - 1]],
+            'left' => [[0, mid_x.floor], [0, h - 1]],
+            'right' => [[mid_x.ceil, w - 1], [0, h - 1]],
+        }
+        # Vorgaben sind ganze Zahlen; halbe Positionen passen nicht dazu.
+        areas.select { |_, r| r.flatten.all? { |v| v == v.to_i } }.transform_values { |r| r.map { |a| a.map(&:to_i) } }
+    end
+
+    # Im eigenen Fachraum: Wer dort unterrichtet und zugleich Klassenleitung
+    # der Klasse ist, darf die eigenen Vorgaben aus dem Klassenraum als Kopie
+    # übernehmen - sonst niemand, auch kein Admin, denn sie können
+    # vertrauliche Absprachen enthalten. Übernommen werden Paare und Bereiche
+    # (vorne, hinten …), umgerechnet auf die eigenen Tische; genaue Plätze
+    # nicht, weil sie zu den Tischen des Klassenraums gehören. Was im
+    # Fachraum schon festgelegt ist, bleibt. Danach sind beide getrennt.
+    post '/api/sph_copy_class_rules' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:klasse, :raum])
+        klasse = data[:klasse]
+        raum = data[:raum]
+        lehrer = sph_scope!(klasse, raum)
+        assert(!lehrer.empty? && sph_is_klassenleitung?(klasse), 'Nur die Klassenleitung kann ihre Vorgaben in den eigenen Fachraum übernehmen.')
+        open = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer)
+            MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
+            WHERE sc.saved_at IS NULL AND #{sph_scope_cond('sc')}
+            RETURN sc
+            ORDER BY sc.created_at DESC
+            LIMIT 1;
+        END_OF_QUERY
+        if open.empty?
+            target = {:klasse => klasse, :raum => raum, :lehrer => lehrer}
+            rules = sph_current_rules(klasse, raum, lehrer)
+        else
+            sc = open.first['sc']
+            target = {:cycle_id => sc[:id]}
+            rules = {:forced_pairs => sc[:forced_pairs] || '[]', :forbidden_pairs => sc[:forbidden_pairs] || '[]',
+                     :fixed_rules => sc[:fixed_rules] || '[]'}
+        end
+        own = rules.transform_values { |v| JSON.parse(v) rescue [] }
+        target_areas = sph_named_areas(SitzplanDaten.teacher_room(raum, lehrer))
+        sus_emails = @@schueler_for_klasse[klasse] || []
+        counts = {:pairs => 0, :areas => 0, :skipped => 0, :kept => 0}
+        klassenraeume_for_klasse(klasse).each do |kr|
+            source = sph_current_rules(klasse, kr, '').transform_values { |v| JSON.parse(v) rescue [] }
+            [[:forced_pairs, :forbidden_pairs], [:forbidden_pairs, :forced_pairs]].each do |prop, other|
+                source[prop].each do |p|
+                    next unless p.is_a?(Array) && p.size == 2 && p.all? { |e| sus_emails.include?(e) }
+                    next if own[prop].any? { |q| q.sort == p.sort }
+                    if own[other].any? { |q| q.sort == p.sort }
+                        counts[:kept] += 1
+                        next
+                    end
+                    own[prop] << p
+                    counts[:pairs] += 1
+                end
+            end
+            source_areas = sph_named_areas(SitzplanDaten.room(kr))
+            source[:fixed_rules].each do |r|
+                next unless r.is_a?(Array) && r.size == 3 && sus_emails.include?(r[0])
+                if r[1][0] == r[1][1] && r[2][0] == r[2][1]
+                    counts[:skipped] += 1
+                    next
+                end
+                name = source_areas.keys.find { |k| source_areas[k] == [r[1], r[2]] }
+                if name.nil? || target_areas[name].nil?
+                    counts[:skipped] += 1
+                    next
+                end
+                if own[:fixed_rules].any? { |o| o[0] == r[0] }
+                    counts[:kept] += 1
+                    next
+                end
+                own[:fixed_rules] << [r[0]] + target_areas[name]
+                counts[:areas] += 1
+            end
+        end
+        SPH_RULE_PROPS.each do |prop|
+            sph_write_rule!(target, rules, prop, own[prop])
+            rules = rules.merge(prop => own[prop].to_json)
+        end
+        respond({:ok => true}.merge(counts))
+    end
 
     def sph_write_rule!(target, rules, prop, value)
         assert(SPH_RULE_PROPS.include?(prop), 'Unbekannte Vorgabe.')

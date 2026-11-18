@@ -505,6 +505,7 @@ body.dark .sph-group {
     <div class='api_messages'></div>
     <p><a class="btn btn-outline-secondary" id="sph_back_link" href="#"><i class="fa fa-arrow-left"></i>&nbsp;&nbsp;Zurück zur Klasse</a></p>
     <p id="sph_fachraum_info" class="sph-legend" style="display: none;"></p>
+    <p id="sph_klassenraum_info" class="sph-legend" style="display: none;"></p>
     <p id="sph_status" class="sph-status" role="status"></p>
 
     <!-- Ganz oben, in jeder Ansicht: die Tische im Raum (der erste Schritt,
@@ -608,7 +609,12 @@ body.dark .sph-group {
 
         <details class="sph-section sph-panel" id="sph_vorgaben">
             <summary><h4>Vorgaben <span id="sph_vorgaben_count" class="sph-count"></span></h4></summary>
-            <p class="sph-legend">Ihre Eingaben gelten für alle Werkzeuge, bis Sie sie ändern; Wünsche treten hinter ihnen zurück. Ein ausgeschalteter Bereich bleibt gespeichert und fließt nur in diesem Werkzeug nicht in den Plan ein.</p>
+            <p class="sph-legend" id="sph_vorgaben_legend">Ihre Eingaben gelten für alle Werkzeuge, bis Sie sie ändern; Wünsche treten hinter ihnen zurück. Ein ausgeschalteter Bereich bleibt gespeichert und fließt nur in diesem Werkzeug nicht in den Plan ein.</p>
+            <!-- Nur im eigenen Fachraum und nur für die Klassenleitung der Klasse:
+                 die eigenen Vorgaben aus dem Klassenraum als Kopie übernehmen -->
+            <p id="sph_copy_class_rules_row" style="display: none;">
+                <button class="btn btn-sm btn-outline-primary" id="sph_bu_copy_class_rules"><i class="fa fa-clone"></i>&nbsp;&nbsp;Meine Vorgaben aus dem Klassenraum übernehmen</button>
+            </p>
 
 
             <h5 class="sph-area-head">Paare
@@ -750,6 +756,7 @@ var sph_editor_allowed = #{sitzplan_editor_allowed?.to_json};
 // Tische, nur „Shuffler“ und „Von Hand verteilen“, keine Wunschrunde und
 // keine Verteilungslisten (die gehören zur Klassenleitung).
 var sph_fachraum = #{(!!sitzplan_owner(*sitzplan_path_params)).to_json};
+var sph_klassenraum = #{klassenraeume_for_klasse(sitzplan_path_params[0]).include?(sitzplan_path_params[1]).to_json};
 
 // Bestuhlung aller Räume, geteilt mit dem Sitzplan-Shuffler (siehe sitzplan_daten.rb);
 // im eigenen Fachraum die Tische der Lehrkraft. Fehlt der Raum, erscheint
@@ -1563,6 +1570,7 @@ function load_state(after) {
         fixed_rules = rules.fixed_rules || [];
         can_start_cycle = !!data.can_start_cycle;
         rule_areas = data.rule_areas || {};
+        $('#sph_copy_class_rules_row').toggle(!!data.can_copy_class_rules);
         base_mode = oc ? (oc.base_mode || null) : null;
         open_cycle_data = oc || null;
         // Die Vorgaben gibt es in beiden Ansichten: auf der Startseite unter
@@ -2554,12 +2562,19 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#sph_link_editor').attr('href', `/sitzplaneditor/${encodeURIComponent(klasse)}/${encodeURIComponent(raum)}`);
     $('#sph_link_editor').toggle(sph_editor_allowed);
     if (sph_fachraum) {
-        $('#sph_fachraum_info').text(`Ihr eigener Sitzplan für Ihren Unterricht mit der ganzen Klasse in Raum ${raum}. ` +
-            'Ihn und Ihre Tische sehen nur Sie; der Sitzplan der Klassenleitung bleibt davon unberührt.').show();
+        $('#sph_fachraum_info').text(`Fachraum: Ihr eigener Sitzplan für Ihren Unterricht mit der ganzen Klasse in Raum ${raum}. ` +
+            'Ihn und Ihre Tische sehen nur Sie; der Sitzplan der Klassenleitung im Klassenraum bleibt davon unberührt.').show();
         // Wunschrunde und Verteilungslisten gibt es nur bei der Klassenleitung im
         // Klassenraum; den Shuffler ohne ihre Regeln.
         $('#sph_bu_start_spread, #sph_bu_wishes, #sph_new_choice, #sph_shuffler_box, #sph_spread_area').remove();
         $('#sph_link_shuffler').attr('title', 'Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts.');
+        $('#sph_vorgaben_legend').text('Ihre eigenen Vorgaben für diesen Fachraum. Sie gelten für alle Werkzeuge hier, bis Sie sie ändern. ' +
+            'Die Vorgaben der Klassenleitung sehen Sie hier nicht, und Ihre gelten nicht im Klassenraum. ' +
+            'Ein ausgeschalteter Bereich bleibt gespeichert und fließt nur in diesem Werkzeug nicht in den Plan ein.');
+    }
+    if (sph_klassenraum && !sph_fachraum) {
+        $('#sph_klassenraum_info').text(`Klassenraum: Dieser Sitzplan gilt für die Klasse in Raum ${raum}, und alle Lehrkräfte der Klasse können ihn ansehen. ` +
+            'Lehrkräfte, die die Klasse in einem Fachraum unterrichten, machen dort eigene Pläne; dieser hier bleibt davon unberührt.').show();
     }
     if (!seats) {
         // Noch keine Tische für diesen Raum - mit einer Erklärung und dem Weg
@@ -2734,6 +2749,22 @@ document.addEventListener('DOMContentLoaded', function () {
             let [xr, yr] = area_for_rule(area);
             api_call('/api/sph_set_fixed_rule', {...rules_target(), email: email, x_min: xr[0], x_max: xr[1], y_min: yr[0], y_max: yr[1]}, done);
         }
+    });
+    $('#sph_bu_copy_class_rules').click(function () {
+        dashboardConfirm('Sie sind auch Klassenleitung dieser Klasse. Ihre Vorgaben aus dem Klassenraum werden als Kopie in Ihre Vorgaben für diesen Fachraum übernommen: ' +
+            'Paare und Bereiche wie „vorne“, umgerechnet auf Ihre Tische hier. Genaue Plätze werden nicht übernommen, und was Sie hier schon festgelegt haben, bleibt. ' +
+            'Danach sind beide getrennt: Änderungen hier betreffen den Klassenraum nicht und umgekehrt.', function () {
+            api_call('/api/sph_copy_class_rules', {klasse: klasse, raum: raum}, function (data) {
+                if (data.success === false) { dashboardAlert(data.error || 'Konnte nicht übernommen werden.'); return; }
+                load_state(function () {
+                    $('#sph_vorgaben').prop('open', true);
+                    let msg = `Übernommen: ${data.pairs} ${data.pairs === 1 ? 'Paar' : 'Paare'} und ${data.areas} ${data.areas === 1 ? 'Bereich' : 'Bereiche'}.`;
+                    if (data.skipped > 0) msg += ` ${data.skipped} nicht übernommen: genaue Plätze oder Bereiche, die zu Ihren Tischen hier nicht passen.`;
+                    if (data.kept > 0) msg += ` ${data.kept} nicht übernommen, weil Sie hier für dieselben Personen schon etwas anderes festgelegt haben.`;
+                    set_status(msg);
+                });
+            });
+        }, { title: 'Vorgaben übernehmen', confirm: 'Übernehmen' });
     });
     $('#sph_bu_generate').click(function () {
         selected_email = null;

@@ -51,7 +51,12 @@ test('Sitzplan im Fachraum: eigene Tische übernehmen, eigener Plan, getrennt vo
   // homeroom plan belongs to the class teacher and can only be looked at
   await page.goto(`/directory/${KLASSE}`);
   await expect(page.locator(`a[href="/sitzplanhelfer/${KLASSE}/${FACHRAUM}"]`)).toHaveText(`Sitzplan Raum ${FACHRAUM}`);
-  await expect(page.locator(`#additional_teacher_content`)).toContainText('Ihr eigener Sitzplan für Ihren Unterricht in diesem Raum.');
+  // the section explains what applies to whom: homeroom plan for the class,
+  // subject room plans of one's own
+  await expect(page.locator('#sitzplan_raum_info')).toContainText('Im Klassenraum gibt es einen Sitzplan für die ganze Klasse');
+  await expect(page.locator('#sitzplan_raum_info')).toContainText('am Sitzplan des Klassenraums ändert er nichts');
+  await expect(page.locator(`.sitzplan-raum[data-raum="${FACHRAUM}"]`)).toContainText('Fachraum: Ihr eigener Sitzplan für Ihren Unterricht hier. Nur Sie sehen ihn.');
+  await expect(page.locator('.sitzplan-raum[data-raum="108"]')).toContainText('Klassenraum: Der Sitzplan der Klassenleitung, zum Ansehen.');
   await expect(page.locator(`a[href^="/sitzplanhelfer/${KLASSE}/"]`)).toHaveCount(1);
 
   // seat editor: take over Clarke's desks as a copy, then save them as own
@@ -80,6 +85,24 @@ test('Sitzplan im Fachraum: eigene Tische übernehmen, eigener Plan, getrennt vo
   await expect(page.locator('#sph_room_bar #sph_bu_start_manual')).toBeVisible();
   await expect(page.locator('#sph_bu_wishes, #sph_bu_start_spread, #sph_spread_area, #sph_shuffler_box')).toHaveCount(0);
   await expect(page.locator('#sph_start_info')).toContainText('noch kein Sitzplan gespeichert');
+
+  // own Vorgaben, without being class teacher: who must not sit together and
+  // who sits in front (no lists for spreading out in a subject room)
+  await page.locator('#sph_vorgaben > summary').click();
+  await expect(page.locator('#sph_area_pairs, #sph_area_fixed')).toHaveCount(2);
+  await expect(page.locator('#sph_vorgaben_legend')).toContainText('Die Vorgaben der Klassenleitung sehen Sie hier nicht');
+  // only the class teacher may copy her own homeroom Vorgaben
+  await expect(page.locator('#sph_copy_class_rules_row')).toBeHidden();
+  const notAllowed = await page.request.post('/api/sph_copy_class_rules', { data: { klasse: KLASSE, raum: FACHRAUM } });
+  expect(notAllowed.status()).not.toBe(200);
+  await page.locator('#sph_pair_a').selectOption({ label: 'Elli Mustermann' });
+  await page.locator('#sph_pair_b').selectOption({ label: 'Mallory Mustermann' });
+  await page.locator('#sph_bu_add_forbidden').click();
+  await expect(page.locator('#sph_forbidden_list')).toContainText('Elli Mustermann');
+  await page.locator('#sph_rule_sus').selectOption({ label: 'Max Mustermann' });
+  await page.locator('#sph_rule_area').selectOption('front');
+  await page.locator('#sph_bu_add_rule').click();
+  await expect(page.locator('#sph_rules_list')).toContainText('Max Mustermann');
 
   // by hand: everyone gets a seat by dice, then the plan is saved
   const started = page.waitForResponse('**/api/sph_start_cycle');
@@ -132,7 +155,55 @@ test('Sitzplan im Fachraum: eigene Tische übernehmen, eigener Plan, getrennt vo
   await clarke.goto(`/sitzplanhelfer/${KLASSE}/323`);
   await expect(clarke.locator('#sph_fachraum_info')).toBeVisible();
   await expect(clarke.locator('#sph_history_body [data-id="e2efachraumalt"]')).toHaveCount(2);
+  await clarke.goto(`/directory/${KLASSE}`);
+  await expect(clarke.locator('.sitzplan-raum[data-raum="108"]')).toContainText('Klassenraum: Ihren Sitzplan hier sehen alle Lehrkräfte der Klasse.');
   await clarke.goto(`/sitzplanhelfer/${KLASSE}/108`);
   await expect(clarke.locator('#sph_fachraum_info')).toBeHidden();
+  await expect(clarke.locator('#sph_klassenraum_info')).toContainText('alle Lehrkräfte der Klasse können ihn ansehen');
   await expect(clarke.locator('#sph_room_bar #sph_bu_wishes')).toBeVisible();
+});
+
+// Rules of the class teacher stay hers. Only someone who is class teacher of
+// the class herself may copy her homeroom Vorgaben into her own subject room
+// plan – as a copy: pairs and areas, no exact seats; afterwards both are
+// separate.
+test('Sitzplan im Fachraum: Klassenleitung übernimmt eigene Vorgaben aus dem Klassenraum als Kopie', async ({ page }) => {
+  await login(page, ACCOUNTS.admin); // Clarke: class teacher of 5a, also teaches it in 317
+  await saveDesks(page.request, '108', CLARKE_DESKS);
+  await saveDesks(page.request, FACHRAUM, CLARKE_DESKS);
+  const sus = (await (await page.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: '108' } })).json()).sus;
+  const email = (name: string) => sus.find((s: any) => s.display_name === name).email;
+  const max = email('Max Mustermann');
+  const mallory = email('Mallory Mustermann');
+  const rule = (raum: string, path: string, extra: object) =>
+    page.request.post(path, { data: { klasse: KLASSE, raum, ...extra } });
+  // homeroom: Max and Mallory must not sit together, Max sits in front
+  // (both rows: the room has two); the subject room starts without them
+  const front = { email: max, x_min: 0, x_max: 4, y_min: 0, y_max: 2 };
+  try {
+    expect((await rule('108', '/api/sph_set_pair', { email_a: max, email_b: mallory, kind: 'forbidden' })).status()).toBe(200);
+    expect((await rule('108', '/api/sph_set_fixed_rule', front)).status()).toBe(200);
+    await rule(FACHRAUM, '/api/sph_remove_pair', { email_a: max, email_b: mallory, kind: 'forbidden' });
+    await rule(FACHRAUM, '/api/sph_remove_fixed_rule', { email: max });
+
+    await page.goto(`/sitzplanhelfer/${KLASSE}/${FACHRAUM}`);
+    await expect(page.locator('#sph_view_start:visible, #sph_view_work:visible')).toHaveCount(1);
+    await page.locator('#sph_vorgaben > summary').click();
+    await expect(page.locator('#sph_forbidden_list')).not.toContainText('Max Mustermann');
+    await page.locator('#sph_bu_copy_class_rules').click();
+    await dashboardDialog(page).getByRole('button', { name: 'Übernehmen' }).click();
+    await expect(page.locator('#sph_status')).toContainText('Übernommen: 1 Paar und 1 Bereich');
+    await expect(page.locator('#sph_forbidden_list')).toContainText('Max Mustermann');
+    await expect(page.locator('#sph_rules_list')).toContainText('Max Mustermann');
+
+    // a copy: removing it in the subject room leaves the homeroom as it was
+    expect((await rule(FACHRAUM, '/api/sph_remove_pair', { email_a: max, email_b: mallory, kind: 'forbidden' })).status()).toBe(200);
+    const homeroom = (await (await page.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: '108' } })).json()).current_rules;
+    expect(homeroom.forbidden_pairs.some((p: string[]) => p.includes(max) && p.includes(mallory))).toBe(true);
+  } finally {
+    await rule('108', '/api/sph_remove_pair', { email_a: max, email_b: mallory, kind: 'forbidden' });
+    await rule('108', '/api/sph_remove_fixed_rule', { email: max });
+    await rule(FACHRAUM, '/api/sph_remove_pair', { email_a: max, email_b: mallory, kind: 'forbidden' });
+    await rule(FACHRAUM, '/api/sph_remove_fixed_rule', { email: max });
+  }
 });

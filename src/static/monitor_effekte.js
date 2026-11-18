@@ -7506,7 +7506,7 @@
     // einer Weile platzt die Puppe, ein Schmetterling entfaltet die Flügel und flattert davon.
     let raupeZuletzt = [];
     function Raupe() {
-        const kandidaten = kaesten.filter((k) => k.w > 12 * VW && k.y + k.h < UNTEN - 5 * VW && k.y > 2 * VW
+        const kandidaten = kaesten.filter((k) => k.w > 12 * VW && k.y + k.h < UNTEN - 7.5 * VW && k.y > 2 * VW
             && !k.el.dataset.fxStory && !k.el.querySelector(':scope > .fx-eisscheibe'));
         if (!kandidaten.length) return null;
         let frisch = kandidaten.filter((kk) => raupeZuletzt.indexOf(kachelName(kk.el)) < 0);
@@ -7519,7 +7519,7 @@
         const kk0 = kante();
         const richtung = Math.random() < 0.5 ? 1 : -1;
         const startX = richtung > 0 ? kk0.x + kk0.w * 0.18 : kk0.x + kk0.w * 0.82;
-        const endeX = startX + richtung * zufall(3.6, 4.6) * VW;
+        const endeX = startX + richtung * zufall(6, 7.5) * VW;
         const L = 3.2 * VW, N = 10, SEG = L / (N - 1);
         let kopf = startX, welle = 0, t0 = null, pstart = 0, phase = 'kriechen', fertig = false;
         const bisse = [];                                  // Bisse in der Unterkante (x relativ zur Kachel, Radius)
@@ -7599,7 +7599,7 @@
         // Puppe: grün-goldener Tropfen, hängt an einem Fädchen von der Kante und pendelt leicht
         function puppeMalen(ax, ay, a, offen) {
             const w = Math.sin(pendel) * 0.08;
-            cxV.save(); cxV.translate(ax, ay); cxV.rotate(w); cxV.globalAlpha = a;
+            cxV.save(); cxV.translate(ax, ay); cxV.rotate(w); cxV.scale(1.5, 1.5); cxV.globalAlpha = a;
             cxV.strokeStyle = 'rgba(80,80,80,.6)'; cxV.lineWidth = 0.05 * VW;
             cxV.beginPath(); cxV.moveTo(0, 0); cxV.lineTo(0, 0.35 * VW); cxV.stroke();
             const h = 2.3 * VW, b = 0.75 * VW;
@@ -7621,7 +7621,7 @@
         }
         // Schmetterling von vorn: s = Größe (0…1, beim Entfalten), o = Öffnung der Flügel (−1…1)
         function falterMalen(x, y, s, o, w) {
-            cxV.save(); cxV.translate(x, y); cxV.rotate(w || 0);
+            cxV.save(); cxV.translate(x, y); cxV.rotate(w || 0); cxV.scale(1.5, 1.5);
             const auf = Math.abs(o) * 0.85 + 0.15;
             for (const sgn of [-1, 1]) {
                 cxV.save(); cxV.scale(sgn * auf, 1);
@@ -7667,10 +7667,10 @@
                         kopf += richtung * Math.max(0, Math.sin(welle)) * 2.2 * VW * dt;
                         if ((richtung > 0 && kopf >= naechsterBiss) || (richtung < 0 && kopf <= naechsterBiss)) {
                             // abbeißen: ein Bogen aus der Kante, Krümel fallen
-                            bisse.push({x: kopf + richtung * 0.35 * VW - kk.x, r: zufall(0.3, 0.42) * VW});
+                            bisse.push({x: kopf + richtung * 0.55 * VW - kk.x, r: zufall(0.62, 0.8) * VW});
                             maskeSetzen();
-                            for (let i = 0; i < 5; i++) kruemel.push({x: kopf + richtung * 0.35 * VW, y: kk.y, vx: zufall(-0.6, 0.6) * VW, vy: zufall(0, 1) * VW, alter: 0});
-                            naechsterBiss += richtung * zufall(0.85, 1.05) * VW;
+                            for (let i = 0; i < 8; i++) kruemel.push({x: kopf + richtung * 0.55 * VW, y: kk.y, vx: zufall(-0.6, 0.6) * VW, vy: zufall(0, 1) * VW, alter: 0});
+                            naechsterBiss += richtung * zufall(1.95, 2.2) * VW;
                             kauen = 0.6;
                         }
                     }
@@ -7694,7 +7694,7 @@
                     pendel += dt * 1.6;
                     if (ps > 2.6) {
                         const a0 = kopf - richtung * (N - 1) * SEG;
-                        flug = {x: a0, y: kk.y + 1.3 * VW, vx: (a0 < W / 2 ? 1 : -1) * 8 * VW, t: 0};
+                        flug = {x: a0, y: kk.y + 3.9 * VW, vx: (a0 < W / 2 ? 1 : -1) * 8 * VW, t: 0};
                         weiter('fliegen');
                     }
                 } else if (phase === 'fliegen') {
@@ -7744,7 +7744,7 @@
                     // hängt unter der Hülle, die Flügel werden groß und klappen auf und zu
                     const w = Math.sin(pendel) * 0.08;
                     const o = phase === 'trocknen' ? Math.sin(ps * 2.4) : 0.2;
-                    falterMalen(ax + Math.sin(w) * 2.4 * VW, ay + 2.6 * VW, 0.25 + 0.75 * glatt(auf), o, -w);
+                    falterMalen(ax + Math.sin(w) * 3.6 * VW, ay + 3.9 * VW, 0.25 + 0.75 * glatt(auf), o, -w);
                 }
                 if (flug && phase !== 'schluepfen' && phase !== 'trocknen') falterMalen(flug.x, flug.y, 1, Math.sin(flug.t * 16), Math.sin(flug.t * 2) * 0.2);
                 if (trupp) trupp.schritt(dt, t);

@@ -89,3 +89,32 @@ test('Verschobener Termin verschwindet aus der alten Woche (kein Geister-Termin)
     await expect(await eventOnDay(student, oldDay, title)).toHaveCount(0, { timeout: 2_000 });
   }).toPass({ timeout: 90_000 });
 });
+
+// A new event counted as changed as soon as it opened (new_event did not
+// record its defaults as the starting point): »Schließen« was disabled and
+// only »Verwerfen« closed the dialog – also after an existing event had been
+// open, whose values then served as the starting point.
+test('Neuer Termin: Schließen geht, solange nichts geändert ist', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/events');
+  const modal = page.locator('#composeModal');
+  const close = page.locator('#bu_close_event_modal');
+  const discard = page.locator('#bu_discard_event');
+  for (let round = 0; round < 2; round++) {
+    await page.locator('.bu-new-event').first().click();
+    await expect(modal).toBeVisible();
+    await expect(close).toBeEnabled();
+    await expect(discard).toBeDisabled();
+    // a change (typed: the page reacts to keys): only »Verwerfen« (or
+    // saving) leaves the dialog
+    await page.locator('#ti_title').pressSequentially('Sprechstunde');
+    await expect(close).toBeDisabled();
+    await expect(discard).toBeEnabled();
+    // undone: nothing changed any more
+    await page.locator('#ti_title').fill('');
+    await page.locator('#ti_title').press('End');
+    await expect(close).toBeEnabled();
+    await close.click();
+    await expect(modal).toBeHidden();
+  }
+});

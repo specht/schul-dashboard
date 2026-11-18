@@ -538,6 +538,13 @@ function new_event() {
     force_close = false;
     old_recipients_list = [];
     old_description = $('#summernote').summernote('code');
+    // the defaults just filled in are the starting point: nothing changed yet
+    // (otherwise »Schließen« was disabled from the start)
+    old_title = '';
+    old_date = $('#ti_date').val();
+    old_start_time = $('#ti_start_time').val();
+    old_end_time = $('#ti_end_time').val();
+    old_jitsi = ($('#ti_event_jitsi').data('state') === 'yes');
     old_eid = null;
     $('#ti_recipients').val('');
     $('#ti_title').focus();

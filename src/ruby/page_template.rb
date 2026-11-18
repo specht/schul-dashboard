@@ -23,22 +23,38 @@ module PageTemplate
     # Yields the code of every #{...} (braces inside are counted) and puts the
     # block's result in its place. Returns the new string. Other templates
     # (e.g. mail texts with {...}) pass their opening delimiter.
+    #
+    # Works on byte positions: character positions in a UTF-8 string with
+    # umlauts are counted from the start on every access, which made large
+    # pages (the start page, 190 KB) take hundreds of milliseconds. The
+    # delimiters and braces are ASCII, so byte positions are safe; the output
+    # is built in one new string instead of replacing inside the source.
+    OPEN_BRACE = '{'.ord
+    CLOSE_BRACE = '}'.ord
+
     def self.evaluate(source, open: '#{')
-        s = source.dup
+        out = String.new(capacity: source.bytesize + 1024, encoding: source.encoding)
+        open_size = open.bytesize
+        size = source.bytesize
         pos = 0
-        while (index = s.index(open, pos))
-            length = open.size
+        while (index = source.byteindex(open, pos))
+            out << source.byteslice(pos, index - pos)
+            i = index + open_size
             balance = 1
-            while index + length < s.size && balance > 0
-                c = s[index + length]
-                balance -= 1 if c == '}'
-                balance += 1 if c == '{'
-                length += 1
+            while i < size && balance > 0
+                b = source.getbyte(i)
+                balance -= 1 if b == CLOSE_BRACE
+                balance += 1 if b == OPEN_BRACE
+                i += 1
             end
-            result = (yield s[index + open.size, length - open.size - 1]).to_s
-            s[index, length] = result
-            pos = index + result.size
+            code = source.byteslice(index + open_size, i - index - open_size)
+            # the closing brace is not part of the code (nor, as before, the
+            # last character when the braces never close)
+            code = code[0...-1]
+            out << (yield code).to_s
+            pos = i
         end
-        s
+        out << source.byteslice(pos, size - pos)
+        out
     end
 end

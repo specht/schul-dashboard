@@ -67,4 +67,29 @@ class PageTemplateTest < Minitest::Test
         PageTemplate.evaluate(source) { 'y' }
         assert_equal "\#{x}", source
     end
+
+    def test_umlauts_around_and_inside_expressions
+        codes = []
+        result = PageTemplate.evaluate("Grüße \#{a{ä}} für \#{b}, Straße") do |code|
+            codes << code
+            code == 'b' ? 'Jörg' : 'Ü'
+        end
+        assert_equal ['a{ä}', 'b'], codes
+        assert_equal 'Grüße Ü für Jörg, Straße', result
+        assert_equal Encoding::UTF_8, result.encoding
+    end
+
+    # Large pages with umlauts (the start page has 190 KB) must not be slow:
+    # counting characters from the start on every access took 200 ms there
+    # and grew with the square of the size.
+    def test_large_page_with_umlauts_is_fast
+        source = ("<p>Größe ä ö ü \#{x}</p>\n" + "Übung " * 60) * 600
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        n = 0
+        result = PageTemplate.evaluate(source) { n += 1; 'ß' }
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+        assert_equal 600, n
+        assert_equal 600, result.scan('ß</p>').size
+        assert_operator elapsed, :<, 0.25
+    end
 end

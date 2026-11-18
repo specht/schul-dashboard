@@ -191,6 +191,9 @@ module DesignTokens
 
     # Text over the left 60 % of the backdrop band: the colour (white or ink)
     # and the weakest shade behind it that keeps 4.5:1 everywhere.
+    # how much more shade white text may need than dark text and still win
+    BAND_PREFER_WHITE = 0.15
+
     def self.band_text(colors, dark)
         g = [colors[0], mix(colors[1], [1, 1, 1], 0.1), colors[2]]
         paper = hex_to_rgb(PAPER[dark])
@@ -200,17 +203,23 @@ module DesignTokens
             c = mix(c, scrim, x < 0.75 ? a * (1 - x / 0.75) : 0)
             mix(c, paper, 0.25)
         end
-        best = nil
+        # the lightest shade that keeps the text readable, for white text (a
+        # dark shade) and for dark text (a light shade). A light shade washes
+        # the scheme's colours out, a dark one keeps them strong: white text
+        # wins unless dark text needs clearly less shade.
+        found = {}
         [[[1, 1, 1], [0, 0, 0]], [hex_to_rgb(INK[false]), [1, 1, 1]]].each do |ink, scrim|
             (0..14).each do |i|
                 a = (i * 0.05).round(2)
                 if (0..12).all? { |x| contrast(ink, sample.call(x / 20.0, scrim, a)) >= 4.5 }
-                    best = [ink, scrim, a] if best.nil? || a < best[2]
+                    found[scrim] = [ink, scrim, a]
                     break
                 end
             end
         end
-        best || [[1, 1, 1], [0, 0, 0], 0.7]
+        light, dark_shade = found[[1, 1, 1]], found[[0, 0, 0]]
+        return dark_shade if dark_shade && (light.nil? || dark_shade[2] <= light[2] + BAND_PREFER_WHITE)
+        light || dark_shade || [[1, 1, 1], [0, 0, 0], 0.7]
     end
 
     # ---------- colour helpers (components 0..1) ----------

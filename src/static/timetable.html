@@ -916,14 +916,16 @@ function render_preview_day_band(day, label, is_today, subtitle) {
         corner.append($('<a>').addClass('pv-band-avatar').attr('href', '/profil').attr('aria-label', 'Profil').append(avatar.contents()));
     // the day across the full width, the line with what it holds
     let title = $('<h1>').text(label);
+    // the day and its line together, on a soft shade only behind the text
+    // (the backdrop keeps its colours around it)
+    let text = $('<div>').addClass('pv-band-text').append(title, $('<div>').addClass('pv-band-sub').text(parts.join(', ')));
     if (top.children().length > 0 || corner.find('.pv-band-search').length > 0) {
         top.append(corner);
-        band.append(top, title);
+        band.append(top, text);
     } else {
         // nothing but the picture (students): no row of its own, the picture beside the day
-        band.append($('<div>').addClass('pv-band-title').append(title, corner));
+        band.append($('<div>').addClass('pv-band-title').append(text, corner));
     }
-    band.append($('<div>').addClass('pv-band-sub').text(parts.join(', ')));
 }
 
 // The school days of the shown week as a strip: tap one to show it, the dots

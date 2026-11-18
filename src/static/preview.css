@@ -2143,19 +2143,21 @@ html {
         position: relative;
     }
 
-    body.ui-preview.pv-agenda-on::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        height: 340px;
-        z-index: -1;
-        pointer-events: none;
-        background: linear-gradient(180deg,
-            rgba(var(--band-scrim), max(var(--band-scrim-a), 0.22)) 0%,
-            rgba(var(--band-scrim), max(calc(var(--band-scrim-a) * 0.7), 0.14)) 45%,
-            rgba(var(--band-scrim), 0) 100%);
+    /* the shade for the text on the backdrop: only behind the day and its
+       line (as on the desktop's week title), not across the whole top – a
+       light shade there washed the scheme's colours out */
+    .pv-band-text {
+        width: fit-content;
+        max-width: calc(100% + 28px);
+        margin: 0 -14px;
+        padding: 6px 14px 8px;
+        border-radius: 16px;
+        background: rgba(var(--band-scrim), var(--band-scrim-a));
+    }
+
+    .pv-band-title .pv-band-text {
+        flex: 0 1 auto;
+        min-width: 0;
     }
 
     .pv-band-top {

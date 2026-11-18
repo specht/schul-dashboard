@@ -13,6 +13,8 @@ class Main < Sinatra::Base
     UI_PREVIEW_FOR = DEVELOPMENT ? :all : :admins
 
     def ui_preview_allowed?
+        # test persons an admin chose (/design_feedback), whatever the stage
+        return true if user_logged_in? && (@session_user || {})[:ui_preview_granted]
         case UI_PREVIEW_FOR
         when :admins then admin_logged_in?
         when :teachers then admin_logged_in? || teacher_logged_in?
@@ -200,6 +202,36 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    # Admins give the new design to single persons for testing (or take it
+    # back): allowed for them from now on and switched on at once; taking it
+    # back switches it off. They can still switch it off themselves.
+    post '/api/set_ui_preview_tester' do
+        require_admin!
+        data = parse_request_data(:required_keys => [:email, :mode], :max_body_length => 1024,
+                                  :max_value_lengths => {:email => 256})
+        assert(%w(on off).include?(data[:mode]))
+        email = data[:email].strip.downcase
+        assert(@@user_info.include?(email))
+        on = data[:mode] == 'on'
+        neo4j_query(<<~END_OF_QUERY, :email => email, :on => on, :ts => Time.now.to_i)
+            MATCH (u:User {email: $email})
+            SET u.ui_preview_granted = $on
+            SET u.ui_preview = $on
+            SET u.ui_preview_ts = $ts
+            SET u.ui_preview_tried = COALESCE(u.ui_preview_tried, false) OR $on;
+        END_OF_QUERY
+        respond(:ok => true)
+    end
+
+    def ui_preview_testers
+        require_admin!
+        neo4j_query(<<~END_OF_QUERY).map { |row| {:email => row['email'], :on => !!row['on']} }.select { |x| @@user_info.include?(x[:email]) }
+            MATCH (u:User)
+            WHERE u.ui_preview_granted = true
+            RETURN u.email AS email, u.ui_preview AS on;
+        END_OF_QUERY
+    end
+
     post '/api/design_feedback' do
         require_user!
         assert(ui_preview?)
@@ -311,6 +343,36 @@ class Main < Sinatra::Base
         data = design_feedback_page_data
         kinds = {'feedback' => 'Feedback', 'opt_out' => 'Zurück zum alten Design'}
         StringIO.open do |io|
+            # test persons: the new design for single persons, whatever the stage
+            testers = ui_preview_testers.sort_by { |x| (@@user_info[x[:email]][:display_name] || '').downcase }
+            io.puts "<h3 class='mt-4'>Testpersonen</h3>"
+            io.puts "<p class='text-muted'>Diese Personen bekommen das neue Design zum Testen, auch wenn es sonst nur für Admins freigeschaltet ist. Hinzufügen schaltet es für sie gleich ein, Entfernen schaltet es aus; selbst abschalten können sie es im Profil.</p>"
+            if testers.empty?
+                io.puts "<p class='text-muted' id='pv_testers_empty'>Noch keine Testpersonen.</p>"
+            else
+                io.puts "<ul class='list-unstyled pv-testers' id='pv_testers'>"
+                testers.each do |x|
+                    info = @@user_info[x[:email]]
+                    extra = info[:teacher] ? 'Lehrkraft' : (info[:klasse] ? "Klasse #{tr_klasse(info[:klasse])}" : '')
+                    state = x[:on] ? 'eingeschaltet' : 'selbst abgeschaltet'
+                    io.puts "<li class='d-flex align-items-center' style='gap: 12px; padding: 6px 0; border-bottom: 1px solid rgba(128,128,128,0.2);' data-email='#{CGI.escapeHTML(x[:email])}'>" +
+                            "<span style='flex: 1;'><b>#{CGI.escapeHTML(info[:display_name].to_s)}</b> <span class='text-muted'>#{CGI.escapeHTML(extra)}, #{state}</span></span>" +
+                            "<button type='button' class='btn btn-sm btn-outline-secondary bu-remove-tester' data-email='#{CGI.escapeHTML(x[:email])}'>Entfernen</button></li>"
+                end
+                io.puts "</ul>"
+            end
+            io.puts "<div class='d-flex flex-wrap align-items-center' style='gap: 8px; margin: 10px 0 28px;'>"
+            io.puts "<input type='text' class='form-control' id='ti_preview_tester' list='dl_preview_tester' placeholder='Name oder E-Mail-Adresse' autocomplete='off' style='max-width: 26rem;'>"
+            io.puts "<button type='button' class='btn btn-secondary' id='bu_add_tester' disabled>Hinzufügen</button>"
+            io.puts "</div>"
+            io.puts "<datalist id='dl_preview_tester'>"
+            @@user_info.keys.sort_by { |e| (@@user_info[e][:display_name] || e).downcase }.each do |e|
+                info = @@user_info[e]
+                extra = info[:teacher] ? 'Lehrkraft' : (info[:klasse] ? "Klasse #{tr_klasse(info[:klasse])}" : '')
+                io.puts "<option value='#{CGI.escapeHTML(e)}'>#{CGI.escapeHTML(info[:display_name].to_s)}#{extra.empty? ? '' : ', ' + CGI.escapeHTML(extra)}</option>"
+            end
+            io.puts "</datalist>"
+            io.puts "<h3>Nutzung und Feedback</h3>"
             io.puts "<p class='design-feedback-counts'><b>#{data[:active]}</b> nutzen das neue Design gerade, <b>#{data[:left]}</b> haben es ausprobiert und wieder abgeschaltet.</p>"
             if data[:entries].empty?
                 io.puts "<p class='text-muted'>Noch kein Feedback.</p>"

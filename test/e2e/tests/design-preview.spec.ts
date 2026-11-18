@@ -75,6 +75,42 @@ test('Neues Design: vorerst nur für Admins', async ({ page, newUserPage }) => {
   }
 });
 
+// Admins give the new design to single persons for testing (/design_feedback,
+// »Testpersonen«): switched on at once, the person may switch it on and off
+// like an admin; taking it back switches it off. Only admins may do that.
+test('Neues Design: Admins geben es einzelnen Personen zum Testen', async ({ page, newUserPage }) => {
+  await login(page, ACCOUNTS.admin);
+  const student = await newUserPage();
+  await login(student, ACCOUNTS.schueler);
+  // not for students themselves
+  expect((await student.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.schueler, mode: 'on' } })).status()).not.toBe(200);
+  try {
+    await page.goto('/design_feedback');
+    await page.locator('#ti_preview_tester').fill(ACCOUNTS.schueler);
+    await page.locator('#bu_add_tester').click();
+    await expect(page.locator('#pv_testers li', { hasText: 'eingeschaltet' })).toHaveCount(1);
+    await student.goto('/');
+    await expect(student.locator('body')).toHaveClass(/ui-preview/);
+    // the person may switch it off and on again
+    expect((await student.request.post('/api/set_ui_preview', { data: { mode: 'off' } })).status()).toBe(200);
+    await student.goto('/');
+    await expect(student.locator('body')).not.toHaveClass(/ui-preview/);
+    expect((await student.request.post('/api/set_ui_preview', { data: { mode: 'on' } })).status()).toBe(200);
+    await student.goto('/profil');
+    await expect(student.locator('body')).toHaveClass(/ui-preview/);
+    // taken back: off, and not to be switched on again
+    await page.goto('/design_feedback');
+    await page.locator('#pv_testers .bu-remove-tester').first().click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Entfernen' }).click();
+    await expect(page.locator('#pv_testers_empty')).toBeVisible();
+    await student.goto('/');
+    await expect(student.locator('body')).not.toHaveClass(/ui-preview/);
+    expect((await student.request.post('/api/set_ui_preview', { data: { mode: 'on' } })).status()).not.toBe(200);
+  } finally {
+    await page.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.schueler, mode: 'off' } });
+  }
+});
+
 // The colour sliders (Farbton, Sepia, Analog …) lay a filter over the whole
 // page. The new design computes readable colours per scheme; a filter would
 // undo that, so the preview shows the page without them.

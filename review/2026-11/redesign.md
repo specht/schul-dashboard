@@ -55,6 +55,10 @@ in [doc/Gestaltung.md](../../doc/Gestaltung.md).
   script swaps the icons in the browser (also those created by JavaScript), so
   the pages need no change yet; converted pages write Tabler icons directly;
   Fork Awesome goes away at the switch.
+  Kept after a comparison (2026-11-18): 73 of the dashboard's icons in nine
+  sets (Phosphor, Material Symbols, Lucide, Remix, Iconoir, Heroicons, Tabler
+  filled and outline at 2 and 2.5) – the maintainer stays with Tabler outline.
+  Only Tabler icons, never CSS-drawn or text glyphs (doc/Gestaltung.md, 11).
 - **Admins first.** The preview starts with admins only; the next stages
   (teachers, everyone) are one constant (\`UI_PREVIEW_FOR\` in
   \`include/design_preview.rb\`).

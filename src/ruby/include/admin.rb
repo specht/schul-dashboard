@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     # the admin page's own pages (also found by the search, quick_search.rb)
-    ADMIN_PAGE_LINKS = [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Feedback neues Design', 'fa-comment-o'], ['/design_palettes', 'Farbschemata neues Design', 'fa-paint-brush']]
+    ADMIN_PAGE_LINKS = [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Neues Design: Testpersonen und Feedback', 'fa-comment-o'], ['/design_palettes', 'Farbschemata neues Design', 'fa-paint-brush']]
 
     post '/api/impersonate' do
         require_admin!

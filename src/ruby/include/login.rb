@@ -849,6 +849,7 @@ class Main < Sinatra::Base
         require_user!
         data = parse_request_data(:required_keys => [:method])
         method = data[:method]
+        assert(%w(email sms otp).include?(method))
         random_code = RandomTag::digits(6)
         random_code = '654321' if DEVELOPMENT
         tag = RandomTag::generate(8)

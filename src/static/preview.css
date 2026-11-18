@@ -503,7 +503,11 @@ html {
         z-index: 7500;
     }
 
-    /* slides up like the lesson sheet, down again when closing (design_preview.rb) */
+    /* slides up like the lesson sheet, down again when closing (design_preview.rb).
+       Already while Bootstrap marks it .collapsing (one frame before .show):
+       otherwise it stood there fully open for that frame, then slid in from
+       below – a flicker. The same animation on both keeps it running. */
+    .ui-preview .navbar .navbar-collapse.collapsing,
     .ui-preview .navbar .navbar-collapse.show {
         animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
     }

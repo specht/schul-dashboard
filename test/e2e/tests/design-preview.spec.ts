@@ -1225,3 +1225,34 @@ test('Neues Design: Tageskopf am Handy bündig', async ({ page }, testInfo) => {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Phones: "Mehr" slides up once. Bootstrap marks it .collapsing for a frame
+// before .show; without the slide on that frame it stood there fully open,
+// then jumped down and slid in – a flicker. Its top edge only ever rises.
+test('Neues Design: Mehr öffnet ohne Flackern', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Mehr am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await page.evaluate(() => {
+      const m = document.getElementById('navbarTogglerDemo02')!;
+      const tops: number[] = [];
+      (window as any).pv_tops = tops;
+      const t0 = performance.now();
+      const tick = () => {
+        if (getComputedStyle(m).display !== 'none') tops.push(Math.round(m.getBoundingClientRect().top));
+        if (performance.now() - t0 < 500) requestAnimationFrame(tick);
+      };
+      document.getElementById('bu_pv_more')!.addEventListener('click', () => requestAnimationFrame(tick), { once: true, capture: true });
+    });
+    await page.locator('#bu_pv_more').click();
+    await expect(page.locator('#navbarTogglerDemo02')).toHaveClass(/\bshow\b/);
+    await page.waitForTimeout(600);
+    const tops = await page.evaluate(() => (window as any).pv_tops as number[]);
+    expect(tops.length).toBeGreaterThan(3);
+    for (let i = 1; i < tops.length; i++) expect(tops[i], `frame ${i}: ${tops.join(', ')}`).toBeLessThanOrEqual(tops[i - 1] + 1);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

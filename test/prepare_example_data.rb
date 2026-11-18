@@ -58,6 +58,8 @@ append_lines(File.join(target, 'lehrer', 'lehrer.csv'), [
     'technik@beispielschule.de,Tk,m,Technik,Tom,,',
     # teaches 5a in a subject room, not its homeroom (sitzplan-fachraum.spec.ts)
     'fachraum@beispielschule.de,Fr,w,Fachraum,Frieda,,',
+    # a teacher who also manages the library (design-preview-bib.spec.ts)
+    'bib.lehrkraft@beispielschule.de,Bk,w,Lesemann,Berta,,',
     # only for otp-nudge.spec.ts: SMS login without a code app (one per
     # Playwright project, see test/e2e/seed.cypher)
     'sms.eins@beispielschule.de,Se,w,Eins,Sina,,',
@@ -89,7 +91,7 @@ append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'SEKRETARIAT' => ['sekretariat@beispielschule.de'],
     'MITTAGESSEN' => ['sekretariat@beispielschule.de'],
     'CAN_PRINT_PHOTOS' => ['sekretariat@beispielschule.de'],
-    'CAN_MANAGE_BIB' => ['bibliothek@beispielschule.de'],
+    'CAN_MANAGE_BIB' => ['bibliothek@beispielschule.de', 'bib.lehrkraft@beispielschule.de'],
     'CAN_MANAGE_BIB_MEMBERS' => ['bibliothek@beispielschule.de'],
     'CAN_MANAGE_BIB_PAYMENT' => ['bibliothek@beispielschule.de'],
     'GEV' => ['gev@beispielschule.de'],

@@ -1,0 +1,545 @@
+/* Neues Design (Vorschau): Passwörter (/passwoerter) – loaded after
+   preview.css for users with the preview (include/design_preview.rb). The
+   page is drawn by print_password_page_preview (include/mail_password_reset.rb)
+   and made to work by preview/passwoerter.js; everything here is scoped to
+   its own classes (.pv-pw-…).
+
+   A form page (doc/Gestaltung.md, 6a), at most about 980 px wide: the title,
+   then one section per topic with a heading (Nextcloud, E-Mail-Postfach),
+   labelled rows aligned in two columns (the label, then a copy field), the
+   password as dots until »Anzeigen«, one main action (»Zur
+   Nextcloud-Anmeldung«), buttons left-aligned with the text, notes as quiet
+   text with an icon. The Klassenleitung's students: a table (name, the
+   student's and the parents' mailbox, state and a quiet »Zurücksetzen…«),
+   list rows with »›« where it is narrow, a row opening a dialog (a sheet on
+   phones). */
+
+/* ---------- the page ---------- */
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container:has(.pv-pw) {
+        max-width: min(980px, calc(100% - 48px));
+    }
+}
+
+.ui-preview .container:has(.pv-pw) > .row > .col-lg-10 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-left: 0;
+}
+
+.pv-pw {
+    color: var(--pv-ink);
+}
+
+.pv-pw-section + .pv-pw-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--pv-line);
+}
+
+/* headings: the page title (h2) above the sections (h3) above a class (h4) */
+.ui-preview .container .pv-pw h3.pv-pw-h {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+    line-height: 1.3;
+}
+
+.ui-preview .container .pv-pw h4.pv-pw-sub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    margin: 22px 0 6px;
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.pv-pw-count {
+    color: var(--pv-muted);
+    font-family: var(--pv-text);
+    font-size: 0.85rem;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-pw-text {
+    margin: 0 0 14px;
+    max-width: 68ch;
+    color: var(--pv-muted);
+    line-height: 1.5;
+}
+
+/* a note: quiet text with an icon level with its first line */
+.pv-pw-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 14px 0 0;
+    max-width: 68ch;
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.pv-pw-note > .ti {
+    flex: none;
+    font-size: 1.1rem;
+    line-height: 1.45rem;
+    height: 1.3rem;
+}
+
+.ui-preview .pv-pw-note a {
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+/* ---------- labelled rows: the label, then the value ---------- */
+.ui-preview .pv-pw-facts {
+    display: grid;
+    /* the same label column in every section, so the fields line up */
+    grid-template-columns: 9.5rem minmax(0, 34rem);
+    align-items: center;
+    gap: 10px 20px;
+    margin: 14px 0 18px;
+}
+
+.pv-pw-fact {
+    display: contents;
+}
+
+.ui-preview .pv-pw-facts dt {
+    margin: 0;
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.ui-preview .pv-pw-facts dd {
+    margin: 0;
+    min-width: 0;
+}
+
+@media (max-width: 575px) {
+    .ui-preview .pv-pw-facts {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+    }
+
+    .ui-preview .pv-pw-facts dd + dt,
+    .ui-preview .pv-pw-fact + .pv-pw-fact dt {
+        margin-top: 10px;
+    }
+}
+
+/* ---------- copy fields (.pv-copy of preview.css) ---------- */
+.ui-preview .pv-pw .pv-copy,
+.ui-preview .pv-pw-modal .pv-copy {
+    font-size: 0.95rem;
+}
+
+/* a password: dots until »Anzeigen«, then in the monospaced font */
+.pv-pw-secret {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    max-width: 34rem;
+}
+
+.ui-preview .pv-pw-secret .pv-pw-secret-field {
+    flex: 1 1 12rem;
+    width: auto;
+}
+
+.pv-pw-secret-field .pv-copy-text {
+    font-family: var(--pv-mono);
+    letter-spacing: 0.02em;
+}
+
+.pv-pw-secret-field .pv-copy-text.pv-pw-mask {
+    letter-spacing: 0.12em;
+    color: var(--pv-muted);
+}
+
+/* quiet text buttons (»Anzeigen«, »Zurücksetzen…«) */
+.ui-preview .pv-pw-act {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: 0;
+    padding: 5px 9px;
+    min-height: 31px;
+    background: transparent;
+    color: var(--acc-text);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-preview .pv-pw-act > .ti {
+    font-size: 1rem;
+    color: inherit;
+    opacity: 0.85;
+}
+
+.ui-preview .pv-pw-act:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-pw-act:focus {
+    outline: none;
+}
+
+.ui-preview .pv-pw-act:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+}
+
+/* ---------- buttons: left-aligned with the content ---------- */
+.pv-pw-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 6px;
+}
+
+.ui-preview #main_container .pv-pw .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-preview #main_container .pv-pw .btn > .ti {
+    font-size: 1.05rem;
+}
+
+.ui-preview #main_container .pv-pw .btn .pv-pw-ext {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.pv-pw-forgot {
+    margin-top: 22px;
+}
+
+.pv-pw-forgot .pv-pw-text {
+    margin-bottom: 10px;
+}
+
+.ui-preview .pv-pw-forgot-title {
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--pv-ink);
+}
+
+/* the result of »Nextcloud-Passwort zurücksetzen«: one quiet line */
+.pv-pw-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 10px 0 0;
+    max-width: 68ch;
+    line-height: 1.45;
+}
+
+.pv-pw-result > .ti {
+    flex: none;
+    font-size: 1.1rem;
+    height: 1.3rem;
+    line-height: 1.45rem;
+}
+
+/* ---------- states of a mailbox ---------- */
+.ui-preview .pv-pw-ok {
+    color: var(--pv-ok);
+}
+
+.ui-preview .pv-pw-err {
+    color: #b42318;
+}
+
+.ui-preview.dark .pv-pw-err {
+    color: #ff8f8f;
+}
+
+.pv-pw-state:empty {
+    display: none;
+}
+
+.pv-pw-state {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.pv-pw-st {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 0.9rem;
+    line-height: 1.35;
+}
+
+.pv-pw-st > .ti {
+    flex: none;
+    font-size: 1rem;
+    height: 1.2rem;
+    line-height: 1.2rem;
+}
+
+.pv-pw-st-label {
+    font-weight: 600;
+}
+
+.pv-pw-st-when {
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-pw-st-hint {
+    color: var(--pv-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    padding-left: 22px;
+}
+
+.pv-pw-state > .pv-pw-secret {
+    margin-top: 2px;
+}
+
+.pv-pw-spin {
+    animation: pv-pw-spin 1.2s linear infinite;
+}
+
+@keyframes pv-pw-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pv-pw-spin {
+        animation: none;
+    }
+}
+
+/* ---------- one's own mailbox (students) ---------- */
+.pv-pw-own {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 4px 0 0;
+}
+
+.pv-pw-own-action {
+    margin-top: 2px;
+}
+
+/* ---------- the students of a class ---------- */
+.pv-pw-class {
+    container-type: inline-size;
+}
+
+.ui-preview .pv-pw table.pv-pw-students {
+    width: 100%;
+    border-collapse: collapse;
+    background: transparent;
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-pw-students th {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.ui-preview .pv-pw-students td {
+    padding: 8px;
+    border-top: 1px solid var(--pv-line);
+    vertical-align: top;
+}
+
+/* the name level with the first line of its cells */
+.ui-preview .pv-pw-students .pv-pw-name {
+    padding: 5px 0;
+}
+
+.ui-preview .pv-pw-students tbody tr:first-child td {
+    border-top: 0;
+}
+
+.ui-preview .pv-pw-students th:first-child,
+.ui-preview .pv-pw-students td:first-child {
+    padding-left: 0;
+}
+
+.ui-preview .pv-pw-students th:nth-child(2),
+.ui-preview .pv-pw-students th:nth-child(3) {
+    width: 34%;
+}
+
+.pv-pw-name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.pv-pw-cell-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.ui-preview .pv-pw-cell .pv-pw-act {
+    margin-left: -9px;
+}
+
+.ui-preview .pv-pw-cell .pv-pw-st {
+    padding-top: 5px;
+}
+
+/* a password in a cell: the field and »Anzeigen« side by side */
+.ui-preview .pv-pw-cell .pv-pw-secret .pv-pw-secret-field {
+    flex-basis: 7rem;
+}
+
+.ui-preview .pv-pw-cell .pv-pw-secret .pv-pw-act {
+    margin-left: 0;
+    padding: 5px 7px;
+}
+
+/* in the narrow cells »Anzeigen« is its eye alone (named for screen
+   readers and in the tooltip), so the password has room */
+.pv-pw-cell .bu_pv_show_password > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.ui-preview .pv-pw-cell .bu_pv_show_password > .ti {
+    font-size: 1.15rem;
+    opacity: 1;
+}
+
+/* the row as a whole opens the student where it is narrow */
+.ui-preview .pv-pw-open {
+    display: none;
+}
+
+.pv-pw-row-facts {
+    margin-top: 2px;
+    color: var(--pv-muted);
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+
+@container (max-width: 599px) {
+    .ui-preview .pv-pw-students thead,
+    .ui-preview .pv-pw-students .pv-pw-cell,
+    .ui-preview .pv-pw-students .pv-pw-name {
+        display: none;
+    }
+
+    .ui-preview .pv-pw-students td.pv-pw-who {
+        padding: 0;
+    }
+
+    .ui-preview .pv-pw-open {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+        border: 0;
+        margin: 0;
+        padding: 12px 2px;
+        background: transparent;
+        color: var(--pv-ink);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .ui-preview .pv-pw-open:active {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .pv-pw-open:focus {
+        outline: none;
+    }
+
+    .ui-preview .pv-pw-open:focus-visible {
+        outline: 2px solid var(--acc);
+        outline-offset: -2px;
+        border-radius: 8px;
+    }
+
+    .pv-pw-open-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pv-pw-open .pv-pw-row-facts:not([hidden]) {
+        display: block;
+    }
+
+    .pv-pw-open > .ti {
+        flex: none;
+        color: var(--pv-muted);
+        font-size: 1.1rem;
+        height: 1.35rem;
+        line-height: 1.35rem;
+    }
+}
+
+/* ---------- a student: dialog, a sheet on phones ---------- */
+@media (min-width: 768px) {
+    .ui-preview .pv-pw-modal .modal-dialog {
+        max-width: 520px;
+    }
+}
+
+.ui-preview .pv-pw-modal .modal-title {
+    overflow-wrap: anywhere;
+}
+
+.pv-pw-mbox {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-pw-mbox:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.ui-preview .pv-pw-mbox-title {
+    margin: 0;
+    color: var(--pv-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.ui-preview .pv-pw-mbox-action {
+    margin: 0 0 0 -9px;
+}

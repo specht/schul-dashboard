@@ -215,11 +215,22 @@ Aktionen und das Verhalten am Handy.
 
 **Bereiche mit eigener Navigation** (Beispiel: Bibliothek)
 
-- Die Seiten eines Bereichs stehen als Zeile leiser Reiter oben auf dem
-  Panel, die eigenen Seiten zuerst, die Verwaltung nach einer Haarlinie;
-  der aktuelle Reiter in der leisen Akzentfläche. Am Handy scrollt jede
-  Gruppe als eigene Zeile seitlich. Links, die nur eine Seite hat
-  (»Metadaten bearbeiten«), stehen als zweite, kleinere Zeile darunter.
+- Zwei Ebenen, nie zwei gleich schwere Zeilen. Oben auf dem Panel stehen
+  die eigenen Seiten des Bereichs als Umschalter (wie Posteingang und
+  Postausgang): eine leise Spur, das aktuelle Segment hervorgehoben. Wer
+  den Bereich verwaltet, hat darin ein Segment mehr, »Verwaltung«; es
+  führt zur ersten Seite der Verwaltung. Nur innerhalb der Verwaltung
+  stehen deren Seiten als zweite Zeile darunter, als Reiter auf einer
+  Haarlinie, der aktuelle unterstrichen in der Akzentfarbe. Wer nichts
+  verwaltet, sieht nur den Umschalter.
+- Die aktuelle Seite ist immer markiert, auch Unterseiten ohne eigenen
+  Reiter (ein Buch gehört zum Katalog, eine Person zu »Nutzer«).
+- Reiter sind keine Textlinks: nie in der Linkfarbe, nie unterstrichen
+  außer der aktuelle Reiter der zweiten Ebene.
+- Am Handy bleibt jede Zeile eine Zeile und scrollt seitlich, das aktuelle
+  Segment im Blick; der Umschalter füllt die Breite, solange er passt.
+- Links, die nur eine Seite hat (»Metadaten bearbeiten«), stehen als
+  dritte, kleinere Zeile darunter.
 - Geräte eines Bereichs (die Ausleihstation der Bibliothek) zeigen keine
   Navigation des Dashboards, nur ihre Leiste mit der angemeldeten Person.
 

@@ -4,9 +4,10 @@
    .pv-bib-<page> on the body). Every rule here starts with .pv-bib or a
    class that only bib.js sets.
 
-   - Navigation: the library's own links as a row of quiet tabs at the top
-     of the panel (one's own, then the management), the page's extra links
-     (a book: Metadaten bearbeiten …) as a second, smaller row.
+   - Navigation at the top of the panel: one's own pages as a segmented
+     switch (with »Verwaltung« for the staff), in the management its pages
+     as underlined tabs below, the page's extra links (a book: Metadaten
+     bearbeiten …) as a smaller row after that.
    - Page types (doc/Gestaltung.md, 6a): Meine Bücher, Katalog, Bestellungen,
      Bücher bestätigen and a book are lists or reading pages (at most about
      980 px); the staff pages are tables (full width). Tables become list
@@ -111,44 +112,42 @@
     color: var(--pv-ink);
 }
 
-/* ---------- the library's tabs ---------- */
+/* ---------- the library's navigation ----------
+   two levels: one's own pages (and »Verwaltung«) as a segmented switch,
+   within the management its pages as underlined tabs on a hairline below.
+   The links are no text links: never in the accent colour of links (the
+   rule for links in page text in preview.css is beaten here). */
 .pv-bib-nav {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 18px;
-    margin: -4px 0 18px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--pv-line);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin: -4px 0 20px;
 }
 
 .pv-bib-tabs {
     display: flex;
-    align-items: center;
-    gap: 2px;
+    align-items: stretch;
+    max-width: 100%;
     margin: 0;
     padding: 0;
     list-style: none;
-    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
 
-.pv-bib-tabs-staff {
-    position: relative;
+.pv-bib-tabs::-webkit-scrollbar {
+    display: none;
 }
 
-/* the management after a hairline (desktop) */
-.pv-bib-tabs + .pv-bib-tabs-staff::before {
-    content: "";
-    align-self: stretch;
-    width: 1px;
-    margin: 4px 10px 4px -8px;
-    background: var(--pv-line);
+.pv-bib-tabs > li {
+    display: flex;
+    flex: none;
 }
 
-.ui-preview .pv-bib-tab {
-    display: inline-block;
-    padding: 6px 11px;
-    border-radius: 999px;
+.ui-preview #main_container .pv-bib-nav a.pv-bib-tab {
+    display: inline-flex;
+    align-items: center;
     color: var(--pv-muted);
     font-weight: 600;
     font-size: 0.92rem;
@@ -157,53 +156,101 @@
     text-decoration: none;
 }
 
-.ui-preview .pv-bib-tab:hover {
-    background: var(--pv-hover);
+.ui-preview #main_container .pv-bib-nav a.pv-bib-tab:hover {
     color: var(--pv-ink);
     text-decoration: none;
 }
 
-.ui-preview .pv-bib-tab[aria-current] {
-    background: var(--acc-soft);
-    color: var(--acc-text);
-}
-
-.ui-preview .pv-bib-tab:focus-visible {
+.ui-preview #main_container .pv-bib-nav a.pv-bib-tab:focus-visible {
     outline: 2px solid var(--acc);
-    outline-offset: 2px;
+    outline-offset: -2px;
 }
 
-/* phones: one row that scrolls sideways (the management after its
-   hairline), from edge to edge of the panel */
+/* the switch: a quiet track, the current segment raised (as Posteingang /
+   Postausgang in the messages) */
+.pv-bib-tabs-main {
+    gap: 2px;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--pv-hover);
+}
+
+.ui-preview #main_container .pv-bib-tabs-main a.pv-bib-tab {
+    padding: 6px 14px;
+    border-radius: 9px;
+}
+
+.ui-preview #main_container .pv-bib-tabs-main a.pv-bib-tab[aria-current] {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ui-preview.dark #main_container .pv-bib-tabs-main a.pv-bib-tab[aria-current] {
+    background: var(--pv-line);
+    box-shadow: none;
+}
+
+/* the management's pages: tabs on a hairline across the panel, the
+   current one underlined in the accent */
+.pv-bib-tabs-staff {
+    align-self: stretch;
+    gap: 4px;
+    box-shadow: inset 0 -1px 0 var(--pv-line);
+}
+
+.ui-preview #main_container .pv-bib-tabs-staff a.pv-bib-tab {
+    padding: 8px 10px 9px;
+    border-bottom: 2px solid transparent;
+    font-size: 0.88rem;
+}
+
+.ui-preview #main_container .pv-bib-tabs-staff li:first-child a.pv-bib-tab {
+    padding-left: 2px;
+}
+
+.ui-preview #main_container .pv-bib-tabs-staff a.pv-bib-tab[aria-current] {
+    border-bottom-color: var(--acc);
+    color: var(--pv-ink);
+}
+
+/* phones: each row one line from edge to edge of the panel, scrolling
+   sideways; the switch fills the width while it fits */
 @media (max-width: 767px) {
     .pv-bib-nav {
-        flex-wrap: nowrap;
-        gap: 0;
-        margin: -6px -15px 14px;
-        padding: 0 11px 8px;
-        overflow-x: auto;
-        scrollbar-width: none;
+        gap: 8px;
+        margin: -6px 0 16px;
     }
 
-    .pv-bib-nav::-webkit-scrollbar {
-        display: none;
+    .pv-bib-tabs-main {
+        align-self: stretch;
     }
 
-    .pv-bib-tabs {
-        flex: none;
+    .pv-bib-tabs-main > li {
+        flex: 1 0 auto;
     }
 
-    .pv-bib-tabs + .pv-bib-tabs-staff::before {
-        margin: 6px 8px 6px 6px;
+    /* four segments (with »Verwaltung«) still fit next to each other on a
+       phone of 390 px; narrower ones scroll */
+    .ui-preview #main_container .pv-bib-tabs-main a.pv-bib-tab {
+        flex: 1 0 auto;
+        justify-content: center;
+        padding: 7px 6px;
+        font-size: 0.8rem;
     }
 
-    .ui-preview .pv-bib-tab {
-        padding: 6px 10px;
-        font-size: 0.88rem;
+    .pv-bib-tabs-staff {
+        max-width: none;
+        margin: 0 -15px;
+        padding: 0 9px;
+    }
+
+    .ui-preview #main_container .pv-bib-tabs-staff li:first-child a.pv-bib-tab {
+        padding-left: 6px;
     }
 }
 
-/* the page's extra links: a second, smaller row */
+/* the page's extra links: a smaller row below the navigation */
 .pv-bib #subsubmenu.pv-bib-subnav {
     max-width: none;
     margin: -8px 0 16px !important;
@@ -227,6 +274,24 @@
     background: transparent !important;
     border: 0 !important;
     overflow: visible;
+}
+
+/* phones: one line that scrolls sideways, like the navigation above (not
+   with a button in it: »Änderungen speichern« stays in view) */
+@media (max-width: 767px) {
+    .pv-bib #subsubmenu.pv-bib-subnav ul.submenu:not(:has(button)) {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .pv-bib #subsubmenu.pv-bib-subnav ul.submenu:not(:has(button))::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pv-bib #subsubmenu.pv-bib-subnav ul.submenu:not(:has(button)) > li {
+        flex: none;
+    }
 }
 
 .pv-bib #subsubmenu.pv-bib-subnav li {

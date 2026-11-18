@@ -12,6 +12,9 @@ import { fakeBib, stationLogin, FakeBib } from './fake-bib';
 // the library. The last test checks that the old design stays as it was.
 
 const STAFF = ROLE_ACCOUNTS.bibliothek;
+// a teacher who also manages the library (test/prepare_example_data.rb)
+const BIB_TEACHER = 'bib.lehrkraft@beispielschule.de';
+const STAFF_TABS = ['Übersicht', 'Medien', 'Nutzer', 'Alle Bestellungen', 'Scannen', 'Rückgabe', 'Ausmustern'];
 
 async function preview(browser: Browser, email: string, mode: 'on' | 'off') {
   const admin = await browser.newContext();
@@ -32,6 +35,43 @@ async function atStation(page: Page, browser: Browser, device = 'bib-station') {
   await apiLogin(staff.request, STAFF);
   await stationLogin(page, staff.request, device);
   await staff.close();
+}
+
+// every row of the library's navigation is one line (on phones it scrolls
+// sideways), and the page itself never gets wider than the window
+async function expectNavInOneLinePerRow(page: Page) {
+  const rows = page.locator('.pv-bib-nav .pv-bib-tabs');
+  for (const row of await rows.all()) {
+    const tops = await row.locator('.pv-bib-tab').evaluateAll((as) => as.map((a) => Math.round(a.getBoundingClientRect().top)));
+    expect(new Set(tops).size, `one line: ${await row.innerText()}`).toBe(1);
+  }
+  const { page: width, window: win, nav } = await page.evaluate(() => ({
+    page: document.documentElement.scrollWidth, window: window.innerWidth,
+    nav: Math.round(document.querySelector('.pv-bib-nav')!.getBoundingClientRect().right),
+  }));
+  expect(width).toBeLessThanOrEqual(win);
+  expect(nav).toBeLessThanOrEqual(win);
+}
+
+// the tabs are no text links: a tab that isn't current is in the quiet
+// text colour, the current one looks different from the others
+async function expectCalmTabs(page: Page) {
+  const style = await page.locator('.pv-bib-tabs-main').evaluate((row) => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--pv-muted)';
+    row.appendChild(probe);
+    const muted = getComputedStyle(probe).color;
+    probe.remove();
+    const tabs = Array.from(row.querySelectorAll('a.pv-bib-tab'));
+    const other = tabs.find((a) => !a.hasAttribute('aria-current'))!;
+    const current = tabs.find((a) => a.hasAttribute('aria-current'))!;
+    return {
+      muted, other: getComputedStyle(other).color,
+      otherBg: getComputedStyle(other).backgroundColor, currentBg: getComputedStyle(current).backgroundColor,
+    };
+  });
+  expect(style.other).toBe(style.muted);
+  expect(style.currentBg).not.toBe(style.otherBg);
 }
 
 function called(bib: FakeBib, path: string) {
@@ -120,6 +160,10 @@ test('Neues Design: Katalog, ein Buch bestellen, Bestellungen (Lehrkraft)', asyn
     const tabs = page.locator('.pv-bib-nav .pv-bib-tab');
     await expect(tabs).toHaveText(['Meine Bücher', 'Katalog', 'Bestellungen']);
     await expect(page.locator('.pv-bib-tab[aria-current=page]')).toHaveText('Katalog');
+    // no management for those who don't manage the library
+    await expect(page.locator('.pv-bib-tabs-staff, #bu_pv_bib_manage')).toHaveCount(0);
+    await expectCalmTabs(page);
+    await expectNavInOneLinePerRow(page);
     await expect(page.locator('.pv-bib-head h2')).toHaveText('Katalog');
     await expect(page.locator('#ti_search')).toBeFocused();
     await page.locator('#ti_search').fill('Klett');
@@ -207,10 +251,14 @@ test('Neues Design: Nutzer, Ausleihe und Rückgabe an der Bibliotheksstation', a
     await expect(page.locator('body')).toHaveClass(/pv-bib-device/);
     // no dashboard navigation at the station, the device's bar instead
     await expect(page.locator('#device_navbar')).toBeVisible();
-    await expect(page.locator('.pv-bib-nav .pv-bib-tab')).toHaveText(['Katalog', 'Übersicht', 'Medien', 'Nutzer', 'Alle Bestellungen', 'Scannen', 'Rückgabe', 'Ausmustern']);
+    // the station has the catalogue and the management
+    await expect(page.locator('.pv-bib-tabs-main .pv-bib-tab')).toHaveText(['Katalog', 'Verwaltung']);
+    await page.goto('/bib_overview');
+    await expect(page.locator('.pv-bib-tabs-staff .pv-bib-tab')).toHaveText(STAFF_TABS);
+    await expectNavInOneLinePerRow(page);
 
     // ---------- people: a table, a search, classes as chips ----------
-    await page.locator('.pv-bib-tab', { hasText: 'Nutzer' }).click();
+    await page.locator('.pv-bib-tabs-staff .pv-bib-tab', { hasText: 'Nutzer' }).click();
     await expect(page).toHaveURL(/\/bib_users$/);
     await expect(page.locator('.pv-bib-head h2')).toHaveText('Nutzer');
     await page.locator('#ti_search').fill('max mustermann');
@@ -278,6 +326,62 @@ test('Neues Design: Nutzer, Ausleihe und Rückgabe an der Bibliotheksstation', a
     await expect(page.locator('#subsubmenu.pv-bib-subnav a', { hasText: 'Metadaten bearbeiten' })).toBeVisible();
   } finally {
     await preview(browser, STAFF, 'off');
+  }
+});
+
+test('Neues Design: Navigation der Bibliothek, Lehrkraft mit Verwaltung', async ({ page, browser }) => {
+  await preview(browser, BIB_TEACHER, 'on');
+  try {
+    await withBib(page);
+    await login(page, BIB_TEACHER);
+    const main = page.locator('.pv-bib-tabs-main .pv-bib-tab');
+    const staff = page.locator('.pv-bib-tabs-staff .pv-bib-tab');
+    const manage = page.locator('#bu_pv_bib_manage');
+
+    // one's own pages: the switch with »Verwaltung«, no second row
+    await page.goto('/bibliothek');
+    await expect(main).toHaveText(['Meine Bücher', 'Katalog', 'Bestellungen', 'Verwaltung']);
+    await expect(page.locator('.pv-bib-nav [aria-current]')).toHaveText(['Meine Bücher']);
+    await expect(page.locator('.pv-bib-nav [aria-current]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('.pv-bib-tabs-staff')).toHaveCount(0);
+    await expect(page.locator('.pv-bib-head h2')).toHaveText('Meine Bücher');
+    await expectCalmTabs(page);
+    await expectNavInOneLinePerRow(page);
+    // all four segments in view, also on phones (no scrolling to find »Verwaltung«)
+    expect(await page.locator('.pv-bib-tabs-main').evaluate((row) => row.scrollWidth <= row.clientWidth)).toBe(true);
+
+    // »Verwaltung«: its first page, its pages as the second row
+    await manage.click();
+    await expect(page).toHaveURL(/\/bib_overview$/);
+    await expect(manage).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('.pv-bib-tabs-staff')).toHaveAttribute('aria-label', 'Verwaltung');
+    await expect(staff).toHaveText(STAFF_TABS);
+    await expect(page.locator('.pv-bib-tabs-staff [aria-current=page]')).toHaveText('Übersicht');
+    await expectCalmTabs(page);
+    await expectNavInOneLinePerRow(page);
+
+    await staff.filter({ hasText: 'Rückgabe' }).click();
+    await expect(page).toHaveURL(/\/bib_return$/);
+    await expect(page.locator('.pv-bib-nav [aria-current]')).toHaveText(['Verwaltung', 'Rückgabe']);
+    await expectNavInOneLinePerRow(page);
+
+    // pages without a tab of their own: the tab they belong to
+    await page.goto(`/bib_user/${encodeURIComponent(ACCOUNTS.schueler)}`);
+    await expect(page.locator('.pv-bib-nav [aria-current]')).toHaveText(['Verwaltung', 'Nutzer']);
+    await expect(page.locator('.pv-bib-tabs-staff [aria-current]')).toHaveAttribute('aria-current', 'true');
+    await page.goto('/bib_book/1205');
+    await expect(page.locator('.pv-bib-nav [aria-current]')).toHaveText(['Katalog']);
+    await expect(page.locator('.pv-bib-tabs-staff')).toHaveCount(0);
+    await page.goto('/bib_book_edit/1205');
+    await expect(page.locator('.pv-bib-nav [aria-current]')).toHaveText(['Verwaltung', 'Medien']);
+
+    // back to one's own
+    await main.filter({ hasText: 'Bestellungen' }).click();
+    await expect(page).toHaveURL(/\/bib_orders$/);
+    await expect(page.locator('.pv-bib-nav [aria-current]')).toHaveText(['Bestellungen']);
+    await expect(page.locator('.pv-bib-tabs-staff')).toHaveCount(0);
+  } finally {
+    await preview(browser, BIB_TEACHER, 'off');
   }
 });
 

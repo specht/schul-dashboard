@@ -33,6 +33,14 @@ VERTEILER_TEST_EMAILS = []
 
 PK5_CURRENT_KLASSE = '12'
 
+# Warngebiet des Deutschen Wetterdienstes für die Wettereffekte auf den
+# Monitoren: Warnzellen-ID auf Kreisebene (Liste beim DWD unter
+# opendata/help/warnungen/cap_warncellids_csv.csv), '111000000' ist Berlin.
+# Bezirke (z. B. Steglitz, 711000601) kommen in der Meldungsdatei nicht vor:
+# Der DWD warnt dort für ganz Berlin, ein Bezirk lässt sich nicht einstellen.
+# nil schaltet die Abfrage beim DWD ab.
+MONITOR_DWD_WARNCELL = '111000000'
+
 # Bei Bedarf können alle Namen durch falsche Namen ersetzt werden
 # (für Demozwecke)
 USE_MOCK_NAMES = false

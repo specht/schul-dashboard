@@ -47,6 +47,10 @@ MAILBOX_CHECK_IMAP = {:host => 'imap', :port => 1143, :ssl => false}
 # for the fake bot in test/e2e/tests/mail-password-reset.spec.ts
 MAIL_ACCOUNT_BOT_TOKEN = 'test-mail-password-reset-bot-token-0123456789'
 
+# the test stack never asks the Deutscher Wetterdienst – monitor effects are
+# tested with ?effekt=… (test/e2e/tests/monitor-effekte.spec.ts)
+MONITOR_DWD_WARNCELL = nil
+
 # All mail goes to the Mailpit container of the test stack, where the tests
 # read login codes from (see test/e2e/tests/fixtures.ts).
 SMTP_SERVER = 'mailpit'

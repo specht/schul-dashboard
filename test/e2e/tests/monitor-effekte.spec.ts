@@ -7,7 +7,7 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 
 const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost',
   'weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang',
-  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'rundgang'];
+  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug', 'rundgang'];
 
 for (const effekt of EFFEKTE) {
   test(`Monitor-Effekt ${effekt}: läuft hinter den Kästen, die Einträge bleiben lesbar`, async ({ page }) => {
@@ -55,6 +55,8 @@ test('Monitor-Effekte: Weihnachtsmann fliegt, Osterhase versteckt Eier', async (
 });
 
 test('Monitor-Effekte: Stand abfragen und auf „Monitore verwalten“ ab- und einschalten', async ({ page }) => {
+  // viele Schritte (Effekte, Storys, Pausen, Test im Schulhaus) – am Handy dauert das länger als 30 s
+  test.slow();
   await login(page, ACCOUNTS.admin);
   const stand = await (await page.request.get('/api/monitor_effekte')).json();
   expect(stand.an).toBe(true);
@@ -125,7 +127,10 @@ test('Monitor-Effekte: Stand abfragen und auf „Monitore verwalten“ ab- und e
   const ohneTest = await (await page.request.get('/api/monitor_effekte')).json();
   expect(ohneTest.test).toBeUndefined();
   expect(ohneTest.wetter).toBeNull();
-  await page.locator('.bu_monitor_effekt_vorschau[data-effekt=""]').click();
+  // in die Bildmitte scrollen: am oberen Rand läge der Knopf unter der festen Menüleiste
+  const schliessen = page.locator('.bu_monitor_effekt_vorschau[data-effekt=""]');
+  await schliessen.evaluate((e) => e.scrollIntoView({block: 'center'}));
+  await schliessen.click();
   await expect(vorschau).toBeHidden();
 });
 

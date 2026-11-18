@@ -22,14 +22,24 @@ module MonitorEffekte
     EFFEKTE = %w(schnee regen gewitter hitze sturm glatteis frost).freeze
     FESTE = %w(weihnachten nikolaus ostern valentinstag fasching sommerferien schulanfang adventskonzert forschertag).freeze
     # Storys: kleine Geschichten, die die Monitore von selbst ab und zu zeigen
-    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe).freeze
+    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug).freeze
     # Storys nur in den Pausen (Jonas, 18.11.): [von, bis, wie viele]; zufällig im Zeitraum,
     # jede Story höchstens einmal am Tag, alle Flur-Monitore nach demselben Plan
     STORY_PAUSEN = [['07:46', '08:00', 3], ['08:45', '08:50', 1], ['10:20', '10:23', 1], ['10:35', '10:40', 2],
                     ['12:10', '12:15', 2], ['12:45', '12:50', 2], ['13:05', '13:10', 2], ['13:35', '13:40', 2],
                     ['14:25', '14:35', 2]].freeze
-    STORY_DAUER = 55     # Sekunden: so lange läuft die längste Story höchstens; sie endet vor dem Pausenende
+    STORY_DAUER = 65     # Sekunden: so lange läuft eine Story höchstens; sie endet vor dem Pausenende
     STORY_LUECKE = 5     # Sekunden zwischen zwei Storys in derselben Pause
+    # einzelne Storys dürfen länger dauern (Jonas, 18.11.: die Abflugtafel läuft gut eine Minute;
+    # höchstens 30 s normal, kaputt und Reparatur, danach 15 s gut) – mit etwas Reserve
+    STORY_DAUER_JE = {'abflug' => 80}.freeze
+    # Zeiten, in denen eine Story nicht kommen darf (Jonas, 18.11.: die Abflugtafel nicht
+    # zwischen 7:45 und 8:00 Uhr); gilt für jede Pause, die diese Zeit berührt
+    STORY_SPERRZEITEN = {'abflug' => [['07:45', '08:00']]}.freeze
+
+    def self.story_dauer(story)
+        STORY_DAUER_JE.fetch(story, STORY_DAUER)
+    end
 
     # Pausen aus „Monitore verwalten“ prüfen: [[von, bis, anzahl], …] mit HH:MM, von < bis,
     # Anzahl 1–9, höchstens 20 Pausen; nach Beginn sortiert. Ungültig → nil
@@ -51,21 +61,53 @@ module MonitorEffekte
         return [] if datum.saturday? || datum.sunday? || storys.empty?
         rng = Random.new(datum.strftime('%Y%m%d').to_i * 7919 + 17)
         reihe = storys.shuffle(random: rng)
-        plan = []
-        pausen.each do |von, bis, anzahl|
-            a = von.split(':').map(&:to_i).inject { |h, m| h * 60 + m } * 60
-            b = bis.split(':').map(&:to_i).inject { |h, m| h * 60 + m } * 60 - STORY_DAUER
-            schritt = STORY_DAUER + STORY_LUECKE
-            anzahl -= 1 while anzahl > 1 && b - a - (anzahl - 1) * schritt < 0
-            platz = b - a - (anzahl - 1) * schritt
-            next if platz < 0
-            Array.new(anzahl) { rng.rand * platz }.sort.each_with_index do |x, i|
-                plan << {:sekunde => (a + x + i * schritt).round}
-            end
+        sek = lambda { |z| z.split(':').map(&:to_i).inject { |h, m| h * 60 + m } * 60 }
+        # Plätze je Pause: so viele, wie Storys normaler Länge hineinpassen
+        plaetze = []
+        pausen.each_with_index do |(von, bis, anzahl), pi|
+            frei = sek.call(bis) - sek.call(von)
+            anzahl -= 1 while anzahl > 0 && anzahl * STORY_DAUER + (anzahl - 1) * STORY_LUECKE > frei
+            anzahl.times { plaetze << pi }
         end
         # weniger Storys als Plätze: zufällig über alle Pausen des Tages verteilen
-        plan = plan.sample(reihe.size, random: rng).sort_by { |e| e[:sekunde] } if reihe.size < plan.size
-        plan.each_with_index { |e, i| e[:story] = reihe[i] }
+        if reihe.size < plaetze.size
+            plaetze = plaetze.each_with_index.to_a.sample(reihe.size, random: rng).sort_by(&:last).map(&:first)
+        end
+        belegung = plaetze.each_with_index.map { |pi, i| [pi, reihe[i]] }
+        # gesperrte Pausen: mit einer Story aus einer erlaubten Pause tauschen; geht das nicht,
+        # fällt die Story heute aus
+        gesperrt = lambda do |story, pi|
+            von, bis = sek.call(pausen[pi][0]), sek.call(pausen[pi][1])
+            (STORY_SPERRZEITEN[story] || []).any? { |a, b| von < sek.call(b) && bis > sek.call(a) }
+        end
+        belegung.each_with_index do |(pi, story), i|
+            next unless story && gesperrt.call(story, pi)
+            j = belegung.each_index.find { |k| k != i && !gesperrt.call(story, belegung[k][0]) && !gesperrt.call(belegung[k][1], pi) }
+            if j
+                belegung[i][1], belegung[j][1] = belegung[j][1], story
+            else
+                belegung[i][1] = nil
+            end
+        end
+        je_pause = Hash.new { |h, k| h[k] = [] }
+        belegung.each { |pi, story| je_pause[pi] << story if story }
+        plan = []
+        je_pause.keys.sort.each do |pi|
+            liste = je_pause[pi]
+            a = sek.call(pausen[pi][0])
+            frei = sek.call(pausen[pi][1]) - a
+            brauchen = lambda { liste.sum { |x| story_dauer(x) } + (liste.size - 1) * STORY_LUECKE }
+            # passt eine lange Story nicht in diese Pause, fällt sie heute aus
+            liste.delete_at(liste.index(liste.max_by { |x| story_dauer(x) })) while liste.any? && brauchen.call > frei
+            next if liste.empty?
+            platz = frei - brauchen.call
+            versatz = Array.new(liste.size) { rng.rand * platz }.sort
+            schon = 0
+            liste.each_with_index do |x, i|
+                plan << {:sekunde => (a + versatz[i] + schon).floor, :story => x}
+                schon += story_dauer(x) + STORY_LUECKE
+            end
+        end
         plan
     end
     # Treffen Wetter und Fest zusammen: Einzeltage haben Vorrang vor dem Wetter,

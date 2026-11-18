@@ -18,7 +18,7 @@
 
     const NS = 'http://www.w3.org/2000/svg';
     const WETTER = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost'];
-    const STORYS = ['roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe'];
+    const STORYS = ['roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug'];
     const FESTE = ['weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang', 'adventskonzert', 'forschertag'];
     const ABFRAGE_ALLE_MS = 10 * 60 * 1000;
     const RUNDGANG_MS = 40 * 1000;
@@ -224,6 +224,24 @@
     @keyframes fx-kiesel-wackeln { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
     .fx-kiesel-neu { animation: fx-kiesel-neu .45s ease-out; }
     @keyframes fx-kiesel-neu { 0% { transform: scale(1.25); } 60% { transform: scale(.94); } 100% { transform: scale(1); } }
+    .fx-abflug { position: absolute; left: 0; top: 0; box-sizing: border-box; padding: .25vw .35vw; display: flex; flex-direction: column;
+        justify-content: center; gap: .14vw; opacity: 0; transition: opacity .8s; font-family: 'DejaVu Sans Mono', Consolas, 'Courier New', monospace; }
+    .fx-abflug.fx-an { opacity: 1; }
+    .fx-abflug-kopf { display: flex; justify-content: space-between; font-weight: 700; letter-spacing: .06em; padding: 0 .1vw; }
+    .fx-abflug-kopf span { white-space: nowrap; }
+    .fx-abflug-zeile { display: flex; align-items: center; }
+    .fx-ab-klappe, .fx-ab-luecke { position: relative; display: inline-block; flex: none; width: var(--zw); height: var(--zh); margin-right: var(--lu); }
+    .fx-ab-klappe { font-size: calc(var(--zh) * .74); font-weight: 700; perspective: 2.5vw; filter: drop-shadow(0 .05vw .06vw rgba(0,0,0,.35)); }
+    .fx-ab-klappe b { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: #2d3239; color: #ffe07a; text-align: center; }
+    .fx-ab-klappe b i { display: block; font-style: normal; white-space: pre; height: var(--zh); line-height: var(--zh); }
+    .fx-ab-klappe .fx-o { top: 0; border-radius: .1vw .1vw 0 0; }
+    .fx-ab-klappe .fx-u { bottom: 0; border-radius: 0 0 .1vw .1vw; background: #262a30; border-top: .04vw solid #0a0c0e; }
+    .fx-ab-klappe .fx-u i { transform: translateY(-50%); }
+    .fx-ab-klappe .fx-f { top: 0; z-index: 1; transform-origin: 50% 100%; border-radius: .1vw .1vw 0 0; backface-visibility: hidden; }
+    .fx-ab-lampe { flex: none; border-radius: 50%; background: #3a3f45; margin-left: .25vw; }
+    .fx-ab-lampe.fx-gruen { background: #3ddc84; box-shadow: 0 0 .4vw #3ddc84; }
+    .fx-ab-lampe.fx-blinkt { animation: fx-ab-lampe .5s steps(2) infinite; }
+    @keyframes fx-ab-lampe { 50% { background: #ffcc33; box-shadow: 0 0 .4vw #ffcc33; } }
     .fx-kiesel-kopie { pointer-events: none; will-change: transform; transform-origin: 50% 50%; }
     .fx-heli { position: absolute; left: 0; top: 0; overflow: visible; will-change: transform; filter: drop-shadow(0 .25vw .3vw rgba(0,0,0,.3)); }
     .fx-heli .fx-rotor { transform-box: fill-box; transform-origin: 50% 50%; animation: fx-rotor .16s linear infinite; }
@@ -297,6 +315,29 @@
     .fx-falle.fx-zu .fx-falltuer { transform: rotate(0deg); }
     .fx-falle .fx-kaese { opacity: 0; transition: opacity .3s; }
     .fx-falle.fx-mit-kaese .fx-kaese { opacity: 1; }
+    /* Story „Seifenblasen“: Pustering vor den Mund, zum Eintauchen hinunter */
+    .fx-trupp.fx-helfer.fx-pustet .fx-tragarm-l { transform: rotate(-74deg) scaleY(.5); }
+    .fx-trupp.fx-helfer.fx-pustet .fx-tragarm-r { transform: rotate(150deg); }
+    .fx-trupp.fx-helfer.fx-taucht .fx-tragarm-l { transform: rotate(-150deg); }
+    .fx-trupp.fx-helfer.fx-taucht .fx-tragarm-r { transform: rotate(160deg); }
+    .fx-trupp.fx-helfer.fx-nimmt .fx-tragarm-l { transform: rotate(-98deg); }
+    .fx-trupp.fx-helfer.fx-nimmt .fx-tragarm-r { transform: rotate(150deg); }
+    .fx-trupp.fx-helfer.fx-haelt-zettel .fx-tragarm-l { transform: rotate(-125deg); }
+    .fx-trupp.fx-helfer.fx-haelt-zettel .fx-tragarm-r { transform: rotate(150deg); }
+    .fx-trupp.fx-ordnungsamt .fx-oa-stift { transform-box: view-box; transform-origin: 33px 47px; }
+    .fx-trupp.fx-ordnungsamt.fx-schreibt .fx-oa-stift { animation: fx-schreiben .22s ease-in-out infinite alternate; }
+    @keyframes fx-schreiben { from { transform: rotate(-5deg); } to { transform: rotate(6deg); } }
+    .fx-seifenfilm { -webkit-backdrop-filter: blur(2.6px) saturate(1.15); backdrop-filter: blur(2.6px) saturate(1.15);
+        box-shadow: inset 0 0 .3vw rgba(255,255,255,.35); transition: height 1.4s ease-in, opacity .4s linear; }
+    /* Story „Heißluftballon“: Feuerwehr mit Drehleiter */
+    .fx-feuerwehr { position: absolute; left: 0; top: 0; width: 17vw; overflow: visible; will-change: transform; filter: drop-shadow(0 .2vw .25vw rgba(0,0,0,.3)); }
+    .fx-feuerwehr .fx-blaulicht { opacity: .25; }
+    .fx-feuerwehr.fx-einsatz .fx-blaulicht-a { animation: fx-blau .5s steps(2) infinite; }
+    .fx-feuerwehr.fx-einsatz .fx-blaulicht-b { animation: fx-blau .5s steps(2) infinite; animation-delay: -.25s; }
+    @keyframes fx-blau { 0% { opacity: 1; } 50% { opacity: .2; } }
+    .fx-feuerwehr .fx-rad { transform-box: fill-box; transform-origin: 50% 50%; }
+    .fx-feuerwehr.fx-faehrt .fx-rad { animation: fx-rad .5s linear infinite; }
+    @keyframes fx-rad { to { transform: rotate(360deg); } }
     /* Klettern: Beine mit Knie und die Greifhand werden pro Bild berechnet (fx-ik) */
     .fx-trupp .fx-ik-glied { display: none; }
     .fx-trupp.fx-ik .fx-ik-glied { display: inline; }
@@ -1581,8 +1622,14 @@
         const spachtelArm = armUndHand(`<path d="M${x - 11.6},42.6 L${x - 16.4},42.6" stroke="#8a5a30" stroke-width="2.4" stroke-linecap="round"/>
                <path d="M${x - 16.2},41.5 L${x - 22},40 L${x - 22},45.2 L${x - 16.2},43.7 Z" fill="#b9c1c8" stroke="#6f7881" stroke-width=".5"/>
                <circle class="fx-wedel-spitze" cx="${x - 22}" cy="42.6" r=".2" fill="none"/>`);
+        const kescherArm = armUndHand(`<path d="M${x - 11.4},43 L${x - 27},19" stroke="#8a5a30" stroke-width="1.8" stroke-linecap="round"/>
+               <path d="M${x - 56},14 C${x - 54},-12 ${x - 30},-14 ${x - 24},14" stroke="#cfd4d9" stroke-width=".7" fill="rgba(240,244,248,.22)"/>
+               <path d="M${x - 53},6 C${x - 46},3 ${x - 34},3 ${x - 26.5},6 M${x - 50},-2 C${x - 44},-4.5 ${x - 36},-4.5 ${x - 30},-2
+                        M${x - 46},13.5 C${x - 46.5},2 ${x - 44},-6 ${x - 41},-8.5 M${x - 34},13.5 C${x - 33.5},2 ${x - 35},-6 ${x - 38},-8.5" stroke="#cfd4d9" stroke-width=".5" fill="none"/>
+               <ellipse cx="${x - 40}" cy="14" rx="16" ry="4.2" fill="none" stroke="#5d656c" stroke-width="1.3"/>
+               <circle class="fx-wedel-spitze" cx="${x - 40}" cy="14" r=".2" fill="none"/>`);
         const leerArm = armUndHand('<circle class="fx-wedel-spitze" cx="' + (x - 11.2) + '" cy="42.7" r=".2" fill="none"/>');
-        const schrauberArm = art === 'spachtel' ? spachtelArm : art === 'bohrer' ? bohrerArm : art === 'leer' ? leerArm : art === 'wedel' ? wedelArm : art === 'zange' ? `<g class="fx-zangenarm"><path class="fx-za-griff" d="" stroke="#c62828" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+        const schrauberArm = art === 'kescher' ? kescherArm : art === 'spachtel' ? spachtelArm : art === 'bohrer' ? bohrerArm : art === 'leer' ? leerArm : art === 'wedel' ? wedelArm : art === 'zange' ? `<g class="fx-zangenarm"><path class="fx-za-griff" d="" stroke="#c62828" stroke-width="2.6" stroke-linecap="round" fill="none"/>
                <path class="fx-za-kopf" d="" stroke="#7c858e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
                <path class="fx-za-arm" d="" stroke="#ff7a1a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
                <circle class="fx-za-hand" r="2.1" fill="${haut}"/></g>` : `<g class="fx-schrauberarm"><path d="M${x - 2},49 L${x - 10.5},43" stroke="#ff7a1a" stroke-width="3.6" stroke-linecap="round" fill="none"/>
@@ -1591,10 +1638,11 @@
                <rect x="${x - 20.2}" y="41.7" width="1.8" height="1.8" rx=".3" fill="#c9ced4"/>
                <path class="fx-klinge" d="M${x - 20},42.6 L${x - 26.5},42.6" stroke="#aab3bb" stroke-width="1" stroke-linecap="butt"/>
                <path d="M${x - 26.5},42.1 L${x - 27.4},42.6 L${x - 26.5},43.1 Z" fill="#7c858e"/>
+               <circle class="fx-wedel-spitze" cx="${x - 27.4}" cy="42.6" r=".2" fill="none"/>
                <circle cx="${x - 11.2}" cy="42.7" r="2.2" fill="${haut}"/></g>`;
         const werkzeug = `<path d="M${x - 9.5},38.5 L${x - 16},27" stroke="#8a5a30" stroke-width="2.2" stroke-linecap="round"/>
                <rect x="${x - 21}" y="22" width="10" height="5.5" rx="1" fill="#7d8790" transform="rotate(-30 ${x - 16} 25)"/>`;
-        const werkzeugKind = ['hammer', 'schrauber', 'zange', 'wedel', 'bohrer', 'leer', 'spachtel'].indexOf(art) >= 0;
+        const werkzeugKind = ['hammer', 'schrauber', 'zange', 'wedel', 'bohrer', 'leer', 'spachtel', 'kescher'].indexOf(art) >= 0;
         const arme = werkzeugKind
             ? `<g class="fx-haltearm"><path d="M${x + 2},50 L${x + 9},44 L${x + 10.5},46.5 L${x + 3},53 Z" fill="#ff7a1a"/><circle cx="${x + 10}" cy="44.5" r="2.2" fill="${haut}"/></g>
                <g class="fx-ik-glied fx-ik-arm"><path d="" stroke="#ff7a1a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle r="2.3" fill="${haut}"/></g>
@@ -2786,14 +2834,16 @@
                     const rot = sc.r0 * Math.exp(-a * 1.6) * Math.cos(a * 1.2) + Math.sin(a * 2.3) * 9 * Math.min(1, a / 2);
                     sc.el.style.transform = `translate(${sc.x.toFixed(1)}px, ${sc.y.toFixed(1)}px) rotate(${rot.toFixed(1)}deg)`;
                     const kindWeg = sc.x > W + VW || sc.x < -11 * VW || sc.y > H;
-                    if ((kindWeg && traegerWeg) || t - tr.anfang > 45) { truppEnde(); truppAb = t + truppAbstand(); return; }
+                    if ((kindWeg && traegerWeg) || t - tr.anfang > 120) { truppEnde(); truppAb = t + truppAbstand(); return; }
                 }
             } else if (tr.kphase === 'raus') {
                 if (tr.rausK === undefined) tr.rausK = tr.kx + kb / 2 < W / 2 ? -1 : 1;
                 richtung = tr.rausK;
                 tr.kx += richtung * lauf * dt; gehen = true;
                 const kindWeg = tr.kx < -kb - VW || tr.kx > W + VW;
-                if ((kindWeg && traegerWeg) || t - tr.anfang > 30) { truppEnde(); truppAb = t + truppAbstand(); return; }
+                // 120 s nur als Notausgang: das Kind läuft immer ganz aus dem Bild (Jonas, 18.11.;
+                // vorher 30 s, an hohen Kacheln verschwand es mitten beim Weggehen)
+                if ((kindWeg && traegerWeg) || t - tr.anfang > 120) { truppEnde(); truppAb = t + truppAbstand(); return; }
             }
             tr.kind.classList.toggle('fx-geht', gehen);
             tr.kind.classList.toggle('fx-ik', !!pose);
@@ -3514,7 +3564,7 @@
                 if (tr.rausK === undefined) tr.rausK = tr.kx + kb / 2 < W / 2 ? -1 : 1;
                 richtung = tr.rausK;
                 tr.kx += richtung * LAUF_E * VW * dt; gehen = true;
-                if (tr.kx < -kb - VW || tr.kx > W + VW || t - tr.anfang > 40) { truppEnde(); return; }
+                if (tr.kx < -kb - VW || tr.kx > W + VW || t - tr.anfang > 120) { truppEnde(); return; }   // 120 s nur als Notausgang
             }
             tr.kind.classList.toggle('fx-geht', gehen);
             tr.kind.classList.toggle('fx-ik', !!pose);
@@ -5629,7 +5679,7 @@
             schritt(dt, t) {
                 if (t0 === null) t0 = t;
                 // verschwindet die Kachel (neu aufgebaut), endet die Geschichte
-                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 if (t - t0 >= flackerAb) lichtSchritt(dt);
                 if (!tr && t - t0 >= kindAb) kindStarten(t);
                 if (tr) kindSchritt(dt, t);
@@ -5907,7 +5957,7 @@
             },
             schritt(dt, t) {
                 if (t0 === null) { t0 = t; pstart = t; }
-                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 const ps = t - pstart;
                 const weiter = (ph) => { phase = ph; pstart = t; };
                 let neigungZiel = 0, ampZiel = amp;
@@ -6430,7 +6480,7 @@
             },
             schritt(dt, t) {
                 if (t0 === null) t0 = t;
-                if (!el.isConnected || t - t0 > 130) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 wasserZeichnen(dt, t);
                 // erst läuft es eine Weile, dann kommt das Kind mit dem Schild
                 if (!a && t - t0 > 4 && b === null) aStarten();
@@ -6571,7 +6621,7 @@
             },
             schritt(dt, t) {
                 if (t0 === null) { t0 = t; pstart = t; }
-                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 const ps = t - pstart;
                 const weiter = (ph) => { phase = ph; pstart = t; };
                 if (phase === 'verschmutzen') {
@@ -6842,7 +6892,7 @@
             stop() { if (tr) tr.kind.remove(); delete el.dataset.fxStory; },
             schritt(dt, t) {
                 if (t0 === null) { t0 = t; pstart = t; }
-                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 const ps = t - pstart;
                 const weiter = (ph) => { phase = ph; pstart = t; };
                 laeuft = false; faden = null;
@@ -7055,7 +7105,7 @@
             },
             schritt(dt, t) {
                 if (t0 === null) { t0 = t; pstart = t; }
-                if (!el.isConnected || t - t0 > 120) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 const ps = t - pstart;
                 const weiter = (ph) => { phase = ph; pstart = t; };
                 if (phase === 'loesen') {
@@ -7214,7 +7264,7 @@
             stop() { taube.remove(); if (kind && !kind.weg) kind.entfernen(); delete el.dataset.fxStory; },
             schritt(dt, t) {
                 if (t0 === null) { t0 = t; pstart = t; }
-                if (!el.isConnected || t - t0 > 100) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 const ps = t - pstart;
                 const weiter = (ph) => { phase = ph; pstart = t; };
                 taube.classList.toggle('fx-fliegt', ['anflug', 'umzug'].indexOf(phase) >= 0);
@@ -7406,7 +7456,7 @@
             stop() { maus.remove(); falle.remove(); if (kind) kind.el.remove(); delete el.dataset.fxStory; },
             schritt(dt, t) {
                 if (t0 === null) { t0 = t; pstart = t; }
-                if (!el.isConnected || t - t0 > 90) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 const ps = t - pstart;
                 const weiter = (ph) => { phase = ph; pstart = t; };
                 // erst läuft die Maus 15 Sekunden herum, dann kommt das Kind mit der Falle (Wunsch Jonas)
@@ -7654,7 +7704,7 @@
             stop() { maskeZurueck(); if (trupp && !trupp.weg) trupp.entfernen(); delete el.dataset.fxStory; },
             schritt(dt, t) {
                 if (t0 === null) { t0 = t; pstart = t; }
-                if (!el.isConnected || t - t0 > 90) { fertig = true; return; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
                 const ps = t - pstart;
                 const weiter = (ph) => { phase = ph; pstart = t; };
                 const kk = kante();
@@ -7759,14 +7809,1345 @@
         };
     }
 
+    // Luftballon: Aus einer Kachel entwischt ein Ballon und steigt in der Lücke auf; seine
+    // Schnur verhakt sich an der Ecke der Kachel darüber. Ein Kind holt ihn mit Leiter und
+    // Kescher herunter und zieht mit ihm ab.
+    let ballonZuletzt = [];
+    function ballonMalen(cx, x, y, farbe, w) {
+        const r = 1.75 * VW;
+        cx.save(); cx.translate(x, y); cx.rotate(w || 0);
+        const f = cx.createRadialGradient(-r * 0.35, -r * 0.45, r * 0.1, 0, 0, r * 1.2);
+        f.addColorStop(0, '#ffffff'); f.addColorStop(0.18, farbe[0]); f.addColorStop(1, farbe[1]);
+        cx.fillStyle = f;
+        cx.beginPath(); cx.ellipse(0, 0, r * 0.88, r, 0, 0, 6.283); cx.fill();
+        cx.fillStyle = farbe[1];
+        cx.beginPath(); cx.moveTo(-0.18 * VW, r * 0.98); cx.lineTo(0.18 * VW, r * 0.98); cx.lineTo(0, r * 1.18); cx.closePath(); cx.fill();
+        cx.restore();
+    }
+    function Luftballon() {
+        // Kachel A (Start) mit einer Kachel B direkt darüber in derselben Spalte
+        const paare = [];
+        for (const a of kaesten) {
+            if (a.el.dataset.fxStory || a.y + a.h > UNTEN - 1 * VW) continue;
+            const drueber = kaesten.filter((bb) => bb !== a && Math.abs(bb.x - a.x) < 1 * VW && bb.y + bb.h < a.y + 0.5 * VW && bb.y > 3 * VW)
+                .sort((p1, p2) => p2.y - p1.y);
+            const b = drueber[1] || drueber[0];
+            if (b) paare.push([a, b]);
+        }
+        if (!paare.length) return null;
+        let frisch = paare.filter(([a]) => ballonZuletzt.indexOf(kachelName(a.el)) < 0);
+        if (!frisch.length) { ballonZuletzt = []; frisch = paare; }
+        const [A, B] = auswahl(frisch);
+        ballonZuletzt.push(kachelName(A.el));
+        A.el.dataset.fxStory = 'ballon';
+        const farbe = auswahl([['#ff5a6e', '#b3122e'], ['#4f9dff', '#1a4fa8'], ['#ffd23f', '#c98a00'], ['#5fd27a', '#1f8a3e']]);
+        const SCHNUR = 4.4 * VW;
+        // rechts aus der Kachel in die Lücke; ganz rechts im Bild nach links
+        const seite = A.x + A.w + 5 * VW < W ? 1 : -1;
+        const lueckeX = seite > 0 ? A.x + A.w + 0.6 * VW : A.x - 0.6 * VW;
+        const ecke = [seite > 0 ? B.x + B.w - 0.1 * VW : B.x + 0.1 * VW, B.y + B.h - 0.1 * VW];   // hier verhakt sich die Schnur
+        const startX = seite > 0 ? A.x + A.w - 1.5 * VW : A.x + 1.5 * VW;
+        let bx = startX, by = A.y + A.h * 0.5, vx = 0, vy = 0, w = 0;
+        let ende = null;                                     // Schnurende (frei: hängt unter dem Ballon)
+        let t0 = null, pstart = 0, phase = 'raus', fertig = false, kind = null, imNetz = false;
+        // Ballon schwebt: Ziel über der Ecke, leicht nach rechts in die Lücke getrieben
+        const halt = [ecke[0] + seite * 1.4 * VW, ecke[1] - SCHNUR * 0.85];
+        function schnurMalen(cx, t) {
+            const r = 1.75 * VW * 1.16;
+            const knoten = [bx - Math.sin(w) * r, by + Math.cos(w) * r];
+            const e = ende || [knoten[0] + Math.sin(t * 1.3) * 0.6 * VW, knoten[1] + SCHNUR];
+            cx.strokeStyle = 'rgba(70,70,70,.85)'; cx.lineWidth = 0.06 * VW;
+            cx.beginPath(); cx.moveTo(knoten[0], knoten[1]);
+            const m = [(knoten[0] + e[0]) / 2 + Math.sin(t * 2.1) * 0.35 * VW, (knoten[1] + e[1]) / 2];
+            cx.quadraticCurveTo(m[0], m[1], e[0], e[1]); cx.stroke();
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() { if (kind && !kind.weg) kind.entfernen(); delete A.el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!A.el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                let hinten = false;
+                if (phase === 'raus') {
+                    // hinter der Kachel hervor in die Lücke
+                    hinten = true;
+                    const f = glatt(ps / 1.6);
+                    bx = startX + (lueckeX - startX) * f;
+                    by = A.y + A.h * 0.5 - 0.8 * VW * f;
+                    if (ps > 1.6) { hinten = false; vy = -1 * VW; weiter('steigen'); }
+                } else if (phase === 'steigen') {
+                    // langsam steigen und schaukeln, bis die Schnur an der Ecke hängen bleibt
+                    vy += (-1.5 * VW - vy) * Math.min(1, dt * 1.2);
+                    by += vy * dt;
+                    bx = lueckeX + Math.sin((t - t0) * 0.9) * 1.1 * VW + Math.sin(t * 2.3) * 0.2 * VW;
+                    w = Math.sin(t * 1.7) * 0.1 + Math.cos((t - t0) * 0.9) * 0.1;
+                    if (by + 1.95 * VW + SCHNUR < ecke[1] + 0.3 * VW) { ende = ecke.slice(); weiter('haengen'); }
+                } else if (phase === 'haengen' || phase === 'warten') {
+                    // an der Schnur gehalten: wippt im Wind, treibt etwas zur Seite
+                    bx += (halt[0] + Math.sin(t * 1.1) * 0.5 * VW - bx) * Math.min(1, dt * 1.4);
+                    by += (halt[1] + Math.sin(t * 1.7) * 0.25 * VW - by) * Math.min(1, dt * 1.4);
+                    w = Math.sin(t * 1.3) * 0.12 - 0.08 * seite;
+                    if (phase === 'haengen' && ps > 5) {
+                        let pk = [halt[0], halt[1] + 0.7 * VW];
+                        const sk = leiterGeometrie(pk).seite;
+                        pk = [halt[0] + sk * 1.3 * VW, halt[1] + 0.7 * VW];
+                        kind = leiterkind('kescher', pk, t, {seite: sk});
+                        weiter('warten');
+                    }
+                    if (phase === 'warten' && kind.oben()) weiter('fangen');
+                } else if (phase === 'fangen') {
+                    // den Kescher von oben über den Ballon senken (Arm dreht nach unten)
+                    const f = glatt(Math.min(1, ps / 1.4));
+                    if (kind.arm) kind.arm.style.transform = `rotate(${(-26 * f).toFixed(1)}deg)`;
+                    const z = kind.spitze();
+                    bx += (z[0] - bx) * Math.min(1, dt * 4);
+                    if (z[1] > by - 0.9 * VW) by = z[1] - 0.9 * VW;          // der Reif ist über den Ballon gestülpt
+                    else by += (halt[1] - by) * Math.min(1, dt * 2);
+                    w *= 0.9;
+                    if (ps > 1.1 && ende) ende = null;
+                    if (ps > 1.7) { imNetz = true; kind.freigabe = true; weiter('ab'); }
+                } else if (phase === 'ab') {
+                    if (kind.weg) { fertig = true; return; }
+                    const z = kind.spitze();
+                    bx = z[0]; by = z[1] - 0.9 * VW;
+                    w = Math.sin(t * 3) * 0.05;
+                }
+                if (kind) kind.schritt(dt, t);
+                if (phase === 'ab' && kind.weg) { fertig = true; return; }
+                // erst hinter Kachel A (hintere Leinwand), dann vorn mit Schnur
+                if (hinten) { schnurMalen(cxH, t); ballonMalen(cxH, bx, by, farbe, w); }
+                else { if (!imNetz) schnurMalen(cxV, t); ballonMalen(cxV, bx, by, farbe, w); }
+            },
+        };
+    }
+
+    // Seifenblasen: Ein Kind pustet ohne Pause, bis der ganze Bildschirm voller Blasen ist.
+    // Platzen sie auf einer Kachel, bleibt ein schillernder Seifenfilm mit Laufspur. Dann kommt
+    // das Ordnungsamt und stellt einen Strafzettel aus; beide gehen, die Blasen zerfallen,
+    // die Seifenflecken trocknen weg.
+    function ordnungsamtSvg() {
+        const bein = (klasse, dx) => `<g class="fx-glied ${klasse}"><path d="M${25 + dx - 3},74 L${25 + dx + 3},74 L${25 + dx + 2.6},112 L${25 + dx - 2.6},112 Z" fill="#1f2a44"/>
+            <path d="M${25 + dx - 6},111 L${25 + dx + 3},111 L${25 + dx + 3},116 L${25 + dx - 6.5},116 Q${25 + dx - 7.5},113.5 ${25 + dx - 6},111 Z" fill="#111"/></g>`;
+        return `<svg class="fx-trupp fx-ordnungsamt" viewBox="0 0 50 120" xmlns="${NS}">
+            ${bein('fx-kbein-b', 2)}
+            <path d="M15,44 C15,38 35,38 35,44 L34,78 L16,78 Z" fill="#24324f"/>
+            <path d="M22,40 L25,48 L28,40 Z" fill="#cfe0f2"/>
+            <path d="M16.5,60 L33.5,60" stroke="#c9d3df" stroke-width="1.4"/>
+            ${bein('fx-kbein-a', -2)}
+            <g class="fx-oa-arm"><path d="M17,46 L9,60 L12,62 L19,50 Z" fill="#24324f"/>
+                <rect x="4" y="56" width="8" height="10" rx="1" fill="#f4f1e6" stroke="#8c8a80" stroke-width=".6"/>
+                <path d="M5.5,59 L10.5,59 M5.5,61.5 L10.5,61.5 M5.5,64 L9,64" stroke="#8c8a80" stroke-width=".5"/>
+                <circle cx="11" cy="61.5" r="2.3" fill="#f1cfb2"/></g>
+            <g class="fx-oa-stift"><path d="M33,46 L26,57 L28.5,58.5 L35,49 Z" fill="#24324f"/>
+                <path d="M27,57.5 L22,61" stroke="#1d1d1d" stroke-width="1"/>
+                <circle cx="27" cy="57.5" r="2.2" fill="#f1cfb2"/></g>
+            <circle cx="25" cy="32" r="7.5" fill="#f1cfb2"/>
+            <ellipse cx="21.6" cy="32.4" rx=".75" ry=".55" fill="#2a1a14"/>
+            <path d="M18.6,29.6 L23.6,31.2" stroke="#2a1a14" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M19.4,37 q2,-1.1 4.2,0" stroke="#2a1a14" stroke-width=".9" fill="none" stroke-linecap="round"/>
+            <path d="M24.6,34.6 L25.2,35.4" stroke="#c89c7e" stroke-width=".6"/>
+            <path d="M16,27.5 C16,20 34,20 34,27.5 Z" fill="#1f2a44"/>
+            <path d="M14.5,27.5 L35.5,27.5 L33,30 L13,30 Z" fill="#111827"/>
+            <rect x="22" y="23" width="6" height="2.4" rx=".6" fill="#d9b44a"/>
+        </svg>`;
+    }
+    function Seifenblasen() {
+        const KA = 3.6 * VW, KAH = KA * 2, OB = 4.4 * VW, OH = OB * 120 / 50;
+        const stand = zufall(15, 35) * VW;
+        const vonLinks = Math.random() < 0.5;
+        const kindX = vonLinks ? stand : W - stand;
+        const blick = vonLinks ? 1 : -1;                     // pustet zur Bildmitte hin
+        const kind = svgAusText(helferkindSvg());
+        domV.appendChild(kind);
+        let kx = vonLinks ? -KA - 2 * VW : W + 2 * VW, krichtung = blick;
+        let amt = null, ax = 0, arichtung = -blick;
+        let t0 = null, pstart = 0, phase = 'kommen', fertig = false, pustUhr = 0, zettel = null, trocknen = 0;
+        const blasen = [], tropfen = [], filme = [];
+        const hand = (e, sel) => { const r = e.querySelector(sel).getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect(); return [r.left - o.left + r.width / 2, r.top - o.top + r.height / 2]; };
+        const ringOrt = () => { const h = hand(kind, '.fx-tragarm-l circle'); return [h[0] + blick * 0.55 * VW, h[1] - 0.5 * VW, h]; };
+        // vorgezeichnete Blasen (schont die Monitor-Rechner): 8 Farbstellungen
+        const R0 = 1.8 * VW;
+        const blasenBild = (n) => sprite(`blase-${n}`, () => {
+            const R = R0 * DPR, c = leinwand(Math.ceil(R * 2 + 4), Math.ceil(R * 2 + 4)), g = c.getContext('2d');
+            const m = R + 2;
+            const f = g.createRadialGradient(m - R * 0.3, m - R * 0.3, R * 0.1, m, m, R);
+            f.addColorStop(0, 'rgba(255,255,255,.06)'); f.addColorStop(0.7, 'rgba(200,230,255,.14)'); f.addColorStop(1, 'rgba(225,238,255,.42)');
+            g.fillStyle = f; g.beginPath(); g.arc(m, m, R, 0, 6.283); g.fill();
+            g.lineWidth = Math.max(2, 0.12 * VW * DPR);
+            for (let k = 0; k < 6; k++) {
+                const a0 = k / 6 * 6.283 + n * 0.4;
+                g.strokeStyle = `hsla(${(n * 45 + k * 60) % 360}, 95%, 58%, .92)`;
+                g.beginPath(); g.arc(m, m, R - g.lineWidth / 2, a0, a0 + 1.1); g.stroke();
+            }
+            g.fillStyle = 'rgba(255,255,255,.75)';
+            g.beginPath(); g.ellipse(m - R * 0.42, m - R * 0.45, R * 0.22, R * 0.12, -0.7, 0, 6.283); g.fill();
+            return c;
+        });
+        const filmBild = (n) => sprite(`seifenfilm-${n}`, () => {
+            const R = R0 * DPR, c = leinwand(Math.ceil(R * 2 + 4), Math.ceil(R * 2 + 4)), g = c.getContext('2d');
+            const m = R + 2;
+            for (let k = 0; k < 4; k++) {
+                const f = g.createRadialGradient(m + zufall(-0.3, 0.3) * R, m + zufall(-0.3, 0.3) * R, 0, m, m, R * zufall(0.6, 1));
+                f.addColorStop(0, `hsla(${(n * 70 + k * 90) % 360}, 85%, 70%, .16)`); f.addColorStop(1, 'hsla(0,0%,100%,0)');
+                g.fillStyle = f; g.beginPath(); g.arc(m, m, R, 0, 6.283); g.fill();
+            }
+            g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = Math.max(1, 0.05 * VW * DPR);
+            g.beginPath(); g.arc(m, m, R * 0.7, 0.4, 2.2); g.stroke();
+            return c;
+        });
+        function blaseNeu(ring) {
+            const ziel = [zufall(2, 98) * VW, zufall(2, Math.max(4, UNTEN / VW - 3)) * VW];
+            blasen.push({x: ring[0] + blick * 0.3 * VW, y: ring[1], r: zufall(0.6, 1.8) * VW, ziel: ziel,
+                vx: blick * zufall(3, 7) * VW, vy: zufall(-3, -1) * VW, p: zufall(0, 6.28), bild: Math.floor(zufall(0, 8)),
+                alter: 0, beruehrt: new Set(), platzBei: null});
+        }
+        function platzen(b) {
+            tropfen.push({ring: true, x: b.x, y: b.y, r: b.r, alter: 0});
+            for (let i = 0; i < 3; i++) { const w = zufall(0, 6.28); tropfen.push({x: b.x + Math.cos(w) * b.r, y: b.y + Math.sin(w) * b.r, vx: Math.cos(w) * 1.5 * VW, vy: Math.sin(w) * 1.5 * VW, alter: 0}); }
+            // auf einer Kachel bleibt ein Seifenfilm, der die Schrift darunter verschmiert (Wunsch Jonas);
+            // höchstens 40, damit die Monitor-Rechner nicht ins Stocken kommen
+            const k = kaesten.find((kk) => b.x > kk.x && b.x < kk.x + kk.w && b.y > kk.y && b.y < kk.y + kk.h);
+            if (k && filme.length < 40 && trocknen <= 0) {
+                const r = b.r * zufall(1.1, 1.4), el = document.createElement('div');
+                el.className = 'fx-story fx-seifenfilm';
+                const h0 = 0.62 * 255;
+                el.style.left = `${(b.x - k.x - r).toFixed(1)}px`; el.style.top = `${(b.y - k.y - r).toFixed(1)}px`;
+                el.style.width = `${(2 * r).toFixed(1)}px`; el.style.height = `${(2 * r).toFixed(1)}px`;
+                el.style.borderRadius = `${Math.round(zufall(40, 60))}% ${Math.round(zufall(40, 60))}% ${Math.round(zufall(35, 55))}% ${Math.round(zufall(35, 55))}% / ${Math.round(zufall(40, 60))}% ${Math.round(zufall(40, 60))}% ${Math.round(zufall(55, 70))}% ${Math.round(zufall(55, 70))}%`;
+                el.style.background = `radial-gradient(circle at ${Math.round(zufall(30, 70))}% ${Math.round(zufall(30, 60))}%, hsla(${Math.round(zufall(0, 360))},85%,75%,.16), hsla(${Math.round(zufall(0, 360))},85%,70%,.1) 60%, rgba(255,255,255,.04))`;
+                void h0;
+                k.el.appendChild(el);
+                // die Laufspur: der Fleck zieht sich langsam nach unten
+                requestAnimationFrame(() => { el.style.height = `${(2 * r + zufall(0.5, 1.6) * VW).toFixed(1)}px`; });
+                filme.push({el: el, alter: 0});
+            }
+        }
+        function figurSetzen(e, x, y, r, gehen) {
+            e.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)${r > 0 ? ' scale(-1, 1)' : ''}`;
+            e.classList.toggle('fx-geht', gehen);
+        }
+
+        return {
+            leiter: false,
+            get fertig() { return fertig; },
+            stop() { kind.remove(); if (amt) amt.remove(); for (const fm of filme) fm.el.remove(); },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (t - t0 > 80) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                let kGehen = false, aGehen = false;
+                kind.classList.remove('fx-pustet', 'fx-taucht', 'fx-traegt', 'fx-nimmt', 'fx-haelt-zettel');
+                kind.classList.add(phase === 'zettel' ? 'fx-nimmt' : (phase === 'gehen' && zettel ? 'fx-haelt-zettel' : 'fx-traegt'));
+                if (phase === 'kommen') {
+                    kx += blick * 7 * VW * dt; kGehen = true; krichtung = blick;
+                    if ((blick > 0 && kx >= kindX) || (blick < 0 && kx <= kindX)) { kx = kindX; weiter('pusten'); }
+                } else if (phase === 'pusten') {
+                    // ohne Pause pusten, nur ab und zu kurz eintauchen – bis alles voller Blasen ist
+                    const zyklus = ps % 3.4;
+                    kind.classList.remove('fx-traegt');
+                    if (zyklus < 0.7) kind.classList.add('fx-taucht');
+                    else {
+                        kind.classList.add('fx-pustet');
+                        if (zyklus > 1.1) { pustUhr -= dt; while (pustUhr <= 0) { blaseNeu(ringOrt()); pustUhr += zufall(0.025, 0.055); } }
+                    }
+                    // erst 10 Sekunden pustet das Kind allein (Wunsch Jonas)
+                    if (!amt && ps > 10) {
+                        amt = svgAusText(ordnungsamtSvg());
+                        amt.style.width = `${(OB / VW).toFixed(2)}vw`;
+                        domV.appendChild(amt);
+                        ax = vonLinks ? W + OB : -OB * 2;
+                    }
+                    if (amt) {
+                        const ziel = kindX + blick * 5 * VW - OB / 2;
+                        ax += -blick * 12 * VW * dt; aGehen = true; arichtung = -blick;
+                        if ((blick > 0 && ax <= ziel) || (blick < 0 && ax >= ziel)) { ax = ziel; weiter('ermahnen'); }
+                    }
+                } else if (phase === 'ermahnen') {
+                    // das Kind hört auf und schaut; der Strafzettel wird geschrieben
+                    krichtung = blick; arichtung = -blick;
+                    amt.classList.toggle('fx-schreibt', ps < 1.8);
+                    if (ps > 2.0) { zettel = {f: 0}; weiter('zettel'); }
+                } else if (phase === 'zettel') {
+                    zettel.f = Math.min(1, ps / 0.9);
+                    if (ps > 1.1) weiter('gehen');
+                } else if (phase === 'gehen') {
+                    // beide gehen, jedes zu seiner Seite; die Blasen zerfallen nach und nach
+                    kx -= blick * 6.5 * VW * dt; kGehen = true; krichtung = -blick;
+                    ax += blick * 12 * VW * dt; aGehen = true; arichtung = blick;
+                    // die Blasen dürfen noch etwas bleiben, die Schrift wird aber gleich wieder lesbar
+                    if (ps < 0.05) for (const b of blasen) b.platzBei = Infinity;      // vorerst weiter schweben
+                    trocknen = Math.min(1, trocknen + dt / 9);
+                    const weg = (x, b) => x < -b * 2 || x > W + b;
+                    if (weg(kx, KA) && kind.isConnected) kind.remove();
+                    if (weg(ax, OB) && amt.isConnected) amt.remove();
+                    if (!kind.isConnected && (!amt || !amt.isConnected)) {
+                        // alle weg: die Blasen zerplatzen nach und nach, die letzte nach 30 Sekunden
+                        const n = blasen.length;
+                        blasen.forEach((bl, j) => { bl.platzBei = t + (n > 1 ? 0.5 + 29.5 * Math.pow(j / (n - 1), 1.6) : 30) * zufall(0.9, 1); });
+                        if (n) blasen[Math.floor(zufall(0, n))].platzBei = t + 30;
+                        weiter('trocknen');
+                    }
+                } else if (phase === 'trocknen') {
+                    // die Schlieren trocknen weg; das Ordnungsamt geht derweil zu Ende
+
+                    trocknen = Math.min(1, trocknen + dt / 9);
+                    if (trocknen >= 1 && !blasen.length && !tropfen.length && !amt.isConnected) { for (const fm of filme) fm.el.remove(); fertig = true; return; }
+                }
+                // Figuren
+                if (kind.isConnected) {
+                    const y = LAUF_BODEN - KAH * 0.97 + (kGehen ? Math.abs(Math.sin(t * 11)) * -0.12 * VW : 0);
+                    figurSetzen(kind, kx - KA / 2, y, krichtung, kGehen);
+                    const fl = hand(kind, '.fx-tragarm-r circle');
+                    cxV.fillStyle = 'rgba(120,200,255,.85)'; cxV.strokeStyle = '#3a7fb8'; cxV.lineWidth = 0.05 * VW;
+                    cxV.beginPath(); cxV.rect(fl[0] - 0.35 * VW, fl[1] - 0.2 * VW, 0.7 * VW, 1.1 * VW); cxV.fill(); cxV.stroke();
+                    cxV.fillStyle = '#e8344e'; cxV.fillRect(fl[0] - 0.22 * VW, fl[1] - 0.45 * VW, 0.44 * VW, 0.25 * VW);
+                    if (phase === 'pusten' || phase === 'ermahnen') {
+                        const [rx, ry, h] = ringOrt();
+                        cxV.strokeStyle = '#e8344e'; cxV.lineWidth = 0.14 * VW; cxV.lineCap = 'round';
+                        cxV.beginPath(); cxV.moveTo(h[0], h[1]); cxV.lineTo(rx, ry + 0.35 * VW); cxV.stroke();
+                        cxV.beginPath(); cxV.ellipse(rx, ry, 0.22 * VW, 0.42 * VW, 0, 0, 6.283); cxV.stroke();
+                    }
+                }
+                if (amt && amt.isConnected) {
+                    const y = LAUF_BODEN - OH * 0.97 + (aGehen ? Math.abs(Math.sin(t * 9)) * -0.1 * VW : 0);
+                    figurSetzen(amt, ax, y, arichtung, aGehen);
+                }
+                // der Strafzettel: vom Block zur Hand des Kinds, das Kind trägt ihn davon
+                if (zettel && kind.isConnected) {
+                    const von = amt && amt.isConnected ? hand(amt, '.fx-oa-arm circle') : null;
+                    const nach = hand(kind, '.fx-tragarm-l circle');
+                    const f = glatt(zettel.f);
+                    const x = von ? von[0] + (nach[0] - von[0]) * f : nach[0], y = von ? von[1] + (nach[1] - von[1]) * f - Math.sin(f * Math.PI) * 0.8 * VW : nach[1];
+                    cxV.save(); cxV.translate(x, y); cxV.rotate(Math.sin(t * 3) * 0.1);
+                    cxV.fillStyle = '#fff6c2'; cxV.strokeStyle = '#8c8a80'; cxV.lineWidth = 0.04 * VW;
+                    cxV.fillRect(-0.45 * VW, -0.6 * VW, 0.9 * VW, 1.2 * VW); cxV.strokeRect(-0.45 * VW, -0.6 * VW, 0.9 * VW, 1.2 * VW);
+                    cxV.strokeStyle = '#c0392b'; cxV.beginPath(); cxV.moveTo(-0.3 * VW, -0.35 * VW); cxV.lineTo(0.3 * VW, -0.35 * VW); cxV.stroke();
+                    cxV.strokeStyle = '#8c8a80'; cxV.beginPath();
+                    for (const yy of [-0.1, 0.1, 0.3]) { cxV.moveTo(-0.3 * VW, yy * VW); cxV.lineTo(0.25 * VW, yy * VW); }
+                    cxV.stroke(); cxV.restore();
+                }
+                // Seifenfilme trocknen: die Schrift darunter wird wieder scharf
+                for (const fm of filme) {
+                    fm.alter += dt;
+                    const a = (1 - trocknen).toFixed(2);
+                    if (fm.el.style.opacity !== a) fm.el.style.opacity = a;
+                }
+                // Blasen: verteilen sich über den ganzen Schirm und schweben dort
+                for (let i = blasen.length - 1; i >= 0; i--) {
+                    const b = blasen[i];
+                    b.alter += dt;
+                    b.vx += ((b.ziel[0] - b.x) * 0.5 - b.vx) * Math.min(1, dt * 1.2);
+                    b.vy += ((b.ziel[1] - b.y) * 0.5 - b.vy) * Math.min(1, dt * 1.2);
+                    const sp = Math.hypot(b.vx, b.vy), max = 9 * VW;
+                    if (sp > max) { b.vx *= max / sp; b.vy *= max / sp; }
+                    b.x += (b.vx + Math.sin(t * 1.3 + b.p) * 0.6 * VW) * dt;
+                    b.y += (b.vy + Math.cos(t * 1.1 + b.p) * 0.4 * VW) * dt;
+                    let weg = b.platzBei !== null && t >= b.platzBei;
+                    // aus dem Bild gepustet: einfach weg
+                    if (b.x < -b.r * 2 || b.x > W + b.r * 2 || b.y < -b.r * 2) { blasen.splice(i, 1); continue; }
+                    // beim Pusten platzt ab und zu eine an einer Kachelkante
+                    if (!weg && b.alter > 0.5 && b.platzBei === null) {
+                        for (const k of kaesten) {
+                            if (b.beruehrt.has(k.el)) continue;
+                            const innen = b.x > k.x && b.x < k.x + k.w && b.y > k.y && b.y < k.y + k.h;
+                            const dx = Math.max(k.x - b.x, 0, b.x - (k.x + k.w)), dy = Math.max(k.y - b.y, 0, b.y - (k.y + k.h));
+                            const d = innen ? Math.min(b.x - k.x, k.x + k.w - b.x, b.y - k.y, k.y + k.h - b.y) : Math.hypot(dx, dy);
+                            if (d < b.r * 0.6) { b.beruehrt.add(k.el); if (Math.random() < 0.12) { weg = true; break; } }
+                        }
+                    }
+                    if (weg) { platzen(b); blasen.splice(i, 1); continue; }
+                    const r = b.r * Math.min(1, b.alter * 3);
+                    const n = (b.bild + Math.floor((t + b.p) * 2.5)) % 8;   // die Farben schillern weiter
+                    cxV.drawImage(blasenBild(n), b.x - r, b.y - r, r * 2, r * 2);
+                }
+                for (let i = tropfen.length - 1; i >= 0; i--) {
+                    const d = tropfen[i];
+                    d.alter += dt;
+                    if (d.ring) {
+                        if (d.alter > 0.3) { tropfen.splice(i, 1); continue; }
+                        cxV.strokeStyle = `rgba(255,255,255,${(0.7 * (1 - d.alter / 0.3)).toFixed(2)})`; cxV.lineWidth = 0.05 * VW;
+                        cxV.beginPath(); cxV.arc(d.x, d.y, d.r * (1 + d.alter * 1.5), 0, 6.283); cxV.stroke();
+                        continue;
+                    }
+                    if (d.alter > 0.6) { tropfen.splice(i, 1); continue; }
+                    d.vy += 25 * VW * dt; d.x += d.vx * dt; d.y += d.vy * dt;
+                    cxV.fillStyle = `rgba(190,225,255,${(0.8 * (1 - d.alter / 0.6)).toFixed(2)})`;
+                    cxV.beginPath(); cxV.arc(d.x, d.y, 0.06 * VW, 0, 6.283); cxV.fill();
+                }
+            },
+        };
+    }
+
+    // Heißluftballon: Ein Heißluftballon schwebt herein und verhakt sich mit dem Korb an der
+    // Ecke einer Kachel. Die Feuerwehr kommt mit der Drehleiter, stützt ab, fährt die Leiter
+    // aus und befreit den Korb; der Ballon fliegt weiter, die Leiter fährt ein, der Wagen fährt ab.
+    const FW_B = 17, FW_VB = [170, 52];                       // vw breit; viewBox
+    const FW_DREH = [24, 4.5];                               // Drehkranz hinten im viewBox (Fahrtrichtung rechts)
+    function feuerwehrSvg() {
+        const rad = (x) => `<g class="fx-rad"><circle cx="${x}" cy="44" r="7.2" fill="#222"/><circle cx="${x}" cy="44" r="3.2" fill="#b9c1c8"/>
+            <path d="M${x - 3},44 L${x + 3},44 M${x},41 L${x},47" stroke="#555" stroke-width="1"/></g>`;
+        let laeden = '';
+        for (const [x0, x1] of [[8, 38], [41, 71], [74, 110]]) {
+            laeden += `<rect x="${x0}" y="15" width="${x1 - x0}" height="19" rx="1.2" fill="#d23a2e"/>`;
+            for (let y = 17.5; y < 33; y += 2.6) laeden += `<path d="M${x0 + 1},${y} L${x1 - 1},${y}" stroke="#a82a20" stroke-width=".7"/>`;
+        }
+        return `<svg class="fx-feuerwehr" viewBox="0 0 ${FW_VB[0]} ${FW_VB[1]}" xmlns="${NS}">
+            <rect x="4" y="12" width="110" height="26" rx="2" fill="#c0392b"/>
+            ${laeden}
+            <rect x="4" y="34" width="110" height="3.2" fill="#f4f4f4"/>
+            <path d="M112,38 L112,14 Q112,9 118,9 L150,9 Q158,9 162,18 L166,30 L166,38 Z" fill="#c0392b"/>
+            <path d="M150,12 Q156,12 159,19 L162,27 L148,27 L148,12 Z" fill="#bfe3f5" stroke="#7a1d14" stroke-width=".8"/>
+            <rect x="120" y="13" width="22" height="12" rx="1.5" fill="#bfe3f5" stroke="#7a1d14" stroke-width=".8"/>
+            <rect x="112" y="31" width="54" height="3" fill="#f4f4f4"/>
+            <rect class="fx-blaulicht fx-blaulicht-a" x="122" y="5" width="8" height="4" rx="1.5" fill="#2f7bff"/>
+            <rect class="fx-blaulicht fx-blaulicht-b" x="161" y="27.5" width="4.5" height="2.6" rx="1" fill="#2f7bff"/>
+            <rect x="160" y="33" width="6" height="3" rx="1" fill="#ffd34d"/>
+            <rect x="2" y="37" width="166" height="4" rx="1.5" fill="#3b3b3b"/>
+            <ellipse cx="${FW_DREH[0]}" cy="11.5" rx="12" ry="3" fill="#8d969f"/>
+            <path d="M${FW_DREH[0] - 8},12 L${FW_DREH[0] - 5},3 L${FW_DREH[0] + 5},3 L${FW_DREH[0] + 8},12 Z" fill="#6b737b"/>
+            <rect x="${FW_DREH[0] - 3}" y="1.5" width="6" height="4" rx="1" fill="#4a4f55"/>
+            <path d="M44,12 L44,7 L100,7 L100,12" stroke="#8d969f" stroke-width="1.4" fill="none"/>
+            ${rad(28)}${rad(50)}${rad(140)}
+        </svg>`;
+    }
+    // Drehleiter: Fuß (x, y), Länge, Winkel (0 = rechts, 90 = senkrecht)
+    function drehleiterMalen(x, y, laenge, winkel) {
+        const w = winkel * Math.PI / 180, dx = Math.cos(w), dy = -Math.sin(w);
+        const nx = -dy, ny = dx, b = 0.42 * VW;
+        cxV.lineCap = 'round';
+        for (const [farbe, breite] of [['#5d656c', 0.26 * VW], ['#e6e9ec', 0.13 * VW]]) {
+            cxV.strokeStyle = farbe; cxV.lineWidth = breite;
+            cxV.beginPath();
+            cxV.moveTo(x - nx * b, y - ny * b); cxV.lineTo(x - nx * b + dx * laenge, y - ny * b + dy * laenge);
+            cxV.moveTo(x + nx * b, y + ny * b); cxV.lineTo(x + nx * b + dx * laenge, y + ny * b + dy * laenge);
+            cxV.stroke();
+        }
+        cxV.strokeStyle = '#9aa3ab'; cxV.lineWidth = 0.09 * VW;
+        cxV.beginPath();
+        for (let d = 0.5 * VW; d < laenge - 0.3 * VW; d += 0.75 * VW) {
+            cxV.moveTo(x - nx * b + dx * d, y - ny * b + dy * d); cxV.lineTo(x + nx * b + dx * d, y + ny * b + dy * d);
+        }
+        cxV.stroke();
+        // rote Warnstreifen am Leiterpark
+        cxV.strokeStyle = '#c0392b'; cxV.lineWidth = 0.3 * VW;
+        cxV.beginPath(); cxV.moveTo(x, y); cxV.lineTo(x + dx * Math.min(3 * VW, laenge), y + dy * Math.min(3 * VW, laenge)); cxV.stroke();
+    }
+    // Rettungskorb mit Feuerwehrmann, immer waagerecht. (x, y) = Leiterspitze an der Rückseite
+    // des Korbs (Unterkante); der Korb liegt in Blickrichtung r vor der Leiterspitze.
+    const RK_B = 2.6, RK_H = 1.4;                            // vw
+    function rettungskorbMalen(x, y, r, arm, leer) {
+        const KB = RK_B * VW, KH = RK_H * VW, mx = x + r * KB / 2;
+        // Feuerwehrmann (hinter der Brüstung): Jacke dunkelblau mit Leuchtstreifen, Helm
+        const fx = mx - r * 0.2 * VW;
+        if (!leer) {
+        cxV.fillStyle = '#1f2a44';
+        cxV.fillRect(fx - 0.45 * VW, y - KH - 0.5 * VW, 0.9 * VW, 1.4 * VW);
+        cxV.fillStyle = '#e6ff3a'; cxV.fillRect(fx - 0.45 * VW, y - KH + 0.15 * VW, 0.9 * VW, 0.16 * VW);
+        cxV.fillStyle = '#f1cfb2'; cxV.beginPath(); cxV.arc(fx, y - KH - 0.85 * VW, 0.4 * VW, 0, 6.283); cxV.fill();
+        cxV.fillStyle = '#f2f2f2'; cxV.beginPath(); cxV.arc(fx, y - KH - 0.95 * VW, 0.46 * VW, Math.PI, 0); cxV.fill();
+        cxV.fillStyle = '#c9a227'; cxV.fillRect(fx - 0.46 * VW, y - KH - 0.99 * VW, 0.92 * VW, 0.1 * VW);
+        // Arm nach vorn über die Brüstung (zum Lösen)
+        cxV.strokeStyle = '#1f2a44'; cxV.lineWidth = 0.22 * VW; cxV.lineCap = 'round';
+        cxV.beginPath(); cxV.moveTo(fx + r * 0.3 * VW, y - KH - 0.1 * VW); cxV.lineTo(fx + r * (0.9 + arm * 1.4) * VW, y - KH - 0.15 * VW - arm * 0.25 * VW); cxV.stroke();
+        cxV.fillStyle = '#2b2b2b'; cxV.beginPath(); cxV.arc(fx + r * (0.9 + arm * 1.4) * VW, y - KH - 0.15 * VW - arm * 0.25 * VW, 0.15 * VW, 0, 6.283); cxV.fill();
+        }
+        // Korb mit Gitter und rotem Handlauf
+        cxV.fillStyle = 'rgba(190,198,206,.9)'; cxV.strokeStyle = '#5d656c'; cxV.lineWidth = 0.08 * VW;
+        cxV.beginPath(); cxV.rect(mx - KB / 2, y - KH, KB, KH); cxV.fill(); cxV.stroke();
+        cxV.beginPath();
+        for (let i = 1; i < 6; i++) { const xx = mx - KB / 2 + KB * i / 6; cxV.moveTo(xx, y - KH); cxV.lineTo(xx, y); }
+        cxV.stroke();
+        cxV.fillStyle = '#c0392b'; cxV.fillRect(mx - KB / 2, y - KH - 0.12 * VW, KB, 0.18 * VW);
+        return [fx + r * (0.9 + arm * 1.4) * VW, y - KH - 0.15 * VW - arm * 0.25 * VW];
+    }
+    let heissluftZuletzt = [];
+    function Heissluftballon() {
+        // Flugrichtung so, dass hinter der Kachel Platz für Ballon und Feuerwehr ist
+        const kandidaten = [];
+        for (const k of kaesten) {
+            if (k.y < 14 * VW || k.y > UNTEN - 20 * VW || k.el.dataset.fxStory) continue;
+            for (const dir of [1, -1]) {
+                const ex = dir > 0 ? k.x + k.w : k.x;
+                if (ex + dir * 22 * VW > 2 * VW && ex + dir * 22 * VW < W - 2 * VW) kandidaten.push([k, dir]);
+            }
+        }
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter(([kk]) => heissluftZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { heissluftZuletzt = []; frisch = kandidaten; }
+        const [T, dir] = auswahl(frisch);
+        heissluftZuletzt.push(kachelName(T.el));
+        T.el.dataset.fxStory = 'heissluft';
+        // größer als vorher (Wunsch Jonas)
+        const KORB_B = 3.5 * VW, KORB_H = 2.1 * VW, HUELLE = 5.4 * VW, SEIL = 3.2 * VW, TAU = 4.5 * VW;
+        // das Schlepptau wickelt sich um die hintere obere Ecke der Kachel, über die der Ballon fliegt
+        const ecke = [dir > 0 ? T.x + T.w : T.x, T.y];
+        const halt = [ecke[0] + dir * 4.2 * VW, ecke[1] - 1.2 * VW];        // Korbunterkante, wenn er festhängt
+        const startX = dir > 0 ? -HUELLE * 1.6 : W + HUELLE * 1.6;
+        let kx = startX, ky = halt[1] - 2 * VW, neig = 0, flug = null, tauFest = false, tauLos = 0;
+        const farben = auswahl([['#e8344e', '#ffd23f'], ['#2f7bff', '#ffffff'], ['#5fd27a', '#f39c12'], ['#9b59b6', '#ffd23f']]);
+        // Feuerwehr: steht auf der Ballonseite und reicht mit der Leiter unter dem Ballon zur Ecke
+        const seite = dir;
+        const fwRicht = -seite;                                   // fährt auf die Ecke zu
+        const fwB = FW_B * VW, fwH = fwB * FW_VB[1] / FW_VB[0], u = fwB / FW_VB[0];
+        const drehX = (x) => (fwRicht > 0 ? x + FW_DREH[0] * u : x + (FW_VB[0] - FW_DREH[0]) * u);
+        const halteDreh = ecke[0] + seite * 16 * VW;
+        const halteX = fwRicht > 0 ? halteDreh - FW_DREH[0] * u : halteDreh - (FW_VB[0] - FW_DREH[0]) * u;
+        const fwStart = fwRicht > 0 ? -fwB - 2 * VW : W + 2 * VW;
+        let fx = fwStart, fv = 0, fw = null, stuetzen = 0;
+        const ruhe = fwRicht > 0 ? -1.5 : 181.5;                // Leiter liegt nach vorn über dem Fahrerhaus
+        // der Wagen steht auf der Oberkante des Schriftbands (sonst verdeckt ihn das Band)
+        const fwY0 = () => UNTEN - fwH * 51 / 52;
+        const HUB = 0.45 * VW;                                    // so weit heben die Stützen den Wagen an
+        // Leiterspitze: Korb vor der Spitze, die Hand des Feuerwehrmanns reicht an die Ecke
+        const spitzeZiel = [ecke[0] + seite * (RK_B * VW + 0.6 * VW), ecke[1] + RK_H * VW + 0.15 * VW];
+        const RUHE_L = 12.2 * VW;
+        // Winkel und Länge der Leiter werden beim Anhalten bestimmt (dann steht der Boden fest)
+        let zielWinkel = ruhe, zielLaenge = RUHE_L;
+        function leiterZiel() {
+            const drehY0 = fwY0() - HUB + FW_DREH[1] * u;
+            zielWinkel = Math.atan2(drehY0 - spitzeZiel[1], spitzeZiel[0] - halteDreh) * 180 / Math.PI;
+            zielLaenge = Math.hypot(spitzeZiel[0] - halteDreh, drehY0 - spitzeZiel[1]);
+        }
+        let winkel = ruhe, laenge = RUHE_L, armVor = 0, zug = 0, zugT0 = 0, kv = 0;
+        let t0 = null, pstart = 0, phase = 'anflug', fertig = false, winken = 0;
+        const korbUnten = () => { const w = neig * Math.PI / 180; return [kx, ky, w]; };
+
+        function tauMalen(t) {
+            // vom Korbboden: frei pendelnd, an der Ecke straff mit Schlinge, nach dem Lösen wieder lose
+            const [x0, y0, w] = korbUnten();
+            const ax = x0 - Math.sin(w) * 0, ay = y0;
+            cxV.strokeStyle = '#7a5532'; cxV.lineWidth = 0.13 * VW; cxV.lineCap = 'round';
+            cxV.beginPath(); cxV.moveTo(ax, ay);
+            if (tauFest && tauLos <= 0) {
+                cxV.lineTo(ecke[0] + dir * 0.15 * VW, ecke[1] - 0.15 * VW);
+                cxV.stroke();
+                // Schlinge um die Ecke
+                cxV.beginPath(); cxV.ellipse(ecke[0], ecke[1] + 0.05 * VW, 0.38 * VW, 0.3 * VW, 0, 0, 6.283); cxV.stroke();
+                cxV.beginPath(); cxV.moveTo(ecke[0] - dir * 0.3 * VW, ecke[1] + 0.25 * VW); cxV.lineTo(ecke[0] - dir * 0.55 * VW, ecke[1] + 0.9 * VW + Math.sin(t * 2) * 0.1 * VW); cxV.stroke();
+            } else {
+                const ende = [ax - dir * 0.9 * VW + Math.sin(t * 1.4) * 0.5 * VW, ay + TAU];
+                cxV.quadraticCurveTo(ax - dir * 0.2 * VW, ay + TAU * 0.55, ende[0], ende[1]); cxV.stroke();
+            }
+        }
+        function ballonMalen(t) {
+            const w = neig * Math.PI / 180;
+            cxV.save(); cxV.translate(kx, ky); cxV.rotate(w);
+            const huY = -KORB_H - SEIL - HUELLE * 0.95;
+            cxV.strokeStyle = '#6b4a2b'; cxV.lineWidth = 0.07 * VW;
+            cxV.beginPath();
+            for (const sx of [-1, 1]) { cxV.moveTo(sx * KORB_B * 0.45, -KORB_H); cxV.lineTo(sx * HUELLE * 0.42, huY + HUELLE * 0.82); }
+            cxV.stroke();
+            const fl = 0.6 + 0.4 * Math.abs(Math.sin(t * 13)) * (Math.sin(t * 2.1) > -0.3 ? 1 : 0.3);
+            cxV.fillStyle = `rgba(255,${Math.round(140 + 60 * fl)},40,${(0.85 * fl).toFixed(2)})`;
+            cxV.beginPath(); cxV.moveTo(-0.35 * VW, -KORB_H - SEIL * 0.55); cxV.quadraticCurveTo(0, -KORB_H - SEIL * (0.55 + 0.6 * fl), 0.35 * VW, -KORB_H - SEIL * 0.55); cxV.closePath(); cxV.fill();
+            const segs = 8;
+            for (let i = 0; i < segs; i++) {
+                const a0 = -Math.PI / 2 - Math.PI * 0.5 + i * Math.PI / segs, a1 = a0 + Math.PI / segs;
+                cxV.fillStyle = farben[i % 2];
+                cxV.beginPath();
+                cxV.moveTo(0, huY + HUELLE * 1.55);
+                const r = HUELLE;
+                cxV.quadraticCurveTo(Math.cos(a0) * r * 1.25, huY + Math.sin(a0) * r + r * 0.6, Math.cos(a0) * r, huY + Math.sin(a0) * r);
+                cxV.arc(0, huY, r, a0, a1);
+                cxV.quadraticCurveTo(Math.cos(a1) * r * 1.25, huY + Math.sin(a1) * r + r * 0.6, 0, huY + HUELLE * 1.55);
+                cxV.fill();
+            }
+            cxV.strokeStyle = 'rgba(0,0,0,.25)'; cxV.lineWidth = 0.07 * VW;
+            cxV.beginPath(); cxV.arc(0, huY, HUELLE, 0, 6.283); cxV.stroke();
+            cxV.fillStyle = 'rgba(255,255,255,.25)'; cxV.beginPath(); cxV.ellipse(-HUELLE * 0.4, huY - HUELLE * 0.4, HUELLE * 0.25, HUELLE * 0.15, -0.6, 0, 6.283); cxV.fill();
+            for (const [px, farbe] of [[-0.75, '#2f7bff'], [0.75, '#e8344e']]) {
+                cxV.fillStyle = farbe; cxV.fillRect(px * VW - 0.42 * VW, -KORB_H - 0.8 * VW, 0.84 * VW, 0.85 * VW);
+                cxV.fillStyle = '#f1cfb2'; cxV.beginPath(); cxV.arc(px * VW, -KORB_H - 1.15 * VW, 0.42 * VW, 0, 6.283); cxV.fill();
+                if (winken > 0) {
+                    const a = Math.sin(t * 9 + px * 3) * 0.5;
+                    cxV.strokeStyle = '#f1cfb2'; cxV.lineWidth = 0.2 * VW; cxV.lineCap = 'round';
+                    cxV.beginPath(); cxV.moveTo(px * VW + Math.sign(px) * 0.35 * VW, -KORB_H - 0.65 * VW);
+                    cxV.lineTo(px * VW + Math.sign(px) * (0.8 + a * 0.4) * VW, -KORB_H - (1.7 + Math.cos(a) * 0.4) * VW); cxV.stroke();
+                }
+            }
+            cxV.fillStyle = '#a8743f'; cxV.strokeStyle = '#6b4a2b'; cxV.lineWidth = 0.08 * VW;
+            cxV.beginPath(); cxV.rect(-KORB_B / 2, -KORB_H, KORB_B, KORB_H); cxV.fill(); cxV.stroke();
+            cxV.beginPath();
+            for (let yy = 0.3; yy < 1; yy += 0.23) { cxV.moveTo(-KORB_B / 2, -KORB_H * yy); cxV.lineTo(KORB_B / 2, -KORB_H * yy); }
+            cxV.stroke();
+            cxV.restore();
+        }
+        // Stützen vorn und hinten: Ausleger seitlich hinaus, dann senkrecht auf eine Platte
+        function stuetzenMalen(fwY) {
+            if (stuetzen <= 0) return;
+            for (const [sx, raus] of [[8, -1], [108, 1]]) {
+                const x0 = fwRicht > 0 ? fx + sx * u : fx + (FW_VB[0] - sx) * u;
+                const r = fwRicht > 0 ? raus : -raus;
+                const aus = Math.min(1, stuetzen * 2) * 1.4 * VW;
+                const unten = Math.max(0, stuetzen * 2 - 1);
+                const xb = x0 + r * aus, y0 = fwY + 36 * u;
+                cxV.strokeStyle = '#4a4f55'; cxV.lineWidth = 0.42 * VW; cxV.lineCap = 'butt';
+                cxV.beginPath(); cxV.moveTo(x0, y0); cxV.lineTo(xb, y0); cxV.stroke();
+                cxV.strokeStyle = '#ffd34d'; cxV.lineWidth = 0.12 * VW;
+                cxV.beginPath(); cxV.moveTo(x0, y0 - 0.12 * VW); cxV.lineTo(xb, y0 - 0.12 * VW); cxV.stroke();
+                const y1 = y0 + (UNTEN - y0) * unten;
+                cxV.strokeStyle = '#3b3f44'; cxV.lineWidth = 0.3 * VW;
+                cxV.beginPath(); cxV.moveTo(xb, y0); cxV.lineTo(xb, y1); cxV.stroke();
+                cxV.fillStyle = '#ffd34d'; cxV.fillRect(xb - 0.6 * VW, y1 - 0.22 * VW, 1.2 * VW, 0.26 * VW);
+            }
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() { if (fw) fw.remove(); delete T.el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!T.el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                if (phase === 'anflug') {
+                    // langsam heran (Wunsch Jonas), knapp über die Kachel; das Tau schleift über die Kante
+                    const f = Math.min(1, ps / 11), e = f;
+                    kx = startX + (halt[0] + dir * 3 * VW - startX) * e;
+                    ky = halt[1] - 2 * VW * (1 - f) + Math.sin(t * 1.2) * 0.25 * VW;
+                    neig = Math.sin(t * 0.8) * 2;
+                    // das Tau hakt an der Ecke ein, sobald der Korb darüber hinaus ist
+                    if ((kx - ecke[0]) * dir > 0.6 * VW) { tauFest = true; kv = dir * (halt[0] + dir * 3 * VW - startX) * dir / 11; funkenStreuen(ecke[0], ecke[1], 4, 'weiss'); weiter('ruck'); }
+                } else if (phase === 'ruck') {
+                    // das Tau strafft sich: der Ballon wird weich abgebremst (fast kritisch gedämpft,
+                    // kein Vorziehen, kaum Zurückfedern) und kippt dabei langsam gegen das Tau
+                    const ziel = halt[0];
+                    kv += (-(kx - ziel) * 1.96 - kv * 2.4) * dt;
+                    kx += kv * dt;
+                    ky += (halt[1] - ky) * Math.min(1, dt * 1.2);
+                    neig += (-dir * 15 - neig) * Math.min(1, dt * 1.2);
+                    winken = Math.min(1, ps / 1.5);
+                    if (ps > 3.5) { zugT0 = t; weiter('haengt'); }
+                } else if (['haengt', 'warten', 'abstuetzen', 'aufrichten', 'ausfahren'].indexOf(phase) >= 0) {
+                    // hängt am straffen Tau und zerrt immer wieder
+                    zug = 0.5 - 0.5 * Math.cos((t - zugT0) * 1.3);   // beginnt bei 0: kein Sprung nach dem Abbremsen
+                    kx += (halt[0] + dir * 1.2 * VW * zug - kx) * Math.min(1, dt * 1.5); ky += (halt[1] - 0.2 * VW * zug - ky) * Math.min(1, dt * 1.5);
+                    neig += ((-dir * 13 - dir * 4 * zug) - neig) * Math.min(1, dt * 1.5);
+                    winken = 1;
+                    if (phase === 'haengt' && ps > 2) {
+                        fw = svgAusText(feuerwehrSvg());
+                        fw.style.width = `${FW_B}vw`;
+                        fw.classList.add('fx-einsatz', 'fx-faehrt');
+                        domV.appendChild(fw);
+                        weiter('warten');
+                    } else if (phase === 'warten') {
+                        const rest = (halteX - fx) * fwRicht;
+                        const v = Math.min(13 * VW, Math.sqrt(2 * 5 * VW * Math.max(0, rest)));
+                        fx += fwRicht * v * dt;
+                        if (rest <= 0.05 * VW) { fx = halteX; fw.classList.remove('fx-faehrt'); leiterZiel(); weiter('abstuetzen'); }
+                    } else if (phase === 'abstuetzen') {
+                        stuetzen = Math.min(1, ps / 2);
+                        if (ps > 2.1) weiter('aufrichten');
+                    } else if (phase === 'aufrichten') {
+                        winkel = ruhe + (zielWinkel - ruhe) * glatt(ps / 3);
+                        if (ps > 3) weiter('ausfahren');
+                    } else if (phase === 'ausfahren') {
+                        laenge = RUHE_L + (zielLaenge - RUHE_L) * glatt(ps / 3);
+                        if (ps > 3) weiter('befreien');
+                    }
+                } else if (phase === 'befreien') {
+                    // der Feuerwehrmann greift zur Ecke und löst die Schlinge
+                    armVor = glatt(Math.min(1, ps / 0.8)) * (ps < 1.8 ? 1 : Math.max(0, 1 - (ps - 1.8) / 0.5));
+                    kx += (halt[0] - kx) * Math.min(1, dt * 2); ky += (halt[1] - ky) * Math.min(1, dt * 2);
+                    if (ps > 1.1 && tauLos <= 0) { tauLos = 1; funkenStreuen(ecke[0], ecke[1], 8, 'gold'); }
+                    neig += ((tauLos > 0 ? 0 : -dir * 14) - neig) * Math.min(1, dt * 2.5);
+                    if (ps > 2.3) { flug = {t: 0, x: kx, y: ky}; weiter('einfahren'); }
+                } else if (phase === 'einfahren') {
+                    laenge = zielLaenge + (RUHE_L - zielLaenge) * glatt(ps / 2.5);
+                    if (ps > 2.5) weiter('ablegen');
+                } else if (phase === 'ablegen') {
+                    winkel = zielWinkel + (ruhe - zielWinkel) * glatt(ps / 2.4);
+                    if (ps > 2.4) weiter('stuetzenEin');
+                } else if (phase === 'stuetzenEin') {
+                    stuetzen = Math.max(0, 1 - ps / 1.6);
+                    if (ps > 1.7) { fw.classList.add('fx-faehrt'); fv = 0; weiter('abfahrt'); }
+                } else if (phase === 'abfahrt') {
+                    if (fw) {
+                        fv = Math.min(15 * VW, fv + 6 * VW * dt);
+                        fx += fwRicht * fv * dt;
+                        if (fx > W + 2 * VW || fx < -fwB - 2 * VW) { fw.remove(); fw = null; }
+                    }
+                    if (!fw && !flug) { fertig = true; return; }
+                }
+                // der befreite Ballon fliegt langsam weiter und steigt, die beiden winken zum Dank
+                if (flug) {
+                    flug.t += dt;
+                    flug.x += dir * (1.4 + flug.t * 0.35) * VW * dt; flug.y -= (1.2 + flug.t * 0.25) * VW * dt;
+                    kx = flug.x; ky = flug.y; neig += (Math.sin(t * 1.1) * 3 - neig) * Math.min(1, dt * 2); winken = flug.t < 5 ? 1 : 0;
+                    if (ky < -HUELLE * 3.2 || kx < -HUELLE * 2 || kx > W + HUELLE * 2) { flug = null; if (!fw) { fertig = true; return; } }
+                }
+                if (fw) {
+                    const fahrt = phase === 'warten' || phase === 'abfahrt';
+                    const fwY = fwY0() - HUB * Math.max(0, stuetzen * 2 - 1) + (fahrt ? Math.abs(Math.sin(t * 9)) * -0.04 * VW : 0);
+                    fw.style.transform = `translate(${fx.toFixed(1)}px, ${fwY.toFixed(1)}px)${fwRicht < 0 ? ' scale(-1, 1)' : ''}`;
+                    stuetzenMalen(fwY);
+                    const dx0 = drehX(fx), dy0 = fwY + FW_DREH[1] * u;
+                    drehleiterMalen(dx0, dy0, laenge, winkel);
+                    const w = winkel * Math.PI / 180;
+                    const besetzt = ['aufrichten', 'ausfahren', 'befreien', 'einfahren', 'ablegen'].indexOf(phase) >= 0;
+                    rettungskorbMalen(dx0 + Math.cos(w) * laenge, dy0 - Math.sin(w) * laenge + 0.2 * VW, fwRicht, armVor, !besetzt);
+                }
+                if (tauFest && tauLos > 0) tauFest = false;
+                tauMalen(t);
+                ballonMalen(t);
+            },
+        };
+    }
+
+    // UFO: Ein UFO beamt einen Kiesel (das runde Klassenschild) hoch und will damit abhauen.
+    // Zwei Patrouillen-Raumschiffe schneiden ihm den Weg ab, Lasergefecht; ein Treffer, der
+    // Strahl fällt aus, der Kiesel trudelt hinab. Ein Schiff fängt ihn in der Luft und bringt
+    // ihn zurück, das andere jagt den Dieb aus dem Bild.
+    const UFO_B = 11;                                          // vw breit (größer: Wunsch Jonas)
+    let ufoZuletzt = [];
+    // stil: Aussehen der Jäger (blau, oranger Pilot, Blaulicht); ohne stil der grüne Dieb
+    function ufoMalen(x, y, neig, t, staunt, froh, stil) {
+        const U = UFO_B * VW * (stil ? stil.gross : 1), kr = U * 0.21;
+        cxV.save(); cxV.translate(x, y); cxV.rotate(neig * Math.PI / 180);
+        // der kleine Außerirdische unter der Glaskuppel
+        const wipp = froh ? Math.sin(t * 14) * 0.08 * kr : Math.sin(t * 3) * 0.04 * kr;
+        cxV.strokeStyle = '#4f9a37'; cxV.lineWidth = 0.05 * VW; cxV.lineCap = 'round';
+        cxV.fillStyle = '#ffd23f';
+        for (const s of [-1, 1]) {
+            const ax = s * (0.27 * kr + (froh ? Math.sin(t * 16 + s) * 0.05 * kr : 0)), ay = -0.9 * kr + wipp;
+            cxV.beginPath(); cxV.moveTo(s * 0.12 * kr, -0.68 * kr); cxV.lineTo(ax, ay); cxV.stroke();
+            cxV.beginPath(); cxV.arc(ax, ay, 0.07 * kr, 0, 6.283); cxV.fill();
+        }
+        cxV.fillStyle = stil ? stil.kopf : '#7ed957';
+        cxV.beginPath(); cxV.ellipse(0, -0.4 * kr, 0.4 * kr, 0.34 * kr, 0, 0, 6.283); cxV.fill();
+        const ag = staunt ? 1.35 : 1;
+        for (const s of [-1, 1]) {
+            cxV.fillStyle = '#111';
+            cxV.beginPath(); cxV.ellipse(s * 0.17 * kr, -0.43 * kr, 0.11 * kr * ag, 0.17 * kr * ag, s * 0.35, 0, 6.283); cxV.fill();
+            cxV.fillStyle = '#fff';
+            cxV.beginPath(); cxV.arc(s * 0.15 * kr, -0.5 * kr, 0.035 * kr * ag, 0, 6.283); cxV.fill();
+        }
+        if (froh) {
+            cxV.strokeStyle = '#2d5e20'; cxV.lineWidth = 0.04 * VW;
+            cxV.beginPath(); cxV.arc(0, -0.3 * kr, 0.12 * kr, 0.15 * Math.PI, 0.85 * Math.PI); cxV.stroke();
+        }
+        // Glaskuppel
+        cxV.fillStyle = 'rgba(190,235,255,.42)'; cxV.strokeStyle = 'rgba(80,130,160,.85)'; cxV.lineWidth = 0.06 * VW;
+        cxV.beginPath(); cxV.ellipse(0, 0, kr, kr, 0, Math.PI, 0); cxV.closePath(); cxV.fill(); cxV.stroke();
+        cxV.fillStyle = 'rgba(255,255,255,.55)';
+        cxV.beginPath(); cxV.ellipse(-0.45 * kr, -0.55 * kr, 0.16 * kr, 0.08 * kr, -0.7, 0, 6.283); cxV.fill();
+        // Blaulicht oben auf der Kuppel der Jäger
+        if (stil) {
+            const an = Math.sin(t * 14) > 0;
+            cxV.fillStyle = an ? '#4da3ff' : '#1d4f8f';
+            if (an) { cxV.shadowColor = '#4da3ff'; cxV.shadowBlur = 0.8 * VW; }
+            cxV.fillRect(-0.16 * kr, -1.14 * kr, 0.32 * kr, 0.16 * kr);
+            cxV.shadowBlur = 0;
+        }
+        // Untertasse
+        const g = cxV.createLinearGradient(0, -U * 0.07, 0, U * 0.15);
+        const sc = stil ? stil.schale : ['#f3f6f8', '#b8c2ca', '#6f7b85'];
+        g.addColorStop(0, sc[0]); g.addColorStop(0.5, sc[1]); g.addColorStop(1, sc[2]);
+        cxV.fillStyle = g; cxV.strokeStyle = stil ? '#2c4a75' : '#56616a'; cxV.lineWidth = 0.06 * VW;
+        cxV.beginPath(); cxV.ellipse(0, U * 0.04, U / 2, U * 0.11, 0, 0, 6.283); cxV.fill(); cxV.stroke();
+        cxV.strokeStyle = 'rgba(70,80,90,.7)'; cxV.lineWidth = 0.05 * VW;
+        cxV.beginPath(); cxV.ellipse(0, U * 0.045, U * 0.47, U * 0.04, 0, 0, Math.PI); cxV.stroke();
+        // Lichter am Rand, sie laufen rundherum
+        const farben = stil ? ['#ffffff', '#4da3ff', '#ffffff'] : ['#ffd23f', '#ff5d73', '#5fd2ff'];
+        for (let i = 0; i < 7; i++) {
+            const a = Math.PI * (0.1 + 0.8 * i / 6);
+            const lx = -Math.cos(a) * U * 0.4, ly = U * 0.05 + Math.sin(a) * U * 0.055;
+            cxV.fillStyle = farben[(i + Math.floor(t * 6)) % 3];
+            cxV.beginPath(); cxV.arc(lx, ly, U * 0.017, 0, 6.283); cxV.fill();
+        }
+        // Strahler unten
+        cxV.fillStyle = stil ? 'rgba(140,205,255,.9)' : 'rgba(170,255,200,.9)';
+        cxV.beginPath(); cxV.ellipse(0, U * 0.14, U * 0.12, U * 0.035, 0, 0, 6.283); cxV.fill();
+        cxV.restore();
+    }
+    // Lichtstrahl vom UFO (x, y = Mitte des UFOs) nach unten bis (zx, zy), unten so breit
+    function ufoStrahlMalen(x, y, zx, zy, breit, staerke, t) {
+        if (staerke <= 0.01) return;
+        const U = UFO_B * VW, oy = y + U * 0.14, ob = U * 0.11;
+        const g = cxV.createLinearGradient(0, oy, 0, zy);
+        g.addColorStop(0, `rgba(170,255,200,${(0.5 * staerke).toFixed(2)})`);
+        g.addColorStop(1, `rgba(170,255,200,${(0.16 * staerke).toFixed(2)})`);
+        cxV.fillStyle = g;
+        cxV.beginPath(); cxV.moveTo(x - ob, oy); cxV.lineTo(x + ob, oy); cxV.lineTo(zx + breit, zy); cxV.lineTo(zx - breit, zy); cxV.closePath(); cxV.fill();
+        // Ringe wandern im Strahl nach oben
+        for (let k = 0; k < 4; k++) {
+            const f = (t * 0.9 + k / 4) % 1, p = 1 - f;
+            const rx = ob + (breit - ob) * p, ry = rx * 0.18;
+            cxV.strokeStyle = `rgba(225,255,232,${(0.55 * staerke * Math.sin(Math.PI * f)).toFixed(2)})`; cxV.lineWidth = 0.07 * VW;
+            cxV.beginPath(); cxV.ellipse(x + (zx - x) * p, oy + (zy - oy) * p, rx, ry, 0, 0, 6.283); cxV.stroke();
+        }
+    }
+    // die Jäger: ebenfalls Untertassen, aber blau mit orangem Piloten und Blaulicht
+    const JAEGER_STIL = {gross: 0.78, kopf: '#ffa64d', schale: ['#eaf3ff', '#86afe6', '#35588f']};
+    function patrouilleMalen(x, y, r, t, w) {
+        ufoMalen(x, y, (w || 0) * 180 / Math.PI, t, false, false, JAEGER_STIL);
+    }
+    function Ufo() {
+        const sel = `:scope > ${opt.kiesel || 'h3'}`;
+        const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+        const U = UFO_B * VW, HOCH = 8.5 * VW;                  // so hoch schwebt das UFO über dem Kiesel
+        const kandidaten = [];
+        for (const k of kaesten) {
+            const h = k.el.querySelector(sel);
+            if (!h || k.el.dataset.fxStory) continue;
+            const r = h.getBoundingClientRect();
+            const cy = r.top - b0.top + r.height / 2;
+            if (r.width < 0.5 * VW || cy - HOCH < 3 * VW || cy > UNTEN - 3 * VW) continue;
+            kandidaten.push({k: k, h: h, r: r});
+        }
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((c) => ufoZuletzt.indexOf(kachelName(c.k.el)) < 0);
+        if (!frisch.length) { ufoZuletzt = []; frisch = kandidaten; }
+        const wahl = auswahl(frisch);
+        ufoZuletzt.push(kachelName(wahl.k.el));
+        const el = wahl.k.el, h3 = wahl.h;
+        el.dataset.fxStory = 'ufo';
+        const slot = {x: wahl.r.left - b0.left, y: wahl.r.top - b0.top, w: wahl.r.width, h: wahl.r.height};
+        slot.cx = slot.x + slot.w / 2; slot.cy = slot.y + slot.h / 2;
+        const farbe = getComputedStyle(h3).color;
+        let kopie = null;
+        function kopieMachen() {
+            const c = h3.cloneNode(true);
+            c.removeAttribute('id');
+            c.classList.remove('fx-kiesel-wackelt', 'fx-kiesel-neu');
+            c.classList.add('fx-kiesel-kopie');
+            Object.assign(c.style, {position: 'absolute', left: '0', top: '0', margin: '0', visibility: 'visible', boxSizing: 'border-box',
+                width: `${slot.w.toFixed(1)}px`, height: `${slot.h.toFixed(1)}px`, color: farbe});
+            domV.appendChild(c);
+            return c;
+        }
+        function setzen(x, y, w) {
+            kopie.style.transform = `translate(${(x - slot.w / 2).toFixed(1)}px, ${(y - slot.h / 2).toFixed(1)}px) rotate(${w.toFixed(1)}deg)`;
+        }
+        const vonLinks = Math.random() < 0.5;
+        const sx = vonLinks ? -U : W + U, sy = zufall(2, 4) * VW;
+        const hx0 = slot.cx, hy0 = slot.cy - HOCH;
+        const weg = hx0 < W / 2 ? 1 : -1;                        // dorthin will der Dieb (zur weiteren Seite)
+        const haengAb = U * 0.15 + slot.h / 2 + 0.5 * VW;       // Kiesel unter dem UFO
+        const PAT_L = UFO_B * 0.78 * VW, PAT_AB = PAT_L * 0.15 + slot.h / 2 + 0.5 * VW;   // Breite der Jäger; Kiesel darunter
+        const kampfY = Math.max(4 * VW, Math.min(UNTEN - 14 * VW, hy0 - 3 * VW));
+        const raus = (x, y, m) => x < -m || x > W + m || y < -m;
+        // UFO
+        let ux = sx, uy = sy, uvx = 0, uvy = 0, uxAlt = sx, uyAlt = sy, vxAlt = 0, vyAlt = 0, axS = 0, ayS = 0;
+        let neig = 0, strahl = 0, wackeln = 0, flieht = false, uWeg = false, ufoUhr = 0;
+        // Kiesel: platz | ufo | faellt | schiff | gesetzt
+        let kiesel = 'platz', kx = slot.cx, ky = slot.cy, kw = 0, kvx = 0, kvy = 0, kom = 0, pth = 0, pom = 0, von = null;
+        // Raumschiffe der Patrouille
+        const schiffe = [];
+        let faenger = null, jaeger = null, laser = [], fangOff = [0, 0], fangT = 0;
+        let t0 = null, pstart = 0, phase = 'anflug', fertig = false;
+        function schuss(x, y, zx, zy, farbe, trifft) {
+            // meist knapp daneben, von oben oder unten am Ziel vorbei
+            if (!trifft) zy += (Math.random() < 0.5 ? -1 : 1) * zufall(2.4, 4.2) * VW;
+            const d = Math.hypot(zx - x, zy - y) || 1, v = 75 * VW;
+            laser.push({x: x, y: y, vx: (zx - x) / d * v, vy: (zy - y) / d * v, farbe: farbe, trifft: !!trifft, alter: 0});
+        }
+        function nase(s) { return [s.x + s.r * PAT_L * 0.5, s.y + PAT_L * 0.08]; }
+        // fliegt auf (zx, zy) zu, höchstens v schnell, bremst vor dem Ziel
+        function anfliegen(s, zx, zy, v, dt, k) {
+            const dx = zx - s.x, dy = zy - s.y, d = Math.hypot(dx, dy);
+            const ziel = Math.min(v, d * (k || 3));
+            const tvx = d > 0.01 ? dx / d * ziel : 0, tvy = d > 0.01 ? dy / d * ziel : 0;
+            s.vx += (tvx - s.vx) * Math.min(1, dt * 4); s.vy += (tvy - s.vy) * Math.min(1, dt * 4);
+            s.x += s.vx * dt; s.y += s.vy * dt;
+            return d;
+        }
+        function getroffen() {
+            // der Strahl fällt aus, der Kiesel trudelt hinab
+            funkenStreuen(ux, uy, 9, 'gold');
+            wackeln = 14; strahl = 0;
+            kiesel = 'faellt'; kvx = uvx * 0.6; kvy = -2 * VW; kom = (Math.random() < 0.5 ? -1 : 1) * zufall(220, 320);
+            // das Schiff näher am Kiesel fängt, das andere jagt den Dieb
+            const [a, b] = schiffe;
+            const na = Math.hypot(a.x - kx, a.y - ky), nb = Math.hypot(b.x - kx, b.y - ky);
+            faenger = na < nb ? a : b; jaeger = faenger === a ? b : a;
+            flieht = true; uvx = -weg * 4 * VW; uvy = -2 * VW;
+        }
+
+        return {
+            leiter: false,
+            get fertig() { return fertig; },
+            stop() {
+                if (kopie) kopie.remove();
+                h3.style.visibility = '';
+                h3.classList.remove('fx-kiesel-neu');
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                const bob = Math.sin(t * 2.2) * 0.25 * VW;
+                let zx = slot.cx, zy = slot.y + slot.h * 1.05, breit = slot.w * 0.75;
+                if (phase === 'anflug') {
+                    const f = Math.min(1, ps / 4.5), e = 1 - Math.pow(1 - f, 3);
+                    ux = sx + (hx0 - sx) * e;
+                    uy = sy + (hy0 - sy) * e + Math.sin(f * Math.PI * 3) * 1.1 * VW * (1 - f);
+                    if (f >= 1) weiter('scannen');
+                } else if (phase === 'scannen') {
+                    strahl = 0.6 * Math.min(1, ps / 0.3) * (ps > 1.4 ? Math.max(0, 1 - (ps - 1.4) / 0.2) : 1);
+                    zx = slot.cx + Math.sin(ps * 4.5) * slot.w * 0.9; breit = slot.w * 0.25;
+                    if (ps > 1.6) {
+                        kopie = kopieMachen(); h3.style.visibility = 'hidden';
+                        kx = slot.cx; ky = slot.cy; kw = 0;
+                        weiter('beamen');
+                    }
+                } else if (phase === 'beamen') {
+                    strahl = Math.min(1, ps / 0.4);
+                    const f = glatt(Math.max(0, ps - 0.3) / 2.7);
+                    kx = slot.cx + Math.sin(ps * 3) * 0.3 * VW * f; ky = slot.cy + (uy + bob + haengAb - slot.cy) * f;
+                    kw = Math.sin(ps * 2.5) * 12 * f;
+                    if (ps > 3) { kiesel = 'ufo'; pth = -kw * Math.PI / 180; pom = 0; weiter('flucht'); }
+                } else if (phase === 'flucht') {
+                    // der Dieb macht sich mit dem Kiesel davon
+                    strahl = 0.85;
+                    uvx += (weg * 9 * VW - uvx) * Math.min(1, dt * 1.2);
+                    ux += uvx * dt; uy += (kampfY - uy) * Math.min(1, dt * 1.5);
+                    if (ps > 1.8) {
+                        // die Patrouille schneidet ihm den Weg ab
+                        for (const o of [-1, 1]) schiffe.push({x: weg > 0 ? W + PAT_L : -PAT_L, y: kampfY + o * 3.2 * VW, vx: -weg * 26 * VW, vy: 0, r: -weg, o: o, uhr: o > 0 ? 0.9 : 0.6, weg: false});
+                        ufoUhr = 0.8;
+                        weiter('gefecht');
+                    }
+                } else if (phase === 'gefecht') {
+                    // das UFO bremst und weicht aus, beide Seiten feuern
+                    strahl = 0.85;
+                    uvx *= Math.max(0, 1 - dt * 2.5);
+                    ux += uvx * dt; uy += (kampfY + Math.sin(ps * 3) * 2.4 * VW - uy) * Math.min(1, dt * 2.5);
+                    for (const s of schiffe) {
+                        const tx = Math.max(PAT_L, Math.min(W - PAT_L, ux + weg * 21 * VW));
+                        anfliegen(s, tx, kampfY + s.o * 3.2 * VW + Math.sin(t * 2 + s.o) * 0.8 * VW, 30 * VW, dt);
+                        s.r = ux > s.x ? 1 : -1;
+                        s.uhr -= dt;
+                        if (s.uhr <= 0 && Math.abs(s.x - ux) < 30 * VW) { const n = nase(s); schuss(n[0], n[1], ux, uy, '#ff3b3b', false); s.uhr = 0.55; }
+                    }
+                    ufoUhr -= dt;
+                    if (ufoUhr <= 0) { const s = schiffe[Math.floor(t * 7) % 2]; schuss(ux - weg * 0 + Math.sign(s.x - ux) * U * 0.4, uy + U * 0.05, s.x, s.y, '#5dff8a', false); ufoUhr = 0.6; }
+                    // der entscheidende Treffer
+                    if (ps > 3.4 && !laser.some((l) => l.trifft) && !flieht) { const n = nase(schiffe[0]); schuss(n[0], n[1], ux, uy, '#ff3b3b', true); }
+                    if (ps > 6 && !flieht) getroffen();
+                    if (flieht) weiter('fangen');
+                } else if (phase === 'fangen') {
+                    // der Fänger holt den fallenden Kiesel aus der Luft
+                    const d = anfliegen(faenger, kx, ky - PAT_AB, 48 * VW, dt, 9);
+                    if (Math.abs(faenger.vx) > 2 * VW) faenger.r = faenger.vx > 0 ? 1 : -1;
+                    if (kiesel === 'faellt' && (d < 2.5 * VW || ky > UNTEN - 5 * VW)) {
+                        // gefangen: der Kiesel gleitet weich unter das Schiff
+                        kiesel = 'schiff'; kw = ((kw % 360) + 540) % 360 - 180;
+                        fangOff = [kx - faenger.x, ky - faenger.y]; fangT = t;
+                        funkenStreuen(kx, ky - slot.h / 2, 4, 'weiss');
+                        weiter('heimweg');
+                    }
+                } else if (phase === 'heimweg') {
+                    // zurück über die Kachel, der Kiesel dreht sich dabei wieder gerade
+                    const d = anfliegen(faenger, slot.cx, slot.cy - PAT_AB - 2.5 * VW, 16 * VW, dt);
+                    faenger.r = Math.abs(faenger.vx) > 1.5 * VW ? (faenger.vx > 0 ? 1 : -1) : faenger.r;
+                    if (d < 0.3 * VW && ps > 1) { von = [kx, ky, kw]; weiter('absenken'); }
+                } else if (phase === 'absenken') {
+                    anfliegen(faenger, slot.cx, slot.cy - PAT_AB - 2.5 * VW, 16 * VW, dt);
+                    const f = glatt(ps / 2.2);
+                    kx = von[0] + (slot.cx - von[0]) * f; ky = von[1] + (slot.cy - von[1]) * f; kw = von[2] * (1 - f);
+                    if (ps > 2.2) {
+                        kopie.remove(); kopie = null; kiesel = 'gesetzt';
+                        h3.style.visibility = ''; h3.classList.add('fx-kiesel-neu');
+                        funkenStreuen(slot.cx, slot.cy, 6, 'gold');
+                        weiter('dank');
+                    }
+                } else if (phase === 'dank') {
+                    faenger.y += Math.sin(ps * 9) * 0.6 * VW * dt * 9 * (1 - ps);
+                    if (ps > 1) { h3.classList.remove('fx-kiesel-neu'); faenger.vx = 0; weiter('heim'); }
+                } else if (phase === 'heim') {
+                    faenger.r = weg; faenger.vx += weg * 30 * VW * dt; faenger.vy -= 3 * VW * dt;
+                    faenger.x += faenger.vx * dt; faenger.y += faenger.vy * dt;
+                    if (raus(faenger.x, faenger.y, PAT_L)) faenger.weg = true;
+                }
+                // der Dieb flieht, der Jäger hinterher (läuft neben dem Fangen und Zurückbringen)
+                if (flieht && !uWeg) {
+                    uvx += -weg * 40 * VW * dt; uvy -= 9 * VW * dt;
+                    ux += uvx * dt; uy += uvy * dt;
+                    if (raus(ux, uy, U * 1.5)) uWeg = true;
+                }
+                if (jaeger && !jaeger.weg) {
+                    if (!uWeg) {
+                        anfliegen(jaeger, ux + weg * 13 * VW, uy + 1 * VW, 55 * VW, dt);
+                        jaeger.r = -weg;
+                        jaeger.uhr -= dt;
+                        if (jaeger.uhr <= 0) { const n = nase(jaeger); schuss(n[0], n[1], ux, uy, '#ff3b3b', false); jaeger.uhr = 0.3; }
+                    } else {
+                        jaeger.vx += -weg * 40 * VW * dt; jaeger.x += jaeger.vx * dt; jaeger.y += jaeger.vy * dt;
+                        if (raus(jaeger.x, jaeger.y, PAT_L)) jaeger.weg = true;
+                    }
+                }
+                if (phase === 'heim' && uWeg && (!jaeger || jaeger.weg) && faenger.weg && !laser.length) { fertig = true; return; }
+
+                // Neigung des UFOs aus der Bewegung, nach dem Treffer wackelt es
+                const vx = dt > 0 ? (ux - uxAlt) / dt : 0; uxAlt = ux;
+                const vy = dt > 0 ? (uy - uyAlt) / dt : 0; uyAlt = uy;
+                if (dt > 0) {
+                    axS += ((vx - vxAlt) / dt - axS) * Math.min(1, dt * 8);
+                    ayS += ((vy - vyAlt) / dt - ayS) * Math.min(1, dt * 8);
+                }
+                vxAlt = vx; vyAlt = vy;
+                const nz = Math.max(-22, Math.min(22, vx / VW * 1.3)) + Math.sin(t * 20) * wackeln;
+                neig += (nz - neig) * Math.min(1, dt * 6);
+                wackeln = Math.max(0, wackeln - dt * 8);
+                const uyz = uy + (flieht ? 0 : bob);
+                // Kiesel: pendelt unter dem UFO, fällt, hängt unter dem Fänger
+                if (kiesel === 'ufo') {
+                    const L = haengAb, G = 40 * VW;
+                    pom += (-((G + ayS) * Math.sin(pth) + axS * Math.cos(pth)) / L - pom * 2.2) * dt;
+                    pth = Math.max(-0.7, Math.min(0.7, pth + pom * dt));
+                    kx = ux + L * Math.sin(pth); ky = uyz + L * Math.cos(pth);
+                    kw = -pth * 180 / Math.PI;
+                    zx = kx; zy = ky + slot.h * 0.6; breit = slot.w * 0.7;
+                } else if (kiesel === 'faellt') {
+                    kvy += 16 * VW * dt; kvx *= Math.max(0, 1 - dt * 0.8);
+                    kx += kvx * dt; ky += kvy * dt; kw += kom * dt;
+                } else if (kiesel === 'schiff' && phase !== 'absenken') {
+                    const f = glatt((t - fangT) / 0.6);
+                    kx = faenger.x + fangOff[0] * (1 - f); ky = faenger.y + fangOff[1] * (1 - f) + PAT_AB * f;
+                    kw *= Math.max(0, 1 - dt * 1.6);
+                }
+                if (kiesel === 'ufo' || ['anflug', 'scannen', 'beamen'].indexOf(phase) >= 0) ufoStrahlMalen(ux, uyz, zx, zy, breit, strahl, t);
+                // der blaue Haltestrahl des Fängers
+                if (kiesel === 'schiff') {
+                    const oy = faenger.y + PAT_L * 0.14;
+                    const g = cxV.createLinearGradient(0, oy, 0, ky + slot.h * 0.6);
+                    g.addColorStop(0, 'rgba(120,200,255,.55)'); g.addColorStop(1, 'rgba(120,200,255,.15)');
+                    cxV.fillStyle = g;
+                    cxV.beginPath(); cxV.moveTo(faenger.x - 0.5 * VW, oy); cxV.lineTo(faenger.x + 0.5 * VW, oy);
+                    cxV.lineTo(kx + slot.w * 0.65, ky + slot.h * 0.6); cxV.lineTo(kx - slot.w * 0.65, ky + slot.h * 0.6); cxV.closePath(); cxV.fill();
+                }
+                if (kopie) setzen(kx, ky, kw);
+                // Laserschüsse: Fehlschüsse sprühen an den Kacheln Funken, der Treffer erwischt das UFO
+                for (let i = laser.length - 1; i >= 0; i--) {
+                    const l = laser[i];
+                    l.alter += dt; l.x += l.vx * dt; l.y += l.vy * dt;
+                    let ab = raus(l.x, l.y, 5 * VW) || l.y > UNTEN;
+                    if (!ab && l.trifft && !flieht && Math.hypot(l.x - ux, l.y - uy) < U * 0.3) { getroffen(); ab = true; }
+                    if (!ab && !l.trifft && l.alter > 0.12) {
+                        for (const k of kaesten) {
+                            if (l.x > k.x && l.x < k.x + k.w && l.y > k.y && l.y < k.y + k.h) { funkenStreuen(l.x, l.y, 3, 'gold'); ab = true; break; }
+                        }
+                    }
+                    if (!ab && !l.trifft && l.farbe !== '#5dff8a' && !uWeg && Math.hypot(l.x - ux, l.y - uy) < U * 0.5) wackeln = Math.max(wackeln, 4);
+                    if (ab) { laser.splice(i, 1); continue; }
+                    const sp = Math.hypot(l.vx, l.vy), lx = l.vx / sp * 2.4 * VW, ly = l.vy / sp * 2.4 * VW;
+                    cxV.lineCap = 'round';
+                    cxV.strokeStyle = l.farbe; cxV.globalAlpha = 0.35; cxV.lineWidth = 0.55 * VW;
+                    cxV.beginPath(); cxV.moveTo(l.x, l.y); cxV.lineTo(l.x - lx, l.y - ly); cxV.stroke();
+                    cxV.globalAlpha = 1; cxV.strokeStyle = '#ffffff'; cxV.lineWidth = 0.16 * VW;
+                    cxV.beginPath(); cxV.moveTo(l.x, l.y); cxV.lineTo(l.x - lx, l.y - ly); cxV.stroke();
+                }
+                for (const s of schiffe) {
+                    if (s.weg) continue;
+                    patrouilleMalen(s.x, s.y, s.r, t, Math.max(-0.33, Math.min(0.33, s.vx / VW * 0.012)));   // neigt sich in Flugrichtung
+                }
+                if (!uWeg) {
+                    // Fahrtstreifen beim Davonsausen
+                    if (flieht) {
+                        const sp = Math.hypot(uvx, uvy), nx = -uvx / (sp || 1), ny = -uvy / (sp || 1);
+                        cxV.strokeStyle = 'rgba(255,255,255,.55)'; cxV.lineWidth = 0.12 * VW; cxV.lineCap = 'round';
+                        cxV.beginPath();
+                        for (const o of [-0.6, 0, 0.6]) {
+                            const bx = ux + nx * U * 0.45 - ny * o * VW, by = uyz + U * 0.04 + nx * o * VW;
+                            cxV.moveTo(bx, by); cxV.lineTo(bx + nx * Math.min(12 * VW, sp * 0.12), by + ny * Math.min(12 * VW, sp * 0.12));
+                        }
+                        cxV.stroke();
+                    }
+                    ufoMalen(ux, uyz, neig, t, flieht || phase === 'gefecht', false);
+                }
+            },
+        };
+    }
+
+    // Abflugtafel: Eine leere Kachel wird zur Abflugtafel wie am Flughafen, mit Klappbuchstaben
+    // und Urlaubszielen. Nach einer Weile spinnt sie: die Buchstaben drehen durch, alles falsch.
+    // Ein Kind mit Leiter und Schraubenzieher repariert sie; danach verschwindet sie wieder.
+    const ABFLUG_ZEICHEN = ' ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ0123456789:-.?';
+    // nur beliebte, sichere Ferienziele (Wunsch Jonas)
+    const ABFLUG_ZIELE = ['SÜDSEE', 'TROPENPARADIES', 'MALLORCA', 'TENERIFFA', 'GRAN CANARIA', 'KRETA', 'RHODOS', 'KORFU',
+        'ALGARVE', 'MADEIRA', 'SARDINIEN', 'GARDASEE', 'SYLT', 'MALEDIVEN', 'MAURITIUS', 'KARIBIK'];
+    const ABFLUG_FALSCH = ['SÜDKLO', 'NORDPOL', 'MATHEARBEIT', 'HAUSAUFGABEN', 'TROPENREGEN', 'KARIBIKKKK', 'BAHNHOF',
+        'NIRGENDWO', 'MONTAG FRÜH', 'MALEDIVENNNN', 'KELLER'];
+    let abflugZuletzt = [];
+    // ein Verkehrsflugzeug von der Seite, Nase in Richtung d (±1)
+    function flugzeugMalen(x, y, d, farbe, steig) {
+        const L = 6.5 * VW;
+        // Kondensstreifen hinter dem Heck
+        const sx = x - d * L * 0.46, g = cxV.createLinearGradient(sx, 0, sx - d * 16 * VW, 0);
+        g.addColorStop(0, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        cxV.strokeStyle = g; cxV.lineCap = 'round';
+        for (const o of [-0.03, 0.035]) {
+            cxV.lineWidth = 0.16 * VW;
+            cxV.beginPath(); cxV.moveTo(sx, y + o * L); cxV.lineTo(sx - d * 16 * VW, y + o * L - steig * 16 * VW); cxV.stroke();
+        }
+        cxV.save(); cxV.translate(x, y); cxV.rotate(-d * Math.atan(-steig)); cxV.scale(d, 1);
+        cxV.fillStyle = farbe;
+        cxV.beginPath(); cxV.moveTo(-L * 0.4, -L * 0.035); cxV.lineTo(-L * 0.49, -L * 0.2); cxV.lineTo(-L * 0.41, -L * 0.2); cxV.lineTo(-L * 0.25, -L * 0.04); cxV.closePath(); cxV.fill();
+        cxV.fillStyle = '#c9d0d6';
+        cxV.beginPath(); cxV.ellipse(-L * 0.42, L * 0.01, L * 0.08, L * 0.018, 0, 0, 6.283); cxV.fill();
+        cxV.fillStyle = '#f7f9fb'; cxV.strokeStyle = '#9aa3ab'; cxV.lineWidth = 0.05 * VW;
+        cxV.beginPath(); cxV.moveTo(-L * 0.48, -L * 0.03); cxV.lineTo(L * 0.36, -L * 0.05);
+        cxV.quadraticCurveTo(L * 0.5, -L * 0.045, L * 0.5, 0); cxV.quadraticCurveTo(L * 0.5, L * 0.045, L * 0.36, L * 0.05);
+        cxV.lineTo(-L * 0.42, L * 0.04); cxV.closePath(); cxV.fill(); cxV.stroke();
+        cxV.fillStyle = farbe; cxV.fillRect(-L * 0.38, L * 0.008, L * 0.78, L * 0.014);
+        cxV.fillStyle = '#4a6b8a';
+        for (let wx = -L * 0.3; wx < L * 0.33; wx += L * 0.045) { cxV.beginPath(); cxV.arc(wx, -L * 0.014, L * 0.009, 0, 6.283); cxV.fill(); }
+        cxV.fillStyle = '#2f3b47';
+        cxV.beginPath(); cxV.moveTo(L * 0.41, -L * 0.03); cxV.lineTo(L * 0.47, -L * 0.022); cxV.lineTo(L * 0.465, -L * 0.008); cxV.lineTo(L * 0.41, -L * 0.012); cxV.closePath(); cxV.fill();
+        cxV.fillStyle = '#b8c1c8';
+        cxV.beginPath(); cxV.moveTo(L * 0.08, L * 0.02); cxV.lineTo(-L * 0.12, L * 0.15); cxV.lineTo(-L * 0.04, L * 0.15); cxV.lineTo(L * 0.18, L * 0.025); cxV.closePath(); cxV.fill();
+        cxV.fillStyle = '#8d969f';
+        cxV.beginPath(); cxV.ellipse(L * 0.02, L * 0.075, L * 0.055, L * 0.022, 0, 0, 6.283); cxV.fill();
+        cxV.restore();
+    }
+    function Abflugtafel() {
+        // nur auf einer leeren Kachel (Wunsch Jonas); darunter braucht die Leiter Platz
+        const kandidaten = kaesten.filter((k) => !k.el.dataset.fxStory && !k.el.querySelector('table tr')
+            && k.w > 14 * VW && k.h > 4.5 * VW && k.y > 1 * VW && k.y + k.h < UNTEN - 7.5 * VW);
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => abflugZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { abflugZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        abflugZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'abflug';
+        const h3 = el.querySelector(`:scope > ${opt.kiesel || 'h3'}`);
+        const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+        const er = el.getBoundingClientRect();
+        const links = er.left - b0.left, oben = er.top - b0.top, breite = er.width, hoehe = er.height;
+        // der Kiesel bleibt frei
+        let frei = 0.35 * VW;
+        if (h3) { const hr = h3.getBoundingClientRect(); if (hr.width) frei = Math.max(frei, hr.right - er.left + 0.3 * VW); }
+        const N = 24;                                            // Zeit 5, Ziel 14, Flugsteig 3, zwei Lücken
+        const ZEILEN = hoehe > 8 * VW ? 4 : 3;
+        const LUECKE = 0.06 * VW;
+        const innenB = breite - frei - 0.7 * VW - 0.9 * VW;       // Rand und Lampe
+        let zw = innenB / N - LUECKE;
+        const zh = Math.min(zw * 1.38, (hoehe - 0.6 * VW - ZEILEN * 0.14 * VW) / (ZEILEN + 0.85));
+        zw = Math.min(zw, zh / 1.38);
+        const tafel = document.createElement('div');
+        tafel.className = 'fx-abflug';
+        Object.assign(tafel.style, {transform: `translate(${(links + frei).toFixed(1)}px, ${oben.toFixed(1)}px)`,
+            width: `${(breite - frei).toFixed(1)}px`, height: `${hoehe.toFixed(1)}px`});
+        const kopf = document.createElement('div');
+        kopf.className = 'fx-abflug-kopf';
+        kopf.style.fontSize = `${(zh * 0.66).toFixed(1)}px`;
+        kopf.style.color = getComputedStyle(el).color;
+        tafel.style.setProperty('--zw', `${zw.toFixed(1)}px`);
+        tafel.style.setProperty('--zh', `${zh.toFixed(1)}px`);
+        tafel.style.setProperty('--lu', `${LUECKE.toFixed(1)}px`);
+        kopf.innerHTML = `<span><svg viewBox="0 0 24 24" style="display:inline-block;width:1.2em;height:1.2em;vertical-align:-0.2em;margin-right:.2em"><path transform="rotate(-35 12 12)" d="M22.5 12 Q22.5 10.7 20.8 10.7 L16 10.7 L11.2 2.8 L9 2.8 L11.8 10.7 L6.4 10.7 L4 7.6 L2.4 7.6 L3.7 12 L2.4 16.4 L4 16.4 L6.4 13.3 L11.8 13.3 L9 21.2 L11.2 21.2 L16 13.3 L20.8 13.3 Q22.5 13.3 22.5 12 Z" fill="currentColor"/></svg> HEESE-AIRPORT <span style="opacity:.6">· ABFLUG</span></span><span class="fx-abflug-uhr"></span>`;
+        tafel.appendChild(kopf);
+        const uhr = kopf.querySelector('.fx-abflug-uhr');
+        const zellen = [], lampen = [];
+        for (let i = 0; i < ZEILEN; i++) {
+            const z = document.createElement('div');
+            z.className = 'fx-abflug-zeile';
+            const reihe = [];
+            for (let j = 0; j < N; j++) {
+                const c = document.createElement('span');
+                // zwischen den Spalten keine Klappe
+                if (j === 5 || j === 20) { c.className = 'fx-ab-luecke'; z.appendChild(c); reihe.push(null); continue; }
+                c.className = 'fx-ab-klappe';
+                c.innerHTML = '<b class="fx-o"><i> </i></b><b class="fx-u"><i> </i></b><b class="fx-f"><i> </i></b>';
+                z.appendChild(c);
+                const [o, uu, f] = c.querySelectorAll('i');
+                reihe.push({o: o, u: uu, f: f, blatt: c.querySelector('.fx-f'), ist: 0, soll: 0, unten: null});
+            }
+            const l = document.createElement('span');
+            l.className = 'fx-ab-lampe';
+            Object.assign(l.style, {width: `${(zh * 0.42).toFixed(1)}px`, height: `${(zh * 0.42).toFixed(1)}px`});
+            z.appendChild(l);
+            tafel.appendChild(z);
+            zellen.push(reihe); lampen.push(l);
+        }
+        domV.appendChild(tafel);
+
+        // Abflüge: ab jetzt alle 10 bis 25 Minuten, Flugsteige A–D
+        const jetzt = new Date();
+        let minuten = Math.ceil((jetzt.getHours() * 60 + jetzt.getMinutes() + 10) / 5) * 5;
+        let ziele = ABFLUG_ZIELE.slice().sort(() => Math.random() - 0.5), zielNr = 0;
+        function neuerFlug() {
+            minuten += 5 * Math.round(zufall(2, 5));
+            const z = ziele[zielNr++ % ziele.length];
+            return {zeit: `${String(Math.floor(minuten / 60) % 24).padStart(2, '0')}:${String(minuten % 60).padStart(2, '0')}`,
+                ziel: z, steig: 'ABCD'[Math.floor(zufall(0, 3.99))] + String(Math.floor(zufall(1, 29.99)))};
+        }
+        const fluege = [];
+        for (let i = 0; i < ZEILEN; i++) fluege.push(neuerFlug());
+        const zeile = (f) => (f.zeit.padEnd(5) + ' ' + f.ziel.padEnd(14).slice(0, 14) + ' ' + f.steig.padStart(3)).slice(0, N);
+        const code = (ch) => { const i = ABFLUG_ZEICHEN.indexOf(ch); return i < 0 ? ABFLUG_ZEICHEN.indexOf('?') : i; };
+        function setzeZeile(i, text) { for (let j = 0; j < N; j++) if (zellen[i][j]) zellen[i][j].soll = code(text[j] || ' '); }
+        function alleRichtig() { for (let i = 0; i < ZEILEN; i++) setzeZeile(i, zeile(fluege[i])); }
+        const witze = ABFLUG_FALSCH.slice().sort(() => Math.random() - 0.5);
+        let witzNr = 0;
+        function falscheZeile() {
+            const h = Math.floor(zufall(20, 99)), m = Math.floor(zufall(60, 99));
+            return {zeit: `${h}:${m}`, ziel: witze[witzNr++ % witze.length], steig: auswahl(['???', 'Z99', '-1', 'X']) };
+        }
+
+        let t0 = null, pstart = 0, phase = 'auf', fertig = false, klappUhr = 0, abfahrt = 0, trupps = [], chaos = 0, falsche = [], witzUhr = 0;
+        // nach jedem Abflug fliegt oben ein Flugzeug über den Bildschirm (Wunsch Jonas)
+        const flieger = [], FARBEN = ['#e8344e', '#2f7bff', '#f39c12', '#16a085', '#8e44ad'];
+        let starts = 0;
+        // der oberste Flug geht ins Boarding und startet, alles rückt auf
+        function abfluege(dt, t, flugzeug) {
+            abfahrt -= dt;
+            lampen[0].classList.toggle('fx-blinkt', abfahrt < 2.6 && abfahrt > 0);
+            if (abfahrt <= 0) {
+                fluege.shift(); fluege.push(neuerFlug()); alleRichtig();
+                lampen[0].classList.remove('fx-blinkt');
+                if (flugzeug !== false) abheben(t);
+                abfahrt = 9;
+            }
+            for (const l of lampen) l.classList.add('fx-gruen');
+        }
+        function abheben(t) {
+            const d = Math.random() < 0.5 ? 1 : -1;
+            flieger.push({x: d > 0 ? -5 * VW : W + 5 * VW, y: zufall(4.5, 8.5) * VW, d: d, v: zufall(12, 16) * VW,
+                steig: -zufall(0.02, 0.05), farbe: FARBEN[starts++ % FARBEN.length], ab: t + 1.2});
+        }
+        return {
+            leiter: false,
+            get fertig() { return fertig; },
+            stop() { tafel.remove(); for (const k of trupps) if (!k.weg) k.entfernen(); delete el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; alleRichtig(); requestAnimationFrame(() => tafel.classList.add('fx-an')); }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                const d = new Date();
+                const u = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                if (uhr.textContent !== u) uhr.textContent = u;
+                if (phase === 'auf') {
+                    if (ps > 3) { abfahrt = 2.5; weiter('normal'); }
+                } else if (phase === 'normal') {
+                    abfluege(dt, t);
+                    // höchstens 30 s läuft sie, wie sie ist; dann geht sie kaputt (Wunsch Jonas)
+                    if (t - t0 > 30) { for (const l of lampen) l.classList.remove('fx-blinkt'); weiter('stoerung'); }
+                } else if (phase === 'stoerung') {
+                    // sie spinnt: die Buchstaben drehen kurz durch …
+                    chaos = 1;
+                    if (ps > 1.6) {
+                        // … und bleiben auf lauter Witz-Zielen stehen; genau dann kommt der Trupp (Wunsch Jonas)
+                        chaos = 0;
+                        falsche = []; for (let i = 0; i < ZEILEN; i++) falsche.push(falscheZeile());
+                        falsche.forEach((f, i) => setzeZeile(i, zeile(f))); witzUhr = 5;
+                        // zwei Kinder mit Leiter, die direkt an den Klappbuchstaben arbeiten (Wunsch Jonas):
+                        // eins von links am Ziel, eins von rechts weiter hinten, auf Höhe der mittleren Reihe
+                        const b1 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+                        const mz = tafel.querySelectorAll('.fx-abflug-zeile')[Math.floor(ZEILEN / 2)].getBoundingClientRect();
+                        // (die Werkzeugspitze sitzt etwas tiefer als der Zielpunkt der Leiter: ausgleichen)
+                        const zy = mz.top - b1.top + mz.height / 2 - 1.6 * VW;
+                        const x0 = links + frei, bw = breite - frei;
+                        trupps = [leiterkind('schrauber', [x0 + bw * 0.34, zy], t, {seite: -1, von: -1, raus: -1}),
+                            leiterkind('schrauber', [x0 + bw * 0.68, zy], t, {seite: 1, von: 1, raus: 1})];
+                        weiter('falsch');
+                    }
+                } else if (phase === 'falsch') {
+                    // die Witz-Ziele bleiben lesbar stehen, die Lämpchen flackern, bis der Trupp oben ist
+                    for (const l of lampen) if (Math.random() < dt * 3) l.classList.toggle('fx-gruen');
+                    // mehrere Witz-Ziele laufen durch wie echte Abflüge (Wunsch Jonas), dann wird repariert
+                    witzUhr -= dt;
+                    if (witzUhr <= 0) { falsche.shift(); falsche.push(falscheZeile()); falsche.forEach((f, i) => setzeZeile(i, zeile(f))); witzUhr = 5; }
+                    if (ps > 5 * 2 + 2.8 && trupps.every((k) => k.oben())) {
+                        // die Klappen gleich an den Schraubenziehern drehen beim Reparieren besonders wild
+                        const b1 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+                        const spitzen = trupps.map((k) => k.spitze());
+                        for (const reihe of zellen) for (const z of reihe) {
+                            if (!z) continue;
+                            const r = z.blatt.parentElement.getBoundingClientRect();
+                            const cx = r.left - b1.left + r.width / 2, cy = r.top - b1.top + r.height / 2;
+                            z.heiss = spitzen.some(([sx, sy]) => Math.abs(cx - sx) < 2.2 * VW && Math.abs(cy - sy) < 1.6 * VW);
+                        }
+                        for (const k of trupps) k.kind.classList.add('fx-schraubt');
+                        weiter('reparieren');
+                    }
+                } else if (phase === 'reparieren') {
+                    // beim Schrauben drehen die Buchstaben noch einmal durch, dann stimmt alles wieder
+                    chaos = Math.max(0.15, 1 - ps / 2.6);
+                    for (const k of trupps) if (Math.random() < dt * 5) { const s = k.spitze(); funkenStreuen(s[0], s[1], 2, 'gold'); }
+                    if (ps > 3.4) {
+                        chaos = 0;
+                        for (const reihe of zellen) for (const z of reihe) if (z) z.heiss = false;
+                        for (const k of trupps) { k.kind.classList.remove('fx-schraubt'); const s = k.spitze(); funkenStreuen(s[0], s[1], 6, 'weiss'); k.freigabe = true; }
+                        alleRichtig(); abfahrt = 5;
+                        for (const z of tafel.querySelectorAll('.fx-abflug-zeile')) z.style.opacity = '';
+                        weiter('heil');
+                    }
+                } else if (phase === 'heil') {
+                    // repariert: noch 15 Sekunden ganz normal weiter, dann ist Schluss
+                    // (zum Schluss startet kein Flugzeug mehr, sonst zieht sich das Ende)
+                    abfluege(dt, t, ps < 8);
+                    if (trupps.every((k) => k.weg) && ps > 15) { for (const l of lampen) l.classList.remove('fx-blinkt'); tafel.classList.remove('fx-an'); weiter('zu'); }
+                } else if (phase === 'zu') {
+                    if (ps > 1 && !flieger.length) { fertig = true; return; }
+                }
+                // die Flugzeuge oben
+                for (let i = flieger.length - 1; i >= 0; i--) {
+                    const f = flieger[i];
+                    if (t < f.ab) continue;
+                    f.x += f.d * f.v * dt; f.y += f.steig * f.v * dt;
+                    if (f.x < -12 * VW || f.x > W + 12 * VW) { flieger.splice(i, 1); continue; }
+                    flugzeugMalen(f.x, f.y, f.d, f.farbe, f.steig);
+                }
+                // Lampen und Zeilen flackern, solange sie spinnt
+                if (chaos > 0) {
+                    const zn = tafel.querySelectorAll('.fx-abflug-zeile');
+                    for (let i = 0; i < ZEILEN; i++) {
+                        if (Math.random() < dt * 3 * chaos) lampen[i].classList.toggle('fx-gruen');
+                        if (Math.random() < dt * 2 * chaos) zn[i].style.opacity = String(zufall(0.55, 1).toFixed(2));
+                    }
+                }
+                for (const k of trupps) k.schritt(dt, t);
+                // Klappen: jede Klappe schaltet Zeichen für Zeichen weiter bis zum Ziel
+                // im Normalbetrieb schlagen sie flott um, beim Spinnen hektisch und wirr
+                klappUhr += dt;
+                const takt = 0.066;
+                if (klappUhr >= takt) {
+                    klappUhr = Math.min(klappUhr - takt, takt);
+                    for (const reihe of zellen) {
+                        for (const c of reihe) {
+                            if (!c) continue;
+                            if (c.unten !== null) { c.u.textContent = c.unten; c.unten = null; }
+                            if (chaos > 0 && Math.random() < 0.12 * chaos) c.soll = Math.floor(Math.random() * ABFLUG_ZEICHEN.length);
+                            if (c.heiss) c.soll = Math.floor(Math.random() * ABFLUG_ZEICHEN.length);
+                            if (c.ist !== c.soll) {
+                                // Blatt für Blatt durchs Alphabet; im Chaos springen sie wild
+                                const alt = ABFLUG_ZEICHEN[c.ist];
+                                c.ist = chaos > 0.3 && Math.random() < 0.5 ? Math.floor(Math.random() * ABFLUG_ZEICHEN.length) : (c.ist + 1) % ABFLUG_ZEICHEN.length;
+                                const neu = ABFLUG_ZEICHEN[c.ist];
+                                c.o.textContent = neu; c.f.textContent = alt; c.unten = neu;
+                                if (c.blatt.animate) c.blatt.animate([{transform: 'rotateX(0deg)'}, {transform: 'rotateX(-90deg)'}], {duration: takt * 950, fill: 'forwards'});
+                            }
+                        }
+                    }
+                }
+            },
+        };
+    }
+
     // ==================================================================
     // Steuerung
 
     const BAUER = {schnee: Schnee, regen: Regen, gewitter: Gewitter, hitze: Hitze, sturm: Sturm, glatteis: Glatteis, frost: Frost};
-    const STORY_BAUER = {roehre: Roehre, kiesel: Kiesel, rohrbruch: Rohrbruch, gondel: Gondel, spinne: Spinne, schief: SchiefeKachel, taube: Taube, maus: Maus, raupe: Raupe};
+    const STORY_BAUER = {roehre: Roehre, kiesel: Kiesel, rohrbruch: Rohrbruch, gondel: Gondel, spinne: Spinne, schief: SchiefeKachel, taube: Taube, maus: Maus, raupe: Raupe, ballon: Luftballon, blasen: Seifenblasen, heissluft: Heissluftballon, ufo: Ufo, abflug: Abflugtafel};
     // Im Schulhaus kommen die Storys nur in den Pausen, nach dem Tagesplan des Servers
     // (alle Flur-Monitore gleich, jede Story höchstens einmal am Tag). In der Vorschau
     // und im Test läuft die gewählte Story immer wieder.
+    // Jede Story endet von selbst, wenn alle Figuren aus dem Bild sind. Die Grenze von 180 s in
+    // jeder Story ist nur ein Notausgang, falls etwas hängt; sie liegt bewusst weit hinter der
+    // geplanten Dauer, damit ein Kind an einer hohen Kachel nie mitten auf der Leiter
+    // verschwindet (Jonas, 18.11.).
     let story = null, storyUhr = null, storyArt = '';   // storyArt: '' | 'plan' | Name (Vorschau/Test: wiederholen)
     let storyPlan = [], storyVersatz = 0, storyEintrag = null, storyVersuche = 0;
     const storyGespielt = new Set();
@@ -7820,7 +9201,14 @@
         // nie zugleich mit dem Leitertrupp von Sturm oder Frost
         if (document.querySelector('.fx-hammerkind:not(.fx-monteur)')) { nochmal(10); return; }
         kaestenMessen(performance.now() / 1000);
-        const s = name && STORY_BAUER[name] ? STORY_BAUER[name]() : null;
+        let s = null;
+        try { s = name && STORY_BAUER[name] ? STORY_BAUER[name]() : null; } catch (e) {
+            // ein Fehler beim Aufbau darf den Monitor nie stören
+            console.error(e);
+            for (const el of document.querySelectorAll('[data-fx-story]')) delete el.dataset.fxStory;
+            if (storyArt === 'plan') planWecker();
+            return;
+        }
         if (!s) { nochmal(3); return; }
         story = s;
         schleifeStarten();

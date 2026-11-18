@@ -224,6 +224,9 @@ Umfragen, Termine, News verwalten)
   lesen sich als Schritte (»1. Prüfen«, »2. Zurücksetzen«).
 - **Gruppen** (Eingabe mit Knöpfen) wirken als eine Einheit.
 - Reihenfolge in Fußzeilen: Löschen am Anfang, die Hauptaktion am Ende.
+- **Kopieren:** Was man oft kopiert (eine Verteileradresse), ist selbst ein
+  leiser Knopf mit Kopier-Symbol; ein Klick kopiert, an derselben Stelle
+  steht kurz »Kopiert«. Kein Dialog, kein eigenes Eingabefeld.
 
 ## 8. Dialoge, Sheets und Menüs
 

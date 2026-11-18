@@ -1,4 +1,4 @@
-#{redirect_on_error { require_sitzplan_klassenleitung!(*sitzplan_path_params) }}
+#{redirect_on_error { require_sitzplan_page!(*sitzplan_path_params) }}
 <style>
 body {
     margin: 0;
@@ -204,7 +204,7 @@ var raum = '';
 
 var seats = [];
 
-#{SitzplanDaten.seats_js}
+#{sitzplan_seats_js}
 
 var place_for_sus = [];
 

@@ -1411,6 +1411,7 @@ class Main < Sinatra::Base
         @@rooms_for_shorthand = {}
         @@rooms_for_klasse = {}
         room_slots_for_klasse = {}
+        rooms_for_klasse_and_shorthand = {}
         room_order_set = Set.new(ROOM_ORDER)
         undeclared_rooms = Set.new()
         unless timetable_today.nil?
@@ -1439,6 +1440,11 @@ class Main < Sinatra::Base
                                         # stehen zur selben Zeit mehrere Einträge der Klasse im Plan.
                                         room_slots_for_klasse[klasse] ||= {}
                                         (room_slots_for_klasse[klasse][room] ||= Set.new) << [wday, stunde]
+                                        # Wer die Klasse in welchem Raum unterrichtet (Sitzplan im
+                                        # Fachraum); bei Teilung bekommt jede Lehrkraft ihren Raum.
+                                        lesson_info[:lehrer].each do |shorthand|
+                                            ((rooms_for_klasse_and_shorthand[klasse] ||= {})[shorthand] ||= Set.new) << room
+                                        end
                                     else
                                         undeclared_rooms << room
                                     end
@@ -1451,6 +1457,7 @@ class Main < Sinatra::Base
         end
         # erst komplett aufbauen, dann austauschen: Anfragen sehen nie eine halbe Liste
         @@room_hours_for_klasse = room_slots_for_klasse.transform_values { |rooms| rooms.transform_values(&:size) }
+        @@rooms_for_klasse_and_shorthand = rooms_for_klasse_and_shorthand
         unless undeclared_rooms.empty?
             debug("Undeclared rooms: #{undeclared_rooms.to_a.sort.join(' ')}")
         end

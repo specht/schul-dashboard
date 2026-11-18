@@ -783,7 +783,7 @@ class Main < Sinatra::Base
                 <input type='hidden' id='ti_scheme_right' value='#{colours[2]}'>
                 <div class='pv-scheme-strip' aria-hidden='true'></div>
                 <div class='pv-cling' role='group' aria-label='Farben zur Auswahl'>
-                    #{CLING_COLOURS.map { |hex, name| "<button type='button' class='pv-cling-colour#{cling_light?(hex) ? ' pv-cling-light' : ''}' data-hex='#{hex}' style='background: #{hex}' title='#{name}' aria-label='#{name}' aria-pressed='false'><i class='ti ti-check' aria-hidden='true'></i></button>" }.join}
+                    #{CLING_COLOURS.map { |hex, name| "<button type='button' class='pv-cling-colour#{cling_light?(hex) ? ' pv-cling-light' : ''}' data-hex='#{hex}' style='--sw: #{hex}; background: #{hex}' title='#{name}' aria-label='#{name}' aria-pressed='false'><i class='ti ti-check' aria-hidden='true'></i></button>" }.join}
                 </div>
                 <div class='pv-hsl'>
                     <label for='ti_hsl_h'>Farbton</label>

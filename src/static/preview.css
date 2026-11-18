@@ -2020,6 +2020,33 @@ html {
     color: var(--acc-ink) !important;
 }
 
+/* the same for every other "current" or "chosen" element of the new design
+   (dark.css paints every .active grey with !important) */
+.ui-preview.dark .pv-plan-chip.active,
+.ui-preview.dark .pv-tests-menu-klasse.active {
+    background-color: var(--acc) !important;
+    color: var(--acc-ink) !important;
+}
+
+.ui-preview.dark .pv-sheet-links a.active,
+.ui-preview.dark #atNotesModal .bu-at-note.active,
+.ui-preview.dark #main_container .btn-outline-primary.active,
+.ui-preview.dark #main_container .btn-outline-success.active,
+.ui-preview.dark #main_container .btn-outline-info.active,
+.ui-preview.dark #main_container .btn-outline-warning.active,
+.ui-preview.dark .modal .btn-outline-primary.active,
+.ui-preview.dark .modal .btn-outline-success.active,
+.ui-preview.dark .modal .btn-outline-info.active,
+.ui-preview.dark .modal .btn-outline-warning.active {
+    background-color: var(--acc-soft) !important;
+    color: var(--acc-text) !important;
+}
+
+/* the chosen colour of the palette keeps its colour (--sw, set per swatch) */
+.ui-preview.dark .pv-cling-colour.active {
+    background-color: var(--sw) !important;
+}
+
 .ui-preview.dark .form-control {
     background-color: var(--pv-surface) !important;
     color: var(--pv-ink) !important;

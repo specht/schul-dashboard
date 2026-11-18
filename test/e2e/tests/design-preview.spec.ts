@@ -1171,3 +1171,34 @@ test('Neues Design: Termine in der Agenda mit Titel und Symbol', async ({ page }
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Dark mode: dark.css paints every .active grey (!important). The current or
+// chosen element of the new design keeps the accent (the class in the
+// Klassenarbeiten menu) or its own colour (the chosen palette colour).
+test('Neues Design: Gewähltes bleibt dunkel sichtbar', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Klassenmenü als Sheet');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'dark' } });
+  try {
+    await page.goto('/tests/5a');
+    await page.locator('.pv-tests-klasse').first().click();
+    const active = page.locator('.pv-tests-menu-klasse.active');
+    await expect(active).toBeVisible();
+    const [bg, acc] = await active.evaluate((el) => {
+      const probe = document.createElement('span');
+      probe.style.color = getComputedStyle(el).getPropertyValue('--acc');
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return [getComputedStyle(el).backgroundColor, c];
+    });
+    expect(bg).toBe(acc);
+    await page.goto('/profil');
+    await page.locator('.pv-cling-colour[data-hex="#faaa21"]').click();
+    expect(await page.locator('.pv-cling-colour.active').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(250, 170, 33)');
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

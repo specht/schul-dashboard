@@ -4,9 +4,10 @@ Der Sitzplanhelfer ist die Sitzplan-Seite der Klassenleitung
 (`/sitzplanhelfer/<klasse>/<raum>`). Dort entsteht jeder Sitzplan der
 Klasse: mit Sitzwünschen der SuS, zufällig oder von Hand. Die Lehrkraft
 behält volle Kontrolle über Vorgaben und das Endergebnis. Daneben steht
-unverändert der Sitzplan-Shuffler (`src/static/sitzplan.html`), der vor
-der Klasse zufällig mischt (mit optionalen statischen Regeln, siehe
-„Sitzdaten“ unten) und nichts speichert.
+der Sitzplan-Shuffler (`src/static/sitzplan.html`), der vor der Klasse
+zufällig mischt (mit optionalen statischen Regeln, siehe „Sitzdaten“
+unten). Er selbst speichert nichts, sein Ergebnis lässt sich aber als
+Plan übernehmen (siehe „Shuffler-Ergebnis übernehmen“).
 
 ## Einstieg
 
@@ -51,6 +52,17 @@ ihren eigenen Sitzplan für ihren Unterricht, immer für die ganze Klasse:
   sieht die Fachlehrkraft nicht.
 
 Der Sitzplan der Klassenleitung im Klassenraum bleibt davon unberührt.
+
+## Shuffler-Ergebnis übernehmen
+
+Nach dem Auslosen steht im Shuffler neben „Drucken“ der Knopf „Als Plan
+übernehmen“, im Klassenraum für die Klassenleitung, im Fachraum für die
+Lehrkraft mit ihrem eigenen Plan. Er öffnet die Sitzplan-Seite mit dem
+ausgelosten Plan; dort lassen sich Plätze von Hand tauschen, dann wird
+gespeichert wie jeder andere Plan. Ist schon ein neuer Plan angefangen,
+fragt die Seite vorher, ob er ersetzt werden soll. Eine laufende
+Wunschrunde und die Bearbeitung eines gespeicherten Plans ersetzt das
+Ergebnis nicht.
 
 ## Ablauf für Lehrkräfte
 
@@ -226,7 +238,9 @@ unvollständige letzte Zeile mittig), Namen untereinander.
   `satisfied_emails` und `saved_at`. Pro Klasse+Raum ist immer nur
   **ein** Zyklus gleichzeitig offen (`saved_at IS NULL`). Pläne einer
   Lehrkraft im Fachraum tragen zusätzlich `lehrer` (ihre E-Mail); die der
-  Klasse haben kein `lehrer`. Alle Abfragen trennen beides.
+  Klasse haben kein `lehrer`. Alle Abfragen trennen beides. Ein aus dem
+  Shuffler übernommener Plan ist `manual` und trägt die
+  ausgeloste Sitzordnung als Ausgangspunkt in `start_seats`.
 - **`SeatingRules`** (`key` = `<klasse>/<raum>`, im Fachraum
   `<klasse>/<raum>/<E-Mail>`): die geltenden
   Vorgaben, nach jeder Änderung aus dem offenen Zyklus übernommen. Neue

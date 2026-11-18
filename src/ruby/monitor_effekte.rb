@@ -19,8 +19,97 @@ module MonitorEffekte
     # (falls der DWD eine Warnung vorzeitig aufhebt und wir ihn nicht erreichen).
     HOECHSTALTER = 2 * 60 * 60
 
-    EFFEKTE = %w(schnee regen gewitter hitze sturm frost).freeze
+    EFFEKTE = %w(schnee regen gewitter hitze sturm glatteis frost).freeze
     FESTE = %w(weihnachten nikolaus ostern valentinstag fasching sommerferien schulanfang adventskonzert forschertag).freeze
+    # Storys: kleine Geschichten, die die Monitore von selbst ab und zu zeigen
+    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug).freeze
+    # Storys nur in den Pausen (Jonas, 18.11.): [von, bis, wie viele]; zufällig im Zeitraum,
+    # jede Story höchstens einmal am Tag, alle Flur-Monitore nach demselben Plan
+    STORY_PAUSEN = [['07:46', '08:00', 3], ['08:45', '08:50', 1], ['10:20', '10:23', 1], ['10:35', '10:40', 2],
+                    ['12:10', '12:15', 2], ['12:45', '12:50', 2], ['13:05', '13:10', 2], ['13:35', '13:40', 2],
+                    ['14:25', '14:35', 2]].freeze
+    STORY_DAUER = 65     # Sekunden: so lange läuft eine Story höchstens; sie endet vor dem Pausenende
+    STORY_LUECKE = 5     # Sekunden zwischen zwei Storys in derselben Pause
+    # einzelne Storys dürfen länger dauern (Jonas, 18.11.: die Abflugtafel läuft gut eine Minute;
+    # höchstens 30 s normal, kaputt und Reparatur, danach 15 s gut) – mit etwas Reserve
+    STORY_DAUER_JE = {'abflug' => 80}.freeze
+    # Zeiten, in denen eine Story nicht kommen darf (Jonas, 18.11.: die Abflugtafel nicht
+    # zwischen 7:45 und 8:00 Uhr); gilt für jede Pause, die diese Zeit berührt
+    STORY_SPERRZEITEN = {'abflug' => [['07:45', '08:00']]}.freeze
+
+    def self.story_dauer(story)
+        STORY_DAUER_JE.fetch(story, STORY_DAUER)
+    end
+
+    # Pausen aus „Monitore verwalten“ prüfen: [[von, bis, anzahl], …] mit HH:MM, von < bis,
+    # Anzahl 1–9, höchstens 20 Pausen; nach Beginn sortiert. Ungültig → nil
+    def self.pausen_pruefen(liste)
+        return nil unless liste.is_a?(Array) && liste.size <= 20
+        minuten = lambda { |z| z.is_a?(String) && z =~ /\A([01]?\d|2[0-3]):([0-5]\d)\z/ ? $1.to_i * 60 + $2.to_i : nil }
+        pausen = liste.map do |p|
+            return nil unless p.is_a?(Array) && p.size == 3
+            von, bis, anzahl = minuten.call(p[0]), minuten.call(p[1]), p[2]
+            anzahl = anzahl.to_i if anzahl.is_a?(String) && anzahl =~ /\A\d+\z/
+            return nil unless von && bis && von < bis && anzahl.is_a?(Integer) && anzahl >= 1 && anzahl <= 9
+            [format('%02d:%02d', von / 60, von % 60), format('%02d:%02d', bis / 60, bis % 60), anzahl]
+        end
+        pausen.sort_by { |p| p[0] }
+    end
+
+    # Tagesplan: [{:sekunde (seit Mitternacht), :story}], gleich für dasselbe Datum
+    def self.story_plan(datum, storys = STORYS, pausen = STORY_PAUSEN)
+        return [] if datum.saturday? || datum.sunday? || storys.empty?
+        rng = Random.new(datum.strftime('%Y%m%d').to_i * 7919 + 17)
+        reihe = storys.shuffle(random: rng)
+        sek = lambda { |z| z.split(':').map(&:to_i).inject { |h, m| h * 60 + m } * 60 }
+        # Plätze je Pause: so viele, wie Storys normaler Länge hineinpassen
+        plaetze = []
+        pausen.each_with_index do |(von, bis, anzahl), pi|
+            frei = sek.call(bis) - sek.call(von)
+            anzahl -= 1 while anzahl > 0 && anzahl * STORY_DAUER + (anzahl - 1) * STORY_LUECKE > frei
+            anzahl.times { plaetze << pi }
+        end
+        # weniger Storys als Plätze: zufällig über alle Pausen des Tages verteilen
+        if reihe.size < plaetze.size
+            plaetze = plaetze.each_with_index.to_a.sample(reihe.size, random: rng).sort_by(&:last).map(&:first)
+        end
+        belegung = plaetze.each_with_index.map { |pi, i| [pi, reihe[i]] }
+        # gesperrte Pausen: mit einer Story aus einer erlaubten Pause tauschen; geht das nicht,
+        # fällt die Story heute aus
+        gesperrt = lambda do |story, pi|
+            von, bis = sek.call(pausen[pi][0]), sek.call(pausen[pi][1])
+            (STORY_SPERRZEITEN[story] || []).any? { |a, b| von < sek.call(b) && bis > sek.call(a) }
+        end
+        belegung.each_with_index do |(pi, story), i|
+            next unless story && gesperrt.call(story, pi)
+            j = belegung.each_index.find { |k| k != i && !gesperrt.call(story, belegung[k][0]) && !gesperrt.call(belegung[k][1], pi) }
+            if j
+                belegung[i][1], belegung[j][1] = belegung[j][1], story
+            else
+                belegung[i][1] = nil
+            end
+        end
+        je_pause = Hash.new { |h, k| h[k] = [] }
+        belegung.each { |pi, story| je_pause[pi] << story if story }
+        plan = []
+        je_pause.keys.sort.each do |pi|
+            liste = je_pause[pi]
+            a = sek.call(pausen[pi][0])
+            frei = sek.call(pausen[pi][1]) - a
+            brauchen = lambda { liste.sum { |x| story_dauer(x) } + (liste.size - 1) * STORY_LUECKE }
+            # passt eine lange Story nicht in diese Pause, fällt sie heute aus
+            liste.delete_at(liste.index(liste.max_by { |x| story_dauer(x) })) while liste.any? && brauchen.call > frei
+            next if liste.empty?
+            platz = frei - brauchen.call
+            versatz = Array.new(liste.size) { rng.rand * platz }.sort
+            schon = 0
+            liste.each_with_index do |x, i|
+                plan << {:sekunde => (a + versatz[i] + schon).floor, :story => x}
+                schon += story_dauer(x) + STORY_LUECKE
+            end
+        end
+        plan
+    end
     # Treffen Wetter und Fest zusammen: Einzeltage haben Vorrang vor dem Wetter,
     # Festzeiten über mehrere Tage (Advent, Ostern) lassen dem Wetter den Vortritt.
     FESTE_EINZELTAG = %w(valentinstag fasching sommerferien nikolaus schulanfang adventskonzert forschertag).freeze
@@ -29,7 +118,7 @@ module MonitorEffekte
 
     # Reihenfolge, wenn mehrere Warnungen gleichzeitig gelten: das, was man
     # draußen am deutlichsten merkt, gewinnt.
-    VORRANG = %w(gewitter schnee regen sturm frost hitze).freeze
+    VORRANG = %w(gewitter schnee regen sturm glatteis frost hitze).freeze
 
     # Level im warnings.json des DWD: 1 Vorabinformation, 2 Wetterwarnung (gelb),
     # 3 markantes Wetter (orange), 4 Unwetter (rot), 5 extremes Unwetter (violett),
@@ -37,11 +126,13 @@ module MonitorEffekte
     #
     # Je Effekt lässt sich auf „Monitore verwalten“ einstellen, ob er erscheint
     # und ab welcher Stufe. Ohne Einstellung gilt das hier. Sturm erst ab rot,
-    # weil Sturmböen (orange) in Berlin häufig sind.
+    # weil Sturmböen (orange) in Berlin häufig sind; Schnee schon ab gelb (beim
+    # Schnee zeigt die Stufe sich am Monitor: Streufahrzeug ab orange, Pistenraupen ab rot).
     REGELN_STANDARD = {
-        'schnee' => {:an => true, :ab => 3}, 'regen' => {:an => true, :ab => 3},
+        'schnee' => {:an => true, :ab => 2}, 'regen' => {:an => true, :ab => 3},
         'gewitter' => {:an => true, :ab => 3}, 'sturm' => {:an => true, :ab => 4},
-        'frost' => {:an => true, :ab => 3}, 'hitze' => {:an => true, :ab => 10},
+        'glatteis' => {:an => true, :ab => 3}, 'frost' => {:an => true, :ab => 3},
+        'hitze' => {:an => true, :ab => 10},
     }.freeze
     STUFEN_WAEHLBAR = [2, 3, 4, 5].freeze
     STUFEN_HITZE = [10, 11].freeze
@@ -53,7 +144,8 @@ module MonitorEffekte
         'regen' => ['Starkregen', 'Heftiger Starkregen', 'Extrem heftiger Starkregen', 'Dauerregen', 'Ergiebiger Dauerregen', 'Extrem ergiebiger Dauerregen'],
         'gewitter' => ['Gewitter', 'Starkes Gewitter', 'Schweres Gewitter (mit Orkanböen, Starkregen oder Hagel)', 'Extremes Gewitter'],
         'sturm' => ['Windböen', 'Sturmböen', 'Schwere Sturmböen', 'Orkanartige Böen', 'Orkanböen', 'Extreme Orkanböen', 'Sturm, Starkwind'],
-        'frost' => ['Frost', 'Strenger Frost', 'Glätte', 'Glatteis', 'Gefrierender Regen'],
+        'glatteis' => ['Glätte', 'Glatteis', 'Gefrierender Regen'],
+        'frost' => ['Frost', 'Strenger Frost'],
         'hitze' => ['Starke Hitze', 'Extreme Hitze'],
     }.freeze
     PHAENOMENE_OHNE_EFFEKT = ['Nebel', 'Tauwetter', 'UV-Strahlung', 'Leiterseilschwingungen'].freeze
@@ -91,7 +183,8 @@ module MonitorEffekte
         elsif event.include?('GEWITTER') then 'gewitter'
         elsif event.include?('SCHNEE') then 'schnee'
         # gefrierender Regen ist Glatteis (vor „Regen“ prüfen)
-        elsif event.include?('GEFRIER') || event.include?('GLATTEIS') || event.include?('GLÄTTE') || event.include?('FROST') then 'frost'
+        elsif event.include?('GEFRIER') || event.include?('GLATTEIS') || event.include?('GLÄTTE') then 'glatteis'
+        elsif event.include?('FROST') then 'frost'
         elsif event.include?('REGEN') then 'regen'
         elsif event.include?('ORKAN') || event.include?('STURM') || event.include?('BÖEN') || event.include?('STARKWIND') then 'sturm'
         end
@@ -134,6 +227,7 @@ module MonitorEffekte
                 :staerke => e[1],
                 :titel => titel(w['event']),
                 :bis => ende ? ende.to_i : nil,
+                :stufe => w['level'].to_i,
             }
             k[:zeus] = true if e[0] == 'gewitter'   # Zeus kommt bei jedem Gewitter (Wunsch Jonas)
             kandidaten << k
@@ -181,6 +275,21 @@ module MonitorEffekte
     def self.titel(event)
         woerter = event.to_s.downcase.split(' ')
         woerter.each_with_index.map { |w, i| (i == 0 || NOMEN.include?(w)) ? w.capitalize : w }.join(' ')
+    end
+
+    # Test auf den echten Monitoren („Monitore verwalten“): wie lange er läuft und
+    # was er zeigt – [wetter, fest] wie bei echtem Wetter bzw. einem echten Fest,
+    # bei einer Story [nil, nil, name].
+    TEST_MINUTEN = 5
+    def self.test_soll(name)
+        if EFFEKTE.include?(name)
+            w = {:effekt => name, :staerke => 2, :titel => 'Test', :bis => nil}
+            w[:zeus] = true if name == 'gewitter'
+            return [w, nil]
+        end
+        return [nil, {:fest => name, :nah => true}] if FESTE.include?(name)
+        return [nil, nil, name] if STORYS.include?(name)
+        [nil, nil]
     end
 
     # Ostersonntag nach dem gregorianischen Kalender (Algorithmus von Meeus,

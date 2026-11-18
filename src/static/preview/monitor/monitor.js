@@ -490,6 +490,9 @@
         } else if (d.command === 'monitor_effekte_vorschau') {
             // nur Fenster im Folgen-Modus (?effekt=folgen) reagieren darauf
             if (window.MonitorEffekte) window.MonitorEffekte.vorschauNachricht(d.effekt || '');
+        } else if (d.command === 'monitor_effekte_neu') {
+            // Test „Im Schulhaus zeigen“ oder neue Story-Pausen: gleich neu abfragen
+            if (window.MonitorEffekte) window.MonitorEffekte.neuAbfragen();
         } else if (d.command === 'update_monitor_messages') {
             nachrichten = ((d.data || {}).messages || []).map(String);
             bilder = ((d.data || {}).images || []).map(String);

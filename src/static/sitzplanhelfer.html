@@ -514,7 +514,7 @@ body.dark .sph-group {
         <div class="sph-room-line"><i class="fa fa-th"></i>&nbsp;&nbsp;<span id="sph_room_info"></span></div>
         <div class="sph-tools">
             <a class="btn btn-outline-primary" id="sph_link_editor" href="#"><i class="fa fa-th"></i>&nbsp;&nbsp;Tische im Raum</a>
-            <button class="btn btn-outline-primary" id="sph_link_shuffler" title="Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts. Vorher zeigt die Seite seine Regeln."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</button>
+            <button class="btn btn-outline-primary" id="sph_link_shuffler" title="Zufällig vor der Klasse auslosen, mit Musik. Das Ergebnis können Sie danach als Plan übernehmen und von Hand anpassen. Vorher zeigt die Seite seine Regeln."><i class="fa fa-random"></i>&nbsp;&nbsp;Shuffler</button>
             <button class="btn btn-outline-primary" id="sph_bu_start_manual" title="Ohne Wünsche und ohne Würfeln: Sie setzen jede Person selbst auf ihren Platz."><i class="fa fa-hand-pointer-o"></i>&nbsp;&nbsp;Von Hand verteilen</button>
             <button class="btn btn-outline-primary" id="sph_bu_start_spread" title="Ohne Umfrage und ohne Wünsche: Der Plan wird sofort nach Ihren Vorgaben im Raum verteilt. Danach können Sie von Hand umsetzen."><i class="fa fa-th-large"></i>&nbsp;&nbsp;Im Raum verteilen</button>
             <button class="btn btn-outline-primary" id="sph_bu_wishes" title="Umfrage an die Klasse: Die SuS geben bis zu drei Wunschpartner an, danach erzeugen Sie den Plan."><i class="fa fa-comments"></i>&nbsp;&nbsp;Wunschrunde</button>
@@ -1702,6 +1702,8 @@ function render_work_header(oc) {
                 : 'Es gibt noch keine Verteilungsliste. Legen Sie sie unter „Vorgaben → Verteilung im Raum“ an und würfeln Sie dann neu.'));
     } else if (open_mode === 'random') {
         $('#sph_cycle_info').text(edit_info || 'Neuer Sitzplan, zufällig gewürfelt. Ihre Vorgaben sind berücksichtigt.');
+    } else if (open_mode === 'manual' && oc.from_shuffle) {
+        $('#sph_cycle_info').text('Neuer Sitzplan, im Shuffler ausgelost. Zum Tauschen klicken Sie einen Namen an und dann einen Platz; dann speichern.');
     } else if (open_mode === 'manual') {
         $('#sph_cycle_info').text((edit_info || 'Neuer Sitzplan von Hand: ') + 'Klicken Sie einen Namen an und dann einen Platz.');
     } else if (oc.wishes_open) {
@@ -2567,7 +2569,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Wunschrunde und Verteilungslisten gibt es nur bei der Klassenleitung im
         // Klassenraum; den Shuffler ohne ihre Regeln.
         $('#sph_bu_start_spread, #sph_bu_wishes, #sph_new_choice, #sph_shuffler_box, #sph_spread_area').remove();
-        $('#sph_link_shuffler').attr('title', 'Zufällig vor der Klasse auslosen, mit Musik. Der Shuffler speichert nichts.');
+        $('#sph_link_shuffler').attr('title', 'Zufällig vor der Klasse auslosen, mit Musik. Das Ergebnis können Sie danach als Plan übernehmen und von Hand anpassen.');
         $('#sph_vorgaben_legend').text('Ihre eigenen Vorgaben für diesen Fachraum. Sie gelten für alle Werkzeuge hier, bis Sie sie ändern. ' +
             'Die Vorgaben der Klassenleitung sehen Sie hier nicht, und Ihre gelten nicht im Klassenraum. ' +
             'Ein ausgeschalteter Bereich bleibt gespeichert und fließt nur in diesem Werkzeug nicht in den Plan ein.');

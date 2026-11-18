@@ -128,6 +128,11 @@
 
     .ticker-message {
         position: relative;
+        will-change: transform;
+    }
+
+    .ticker-abschnitt {
+        display: inline-block;
     }
 
     .ticker-message span:after {
@@ -612,6 +617,54 @@
     var scroll_up_speed = 10.0;
     var ticker_speed = 6.0;
     var ticker_div = null;
+    // Das Laufband ist eine Animation, die der Browser auf der Grafikkarte abspielt: Sie läuft
+    // unabhängig vom übrigen Skript und stockt nicht, wenn daneben die Monitor-Effekte rechnen
+    // (Jonas, 18.11.: auf dem neuen Rechner stockte das Band, die Effekte liefen flüssig).
+    // Zwei gleiche Abschnitte hintereinander; einer ist mindestens bildschirmbreit, die
+    // Animation schiebt genau einen Abschnitt weiter und beginnt dann nahtlos von vorn.
+    var ticker_quelle = null, ticker_anim = null, ticker_breite_px = 0;
+    function ticker_aufbauen() {
+        if (!ticker_div) ticker_div = document.querySelector('.ticker-message');
+        if (!ticker_div) return;
+        if (ticker_quelle === ticker_messages && ticker_breite_px === window.innerWidth) return;
+        ticker_quelle = ticker_messages;
+        ticker_breite_px = window.innerWidth;
+        // die Stelle im Band merken, damit es nach einer Änderung nicht von vorn beginnt
+        let anteil = 0;
+        if (ticker_anim) {
+            try { anteil = ((ticker_anim.currentTime || 0) % ticker_anim.effect.getTiming().duration) / ticker_anim.effect.getTiming().duration; } catch (e) {}
+            ticker_anim.cancel();
+            ticker_anim = null;
+        }
+        ticker_div.textContent = '';
+        ticker_div.style.transform = '';
+        if (ticker_messages.length === 0) return;
+        const abschnitt = () => {
+            const g = document.createElement('div');   // kein span: sonst hängt das +++ auch hinter dem Abschnitt
+            g.className = 'ticker-abschnitt';
+            return g;
+        };
+        const a = abschnitt();
+        ticker_div.appendChild(a);
+        // so oft wiederholen, bis ein Abschnitt breiter als der Bildschirm ist
+        for (let runde = 0; runde < 50 && (runde === 0 || a.getBoundingClientRect().width < window.innerWidth); runde++) {
+            for (const m of ticker_messages) {
+                const span = document.createElement('span');
+                span.textContent = m;
+                a.appendChild(span);
+            }
+        }
+        ticker_div.appendChild(a.cloneNode(true));
+        const w = a.getBoundingClientRect().width;
+        if (!(w > 0) || !ticker_div.animate) return;
+        const dauer = (w * 100.0 / window.innerWidth) / ticker_speed * 1000;
+        ticker_anim = ticker_div.animate([{transform: 'translateX(0px)'}, {transform: `translateX(${-w}px)`}],
+            {duration: dauer, iterations: Infinity, easing: 'linear'});
+        ticker_anim.currentTime = anteil * dauer;
+    }
+    // ändert sich die Schrift (Webfont geladen) oder das Fenster, neu messen
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { ticker_quelle = null; });
+    window.addEventListener('resize', () => { ticker_quelle = null; });
     var ticker_messages = [];
     var ticker_index = 0;
     var images = [];
@@ -723,12 +776,16 @@
                 window.location.reload();
             } else if (data.command == 'update_time') {
                 server_time_diff = data.time - js_time();
+            } else if (data.command == 'monitor_effekte_neu') {
+                // Test auf den echten Monitoren gestartet oder beendet
+                if (window.MonitorEffekte) MonitorEffekte.neuAbfragen();
             } else if (data.command == 'monitor_effekte_vorschau') {
                 // nur Fenster im Folgen-Modus (?effekt=folgen) reagieren darauf
                 if (window.MonitorEffekte) MonitorEffekte.vorschauNachricht(data.effekt || '');
             } else if (data.command == 'update_monitor_messages') {
                 console.log(data);
                 ticker_messages = data.data.messages;
+                ticker_aufbauen();
                 images = data.data.images;
                 image_index = 0;
                 refresh_images();
@@ -940,26 +997,7 @@
                 }
             }
         }
-        if ($('.ticker-message span').length > 0) {
-            let message_width = $('.ticker-message span').first().width() * 100.0 / window.innerWidth;
-            if (message_width < 1.0)
-                message_width = 1.0;
-            ticker_offset += diff * ticker_speed;
-            while (ticker_offset > message_width && ticker_offset >= 0) {
-                $('.ticker-message span').first().remove();
-                ticker_offset -= message_width;
-            }
-            $('.ticker-message').css('left', `-${ticker_offset}vw`);
-        }
-        while ($('.ticker-message').width() + $('.ticker-message').position().left < window.innerWidth) {
-            if (ticker_messages.length > 0) {
-                ticker_index %= ticker_messages.length;
-                $('<span>').text(ticker_messages[ticker_index]).appendTo($('.ticker-message'));
-                ticker_index = (ticker_index + 1) % ticker_messages.length;
-            } else {
-                $('<span>').addClass('empty').appendTo($('.ticker-message'));
-            }
-        }
+        ticker_aufbauen();
 
         last_timestamp = timestamp;
 

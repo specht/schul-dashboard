@@ -348,7 +348,10 @@ class Main < Sinatra::Base
                 :base_mode => sph_base_mode(sc),
                 :reopened_from => reopened_from,
                 :reopened_id => rows.first['reopened_id'],
-                :seats => reopened_seats ? JSON.parse(reopened_seats) : nil,
+                # Ausgangspunkt: der bearbeitete Plan oder, im Fachraum, was der
+                # Shuffler ausgelost hat (sph_adopt_shuffle).
+                :seats => reopened_seats ? JSON.parse(reopened_seats) : (sc[:start_seats] ? JSON.parse(sc[:start_seats]) : nil),
+                :from_shuffle => !reopened_from && !!sc[:start_seats],
                 :forced_pairs => JSON.parse(sc[:forced_pairs] || '[]'),
                 :forbidden_pairs => JSON.parse(sc[:forbidden_pairs] || '[]'),
                 :fixed_rules => JSON.parse(sc[:fixed_rules] || '[]'),
@@ -689,6 +692,77 @@ class Main < Sinatra::Base
             rules = rules.merge(prop => own[prop].to_json)
         end
         respond({:ok => true}.merge(counts))
+    end
+
+    # Wer den Shuffler eines Raums nutzt, darf sein Ergebnis als Plan
+    # übernehmen: im eigenen Fachraum die Lehrkraft, im Klassenraum die
+    # Klassenleitung (wie beim Start eines Plans, siehe sph_start_cycle).
+    def sph_can_adopt_shuffle?(klasse, raum)
+        return false unless teacher_logged_in?
+        return true if sitzplan_owner(klasse, raum)
+        sitzplan_allowed_rooms(klasse).include?(raum) && klassenleiter_for_klasse_or_admin_logged_in?(klasse)
+    end
+
+    # Was der Shuffler ausgelost hat, wird ein offener Plan, den die
+    # Lehrkraft von Hand nachbessert und dann speichert. Ist schon ein neuer
+    # Plan offen, ersetzt ihn das Ergebnis erst nach Rückfrage (replace:
+    # 'yes'); eine laufende Wunschrunde und die Bearbeitung eines
+    # gespeicherten Plans bleiben unangetastet.
+    post '/api/sph_adopt_shuffle' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:klasse, :raum, :seats], :optional_keys => [:replace],
+                                  :max_body_length => 64 * 1024, :max_string_length => 64 * 1024)
+        klasse = data[:klasse]
+        raum = data[:raum]
+        assert(sph_can_adopt_shuffle?(klasse, raum), 'Kein Zugriff auf diesen Sitzplan.')
+        lehrer = sitzplan_owner(klasse, raum) || ''
+        room_seats = sitzplan_seats_for(klasse, raum) || []
+        begin
+            seats = JSON.parse(data[:seats])
+        rescue JSON::ParserError
+            assert(false, 'Ungültige Plandaten.')
+        end
+        assert(seats.is_a?(Hash), 'Ungültige Plandaten.')
+        sus_emails = @@schueler_for_klasse[klasse] || []
+        seats = seats.select { |email, idx| sus_emails.include?(email) && idx.is_a?(Integer) && idx >= 0 && idx < room_seats.size }
+        assert(!seats.empty? && seats.values.uniq.size == seats.size, 'Ungültige Plandaten.')
+        open = neo4j_query(<<~END_OF_QUERY, :klasse => klasse, :raum => raum, :lehrer => lehrer)
+            MATCH (sc:SeatingCycle {klasse: $klasse, raum: $raum})
+            WHERE sc.saved_at IS NULL AND #{sph_scope_cond('sc')}
+            OPTIONAL MATCH (sc)-[:REOPENED_FROM]->(src:SeatingCycle)
+            RETURN sc, src.id AS src_id
+            ORDER BY sc.created_at DESC
+            LIMIT 1;
+        END_OF_QUERY
+        if open.empty?
+            rules = sph_current_rules(klasse, raum, lehrer)
+            neo4j_query_expect_one(<<~END_OF_QUERY, rules.merge(:session_email => @session_user[:email], :timestamp => Time.now.to_i, :id => RandomTag.generate(12), :klasse => klasse, :raum => raum, :lehrer => lehrer.empty? ? nil : lehrer, :start_seats => seats.to_json))
+                MATCH (a:User {email: $session_email})
+                CREATE (sc:SeatingCycle {id: $id, klasse: $klasse, raum: $raum, lehrer: $lehrer, mode: 'manual', created_at: $timestamp, start_seats: $start_seats, forced_pairs: $forced_pairs, forbidden_pairs: $forbidden_pairs, fixed_rules: $fixed_rules})
+                CREATE (sc)-[:STARTED_BY]->(a)
+                RETURN sc;
+            END_OF_QUERY
+        else
+            # Kein Fehler, sondern ein Hinweis: Der Shuffler zeigt ihn an.
+            blocked = if open.first['src_id']
+                'Sie bearbeiten dort gerade einen gespeicherten Sitzplan. Speichern oder verwerfen Sie ihn zuerst im Sitzplanhelfer.'
+            elsif open.first['sc'][:poll_run_id]
+                'In diesem Raum läuft gerade eine Wunschrunde. Speichern oder verwerfen Sie deren Plan zuerst im Sitzplanhelfer.'
+            end
+            if blocked
+                respond(:ok => false, :error => blocked)
+                return
+            end
+            unless data[:replace] == 'yes'
+                respond(:ok => true, :needs_confirm => true)
+                return
+            end
+            neo4j_query(<<~END_OF_QUERY, :id => open.first['sc'][:id], :start_seats => seats.to_json)
+                MATCH (sc:SeatingCycle {id: $id})
+                SET sc.mode = 'manual', sc.start_seats = $start_seats;
+            END_OF_QUERY
+        end
+        respond(:ok => true)
     end
 
     def sph_write_rule!(target, rules, prop, value)

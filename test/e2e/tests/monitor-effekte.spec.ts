@@ -5,9 +5,9 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 // is nil in test/credentials.rb), so every effect is checked through the
 // preview parameter ?effekt=… – the same one "Monitore verwalten" uses.
 
-const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'frost',
+const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost',
   'weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang',
-  'adventskonzert', 'forschertag', 'rundgang'];
+  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug', 'rundgang'];
 
 for (const effekt of EFFEKTE) {
   test(`Monitor-Effekt ${effekt}: läuft hinter den Kästen, die Einträge bleiben lesbar`, async ({ page }) => {
@@ -55,6 +55,8 @@ test('Monitor-Effekte: Weihnachtsmann fliegt, Osterhase versteckt Eier', async (
 });
 
 test('Monitor-Effekte: Stand abfragen und auf „Monitore verwalten“ ab- und einschalten', async ({ page }) => {
+  // viele Schritte (Effekte, Storys, Pausen, Test im Schulhaus) – am Handy dauert das länger als 30 s
+  test.slow();
   await login(page, ACCOUNTS.admin);
   const stand = await (await page.request.get('/api/monitor_effekte')).json();
   expect(stand.an).toBe(true);
@@ -79,10 +81,57 @@ test('Monitor-Effekte: Stand abfragen und auf „Monitore verwalten“ ab- und e
   await page.locator('label[for="ti_monitor_effekte"]').click();
   await expect(schalter).toBeChecked();
   await expect(page.getByTestId('monitor-effekte-status')).not.toContainText('ausgeschaltet');
+  // the stories have a switch of their own
+  const storys = page.locator('.ti_monitor_storys');
+  await expect(storys).toBeEnabled();
+  await expect(storys).toBeChecked();
+  await page.locator('label[for="ti_monitor_storys"]').click();
+  await expect(page.getByTestId('monitor-storys-status')).toContainText('ausgeschaltet');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).storys).toBe(false);
+  await page.goto('/manage_monitor');
+  await expect(storys).toBeEnabled();
+  await expect(storys).not.toBeChecked();
+  await page.locator('label[for="ti_monitor_storys"]').click();
+  await expect(storys).toBeChecked();
+  await expect(page.getByTestId('monitor-storys-status')).toHaveText('');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).storys).toBe(true);
+  // the breaks for the stories can be edited; 'Standardzeiten' restores Jonas' defaults
+  const pausen = page.getByTestId('monitor-story-pausen').locator('tbody tr');
+  await expect(pausen).toHaveCount(9);
+  await pausen.first().locator('.fx-p-n').fill('2');
+  await page.locator('.bu_fx_pausen_speichern').click();
+  await expect(page.getByTestId('monitor-story-pausen-status')).toContainText('Gespeichert');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).story_pausen[0]).toEqual(['07:46', '08:00', 2]);
+  await page.locator('.bu_fx_pausen_standard').click();
+  await expect(page.getByTestId('monitor-story-pausen-status')).toContainText('Standardzeiten');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).story_pausen[0]).toEqual(['07:46', '08:00', 3]);
 
-  // preview buttons load the hallway monitor with the effect
+  // the hallway monitor at the top always shows the live picture
+  await expect(page.locator('.if_monitor_flur')).toHaveAttribute('src', '/monitor');
+  // preview buttons open a second window below, the live one stays untouched
+  const vorschau = page.getByTestId('monitor-effekt-vorschau');
+  await expect(vorschau).toBeHidden();
   await page.locator('.bu_monitor_effekt_vorschau[data-effekt="gewitter"]').click();
-  await expect(page.locator('.if_monitor_flur')).toHaveAttribute('src', '/monitor?effekt=gewitter');
+  await expect(vorschau).toBeVisible();
+  await expect(page.locator('.if_monitor_vorschau')).toHaveAttribute('src', '/monitor?effekt=gewitter');
+  await expect(page.locator('.if_monitor_flur')).toHaveAttribute('src', '/monitor');
+  // from the preview, the effect can be shown on the real monitors for a few minutes
+  await page.locator('.bu_fx_test_starten').click();
+  await expect(page.getByTestId('monitor-effekt-test')).toContainText('Gewitter');
+  const mitTest = await (await page.request.get('/api/monitor_effekte')).json();
+  expect(mitTest.test.effekt).toBe('gewitter');
+  expect(mitTest.wetter.effekt).toBe('gewitter');
+  expect(mitTest.test.rest_ms).toBeGreaterThan(4 * 60 * 1000);
+  await page.locator('.bu_fx_test_beenden').click();
+  await expect(page.getByTestId('monitor-effekt-test')).toBeHidden();
+  const ohneTest = await (await page.request.get('/api/monitor_effekte')).json();
+  expect(ohneTest.test).toBeUndefined();
+  expect(ohneTest.wetter).toBeNull();
+  // in die Bildmitte scrollen: am oberen Rand läge der Knopf unter der festen Menüleiste
+  const schliessen = page.locator('.bu_monitor_effekt_vorschau[data-effekt=""]');
+  await schliessen.evaluate((e) => e.scrollIntoView({block: 'center'}));
+  await schliessen.click();
+  await expect(vorschau).toBeHidden();
 });
 
 test('Monitor-Effekte: Schultermin eintragen, Forschertag mit drei Tagen, wieder löschen', async ({ page }) => {
@@ -109,6 +158,9 @@ test('Monitor-Effekte: nur für Monitore und Monitor-Verwaltung', async ({ page 
   await login(page, ACCOUNTS.schueler);
   expect((await page.request.get('/api/monitor_effekte')).status()).not.toBe(200);
   expect((await page.request.post('/api/set_monitor_effekte', { data: { an: 'nein' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/set_monitor_storys', { data: { an: 'nein' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/set_monitor_story_pausen', { data: { pausen: '' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/add_monitor_schultermin', { data: { datum: '2099-01-01', motiv: 'adventskonzert' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/delete_monitor_schultermin', { data: { id: 'x' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/monitor_effekte_test', { data: { effekt: 'sturm' } })).status()).not.toBe(200);
 });

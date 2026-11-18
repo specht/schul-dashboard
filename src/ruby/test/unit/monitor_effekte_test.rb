@@ -22,7 +22,8 @@ class MonitorEffekteTest < Minitest::Test
     end
 
     def test_only_strong_weather_gets_an_effect
-        assert_nil MonitorEffekte.wetter(daten(warnung('SCHNEEFALL', 2)), '111000000', JETZT)
+        # Schnee schon ab gelb (Wunsch Jonas 18.11.)
+        assert_equal 'schnee', MonitorEffekte.wetter(daten(warnung('SCHNEEFALL', 2)), '111000000', JETZT)[:effekt]
         assert_nil MonitorEffekte.wetter(daten(warnung('GEWITTER', 2)), '111000000', JETZT)
         assert_nil MonitorEffekte.wetter(daten(warnung('STURMBÖEN', 3)), '111000000', JETZT)
         assert_nil MonitorEffekte.wetter(daten(warnung('SCHWERE STURMBÖEN', 3)), '111000000', JETZT)
@@ -32,7 +33,11 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal 'regen', MonitorEffekte.wetter(daten(warnung('STARKREGEN', 3)), '111000000', JETZT)[:effekt]
         assert_equal 'gewitter', MonitorEffekte.wetter(daten(warnung('STARKES GEWITTER', 3)), '111000000', JETZT)[:effekt]
         assert_equal 'sturm', MonitorEffekte.wetter(daten(warnung('ORKANARTIGE BÖEN', 4)), '111000000', JETZT)[:effekt]
-        assert_equal 'frost', MonitorEffekte.wetter(daten(warnung('GLATTEIS', 4)), '111000000', JETZT)[:effekt]
+        assert_equal 'glatteis', MonitorEffekte.wetter(daten(warnung('GLATTEIS', 4)), '111000000', JETZT)[:effekt]
+        assert_equal 'frost', MonitorEffekte.wetter(daten(warnung('STRENGER FROST', 3)), '111000000', JETZT)[:effekt]
+        assert_nil MonitorEffekte.wetter(daten(warnung('FROST', 2)), '111000000', JETZT)
+        # die DWD-Stufe geht mit (Schnee: Streufahrzeug ab orange, Pistenraupen ab rot)
+        assert_equal 4, MonitorEffekte.wetter(daten(warnung('STARKER SCHNEEFALL', 4)), '111000000', JETZT)[:stufe]
         assert_equal 'hitze', MonitorEffekte.wetter(daten(warnung('STARKE HITZE', 10)), '111000000', JETZT)[:effekt]
     end
 
@@ -71,7 +76,7 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal 'hitze', MonitorEffekte.wetter(daten(warnung('EXTREME HITZE', 11)), '111000000', JETZT, regeln)[:effekt]
         # unbekannte Stufe → Standard (orange)
         assert_equal 3, regeln['frost'][:ab]
-        assert_equal({:an => true, :ab => 3}, MonitorEffekte.regeln({})['schnee'])
+        assert_equal({:an => true, :ab => 2}, MonitorEffekte.regeln({})['schnee'])
     end
 
     def test_warning_list_for_the_admin_page
@@ -160,8 +165,10 @@ class MonitorEffekteTest < Minitest::Test
         art = ->(ereignis) { MonitorEffekte.effekt_art('event' => ereignis) }
         %w(STARKREGEN DAUERREGEN).each { |e| assert_equal 'regen', art.call(e) }
         assert_equal 'regen', art.call('EXTREM ERGIEBIGER DAUERREGEN')
-        assert_equal 'frost', art.call('GEFRIERENDER REGEN')
-        assert_equal 'frost', art.call('GLATTEIS')
+        assert_equal 'glatteis', art.call('GEFRIERENDER REGEN')
+        assert_equal 'glatteis', art.call('GLATTEIS')
+        assert_equal 'glatteis', art.call('GLÄTTE')
+        assert_equal 'frost', art.call('STRENGER FROST')
         assert_equal 'schnee', art.call('SCHNEEREGEN')
         %w(ORKANBÖEN STURMBÖEN WINDBÖEN STARKWIND).each { |e| assert_equal 'sturm', art.call(e) }
         assert_equal 'sturm', art.call('EXTREME ORKANBÖEN')
@@ -184,6 +191,78 @@ class MonitorEffekteTest < Minitest::Test
         assert_nil MonitorEffekte.schultermin(Date.new(2027, 6, 17), drei)
         assert_equal [nil, {:fest => 'adventskonzert', :nah => true}, 'wetter'],
                      MonitorEffekte.vorrang({:effekt => 'schnee', :staerke => 2}, {:fest => 'adventskonzert', :nah => true})
+    end
+
+    def test_test_on_real_monitors
+        assert_equal [{:effekt => 'sturm', :staerke => 2, :titel => 'Test', :bis => nil}, nil], MonitorEffekte.test_soll('sturm')
+        assert_equal true, MonitorEffekte.test_soll('gewitter')[0][:zeus]
+        assert_equal [nil, {:fest => 'nikolaus', :nah => true}], MonitorEffekte.test_soll('nikolaus')
+        assert_equal [nil, nil], MonitorEffekte.test_soll('rundgang')
+        assert_equal [nil, nil, 'roehre'], MonitorEffekte.test_soll('roehre')
+    end
+
+    def test_story_plan_only_in_breaks
+        montag = Date.new(2026, 11, 16)
+        plan = MonitorEffekte.story_plan(montag)
+        assert_equal [MonitorEffekte::STORYS.size, 17].min, plan.size
+        assert_equal plan.size, plan.map { |e| e[:story] }.uniq.size, 'jede Story höchstens einmal am Tag'
+        assert_equal plan, MonitorEffekte.story_plan(montag), 'gleicher Plan für dasselbe Datum'
+        pausen = MonitorEffekte::STORY_PAUSEN.map { |v, b, _| [v, b].map { |z| h, m = z.split(':').map(&:to_i); (h * 60 + m) * 60 } }
+        plan.each do |e|
+            assert pausen.any? { |a, b| e[:sekunde] >= a && e[:sekunde] + MonitorEffekte.story_dauer(e[:story]) <= b }, "#{e[:sekunde]} liegt nicht in einer Pause"
+        end
+        plan.each_cons(2) { |x, y| assert y[:sekunde] - x[:sekunde] >= MonitorEffekte.story_dauer(x[:story]) }
+        assert_equal [], MonitorEffekte.story_plan(Date.new(2026, 11, 21)), 'samstags keine Storys'
+        # mit genug Storys sind alle 17 Plätze belegt: 3 + 1 + 1 + 2 · 6
+        viele = (1..20).map { |i| "s#{i}" }
+        voll = MonitorEffekte.story_plan(montag, viele)
+        assert_equal 17, voll.size
+        assert_equal 3, voll.count { |e| e[:sekunde] < 8 * 3600 }
+        # eingestellte Pausen werden geprüft und genutzt
+        assert_equal [['09:00', '09:10', 2], ['11:00', '11:05', 1]], MonitorEffekte.pausen_pruefen([['11:00', '11:05', '1'], ['9:00', '09:10', 2]])
+        assert_nil MonitorEffekte.pausen_pruefen([['10:00', '09:00', 1]])
+        assert_nil MonitorEffekte.pausen_pruefen([['10:00', '10:05', 0]])
+        assert_nil MonitorEffekte.pausen_pruefen([['25:00', '25:05', 1]])
+        assert_nil MonitorEffekte.pausen_pruefen('kaputt')
+        eigene = MonitorEffekte.story_plan(montag, viele, [['09:00', '09:10', 2]])
+        assert_equal 2, eigene.size
+        assert eigene.all? { |e| e[:sekunde] >= 9 * 3600 && e[:sekunde] + MonitorEffekte.story_dauer(e[:story]) <= 9 * 3600 + 600 }
+        # wenige Storys verteilen sich über den Tag, nicht nur auf die ersten Pausen
+        tage = (0..20).map { |i| MonitorEffekte.story_plan(montag + i * 7, %w(a b c d e f)) }
+        assert tage.any? { |tp| tp.last[:sekunde] > 12 * 3600 }
+    end
+
+    def test_story_plan_long_story
+        # die Abflugtafel darf 80 s dauern und bekommt in ihrer Pause so viel Platz
+        assert_equal 80, MonitorEffekte.story_dauer('abflug')
+        assert_equal MonitorEffekte::STORY_DAUER, MonitorEffekte.story_dauer('roehre')
+        (0..30).each do |i|
+            tag = Date.new(2026, 11, 16) + i
+            plan = MonitorEffekte.story_plan(tag, %w(abflug roehre), [['10:35', '10:38', 2]])
+            next if plan.empty?
+            a = (10 * 60 + 35) * 60
+            plan.each { |e| assert e[:sekunde] >= a && e[:sekunde] + MonitorEffekte.story_dauer(e[:story]) <= a + 180 }
+            plan.each_cons(2) { |x, y| assert y[:sekunde] - x[:sekunde] >= MonitorEffekte.story_dauer(x[:story]) + MonitorEffekte::STORY_LUECKE - 1 }
+        end
+        # sechs Storys normaler Länge passen in 7 Minuten (415 s), mit der langen nicht mehr (430 s):
+        # dann fällt die lange für heute aus
+        voll = MonitorEffekte.story_plan(Date.new(2026, 11, 16), %w(abflug a b c d e), [['10:00', '10:07', 6]])
+        assert_equal %w(a b c d e), voll.map { |e| e[:story] }.sort
+    end
+
+    def test_story_plan_blocked_times
+        # die Abflugtafel kommt nie zwischen 7:45 und 8:00 Uhr, aber an Schultagen trotzdem
+        tage = (0..60).map { |i| Date.new(2026, 11, 16) + i }.reject { |d| d.saturday? || d.sunday? }
+        tage.each do |tag|
+            plan = MonitorEffekte.story_plan(tag)
+            abflug = plan.select { |e| e[:story] == 'abflug' }
+            assert_equal 1, abflug.size, "#{tag}: Abflugtafel fehlt"
+            abflug.each { |e| assert e[:sekunde] >= 8 * 3600, "#{tag}: Abflugtafel um #{e[:sekunde] / 3600}:#{e[:sekunde] % 3600 / 60}" }
+            assert_equal plan.size, plan.map { |e| e[:story] }.uniq.size
+        end
+        # nur die gesperrte Pause: dann fällt sie aus
+        nur_frueh = MonitorEffekte.story_plan(Date.new(2026, 11, 16), %w(abflug roehre), [['07:46', '08:00', 3]])
+        assert_equal ['roehre'], nur_frueh.map { |e| e[:story] }
     end
 
     def test_easter_sunday

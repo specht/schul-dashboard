@@ -277,6 +277,11 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await expect(courses.locator('a[href="/directory/11"]')).toBeHidden();
       await fold.click();
       await expect(courses.locator('a[href="/directory/11"]')).toBeVisible();
+      // in the school's order: the years 11 and 12 after the classes
+      const others = await courses.locator('.pv-sheet-links').last().locator('a').evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+      expect(others.indexOf('/directory/5b')).toBeGreaterThanOrEqual(0);
+      expect(others.indexOf('/directory/11')).toBeGreaterThan(others.indexOf('/directory/5b'));
+      expect(others.indexOf('/directory/12')).toBeGreaterThan(others.indexOf('/directory/11'));
       await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
       await expect(courses).toHaveCount(0);
       // "Woche": the days of the week one below the other
@@ -1433,6 +1438,42 @@ test('Neues Design: Mehr öffnet ohne Flackern', async ({ page }, testInfo) => {
     expect(veils.length).toBeGreaterThan(3);
     expect(veils[0], veils.join(', ')).toBeLessThan(0.6);
     for (let i = 1; i < veils.length; i++) expect(veils[i], veils.join(', ')).toBeGreaterThanOrEqual(veils[i - 1] - 0.01);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Waiting for the server: the old design shows "Einen Moment bitte" in the
+// page after half a second (and pushes the page down); the new design a thin
+// bar along the top edge instead, gone when the answer is there.
+test('Neues Design: Warten als Leiste oben statt Kasten', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.route('**/api/pv_slow_probe', async (route) => {
+    await new Promise((r) => setTimeout(r, 1500));
+    await route.fulfill({ json: { ok: true } });
+  });
+  const call = () => page.evaluate(() => { (window as any).api_call('/api/pv_slow_probe', {}, () => { (window as any).pv_probe_done = true; }); });
+  // the old design: the box, as before
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/profil');
+  await call();
+  await expect(page.locator('.api_messages').first()).toContainText('Einen Moment bitte');
+  await expect(page.locator('.pv-busy')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => (window as any).pv_probe_done === true)).toBe(true);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/profil');
+    const bar = page.locator('.pv-busy');
+    await expect(bar).toBeHidden();
+    await call();
+    await expect(bar).toBeVisible();
+    const box = (await bar.boundingBox())!;
+    expect(box.y).toBe(0);
+    expect(box.height).toBeLessThanOrEqual(4);
+    // no box in the page
+    await expect(page.locator('.api_messages').first()).toBeHidden();
+    await expect.poll(() => page.evaluate(() => (window as any).pv_probe_done === true)).toBe(true);
+    await expect(bar).toBeHidden();
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

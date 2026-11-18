@@ -288,7 +288,13 @@
         menu.dataset.pvFolded = '1';
         var items = Array.prototype.slice.call(menu.querySelectorAll('a.dropdown-item'));
         var own = items.filter(function(a) { return a.getAttribute('data-own') === '1'; });
-        var others = items.filter(function(a) { return a.getAttribute('data-own') !== '1'; });
+        // the others in the school's order (the server lists the years 11
+        // and 12 apart for some, before the rest)
+        var order = function(a) { return parseInt(a.getAttribute('data-order') || '999', 10); };
+        var others = items.filter(function(a) { return a.getAttribute('data-own') !== '1'; })
+            .map(function(a, i) { return [a, i]; })
+            .sort(function(x, y) { return order(x[0]) - order(y[0]) || x[1] - y[1]; })
+            .map(function(x) { return x[0]; });
         if (others.length === 0) return;
         var own_classes = own.filter(function(a) { return /^Klasse\b/.test(a.textContent.trim()); });
         var own_courses = own.filter(function(a) { return own_classes.indexOf(a) < 0; });
@@ -329,6 +335,27 @@
         });
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fold_group_menu); else fold_group_menu();
+
+    // ---------- Waiting for the server ----------
+    // api_call (code.js) writes "Einen Moment bitte …" into the page's
+    // message area after half a second, which pushes the page down. The new
+    // design shows a thin bar at the top edge instead (preview.css); the old
+    // design keeps its box.
+    function busy_bar() {
+        if (!document.body || !document.body.classList.contains('ui-preview') || document.querySelector('.pv-busy')) return;
+        var bar = document.createElement('div');
+        bar.className = 'pv-busy';
+        bar.hidden = true;
+        bar.setAttribute('role', 'progressbar');
+        bar.setAttribute('aria-label', 'Wird geladen');
+        document.body.appendChild(bar);
+        var update = function() {
+            var busy = !!document.querySelector('.api_messages .fa-spin');
+            if (bar.hidden === busy) bar.hidden = !busy;
+        };
+        new MutationObserver(update).observe(document.body, { childList: true, subtree: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', busy_bar); else busy_bar();
 
     // ---------- The navigation by task (new design) ----------
     // Heute, Nachrichten, Datentresor, then one entry each for Unterricht (my

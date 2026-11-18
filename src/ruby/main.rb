@@ -2921,8 +2921,11 @@ class Main < Sinatra::Base
                     if can_see_all_timetables_logged_in?
                         klassen = @@klassen_order
                     end
+                    # the position in the school's order: data-order (the new design
+                    # sorts the folded "Weitere Lerngruppen" by it)
+                    klasse_order = lambda { |klasse| @@klassen_order.index(klasse) || 999 }
                     klassen.each do |klasse|
-                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}'#{own_klassen.include?(klasse) ? " data-own='1'" : ''}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}' data-order='#{klasse_order.call(klasse)}'#{own_klassen.include?(klasse) ? " data-own='1'" : ''}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         remaining_klassen.delete(klasse)
                     end
                     _first = true
@@ -2936,7 +2939,7 @@ class Main < Sinatra::Base
                     unless remaining_klassen.empty?
                         io.puts "<div class='dropdown-divider'></div>"
                         remaining_klassen.each do |klasse|
-                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}' data-order='#{klasse_order.call(klasse)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         end
                     end
                     io.puts "</div>"

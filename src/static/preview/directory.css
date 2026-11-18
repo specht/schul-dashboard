@@ -90,7 +90,7 @@
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    min-width: 12rem;
+    min-width: 14rem;
 }
 
 .pv-dir-pic {
@@ -170,7 +170,7 @@
    grow to the whole address), a bit narrower than on their own; cqw: the
    width of the list, not of the window */
 .ui-preview .pv-dir-table .pv-copy {
-    width: clamp(10.5rem, 23cqw, 19rem);
+    width: clamp(10rem, 21cqw, 19rem);
 }
 
 .ui-preview .pv-dir-teachers .pv-copy {
@@ -230,12 +230,6 @@
     width: 44px;
     padding-left: 0;
     text-align: right;
-}
-
-.ui-preview .pv-dir-more .ti {
-    font-size: 1.15rem;
-    line-height: 1;
-    vertical-align: middle;
 }
 
 /* the person from the quick search (#quick=…) */
@@ -566,13 +560,48 @@
     gap: 10px;
 }
 
-.pv-dir-dd-act .pv-lact {
+/* »Wechseln«, »Vergeben«: a quiet text button (like .pv-lact, which phones
+   hide in list rows) */
+.ui-preview .pv-dir-ddbtn {
+    flex: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
     margin: -5px -8px -5px 0;
+    padding: 5px 9px;
+    min-height: 31px;
+    background: transparent;
+    color: var(--acc-text);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-preview .pv-dir-ddbtn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-dir-ddbtn:focus {
+    outline: none;
+}
+
+.ui-preview .pv-dir-ddbtn:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-dir-ddbtn:disabled {
+    opacity: 0.6;
 }
 
 @media (max-width: 479px) {
     .pv-dir-dl-row {
+        grid-template-columns: 7rem minmax(0, 1fr);
+        gap: 2px 10px;
+    }
+
+    .pv-dir-dl-row.pv-dir-dl-wide {
         grid-template-columns: minmax(0, 1fr);
-        gap: 2px;
     }
 }

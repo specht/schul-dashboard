@@ -112,7 +112,7 @@ test('Neues Design: Klassenliste der eigenen Klasse', async ({ page }, testInfo)
     const confirm = dashboardDialog(page);
     await expect(confirm).toBeVisible();
     await expect(modal).toBeHidden();
-    await expect(confirm).toContainText('Möchten Sie das Dashboard-Amt an Max Mustermann vergeben?');
+    await expect(confirm).toContainText('Möchtest du das Dashboard-Amt an Max Mustermann vergeben?');
     await confirm.getByRole('button', { name: 'Vergeben' }).click();
     await expect(max.locator('.pv-dir-amt')).toBeVisible();
     // and taken back
@@ -121,7 +121,7 @@ test('Neues Design: Klassenliste der eigenen Klasse', async ({ page }, testInfo)
     await expect(amt_row.locator('dd span')).toHaveText('ja');
     await amt_row.getByRole('button', { name: 'Entziehen' }).click();
     await expect(confirm).toBeVisible();
-    await expect(confirm).toContainText('Möchten Sie Max Mustermann das Dashboard-Amt entziehen?');
+    await expect(confirm).toContainText('Möchtest du Max Mustermann das Dashboard-Amt entziehen?');
     await confirm.getByRole('button', { name: 'Entziehen' }).click();
     await expect(max.locator('.pv-dir-amt')).toBeHidden();
 
@@ -169,7 +169,7 @@ test('Neues Design: Klassenliste der eigenen Klasse', async ({ page }, testInfo)
 });
 
 // Another class (not the admin's own) and a course: the Antikenfahrt in 11,
-// the class of each student in a course, no class teacher's actions.
+// no class teacher's actions; a course without the class sections.
 test('Neues Design: Klasse 11 und ein Kurs', async ({ page }, testInfo) => {
   const phone = testInfo.project.name === 'mobile';
   await login(page, ACCOUNTS.admin);
@@ -189,20 +189,29 @@ test('Neues Design: Klasse 11 und ein Kurs', async ({ page }, testInfo) => {
     }
     await alice.locator('.pv-dir-name').click();
     const modal = page.locator('#directoryStudentModal');
-    await expect(modal.locator('.pv-dir-dl dt')).toContainText(['Antikenfahrt', 'Tutor:in']);
+    await expect(modal.locator('.pv-dir-dl dt')).toContainText(['Tutor:in', 'Letzter Zugriff', 'Gruppe', 'Antikenfahrt']);
     await expect(modal.locator('.pv-dir-dl dt', { hasText: 'Dashboard-Amt' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();
     // a student without a birthday
     await expect(page.locator('.pv-dir-row', { hasText: 'Ohnegeburtstag, Gina' }).locator('.pv-dir-facts')).not.toContainText('–');
 
-    // a course: the class of each student, the course's mailing lists
+    // a course (nobody in it in the example data): the course's mailing
+    // lists, no class sections
     await page.goto('/directory/LA-L108_11~12');
     await expect(page.locator('.pv-dir-head h2')).toHaveText('Latein LK (11, 12)');
-    await expect(page.locator('.pv-dir-row').first().locator('.pv-dir-facts')).toContainText(/^Klasse 1[12]/);
+    await expect(page.locator('.pv-dir-students .pv-lempty')).toHaveText('In diesem Kurs ist zurzeit niemand eingetragen.');
     await expect(page.locator('.pv-dir-list-label')).toHaveText(['Schülerinnen und Schüler', 'Eltern']);
     await expect(page.locator('.pv-dir-tools-sec')).toHaveCount(0);
     await expect(page.locator('.pv-dir-teachers-sec')).toHaveCount(0);
+
+    // a class without students: an empty state (today's table fails there,
+    // TODO.md)
+    const empty = await page.goto('/directory/5b');
+    expect(empty!.status()).toBe(200);
+    await expect(page.locator('.pv-dir-head h2')).toHaveText('Klasse 5b');
+    await expect(page.locator('.pv-dir-students .pv-lempty')).toHaveText('In dieser Klasse ist zurzeit niemand eingetragen.');
+    await expect(page.locator('.pv-dir-list-label')).toHaveText(['Schülerinnen und Schüler', 'Eltern', 'Lehrkräfte']);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

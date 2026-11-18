@@ -88,9 +88,14 @@
         (s.views || []).forEach(function (fn) { fn(); });
     }
 
+    // the dialog is filled anew for every student: its views go with it
+    var collecting = null;      // while the dialog is filled
+    var dialog_views = [];
+
     function watch(s, fn) {
         s.views = s.views || [];
         s.views.push(fn);
+        if (collecting) collecting.push([s, fn]);
         fn();
     }
 
@@ -211,7 +216,6 @@
 
     // ---------- a student: the dialog (a sheet on phones) ----------
     var modal = null;
-    var shown = null;
 
     function build_modal() {
         modal = el('div', 'modal pv-sheet pv-dir-modal');
@@ -234,11 +238,11 @@
         dialog.appendChild(content);
         modal.appendChild(dialog);
         document.body.appendChild(modal);
-        $(modal).on('hidden.bs.modal', function () { shown = null; });
     }
 
     function dl_row(dl, label, value) {
-        var row = el('div', 'pv-dir-dl-row');
+        // an address takes the whole width on phones
+        var row = el('div', 'pv-dir-dl-row' + (value instanceof Element && value.classList.contains('pv-copy') ? ' pv-dir-dl-wide' : ''));
         row.appendChild(el('dt', null, label));
         var dd = el('dd');
         if (value instanceof Node) dd.appendChild(value); else dd.textContent = value;
@@ -251,7 +255,7 @@
     function value_with_action(text_fn, label_fn, run, s) {
         var box = el('div', 'pv-dir-dd-act');
         var span = el('span');
-        var b = el('button', 'pv-lact');
+        var b = el('button', 'pv-dir-ddbtn');
         b.type = 'button';
         box.appendChild(span);
         box.appendChild(b);
@@ -265,7 +269,10 @@
 
     function open_student(s) {
         if (!modal) build_modal();
-        shown = s;
+        dialog_views.forEach(function (x) {
+            x[0].views = x[0].views.filter(function (fn) { return fn !== x[1]; });
+        });
+        collecting = [];
         var who = modal.querySelector('.pv-dir-modal-who');
         who.textContent = '';
         who.appendChild(picture(s, 'pv-dir-pic-lg'));
@@ -328,6 +335,8 @@
         close.type = 'button';
         close.setAttribute('data-dismiss', 'modal');
         foot.appendChild(close);
+        dialog_views = collecting;
+        collecting = null;
         $(modal).modal('show');
     }
 

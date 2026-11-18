@@ -83,6 +83,15 @@ hierher übernehmen, wenn sie angegangen werden.
       (z. B. `/directory` ohne Klasse, `/lessons/<unbekannt>`, `/c/<unbekannt>`);
       unbekannte Seiten liefern eine leere Seite. Freundliche 404/500-Seiten
       im Stil der Neustart-Seite
+- [ ] Klassenliste einer Klasse ohne Schüler:innen (Beispieldaten: `/directory/5b`)
+      endet für Lehrkräfte im bisherigen Design in HTTP 500
+      (`mail_addresses_table`: `@@schueler_for_klasse[klasse].size`); das neue
+      Design zeigt einen leeren Zustand
+- [ ] `/api/print_email_letters`: der `reject!`-Block verlässt mit `return true`
+      die ganze Route, statt die Adresse auszusortieren – Lehrkräfte ohne
+      Klassenleitung bekommen statt einer Fehlermeldung eine leere Antwort
+      (»Alle E-Mail-Briefe« zeigt das neue Design nur Klassenleitung,
+      Admins und Sekretariat)
 - [ ] Zugangsprüfungen per `require_…!`/`assert` auf Seiten führen zu
       HTTP 500 statt zu Umleitung oder Hinweis – laut Smoke-Test 153 Fälle
       über alle Rollen (`bib_*`, `kurslisten`, `pk5`, `lab8/9`, `aula*`,

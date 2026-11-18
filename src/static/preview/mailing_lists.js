@@ -15,7 +15,7 @@
 (function () {
     var data = window.pv_mailing_lists;
     var script = document.currentScript;
-    if (!data || !window.pv_list || !document.body.classList.contains('ui-preview') || !script) return;
+    if (!data || !window.pv_list || !window.pv_copy || !document.body.classList.contains('ui-preview') || !script) return;
 
     var mount = script.closest('.ml-table');
     var container = script.closest('.container');
@@ -47,83 +47,12 @@
         return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     }
 
-    // ---------- copying ----------
-    var live = el('div', 'sr-only');
-    live.setAttribute('aria-live', 'polite');
-    document.body.appendChild(live);
-
-    function copy_text(text, near, done) {
-        function fallback() {
-            // inside an open dialog, so that it keeps the focus
-            var host = (near && near.closest('.modal')) || document.body;
-            var ta = el('textarea');
-            ta.value = text;
-            ta.setAttribute('readonly', '');
-            ta.style.position = 'fixed';
-            ta.style.top = '0';
-            ta.style.left = '0';
-            ta.style.opacity = '0';
-            host.appendChild(ta);
-            ta.select();
-            var ok = false;
-            try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
-            ta.remove();
-            if (near) near.focus({ preventScroll: true });
-            return ok;
-        }
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallback()); });
-        } else {
-            done(fallback());
-        }
-    }
-
-    // the confirmation: a green Tabler check in place of the copy icon, with
-    // a quick pop (preview/mailing_lists.css); screen readers hear the live
-    // region
-    var CHECK = "<i class='pv-ml-done ti ti-check' aria-hidden='true'></i>";
-    function check_mark() {
-        var holder = document.createElement('span');
-        holder.innerHTML = CHECK;
-        return holder.firstChild;
-    }
-
-    // a button that copies: the check for a moment, announced for screen readers
-    function copied(button, what) {
-        button.classList.add('pv-ml-copied');
-        live.textContent = what + ' kopiert';
-        clearTimeout(button.pv_ml_timer);
-        button.pv_ml_timer = setTimeout(function () {
-            button.classList.remove('pv-ml-copied');
-        }, 1600);
-    }
-
-    function copy_failed() {
-        dashboardAlert('Das ließ sich nicht in die Zwischenablage kopieren. ' + (data.du ? 'Du kannst' : 'Sie können') + ' die Adresse markieren und selbst kopieren.', 'Kopieren');
-    }
-
-    // the address as a quiet button: one click copies it
+    // ---------- copying (pv_copy in preview.js) ----------
+    // the address as a quiet one-line field: one click copies it, a green
+    // check for a moment, announced for screen readers
     function address_button(email) {
-        var b = el('button', 'pv-ml-addr');
-        b.type = 'button';
+        var b = pv_copy.field(email, { what: 'Adresse', cls: 'pv-ml-addr' });
         b.setAttribute('data-email', email);
-        b.setAttribute('title', email + ' kopieren');
-        b.setAttribute('aria-label', email + ' kopieren');
-        // one line; a long address ends in "…" (preview/mailing_lists.css)
-        var text = el('span', 'pv-ml-addr-text', email);
-        b.appendChild(text);
-        // the copy segment at the end of the field, the check appears there
-        var end = el('span', 'pv-ml-addr-copy');
-        end.appendChild(icon('copy'));
-        end.appendChild(check_mark());
-        b.appendChild(end);
-        b.addEventListener('click', function (e) {
-            e.stopPropagation();
-            var button = e.currentTarget;
-            copy_text(email, button, function (ok) {
-                if (ok) copied(button, 'Adresse'); else copy_failed();
-            });
-        });
         return b;
     }
 
@@ -152,9 +81,10 @@
             "<p class='pv-ml-bcc'>Falls der Verteiler einmal nicht funktioniert: »Alle Adressen kopieren« und die Adressen in das BCC-Feld einfügen.</p>" +
             "</div>" +
             "<div class='modal-footer'>" +
-            "<button type='button' class='btn btn-secondary' id='bu_ml_copy_all'><i class='ti ti-copy' aria-hidden='true'></i>" + CHECK + "<span class='pv-ml-copy-label'>Alle Adressen kopieren</span></button>" +
+            "<button type='button' class='btn btn-secondary' id='bu_ml_copy_all'><span class='pv-ml-copy-label'>Alle Adressen kopieren</span></button>" +
             "<button type='button' class='btn btn-secondary' data-dismiss='modal'>Schließen</button>" +
             "</div></div></div>";
+        modal.querySelector('#bu_ml_copy_all').prepend(pv_copy.icons());
         modal.querySelector('.pv-ml-people-search').prepend(icon('search'));
         document.body.appendChild(modal);
         modal.querySelector('#ti_ml_people_search').addEventListener('input', function (e) {
@@ -164,9 +94,7 @@
             var button = e.currentTarget;
             if (!current || !cache[current.email]) return;
             var text = cache[current.email].map(function (p) { return p.email; }).join('; ');
-            copy_text(text, button, function (ok) {
-                if (ok) copied(button, 'Alle Adressen'); else copy_failed();
-            });
+            pv_copy.run(button, text, { what: 'Alle Adressen' });
         });
     }
 
@@ -214,7 +142,7 @@
         search.parentNode.hidden = list.count <= 12;
         var copy_all = modal.querySelector('#bu_ml_copy_all');
         copy_all.disabled = true;
-        copy_all.classList.remove('pv-ml-copied');
+        copy_all.classList.remove('pv-copied');
         var box = modal.querySelector('.pv-ml-people');
         box.textContent = '';
         if (cache[list.email]) {

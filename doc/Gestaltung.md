@@ -175,6 +175,10 @@ Aktionen und das Verhalten am Handy.
   wichtigsten Werte, der Rest beim Öffnen der Zeile.
 - Echte Matrizen (Noten pro Arbeit, Anwesenheit pro Tag) scrollen am Handy
   seitlich, die erste Spalte bleibt stehen.
+- Ob Tabelle oder Listenzeilen, entscheidet die Breite der Liste
+  (Container-Abfrage), nicht das Gerät: Tablets hochkant zeigen schon
+  Listenzeilen. Eine Listenzeile öffnet einen Dialog (am Handy ein Sheet)
+  mit allen Angaben und Aktionen (Beispiel: Klassenliste).
 
 **Lange Listen und Archiv**
 
@@ -228,7 +232,10 @@ Umfragen, Termine, News verwalten)
   leiser Knopf mit Kopier-Symbol; ein Klick kopiert, an Stelle des Symbols
   erscheint kurz ein grüner Haken (Tabler, springt kurz auf, gleich groß, damit
   nichts verrutscht; Screenreader hören »kopiert«). Kein Dialog, kein
-  eigenes Eingabefeld.
+  eigenes Eingabefeld. Adressen stehen dafür als einzeiliges graues Feld
+  mit dem Kopier-Feld am Ende da; lange Adressen enden in »…«, der Tooltip
+  zeigt sie ganz (`pv_copy` in `preview.js`, `.pv-copy` in `preview.css`;
+  Beispiele: Verteiler, Klassenliste).
 
 ## 8. Dialoge, Sheets und Menüs
 

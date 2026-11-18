@@ -1202,3 +1202,26 @@ test('Neues Design: Gewähltes bleibt dunkel sichtbar', async ({ page }, testInf
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Phones: the shade behind the day's title only (the backdrop keeps its
+// colours), its edge level with the plan button and the day tiles, the date
+// level with the button's text.
+test('Neues Design: Tageskopf am Handy bündig', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Tageskopf am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.pv-band-text h1')).toBeVisible();
+    const x = await page.evaluate(() => {
+      const left = (s: string) => Math.round(document.querySelector(s)!.getBoundingClientRect().x);
+      const text = (s: string) => { const r = document.createRange(); r.selectNodeContents(document.querySelector(s)!); return Math.round(r.getBoundingClientRect().x); };
+      return { plan: left('.pv-band-plan'), pill: left('.pv-band-text'), tiles: left('.pv-strip-day'), planText: text('.pv-band-plan span'), title: text('.pv-band-text h1') };
+    });
+    expect(Math.abs(x.pill - x.plan)).toBeLessThanOrEqual(1);
+    expect(Math.abs(x.pill - x.tiles)).toBeLessThanOrEqual(1);
+    expect(Math.abs(x.title - x.planText)).toBeLessThanOrEqual(1);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

@@ -2134,7 +2134,8 @@ html {
     .ui-preview.pv-agenda-on .pv-day-band:not([hidden]) {
         display: block;
         margin: 0 -15px 14px;
-        padding: calc(10px + env(safe-area-inset-top, 0px)) 18px 4px;
+        /* the left edge level with the day tiles below */
+        padding: calc(10px + env(safe-area-inset-top, 0px)) 15px 4px;
         color: var(--band-ink);
         text-shadow: var(--band-shadow);
     }
@@ -2146,11 +2147,13 @@ html {
     /* the shade for the text on the backdrop: only behind the day and its
        line (as on the desktop's week title), not across the whole top – a
        light shade there washed the scheme's colours out */
+    /* its edge level with the plan button and the day tiles, the text level
+       with the button's text */
     .pv-band-text {
         width: fit-content;
-        max-width: calc(100% + 28px);
-        margin: 0 -14px;
-        padding: 6px 14px 8px;
+        max-width: 100%;
+        margin: 0;
+        padding: 6px 12px 8px;
         border-radius: 16px;
         background: rgba(var(--band-scrim), var(--band-scrim-a));
     }

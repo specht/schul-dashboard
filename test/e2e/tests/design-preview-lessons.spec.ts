@@ -257,6 +257,91 @@ test('Neues Design: Kursbuch auf breiten Bildschirmen ohne Lücke rechts', async
   }
 });
 
+// Wide lists (from 900 px of list, beside the sidebar and the pane): the
+// lessons as a table with column headings, each entry in its column, the
+// rest as quiet icons, empty cells empty, rows compact. Narrower: the rows
+// with labels again.
+test('Neues Design: Kursbuch auf breiten Bildschirmen als Tabelle', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'breiter Bildschirm');
+  await page.setViewportSize({ width: 1840, height: 920 });
+  const stamp = Date.now().toString(36);
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/lessons/Ma_5a');
+    await expect(weekRow(page)).toBeVisible();
+    // the lesson after the first one of the week (the first test writes there)
+    const offset = 1 + await weekRow(page).evaluate((tr) => (window as any).jQuery(tr).data('lesson_offset'));
+    const r = await page.request.post('/api/save_lesson_data', {
+      data: {
+        lesson_key: 'Ma_5a', lesson_offsets: [offset], data: {
+          thema: `Tabelle ${stamp}`, stundenthema_text: `Für alle ${stamp}`, hausaufgaben_text: `AB ${stamp}`,
+          homework_est_time: '20', homework_nc: true, notizen: `Notiz ${stamp}`, lesson_jitsi: true,
+        },
+      },
+    });
+    expect(r.status()).toBe(200);
+    await page.reload();
+
+    // the column headings
+    const heads = page.locator('tr.pv-kb-colhead th');
+    await expect(heads).toHaveText(['Nr.', 'Datum', /^Thema/, /^Stundenthema/, 'Hausaufgaben', 'Weiteres']);
+    await expect(heads.nth(2)).toBeVisible();
+
+    // each entry in its column, all in one line
+    const row = page.locator('tr.lesson').nth(offset);
+    await row.scrollIntoViewIfNeeded();
+    await expect(row.locator('.pv-kb-title')).toHaveText(`Tabelle ${stamp}`);
+    await expect(row.locator('.pv-kb-topic .pv-kb-v')).toHaveText(`Für alle ${stamp}`);
+    await expect(row.locator('.pv-kb-hw .pv-kb-v')).toHaveText(`AB ${stamp}`);
+    await expect(row.locator('.pv-kb-hw-meta')).toBeVisible();
+    await expect(row.locator('.pv-kb-hw-meta')).toContainText('etwa 20 Min.');
+    await expect(row.locator('.pv-kb-hw-meta')).toContainText('Nextcloud');
+    // no labels in the cells (the headings say it), no line of facts
+    await expect(row.locator('.pv-kb-topic .pv-kb-k')).toBeHidden();
+    await expect(row.locator('.pv-kb-facts')).toBeHidden();
+    // the note and Jitsi as quiet icons with their meaning
+    await expect(row.locator('.pv-kb-note')).toBeHidden();
+    await expect(row.locator(`.pv-kb-marks [aria-label="Notiz: Notiz ${stamp}"]`)).toBeVisible();
+    await expect(row.locator('.pv-kb-marks [aria-label="Jitsi"]')).toBeVisible();
+    const columns: [string, number][] = [['.pv-kb-title', 2], ['.pv-kb-topic', 3], ['.pv-kb-hw', 4], ['.pv-kb-marks', 5]];
+    const rowBox = (await row.boundingBox())!;
+    for (const [cell, head] of columns) {
+      const box = (await row.locator(cell).boundingBox())!;
+      const headBox = (await heads.nth(head).boundingBox())!;
+      expect(Math.abs(box.x - headBox.x), cell).toBeLessThan(2);
+      expect(box.x + box.width, cell).toBeLessThanOrEqual(headBox.x + headBox.width + 1);
+    }
+    expect(rowBox.height).toBeLessThanOrEqual(44);
+
+    // empty lessons: nothing repeated, compact
+    const empty = await page.locator('tr.lesson').evaluateAll((trs) => trs
+      .filter((tr) => !tr.querySelector('.pv-kb-title, .pv-kb-topic, .pv-kb-hw, .pv-kb-marks'))
+      .map((tr) => ({ h: tr.getBoundingClientRect().height, text: (tr as HTMLElement).innerText })));
+    expect(empty.length).toBeGreaterThan(0);
+    for (const e of empty) {
+      expect(e.h).toBeLessThanOrEqual(44);
+      expect(e.text).not.toContain('Noch nichts eingetragen');
+    }
+    expect(await page.locator('.pv-kb').innerText()).not.toContain('·');
+
+    // the headings stay in view while the list scrolls
+    await page.mouse.wheel(0, 1500);
+    await expect.poll(async () => (await heads.nth(2).boundingBox())!.y).toBeLessThan(40);
+    await expect(heads.nth(2)).toBeInViewport();
+
+    // a narrower window: the rows with labels again
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(heads.nth(2)).toBeHidden();
+    await row.scrollIntoViewIfNeeded();
+    await expect(row.locator('.pv-kb-topic .pv-kb-k')).toBeVisible();
+    await expect(row.locator('.pv-kb-note')).toBeVisible();
+    await expect(row.locator('.pv-kb-marks')).toBeHidden();
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('Kursbuch ohne Vorschau: wie bisher', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

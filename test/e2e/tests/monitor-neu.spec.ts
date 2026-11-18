@@ -3,8 +3,10 @@ import type { Page } from '@playwright/test';
 
 // New design of the hallway monitors (include/monitor_neu.rb,
 // preview/monitor/monitor.css and .js): only with ?design=neu or
-// ?design=neu-dunkel in the monitor's address. Without it the monitors stay
-// exactly as they are (also for admins with the design preview switched on).
+// ?design=neu-dunkel in the monitor's address, or for someone whose account
+// has the new design switched on (the previews in manage_monitor). Without
+// that the monitors stay exactly as they are; the screens log in with the
+// monitor account, which never has the new design.
 //
 // The test stack has no substitution plan, so the tests answer /ws_monitor
 // themselves with a full school day (the same messages the server sends)
@@ -221,14 +223,20 @@ test('Flurmonitor, neues Design: Effekte laufen hinter den Kästen', async ({ pa
   await page.clock.runFor(2500);
 });
 
-// The opt-in is explicit and only for the hallway: without it, and on the
-// monitors of Sekretariat and Lehrerzimmer, nothing of the new design is
-// loaded – also not for an admin with the design preview switched on.
+// Only for the hallway, and only with ?design=neu or the account's new
+// design: on the monitors of Sekretariat and Lehrerzimmer, with ?design=alt
+// (or any other value), and without the account's new design nothing of it
+// is loaded.
 test('Flurmonitor, neues Design: nur mit ?design=neu und nur im Flur', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
+  // without the new design in the account: today's monitor
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  expect(await (await page.request.get('/monitor')).text()).not.toContain('/preview/monitor/');
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
-    for (const path of ['/monitor', '/monitor?design=alt', '/monitor?design=', '/monitor?design[]=neu',
+    // with it: the new monitor in the previews (manage_monitor's iframe)
+    expect(await (await page.request.get('/monitor')).text()).toContain('/preview/monitor/monitor.js');
+    for (const path of ['/monitor?design=alt', '/monitor?design=', '/monitor?design[]=neu',
       '/monitor/lz?design=neu', '/monitor/sek?design=neu', '/monitor/lz', '/monitor/sek']) {
       const html = await (await page.request.get(path)).text();
       expect(html, path).not.toContain('monitor_neu');

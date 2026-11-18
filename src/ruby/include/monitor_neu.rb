@@ -2,9 +2,10 @@
 # screen: only a monitor whose address ends in ?design=neu (light) or
 # ?design=neu-dunkel (dark) shows it, e.g. /monitor/<deep link>?design=neu.
 # Without the parameter monitor.html renders exactly as before, byte for byte
-# (every helper below returns '' then). The preview switch of an account
-# (ui_preview?) never reaches the monitors – also not with this parameter, the
-# page keeps the template without the new frame.
+# (every helper below returns '' then) – for the screens, which log in with
+# the monitor account. Someone whose own account has the new design switched
+# on sees the new monitor too (the previews in manage_monitor); ?design=alt
+# shows today's layout. The page keeps the template without the new frame.
 #
 # Only the monitors in the hallway: Sekretariat, Lehrerzimmer and Silentium
 # keep their layout, also with the parameter.
@@ -24,16 +25,27 @@ class Main < Sinatra::Base
     def monitor_neu?
         path = ((request.path rescue '') || '').to_s
         return false unless path == '/monitor' || path.start_with?('/monitor/')
-        design = (params['design'] rescue nil)
-        return false unless design.is_a?(String) && MONITOR_NEU_DESIGNS.include?(design)
         email = (@session_user || {})[:email]
         return false if MONITOR_NEU_NICHT_IM_FLUR.any? { |x| email == "#{x}@#{SCHUL_MAIL_DOMAIN}" }
         return false if MONITOR_NEU_NICHT_IM_FLUR_PFADE.include?(path.sub(/\/\z/, ''))
-        true
+        design = (params['design'] rescue nil)
+        return true if design.is_a?(String) && MONITOR_NEU_DESIGNS.include?(design)
+        # ?design=alt (or anything else given): today's layout
+        return false unless design.nil?
+        # someone who looks at the monitor with the new design switched on in
+        # their account (the previews in manage_monitor, /monitor opened by
+        # hand) sees the new monitor too; the screens themselves log in with
+        # the monitor account, which never has it
+        return false if (@session_user || {})[:is_monitor]
+        ui_preview_account?
     end
 
     def monitor_neu_dunkel?
-        monitor_neu? && MONITOR_NEU_DESIGNS[params['design']]
+        return false unless monitor_neu?
+        design = params['design']
+        return MONITOR_NEU_DESIGNS[design] if design.is_a?(String) && MONITOR_NEU_DESIGNS.include?(design)
+        # through the account's new design: its light or dark
+        ui_dark?
     end
 
     # attribute for today's <style> in monitor.html: off with the opt-in

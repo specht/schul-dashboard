@@ -737,15 +737,23 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
-    for (const path of ['/monitor', '/monitor/lz', '/monitor/sek', '/monitor?design=neu']) {
+    for (const path of ['/monitor', '/monitor/lz', '/monitor/sek', '/monitor?design=neu', '/monitor?design=alt']) {
       const html = await (await page.request.get(path)).text();
       expect(html, path).not.toContain('ui-preview');
       expect(html, path).not.toContain('pv-tabbar');
       expect(html, path).not.toContain('/preview.css');
-      // the new monitor design is a separate opt-in per screen
-      // (?design=neu, monitor-neu.spec.ts), never the account's preview
-      if (!path.includes('design=')) expect(html, path).not.toContain('/preview/monitor/');
+      // the hallway monitor in its own new design (monitor-neu.spec.ts):
+      // with ?design=neu, or for someone with the new design switched on
+      // (the previews in manage_monitor) – not with ?design=alt, never on the
+      // Lehrerzimmer and Sekretariat monitors
+      const neu = path === '/monitor' || path.includes('design=neu');
+      if (neu) expect(html, path).toContain('/preview/monitor/');
+      else expect(html, path).not.toContain('/preview/monitor/');
     }
+    // without the new design switched on: today's monitor
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    expect(await (await page.request.get('/monitor')).text()).not.toContain('/preview/monitor/');
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/ui-preview/);
   } finally {

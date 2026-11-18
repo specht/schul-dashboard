@@ -86,6 +86,8 @@ test('Neues Design: Posteingang als Liste, Nachricht öffnen und schließen', as
       await page.waitForTimeout(1100);
     }
     await waitForInbox(page, file, mids);
+    // the page shows messages only once they are a moment old (MESSAGE_DELAY)
+    await page.waitForTimeout(1500);
     const json = JSON.parse(gunzipText(await (await page.request.get(`${file}?${Date.now()}`)).body())) as any[];
     const sender = json.find((m) => m.mid === mids[0]);
     await addComments(page, sender);
@@ -166,6 +168,11 @@ test('Neues Design: Posteingang als Liste, Nachricht öffnen und schließen', as
       await row.click();
       await reader.locator('.pv-read-back').click();
       await expect(reader).toBeHidden();
+      // closed in the page, no entry is left behind: the next back leaves the page
+      await page.goBack();
+      await expect(page).not.toHaveURL(/\/messages/);
+      await page.goForward();
+      await expect(row).toBeVisible();
       await row.click();
     } else {
       await expect(row).toHaveClass(/pv-selected/);
@@ -208,6 +215,18 @@ test('Neues Design: Posteingang als Liste, Nachricht öffnen und schließen', as
     await player.locator('.player-button').click();
     await expect(player.locator('.player-button .fa')).toHaveClass(/fa-pause|fa-play/);
     await expect.poll(() => page.evaluate(() => (window as any).pb_url as string | null)).toContain('/raw/uploads/audio_comment/pv/');
+
+    if (phone) {
+      // opened from a link: back closes the message and stays on the page
+      await page.goto('/');
+      await page.goto(`/messages#nachricht/${mids[0]}`);
+      await expect(reader.locator('.message p').first()).toHaveText(first);
+      await page.goBack();
+      await expect(reader).toBeHidden();
+      await expect(rowOf(first)).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe('/messages');
+      expect(new URL(page.url()).hash).toBe('');
+    }
   } finally {
     await page.request.post('/api/set_ui_preview', PREVIEW_OFF);
   }
@@ -231,6 +250,8 @@ test('Neues Design: 50 Zeilen, weitere beim Scrollen, Suche', async ({ page, new
       mids.push((await sent.json()).message.mid as string);
     }
     await waitForInbox(page, file, [mids[0], mids[55]]);
+    // the page shows messages only once they are a moment old (MESSAGE_DELAY)
+    await page.waitForTimeout(1500);
 
     // only the rows one sees load their text
     const bodies: string[] = [];

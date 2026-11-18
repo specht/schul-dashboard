@@ -186,6 +186,7 @@ var pv = {
     query: '',
     rendered_query: {in: null, out: null},
     open: null,                     // {box, key}
+    layer: false,                   // the opened message has its own history entry
     two: false,
     scroll: 0,
     want: null,                     // from the address, until the lists are there
@@ -369,12 +370,13 @@ function pv_parse_hash() {
     return {box: box, key: key};
 }
 
-function pv_set_url(box, key, push) {
-    let url = window.location.pathname + window.location.search + pv_hash(box, key);
-    if (push)
-        history.pushState({pv_mail: true, pushed: true}, '', url);
-    else
-        history.replaceState({pv_mail: true, pushed: !!(history.state && history.state.pushed && key)}, '', url);
+function pv_url(box, key) {
+    return window.location.pathname + window.location.search + pv_hash(box, key);
+}
+
+// the address of the current entry (keeps what preview.js keeps there)
+function pv_set_url(box, key) {
+    history.replaceState(Object.assign({}, history.state || {}, {pv_mail: true}), '', pv_url(box, key));
 }
 
 function pv_container(box) {
@@ -603,6 +605,8 @@ function pv_render_reader(box, m) {
 
 // shows a message (or the list) as the address says
 function pv_apply(state) {
+    if (state.key && pv.open && pv.open.box === state.box && pv.open.key === state.key)
+        return;
     if (state.box !== pv.box)
         pv_switch(state.box);
     let m = state.key ? pv_find(state.box, state.key) : null;
@@ -619,8 +623,9 @@ function pv_apply(state) {
         $('body').addClass('pv-mail-reading');
     } else {
         if (state.key)
-            pv_set_url(state.box, null, false);
+            pv_set_url(state.box, null);
         pv.open = null;
+        pv.layer = false;
         pv_mark_selected();
         $('.pv-mail').removeClass('pv-reading');
         $('body').removeClass('pv-mail-reading');
@@ -641,12 +646,29 @@ function pv_in_place() {
     return !pv.two && window.matchMedia('(min-width: 768px)').matches;
 }
 
+// narrow screens: the opened message is a layer in the history (preview.js,
+// pv_back) – back closes it and does not leave the page; the address names
+// the message, so that a reload opens it again
+function pv_layer_open(box, key) {
+    pv.layer = true;
+    if (window.pv_back) {
+        pv_back.opened('message', function() {
+            // back: the list's entry is the current one again
+            pv_apply({box: pv.box, key: null});
+        });
+        history.replaceState(Object.assign({}, history.state, {pv_mail: true, pushed: true}), '', pv_url(box, key));
+    } else {
+        history.pushState(Object.assign({}, history.state || {}, {pv_mail: true, pushed: true}), '', pv_url(box, key));
+    }
+}
+
 function pv_open(box, key) {
     if (!pv.two)
         pv.scroll = window.scrollY;
-    // narrow screens: an entry in the history, so that "back" closes the message
-    let push = !pv.two && !pv.open;
-    pv_set_url(box, key, push);
+    if (!pv.two && !pv.open)
+        pv_layer_open(box, key);
+    else
+        pv_set_url(box, key);
     pv_apply({box: box, key: key});
     if (!pv.two) {
         if (pv_in_place())
@@ -658,11 +680,21 @@ function pv_open(box, key) {
 }
 
 function pv_close() {
-    if (history.state && history.state.pv_mail && history.state.pushed) {
+    if (pv.layer) {
+        pv_apply({box: pv.box, key: null});
+        // back over the message's entry, so that none is left behind
+        if (window.pv_back)
+            pv_back.closed('message');
+        else
+            history.back();
+        return;
+    }
+    // after a reload: the list's entry lies behind the message's
+    if (history.state && history.state.pushed) {
         history.back();
         return;
     }
-    pv_set_url(pv.box, null, false);
+    pv_set_url(pv.box, null);
     pv_apply({box: pv.box, key: null});
 }
 
@@ -673,6 +705,12 @@ function pv_ready() {
     let state = pv.want;
     pv.want = null;
     pv_apply(state);
+    // opened from a link on a narrow screen: the list's entry behind it, so
+    // that back closes the message
+    if (pv.open && !pv.two && !(history.state && history.state.pushed)) {
+        history.replaceState(Object.assign({}, history.state || {}, {pv_mail: true}), '', pv_url(pv.open.box, null));
+        pv_layer_open(pv.open.box, pv.open.key);
+    }
 }
 
 function pv_inbox_loaded(messages) {
@@ -757,7 +795,7 @@ function pv_setup() {
         let box = (e.currentTarget.id === 'bu-inbox') ? 'in' : 'out';
         if (box === pv.box)
             return;
-        pv_set_url(box, null, false);
+        pv_set_url(box, null);
         pv_apply({box: box, key: null});
     });
     $('.pv-mail-list').on('click', '.pv-mrow', function(e) {
@@ -795,10 +833,24 @@ function pv_setup() {
         }
     });
     // only the page's own entries (a link to "#" elsewhere makes one too)
-    history.replaceState({pv_mail: true, pushed: false}, '', window.location.href);
+    history.replaceState(Object.assign({}, history.state || {}, {pv_mail: true}), '', window.location.href);
     window.addEventListener('popstate', function(e) {
-        if (pv.want === null && e.state && e.state.pv_mail)
-            pv_apply(pv_parse_hash());
+        if (pv.want !== null)
+            return;
+        if (!window.pv_back) {
+            if (e.state && e.state.pv_mail)
+                pv_apply(pv_parse_hash());
+            return;
+        }
+        // dialogs and the opened message close through pv_back (preview.js);
+        // afterwards the address follows what is shown (the entry back is
+        // one from before, e.g. from under the compose dialog)
+        setTimeout(function() {
+            // back to the list's entry from a message opened before a reload
+            if (pv.open && !pv.layer && !pv_parse_hash().key)
+                pv_apply({box: pv.box, key: null});
+            pv_set_url(pv.box, pv.open ? pv.open.key : null);
+        }, 0);
     });
     let timer = null;
     $('#ti_pv_search').on('input', function(e) {

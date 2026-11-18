@@ -324,9 +324,9 @@
             cursor: pointer;
         }
     </style>
-    #{(@session_user || {})[:dark] ? '' : '<!--'}
+    #{ui_dark? ? '' : '<!--'}
     <link href="/dark.css" rel="stylesheet" />
-    #{(@session_user || {})[:dark] ? '' : '-->'}
+    #{ui_dark? ? '' : '-->'}
     #{(@session_user || {})[:new_design] ? '' : '<!--'}
     <link href="/new_design.css" rel="stylesheet" />
     #{(@session_user || {})[:new_design] ? '' : '-->'}
@@ -336,7 +336,7 @@
     #{PAGE_CSS_HERE}
 </head>
 
-<body class='#{(@session_user || {})[:dark] ? 'dark' : ''}#{ui_preview? ? ' ui-preview' : ''}'>
+<body class='#{ui_dark? ? 'dark' : ''}#{design_preview_body_class}'>
 
     <script>
         var poll_run_data = null;
@@ -652,7 +652,7 @@
         </div>
     </div>
 
-    <div class="modal" id="pollResponseModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal pv-sheet" id="pollResponseModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-xl modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -717,7 +717,7 @@
         </div>
     </div>
 
-    <div class="modal" id="pollRunResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal pv-sheet" id="pollRunResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
             <div class="modal-content">
                 <!--             <div class="modal-header"> -->
@@ -854,8 +854,8 @@
     </script>
 
     <nav
-        class="navbar navbar-expand-md navbar-#{(@session_user || {})[:dark] ? 'dark' : 'light'} fixed-top justify-content-end">
-        <a class="navbar-brand" href="/"><img src='/#{(@session_user || {})[:dark] ? DARK_SCHUL_ICON : SCHUL_ICON}'
+        class="navbar navbar-expand-md navbar-#{ui_dark? ? 'dark' : 'light'} fixed-top justify-content-end">
+        <a class="navbar-brand" href="/"><img src='/#{ui_dark? ? DARK_SCHUL_ICON : SCHUL_ICON}'
                 style='width: 24px; height: 24px; position: relative; top: -2px;' /><span
                 class='brand-brand'>&nbsp;&nbsp;{BRAND}</span></a>
         <div class='ml-auto'></div>

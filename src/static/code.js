@@ -692,7 +692,9 @@ function padWithZeroes(num, length) {
 // Search in the navigation bar (teachers): students with their class,
 // teachers, classes, courses and the pages of the person's own menu. The list
 // comes from /api/quick_search_index on first use and stays in this page.
-// "/" opens it, arrow keys choose, Enter opens, Escape closes.
+// Pages beyond the menu and keywords per page come with the index, so
+// "Bücher" finds the library. "/" or Ctrl+K (Cmd+K) opens it, arrow keys
+// choose, Enter opens, Escape closes.
 var quick_search = { items: null, loading: false, failed: false, results: [], active: 0 };
 var QUICK_SEARCH_KIND_ORDER = { klasse: 0, lehrer: 1, schueler: 2, kurs: 3, seite: 4 };
 var QUICK_SEARCH_ICONS = { klasse: 'fa-users', lehrer: 'fa-id-badge', schueler: 'fa-user', kurs: 'fa-book', seite: 'fa-link' };
@@ -706,15 +708,28 @@ function quick_search_words(s) {
     return quick_search_normalize(s).split(/[\s\-.,·()\/:]+/).filter(function (w) { return w.length > 0; });
 }
 
-function quick_search_prepare(item) {
-    item.words = quick_search_words(item.label + ' ' + (item.terms || ''));
+// the keywords of a page: by its href (without #part), or by a prefix ending in *
+function quick_search_keywords_for(href, keywords) {
+    if (!keywords || !href) return '';
+    let path = href.split('#')[0];
+    let found = [];
+    for (let key in keywords) {
+        if (key === href || key === path || (key.slice(-1) === '*' && path.indexOf(key.slice(0, -1)) === 0))
+            found.push(keywords[key]);
+    }
+    return found.join(' ');
+}
+
+function quick_search_prepare(item, keywords) {
+    let extra = quick_search_keywords_for(item.href, keywords);
+    item.words = quick_search_words(item.label + ' ' + (item.terms || '') + ' ' + extra);
     item.label_norm = quick_search_normalize(item.label);
     item.shorthand_norm = item.shorthand ? quick_search_normalize(item.shorthand) : null;
     return item;
 }
 
 // the links of the person's own menu (only what they may open anyway)
-function quick_search_menu_items(known_hrefs) {
+function quick_search_menu_items(known_hrefs, keywords) {
     let items = [];
     $('#navbarTogglerDemo02 a[href]').each(function (_, a) {
         let href = a.getAttribute('href');
@@ -726,7 +741,7 @@ function quick_search_menu_items(known_hrefs) {
         let section = 'Menü';
         if (toggle.length > 0)
             section = toggle.attr('id') === 'navbarDropdownProfile' ? 'Profil' : toggle.text().trim();
-        items.push(quick_search_prepare({ kind: 'seite', label: label, sub: section, href: href }));
+        items.push(quick_search_prepare({ kind: 'seite', label: label, sub: section, href: href }, keywords));
     });
     return items;
 }
@@ -741,9 +756,9 @@ function quick_search_load() {
         let known_hrefs = {};
         let items = data.items.map(function (item) {
             known_hrefs[item.href] = true;
-            return quick_search_prepare(item);
+            return quick_search_prepare(item, item.kind === 'seite' ? data.keywords : null);
         });
-        quick_search.items = items.concat(quick_search_menu_items(known_hrefs));
+        quick_search.items = items.concat(quick_search_menu_items(known_hrefs, data.keywords));
         quick_search.loading = false;
         quick_search_update();
     }).catch(function () {
@@ -796,7 +811,7 @@ function quick_search_update() {
         list.append(quick_search_message('quick-search-hint', 'Name, Kürzel, Klasse, Kurs oder Seite eingeben'));
         // only where there is a keyboard (same as the keys line)
         list.append($('<div class="quick-search-hint quick-search-tip text-muted">').append(
-            'Tipp: Mit der Taste ', $('<kbd>').text('/'), ' öffnest du die Suche auf jeder Seite.'));
+            'Tipp: Die Suche öffnet sich auf jeder Seite mit ', $('<kbd>').text('/'), ' oder ', $('<kbd>').text('Strg'), '+', $('<kbd>').text('K'), '.'));
         return;
     }
     quick_search.results = quick_search_find(query);
@@ -810,6 +825,7 @@ function quick_search_update() {
     quick_search.results.forEach(function (item, index) {
         let row = $('<div class="quick-search-row">').toggleClass('active', index === 0);
         let main = $('<a class="quick-search-main">').attr('href', item.href);
+        if (item.external) main.attr('target', '_blank').attr('rel', 'noopener');
         main.append($('<i class="fa">').addClass(QUICK_SEARCH_ICONS[item.kind] || 'fa-link'));
         main.append($('<span class="quick-search-label">').text(item.label));
         if (item.sub) main.append($('<span class="quick-search-sub">').text(item.sub));
@@ -845,8 +861,8 @@ function quick_search_open() {
         panel.append('<div class="quick-search-results"></div>');
         let key = function (text) { return $('<kbd>').text(text); };
         panel.append($('<div class="quick-search-keys text-muted">').append(
-            key('↑'), ' ', key('↓'), ' auswählen · ', key('Enter'), ' öffnen · ', key('Esc'), ' schließen · ',
-            key('/'), ' öffnet die Suche auf jeder Seite'));
+            key('↑'), ' ', key('↓'), ' auswählen, ', key('Enter'), ' öffnen, ', key('Esc'), ' schließen, ',
+            key('/'), ' oder ', key('Strg'), '+', key('K'), ' öffnet die Suche auf jeder Seite'));
         $('body').append(panel);
         input.on('input', quick_search_update);
         // also when the link only changes the #part of this page
@@ -860,7 +876,8 @@ function quick_search_open() {
                 let item = quick_search.results[quick_search.active];
                 if (item) {
                     quick_search_close();
-                    window.location.href = item.href;
+                    if (item.external) window.open(item.href, '_blank', 'noopener');
+                    else window.location.href = item.href;
                 }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
@@ -965,6 +982,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if ($('#quick_search_panel').is(':visible')) quick_search_close(); else quick_search_open();
     });
     document.addEventListener('keydown', function (e) {
+        // Ctrl+K / Cmd+K: also from a text field, as in most apps
+        if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+            if ($('.modal.show').length > 0) return;
+            e.preventDefault();
+            quick_search_open();
+            return;
+        }
         if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
         let el = document.activeElement;
         if (el && (el.isContentEditable || /^(input|textarea|select)$/i.test(el.tagName))) return;

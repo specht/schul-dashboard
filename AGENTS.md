@@ -111,6 +111,11 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 
 **Pages (`src/static/*.html`)**
 
+- **New design:** everything that runs with `ui_preview?` follows
+  [doc/Gestaltung.md](doc/Gestaltung.md) (calm buttons, one surface per page,
+  sheets on phones, top alignment, tokens instead of colours, no "·"
+  separators, the old design unchanged). New design decisions go there.
+
 - `#{…}` in pages and `_template.html` is evaluated as **Ruby**, also inside
   JavaScript and HTML comments. Use `${…}` in JS, never output `#{`.
 - Escape values from the database or from users for HTML or JSON when they

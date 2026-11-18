@@ -1,0 +1,22 @@
+/* Neues Design (Vorschau): Termine (/events), the dialog. The list itself
+   is styled through pv_list (preview.css). */
+
+/* why »Speichern« stays disabled (preview/events.js, save_hint): quiet, on
+   its own line above the buttons */
+.ui-preview #composeModal .modal-footer {
+    flex-wrap: wrap;
+}
+
+.ui-preview #composeModal .pv-ev-save-hint {
+    flex: 1 0 100%;
+    margin: 0 0 4px;
+    font-size: 0.88rem;
+    color: var(--pv-muted);
+    text-align: right;
+}
+
+@media (max-width: 767px) {
+    .ui-preview #composeModal .pv-ev-save-hint {
+        text-align: left;
+    }
+}

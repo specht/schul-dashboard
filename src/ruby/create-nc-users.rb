@@ -42,7 +42,11 @@ class Script
             meta['message'],
         ].compact.reject(&:empty?).join(' / ')
 
-        details = 'unknown OCS error' if details.empty?
+        if details.empty?
+            # say what came back instead (e.g. an HTML error page, a redirect)
+            snippet = response.respond_to?(:to_s) ? response.to_s.gsub(/\s+/, ' ')[0, 200] : ''
+            details = "unknown OCS error (#{response.class}: #{snippet})"
+        end
         raise "#{action} failed: #{details}"
     end
 

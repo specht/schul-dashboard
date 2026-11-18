@@ -68,7 +68,8 @@
                         <div class='col-md-12'>
                             <div class="form-group">
                                 <label>Profilbild</label>
-                                <a href='#{NEXTCLOUD_URL}/index.php/settings/user' target='_blank'><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256}' class='avatar-lg'/></a>
+                                <a href='#{NEXTCLOUD_URL}/index.php/settings/user' target='_blank'><img src='#{NEXTCLOUD_URL}/index.php/avatar/#{@session_user[:nc_login]}/256' class='avatar-lg'/></a>
+                                #{ui_preview? ? "<p class='pv-avatar-hint'>Das Profilbild kommt aus der Nextcloud: dort oben rechts auf das eigene Bild <i class='ti ti-chevron-right' aria-hidden='true'></i> <b>Persönliche Einstellungen</b> <i class='ti ti-chevron-right' aria-hidden='true'></i> <b>Profilbild</b> hochladen. <a href='#{NEXTCLOUD_URL}/index.php/settings/user' target='_blank' rel='noopener'>Zur Nextcloud</a></p>" : ''}
                             </div>
                         </div>
                     </div>
@@ -108,19 +109,20 @@
             
             #{print_semi_public_links()}
             
+            <div class='pv-old-only'>
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Schriftart</h2>
-            #{ui_preview? ? "<p class='text-muted' id='font_preview_note'>Im neuen Design (Vorschau) gelten eigene Schriften; die Auswahl hier betrifft das bisherige Design.</p>" : ''}
             <div class='row'>
                 #{AVAILABLE_FONTS.map do |x|
                     "<div class='col-md-3'><button class='btn " + ((@session_user[:font] || 'Alegreya') == x ? 'btn-success': 'btn-secondary') + " bu_set_font' data-font='" + x + "' style='width: 100%; font-family: " + ({'Alegreya' => 'AlegreyaSans'}[x] || x) + "; margin-bottom: 5px;'>" + x + "</button></div>"
                 end.join('')}
             </div>
             <hr />
+            </div>
             
-            <h2 style='margin-bottom: 30px; margin-top: 30px;'>Helligkeit</h2>
+            <h2 style='margin-bottom: 30px; margin-top: 30px;'>#{ui_preview? ? 'Darstellung' : 'Helligkeit'}</h2>
             <div class="col-md-12">
                 <div class='row'>
-                    <div class="col-md-4">
+                    <div class="col-md-4" style="#{ui_preview? ? 'display: none;' : ''}">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Hintergrund</label>
                             <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
@@ -128,11 +130,11 @@
                     </div>
                     <div class="col-md-4">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
-                            <label style="margin-top: 0.4em;">Helligkeit</label>
+                            <label style="margin-top: 0.4em;" for="dark_css_switch">#{ui_preview? ? 'Dunkles Design' : 'Helligkeit'}</label>
                             <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" style="#{ui_preview? ? 'display: none;' : ''}">
                         <div style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;">Design</label>
                             <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
@@ -143,6 +145,7 @@
                             <div>
                                 <label for="ui_preview_switch" style="margin: 0; font-weight: bold;">Neues Design (Vorschau)</label>
                                 <div class="text-muted" style="font-size: 0.9em;">#{teacher_logged_in? ? 'Probieren Sie aus, woran wir gerade arbeiten. Sie können jederzeit zurückwechseln – über Feedback freuen wir uns.' : 'Probier aus, woran wir gerade arbeiten. Du kannst jederzeit zurückwechseln – über Feedback freuen wir uns.'}</div>
+                                #{ui_preview? ? "<button type='button' class='btn btn-link btn-sm p-0 bu-open-design-feedback' id='bu_profile_design_feedback'>Feedback geben</button>" : ''}
                             </div>
                             <input #{@session_user[:ui_preview] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="an" data-off="aus" data-onstyle="secondary" data-offstyle="secondary" id='ui_preview_switch'>
                         </div>
@@ -196,6 +199,7 @@
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Farbschema</h2>
             <div class='row swatches' style='position: relative;'>
             </div>
+            #{design_preview_scheme_picker_html}
             
             <h2 style='margin-bottom: 30px; margin-top: 30px;'>Muster</h2>
             <div class='row style_swatches' style='position: relative;'>
@@ -537,6 +541,46 @@ window.addEventListener('load', function () {
                 $('body').css(data.css);
         });
     });
+    // new design: an own scheme from three colours
+    let pv_strip = function() {
+        $('.pv-scheme-strip').css('background', 'linear-gradient(90deg, ' + $('#ti_scheme_left').val() + ', ' + $('#ti_scheme_main').val() + ', ' + $('#ti_scheme_right').val() + ')');
+    };
+    $('#ti_scheme_left, #ti_scheme_main, #ti_scheme_right').on('input', pv_strip);
+    pv_strip();
+    // "Farbigkeit": saved when let go, the page loads again with the new colours
+    let pv_vivid_timer = null;
+    $('#ti_ui_vividness').on('input', function(e) {
+        clearTimeout(pv_vivid_timer);
+        let v = parseInt(e.currentTarget.value, 10);
+        pv_vivid_timer = setTimeout(function() { pv_apply_colours(color_scheme, v); }, 60);
+    });
+    $('#ti_ui_vividness').on('change', function(e) {
+        api_call('/api/set_ui_vividness', {value: parseInt(e.currentTarget.value, 10)}, function() {});
+    });
+    // rearranging: swap two neighbours, or reverse all three
+    $('.pv-scheme-swap').on('click', function(e) {
+        let a = $('#ti_scheme_' + $(e.currentTarget).data('a')), b = $('#ti_scheme_' + $(e.currentTarget).data('b'));
+        let t = a.val(); a.val(b.val()); b.val(t);
+        pv_strip();
+    });
+    $('#bu_reverse_own_scheme').on('click', function() {
+        let l = $('#ti_scheme_left'), r = $('#ti_scheme_right');
+        let t = l.val(); l.val(r.val()); r.val(t);
+        pv_strip();
+    });
+    $('#bu_apply_own_scheme').click(function(e) {
+        let hex = [$('#ti_scheme_left').val(), $('#ti_scheme_main').val(), $('#ti_scheme_right').val()].join('').replace(/#/g, '');
+        let new_color_scheme = color_scheme.substr(0, 1) + hex + (color_scheme.substr(19, 1) || '0');
+        $(e.currentTarget).prop('disabled', true);
+        api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
+            $(e.currentTarget).prop('disabled', false);
+            if (data.success) {
+                color_scheme = new_color_scheme;
+                $('.swatch').removeClass('active');
+                if (!pv_apply_colours(new_color_scheme)) location.reload();
+            }
+        });
+    });
     $('#dark_switch').change(function(e) {
         let dark = $(e.target).is(':checked');
         let new_color_scheme = (dark ? 'd' : 'l') + color_scheme.substr(1, 19);
@@ -560,6 +604,18 @@ window.addEventListener('load', function () {
         let mode = checked ? "dark" : "light";
         api_call('/api/set_dark_css', {mode: mode}, function(data) {
             if (data.success) {
+                // new design: switched in place – the mode's class and
+                // stylesheet, its colours from the server, the tiles' backdrops
+                if (document.body.classList.contains('ui-preview')) {
+                    document.body.classList.toggle('dark', checked);
+                    $('nav.navbar').toggleClass('navbar-dark', checked).toggleClass('navbar-light', !checked);
+                    let sheet = $('link[href="/dark.css"]');
+                    if (checked && sheet.length === 0) $('head').append('<link href="/dark.css" rel="stylesheet" />');
+                    if (!checked) sheet.remove();
+                    pv_apply_colours(color_scheme);
+                    pv_refresh_tiles();
+                    return;
+                }
                 location.reload();
             }
         });
@@ -584,9 +640,59 @@ window.addEventListener('load', function () {
             }
         });
     });
+    // new design: colours, menu and backdrop come from the scheme on the
+    // server – after a change the page loads again, at the same place
+    let pv_reload_here = function() {
+        if (!document.body.classList.contains('ui-preview')) return false;
+        try { sessionStorage.setItem('pv_profil_scroll', String(window.scrollY)); } catch (e) {}
+        location.reload();
+        return true;
+    };
+    try {
+        let y = sessionStorage.getItem('pv_profil_scroll');
+        if (y !== null) {
+            sessionStorage.removeItem('pv_profil_scroll');
+            window.addEventListener('load', function() { window.scrollTo(0, parseInt(y, 10)); });
+        }
+    } catch (e) {}
+    // new design: a colour change shows at once – the server computes the
+    // colours, the page takes them over (tokens, backdrop, browser bar)
+    let pv_apply_colours = function(scheme, vivid) {
+        if (!document.body.classList.contains('ui-preview')) return false;
+        let q = 'scheme=' + encodeURIComponent(scheme) + (vivid === undefined ? '' : '&vivid=' + vivid);
+        fetch('/api/design_tokens?' + q, { credentials: 'same-origin' }).then(function(r) { return r.json(); }).then(function(data) {
+            if (!data.tokens) return;
+            $('#design_tokens').text(data.tokens);
+            $('#design_backdrop').text(data.backdrop);
+            $('meta[name=theme-color]').attr('content', data.theme_color);
+        });
+        return true;
+    };
+    // new design: the tiles show the backdrop in the current mode (light /
+    // dark) – the schemes with one's pattern, the patterns with one's scheme
+    let pv_refresh_tiles = function() {
+        if (!document.body.classList.contains('ui-preview')) return;
+        let mode = document.body.classList.contains('dark') ? 'd' : 'l';
+        let pattern = color_scheme.substr(19, 1) || '0';
+        $('.swatches .swatch').each(function(_, el) {
+            let code = $(el).data('scheme');
+            if (!code) return;
+            let key = mode + code.substr(1, 18);
+            el.style.setProperty('--pv-bg', 'url(/gen/bg/bg-' + key + pattern + '.jpg), url(/gen/bg/bg-' + key + '0.svg)');
+        });
+        $('.style_swatches .swatch').each(function(i, el) {
+            $(el).css('background-image', 'url(/gen/bg/bg-' + mode + color_scheme.substr(1, 18) + i + '.jpg)');
+        });
+    };
+    window.addEventListener('load', function() { pv_refresh_tiles(); });
     let gradients = #{get_gradients().to_json()};
+    // new design: only the curated set, and one's own current scheme
+    let pv_curated = #{ui_preview? ? DesignTokens::CURATED.map(&:first).to_json : 'null'};
     for (let x of gradients.color_schemes)
     {
+        let pv_key = x[1].join('').replace(/#/g, '');
+        if (pv_curated && pv_curated.indexOf(pv_key) < 0 && pv_key !== color_scheme.substr(1, 18))
+            continue;
         let color = x[0];
         let gradient = x[1];
         let paint_colors = x[2];
@@ -598,6 +704,13 @@ window.addEventListener('load', function () {
         swatch.html('&nbsp;');
         swatch.addClass('btn');
         swatch.addClass('swatch');
+        // new design: the tile shows the scheme as its backdrop with one's own
+        // pattern, all three colours as fallback (preview.css)
+        let pv_bg = l_mode + gradient.join('').replace(/#/g, '') + (color_scheme.substr(19, 1) || '0');
+        swatch[0].style.setProperty('--pv-bg', 'url(/gen/bg/bg-' + pv_bg + '.jpg), url(/gen/bg/bg-' + pv_bg.substr(0, 19) + '0.svg)');
+        swatch[0].style.setProperty('--g1', gradient[0]);
+        swatch[0].style.setProperty('--g2', gradient[1]);
+        swatch[0].style.setProperty('--g3', gradient[2]);
         if (x[1].join('').replace(/\#/g, '') === color_scheme.substr(1, 18))
             swatch.addClass('active');
         
@@ -660,6 +773,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = $(e.target.closest('.btn')).data('scheme').substr(0, 19) + color_scheme[19];
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
+                if (data.success) { pv_apply_colours(new_color_scheme); setTimeout(pv_refresh_tiles, 0); }
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;
@@ -676,6 +790,13 @@ window.addEventListener('load', function () {
                     $('#dark_switch').bootstrapToggle(new_color_scheme[0] === 'l' ? 'off' : 'on');
                     for (let style of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                         style_swatches[style].css('background-image', `url(/gen/bg/bg-${color_scheme.substr(0, 19)}${style}.jpg)`);
+                    // new design: the own scheme starts from the chosen one
+                    if ($('#ti_scheme_left').length) {
+                        $('#ti_scheme_left').val('#' + new_color_scheme.substr(1, 6));
+                        $('#ti_scheme_main').val('#' + new_color_scheme.substr(7, 6));
+                        $('#ti_scheme_right').val('#' + new_color_scheme.substr(13, 6));
+                        $('#ti_scheme_left').trigger('input');
+                    }
                 }
             });
         });
@@ -704,6 +825,7 @@ window.addEventListener('load', function () {
         swatch.click(function(e) {
             let new_color_scheme = color_scheme.substr(0, 19) + style;
             api_call('/api/set_color_scheme', {scheme: new_color_scheme}, function(data) {
+                if (data.success) { pv_apply_colours(new_color_scheme); setTimeout(pv_refresh_tiles, 0); }
                 if (data.success)
                 {
                     color_scheme = new_color_scheme;

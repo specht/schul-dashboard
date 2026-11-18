@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { test, expect, login, ACCOUNTS, ROLE_ACCOUNTS } from './fixtures';
 
 test('Lehrkraft erstellt eine Umfrage für 5a, Schüler:in beantwortet sie', async ({ page, newUserPage }) => {
@@ -188,4 +189,57 @@ test('Begrenzte Plätze: volle Antworten sind gesperrt, die Auswertung zeigt die
   const xlsx = await page.request.get(`/api/poll_run_results_xlsx/${prid}`);
   expect(xlsx.status()).toBe(200);
   expect(xlsx.headers()['content-type']).toContain('spreadsheet');
+});
+
+test('Antwortmöglichkeit hinzufügen: auch ein Klick auf das Symbol im Knopf', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/polls');
+  const modal = page.locator('#composeModal');
+  await page.locator('.bu-new-poll').click();
+  await expect(modal).toBeVisible();
+  await modal.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
+  await page.locator('.bu-poll-add-radio').click();
+  const add = modal.getByRole('button', { name: 'Antwortmöglichkeit hinzufügen' });
+  const answers = modal.locator('input[placeholder="Bitte geben Sie eine Antwortmöglichkeit ein"]');
+  await add.locator('i').click();
+  await expect(answers).toHaveCount(1);
+  await add.locator('i').click();
+  await expect(answers).toHaveCount(2);
+  await page.locator('#bu_discard_poll').click();
+  await expect(modal).toBeHidden();
+});
+
+// The invitation for external participants (poll.html, no login): the
+// poll's title is shown as it was typed, special characters included.
+test('Einladung für externe Teilnehmer: Titel mit Sonderzeichen', async ({ page, newUserPage }) => {
+  const title = `Grillen & Chillen <i>Klasse ${Date.now().toString(36)}</i>`;
+  const email = 'erika.extern@example.com';
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/add_external_users', { data: { text: `Erika Extern <${email}>` } });
+  const items = [{ type: 'radio', title: 'Kommst du?', answers: ['Ja', 'Nein'] }];
+  const pid = (await (await page.request.post('/api/save_poll', { data: { title, items: JSON.stringify(items) } })).json()).poll.pid;
+  try {
+    // open from a minute ago for an hour (times as the server sees them)
+    const fmt = (d: Date) => [d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' }),
+      d.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' })];
+    const [startDate, startTime] = fmt(new Date(Date.now() - 60_000));
+    const [endDate, endTime] = fmt(new Date(Date.now() + 3600_000));
+    const run = await page.request.post('/api/save_poll_run', { data: {
+      pid, anonymous: 'true', start_date: startDate, start_time: startTime, end_date: endDate, end_time: endTime,
+      visible: 'yes', recipients: [email] } });
+    const prid = (await run.json()).poll_run.prid;
+    // the code from the invitation mail (EXTERNAL_USER_EVENT_SCRAMBLER of the test stack)
+    const hex = crypto.createHash('sha256').update(`bitte_jeden_salt_nur_einmal_verwenden${prid}${email}`).digest('hex');
+    const code = BigInt(`0x${hex}`).toString(36).slice(0, 8);
+    const guest = await newUserPage();
+    await guest.goto(`/poll/${prid}/${code}`);
+    await expect(guest.getByText('Einladung zur Umfrage')).toBeVisible();
+    await expect(guest.locator('strong', { hasText: 'Grillen' })).toHaveText(title);
+    await expect(guest.getByText('(Erika Extern)')).toBeVisible();
+    await guest.locator('.bu-launch-poll').click();
+    await expect(guest.locator('#pollResponseModal .poll-title')).toHaveText(title);
+  } finally {
+    await page.request.post('/api/delete_poll', { data: { pid } });
+  }
 });

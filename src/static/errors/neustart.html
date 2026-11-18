@@ -191,6 +191,7 @@
            button. */
         #countdown { display: inline-block; min-width: 24ch; }
         #elapsed { display: inline-block; min-width: 15ch; }
+        .foot .sep { display: inline-block; width: 1.5ch; }
         .foot button {
             font: inherit;
             font-family: 'AlegreyaSans', system-ui, sans-serif;
@@ -297,7 +298,7 @@
             <text class="z z3" x="150" y="34" font-size="26">Z</text>
         </svg>
 
-        <p class="eyebrow">Dashboard · Neustart</p>
+        <p class="eyebrow">Dashboard startet neu</p>
         <h1 id="title">Kurze Pause – gleich geht’s weiter!</h1>
         <p class="lead" id="lead">Das Dashboard startet gerade neu. Das dauert meistens nicht länger als eine Minute.</p>
         <p class="muted" id="detail">Du musst nichts tun: Diese Seite lädt automatisch neu, sobald alles wieder läuft. Deine gespeicherten Daten sind davon nicht betroffen.</p>
@@ -312,7 +313,7 @@
         </p>
 
         <div class="foot">
-            <span aria-hidden="true"><span id="countdown">Nächster Versuch gleich</span><span class="sep"> · </span><span id="elapsed">Wartezeit 0:00</span></span>
+            <span aria-hidden="true"><span id="countdown">Nächster Versuch gleich</span><span class="sep"></span><span id="elapsed">Wartezeit 0:00</span></span>
             <button type="button" id="retry">Jetzt prüfen</button>
         </div>
 

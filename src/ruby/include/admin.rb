@@ -1,4 +1,7 @@
 class Main < Sinatra::Base
+    # the admin page's own pages (also found by the search, quick_search.rb)
+    ADMIN_PAGE_LINKS = [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Feedback neues Design', 'fa-comment-o'], ['/design_palettes', 'Farbschemata neues Design', 'fa-paint-brush']]
+
     post '/api/impersonate' do
         require_admin!
         data = parse_request_data(:required_keys => [:email])
@@ -112,7 +115,7 @@ class Main < Sinatra::Base
                     ['#teachers', 'Lehrkräfte'], ['#sus', 'Schüler:innen'], ['#external_users', 'Externe'],
                     ['#website', 'Website'], ['#tablets', 'Tablets'], ['#monitor', 'Monitor'], ['#bibliothek', 'Bibliothek'],
                 ], nil],
-                ['Seiten', [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Feedback neues Design', 'fa-comment-o']], nil],
+                ['Seiten', ADMIN_PAGE_LINKS, nil],
                 ['LogoDIDACT', [['/api/all_sus_logo_didact', 'Alle SuS'], ['/api/all_lul_logo_didact', 'Alle Lehrkräfte']], 'fa-download'],
                 ['Untis', [['/api/all_sus_untis', 'Alle SuS'], ['/api/all_kurse_untis', 'Alle Kurse']], 'fa-download'],
                 ['Informatik-Biber', [['/api/all_users_informatik_biber.xlsx', 'Anmeldungen (Excel)'], ['/api/all_users_informatik_biber', 'Zugangsdaten (Text)']], 'fa-download'],

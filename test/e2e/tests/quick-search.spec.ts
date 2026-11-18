@@ -31,7 +31,7 @@ test('Suche mit der Tastatur: Klassen, Kürzel und Namensanfänge', async ({ pag
   await expect(input).toBeFocused();
   const rows = page.locator('.quick-search-row');
   // the panel tells about the key
-  await expect(page.locator('.quick-search-tip kbd')).toHaveText('/');
+  await expect(page.locator('.quick-search-tip kbd')).toHaveText(['/', 'Strg', 'K']);
   await expect(page.locator('.quick-search-keys kbd', { hasText: '/' })).toBeVisible();
 
   // a class comes before its students
@@ -81,6 +81,42 @@ test('Die Suche findet auch die Seiten aus dem eigenen Menü', async ({ page, ne
   await teacher.locator('#ti_quick_search').fill('live anm');
   await expect(teacher.locator('.quick-search-empty')).toBeVisible();
   await expect(teacher.locator('.quick-search-row')).toHaveCount(0);
+});
+
+// Pages beyond the menu (library, profile sections, the admin page's own
+// pages) and keywords: "Bücher" finds the library, "Klausur" the exams.
+// Ctrl+K opens the search like "/", also from a text field.
+test('Die Suche findet Seiten auch über Stichworte, Strg+K öffnet sie', async ({ page, newUserPage }) => {
+  await login(page, ACCOUNTS.teacher);
+  const input = page.locator('#ti_quick_search');
+  const rows = page.locator('.quick-search-row');
+  await page.keyboard.press('Control+k');
+  await expect(input).toBeFocused();
+  await input.fill('bücher');
+  await expect(rows.filter({ hasText: 'Bibliothek' }).first()).toBeVisible();
+  await expect(rows.filter({ hasText: 'Katalog' })).toContainText('Bibliothek');
+  await input.fill('klausur');
+  await expect(rows.filter({ hasText: 'Klassenarbeiten' })).toHaveCount(1);
+  await input.fill('zwei-faktor');
+  const twofa = rows.filter({ hasText: 'Anmeldung und Zwei-Faktor' });
+  await expect(twofa).toContainText('Profil');
+  await input.press('Enter');
+  await page.waitForURL(/\/profil#anmeldung$/);
+  // external services open in a new tab
+  await page.keyboard.press('Control+k');
+  await input.fill('nextcloud');
+  await expect(rows.filter({ hasText: 'Nextcloud' }).first().locator('.quick-search-main[target="_blank"]')).toHaveCount(1);
+  await input.press('Escape');
+  // the admin page's own pages: for admins only
+  await input.evaluate(() => null);
+  const admin = await newUserPage();
+  await login(admin, ACCOUNTS.admin);
+  await admin.keyboard.press('Control+k');
+  await admin.locator('#ti_quick_search').fill('dienste');
+  await expect(admin.locator('.quick-search-row', { hasText: 'Dienste' })).toContainText('Administration');
+  await page.keyboard.press('Control+k');
+  await input.fill('dienste');
+  await expect(rows.filter({ hasText: 'Administration' })).toHaveCount(0);
 });
 
 test('Schüler:innen haben keine Personensuche', async ({ page }) => {

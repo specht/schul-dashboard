@@ -111,6 +111,13 @@ hierher übernehmen, wenn sie angegangen werden.
       Schullogo und Name werden links abgeschnitten. Darüber hilft
       `code.js` (Suche) nacheinander: ohne „Suchen“, ohne Menü-Icons, ohne
       Schulnamen neben dem Logo
+- [ ] Termine ohne Teilnehmende: Die Abfrage liefert `recipients: [null]`,
+      die Tabelle im bisherigen Design zeigt dann „1 Teilnehmer“ an
+      (`include/event.rb`, `organized_events`). Das neue Design zählt nur
+      echte Teilnehmende.
+- [ ] Neuigkeiten: `/api/store_news_entry` verwendet den Zeitstempel in
+      Sekunden als Schlüssel; zwei Einträge in derselben Sekunde scheitern am
+      Unique-Constraint. Betrifft praktisch nur Skripte.
 
 ### Wünsche
 

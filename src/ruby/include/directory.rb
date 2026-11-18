@@ -1042,6 +1042,27 @@ class Main < Sinatra::Base
         results
     end
 
+    # may see who is on a list (today's page: the "… Adressen" button)
+    def mailing_list_recipients_visible?
+        teacher_logged_in? || technikteam_logged_in? || user_with_role_logged_in?(:externe_ag_leitung)
+    end
+
+    # the recipients of a list, sorted by name: [[name, email], …]
+    def mailing_list_recipients(info)
+        info[:recipients].sort do |a, b|
+            an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
+            bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
+            an <=> bn
+        end.map do |email|
+            name = (@@user_info[email] || {})[:display_name] || ''
+            if email[0, 7] == 'eltern.'
+                name = (@@user_info[email.sub('eltern.', '')] || {})[:display_name] || ''
+                name = "Eltern von #{name}"
+            end
+            [name, email]
+        end
+    end
+
     def print_mailing_list(io, list_email)
         return unless @@mailing_lists.include?(list_email)
         assert(user_with_role_logged_in?(:can_use_mailing_lists))
@@ -1051,24 +1072,13 @@ class Main < Sinatra::Base
         io.puts "<td>"
         print_email_field(io, list_email)
         io.puts "</td>"
-        if teacher_logged_in? || technikteam_logged_in? || user_with_role_logged_in?(:externe_ag_leitung)
+        if mailing_list_recipients_visible?
             io.puts "<td style='text-align: right;'><button data-list-email='#{list_email}' class='btn btn-warning btn-sm bu-toggle-adresses'>#{info[:recipients].size} Adressen&nbsp;&nbsp;<i class='fa fa-chevron-down'></i></button></td>"
             io.puts "</tr>"
             io.puts "<tbody style='display: none;' class='list_email_emails' data-list-email='#{list_email}'>"
             emails = []
-            # STDERR.puts list_email
-            # STDERR.puts info[:recipients].to_yaml
-            info[:recipients].sort do |a, b|
-                an = ((@@user_info[a.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
-                bn = ((@@user_info[b.sub(/^eltern\./, '')] || {})[:display_name] || '').downcase.unicode_normalize(:nfd)
-                an <=> bn
-            end.each do |email|
+            mailing_list_recipients(info).each do |name, email|
                 emails << email
-                name = (@@user_info[email] || {})[:display_name] || ''
-                if email[0, 7] == 'eltern.'
-                    name = (@@user_info[email.sub('eltern.', '')] || {})[:display_name] || ''
-                    name = "Eltern von #{name}"
-                end
                 io.puts "<tr class='user_row'>"
                 io.puts "<td>#{name}</td>"
                 io.puts "<td colspan='2'>"
@@ -1088,134 +1098,187 @@ class Main < Sinatra::Base
         io.puts "</tbody>"
     end
 
-    def print_mailing_lists()
-        StringIO.open do |io|
-            io.puts "<table class='table table-condensed narrow' style='width: unset; min-width: 100%;'>"
-            remaining_mailing_lists = Set.new(@@mailing_lists.keys)
-            @@klassen_order.each do |klasse|
-                io.puts "<tr><th colspan='3'>Klasse #{tr_klasse(klasse)}</th></tr>"
-                ["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase,
-                 "eltern.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase,
-                 "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase].each do |list_email|
-                    print_mailing_list(io, list_email)
-                    remaining_mailing_lists.delete(list_email)
-                end
-                if ['11', '12'].include?(klasse)
-                    ['gr', 'it'].each do |group_af|
-                        ['', '.eltern'].each do |extra|
-                            list_email = "antikenfahrt.#{group_af}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
-                            if @@mailing_lists[list_email]
-                                print_mailing_list(io, list_email)
-                                remaining_mailing_lists.delete(list_email)
-                            end
-                        end
-                    end
-                end
-                if ['5', '6'].include?(klasse)
-                    ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
-                        ['', '.eltern'].each do |extra|
-                            list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
-                            if @@mailing_lists[list_email]
-                                print_mailing_list(io, list_email)
-                                remaining_mailing_lists.delete(list_email)
-                            end
-                        end
-                    end
-                end
-            end
-            [5, 6, 7, 8, 9, 10, 11, 12].each do |klasse|
-                io.puts "<tr><th colspan='3'>Klassenstufe #{klasse}</th></tr>"
-                ['sus', 'eltern', 'lehrer'].each do |role|
-                    list_email = "#{role}.klassenstufe.#{klasse}@#{MAILING_LIST_DOMAIN}"
-                    print_mailing_list(io, list_email)
-                    remaining_mailing_lists.delete(list_email)
-                end
-            end
-            io.puts "<tr><th colspan='3'>Klassenleiter-Teams</th></tr>"
-            [5, 6, 7, 8, 9, 10].each do |klasse|
-                list_email = "team.#{klasse}@#{MAILING_LIST_DOMAIN}"
-                print_mailing_list(io, list_email)
+    # The lists of /mailing_lists in their order, as sections:
+    # [{:label => 'Klasse 5a', :klasse => '5a', :emails => [...]}, …].
+    # A section may name lists that do not exist (they are skipped when
+    # shown); a list may stand in two sections (Forschertage).
+    def mailing_list_sections
+        sections = []
+        section = lambda do |label, klasse = nil|
+            sections << {:label => label, :klasse => klasse, :emails => []}
+            sections.last[:emails]
+        end
+        remaining_mailing_lists = Set.new(@@mailing_lists.keys)
+        @@klassen_order.each do |klasse|
+            emails = section.call("Klasse #{tr_klasse(klasse)}", klasse)
+            ["klasse.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase,
+             "eltern.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase,
+             "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase].each do |list_email|
+                emails << list_email
                 remaining_mailing_lists.delete(list_email)
             end
-            print_mailing_list(io, "kl@#{MAILING_LIST_DOMAIN}")
-            remaining_mailing_lists.delete("kl@#{MAILING_LIST_DOMAIN}")
-            io.puts "<tr><th colspan='3'>Gesamte Schule</th></tr>"
-            ["sus@#{MAILING_LIST_DOMAIN}",
-             "lehrer@#{MAILING_LIST_DOMAIN}",
-             "eltern@#{MAILING_LIST_DOMAIN}",
-             "ev@#{MAILING_LIST_DOMAIN}",
-            ].each do |list_email|
-                print_mailing_list(io, list_email)
-                remaining_mailing_lists.delete(list_email)
-            end
-            @@shorthands_for_fach.keys.sort do |a, b|
-                a.downcase <=> b.downcase
-            end.each do |fach|
-                list_email = remove_accents("lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}")
-                if @@mailing_lists[list_email]
-                    print_mailing_list(io, list_email)
-                    remaining_mailing_lists.delete(list_email)
-                end
-            end
-            # io.puts "<tr><th colspan='3'>Oberstufen-Kurse</th></tr>"
-            Main.iterate_kurse do |lesson_key|
-                info = @@lessons[:lesson_keys][lesson_key]
-                ['', 'eltern.'].each do |extra|
-                    list_email = "#{extra}#{info[:list_email]}@#{MAILING_LIST_DOMAIN}"
-                    if @@mailing_lists[list_email]
-                        # print_mailing_list(io, list_email)
-                        remaining_mailing_lists.delete(list_email)
-                    end
-                end
-            end
-            io.puts "<tr><th colspan='3'>Forschertage</th></tr>"
-            ['gewi', 'medien', 'musik', 'nawi'].each do |group_ft|
-                [5, 6].each do |klasse|
+            if ['11', '12'].include?(klasse)
+                ['gr', 'it'].each do |group_af|
                     ['', '.eltern'].each do |extra|
-                        list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
+                        list_email = "antikenfahrt.#{group_af}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
                         if @@mailing_lists[list_email]
-                            print_mailing_list(io, list_email)
+                            emails << list_email
                             remaining_mailing_lists.delete(list_email)
                         end
                     end
                 end
             end
-            io.puts "<tr><th colspan='3'>AGs und Angebote</th></tr>"
-            @@angebote_mailing_lists.keys.reject { |x| x[0, 7] == 'eltern.'}.sort do |a, b|
-                a.downcase <=> b.downcase
-            end.each do |email|
-                ['', 'eltern.'].each do |extra|
-                    list_email = "#{extra}#{email}"
+            if ['5', '6'].include?(klasse)
+                ['nawi', 'gewi', 'musik', 'medien'].each do |group_ft|
+                    ['', '.eltern'].each do |extra|
+                        list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
+                        if @@mailing_lists[list_email]
+                            emails << list_email
+                            remaining_mailing_lists.delete(list_email)
+                        end
+                    end
+                end
+            end
+        end
+        [5, 6, 7, 8, 9, 10, 11, 12].each do |klasse|
+            emails = section.call("Klassenstufe #{klasse}")
+            ['sus', 'eltern', 'lehrer'].each do |role|
+                list_email = "#{role}.klassenstufe.#{klasse}@#{MAILING_LIST_DOMAIN}"
+                emails << list_email
+                remaining_mailing_lists.delete(list_email)
+            end
+        end
+        emails = section.call('Klassenleiter-Teams')
+        [5, 6, 7, 8, 9, 10].each do |klasse|
+            list_email = "team.#{klasse}@#{MAILING_LIST_DOMAIN}"
+            emails << list_email
+            remaining_mailing_lists.delete(list_email)
+        end
+        emails << "kl@#{MAILING_LIST_DOMAIN}"
+        remaining_mailing_lists.delete("kl@#{MAILING_LIST_DOMAIN}")
+        emails = section.call('Gesamte Schule')
+        ["sus@#{MAILING_LIST_DOMAIN}",
+         "lehrer@#{MAILING_LIST_DOMAIN}",
+         "eltern@#{MAILING_LIST_DOMAIN}",
+         "ev@#{MAILING_LIST_DOMAIN}",
+        ].each do |list_email|
+            emails << list_email
+            remaining_mailing_lists.delete(list_email)
+        end
+        @@shorthands_for_fach.keys.sort do |a, b|
+            a.downcase <=> b.downcase
+        end.each do |fach|
+            list_email = remove_accents("lehrer.#{fach.downcase}@#{MAILING_LIST_DOMAIN}")
+            if @@mailing_lists[list_email]
+                emails << list_email
+                remaining_mailing_lists.delete(list_email)
+            end
+        end
+        # the lists of the Oberstufen-Kurse are not shown
+        Main.iterate_kurse do |lesson_key|
+            info = @@lessons[:lesson_keys][lesson_key]
+            ['', 'eltern.'].each do |extra|
+                list_email = "#{extra}#{info[:list_email]}@#{MAILING_LIST_DOMAIN}"
+                if @@mailing_lists[list_email]
+                    remaining_mailing_lists.delete(list_email)
+                end
+            end
+        end
+        emails = section.call('Forschertage')
+        ['gewi', 'medien', 'musik', 'nawi'].each do |group_ft|
+            [5, 6].each do |klasse|
+                ['', '.eltern'].each do |extra|
+                    list_email = "forschertage.#{group_ft}#{extra}.#{klasse}@#{MAILING_LIST_DOMAIN}"
                     if @@mailing_lists[list_email]
-                        print_mailing_list(io, list_email)
+                        emails << list_email
                         remaining_mailing_lists.delete(list_email)
                     end
                 end
             end
-            if user_with_role_logged_in?(:schulbuchverein) || user_with_role_logged_in?(:can_manage_bib_payment)
-                io.puts "<tr><th colspan='3'>Lehrmittelverein</th></tr>"
-            end
-            @@lehrbuchverein_mailing_lists.each_pair do |list_email, v|
+        end
+        emails = section.call('AGs und Angebote')
+        @@angebote_mailing_lists.keys.reject { |x| x[0, 7] == 'eltern.'}.sort do |a, b|
+            a.downcase <=> b.downcase
+        end.each do |email|
+            ['', 'eltern.'].each do |extra|
+                list_email = "#{extra}#{email}"
                 if @@mailing_lists[list_email]
-                    if user_with_role_logged_in?(:schulbuchverein) || user_with_role_logged_in?(:can_manage_bib_payment)
-                        print_mailing_list(io, list_email)
-                    end
+                    emails << list_email
                     remaining_mailing_lists.delete(list_email)
                 end
             end
-            unless remaining_mailing_lists.empty?
-                io.puts "<tr><th colspan='3'>Weitere E-Mail-Verteiler</th></tr>"
-                remaining_mailing_lists.to_a.sort do |a, b|
-                    ia = @@mailing_lists[a]
-                    ib = @@mailing_lists[b]
-                    ia[:label].downcase.unicode_normalize(:nfd) <=> ib[:label].downcase.unicode_normalize(:nfd)
-                end.each do |list_email|
+        end
+        # only for the Lehrmittelverein (and left out of "Weitere" for everyone)
+        lehrmittelverein = user_with_role_logged_in?(:schulbuchverein) || user_with_role_logged_in?(:can_manage_bib_payment)
+        emails = lehrmittelverein ? section.call('Lehrmittelverein') : []
+        @@lehrbuchverein_mailing_lists.each_pair do |list_email, v|
+            if @@mailing_lists[list_email]
+                emails << list_email
+                remaining_mailing_lists.delete(list_email)
+            end
+        end
+        unless remaining_mailing_lists.empty?
+            emails = section.call('Weitere E-Mail-Verteiler')
+            remaining_mailing_lists.to_a.sort do |a, b|
+                ia = @@mailing_lists[a]
+                ib = @@mailing_lists[b]
+                ia[:label].downcase.unicode_normalize(:nfd) <=> ib[:label].downcase.unicode_normalize(:nfd)
+            end.each do |list_email|
+                emails << list_email
+            end
+        end
+        sections
+    end
+
+    def print_mailing_lists()
+        StringIO.open do |io|
+            io.puts "<table class='table table-condensed narrow' style='width: unset; min-width: 100%;'>"
+            mailing_list_sections.each do |section|
+                io.puts "<tr><th colspan='3'>#{section[:label]}</th></tr>"
+                section[:emails].each do |list_email|
                     print_mailing_list(io, list_email)
                 end
             end
             io.puts "</table>"
             io.string
         end
+    end
+
+    # Neues Design: the lists of /mailing_lists as data for
+    # preview/mailing_lists.js instead of today's table (which carries every
+    # recipient of every list); the recipients of a list come with
+    # /api/mailing_list_recipients when it is opened.
+    def mailing_lists_preview_html
+        assert(user_with_role_logged_in?(:can_use_mailing_lists))
+        mine = Set.new(teacher_logged_in? ? (@@klassen_for_shorthand[@session_user[:shorthand]] || []) : [])
+        sections = mailing_list_sections.map do |section|
+            lists = section[:emails].select { |e| @@mailing_lists[e] }.map do |list_email|
+                info = @@mailing_lists[list_email]
+                # some names carry markup for the old table (a flag in a
+                # <span>): the new page shows them as text
+                label = CGI.unescapeHTML(info[:label].to_s.gsub(/<[^>]*>/, ' ')).gsub(/\s+/, ' ').strip
+                {:email => list_email, :label => label, :count => info[:recipients].size}
+            end
+            {:label => section[:label], :open => mine.include?(section[:klasse]), :lists => lists}
+        end.reject { |section| section[:lists].empty? }
+        data = {:sections => sections, :recipients => mailing_list_recipients_visible?, :du => schueler_logged_in?}
+        "<script>var pv_mailing_lists = #{data.to_json.gsub('</', '<\\/')};</script>\n" +
+        "<script src='#{preview_asset('/preview/mailing_lists.js')}'></script>"
+    end
+
+    # Neues Design: who is on one of the lists /mailing_lists shows
+    # (read-only, for those who see the recipients there)
+    post '/api/mailing_list_recipients' do
+        require_user_with_role!(:can_use_mailing_lists)
+        assert(mailing_list_recipients_visible?)
+        data = parse_request_data(:required_keys => [:email], :max_body_length => 1024,
+                                  :max_value_lengths => {:email => 256})
+        list_email = data[:email]
+        assert(mailing_list_sections.any? { |section| section[:emails].include?(list_email) })
+        info = @@mailing_lists[list_email]
+        assert(!info.nil?)
+        respond(:email => list_email,
+                :recipients => mailing_list_recipients(info).map { |name, email| {:name => name, :email => email} })
     end
 
     get '/api/sus_by_birthday_cutoff' do

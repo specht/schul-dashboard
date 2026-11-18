@@ -1,4 +1,4 @@
-<div class='container'>
+<div class='container pv-poll-invite'>
     <div class='row'>
         <div class='col-md-12'>
             <h3 style='margin-bottom: 1em;'>Einladung zur Umfrage</h3>
@@ -8,14 +8,14 @@
                 #{poll_data[:organizer_icon]}
             </div>
             <div style='position: relative; top: -1px;'>
-                #{poll_data[:organizer]} hat Sie (#{poll_data[:external_user_name]}) zu einer Umfrage eingeladen:
-                <strong>#{poll_data[:title]}</strong><br />
+                #{CGI.escapeHTML(poll_data[:organizer].to_s)} hat Sie (#{CGI.escapeHTML(poll_data[:external_user_name].to_s)}) zu einer Umfrage eingeladen:
+                <strong>#{CGI.escapeHTML(poll_data[:title].to_s)}</strong><br />
                 #{poll_data[:html]}
             </div>
             <hr />
             <div style='text-align: center;'>
                 <button class="btn btn-success btn-lg bu-launch-poll" #{poll_data[:disable_launch_button] ? 'disabled'
-                    : '' } data-poll-run-id="#{poll_data[:prid]}" data-poll-external-code="#{poll_data[:code]}">Zur
+                    : '' } data-poll-run-id="#{CGI.escapeHTML(poll_data[:prid].to_s)}" data-poll-external-code="#{CGI.escapeHTML(poll_data[:code].to_s)}">Zur
                     Umfrage&nbsp;<i class="fa fa-angle-double-right"></i></button>
             </div>
         </div>

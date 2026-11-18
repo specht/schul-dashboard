@@ -14,6 +14,7 @@ Entwicklung:
 - [Architektur](file.Architektur.html)
 - [Entwicklerhandbuch](file.Development.html)
 - [Tests](file.Tests.html)
+- [Gestaltung (neues Design)](file.Gestaltung.html)
 
 Funktionen:
 

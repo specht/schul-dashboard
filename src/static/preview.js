@@ -1187,7 +1187,8 @@
             b.setAttribute('aria-expanded', 'false');
             b.appendChild(el('span', 'pv-lgroup-label', o.label));
             if (o.count) b.appendChild(el('span', 'pv-lgroup-count', o.count));
-            var chev = el('span', 'pv-lgroup-chev', '›');
+            // drawn in CSS (a text "›" is thin and odd in some fonts)
+            var chev = el('span', 'pv-lgroup-chev');
             chev.setAttribute('aria-hidden', 'true');
             b.appendChild(chev);
             h.appendChild(b);

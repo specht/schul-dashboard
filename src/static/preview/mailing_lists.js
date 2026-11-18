@@ -78,7 +78,16 @@
         }
     }
 
-    // a button that copies: "Kopiert" for a moment, announced for screen readers
+    // the confirmation: a green check in place of the copy icon, drawn in a
+    // snap (preview/mailing_lists.css); screen readers hear the live region
+    var CHECK = "<svg class='pv-ml-done' viewBox='0 0 24 24' aria-hidden='true' focusable='false'><path pathLength='1' d='M5 12.5l4.5 4.5L19 7.5'/></svg>";
+    function check_mark() {
+        var holder = document.createElement('span');
+        holder.innerHTML = CHECK;
+        return holder.firstChild;
+    }
+
+    // a button that copies: the check for a moment, announced for screen readers
     function copied(button, what) {
         button.classList.add('pv-ml-copied');
         live.textContent = what + ' kopiert';
@@ -97,17 +106,16 @@
         var b = el('button', 'pv-ml-addr');
         b.type = 'button';
         b.setAttribute('data-email', email);
-        b.setAttribute('title', 'Adresse kopieren');
+        b.setAttribute('title', email + ' kopieren');
         b.setAttribute('aria-label', email + ' kopieren');
-        // long addresses break after "@" and dots, not inside a word
-        var text = el('span', 'pv-ml-addr-text');
-        (email.match(/[^@.]+[@.]?|[@.]/g) || [email]).forEach(function (part, i) {
-            if (i > 0) text.appendChild(document.createElement('wbr'));
-            text.appendChild(document.createTextNode(part));
-        });
+        // one line; a long address ends in "…" (preview/mailing_lists.css)
+        var text = el('span', 'pv-ml-addr-text', email);
         b.appendChild(text);
-        b.appendChild(icon('copy'));
-        b.appendChild(el('span', 'pv-ml-done', 'Kopiert'));
+        // the copy segment at the end of the field, the check appears there
+        var end = el('span', 'pv-ml-addr-copy');
+        end.appendChild(icon('copy'));
+        end.appendChild(check_mark());
+        b.appendChild(end);
         b.addEventListener('click', function (e) {
             e.stopPropagation();
             var button = e.currentTarget;
@@ -143,7 +151,7 @@
             "<p class='pv-ml-bcc'>Falls der Verteiler einmal nicht funktioniert: »Alle Adressen kopieren« und die Adressen in das BCC-Feld einfügen.</p>" +
             "</div>" +
             "<div class='modal-footer'>" +
-            "<button type='button' class='btn btn-secondary' id='bu_ml_copy_all'><i class='ti ti-copy' aria-hidden='true'></i><span class='pv-ml-copy-label'>Alle Adressen kopieren</span><span class='pv-ml-done'>Kopiert</span></button>" +
+            "<button type='button' class='btn btn-secondary' id='bu_ml_copy_all'><i class='ti ti-copy' aria-hidden='true'></i>" + CHECK + "<span class='pv-ml-copy-label'>Alle Adressen kopieren</span></button>" +
             "<button type='button' class='btn btn-secondary' data-dismiss='modal'>Schließen</button>" +
             "</div></div></div>";
         modal.querySelector('.pv-ml-people-search').prepend(icon('search'));

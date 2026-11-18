@@ -225,8 +225,10 @@ Umfragen, Termine, News verwalten)
 - **Gruppen** (Eingabe mit Knöpfen) wirken als eine Einheit.
 - Reihenfolge in Fußzeilen: Löschen am Anfang, die Hauptaktion am Ende.
 - **Kopieren:** Was man oft kopiert (eine Verteileradresse), ist selbst ein
-  leiser Knopf mit Kopier-Symbol; ein Klick kopiert, an derselben Stelle
-  steht kurz »Kopiert«. Kein Dialog, kein eigenes Eingabefeld.
+  leiser Knopf mit Kopier-Symbol; ein Klick kopiert, an Stelle des Symbols
+  erscheint kurz ein grüner Haken (schnell gezeichnet, gleich groß, damit
+  nichts verrutscht; Screenreader hören »kopiert«). Kein Dialog, kein
+  eigenes Eingabefeld.
 
 ## 8. Dialoge, Sheets und Menüs
 

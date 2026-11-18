@@ -5070,14 +5070,36 @@ body.ui-preview:has(.container-fluid.solid)::before {
     font-variant-numeric: tabular-nums;
 }
 
+/* the fold chevron: drawn, pointing right when folded, down when open */
 .pv-lgroup-chev {
-    display: inline-block;
-    color: var(--pv-muted);
+    flex: none;
+    align-self: center;
+    width: 8px;
+    height: 8px;
+    margin: 0 4px 0 2px;
+    border: solid var(--pv-ink);
+    border-width: 0 2px 2px 0;
+    opacity: 0.7;
+    transform: rotate(-45deg);
     transition: transform 0.15s;
 }
 
 [aria-expanded='true'] > .pv-lgroup-chev {
-    transform: rotate(90deg);
+    transform: translateY(-2px) rotate(45deg);
+}
+
+/* phones: the whole heading is the button, the chevron at the right edge */
+@media (max-width: 767px) {
+    .ui-preview .container .pv-lgroup-head > .pv-lgroup-toggle {
+        display: flex;
+        flex: 1 1 auto;
+        width: calc(100% + 16px);
+        margin-right: -8px;
+    }
+
+    .ui-preview .pv-lgroup-toggle > .pv-lgroup-chev {
+        margin-left: auto;
+    }
 }
 
 .pv-lempty {

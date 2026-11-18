@@ -25,7 +25,7 @@ export const ACCOUNTS = {
 // Further role accounts, only in the test stack's copy of the example data
 // (test/prepare_example_data.rb). All log in with an e-mail code.
 export const ROLE_ACCOUNTS: Record<string, string> = {
-  zeugnis_admin: 'zeugnis.admin@beispielschule.de', // teacher: report cards, OKO, Kurslisten, Projekttage, Lab8/9
+  zeugnis_admin: 'zeugnis.admin@beispielschule.de', // teacher: report cards, OKO, Kurslisten, Projekttage, Lab8/9, Antikenfahrt
   technikteam: 'technik@beispielschule.de', // teacher: technology team, aula, news, monitors
   sekretariat: 'sekretariat@beispielschule.de', // staff: Sekretariat, lunch, photos
   bibliothek: 'bibliothek@beispielschule.de', // staff: library management

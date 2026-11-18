@@ -1254,7 +1254,10 @@ class Main < Sinatra::Base
         sections = mailing_list_sections.map do |section|
             lists = section[:emails].select { |e| @@mailing_lists[e] }.map do |list_email|
                 info = @@mailing_lists[list_email]
-                {:email => list_email, :label => info[:label].to_s, :count => info[:recipients].size}
+                # some names carry markup for the old table (a flag in a
+                # <span>): the new page shows them as text
+                label = CGI.unescapeHTML(info[:label].to_s.gsub(/<[^>]*>/, ' ')).gsub(/\s+/, ' ').strip
+                {:email => list_email, :label => label, :count => info[:recipients].size}
             end
             {:label => section[:label], :open => mine.include?(section[:klasse]), :lists => lists}
         end.reject { |section| section[:lists].empty? }

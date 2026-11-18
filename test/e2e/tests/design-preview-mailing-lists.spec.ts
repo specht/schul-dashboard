@@ -134,6 +134,38 @@ test('Neues Design: Verteiler suchen, Adresse kopieren, Empfänger zeigen', asyn
   }
 });
 
+// Some list names carry markup for the old table (Antikenfahrt: the flag in a
+// <span>, GROUP_AF_ICONS); the new page shows the name as text, not the tags.
+test('Neues Design: Verteilernamen ohne HTML', async ({ page, playwright, baseURL }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  // an upper-school student in a trip group makes the group's lists appear
+  // (set by whoever manages the Antikenfahrt; the keys cycle '', 'it', 'gr')
+  const manager = await playwright.request.newContext({ baseURL });
+  await apiLogin(manager, ROLE_ACCOUNTS.zeugnis_admin);
+  const toggle = async () => {
+    const r = await manager.post('/api/toggle_group_af_for_user', { data: { email: ACCOUNTS.schueler_oberstufe } });
+    expect(r.ok()).toBe(true);
+    return (await r.json()).group_af as string;
+  };
+  let group = await toggle();
+  try {
+    expect(group).not.toBe('');
+    await page.goto('/mailing_lists');
+    await page.locator('#ti_ml_search').fill('Antikenfahrt');
+    const rows = page.locator('.pv-ml-row', { hasText: 'Antikenfahrt' });
+    await expect(rows.first()).toBeVisible();
+    for (const text of await rows.allInnerTexts()) {
+      expect(text).not.toContain('<');
+      expect(text).not.toContain('font-size');
+    }
+  } finally {
+    for (let i = 0; i < 3 && group !== ''; i++) group = await toggle();
+    await manager.dispose();
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('Empfänger eines Verteilers: nur für Berechtigte und nur für Verteiler der Seite', async ({ playwright }) => {
   const admin = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
   const sv = await playwright.request.newContext({ baseURL: process.env.BASE_URL });

@@ -7,7 +7,7 @@
    A list with actions (doc/Gestaltung.md, 6a): a quiet line instead of the
    yellow box, a search, one folded section per class or group of lists
    (one's own classes open). A row: the list's name, below it the address as
-   a quiet button (one click copies it, "Kopiert" for a moment) and how many
+   a quiet button (one click copies it, a green check for a moment) and how many
    it reaches, spaced apart instead of a separator. "Empfänger" opens a
    dialog, a sheet on phones, where the row itself opens it. */
 
@@ -70,46 +70,63 @@
     padding: 2px 0;
 }
 
-/* the address: a quiet button, one click copies it; the icon level with
-   the first line when a long address wraps */
+/* the address: a field like the copy fields elsewhere (a read-only address
+   with its copy segment, preview.css), but one button: a tap anywhere
+   copies. One line: wide enough for most addresses, a longer one ends in
+   "…" (the copy takes the whole address, the title shows it). */
 .ui-preview .pv-ml-addr {
-    display: inline-flex;
-    align-items: flex-start;
-    gap: 6px;
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: 34rem;
     min-width: 0;
-    max-width: 100%;
     -webkit-appearance: none;
     appearance: none;
-    border: 0;
-    border-radius: 6px;
-    margin: 0 0 0 -5px;
-    padding: 2px 5px;
-    background: none;
-    color: var(--pv-muted);
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    margin: 4px 0 2px;
+    padding: 0;
+    overflow: hidden;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
     font: inherit;
     text-align: left;
     cursor: pointer;
 }
 
 .pv-ml-addr-text {
+    flex: 1 1 auto;
     min-width: 0;
-    overflow-wrap: anywhere;
+    padding: 7px 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.pv-ml-addr > .ti {
+.pv-ml-addr-copy {
     flex: none;
-    font-size: 1.05em;
-    line-height: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    border-left: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+}
+
+.pv-ml-addr-copy > .ti {
+    font-size: 1.1em;
+    line-height: 1;
 }
 
 @media (hover: hover) {
-    .ui-preview .pv-ml-addr:hover {
+    .ui-preview .pv-ml-addr:hover .pv-ml-addr-copy {
         background: var(--pv-hover);
         color: var(--pv-ink);
     }
 }
 
-.ui-preview .pv-ml-addr:active {
+.ui-preview .pv-ml-addr:active .pv-ml-addr-copy {
     background: var(--pv-hover);
 }
 
@@ -122,24 +139,58 @@
     outline-offset: 1px;
 }
 
-/* "Kopiert" for a moment instead of the copy icon */
+/* copied: a green check in place of the copy icon, drawn in a snap (the
+   same size, so nothing moves); the label of »Alle Adressen kopieren« stays */
+.ui-preview {
+    --pv-ml-ok: #1a7f37;
+}
+
+.ui-preview.dark {
+    --pv-ml-ok: #4ac26b;
+}
+
 .pv-ml-done {
     display: none;
     flex: none;
-    color: var(--acc-text);
-    font-weight: 600;
+    width: 1.15em;
+    height: 1.15em;
+    fill: none;
+    stroke: var(--pv-ml-ok);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.pv-ml-copied > .pv-ml-done {
-    display: inline;
+.pv-ml-copied .pv-ml-done {
+    display: inline-block;
+    animation: pv-ml-pop 0.28s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-.pv-ml-copied > .ti {
+.pv-ml-copied .pv-ml-done path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: pv-ml-draw 0.22s ease-out;
+}
+
+.pv-ml-copied .ti {
     display: none;
 }
 
-.pv-ml-copied > .pv-ml-copy-label {
-    display: none;
+@keyframes pv-ml-pop {
+    from { transform: scale(0.4); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pv-ml-draw {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pv-ml-copied .pv-ml-done,
+    .pv-ml-copied .pv-ml-done path {
+        animation: none;
+    }
 }
 
 /* the rows' only action is "Empfänger": on phones the row itself opens it,
@@ -230,7 +281,7 @@
     .ui-preview .pv-ml-page .pv-ml-addr {
         position: relative;
         z-index: 1;
-        padding: 4px 5px;
+        max-width: none;
     }
 
     .pv-ml-line {

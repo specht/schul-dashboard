@@ -696,8 +696,8 @@ function padWithZeroes(num, length) {
 // "Bücher" finds the library. "/" or Ctrl+K (Cmd+K) opens it, arrow keys
 // choose, Enter opens, Escape closes.
 var quick_search = { items: null, loading: false, failed: false, results: [], active: 0 };
-var QUICK_SEARCH_KIND_ORDER = { klasse: 0, lehrer: 1, schueler: 2, kurs: 3, seite: 4 };
-var QUICK_SEARCH_ICONS = { klasse: 'fa-users', lehrer: 'fa-id-badge', schueler: 'fa-user', kurs: 'fa-book', seite: 'fa-link' };
+var QUICK_SEARCH_KIND_ORDER = { klasse: 0, lehrer: 1, schueler: 2, kurs: 3, raum: 4, seite: 5 };
+var QUICK_SEARCH_ICONS = { klasse: 'fa-users', lehrer: 'fa-id-badge', schueler: 'fa-user', kurs: 'fa-book', raum: 'fa-map-marker', seite: 'fa-link' };
 
 function quick_search_normalize(s) {
     return (s || '').toString().toLowerCase().replace(/ß/g, 'ss')
@@ -808,7 +808,7 @@ function quick_search_update() {
         return;
     }
     if (quick_search_words(query).length === 0) {
-        list.append(quick_search_message('quick-search-hint', 'Name, Kürzel, Klasse, Kurs oder Seite eingeben'));
+        list.append(quick_search_message('quick-search-hint', 'Name, Kürzel, Klasse, Kurs, Raum oder Seite eingeben'));
         // only where there is a keyboard (same as the keys line)
         list.append($('<div class="quick-search-hint quick-search-tip text-muted">').append(
             'Tipp: Die Suche öffnet sich auf jeder Seite mit ', $('<kbd>').text('/'), ' oder ', $('<kbd>').text('Strg'), '+', $('<kbd>').text('K'), '.'));
@@ -856,7 +856,7 @@ function quick_search_open() {
     if (panel.length === 0) {
         panel = $('<div id="quick_search_panel" class="quick-search-panel dropdown-menu show" role="dialog" aria-label="Suche" hidden>');
         let input = $('<input id="ti_quick_search" type="text" class="form-control" autocomplete="off" spellcheck="false">')
-            .attr('placeholder', 'Name, Kürzel, Klasse, Kurs oder Seite').attr('aria-label', 'Suchen');
+            .attr('placeholder', 'Name, Kürzel, Klasse, Kurs, Raum oder Seite').attr('aria-label', 'Suchen');
         panel.append(input);
         panel.append('<div class="quick-search-results"></div>');
         let key = function (text) { return $('<kbd>').text(text); };

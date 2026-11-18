@@ -166,3 +166,15 @@ test('Auf dem Handy bleiben Logo, Suche und Menü-Knopf in einer Zeile', async (
   await page.evaluate(() => window.dispatchEvent(new Event('resize')));
   await expect(label).toBeVisible();
 });
+
+// Rooms: the number alone finds the room, first, and opens its timetable.
+test('Die Suche findet Räume über ihre Nummer', async ({ page }) => {
+  await login(page, ACCOUNTS.teacher);
+  await page.locator('#bu_quick_search').click();
+  await page.locator('#ti_quick_search').fill('108');
+  const first = page.locator('.quick-search-row').first();
+  await expect(first).toContainText('Raum 108');
+  await expect(first).toContainText('Raumplan');
+  await page.locator('#ti_quick_search').press('Enter');
+  await page.waitForURL(/\/timetable\/[0-9a-z]+$/);
+});

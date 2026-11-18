@@ -2288,6 +2288,7 @@ class Main < Sinatra::Base
                                         @session_user[:ui_preview_granted] = results.first['u'][:ui_preview_granted]
                                         @session_user[:ui_preview_quick] = results.first['u'][:ui_preview_quick]
                                         @session_user[:ui_vividness] = results.first['u'][:ui_vividness]
+                                        @session_user[:ui_font] = results.first['u'][:ui_font]
                                         @session_user[:dark] = results.first['u'][:dark]
                                         @session_user[:hue] = results.first['u'][:hue]
                                         @session_user[:saturation] = results.first['u'][:saturation]

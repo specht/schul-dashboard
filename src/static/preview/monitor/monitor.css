@@ -35,9 +35,9 @@ body.mn-aktiv .embed-responsive {
     --mn-warn: #8f5605;
     --mn-warn-soft: #fbefd8;
     --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.12);
-    --mn-text: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --mn-display: 'Bricolage Grotesque', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
-    --mn-mono: 'Atkinson Hyperlegible Mono', ui-monospace, Menlo, Consolas, monospace;
+    --mn-text: 'Atkinson Hyperlegible Next', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mn-display: 'Bricolage Grotesque', 'Fira Sans Fallback Display', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+    --mn-mono: 'Atkinson Hyperlegible Mono', 'Fira Sans Fallback', ui-monospace, Menlo, Consolas, monospace;
     --mn-rand: 2.4vw;
     position: fixed;
     left: 0;

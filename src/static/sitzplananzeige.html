@@ -1,7 +1,9 @@
 #{redirect_on_error { require_teacher!; assert(sph_can_view?(sitzplan_path_params[0])) }}
 <style>
+/* Große Räume nutzen die ganze Breite, damit der ganze Plan auf einmal zu
+   sehen ist (etwa am Beamer). */
 .spa-container {
-    max-width: 1100px;
+    max-width: max(1100px, 96vw);
     margin: 1.5em auto;
     padding: 1em;
     text-align: center;
@@ -21,7 +23,8 @@ body.dark #spa_seats .place {
 body.dark .spa-card-name {
     color: #eee;
 }
-/* Breite Räume lassen sich auf schmalen Bildschirmen seitlich verschieben. */
+/* Nur zur Sicherheit: Der Plan wird so klein gezeichnet, dass er ganz ins
+   Fenster passt (siehe render_seats). */
 .spa-seat-scroll {
     overflow-x: auto;
 }
@@ -189,8 +192,14 @@ document.addEventListener('DOMContentLoaded', function () {
         render_seats(false);
         // Für den Ausdruck auf eine Querformat-Seite zugeschnitten zeichnen,
         // danach wieder in Bildschirmgröße.
-        window.addEventListener('beforeprint', function () { render_seats(true); });
-        window.addEventListener('afterprint', function () { render_seats(false); });
+        window.addEventListener('beforeprint', function () { printing = true; render_seats(true); });
+        window.addEventListener('afterprint', function () { printing = false; render_seats(false); });
+        // Fenstergröße geändert (Beamer, Vollbild, Handy gedreht): neu einpassen.
+        let resize_timer = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(resize_timer);
+            resize_timer = setTimeout(function () { if (!printing) render_seats(false); }, 150);
+        });
         // ?print=1 (Knopf „Drucken“ auf der Sitzplan-Seite) öffnet direkt
         // den Druckdialog - erst wenn die Fotos geladen sind, sonst fehlen
         // sie auf dem Papier (spätestens nach 5 Sekunden trotzdem).
@@ -201,6 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 var places = [];
+var printing = false;
 // Die Foto-Elemente bleiben beim Umzeichnen (Bildschirm/Druck) dieselben,
 // damit sie nicht neu laden müssen, während der Druck schon läuft.
 var photo_for_place = {};
@@ -252,10 +262,14 @@ function render_seats(for_print) {
         // Überschrift und Tafel ab.
         scale = Math.min(110, 1000 / w, 500 / h);
     } else {
-        // Nicht kleiner als 64, sonst passen Foto und Name nicht mehr auf den
-        // Platz - schmale Bildschirme verschieben den Raum dann seitlich.
-        let container_width = Math.min($('.spa-container').width() || 900, 900);
-        scale = Math.max(64, Math.min(90, container_width / w));
+        // Der ganze Raum muss auf einmal zu sehen sein, auch ein großer: so
+        // groß, wie Breite und Höhe des Fensters es erlauben (unter der Tafel,
+        // ohne Scrollen). Kleine Räume werden nicht riesig; auf dem Handy
+        // werden große Räume eben klein (die Namen passen sich an).
+        let container_width = $('.spa-container').width() || 900;
+        let top = container.offset().top;
+        let height = Math.max(window.innerHeight * 0.5, window.innerHeight - Math.max(top, 0) - 60);
+        scale = Math.max(10, Math.min(130, container_width / w, height / h));
     }
     container.css('height', `${h * scale}px`).css('width', `${w * scale}px`);
     let size = scale * 0.9;
@@ -271,7 +285,7 @@ function render_seats(for_print) {
         let photo = photo_for(place);
         photo.style.width = photo.style.height = `${photo_size}px`;
         div.append(photo);
-        let name = $('<div>').addClass('spa-card-name').css('font-size', `${Math.max(8, Math.min(15, size * 0.155))}px`);
+        let name = $('<div>').addClass('spa-card-name').css('font-size', `${Math.max(8, Math.min(20, size * 0.155))}px`);
         if (place.first_name || place.last_name) {
             name.append($('<span>').text(place.first_name || ''))
                 .append(document.createTextNode(' '))

@@ -222,6 +222,8 @@ test('Shuffler: Ergebnis als Plan übernehmen, im Fachraum und im Klassenraum', 
     await expect(p.locator('#seats .place')).toHaveCount(3);
     await expect(p.locator('#bu_adopt_shuffle')).toBeHidden();
     await p.keyboard.press('Space');
+    // taking over does not wait for the music to end
+    await expect(p.locator('#bu_adopt_shuffle')).toBeVisible();
     await p.locator('#audio').evaluate((audio) => audio.dispatchEvent(new Event('ended')));
     await expect(p.locator('#bu_print_shuffle')).toBeVisible();
   };
@@ -324,5 +326,39 @@ test('Shuffler: Ergebnis als Plan übernehmen, im Fachraum und im Klassenraum', 
     expect(adopted.mode).toBe('manual');
   } finally {
     await discardHomeroom();
+  }
+});
+
+// The plan shown to the class must fit on the screen in one piece, also for a
+// big room (e.g. on the projector): no seat outside the window, no scrolling.
+test('Sitzplan anzeigen: auch ein großer Raum passt ganz ins Fenster', async ({ page }) => {
+  await login(page, FACHLEHRKRAFT);
+  await removeOwnPlans(page);
+  const BIG = Array.from({ length: 9 }, (_, y) => Array.from({ length: 12 }, (_, x) => [x, y])).flat(); // 108 seats
+  await saveDesks(page.request, FACHRAUM, BIG);
+  try {
+    const state = await (await page.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: FACHRAUM } })).json();
+    const emails = state.sus.map((s: any) => s.email);
+    // the far corners and the middle
+    const seats = { [emails[0]]: 0, [emails[1]]: BIG.length - 1, [emails[2]]: 11 };
+    const started = await (await page.request.post('/api/sph_start_cycle', { data: { klasse: KLASSE, raum: FACHRAUM, mode: 'manual' } })).json();
+    const saved = await page.request.post('/api/sph_save_cycle', {
+      data: { cycle_id: started.cycle_id, seats: JSON.stringify(seats), unresolved: '[]' },
+    });
+    expect(saved.status()).toBe(200);
+
+    await page.goto(`/sitzplananzeige/${KLASSE}/${FACHRAUM}`);
+    await expect(page.locator('#spa_seats .place')).toHaveCount(3);
+    const outside = await page.evaluate(() => {
+      const w = window.innerWidth, h = window.innerHeight;
+      return [...document.querySelectorAll('#spa_seats .place')].map((el) => el.getBoundingClientRect())
+        .filter((r) => r.left < 0 || r.top < 0 || r.right > w || r.bottom > h).length;
+    });
+    expect(outside).toBe(0);
+    // the names stay readable
+    for (const name of ['Max', 'Elli', 'Mallory']) await expect(page.locator('#spa_seats')).toContainText(name);
+  } finally {
+    await removeOwnPlans(page);
+    await saveDesks(page.request, FACHRAUM, OWN_DESKS);
   }
 });

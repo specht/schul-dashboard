@@ -55,8 +55,9 @@ Der Sitzplan der Klassenleitung im Klassenraum bleibt davon unberührt.
 
 ## Shuffler-Ergebnis übernehmen
 
-Nach dem Auslosen steht im Shuffler neben „Drucken“ der Knopf „Als Plan
-übernehmen“, im Klassenraum für die Klassenleitung, im Fachraum für die
+Gleich nach dem Auslosen steht im Shuffler der Knopf „Als Plan
+übernehmen“ (er übernimmt das zuletzt Ausgeloste, auch während die Musik
+noch läuft), im Klassenraum für die Klassenleitung, im Fachraum für die
 Lehrkraft mit ihrem eigenen Plan. Er öffnet die Sitzplan-Seite mit dem
 ausgelosten Plan; dort lassen sich Plätze von Hand tauschen, dann wird
 gespeichert wie jeder andere Plan. Ist schon ein neuer Plan angefangen,
@@ -278,7 +279,9 @@ Klassenraum.
 - **Ansehen**: Die übrigen Lehrkräfte der Klasse sehen im Klassenbereich
   „Sitzplan Raum …“, die Ansicht ohne Wünsche (`sitzplananzeige.html`,
   `sph_can_view?`). Sie zeigt nur Namen, Fotos und Plätze, nie
-  Wünsche, Vorgaben oder Listen.
+  Wünsche, Vorgaben oder Listen. Der Plan wird so groß gezeichnet, dass
+  der ganze Raum ohne Scrollen ins Fenster passt (auch ein großer Raum am
+  Beamer); bei einer Größenänderung des Fensters passt er sich neu an.
 - **SuS** sehen den Sitzplan im Dashboard nicht, weder die Seite noch den
   Endpunkt `sph_get_public_plan`.
 - **Gruppenbildung**: alle Lehrkräfte der Klasse (`zg_can_use?`).

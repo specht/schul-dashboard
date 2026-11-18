@@ -1,6 +1,10 @@
-/* Fonts of the new design (preview), self-hosted – no requests to Google Fonts.
-   Atkinson Hyperlegible Next and Mono, Bricolage Grotesque: SIL Open Font
-   License 1.1 (see the LICENSE files), packaged by Fontsource 5.3.0. */
+/* Fonts of the new design (preview), self-hosted - no requests to Google Fonts.
+   Four pairs to choose from in the profile (preview.css, doc/Gestaltung.md):
+   Klar (Bricolage Grotesque, Atkinson Hyperlegible Next, Greek from Fira Sans),
+   Sachlich (Inter Tight, Inter), Buch (Literata), Freundlich (M PLUS Rounded 1c,
+   Ubuntu Sans). Licences: see the LICENSE files (SIL Open Font License 1.1,
+   Ubuntu Sans: Ubuntu Font Licence 1.0), packaged by Fontsource 5.3.0.
+   unicode-range: browsers only download the files a page needs. */
 
 @font-face {
     font-family: 'Atkinson Hyperlegible Next';
@@ -108,4 +112,492 @@
     font-weight: 400;
     src: url('atkinson-hyperlegible-mono-latin-ext-400-normal.woff2') format('woff2');
     unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* ---------- Greek and missing accents for "Klar" ----------
+   Atkinson Hyperlegible Next and Bricolage Grotesque have no Greek and lack
+   some Latin letters (o with macron, vowels with breve, c / s with
+   circumflex ...). Fira Sans (SIL OFL 1.1) fills in: only its Greek and
+   latin-ext files, behind the two fonts in the stack (preview.css), so it is
+   downloaded only by pages that need it.
+   size-adjust matches its x-height to Atkinson (text) or Bricolage (headings). */
+
+@font-face {
+    font-family: 'Fira Sans Fallback';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('fira-sans-latin-ext-400-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 94%;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('fira-sans-latin-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 94%;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('fira-sans-greek-400-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 94%;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('fira-sans-greek-700-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 94%;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('fira-sans-greek-ext-400-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 94%;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('fira-sans-greek-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 94%;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback Display';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('fira-sans-latin-ext-400-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback Display';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('fira-sans-latin-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback Display';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('fira-sans-greek-400-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback Display';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('fira-sans-greek-700-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback Display';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url('fira-sans-greek-ext-400-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+    font-family: 'Fira Sans Fallback Display';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('fira-sans-greek-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+}
+
+
+/* ---------- "Sachlich": Inter Tight (headings), Inter (text) ----------
+   SIL OFL 1.1, variable weight; size-adjust: the same x-height as Atkinson
+   and Bricolage, so that tab bar, chips and cards keep their widths. */
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-latin-wght-italic.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-latin-ext-wght-italic.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-greek-wght-italic.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-greek-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-greek-ext-wght-italic.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 92%;
+}
+
+@font-face {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-tight-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-tight-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-tight-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Inter Tight';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('inter-tight-greek-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 97%;
+}
+
+
+/* ---------- "Buch": Literata (text and headings) ----------
+   SIL OFL 1.1, variable weight, made for reading on screens; polytonic Greek. */
+
+@font-face {
+    font-family: 'Literata';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 96%;
+}
+
+@font-face {
+    font-family: 'Literata';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-latin-wght-italic.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 96%;
+}
+
+@font-face {
+    font-family: 'Literata';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 96%;
+}
+
+@font-face {
+    font-family: 'Literata';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-latin-ext-wght-italic.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 96%;
+}
+
+@font-face {
+    font-family: 'Literata';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 96%;
+}
+
+@font-face {
+    font-family: 'Literata';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-greek-wght-italic.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 96%;
+}
+
+@font-face {
+    font-family: 'Literata';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-greek-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 96%;
+}
+
+@font-face {
+    font-family: 'Literata';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 200 900;
+    src: url('literata-greek-ext-wght-italic.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 96%;
+}
+
+
+/* ---------- "Freundlich": M PLUS Rounded 1c (headings), Ubuntu Sans (text) ----------
+   M PLUS Rounded 1c: SIL OFL 1.1, 700 and 800. Ubuntu Sans: Ubuntu Font
+   Licence 1.0 (free to use and embed), variable weight. */
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('m-plus-rounded-1c-latin-700-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('m-plus-rounded-1c-latin-800-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('m-plus-rounded-1c-latin-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('m-plus-rounded-1c-latin-ext-800-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('m-plus-rounded-1c-greek-700-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('m-plus-rounded-1c-greek-800-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url('m-plus-rounded-1c-greek-ext-700-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+    font-family: 'M PLUS Rounded 1c';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 800;
+    src: url('m-plus-rounded-1c-greek-ext-800-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-latin-wght-italic.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-latin-ext-wght-italic.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-greek-wght-italic.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-greek-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 97%;
+}
+
+@font-face {
+    font-family: 'Ubuntu Sans';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('ubuntu-sans-greek-ext-wght-italic.woff2') format('woff2');
+    unicode-range: U+1F00-1FFF;
+    size-adjust: 97%;
 }

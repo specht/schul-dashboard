@@ -1087,3 +1087,55 @@ test('Neues Design: eigenes Farbschema mit Palette und HSL-Reglern', async ({ pa
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// The search with the sidebar (tablet rail, desktop): it opened below the
+// navigation – with the sidebar that is the bottom edge of the window, so it
+// was open but out of sight. Now in view, results included.
+test('Neues Design: Suche am Tablet und Desktop sichtbar', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Seitenleiste');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    for (const [w, h] of [[820, 1180], [1024, 768], [1280, 900]]) {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto('/');
+      await page.locator('#bu_quick_search').click();
+      const input = page.locator('#ti_quick_search');
+      await input.fill('Mathe');
+      const panel = page.locator('#quick_search_panel');
+      await expect(panel.locator('.quick-search-row').first()).toBeVisible();
+      const box = (await panel.boundingBox())!;
+      expect(box.y, `${w}`).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height, `${w}`).toBeLessThanOrEqual(h);
+      expect(box.x + box.width, `${w}`).toBeLessThanOrEqual(w);
+      // nothing lies over the input
+      const i = (await input.boundingBox())!;
+      expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id, [i.x + 10, i.y + i.height / 2])).toBe('ti_quick_search');
+      await page.keyboard.press('Escape');
+      await expect(panel).toBeHidden();
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// The profile's own switch follows when light/dark is changed from the menu.
+test('Neues Design: Schalter im Profil folgt hell und dunkel aus dem Menü', async ({ page }, testInfo) => {
+  const phone = testInfo.project.name === 'mobile';
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+  try {
+    await page.goto('/profil');
+    const sw = page.locator('#dark_css_switch');
+    await expect(sw).not.toBeChecked();
+    if (phone) await page.locator('#bu_pv_more').click();
+    else await page.locator('#navbarDropdownProfile').click();
+    await page.locator('.nav-dark').click();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+    await expect(sw).toBeChecked();
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

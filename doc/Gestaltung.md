@@ -115,7 +115,30 @@ und dunkel auf Kontrast geprüft.
 ## 5. Schrift und Zahlen
 
 - Text in `--pv-text`, Überschriften in `--pv-display`, Code und Kürzel bei
-  Bedarf in `--pv-mono`.
+  Bedarf in `--pv-mono`. Nie eine Schrift fest eintragen: die Variablen
+  wechseln mit der gewählten Schrift.
+- Im Profil (»Darstellung«, »Schrift«) gibt es vier Schriftpaare
+  (Überschrift und Text), gespeichert in `u.ui_font`, auf der Seite als
+  Klasse `pv-font-…` am `body` (`preview.css`, `include/fonts-v2/fonts.css`):
+  - **Klar** (Standard): Bricolage Grotesque und Atkinson Hyperlegible Next.
+    Beide haben kein Griechisch und einige Akzente nicht (ō, Vokale mit
+    Breve wie ĕ ĭ ŏ ŭ); Fira Sans springt in der Schriftliste dahinter ein,
+    in der Größe angeglichen (`size-adjust`).
+  - **Sachlich**: Inter Tight und Inter.
+  - **Buch**: Literata (Serifenschrift für das Lesen am Bildschirm).
+  - **Freundlich**: M PLUS Rounded 1c (gerundet) und Ubuntu Sans.
+- Pflicht für jede Schrift: Latin-1 und Latin Extended-A (Akzente
+  europäischer Sprachen, Makron ā ē ī ō ū für Latein) und Griechisch mit
+  Tonos (U+0386–U+03CE, z. B. Ελληνικά, ά έ ή ί ό ύ ώ). Polytonisches
+  Griechisch (Greek Extended, z. B. ἀρετή, ῥῆμα, ᾠδή) ist erwünscht, aber
+  keine Bedingung; die vier Paare haben es alle. Eine neue Schrift kommt nur
+  dazu, wenn ihre Dateien das nachweislich abdecken (mit fontTools geprüft,
+  nicht nach Angabe der Anbieter), unter freier Lizenz (SIL OFL o. ä.),
+  selbst gehostet als woff2 in den Teilmengen latin, latin-ext, greek (und
+  greek-ext, wenn vorhanden) mit `unicode-range` und `font-display: swap`,
+  damit Browser nur laden, was eine Seite braucht.
+- Die Paare haben ungefähr dieselbe x-Höhe (`size-adjust`), damit Tab-Leiste,
+  Tage, Chips und Karten bei jeder Schrift dieselben Breiten behalten.
 - Zahlen, die untereinander stehen oder sich ändern (Uhrzeiten, Daten,
   Zähler), mit `font-variant-numeric: tabular-nums`.
 - Wochentage vor Daten in fester Breite (`.pv-weekday`), damit die Daten

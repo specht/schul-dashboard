@@ -15,7 +15,9 @@ import {
 
 const SHEET_WIDTH = 1023;
 
-// a lesson of the displayed week (the page has a lesson every school day)
+// a lesson of the displayed week (the page has a lesson every school day).
+// Tests open it by its date: the row's middle may hold a link from
+// an earlier test (the topic »Siehe https://…«), which opens a new tab.
 function weekRow(page: Page) {
   const week = displayedSchoolWeek();
   const short = week.map((d) => `${d.getDate()}.${d.getMonth() + 1}.`);
@@ -60,7 +62,7 @@ test('Neues Design: Kursbuch, Stunde wählen, eintragen, Links, speichern', asyn
     }
 
     // ---------- select the lesson: the pane (a sheet on smaller screens) ----------
-    await row.click();
+    await row.locator('.pv-kb-day').click();
     const pane = page.locator('.lesson_pane');
     await expect(pane).toBeVisible();
     if (sheet) await expect(page.locator('.pv-kb-sheet')).toBeVisible();
@@ -116,7 +118,7 @@ test('Neues Design: Kursbuch-Sheet, Zurück schließt, ungespeicherte Änderunge
     const row = weekRow(page);
     const sheet = page.locator('.pv-kb-sheet');
     // back closes the sheet and stays on the page
-    await row.click();
+    await row.locator('.pv-kb-day').click();
     await expect(sheet).toBeVisible();
     await expect(page.locator('body')).toHaveClass(/pv-sheet-open/);
     await page.goBack();
@@ -126,7 +128,7 @@ test('Neues Design: Kursbuch-Sheet, Zurück schließt, ungespeicherte Änderunge
     await expect(row).not.toHaveClass(/selected/);
 
     // unsaved changes: back asks first, "Weiter bearbeiten" keeps the sheet
-    await row.click();
+    await row.locator('.pv-kb-day').click();
     await expect(sheet).toBeVisible();
     await page.locator('#ti_notizen').fill('nicht speichern');
     // (the page puts its entry back at once: Playwright's goBack would wait
@@ -242,7 +244,7 @@ test('Neues Design: Kursbuch auf breiten Bildschirmen ohne Lücke rechts', async
   await page.request.post('/api/set_ui_preview_quick', { data: { mode: 'on' } });
   try {
     await page.goto('/lessons/Ma_5a');
-    await weekRow(page).click();
+    await weekRow(page).locator('.pv-kb-day').click();
     const pane = (await page.locator('.lesson_pane').boundingBox())!;
     const width = await page.evaluate(() => document.documentElement.clientWidth);
     expect(width - (pane.x + pane.width)).toBeLessThan(2);

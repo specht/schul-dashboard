@@ -312,7 +312,10 @@ test('Neues Design: Kursbuch auf breiten Bildschirmen als Tabelle', async ({ pag
       expect(Math.abs(box.x - headBox.x), cell).toBeLessThan(2);
       expect(box.x + box.width, cell).toBeLessThanOrEqual(headBox.x + headBox.width + 1);
     }
-    expect(rowBox.height).toBeLessThanOrEqual(44);
+    // a filled lesson: at most two lines (the homework's time and Nextcloud
+    // follow its text, on a second line when the column is too narrow for
+    // both – that depends on the lesson the week shows)
+    expect(rowBox.height).toBeLessThanOrEqual(64);
 
     // empty lessons: nothing repeated, compact
     const empty = await page.locator('tr.lesson').evaluateAll((trs) => trs

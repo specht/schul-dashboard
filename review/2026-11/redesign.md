@@ -159,7 +159,9 @@ or unused here although they matter; check before retiring anything.
 
 - What the setting is called, and whether parents and external accounts are
   part of the opt-in.
-- When the monitors follow.
+- When the monitors follow. Since 2026-11-18 a hallway monitor can opt in on
+  its own with `?design=neu` / `?design=neu-dunkel` in its address
+  (doc/Gestaltung.md, 12a); without it nothing changes.
 - Which of the pages without visits are seasonal and which can be retired.
 
 ## Inventory

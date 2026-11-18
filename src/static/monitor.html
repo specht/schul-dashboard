@@ -1,5 +1,5 @@
 #{require_monitor_or_user_who_can_manage_monitors!}
-<style>
+<style#{monitor_neu_alte_styles_aus}>
     .navbar, .foot {
         display: none;
     }
@@ -593,7 +593,7 @@
     </div>
 </div>
 
-<script>
+<script#{monitor_neu_altes_skript_aus}>
     var monitor_mode = 'public';
     // Silentium verhält sich wie das Lehrerzimmer, hat aber einen eigenen Zeugniskonferenzen-Schalter
     var is_silentium = false;
@@ -1186,4 +1186,4 @@
         }
     });
 </script>
-<script src='#{preview_asset('/monitor_effekte.js')}'></script>
+<script src='#{preview_asset('/monitor_effekte.js')}'></script>#{monitor_neu_html(color_scheme)}

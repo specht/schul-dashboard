@@ -681,11 +681,14 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
-    for (const path of ['/monitor', '/monitor/lz']) {
+    for (const path of ['/monitor', '/monitor/lz', '/monitor/sek', '/monitor?design=neu']) {
       const html = await (await page.request.get(path)).text();
       expect(html, path).not.toContain('ui-preview');
       expect(html, path).not.toContain('pv-tabbar');
       expect(html, path).not.toContain('/preview.css');
+      // the new monitor design is a separate opt-in per screen
+      // (?design=neu, monitor-neu.spec.ts), never the account's preview
+      if (!path.includes('design=')) expect(html, path).not.toContain('/preview/monitor/');
     }
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/ui-preview/);

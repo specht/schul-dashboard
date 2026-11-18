@@ -309,6 +309,34 @@ Umfragen, Termine, News verwalten)
   dort und rendert sonst endlos neu, die Seite friert ein. Abstand gehört in
   die Trennzeile (`.fc-timegrid-divider`) oder außerhalb des Kalenders.
 
+## 12a. Monitore im Flur
+
+- **Eigener Schalter pro Bildschirm.** Die Monitore laufen den ganzen Tag im
+  Schulhaus und folgen nie der Vorschau eines Kontos. Das neue Design
+  bekommt nur ein Monitor, dessen Adresse `?design=neu` (hell) oder
+  `?design=neu-dunkel` (dunkel) trägt, und nur im Flur; Sekretariat,
+  Lehrerzimmer und Silentium bleiben, wie sie sind. Ohne den Parameter
+  liefert `/monitor` dieselben Bytes wie vorher (`include/monitor_neu.rb`,
+  `preview/monitor/`).
+- **Feste Kacheln.** Jede Klasse hat immer ihre Kachel an derselben Stelle,
+  auch ohne Änderungen (dann steht nur der Name darin, leise). Wo eine
+  Klasse steht, hängt nie davon ab, welche Klassen heute Änderungen haben:
+  man findet seine Klasse jeden Tag am selben Platz. Links die Klassen 5
+  bis 10, eine Reihe pro Jahrgang, eine Spalte pro Parallelklasse; rechts
+  die Oberstufe, jede Klasse eine feste Hälfte.
+- **Blättern statt Scrollen.** Was nicht in eine Kachel passt, blättert in
+  der Kachel (Punkte zeigen die Seite); alle Kacheln blättern im selben
+  Takt, jede Seite steht 15 Sekunden, ein Balken im Fuß zeigt die
+  Standzeit. Nichts wird abgeschnitten.
+- **Aufteilung:** Kopf mit Titel, Datum und Stand, großer Uhr und der
+  laufenden Stunde auf dem Hintergrund des Farbschemas, darunter die
+  Kacheln; im Fuß Nachrichten und das Farbschema.
+- **Zustände als Marke** (Vertretung, Entfall, Raum, Klausur, Verlegt,
+  Aufgaben) statt Durchgestrichenem; »Se statt Pe« in Worten.
+- **Maße in `vw`**, damit dieselbe Seite auf Full HD und in den kleinen
+  Vorschauen auf »Monitore verwalten« gleich aussieht. Einträge mindestens
+  1,15 vw (22 px auf Full HD, heute 20 px).
+
 ## 13. Bewegung
 
 - Sheets und Menüs gleiten kurz (0,2 bis 0,3 s); nichts blinkt oder hüpft.

@@ -327,13 +327,25 @@ class Main < Sinatra::Base
         respond(data)
     end
     
+    # The website's news, newest first. Without parameters the latest 20, as
+    # before; with offset and limit (1..100) one page of them, and the number
+    # of all published entries (total) – the website pages through them.
     get "/api/get_frontpage_news_entries/#{WEBSITE_READ_INFO_SECRET}" do
-        entries = neo4j_query(<<~END_OF_QUERY).map { |x| x['n'] }
+        offset = [(params[:offset] || '0').to_s =~ /\A\d{1,7}\z/ ? params[:offset].to_i : 0, 0].max
+        limit = (params[:limit] || '20').to_s =~ /\A\d{1,4}\z/ ? params[:limit].to_i : 20
+        limit = [[limit, 1].max, 100].min
+        entries = neo4j_query(<<~END_OF_QUERY, {:offset => offset, :limit => limit}).map { |x| x['n'] }
             MATCH (n:NewsEntry)
             WHERE n.published = true
             RETURN n
             ORDER BY n.timestamp DESC
-            LIMIT 20;
+            SKIP $offset
+            LIMIT $limit;
+        END_OF_QUERY
+        total = neo4j_query_expect_one(<<~END_OF_QUERY)['total']
+            MATCH (n:NewsEntry)
+            WHERE n.published = true
+            RETURN count(n) AS total;
         END_OF_QUERY
         results = []
         entries.each do |entry|
@@ -347,7 +359,7 @@ class Main < Sinatra::Base
                 :content_html => parse_markdown(content)
             }
         end
-        respond(:entries => results)
+        respond(:entries => results, :total => total.to_i)
     end
 
     get "/api/get_frontpage_news_entries_with_keyword/#{WEBSITE_READ_INFO_SECRET}/:keyword" do

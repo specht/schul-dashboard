@@ -13,6 +13,9 @@ $VERBOSE = nil
 # must match NGINX_HOST_PORT in env.test.rb
 WEB_ROOT = 'http://localhost:8125'
 
+# the website's read-only news feed (test/e2e/tests/website-news-feed.spec.ts)
+WEBSITE_READ_INFO_SECRET = 'test-website-read-secret'
+
 # the fake SMS gateway in test/e2e/tests/sms-usage.spec.ts
 SMS_GATEWAY_SECRET = 'test-sms-gateway-secret'
 # short heartbeat, so the tests needn't wait a minute

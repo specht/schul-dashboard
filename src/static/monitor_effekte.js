@@ -18,7 +18,7 @@
 
     const NS = 'http://www.w3.org/2000/svg';
     const WETTER = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost'];
-    const STORYS = ['roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug'];
+    const STORYS = ['roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug', 'brand', 'kran', 'bienen', 'diebstahl'];
     const FESTE = ['weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang', 'adventskonzert', 'forschertag'];
     const ABFRAGE_ALLE_MS = 10 * 60 * 1000;
     const RUNDGANG_MS = 40 * 1000;
@@ -206,6 +206,10 @@
     /* Story „Röhre“: die Kachel wird dunkler (die Schrift bleibt schwarz und lesbar), Klappe mit Röhre */
     .fx-story { position: absolute; pointer-events: none; display: block; }
     .fx-roehre-dunkel { left: 0; top: 0; right: 0; bottom: 0; border-radius: inherit; background: #14171b; opacity: 0; }
+    .fx-brand-russ { left: 0; top: 0; right: 0; bottom: 0; border-radius: inherit; opacity: 0;
+        background: radial-gradient(ellipse at 50% 30%, rgba(30,20,12,.95), rgba(45,32,22,.8) 60%, rgba(60,45,32,.65)); }
+    .fx-brand-glut { left: 0; top: 0; right: 0; bottom: 0; border-radius: inherit; opacity: 0;
+        background: radial-gradient(ellipse at 50% 0%, rgba(255,140,30,.9), rgba(255,90,20,.35) 60%, rgba(255,60,20,0)); }
     .fx-roehre-fach { z-index: 3; opacity: 0; transition: opacity .4s; perspective: 9vw; }
     .fx-roehre-fach.fx-da { opacity: 1; }
     .fx-roehre-hohl { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #262b31; border-radius: .2vw; box-shadow: inset 0 .15vw .35vw rgba(0,0,0,.85); }
@@ -268,6 +272,8 @@
     .fx-warnschild { position: absolute; left: 0; top: 0; width: 2.6vw; overflow: visible; will-change: transform; filter: drop-shadow(0 .1vw .15vw rgba(0,0,0,.3)); }
     /* Story „Fensterputzer-Gondel“ */
     .fx-gondel { position: absolute; left: 0; top: 0; width: 7vw; overflow: visible; will-change: transform; filter: drop-shadow(0 .2vw .25vw rgba(0,0,0,.3)); }
+    .fx-trupp.fx-helfer.fx-reling .fx-tragarm-l { transform: rotate(-110deg); }
+    .fx-trupp.fx-helfer.fx-reling .fx-tragarm-r { transform: rotate(110deg); }
     .fx-trupp.fx-helfer.fx-putzt .fx-tragarm-l { transform: rotate(-62deg); }
     .fx-trupp.fx-helfer.fx-putzt .fx-tragarm-r { transform: rotate(-48deg); }
     .fx-schmutz { left: 0; top: 0; width: 100%; height: 100%; border-radius: inherit; }
@@ -338,6 +344,18 @@
     .fx-feuerwehr .fx-rad { transform-box: fill-box; transform-origin: 50% 50%; }
     .fx-feuerwehr.fx-faehrt .fx-rad { animation: fx-rad .5s linear infinite; }
     @keyframes fx-rad { to { transform: rotate(360deg); } }
+    /* Story „Diebstahl“: Fluchtwagen, Streifenwagen, Polizei-Kinder */
+    .fx-polizei, .fx-fluchtwagen { position: absolute; left: 0; top: 0; overflow: visible; will-change: transform; filter: drop-shadow(0 .2vw .25vw rgba(0,0,0,.3)); }
+    .fx-polizei { width: 9vw; }
+    .fx-fluchtwagen { width: 10vw; }
+    .fx-polizei .fx-blaulicht { opacity: .25; }
+    .fx-polizei.fx-einsatz .fx-blaulicht-a { animation: fx-blau .4s steps(2) infinite; }
+    .fx-polizei.fx-einsatz .fx-blaulicht-b { animation: fx-blau .4s steps(2) infinite; animation-delay: -.2s; }
+    .fx-prad { transform-box: fill-box; transform-origin: 50% 50%; }
+    .fx-faehrt .fx-prad { animation: fx-rad .4s linear infinite; }
+    .fx-rueckwaerts .fx-prad { animation-direction: reverse; }
+    .fx-fluchtwagen .fx-rueckfahrlicht { opacity: .3; }
+    .fx-fluchtwagen.fx-rueckwaerts .fx-rueckfahrlicht { opacity: 1; }
     /* Klettern: Beine mit Knie und die Greifhand werden pro Bild berechnet (fx-ik) */
     .fx-trupp .fx-ik-glied { display: none; }
     .fx-trupp.fx-ik .fx-ik-glied { display: inline; }
@@ -5434,14 +5452,20 @@
         let s = 0;
         if (!kaputt) {
             // erst noch ruhig, dann zweimal kurz weg
-            for (const st of [[0.15, 0], [0.05, 0.42], [0.09, 0], [0.04, 0.36], [zufall(0.7, 1.2), 0], [0.06, 0.4], [0.05, 0.05]]) { f.push(st); s += st[0]; }
+            for (const st of [[0.15, 0], [0.05, 0.42], [0.09, 0], [0.04, 0.36], [zufall(0.4, 0.7), 0], [0.06, 0.4], [0.05, 0.05]]) { f.push(st); s += st[0]; }
         }
         while (s < sekunden) {
             const r = Math.random();
             let d, a;
-            if (r < (kaputt ? 0.55 : 0.42)) { d = zufall(0.03, kaputt ? 0.5 : 0.1); a = zufall(0.3, 0.44); }
-            else if (r < 0.85) { d = zufall(0.03, kaputt ? 0.1 : 0.22); a = zufall(0, 0.08); }
-            else { d = zufall(0.2, kaputt ? 0.4 : 0.8); a = kaputt ? zufall(0.25, 0.35) : zufall(0, 0.05); }
+            if (kaputt && r < 0.22) {
+                // Stotter-Salve: die Röhre zündet ein paarmal hektisch hintereinander (Wunsch Jonas: ordentlich kaputt)
+                const n = 5 + Math.floor(zufall(0, 6));
+                for (let i = 0; i < n; i++) { const dd = zufall(0.025, 0.06); f.push([dd, i % 2 ? zufall(0, 0.06) : zufall(0.36, 0.44)]); s += dd; }
+                continue;
+            }
+            if (r < (kaputt ? 0.6 : 0.42)) { d = zufall(0.03, kaputt ? 0.7 : 0.1); a = zufall(0.3, 0.44); }
+            else if (r < 0.86) { d = zufall(0.03, kaputt ? 0.12 : 0.22); a = zufall(0, 0.08); }
+            else { d = zufall(0.2, kaputt ? 0.45 : 0.8); a = kaputt ? zufall(0.25, 0.38) : zufall(0, 0.05); }
             f.push([d, a]); s += d;
         }
         return f;
@@ -5514,14 +5538,15 @@
         const kb = KIND_B * VW, kh = kb * 2;
         const L = fb - 1.0 * VW;       // Länge der Röhre
         let t0 = null, tr = null, fertig = false;
-        // das Flackern beginnt 5 Sekunden, bevor der Trupp an der Leiter ankommt (Wunsch Jonas)
+        // die Röhre geht 13 Sekunden, bevor der Trupp an der Leiter ankommt, kaputt (Wunsch Jonas: 10–15 s)
+        const VORLAUF = 13;
         const vonRechts = p[0] >= W / 2;
         const gehDauer = Math.abs(standX(g, p) - (vonRechts ? W + VW : -kb - VW)) / (LAUF * VW);
-        const flackerAb = Math.max(0, gehDauer - 5), kindAb = Math.max(0, 5 - gehDauer);
+        const flackerAb = Math.max(0, gehDauer - VORLAUF), kindAb = Math.max(0, VORLAUF - gehDauer);
         let ruecken = ['neu'];          // Röhren auf dem Rücken des Kinds
         let bewegt = null;              // Röhre zwischen Fach und Rücken: {art, von: 'fach'|'ruecken'}
         // Licht
-        let folge = flackerFolge(6, false), fi = 0, frest = folge[0][0], modus = 'flackern', a = 0, aGesetzt = -1;
+        let folge = flackerFolge(2, false), fi = 0, frest = folge[0][0], modus = 'flackern', a = 0, aGesetzt = -1;
         function lichtSchritt(dt) {
             if (modus === 'an') a = 0;
             else if (modus === 'aus') a = 0.44;
@@ -6558,6 +6583,7 @@
         for (let i = 0; i < n; i++) bahnen.push(Math.min(0.3 * VW + BW / 2 + i * BW, k.w - 0.3 * VW - BW / 2));
         let t0 = null, pstart = 0, phase = 'verschmutzen', fertig = false;
         let gondel = null, kind = null, gx = 0, gy = -GH - 2 * VW, bahn = 0, kopf = null, kopfAlt = null;
+        let armL = null, armR = null, armZiel = null, armWinkel = -60;
         const kachel = () => { const r = el.getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect(); return {x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height}; };
         // die Gondel steht so, dass das Kind (rechts in der Gondel) die Bahn vor sich hat
         const gondelX = (lx) => lx - GB * 0.38;
@@ -6566,7 +6592,9 @@
             gondel = svgAusText(gondelSvg());
             gondel.style.width = `${GONDEL_B}vw`;
             kind = svgAusText(helferkindSvg());
-            kind.classList.add('fx-putzt');
+            // beim Fahren halten beide Hände die Reling (Wunsch Jonas)
+            kind.classList.add('fx-reling');
+            armL = kind.querySelector('.fx-tragarm-l'); armR = kind.querySelector('.fx-tragarm-r');
             domV.appendChild(kind);
             domV.appendChild(gondel);    // das Geländer verdeckt die Beine
             const kk = kachel();
@@ -6585,7 +6613,28 @@
             sg.fillRect((x - kk.x - BW / 2) * sx, (a - kk.y) * sy, BW * sx, (b - a) * sy);
             sg.restore();
         }
-        function zeichnen(t) {
+        // Arme: mit Abzieher folgen sie seiner Höhe (oben angesetzt bis ganz unten), sonst an die Reling
+        function armeSetzen(t, dt) {
+            if (kopf) {
+                const kk = kachel();
+                const f = Math.max(-0.3, Math.min(1.1, (kopf[1] - kk.y) / Math.max(1, kk.h)));
+                armZiel = -48 - 78 * f;
+                armWinkel += (armZiel - armWinkel) * Math.min(1, dt * 10);
+                const schrubb = kopf.nass ? Math.sin(t * 9) * 4 : 0;
+                for (const a of [armL, armR]) a.style.transition = 'none';
+                armL.style.transform = `rotate(${(armWinkel + schrubb).toFixed(1)}deg)`;
+                // die zweite Hand greift die Stange etwas weiter unten mit
+                armR.style.transform = `rotate(${(armWinkel * 0.92 - 14 + schrubb * 0.7).toFixed(1)}deg)`;
+                kind.classList.remove('fx-reling');
+            } else if (armL && armL.style.transform) {
+                // zurück an die Reling (weich über die CSS-Überblendung)
+                for (const a of [armL, armR]) { a.style.transition = ''; a.style.transform = ''; }
+                kind.classList.add('fx-reling');
+                armWinkel = -60;
+            }
+        }
+        function zeichnen(t, dt) {
+            armeSetzen(t, dt);
             gondel.style.transform = `translate(${gx.toFixed(1)}px, ${gy.toFixed(1)}px)`;
             // das Kind steht rechts in der Gondel und schaut nach links zur Bahn
             const kx = gx + GB * 0.72 - KA / 2, ky = gy + GH * 0.83 - KAH * 0.97;
@@ -6676,7 +6725,7 @@
                     gy -= Math.min(7 * VW, 1.5 * VW + ps * 5 * VW) * dt;
                     if (gy < -GH - KAH - 2 * VW) { fertig = true; return; }
                 }
-                if (gondel) zeichnen(t);
+                if (gondel) zeichnen(t, dt);
             },
         };
     }
@@ -7119,8 +7168,9 @@
                     winkel = u <= 0 ? 0 : W0 * (1 - Math.exp(-u * 5) * Math.cos(u * 11));
                     if (ps > 2.4) { winkel = W0; weiter('warten'); }
                 } else if (phase === 'warten') {
-                    if (!b && ps > 1.5) b = leiterkind('bohrer', pB, t, {von: 1, raus: 1});
-                    if (!a && ps > 2.6) a = leiterkind('leer', pA, t, {seite: -1, von: -1, raus: -1});
+                    // erst 15 s schief hängen lassen, dann kommt der Trupp (Wunsch Jonas)
+                    if (!b && ps > 15) b = leiterkind('bohrer', pB, t, {von: 1, raus: 1});
+                    if (!a && ps > 16.1) a = leiterkind('leer', pA, t, {seite: -1, von: -1, raus: -1});
                     if (a && b && a.oben() && b.oben()) weiter('anlegen');
                 } else if (phase === 'anlegen') {
                     waage = Math.min(1, ps / 0.5);
@@ -7967,6 +8017,8 @@
         let amt = null, ax = 0, arichtung = -blick;
         let t0 = null, pstart = 0, phase = 'kommen', fertig = false, pustUhr = 0, zettel = null, trocknen = 0;
         const blasen = [], tropfen = [], filme = [];
+        // Windböen wirbeln alle Blasen durcheinander
+        let wind = [0, 0], windZiel = [0, 0], windUhr = 0;
         const hand = (e, sel) => { const r = e.querySelector(sel).getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect(); return [r.left - o.left + r.width / 2, r.top - o.top + r.height / 2]; };
         const ringOrt = () => { const h = hand(kind, '.fx-tragarm-l circle'); return [h[0] + blick * 0.55 * VW, h[1] - 0.5 * VW, h]; };
         // vorgezeichnete Blasen (schont die Monitor-Rechner): 8 Farbstellungen
@@ -8000,8 +8052,10 @@
             return c;
         });
         function blaseNeu(ring) {
-            const ziel = [zufall(2, 98) * VW, zufall(2, Math.max(4, UNTEN / VW - 3)) * VW];
-            blasen.push({x: ring[0] + blick * 0.3 * VW, y: ring[1], r: zufall(0.6, 1.8) * VW, ziel: ziel,
+            // bevorzugt nach oben: sonst kämen die oberen Kacheln kaum dran (Wunsch Jonas)
+            const ziel = [zufall(2, 98) * VW, (2 + Math.pow(Math.random(), 1.8) * Math.max(2, UNTEN / VW - 5)) * VW];
+            const gross = Math.random() < 0.15 ? zufall(1.8, 2.6) : zufall(0.5, 1.8);
+            blasen.push({x: ring[0] + blick * 0.3 * VW, y: ring[1], r: gross * VW, ziel: ziel,
                 vx: blick * zufall(3, 7) * VW, vy: zufall(-3, -1) * VW, p: zufall(0, 6.28), bild: Math.floor(zufall(0, 8)),
                 alter: 0, beruehrt: new Set(), platzBei: null});
         }
@@ -8011,18 +8065,29 @@
             // auf einer Kachel bleibt ein Seifenfilm, der die Schrift darunter verschmiert (Wunsch Jonas);
             // höchstens 40, damit die Monitor-Rechner nicht ins Stocken kommen
             const k = kaesten.find((kk) => b.x > kk.x && b.x < kk.x + kk.w && b.y > kk.y && b.y < kk.y + kk.h);
-            if (k && filme.length < 40 && trocknen <= 0) {
-                const r = b.r * zufall(1.1, 1.4), el = document.createElement('div');
+            // höchstens 3 Filme je Kachel: so bekommen auch die oberen Kacheln etwas ab (Wunsch Jonas)
+            if (k && filme.length < 50 && trocknen <= 0 && k.el.querySelectorAll(':scope > .fx-seifenfilm').length < 3) {
+                // der Film bleibt ganz in seiner Kachel und lässt den Kiesel frei (Wunsch Jonas:
+                // die Schrift oben wurde sonst mit verschmiert)
+                const r = Math.min(b.r * zufall(1.1, 1.4), k.w / 2 - 1, k.h / 2 - 1);
+                const lauf = Math.min(zufall(0.5, 1.6) * VW, k.h - 2 * r);
+                const fx = Math.max(0, Math.min(k.w - 2 * r, b.x - k.x - r));
+                const fy = Math.max(0, Math.min(k.h - 2 * r - lauf, b.y - k.y - r));
+                const kie = k.el.querySelector(':scope > h3');
+                if (kie) {
+                    const kr = kie.getBoundingClientRect(), er = k.el.getBoundingClientRect();
+                    const ki = {x: kr.left - er.left - 0.3 * VW, y: kr.top - er.top - 0.3 * VW, w: kr.width + 0.6 * VW, h: kr.height + 0.6 * VW};
+                    if (fx < ki.x + ki.w && fx + 2 * r > ki.x && fy < ki.y + ki.h && fy + 2 * r + lauf > ki.y) return;
+                }
+                const el = document.createElement('div');
                 el.className = 'fx-story fx-seifenfilm';
-                const h0 = 0.62 * 255;
-                el.style.left = `${(b.x - k.x - r).toFixed(1)}px`; el.style.top = `${(b.y - k.y - r).toFixed(1)}px`;
+                el.style.left = `${fx.toFixed(1)}px`; el.style.top = `${fy.toFixed(1)}px`;
                 el.style.width = `${(2 * r).toFixed(1)}px`; el.style.height = `${(2 * r).toFixed(1)}px`;
                 el.style.borderRadius = `${Math.round(zufall(40, 60))}% ${Math.round(zufall(40, 60))}% ${Math.round(zufall(35, 55))}% ${Math.round(zufall(35, 55))}% / ${Math.round(zufall(40, 60))}% ${Math.round(zufall(40, 60))}% ${Math.round(zufall(55, 70))}% ${Math.round(zufall(55, 70))}%`;
                 el.style.background = `radial-gradient(circle at ${Math.round(zufall(30, 70))}% ${Math.round(zufall(30, 60))}%, hsla(${Math.round(zufall(0, 360))},85%,75%,.16), hsla(${Math.round(zufall(0, 360))},85%,70%,.1) 60%, rgba(255,255,255,.04))`;
-                void h0;
                 k.el.appendChild(el);
                 // die Laufspur: der Fleck zieht sich langsam nach unten
-                requestAnimationFrame(() => { el.style.height = `${(2 * r + zufall(0.5, 1.6) * VW).toFixed(1)}px`; });
+                requestAnimationFrame(() => { el.style.height = `${(2 * r + lauf).toFixed(1)}px`; });
                 filme.push({el: el, alter: 0});
             }
         }
@@ -8048,12 +8113,13 @@
                     if ((blick > 0 && kx >= kindX) || (blick < 0 && kx <= kindX)) { kx = kindX; weiter('pusten'); }
                 } else if (phase === 'pusten') {
                     // ohne Pause pusten, nur ab und zu kurz eintauchen – bis alles voller Blasen ist
-                    const zyklus = ps % 3.4;
+                    // noch viel mehr Chaos (Wunsch Jonas): doppelt so viele Blasen, seltener eintauchen
+                    const zyklus = ps % 4.2;
                     kind.classList.remove('fx-traegt');
-                    if (zyklus < 0.7) kind.classList.add('fx-taucht');
+                    if (zyklus < 0.5) kind.classList.add('fx-taucht');
                     else {
                         kind.classList.add('fx-pustet');
-                        if (zyklus > 1.1) { pustUhr -= dt; while (pustUhr <= 0) { blaseNeu(ringOrt()); pustUhr += zufall(0.025, 0.055); } }
+                        if (zyklus > 0.8) { pustUhr -= dt; while (pustUhr <= 0) { blaseNeu(ringOrt()); pustUhr += zufall(0.012, 0.028); } }
                     }
                     // erst 10 Sekunden pustet das Kind allein (Wunsch Jonas)
                     if (!amt && ps > 10) {
@@ -8137,6 +8203,10 @@
                     const a = (1 - trocknen).toFixed(2);
                     if (fm.el.style.opacity !== a) fm.el.style.opacity = a;
                 }
+                // Böen: alle 1–2,5 s eine neue Richtung, solange gepustet wird
+                windUhr -= dt;
+                if (windUhr <= 0) { windUhr = zufall(1, 2.5); windZiel = phase === 'pusten' ? [zufall(-6, 6) * VW, zufall(-3, 2.5) * VW] : [0, 0]; }
+                wind[0] += (windZiel[0] - wind[0]) * Math.min(1, dt * 1.5); wind[1] += (windZiel[1] - wind[1]) * Math.min(1, dt * 1.5);
                 // Blasen: verteilen sich über den ganzen Schirm und schweben dort
                 for (let i = blasen.length - 1; i >= 0; i--) {
                     const b = blasen[i];
@@ -8145,8 +8215,8 @@
                     b.vy += ((b.ziel[1] - b.y) * 0.5 - b.vy) * Math.min(1, dt * 1.2);
                     const sp = Math.hypot(b.vx, b.vy), max = 9 * VW;
                     if (sp > max) { b.vx *= max / sp; b.vy *= max / sp; }
-                    b.x += (b.vx + Math.sin(t * 1.3 + b.p) * 0.6 * VW) * dt;
-                    b.y += (b.vy + Math.cos(t * 1.1 + b.p) * 0.4 * VW) * dt;
+                    b.x += (b.vx + Math.sin(t * 1.3 + b.p) * 1.1 * VW + wind[0] / Math.max(0.6, b.r / VW)) * dt;
+                    b.y += (b.vy + Math.cos(t * 1.1 + b.p) * 0.8 * VW + wind[1] / Math.max(0.6, b.r / VW)) * dt;
                     let weg = b.platzBei !== null && t >= b.platzBei;
                     // aus dem Bild gepustet: einfach weg
                     if (b.x < -b.r * 2 || b.x > W + b.r * 2 || b.y < -b.r * 2) { blasen.splice(i, 1); continue; }
@@ -8157,9 +8227,11 @@
                             const innen = b.x > k.x && b.x < k.x + k.w && b.y > k.y && b.y < k.y + k.h;
                             const dx = Math.max(k.x - b.x, 0, b.x - (k.x + k.w)), dy = Math.max(k.y - b.y, 0, b.y - (k.y + k.h));
                             const d = innen ? Math.min(b.x - k.x, k.x + k.w - b.x, b.y - k.y, k.y + k.h - b.y) : Math.hypot(dx, dy);
-                            if (d < b.r * 0.6) { b.beruehrt.add(k.el); if (Math.random() < 0.12) { weg = true; break; } }
+                            if (d < b.r * 0.6) { b.beruehrt.add(k.el); if (Math.random() < 0.2) { weg = true; break; } }
                         }
                     }
+                    // wer schon eine Weile schwebt, platzt ab und zu dort, wo er ist – auch oben
+                    if (!weg && phase === 'pusten' && b.alter > 2.5 && b.platzBei === null && Math.random() < dt * 0.09) weg = true;
                     if (weg) { platzen(b); blasen.splice(i, 1); continue; }
                     const r = b.r * Math.min(1, b.alter * 3);
                     const n = (b.bild + Math.floor((t + b.p) * 2.5)) % 8;   // die Farben schillern weiter
@@ -8875,8 +8947,9 @@
     // nur beliebte, sichere Ferienziele (Wunsch Jonas)
     const ABFLUG_ZIELE = ['SÜDSEE', 'TROPENPARADIES', 'MALLORCA', 'TENERIFFA', 'GRAN CANARIA', 'KRETA', 'RHODOS', 'KORFU',
         'ALGARVE', 'MADEIRA', 'SARDINIEN', 'GARDASEE', 'SYLT', 'MALEDIVEN', 'MAURITIUS', 'KARIBIK'];
-    const ABFLUG_FALSCH = ['SÜDKLO', 'NORDPOL', 'MATHEARBEIT', 'HAUSAUFGABEN', 'TROPENREGEN', 'KARIBIKKKK', 'BAHNHOF',
-        'NIRGENDWO', 'MONTAG FRÜH', 'MALEDIVENNNN', 'KELLER'];
+    // wenn sie kaputt ist: Schul-Ziele statt Urlaub (Wunsch Jonas)
+    const ABFLUG_FALSCH = ['HAUSAUFGABEN', 'MONTAG FRÜH', 'SCHULE', 'KLASSENARBEIT', 'MATHEARBEIT', 'VOKABELTEST',
+        'NACHSITZEN', 'REFERAT', 'ELTERNABEND', 'ZEUGNISTAG'];
     let abflugZuletzt = [];
     // ein Verkehrsflugzeug von der Seite, Nase in Richtung d (±1)
     function flugzeugMalen(x, y, d, farbe, steig) {
@@ -9038,10 +9111,15 @@
                     // sie spinnt: die Buchstaben drehen kurz durch …
                     chaos = 1;
                     if (ps > 1.6) {
-                        // … und bleiben auf lauter Witz-Zielen stehen; genau dann kommt der Trupp (Wunsch Jonas)
+                        // … und bleiben auf lauter Witz-Zielen stehen; etwa 10 s später kommt der Trupp (Wunsch Jonas)
                         chaos = 0;
                         falsche = []; for (let i = 0; i < ZEILEN; i++) falsche.push(falscheZeile());
                         falsche.forEach((f, i) => setzeZeile(i, zeile(f))); witzUhr = 5;
+                        weiter('falsch');
+                    }
+                } else if (phase === 'falsch') {
+                    // die Klappen brauchen gut 2 s, bis die Witz-Ziele lesbar sind; danach etwa 10 s
+                    if (!trupps.length && ps > 12.5) {
                         // zwei Kinder mit Leiter, die direkt an den Klappbuchstaben arbeiten (Wunsch Jonas):
                         // eins von links am Ziel, eins von rechts weiter hinten, auf Höhe der mittleren Reihe
                         const b1 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
@@ -9051,15 +9129,13 @@
                         const x0 = links + frei, bw = breite - frei;
                         trupps = [leiterkind('schrauber', [x0 + bw * 0.34, zy], t, {seite: -1, von: -1, raus: -1}),
                             leiterkind('schrauber', [x0 + bw * 0.68, zy], t, {seite: 1, von: 1, raus: 1})];
-                        weiter('falsch');
                     }
-                } else if (phase === 'falsch') {
-                    // die Witz-Ziele bleiben lesbar stehen, die Lämpchen flackern, bis der Trupp oben ist
-                    for (const l of lampen) if (Math.random() < dt * 3) l.classList.toggle('fx-gruen');
+                    // die Witz-Ziele bleiben lesbar stehen, bis der Trupp oben ist
+                    for (const l of lampen) l.classList.add('fx-gruen');
                     // mehrere Witz-Ziele laufen durch wie echte Abflüge (Wunsch Jonas), dann wird repariert
                     witzUhr -= dt;
                     if (witzUhr <= 0) { falsche.shift(); falsche.push(falscheZeile()); falsche.forEach((f, i) => setzeZeile(i, zeile(f))); witzUhr = 5; }
-                    if (ps > 5 * 2 + 2.8 && trupps.every((k) => k.oben())) {
+                    if (trupps.length && trupps.every((k) => k.oben())) {
                         // die Klappen gleich an den Schraubenziehern drehen beim Reparieren besonders wild
                         const b1 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
                         const spitzen = trupps.map((k) => k.spitze());
@@ -9100,14 +9176,7 @@
                     if (f.x < -12 * VW || f.x > W + 12 * VW) { flieger.splice(i, 1); continue; }
                     flugzeugMalen(f.x, f.y, f.d, f.farbe, f.steig);
                 }
-                // Lampen und Zeilen flackern, solange sie spinnt
-                if (chaos > 0) {
-                    const zn = tafel.querySelectorAll('.fx-abflug-zeile');
-                    for (let i = 0; i < ZEILEN; i++) {
-                        if (Math.random() < dt * 3 * chaos) lampen[i].classList.toggle('fx-gruen');
-                        if (Math.random() < dt * 2 * chaos) zn[i].style.opacity = String(zufall(0.55, 1).toFixed(2));
-                    }
-                }
+                // kaputt heißt nur: falsche Ziele – die Tafel verblasst nicht, die Lämpchen leuchten weiter (Wunsch Jonas)
                 for (const k of trupps) k.schritt(dt, t);
                 // Klappen: jede Klappe schaltet Zeichen für Zeichen weiter bis zum Ziel
                 // im Normalbetrieb schlagen sie flott um, beim Spinnen hektisch und wirr
@@ -9136,11 +9205,1396 @@
         };
     }
 
+    // Brand: Eine Kachel wird dunkel und rußig, qualmt und geht (comichaft) in Flammen auf.
+    // Die Feuerwehr kommt mit der Drehleiter, stützt ab und löscht aus dem Korb; es dampft,
+    // die Kachel trocknet, der Ruß verschwindet, die Feuerwehr fährt wieder ab.
+    let brandZuletzt = [];
+    // eine Flammenzunge: Fuß (x, y), Breite b, Höhe h (comichaft, flackernd)
+    function flammeMalen(x, y, b, h, t, p) {
+        if (h < 0.2 * VW) return;
+        // drei flache Schichten statt Farbverlauf: comichaft und schont die Monitor-Rechner
+        const wob = Math.sin(t * 9 + p) * 0.2 * b, wob2 = Math.sin(t * 13 + p * 1.7) * 0.12 * b;
+        for (const [f, farbe] of [[1, '#d83a1e'], [0.78, '#ff8a1c'], [0.48, '#ffe066']]) {
+            const bb = b * f, hh = h * (0.35 + 0.65 * f);
+            cxV.fillStyle = farbe;
+            cxV.beginPath(); cxV.moveTo(x - bb / 2, y);
+            cxV.quadraticCurveTo(x - bb * 0.6 + wob2 * f, y - hh * 0.45, x + wob * f, y - hh);
+            cxV.quadraticCurveTo(x + bb * 0.6 + wob2 * f, y - hh * 0.45, x + bb / 2, y);
+            cxV.closePath(); cxV.fill();
+        }
+    }
+    function Brand() {
+        const kandidaten = [];
+        for (const k of kaesten) {
+            if (k.el.dataset.fxStory || k.w < 12 * VW || k.h < 4 * VW || k.y < 3 * VW || k.y + k.h > UNTEN - 9 * VW) continue;
+            const seite = k.x + k.w / 2 < W / 2 ? 1 : -1;      // der Wagen steht zur Bildmitte hin
+            const ex = seite > 0 ? k.x + k.w : k.x;
+            if (ex + seite * 19 * VW < 1 * VW || ex + seite * 19 * VW > W - 1 * VW) continue;
+            kandidaten.push([k, seite]);
+        }
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter(([kk]) => brandZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { brandZuletzt = []; frisch = kandidaten; }
+        const [T, seite] = auswahl(frisch);
+        brandZuletzt.push(kachelName(T.el));
+        const el = T.el;
+        el.dataset.fxStory = 'brand';
+        if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+        // Ruß und Glut: als erste Kinder der Kachel (der Kiesel bleibt darüber hell)
+        const russ = document.createElement('div');
+        russ.className = 'fx-story fx-brand-russ';
+        const glut = document.createElement('div');
+        glut.className = 'fx-story fx-brand-glut';
+        el.insertBefore(glut, el.firstChild);
+        el.insertBefore(russ, el.firstChild);
+        const kachel = () => { const r = el.getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect(); return {x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height}; };
+        const ex = seite > 0 ? T.x + T.w : T.x;
+        // Feuerwehr wie beim Heißluftballon: fährt auf die Kachel zu, Drehkranz hinten
+        const fwRicht = -seite;
+        const fwB = FW_B * VW, fwH = fwB * FW_VB[1] / FW_VB[0], u = fwB / FW_VB[0];
+        const drehX = (x) => (fwRicht > 0 ? x + FW_DREH[0] * u : x + (FW_VB[0] - FW_DREH[0]) * u);
+        const halteDreh = ex + seite * 15 * VW;
+        const halteX = fwRicht > 0 ? halteDreh - FW_DREH[0] * u : halteDreh - (FW_VB[0] - FW_DREH[0]) * u;
+        const fwStart = fwRicht > 0 ? -fwB - 2 * VW : W + 2 * VW;
+        const ruhe = fwRicht > 0 ? -1.5 : 181.5, RUHE_L = 12.2 * VW, HUB = 0.45 * VW;
+        const fwY0 = () => UNTEN - fwH * 51 / 52;
+        // der Korb hält neben der Kachel auf halber Höhe, der Schlauch zielt auf die Flammen
+        const spitzeZiel = [ex + seite * (RK_B * VW + 1.4 * VW), T.y + T.h * 0.5 + RK_H * VW];
+        let zielWinkel = ruhe, zielLaenge = RUHE_L, winkel = ruhe, laenge = RUHE_L, armVor = 0;
+        function leiterZiel() {
+            const drehY0 = fwY0() - HUB + FW_DREH[1] * u;
+            zielWinkel = Math.atan2(drehY0 - spitzeZiel[1], spitzeZiel[0] - halteDreh) * 180 / Math.PI;
+            zielLaenge = Math.hypot(spitzeZiel[0] - halteDreh, drehY0 - spitzeZiel[1]);
+        }
+        let fx = fwStart, fv = 0, fw = null, stuetzen = 0, fwPhase = null, fps0 = 0;
+        let t0 = null, pstart = 0, phase = 'dunkel', fertig = false;
+        let russA = 0, staerke = 0, glutA = 0;
+        const rauch = [], wasser = [];
+        let rauchUhr = 0, wasserUhr = 0, duese = null;
+        function stuetzenMalen(fwY) {
+            if (stuetzen <= 0) return;
+            for (const [sx, raus] of [[8, -1], [108, 1]]) {
+                const x0 = fwRicht > 0 ? fx + sx * u : fx + (FW_VB[0] - sx) * u;
+                const r = fwRicht > 0 ? raus : -raus;
+                const aus = Math.min(1, stuetzen * 2) * 1.4 * VW, unten = Math.max(0, stuetzen * 2 - 1);
+                const xb = x0 + r * aus, y0 = fwY + 36 * u, y1 = y0 + (UNTEN - y0) * unten;
+                cxV.strokeStyle = '#4a4f55'; cxV.lineWidth = 0.42 * VW; cxV.lineCap = 'butt';
+                cxV.beginPath(); cxV.moveTo(x0, y0); cxV.lineTo(xb, y0); cxV.stroke();
+                cxV.strokeStyle = '#3b3f44'; cxV.lineWidth = 0.3 * VW;
+                cxV.beginPath(); cxV.moveTo(xb, y0); cxV.lineTo(xb, y1); cxV.stroke();
+                cxV.fillStyle = '#ffd34d'; cxV.fillRect(xb - 0.6 * VW, y1 - 0.22 * VW, 1.2 * VW, 0.26 * VW);
+            }
+        }
+        function puff(x, y, art) {
+            const dunkel = art === 'rauch';
+            rauch.push({x: x, y: y, vx: zufall(-0.6, 0.6) * VW, vy: -zufall(1.6, 3.2) * VW, r: (dunkel ? zufall(0.8, 1.7) : zufall(0.5, 1.1)) * VW,
+                alter: 0, dauer: zufall(2, 3.4), grau: art === 'dampf' ? zufall(225, 245) : (dunkel ? zufall(55, 85) : zufall(140, 175)),
+                a: art === 'dampf' ? 0.55 : (dunkel ? 0.55 : 0.4)});
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() { russ.remove(); glut.remove(); if (fw) fw.remove(); delete el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                const kk = kachel();
+                if (phase === 'dunkel') {
+                    // die Kachel wird dunkel und rußig
+                    russA = Math.min(0.45, ps / 6 * 0.45);
+                    if (ps > 6) weiter('qualm');
+                } else if (phase === 'qualm') {
+                    // es qualmt, erst hell, dann dunkler
+                    rauchUhr -= dt;
+                    while (rauchUhr <= 0) { puff(kk.x + zufall(0.1, 0.9) * kk.w, kk.y + zufall(0, 0.3) * kk.h, ps > 2.5 ? 'rauch' : 'qualm'); rauchUhr += Math.max(0.05, 0.3 - ps * 0.05); }
+                    if (ps > 4.5) weiter('brand');
+                } else if (phase === 'brand') {
+                    // bis gelöscht wird, lodert es immer stärker
+                    const loescht = ['loeschen', 'nachloeschen', 'einfahren', 'ablegen', 'stuetzenEin', 'abfahrt'].indexOf(fwPhase) >= 0;
+                    if (!loescht) staerke = Math.min(1, staerke + dt / 2);
+                    if (!fw && ps > 1.5) {
+                        fw = svgAusText(feuerwehrSvg());
+                        fw.style.width = `${FW_B}vw`;
+                        fw.classList.add('fx-einsatz', 'fx-faehrt');
+                        domV.appendChild(fw);
+                        fwPhase = 'fahrt'; fps0 = t;
+                    }
+                    if (loescht && staerke <= 0) weiter('dampf');
+                } else if (phase === 'dampf') {
+                    // gelöscht: es dampft noch, dann trocknet die Kachel und der Ruß verschwindet
+                    if (ps > 2) russA = Math.max(0, russA - dt / 4);
+                    if (Math.random() < dt * Math.max(0, 4 - ps)) puff(kk.x + zufall(0.1, 0.9) * kk.w, kk.y + zufall(0, 0.6) * kk.h, 'dampf');
+                    if (russA <= 0 && !fw && !rauch.length && !wasser.length) { fertig = true; return; }
+                }
+                // Feuerwehr
+                if (fw) {
+                    const fp = t - fps0;
+                    const fweiter = (ph) => { fwPhase = ph; fps0 = t; };
+                    if (fwPhase === 'fahrt') {
+                        const rest = (halteX - fx) * fwRicht;
+                        const v = Math.min(14 * VW, Math.sqrt(2 * 6 * VW * Math.max(0, rest)));
+                        fx += fwRicht * v * dt;
+                        if (rest <= 0.05 * VW) { fx = halteX; fw.classList.remove('fx-faehrt'); leiterZiel(); fweiter('abstuetzen'); }
+                    } else if (fwPhase === 'abstuetzen') {
+                        stuetzen = Math.min(1, fp / 1.8);
+                        if (fp > 1.9) fweiter('aufrichten');
+                    } else if (fwPhase === 'aufrichten') {
+                        winkel = ruhe + (zielWinkel - ruhe) * glatt(fp / 2.6);
+                        if (fp > 2.6) fweiter('ausfahren');
+                    } else if (fwPhase === 'ausfahren') {
+                        laenge = RUHE_L + (zielLaenge - RUHE_L) * glatt(fp / 2.6);
+                        if (fp > 2.6) fweiter('loeschen');
+                    } else if (fwPhase === 'loeschen') {
+                        armVor = Math.min(1, fp / 0.5);
+                        // der Wasserstrahl drückt die Flammen langsam herunter
+                        if (fp > 0.6) staerke = Math.max(0, staerke - dt / 6);
+                        if (staerke <= 0 && fp > 2) fweiter('nachloeschen');
+                    } else if (fwPhase === 'nachloeschen') {
+                        if (fp > 1.6) { armVor = 0; fweiter('einfahren'); }
+                    } else if (fwPhase === 'einfahren') {
+                        laenge = zielLaenge + (RUHE_L - zielLaenge) * glatt(fp / 2.4);
+                        if (fp > 2.4) fweiter('ablegen');
+                    } else if (fwPhase === 'ablegen') {
+                        winkel = zielWinkel + (ruhe - zielWinkel) * glatt(fp / 2.3);
+                        if (fp > 2.3) fweiter('stuetzenEin');
+                    } else if (fwPhase === 'stuetzenEin') {
+                        stuetzen = Math.max(0, 1 - fp / 1.5);
+                        if (fp > 1.6) { fw.classList.add('fx-faehrt'); fv = 0; fweiter('abfahrt'); }
+                    } else if (fwPhase === 'abfahrt') {
+                        fv = Math.min(15 * VW, fv + 6 * VW * dt);
+                        fx += fwRicht * fv * dt;
+                        if (fx > W + 2 * VW || fx < -fwB - 2 * VW) { fw.remove(); fw = null; }
+                    }
+                }
+                // Ruß und Glut auf der Kachel
+                glutA = staerke * (0.5 + 0.1 * Math.sin(t * 11) + 0.06 * Math.sin(t * 23));
+                russ.style.opacity = russA.toFixed(3);
+                glut.style.opacity = Math.max(0, glutA).toFixed(3);
+                // Flammen oben aus der Kachel, Funken und dunkler Rauch
+                if (staerke > 0) {
+                    // richtig doll (Wunsch Jonas): hohe Flammen oben, dazu Feuer aus der Mitte und vom unteren Rand
+                    const reihe = (y, abstand, breit, hMin, hMax, p0) => {
+                        const n = Math.max(3, Math.round(kk.w / abstand));
+                        for (let i = 0; i < n; i++) {
+                            const x = kk.x + (i + 0.5) / n * kk.w, p = i * 2.1 + p0;
+                            const h = (hMin + (hMax - hMin) * (0.5 + 0.5 * Math.sin(t * 3.1 + p))) * VW * staerke;
+                            flammeMalen(x + Math.sin(t * 1.7 + p) * 0.3 * VW, y, breit, h, t, p);
+                        }
+                    };
+                    reihe(kk.y + kk.h, 1.7 * VW, 2.2 * VW, 2.0, 3.6, 7);            // unten
+                    reihe(kk.y + kk.h * 0.62, 1.6 * VW, 2.3 * VW, 2.4, 4.4, 3);     // aus der Mitte
+                    reihe(kk.y + 0.5 * VW, 1.2 * VW, 2.4 * VW, 3.8, 7.0, 0);        // oben, am höchsten
+                    for (const [sx, sp] of [[kk.x + 0.3 * VW, 0.7], [kk.x + kk.w - 0.3 * VW, 2.3]]) {
+                        flammeMalen(sx, kk.y + kk.h * 0.85, 1.8 * VW, (2.6 + Math.sin(t * 4 + sp)) * VW * staerke, t, sp + 5);
+                    }
+                    rauchUhr -= dt;
+                    while (rauchUhr <= 0) { puff(kk.x + zufall(0.05, 0.95) * kk.w, kk.y - zufall(3, 6) * VW * staerke, 'rauch'); rauchUhr += 0.045 / Math.max(0.3, staerke); }
+                    if (Math.random() < dt * 9 * staerke) funkenStreuen(kk.x + zufall(0.05, 0.95) * kk.w, kk.y - zufall(1, 5) * VW, 3, 'gold');
+                }
+                // Rauch und Dampf
+                for (let i = rauch.length - 1; i >= 0; i--) {
+                    const r = rauch[i];
+                    r.alter += dt;
+                    if (r.alter > r.dauer || r.y < -4 * VW) { rauch.splice(i, 1); continue; }
+                    r.x += (r.vx + Math.sin(t + i) * 0.3 * VW) * dt; r.y += r.vy * dt;
+                    const f = r.alter / r.dauer, g = Math.round(r.grau);
+                    cxV.fillStyle = `rgba(${g},${g},${g},${(r.a * (1 - f)).toFixed(2)})`;
+                    cxV.beginPath(); cxV.arc(r.x, r.y, r.r * (1 + f * 1.8), 0, 6.283); cxV.fill();
+                }
+                if (fw) {
+                    const fahrt = fwPhase === 'fahrt' || fwPhase === 'abfahrt';
+                    const fwY = fwY0() - HUB * Math.max(0, stuetzen * 2 - 1) + (fahrt ? Math.abs(Math.sin(t * 9)) * -0.04 * VW : 0);
+                    fw.style.transform = `translate(${fx.toFixed(1)}px, ${fwY.toFixed(1)}px)${fwRicht < 0 ? ' scale(-1, 1)' : ''}`;
+                    stuetzenMalen(fwY);
+                    const dx0 = drehX(fx), dy0 = fwY + FW_DREH[1] * u;
+                    drehleiterMalen(dx0, dy0, laenge, winkel);
+                    const w = winkel * Math.PI / 180;
+                    const besetzt = ['aufrichten', 'ausfahren', 'loeschen', 'nachloeschen', 'einfahren', 'ablegen'].indexOf(fwPhase) >= 0;
+                    duese = rettungskorbMalen(dx0 + Math.cos(w) * laenge, dy0 - Math.sin(w) * laenge + 0.2 * VW, fwRicht, armVor, !besetzt);
+                    // Wasserstrahl in hohem Bogen auf die Flammen
+                    if (besetzt && (fwPhase === 'loeschen' || fwPhase === 'nachloeschen') && armVor > 0.5) {
+                        wasserUhr -= dt;
+                        while (wasserUhr <= 0) {
+                            const zx = kk.x + kk.w * zufall(0.25, 0.75), zy = kk.y + zufall(-1.5, 0.8) * VW, T2 = zufall(0.45, 0.6), G = 30 * VW;
+                            wasser.push({x: duese[0], y: duese[1], vx: (zx - duese[0]) / T2, vy: (zy - duese[1]) / T2 - 0.5 * G * T2, g: G, rest: T2});
+                            wasserUhr += 0.012;
+                        }
+                    }
+                }
+                for (let i = wasser.length - 1; i >= 0; i--) {
+                    const d = wasser[i];
+                    d.rest -= dt; d.vy += d.g * dt; d.x += d.vx * dt; d.y += d.vy * dt;
+                    if (d.rest <= 0) { if (Math.random() < 0.25) puff(d.x, d.y, 'dampf'); wasser.splice(i, 1); continue; }
+                    cxV.strokeStyle = 'rgba(170,215,255,.8)'; cxV.lineWidth = 0.22 * VW; cxV.lineCap = 'round';
+                    cxV.beginPath(); cxV.moveTo(d.x, d.y); cxV.lineTo(d.x - d.vx * 0.02, d.y - d.vy * 0.02); cxV.stroke();
+                }
+            },
+        };
+    }
+
+    // Baustelle: In einer leeren Kachel springt ein Riss auf. Ein Bauarbeiter-Kind sperrt ab, ein
+    // großer Turmdrehkran wächst in die Höhe, hakt die Kachel an und lässt sie bis auf den Boden
+    // hinab. Dort schweißt das Kind den Riss zu; der Kran hebt die Kachel zurück an ihren Platz,
+    // baut sich ab, und die Absperrung kommt weg (Wunsch Jonas).
+    let kranZuletzt = [];
+    function gitterMalen(x0, y0, x1, y1, breit, felder) {
+        // Gittermast/-ausleger von (x0, y0) nach (x1, y1), quer „breit“
+        const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 1, nx = -dy / l * breit / 2, ny = dx / l * breit / 2;
+        cxV.strokeStyle = '#d99a00'; cxV.lineWidth = 0.22 * VW; cxV.lineCap = 'butt';
+        cxV.beginPath();
+        cxV.moveTo(x0 + nx, y0 + ny); cxV.lineTo(x1 + nx, y1 + ny);
+        cxV.moveTo(x0 - nx, y0 - ny); cxV.lineTo(x1 - nx, y1 - ny);
+        cxV.stroke();
+        cxV.strokeStyle = '#f2b705'; cxV.lineWidth = 0.12 * VW;
+        cxV.beginPath();
+        for (let i = 0; i < felder; i++) {
+            const a = i / felder, b = (i + 1) / felder;
+            cxV.moveTo(x0 + dx * a + nx, y0 + dy * a + ny); cxV.lineTo(x0 + dx * b - nx, y0 + dy * b - ny);
+            cxV.moveTo(x0 + dx * b + nx, y0 + dy * b + ny); cxV.lineTo(x0 + dx * b - nx, y0 + dy * b - ny);
+        }
+        cxV.stroke();
+    }
+    function Baustelle() {
+        // nur leere Kacheln (dauert länger), mit Platz für den Kran darüber und daneben.
+        // Der Mast steht in der senkrechten Lücke zwischen zwei Kachelspalten, damit er möglichst
+        // wenig Schrift verdeckt (Wunsch Jonas).
+        const spalten = kaesten.map((k) => [k.x, k.x + k.w]).sort((a, b) => a[0] - b[0]);
+        const zusammen = [];
+        for (const [a, b] of spalten) { if (zusammen.length && a <= zusammen[zusammen.length - 1][1] + 0.2 * VW) zusammen[zusammen.length - 1][1] = Math.max(zusammen[zusammen.length - 1][1], b); else zusammen.push([a, b]); }
+        const luecken = [];
+        for (let i = 1; i < zusammen.length; i++) { const a = zusammen[i - 1][1], b = zusammen[i][0]; if (b - a > 0.6 * VW) luecken.push({x: (a + b) / 2, b: b - a}); }
+        const kandidaten = [];
+        for (const k of kaesten) {
+            if (k.el.dataset.fxStory || k.el.querySelector('table tr') || k.w < 12 * VW || k.y < 14 * VW || k.y + k.h > UNTEN - 8 * VW) continue;
+            // die nächste Lücke rechts oder links neben der Kachel (zur Bildmitte hin bevorzugt)
+            const vorzug = k.x + k.w / 2 < W / 2 ? 1 : -1;
+            const neben = (sd) => luecken.filter((l) => (sd > 0 ? l.x > k.x + k.w - 0.5 * VW && l.x < k.x + k.w + 3 * VW : l.x < k.x + 0.5 * VW && l.x > k.x - 3 * VW))[0];
+            const l = neben(vorzug) || neben(-vorzug);
+            if (!l) continue;
+            kandidaten.push([k, l.x > k.x + k.w / 2 ? 1 : -1, l.x, l.b]);
+        }
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter(([kk]) => kranZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { kranZuletzt = []; frisch = kandidaten; }
+        const [T, seite, mx, lueckeB] = auswahl(frisch);
+        kranZuletzt.push(kachelName(T.el));
+        const el = T.el;
+        el.dataset.fxStory = 'kran';
+        const alt = {transform: el.style.transform, zIndex: el.style.zIndex, position: el.style.position, transition: el.style.transition};
+        if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+        const boden = LAUF_BODEN - 0.1 * VW;
+        const riss = document.createElement('canvas');
+        riss.className = 'fx-story fx-riss';
+        Object.assign(riss.style, {left: '0', top: '0', width: '100%', height: '100%'});
+        riss.width = Math.max(1, Math.round(T.w * DPR)); riss.height = Math.max(1, Math.round(T.h * DPR));
+        el.appendChild(riss);
+        const rg = riss.getContext('2d');
+        // ein Hauptriss quer durch die Kachel und zwei Verzweigungen (Punkte in der Kachel)
+        const rissLinien = [];
+        (function () {
+            const haupt = [];
+            let x = T.w * zufall(0.25, 0.45), y = 0;
+            haupt.push([x, y]);
+            while (y < T.h) { y = Math.min(T.h, y + zufall(0.5, 1.1) * VW); x += zufall(-1.6, 1.6) * VW + 0.6 * VW; haupt.push([x, y]); }
+            rissLinien.push(haupt);
+            for (const ab of [0.35, 0.65]) {
+                const i = Math.max(1, Math.floor(haupt.length * ab)), ast = [haupt[i].slice()];
+                let [bx, by] = haupt[i];
+                for (let k = 0; k < 3; k++) { bx += zufall(1, 2.2) * VW * (ab < 0.5 ? -1 : 1); by += zufall(-0.6, 0.8) * VW; ast.push([bx, Math.max(0, Math.min(T.h, by))]); }
+                rissLinien.push(ast);
+            }
+        })();
+        const linienLaenge = (l) => { let s0 = 0; for (let i = 1; i < l.length; i++) s0 += Math.hypot(l[i][0] - l[i - 1][0], l[i][1] - l[i - 1][1]); return s0; };
+        // Punkt auf der Linie bei Anteil f
+        const punktBei = (l, f) => { let rest = f * linienLaenge(l); for (let i = 1; i < l.length; i++) { const d = Math.hypot(l[i][0] - l[i - 1][0], l[i][1] - l[i - 1][1]); if (rest <= d) { const u = d ? rest / d : 0; return [l[i - 1][0] + (l[i][0] - l[i - 1][0]) * u, l[i - 1][1] + (l[i][1] - l[i - 1][1]) * u]; } rest -= d; } return l[l.length - 1]; };
+        let rissP = 0, heil = 0, rissGemalt = '', naht = 0, schweissen = false;
+        const glutFunken = [];
+        function rissMalen() {
+            const key = rissP.toFixed(3) + '/' + heil.toFixed(3) + '/' + naht.toFixed(2);
+            if (key === rissGemalt) return;
+            rissGemalt = key;
+            rg.setTransform(DPR, 0, 0, DPR, 0, 0);
+            rg.clearRect(0, 0, T.w, T.h);
+            // die Schweißnaht (schon verschweißter Teil): silbern, vorn noch glühend
+            if (naht > 0 && heil > 0) {
+                rissLinien.forEach((l, li) => {
+                    const pts = [];
+                    for (let f = 0; f <= heil + 1e-6; f += 0.02) pts.push(punktBei(l, Math.min(f, heil)));
+                    rg.globalAlpha = naht;
+                    rg.strokeStyle = '#b9c1c8'; rg.lineWidth = (li === 0 ? 0.26 : 0.18) * VW; rg.lineCap = 'round'; rg.lineJoin = 'round';
+                    rg.beginPath(); pts.forEach(([px, py], i) => (i ? rg.lineTo(px, py) : rg.moveTo(px, py))); rg.stroke();
+                    if (schweissen) {
+                        const g0 = Math.max(0, heil - 0.12), glut = [];
+                        for (let f = g0; f <= heil + 1e-6; f += 0.02) glut.push(punktBei(l, Math.min(f, heil)));
+                        rg.strokeStyle = '#ff9a2e'; rg.lineWidth = (li === 0 ? 0.3 : 0.2) * VW;
+                        rg.beginPath(); glut.forEach(([px, py], i) => (i ? rg.lineTo(px, py) : rg.moveTo(px, py))); rg.stroke();
+                    }
+                    rg.globalAlpha = 1;
+                });
+            }
+            rissLinien.forEach((l, li) => {
+                // die Äste reißen etwas später auf
+                const p0 = li === 0 ? rissP : Math.max(0, (rissP - 0.35) / 0.65);
+                if (p0 <= heil) return;
+                const pts = [];
+                for (let f = heil; f <= p0 + 1e-6; f += 0.02) pts.push(punktBei(l, Math.min(f, p0)));
+                for (const [farbe, breite, dy] of [['rgba(255,255,255,.7)', 0.1 * VW, 0.07 * VW], ['#3b3530', li === 0 ? 0.22 * VW : 0.14 * VW, 0]]) {
+                    rg.strokeStyle = farbe; rg.lineWidth = breite; rg.lineJoin = 'round'; rg.lineCap = 'round';
+                    rg.beginPath(); pts.forEach(([px, py], i) => (i ? rg.lineTo(px, py + dy) : rg.moveTo(px, py + dy))); rg.stroke();
+                }
+            });
+        }
+        // der Ausleger läuft ganz oben über den obersten Kacheln entlang, nicht durch sie hindurch
+        const obersteKachel = Math.min(...kaesten.map((k) => k.y));
+        const jibY = Math.max(0.7 * VW, obersteKachel - 0.75 * VW);
+        const mastTop = jibY - 2.2 * VW;
+        const MAST_B = Math.max(1.3 * VW, Math.min(2.8 * VW, lueckeB + 0.3 * VW)), SEG = 2.8 * VW;
+        const mastH = boden - jibY;
+        const segs = Math.ceil(mastH / SEG);
+        const kx = T.x + T.w / 2;                                // über der Kachelmitte hängt der Haken
+        const jibL = (kx - mx) * 1.25;                           // Ausleger reicht etwas über die Kachel hinaus
+        const gegenL = -Math.sign(jibL) * 7 * VW;
+        // Bauarbeiter-Kind mit Helm (Helferkind) als Einweiser
+        const KA = 3.6 * VW, KAH = KA * 2;
+        const kind = svgAusText(helferkindSvg());
+        kind.classList.add('fx-traegt');
+        domV.appendChild(kind);
+        const armL = kind.querySelector('.fx-tragarm-l'), armR = kind.querySelector('.fx-tragarm-r');
+        const schild = document.createElementNS(NS, 'g');
+        schild.innerHTML = '<rect x="15.5" y="29.5" width="12" height="13.5" rx="2.5" fill="#2b2f33"/><rect x="16.5" y="33" width="7" height="3.6" rx="1" fill="#2f5d3a"/><path d="M27.5,31 L31,30 L31,42 L27.5,41.5 Z" fill="#3a3f45"/>';
+        schild.style.display = 'none';
+        kind.appendChild(schild);
+        const vonRechts = seite < 0;
+        // neben der Absperrung, auf der anderen Seite als der Mast; immer im Bild
+        const standX = Math.max(KA, Math.min(W - KA, T.x + T.w / 2 - seite * (T.w / 2 + 8.5 * VW)));
+        let kxk = vonRechts ? W + 2 * VW : -KA - 2 * VW, kr = vonRechts ? -1 : 1, kGehen = false;
+        let t0 = null, pstart = 0, phase = 'riss', fertig = false, brenner = null, ankunft = null;
+        const FALL = Math.max(2 * VW, LAUF_BODEN - 0.4 * VW - (T.y + T.h));      // so tief geht die Kachel hinab
+        // repariert von der Außenseite; ist dort kein Platz (Bildrand), zwischen Kachel und Mast
+        const reparierX = () => {
+            const aussen = seite > 0 ? T.x - 1.4 * VW : T.x + T.w + 1.4 * VW, innen = seite > 0 ? T.x + T.w - 2.4 * VW : T.x + 2.4 * VW;
+            return aussen > KA / 2 + 0.5 * VW && aussen < W - KA / 2 - 0.5 * VW ? aussen : innen;
+        };
+        let absperr = 0, mastF = 0, jibF = 0, katze = 0, seil = 1.5 * VW, eingehakt = false, hub = 0, pendel = 0;
+        const hakenX = () => mx + jibL * katze;
+        const tileTop = () => T.y - hub;
+
+        function setTile() {
+            if (Math.abs(hub) > 0.01 || pendel) {
+                el.style.transition = 'none';
+                el.style.zIndex = '20';
+                el.style.transform = `translateY(${(-hub).toFixed(1)}px) rotate(${pendel.toFixed(2)}deg)`;
+            } else {
+                el.style.transform = alt.transform; el.style.zIndex = alt.zIndex; el.style.transition = alt.transition;
+            }
+        }
+        function absperrungMalen(t) {
+            if (absperr <= 0) return;
+            cxV.globalAlpha = Math.min(1, absperr);
+            const y = boden;
+            // links und rechts neben dem Landeplatz; auf der Mastseite nur ein kurzes Stück
+            const lang = 6 * VW, kurz = 2.6 * VW;
+            const links = seite > 0 ? [T.x - 0.8 * VW - lang, T.x - 0.8 * VW] : [T.x - 0.8 * VW - kurz, T.x - 0.8 * VW];
+            const rechts = seite > 0 ? [T.x + T.w + 0.8 * VW, T.x + T.w + 0.8 * VW + kurz] : [T.x + T.w + 0.8 * VW, T.x + T.w + 0.8 * VW + lang];
+            for (const [a, b] of [links, rechts]) {
+                cxV.strokeStyle = '#555'; cxV.lineWidth = 0.18 * VW;
+                cxV.beginPath(); cxV.moveTo(a + 0.5 * VW, y); cxV.lineTo(a + 0.5 * VW, y - 2.2 * VW); cxV.moveTo(b - 0.5 * VW, y); cxV.lineTo(b - 0.5 * VW, y - 2.2 * VW); cxV.stroke();
+                const n = 6, bw = (b - a) / n;
+                for (let i = 0; i < n; i++) { cxV.fillStyle = i % 2 ? '#ffffff' : '#e8344e'; cxV.fillRect(a + i * bw, y - 2.2 * VW, bw, 0.7 * VW); }
+                cxV.strokeStyle = 'rgba(0,0,0,.35)'; cxV.lineWidth = 0.04 * VW; cxV.strokeRect(a, y - 2.2 * VW, b - a, 0.7 * VW);
+                const an = Math.sin(t * 6 + a) > 0;
+                cxV.fillStyle = an ? '#ffb300' : '#7a5600';
+                if (an) { cxV.shadowColor = '#ffb300'; cxV.shadowBlur = 0.8 * VW; }
+                cxV.beginPath(); cxV.arc(a + 0.5 * VW, y - 2.6 * VW, 0.32 * VW, 0, 6.283); cxV.fill();
+                cxV.shadowBlur = 0;
+            }
+            cxV.globalAlpha = 1;
+        }
+        function kranMalen(t) {
+            if (mastF <= 0) return;
+            const hoch = boden - mastH * mastF;
+            // Fundament
+            cxV.fillStyle = '#7d8790'; cxV.fillRect(mx - 2.2 * VW, boden - 0.7 * VW, 4.4 * VW, 0.7 * VW);
+            gitterMalen(mx, boden - 0.6 * VW, mx, hoch, MAST_B, Math.max(1, Math.round(segs * mastF)));
+            if (mastF < 1) return;
+            // Kopf mit Führerhaus, Turmspitze und Abspannseilen
+            cxV.fillStyle = '#f2b705'; cxV.fillRect(mx - 1.2 * VW, jibY - 0.6 * VW, 2.4 * VW, 1.2 * VW);
+            cxV.fillStyle = '#9fd3ef'; cxV.fillRect(mx - MAST_B / 2 + 0.1 * VW, jibY + 0.6 * VW, MAST_B - 0.2 * VW, 1.1 * VW);
+            cxV.strokeStyle = '#d99a00'; cxV.lineWidth = 0.18 * VW;
+            cxV.beginPath(); cxV.moveTo(mx, jibY - 0.6 * VW); cxV.lineTo(mx, mastTop - 1.5 * VW); cxV.stroke();
+            if (jibF > 0) {
+                const ende = mx + jibL * jibF, gegen = mx + gegenL * jibF;
+                gitterMalen(mx, jibY, ende, jibY, 1.2 * VW, Math.max(1, Math.round(Math.abs(jibL) / (1.6 * VW) * jibF)));
+                gitterMalen(mx, jibY, gegen, jibY, 1.2 * VW, Math.max(1, Math.round(4 * jibF)));
+                // Gegengewichte aus Beton
+                cxV.fillStyle = '#9aa3ab'; cxV.strokeStyle = '#6f7b85'; cxV.lineWidth = 0.05 * VW;
+                for (let i = 0; i < 3; i++) { const gx = gegen - Math.sign(gegenL) * (0.4 + i * 1.1) * VW; cxV.fillRect(gx - 0.5 * VW, jibY - 2 * VW, 1 * VW, 1.5 * VW); cxV.strokeRect(gx - 0.5 * VW, jibY - 2 * VW, 1 * VW, 1.5 * VW); }
+                cxV.strokeStyle = 'rgba(60,60,60,.8)'; cxV.lineWidth = 0.08 * VW;
+                cxV.beginPath(); cxV.moveTo(mx, mastTop - 1.5 * VW); cxV.lineTo(ende, jibY - 0.6 * VW); cxV.moveTo(mx, mastTop - 1.5 * VW); cxV.lineTo(gegen, jibY - 0.6 * VW); cxV.stroke();
+            }
+            if (jibF >= 1) {
+                // Laufkatze, Seil, Hakenflasche
+                const hx = hakenX(), hy = jibY + 0.6 * VW + seil;
+                cxV.fillStyle = '#4a4f55'; cxV.fillRect(hx - 0.8 * VW, jibY + 0.5 * VW, 1.6 * VW, 0.5 * VW);
+                cxV.strokeStyle = '#333'; cxV.lineWidth = 0.08 * VW;
+                cxV.beginPath(); cxV.moveTo(hx - 0.3 * VW, jibY + 1 * VW); cxV.lineTo(hx - 0.3 * VW, hy); cxV.moveTo(hx + 0.3 * VW, jibY + 1 * VW); cxV.lineTo(hx + 0.3 * VW, hy); cxV.stroke();
+                cxV.fillStyle = '#e8622c'; cxV.fillRect(hx - 0.6 * VW, hy, 1.2 * VW, 0.9 * VW);
+                cxV.strokeStyle = '#333'; cxV.lineWidth = 0.18 * VW;
+                cxV.beginPath(); cxV.arc(hx, hy + 1.35 * VW, 0.35 * VW, -Math.PI * 0.1, Math.PI * 1.05); cxV.stroke();
+                if (eingehakt) {
+                    // vier Seile zu den Ecken der Kachel
+                    const w = pendel * Math.PI / 180, cx = T.x + T.w / 2, cy = tileTop() + T.h / 2;
+                    const ecke = (ex, ey) => [cx + (ex - cx) * Math.cos(w) - (ey - cy) * Math.sin(w), cy + (ex - cx) * Math.sin(w) + (ey - cy) * Math.cos(w)];
+                    cxV.strokeStyle = 'rgba(40,40,40,.85)'; cxV.lineWidth = 0.1 * VW;
+                    cxV.beginPath();
+                    for (const [ex, ey] of [[T.x + 0.6 * VW, tileTop() + 0.4 * VW], [T.x + T.w - 0.6 * VW, tileTop() + 0.4 * VW]]) {
+                        const [px, py] = ecke(ex, ey); cxV.moveTo(hx, hy + 1.6 * VW); cxV.lineTo(px, py);
+                    }
+                    cxV.stroke();
+                }
+            }
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() {
+                kind.remove(); riss.remove();
+                el.style.transform = alt.transform; el.style.zIndex = alt.zIndex; el.style.transition = alt.transition; el.style.position = alt.position;
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                kGehen = false;
+                let arm = null;
+                if (phase === 'riss') {
+                    // die Kachel reißt: der Riss läuft durch, es staubt, die Kachel zuckt kurz
+                    rissP = glatt(ps / 2.6);
+                    pendel = ps < 0.6 ? Math.sin(ps * 40) * 0.8 * (1 - ps / 0.6) : 0;
+                    if (Math.random() < dt * 6 && ps < 2.6) { const [px, py] = punktBei(rissLinien[0], rissP); funkenStreuen(T.x + px, T.y + py, 2, 'weiss'); }
+                    if (ps > 3.5) { pendel = 0; weiter('kommen'); }
+                } else if (phase === 'kommen') {
+                    kxk += kr * 8 * VW * dt; kGehen = true;
+                    if ((standX - kxk) * kr <= 0) { kxk = standX; kr = seite; weiter('absperren'); }
+                } else if (phase === 'absperren') {
+                    absperr = Math.min(1, ps / 1.2); arm = -140;
+                    if (ps > 1.5) weiter('mast');
+                } else if (phase === 'mast') {
+                    // Stück für Stück in die Höhe
+                    mastF = Math.min(1, ps / 5);
+                    if (ps > 5) weiter('ausleger');
+                } else if (phase === 'ausleger') {
+                    jibF = glatt(ps / 3);
+                    if (ps > 3) weiter('katze');
+                } else if (phase === 'katze') {
+                    katze = glatt(ps / 3) * ((kx - mx) / jibL);
+                    if (ps > 3) weiter('senken');
+                } else if (phase === 'senken') {
+                    seil = 1.5 * VW + (T.y - 1.8 * VW - jibY - 2 * VW) * glatt(ps / 3);
+                    arm = -55 + Math.sin(t * 2) * 8;       // zeigt nach oben: „Haken runter“
+                    if (ps > 3.2) { eingehakt = true; weiter('runter'); }
+                } else if (phase === 'runter') {
+                    // der Kran lässt die Kachel vorsichtig bis auf den Boden hinab; das Kind winkt ein
+                    const f = glatt(Math.max(0, ps - 0.6) / 4.5);
+                    hub = -FALL * f; seil = (T.y - 1.8 * VW - jibY - 2 * VW) - hub;
+                    pendel = Math.sin(t * 1.7) * 2.2 * Math.sin(Math.PI * f);
+                    arm = -35 + Math.sin(t * 3) * 30;
+                    if (ps > 5.2) { pendel = 0; funkenStreuen(T.x + T.w / 2, LAUF_BODEN - 0.4 * VW, 5, 'weiss'); weiter('reparieren'); }
+                } else if (phase === 'reparieren') {
+                    // zur Kachel, den Riss Stück für Stück zuschweißen, zurück zur Absperrung (Wunsch Jonas)
+                    // erst zur Kachel; die Schweißzeit zählt ab Ankunft; dann zurück zur Absperrung
+                    const fertigGeschweisst = ankunft !== null && t - ankunft > 5.4;
+                    if (fertigGeschweisst) {
+                        schweissen = false; brenner = null; schild.style.display = 'none';
+                        const weg = standX - kxk;
+                        if (Math.abs(weg) > 0.2 * VW) { kr = Math.sign(weg); kxk += kr * 6 * VW * dt; kGehen = true; }
+                        else { kr = seite; weiter('hoch'); }
+                    } else if (ankunft === null) {
+                        const weg = reparierX() - kxk;
+                        if (Math.abs(weg) > 0.2 * VW) { kr = Math.sign(weg); kxk += kr * 6 * VW * dt; kGehen = true; }
+                        else ankunft = t;
+                    } else {
+                        const as = t - ankunft;
+                        schild.style.display = '';
+                        if (as > 0.6) { schweissen = true; naht = 1; }
+                        heil = Math.min(1, Math.max(heil, (as - 0.6) / 4.4));
+                        // der Brenner sitzt am vorderen Ende der Naht
+                        const [px, py] = punktBei(rissLinien[0], Math.min(1, heil));
+                        brenner = [T.x + px, T.y - hub + py];
+                        // dicht dran (Wunsch Jonas): das Kind steht vor der Kachel, eine Armlänge neben dem Brenner
+                        const seiteKind = kxk < brenner[0] ? 1 : -1;
+                        const nah = Math.max(KA / 2, Math.min(W - KA / 2, brenner[0] - seiteKind * 2.1 * VW));
+                        const d = nah - kxk;
+                        if (Math.abs(d) > 0.05 * VW) { kxk += Math.sign(d) * Math.min(Math.abs(d), 3 * VW * dt); kGehen = Math.abs(d) > 0.4 * VW; }
+                        kr = seiteKind;
+                        const sx0 = kxk, sy0 = LAUF_BODEN - KAH * 0.48;
+                        const dx = (brenner[0] - sx0) * kr, dy = brenner[1] - sy0;
+                        arm = Math.max(-170, Math.min(-20, -Math.atan2(dx, -dy) * 180 / Math.PI)) + Math.sin(t * 9) * 3;
+                    }
+                } else if (phase === 'hoch') {
+                    // die reparierte Kachel wieder an ihren Platz; die Naht verblasst dabei
+                    heil = 1; naht = Math.max(0, 1 - ps / 3);
+                    const f = glatt(Math.max(0, ps - 0.4) / 4.5);
+                    hub = -FALL * (1 - f); seil = (T.y - 1.8 * VW - jibY - 2 * VW) - hub;
+                    pendel = Math.sin(t * 1.7) * 2.2 * Math.sin(Math.PI * f);
+                    arm = -35 + Math.sin(t * 3) * 30;
+                    if (ps > 5.1) { hub = 0; pendel = 0; eingehakt = false; funkenStreuen(T.x + T.w / 2, T.y + T.h / 2, 6, 'gold'); weiter('heben'); }
+                } else if (phase === 'heben') {
+                    seil = 1.5 * VW + (T.y - 1.8 * VW - jibY - 2 * VW) * (1 - glatt(ps / 2.5));
+                    if (ps > 2.5) weiter('zurueck');
+                } else if (phase === 'zurueck') {
+                    katze = (1 - glatt(ps / 2.5)) * ((kx - mx) / jibL);
+                    if (ps > 2.5) weiter('einziehen');
+                } else if (phase === 'einziehen') {
+                    jibF = 1 - glatt(ps / 2.5);
+                    if (ps > 2.5) weiter('abbauen');
+                } else if (phase === 'abbauen') {
+                    mastF = Math.max(0, 1 - ps / 4);
+                    if (ps > 4) { mastF = 0; weiter('wegraeumen'); }
+                } else if (phase === 'wegraeumen') {
+                    absperr = Math.max(0, 1 - ps / 1.2); arm = -140;
+                    if (ps > 1.5) { kr = vonRechts ? 1 : -1; weiter('gehen'); }
+                } else if (phase === 'gehen') {
+                    kxk += kr * 8 * VW * dt; kGehen = true;
+                    if (kxk < -KA - 3 * VW || kxk > W + 3 * VW) { riss.remove(); fertig = true; return; }
+                }
+                setTile();
+                rissMalen();
+                const y = LAUF_BODEN - KAH * 0.97 + (kGehen ? Math.abs(Math.sin(t * 11)) * -0.12 * VW : 0);
+                kind.style.transform = `translate(${(kxk - KA / 2).toFixed(1)}px, ${y.toFixed(1)}px)${kr > 0 ? ' scale(-1, 1)' : ''}`;
+                kind.classList.toggle('fx-geht', kGehen);
+                if (arm !== null) { for (const a of [armL]) { a.style.transition = 'none'; a.style.transform = `rotate(${arm.toFixed(1)}deg)`; } }
+                else { armL.style.transition = ''; armL.style.transform = ''; }
+                void armR;
+                absperrungMalen(t);
+                kranMalen(t);
+                if (schweissen && brenner) {
+                    const hr = kind.querySelector('.fx-tragarm-l circle').getBoundingClientRect(), o = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+                    const hx = hr.left - o.left + hr.width / 2, hy = hr.top - o.top + hr.height / 2;
+                    // Brenner vom Griff in der Hand bis an die Naht
+                    cxV.strokeStyle = '#3b3f44'; cxV.lineWidth = 0.32 * VW; cxV.lineCap = 'round';
+                    cxV.beginPath(); cxV.moveTo(hx, hy); cxV.lineTo(brenner[0], brenner[1]); cxV.stroke();
+                    cxV.strokeStyle = '#c0392b'; cxV.lineWidth = 0.16 * VW;
+                    cxV.beginPath(); cxV.moveTo(hx, hy); cxV.lineTo(hx - kr * 0.2 * VW, hy + 1.6 * VW); cxV.stroke();
+                    // grelles blau-weißes Licht, flackernd
+                    const r = (0.9 + 0.5 * Math.random()) * VW;
+                    const g = cxV.createRadialGradient(brenner[0], brenner[1], 0, brenner[0], brenner[1], r * 2.2);
+                    g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(0.25, 'rgba(170,215,255,.75)'); g.addColorStop(1, 'rgba(120,170,255,0)');
+                    cxV.fillStyle = g; cxV.beginPath(); cxV.arc(brenner[0], brenner[1], r * 2.2, 0, 6.283); cxV.fill();
+                    // Funkenschauer: fliegen weg und fallen herunter
+                    for (let i = 0; i < 4; i++) glutFunken.push({x: brenner[0], y: brenner[1], vx: zufall(-6, 6) * VW, vy: zufall(-7, 1) * VW, alter: 0, dauer: zufall(0.4, 0.9)});
+                    if (Math.random() < dt * 4) funkenStreuen(brenner[0], brenner[1] - 1 * VW, 1, 'weiss');
+                }
+                for (let i = glutFunken.length - 1; i >= 0; i--) {
+                    const f = glutFunken[i];
+                    f.alter += dt; f.vy += 30 * VW * dt; f.x += f.vx * dt; f.y += f.vy * dt;
+                    if (f.alter > f.dauer || f.y > LAUF_BODEN) { glutFunken.splice(i, 1); continue; }
+                    cxV.strokeStyle = `rgba(255,${Math.round(200 - 120 * f.alter / f.dauer)},60,${(1 - f.alter / f.dauer).toFixed(2)})`;
+                    cxV.lineWidth = 0.12 * VW; cxV.lineCap = 'round';
+                    cxV.beginPath(); cxV.moveTo(f.x, f.y); cxV.lineTo(f.x - f.vx * 0.025, f.y - f.vy * 0.025); cxV.stroke();
+                }
+            },
+        };
+    }
+
+    // Bienenstock: Unter einer Kachel wächst ein Bienenstock, immer mehr Bienen schwirren herum.
+    // Ein Imker-Kind im weißen Schutzanzug mit Schleier steigt auf die Leiter, räuchert, die
+    // Bienen werden ruhig; es nimmt den Stock ab und trägt ihn davon, die Bienen folgen.
+    let bienenZuletzt = [];
+    function bienenstockMalen(x, y, s, t) {
+        // (x, y) = Aufhängung oben; s = Größe 0…1
+        if (s <= 0.02) return;
+        const B = 3.4 * VW * s, H = 4.4 * VW * s;
+        cxV.strokeStyle = '#6b4a2b'; cxV.lineWidth = 0.2 * VW * s; cxV.lineCap = 'round';
+        cxV.beginPath(); cxV.moveTo(x, y); cxV.lineTo(x, y + H * 0.1); cxV.stroke();
+        const ringe = [0.5, 0.78, 0.95, 0.88, 0.62];
+        ringe.forEach((f, i) => {
+            const cy = y + H * (0.14 + i * 0.18);
+            cxV.fillStyle = i % 2 ? '#c98a2b' : '#e3ad42'; cxV.strokeStyle = 'rgba(90,60,20,.45)'; cxV.lineWidth = 0.05 * VW;
+            cxV.beginPath(); cxV.ellipse(x, cy, B / 2 * f, H * 0.13, 0, 0, 6.283); cxV.fill(); cxV.stroke();
+        });
+        cxV.fillStyle = '#3a2a14';
+        cxV.beginPath(); cxV.ellipse(x + B * 0.06, y + H * 0.76, B * 0.12, H * 0.06, 0, 0, 6.283); cxV.fill();
+        cxV.fillStyle = 'rgba(255,255,255,.35)';
+        cxV.beginPath(); cxV.ellipse(x - B * 0.2, y + H * 0.35, B * 0.08, H * 0.12, -0.3, 0, 6.283); cxV.fill();
+    }
+    function bieneMalen(x, y, t, p, d) {
+        const v = VW * 0.7;
+        cxV.save(); cxV.translate(x, y); cxV.scale(d, 1);
+        const fl = 0.55 + 0.45 * Math.abs(Math.sin(t * 55 + p));
+        cxV.fillStyle = 'rgba(235,245,255,.8)';
+        cxV.beginPath(); cxV.ellipse(-0.1 * v, -0.42 * v, 0.32 * v, 0.2 * v * fl, -0.5, 0, 6.283); cxV.fill();
+        cxV.beginPath(); cxV.ellipse(0.12 * v, -0.4 * v, 0.28 * v, 0.18 * v * fl, 0.4, 0, 6.283); cxV.fill();
+        cxV.fillStyle = '#ffd23f'; cxV.strokeStyle = '#222'; cxV.lineWidth = 0.05 * v;
+        cxV.beginPath(); cxV.ellipse(0, 0, 0.55 * v, 0.36 * v, 0, 0, 6.283); cxV.fill(); cxV.stroke();
+        cxV.strokeStyle = '#222'; cxV.lineWidth = 0.14 * v;
+        cxV.beginPath(); cxV.moveTo(-0.12 * v, -0.33 * v); cxV.lineTo(-0.12 * v, 0.33 * v); cxV.moveTo(-0.36 * v, -0.25 * v); cxV.lineTo(-0.36 * v, 0.25 * v); cxV.stroke();
+        cxV.fillStyle = '#222'; cxV.beginPath(); cxV.arc(0.5 * v, -0.05 * v, 0.16 * v, 0, 6.283); cxV.fill();
+        cxV.restore();
+    }
+    function Bienenstock() {
+        // der Stock hängt direkt unter dem Klassennamen (Kiesel), am linken Rand der Kachel, wo keine
+        // Schrift steht (Wunsch Jonas)
+        const b0 = opt.fixiert ? {left: 0, top: 0} : buehne.getBoundingClientRect();
+        const kieselVon = (k) => { const h = k.el.querySelector(`:scope > ${opt.kiesel || 'h3'}`); if (!h) return null; const r = h.getBoundingClientRect(); return r.width ? {x: r.left - b0.left + r.width / 2, y: r.bottom - b0.top} : null; };
+        const kandidaten = kaesten.filter((k) => { if (k.el.dataset.fxStory || k.w < 10 * VW || k.y + k.h > UNTEN - 7 * VW || k.y < 1 * VW) return false; const q = kieselVon(k); return q && q.x > 2.2 * VW; });
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((kk) => bienenZuletzt.indexOf(kachelName(kk.el)) < 0);
+        if (!frisch.length) { bienenZuletzt = []; frisch = kandidaten; }
+        const k = auswahl(frisch);
+        bienenZuletzt.push(kachelName(k.el));
+        const el = k.el;
+        el.dataset.fxStory = 'bienen';
+        const kiesel = kieselVon(k);
+        const ax = kiesel.x, ay = kiesel.y - 0.1 * VW;
+        let groesse = 0, stockX = ax, stockY = ay, getragen = false;
+        const bienen = [];
+        let t0 = null, pstart = 0, phase = 'wachsen', fertig = false, imker = null, ruhe = 0;
+        const rauch = [];
+        function bieneNeu() {
+            bienen.push({x: ax + zufall(-1, 1) * VW, y: ay + 2.4 * VW, a: zufall(0, 6.28), r1: zufall(2, 4.5) * VW, r2: zufall(1.2, 2.6) * VW,
+                v: zufall(1.6, 2.8) * (Math.random() < 0.5 ? 1 : -1), p: zufall(0, 6.28), modus: 'kreisen', ziel: null, uhr: zufall(2, 6), d: 1, weg: false});
+        }
+        // Imker: Kind mit Leiter, im weißen Anzug mit Hut und Schleier
+        function imkerAnziehen(e) {
+            for (const n of e.querySelectorAll('[fill="#ff7a1a"]')) n.setAttribute('fill', '#f1f1ea');
+            for (const n of e.querySelectorAll('[stroke="#ff7a1a"]')) n.setAttribute('stroke', '#f1f1ea');
+            for (const n of e.querySelectorAll('.fx-ik-hose')) n.setAttribute('stroke', '#e6e6dc');
+            const hut = document.createElementNS(NS, 'g');
+            hut.innerHTML = '<path d="M17,31 Q25,22 33,31 Z" fill="#e8e2c8" stroke="#b9b08a" stroke-width=".6"/>'
+                + '<ellipse cx="25" cy="31" rx="11" ry="2.2" fill="#e8e2c8" stroke="#b9b08a" stroke-width=".6"/>'
+                + '<path d="M15,31.5 L15.5,44 L34.5,44 L35,31.5 Z" fill="rgba(40,40,40,.38)"/>'
+                + '<path d="M17,34 L33,34 M16.5,37 L33.5,37 M16.5,40 L33.5,40 M20,31.5 L20,44 M25,31.5 L25,44 M30,31.5 L30,44" stroke="rgba(20,20,20,.35)" stroke-width=".35"/>';
+            e.appendChild(hut);
+        }
+        function smokerMalen(t) {
+            if (!imker) return;
+            const [hx, hy] = imker.spitze();
+            cxV.fillStyle = '#9aa3ab'; cxV.strokeStyle = '#5d656c'; cxV.lineWidth = 0.05 * VW;
+            cxV.fillRect(hx - 0.35 * VW, hy - 0.2 * VW, 0.7 * VW, 1.1 * VW); cxV.strokeRect(hx - 0.35 * VW, hy - 0.2 * VW, 0.7 * VW, 1.1 * VW);
+            cxV.fillStyle = '#7d8790';
+            cxV.beginPath(); cxV.moveTo(hx - 0.35 * VW, hy - 0.2 * VW); cxV.lineTo(hx, hy - 0.8 * VW); cxV.lineTo(hx + 0.35 * VW, hy - 0.2 * VW); cxV.closePath(); cxV.fill();
+            return [hx, hy - 0.8 * VW];
+        }
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() { if (imker && !imker.weg) imker.entfernen(); delete el.dataset.fxStory; },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                if (phase === 'wachsen') {
+                    // der Stock wächst, Biene um Biene kommt dazu
+                    groesse = glatt(ps / 5);
+                    while (bienen.length < Math.round(16 * groesse)) bieneNeu();
+                    if (ps > 5) weiter('summen');
+                } else if (phase === 'summen') {
+                    // erst eine Weile summen und ausschwärmen lassen, dann kommt der Imker
+                    if (!imker && ps > 9) {
+                        imker = leiterkind('leer', [ax, ay + 2.9 * VW], t);
+                        imkerAnziehen(imker.kind);
+                    }
+                    if (imker && imker.oben()) weiter('raeuchern');
+                } else if (phase === 'raeuchern') {
+                    // Rauch aus dem Smoker beruhigt die Bienen
+                    ruhe = Math.min(1, ps / 2.5);
+                    const duese = smokerMalen(t);
+                    if (duese && Math.random() < dt * 14) rauch.push({x: duese[0], y: duese[1], vx: (ax - duese[0]) * 0.8 + zufall(-0.5, 0.5) * VW, vy: -zufall(0.5, 1.5) * VW, r: zufall(0.4, 0.8) * VW, alter: 0});
+                    if (ps > 3.2) weiter('einsammeln');
+                } else if (phase === 'einsammeln') {
+                    // Stock abnehmen; die Bienen fliegen in die Hand
+                    const [hx, hy] = imker.spitze();
+                    const f = glatt(ps / 1.6);
+                    stockX = ax + (hx - ax) * f; stockY = ay + (hy - 1.2 * VW - ay) * f; groesse = 1 - 0.4 * f;
+                    if (ps > 1.6) getragen = true;
+                    if (ps > 2.6) { imker.freigabe = true; weiter('abgang'); }
+                } else if (phase === 'abgang') {
+                    if (imker.weg) { fertig = true; return; }
+                }
+                if (imker) imker.schritt(dt, t);
+                if (getragen && imker && !imker.weg) { const [hx, hy] = imker.spitze(); stockX = hx; stockY = hy - 1.2 * VW; }
+                // Rauch
+                for (let i = rauch.length - 1; i >= 0; i--) {
+                    const r = rauch[i]; r.alter += dt;
+                    if (r.alter > 1.8) { rauch.splice(i, 1); continue; }
+                    r.x += r.vx * dt; r.y += r.vy * dt;
+                    cxV.fillStyle = `rgba(225,225,225,${(0.5 * (1 - r.alter / 1.8)).toFixed(2)})`;
+                    cxV.beginPath(); cxV.arc(r.x, r.y, r.r * (1 + r.alter), 0, 6.283); cxV.fill();
+                }
+                if (phase !== 'raeuchern' && imker && ['einsammeln', 'abgang'].indexOf(phase) < 0 && imker.oben()) smokerMalen(t);
+                bienenstockMalen(stockX, stockY, groesse, t);
+                // Bienen
+                const sammeln = phase === 'einsammeln' || phase === 'abgang';
+                for (let i = bienen.length - 1; i >= 0; i--) {
+                    const b = bienen[i];
+                    const ox = b.x, tempo = 1 - 0.6 * ruhe;
+                    if (sammeln) {
+                        // zur Hand des Imkers; dort verschwinden sie im Stock (ein paar fliegen noch mit)
+                        const [hx, hy] = imker && !imker.weg ? imker.spitze() : [b.x, b.y];
+                        const zx = hx + Math.cos(t * 3 + b.p) * (i < 3 ? 1.6 : 0.2) * VW, zy = hy - 1.4 * VW + Math.sin(t * 4 + b.p) * (i < 3 ? 1 : 0.2) * VW;
+                        b.x += (zx - b.x) * Math.min(1, dt * 3); b.y += (zy - b.y) * Math.min(1, dt * 3);
+                        if (i >= 3 && Math.hypot(zx - b.x, zy - b.y) < 0.6 * VW) { bienen.splice(i, 1); continue; }
+                        if (imker && imker.weg) { bienen.splice(i, 1); continue; }
+                    } else if (b.modus === 'ausflug') {
+                        b.x += (b.ziel[0] - b.x) * Math.min(1, dt * 0.9 * tempo); b.y += (b.ziel[1] - b.y) * Math.min(1, dt * 0.9 * tempo);
+                        b.x += Math.sin(t * 9 + b.p) * 0.4 * VW * dt * 6; b.y += Math.cos(t * 11 + b.p) * 0.3 * VW * dt * 6;
+                        if (Math.hypot(b.ziel[0] - b.x, b.ziel[1] - b.y) < 1 * VW) { b.modus = 'kreisen'; b.uhr = zufall(3, 7); }
+                    } else {
+                        b.a += b.v * dt * tempo;
+                        const r1 = b.r1 * (1 - 0.5 * ruhe), r2 = b.r2 * (1 - 0.5 * ruhe);
+                        const zx = stockX + Math.cos(b.a) * r1, zy = stockY + 2.3 * VW + Math.sin(b.a * 2) * r2 / 2 + Math.sin(t * 5 + b.p) * 0.4 * VW;
+                        b.x += (zx - b.x) * Math.min(1, dt * 4); b.y += (zy - b.y) * Math.min(1, dt * 4);
+                        b.uhr -= dt;
+                        // ab und zu ein Ausflug über die Kacheln
+                        if (b.uhr <= 0 && ruhe < 0.2 && phase !== 'wachsen') { b.modus = 'ausflug'; b.ziel = [zufall(5, 95) * VW, zufall(4, Math.max(6, UNTEN / VW - 6)) * VW]; }
+                        if (b.uhr <= 0 && b.modus === 'kreisen') b.uhr = zufall(3, 7);
+                    }
+                    if (Math.abs(b.x - ox) > 0.01) b.d = b.x > ox ? 1 : -1;
+                    bieneMalen(b.x, b.y, t, b.p, b.d);
+                }
+            },
+        };
+    }
+
+    // Diebstahl: Eine Diebesbande parkt rückwärts ein, steigt mit Leitern an eine Kachel und
+    // schneidet sie mit Schneidbrennern los. Da kommt die Polizei mit Großaufgebot (drei
+    // Streifenwagen und ein Hubschrauber); die Bande flieht, die Schneidbrenner bleiben liegen.
+    // Der Tatort wird abgesperrt, das Werkzeug sichergestellt, dann fahren alle wieder ab
+    // (Wunsch Jonas). Alles comichaft und allgemein, ohne echte Wappen oder Abzeichen.
+    let diebstahlZuletzt = [];
+    const STREIFE_B = 9, FLUCHT_B = 10, POLHELI_B = 11;      // vw
+    function streifenwagenSvg(links) {
+        const rad = (x) => `<g class="fx-prad"><circle cx="${x}" cy="31" r="6" fill="#222"/><circle cx="${x}" cy="31" r="2.6" fill="#b9c1c8"/>
+            <path d="M${x - 2.4},31 L${x + 2.4},31 M${x},28.6 L${x},33.4" stroke="#555" stroke-width=".9"/></g>`;
+        // fährt der Wagen nach links, wird er gespiegelt; die Schrift bleibt lesbar
+        const schrift = links ? ' transform="matrix(-1 0 0 1 102 0)"' : '';
+        return `<svg class="fx-polizei" viewBox="0 0 100 38" xmlns="${NS}">
+            <path d="M4,30 L4,20 Q4,16.5 8,16 L26,15 L36,6 Q38,4 42,4 L66,4 Q70,4 73,7 L82,15 L94,17 Q98,18 98,22 L98,30 Z" fill="#eef1f4" stroke="#8d969f" stroke-width=".8"/>
+            <path d="M38,7.5 L50,7.5 L50,14 L31,14 Z" fill="#bfe3f5" stroke="#5d656c" stroke-width=".6"/>
+            <path d="M53,7.5 L65,7.5 Q68,7.5 70,9.5 L75,14 L53,14 Z" fill="#bfe3f5" stroke="#5d656c" stroke-width=".6"/>
+            <rect x="4.5" y="19.5" width="93" height="5.6" fill="#1e4fa3"/>
+            <text x="51" y="24" font-size="4.6" fill="#ffffff" text-anchor="middle" font-weight="bold" font-family="sans-serif" letter-spacing=".4"${schrift}>POLIZEI</text>
+            <rect x="43" y="1.6" width="17" height="2.6" rx="1" fill="#c9ced4"/>
+            <rect class="fx-blaulicht fx-blaulicht-a" x="43" y=".4" width="7.5" height="3.4" rx="1.3" fill="#2f7bff"/>
+            <rect class="fx-blaulicht fx-blaulicht-b" x="52.5" y=".4" width="7.5" height="3.4" rx="1.3" fill="#2f7bff"/>
+            <rect x="94.5" y="17.6" width="3.5" height="2.4" rx="1" fill="#ffd34d"/>
+            <rect x="4" y="16.8" width="2.6" height="2.4" rx=".6" fill="#d8322b"/>
+            <rect x="2" y="27.5" width="97" height="3.2" rx="1.4" fill="#3b3b3b"/>
+            ${rad(22)}${rad(80)}
+        </svg>`;
+    }
+    function fluchtwagenSvg() {
+        const rad = (x) => `<g class="fx-prad"><circle cx="${x}" cy="37" r="6.5" fill="#1b1b1b"/><circle cx="${x}" cy="37" r="2.6" fill="#7d8790"/>
+            <path d="M${x - 2.4},37 L${x + 2.4},37" stroke="#4a4f55" stroke-width=".9"/></g>`;
+        return `<svg class="fx-fluchtwagen" viewBox="0 0 100 44" xmlns="${NS}">
+            <path d="M3,36 L3,8 Q3,4 7,4 L68,4 Q74,4 78,9 L89,20 Q96,21 97,27 L97,36 Z" fill="#3d4249" stroke="#24282d" stroke-width=".8"/>
+            <path d="M71,8 Q74,8 76.5,10.5 L86,20.5 L71,20.5 Z" fill="#20262c" stroke="#15191d" stroke-width=".6"/>
+            <path d="M40,6 L40,35 M68,6 L68,35" stroke="#2c3136" stroke-width=".8"/>
+            <rect x="61" y="22" width="4" height="1.4" rx=".6" fill="#7d8790"/>
+            <rect class="fx-rueckfahrlicht" x="3" y="21.5" width="2.4" height="3.4" rx=".6" fill="#ffffff"/>
+            <rect x="3" y="15.5" width="2.4" height="4" rx=".6" fill="#b3261e"/>
+            <rect x="93.5" y="25" width="3.5" height="2.6" rx="1" fill="#ffd34d"/>
+            <rect x="1.5" y="33.5" width="97" height="3.4" rx="1.5" fill="#26292d"/>
+            ${rad(20)}${rad(80)}
+        </svg>`;
+    }
+    function polizeiHeliSvg() {
+        return heliSvg().replace('class="fx-heli"', 'class="fx-heli fx-polheli"')
+            .split('#2b5fa8').join('#1e3f7a').split('#ff8a1a').join('#e8eef5').split('#1f4a85').join('#132a52');
+    }
+    function polizistSvg() {
+        const e = svgAusText(helferkindSvg());
+        e.classList.add('fx-polizist', 'fx-traegt');
+        for (const n of e.querySelectorAll('[fill="#ff7a1a"]')) n.setAttribute('fill', '#24406e');
+        for (const n of e.querySelectorAll('[stroke="#ff7a1a"]')) n.setAttribute('stroke', '#24406e');
+        for (const n of e.querySelectorAll('[stroke="#2f6fb3"]')) n.setAttribute('stroke', '#16294a');
+        const m = document.createElementNS(NS, 'g');
+        m.innerHTML = '<path d="M17.8,33 C17.8,26.2 32.2,26.2 32.2,33 Z" fill="#24406e"/>'
+            + '<rect x="17.6" y="31" width="14.8" height="2.1" fill="#e8edf2"/>'
+            + '<path d="M14.2,33 L25,33 L23.5,34.9 L14.8,34.9 Z" fill="#111"/>'
+            + '<circle cx="25" cy="29.4" r="1.2" fill="#f2c14e"/>';
+        e.appendChild(m);
+        return e;
+    }
+    function gaunerAnziehen(e) {
+        // gestreifter Pulli, Mütze und Augenmaske
+        for (const n of e.querySelectorAll('[fill="#ff7a1a"]')) n.setAttribute('fill', '#2b2b2b');
+        for (const n of e.querySelectorAll('[stroke="#ff7a1a"]')) n.setAttribute('stroke', '#2b2b2b');
+        for (const n of e.querySelectorAll('[stroke="#2f6fb3"]')) n.setAttribute('stroke', '#2b2b2b');
+        const g = document.createElementNS(NS, 'g');
+        g.innerHTML = '<path d="M17.6,33.6 C17.2,25.2 32.8,25.2 32.4,33.6 Z" fill="#1d1d1d"/>'
+            + '<rect x="17" y="31.8" width="16" height="2.4" rx="1" fill="#3a3a3a"/>'
+            + '<rect x="17.8" y="35" width="14.6" height="3.6" rx="1.2" fill="#111"/>'
+            + '<path d="M32.2,35.8 l3.2,-1.6 M32.2,37.8 l3.2,1.2" stroke="#111" stroke-width=".9" stroke-linecap="round"/>'
+            + '<ellipse cx="21.5" cy="36.8" rx="1.5" ry="1.1" fill="#fff"/><circle cx="21" cy="36.9" r=".65" fill="#2a1a14"/>';
+        e.appendChild(g);
+    }
+    function Diebstahl() {
+        // eine Kachel mit Platz für Leitern darunter und den Hubschrauber darüber
+        const passt = (k, streng) => !k.el.dataset.fxStory && k.w >= 10 * VW && k.h >= 4 * VW && k.x >= 4.5 * VW && k.x + k.w <= W - 4.5 * VW
+            && k.y + k.h <= UNTEN - 8 * VW && (!streng || (k.y >= 8 * VW && k.y + k.h >= UNTEN - 28 * VW));
+        let kandidaten = kaesten.filter((k) => passt(k, true));
+        if (!kandidaten.length) kandidaten = kaesten.filter((k) => passt(k, false));
+        if (!kandidaten.length) return null;
+        let frisch = kandidaten.filter((k) => diebstahlZuletzt.indexOf(kachelName(k.el)) < 0);
+        if (!frisch.length) { diebstahlZuletzt = []; frisch = kandidaten; }
+        const T = auswahl(frisch);
+        diebstahlZuletzt.push(kachelName(T.el));
+        const el = T.el;
+        el.dataset.fxStory = 'diebstahl';
+        const alt = {transform: el.style.transform, transition: el.style.transition};
+        const tcx = T.x + T.w / 2, unten = T.y + T.h;
+        // der Fluchtwagen parkt auf der Seite mit mehr Platz; die Polizei kommt von der anderen
+        const s = W - (T.x + T.w) >= T.x ? 1 : -1;
+        const vB = FLUCHT_B * VW, vH = vB * 44 / 100, pB = STREIFE_B * VW, pH = pB * 38 / 100;
+        const vanY = UNTEN - vH * 43.5 / 44, polY = UNTEN - pH * 37 / 38;
+        const vanZiel = s > 0 ? T.x + T.w + 5.5 * VW : T.x - 5.5 * VW - vB;
+        let vanX = s > 0 ? W + 2 * VW : -vB - 2 * VW, vanV = 0, vanPhase = 'rueckwaerts';
+        const van = svgAusText(fluchtwagenSvg());
+        van.classList.add('fx-faehrt', 'fx-rueckwaerts');
+        domV.appendChild(van);
+        const vanMitte = () => vanX + vB / 2;
+        // Absperrung: Pfosten links und rechts unter der Kachel
+        const pfA = Math.max(0.8 * VW, T.x - 2 * VW), pfB = Math.min(W - 0.8 * VW, T.x + T.w + 2 * VW);
+        const nahPfosten = s > 0 ? pfA : pfB, fernPfosten = s > 0 ? pfB : pfA;
+        const imBild = (x) => Math.max(KA / 2, Math.min(W - KA / 2, x));
+        let absperr = 0, heiss = 0, spurA = 1, sack = 0, kipp = 0, ruettel = 0;
+        const kippR = Math.random() < 0.5 ? -1 : 1;
+        // die Diebe: Leiterkinder, die Hand an der Unterkante der Kachel
+        const handY = unten - 0.35 * VW;
+        const diebe = [];
+        function diebNeu(links, t) {
+            const sd = links ? -1 : 1;
+            const p = [links ? T.x + 1.2 * VW : T.x + T.w - 1.2 * VW, handY - 1.77 * VW];
+            const tr = leiterkind('leer', p, t, {seite: sd, raus: s, lauf: 12});
+            gaunerAnziehen(tr.kind);
+            tr.kx = vanMitte() - KIND_B * VW / 2;
+            const flasche = Math.max(0.8 * VW, Math.min(W - 0.8 * VW, tr.g.fuss[0] - sd * 2 * VW));
+            diebe.push({tr, links, ecke: links ? T.x + 0.3 * VW : T.x + T.w - 0.3 * VW, front: 0, brenner: 'hand', bx: 0, by: 0, bvx: 0, bvy: 0, bw: 0,
+                flasche, da: 0, drin: false, weg: false, nr: diebe.length + 1});
+        }
+        const glutFunken = [], staub = [], bremsspuren = [];
+        function puff(x, y, art) {
+            const dunkel = art === 'reifen';
+            staub.push({x, y, vx: zufall(-1, 1) * VW - (dunkel ? s * zufall(1, 3) * VW : 0), vy: -zufall(0.6, 2) * VW, r: zufall(0.4, dunkel ? 1.2 : 0.8) * VW,
+                alter: 0, dauer: zufall(1, 2), grau: dunkel ? zufall(150, 190) : zufall(110, 150), a: dunkel ? 0.6 : 0.45});
+        }
+        // Polizei: zwei Wagen halten, zwei verfolgen den Fluchtwagen
+        const KA = 3.6 * VW, KAH = KA * 2;
+        const AUTO_START = [1.0, 1.7, 3.4, 4.3];
+        const autos = [];
+        let autosGekommen = 0;
+        const polizisten = [];
+        let heli = null, hx = 0, hy = 0, hd = s, hv = 0, heliPhase = null, heliUhr = 0, licht = 0;
+        const hB = POLHELI_B * VW, hH = hB * 72 / 160;
+        const heliZielX = tcx - hB / 2, heliZielY = Math.max(0.3 * VW, T.y - hH - 2.5 * VW);
+        let alarm = null, gerufen = false, verpasstGerufen = false;
+        const blasen = [];
+        function blase(text, dauer, folge, farbe) {
+            const b = document.createElement('div');
+            b.className = 'fx-sprechblase';
+            b.textContent = Array.isArray(text) ? text[0] : text;
+            if (farbe) b.style.color = farbe;
+            domV.appendChild(b);
+            const o = {el: b, rest: dauer, folge, text};
+            blasen.push(o);
+            return o;
+        }
+        function autoNeu(i) {
+            const e = svgAusText(streifenwagenSvg(s < 0));
+            e.classList.add('fx-einsatz', 'fx-faehrt');
+            domV.appendChild(e);
+            const start = s > 0 ? -pB - 2 * VW : W + 2 * VW;
+            const ziel0 = s > 0 ? T.x - 3.5 * VW - pB : T.x + T.w + 3.5 * VW;
+            const ziel = i === 0 ? ziel0 : i === 1 ? ziel0 - s * (pB + 1.2 * VW) : null;
+            autos.push({e, i, x: start, v: 20 * VW, ziel, phase: 'fahrt', ab: 0, spur: null, ph: i * 0.13});
+        }
+        function polizistNeu(x, auto) {
+            const e = polizistSvg();
+            domV.appendChild(e);
+            const o = {e, x, r: s, ziel: x, auto, gehen: false, armL: e.querySelector('.fx-tragarm-l'), arm: null, kiste: 0, drin: false, warte: 0,
+                modus: vanPhase === 'weg' ? 'normal' : 'jagen'};
+            polizisten.push(o);
+            return o;
+        }
+        const gehe = (o, dt) => {
+            const d = o.ziel - o.x;
+            if (Math.abs(d) < 0.15 * VW) { o.gehen = false; return true; }
+            o.r = Math.sign(d); o.x += o.r * Math.min(Math.abs(d), (o.modus === 'jagen' ? 14 : 9) * VW * dt); o.gehen = true;
+            return false;
+        };
+        function setTile(t) {
+            if (sack || kipp || ruettel) {
+                el.style.transition = 'none';
+                el.style.transform = `translate(${(Math.sin(t * 47) * ruettel).toFixed(2)}px, ${sack.toFixed(2)}px) rotate(${kipp.toFixed(2)}deg)`;
+            } else { el.style.transform = alt.transform; el.style.transition = alt.transition; }
+        }
+        function flaschenMalen(d) {
+            if (d.da <= 0 || d.weg) return;
+            const yb = LAUF_BODEN - 0.1 * VW, h = 2.6 * VW, w = 0.78 * VW;
+            cxV.globalAlpha = Math.min(1, d.da);
+            for (const [ox, farbe] of [[-0.45, '#b3261e'], [0.45, '#2f5fa8']]) {
+                const x = d.flasche + ox * VW;
+                cxV.fillStyle = farbe;
+                cxV.fillRect(x - w / 2, yb - h + w / 2, w, h - w / 2);
+                cxV.beginPath(); cxV.arc(x, yb - h + w / 2, w / 2, Math.PI, 0); cxV.fill();
+                cxV.fillStyle = 'rgba(255,255,255,.25)'; cxV.fillRect(x - w * 0.3, yb - h + w * 0.6, w * 0.16, h - w);
+                cxV.fillStyle = '#7d8790'; cxV.fillRect(x - 0.15 * VW, yb - h - 0.3 * VW, 0.3 * VW, 0.4 * VW);
+            }
+            cxV.globalAlpha = 1;
+        }
+        // Schneidbrenner: Griff, Lanze und eine grelle Flamme mit Funkenregen
+        function brennerMalen(gx, gy, zx, zy, flamme, t) {
+            const dx = zx - gx, dy = zy - gy, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
+            const ende = [zx - ux * Math.min(0.7 * VW, l * 0.4), zy - uy * Math.min(0.7 * VW, l * 0.4)];
+            cxV.lineCap = 'round';
+            cxV.strokeStyle = '#3b3f44'; cxV.lineWidth = 0.34 * VW;
+            cxV.beginPath(); cxV.moveTo(gx, gy); cxV.lineTo(gx + ux * Math.min(0.9 * VW, l * 0.4), gy + uy * Math.min(0.9 * VW, l * 0.4)); cxV.stroke();
+            cxV.strokeStyle = '#b9c1c8'; cxV.lineWidth = 0.14 * VW;
+            cxV.beginPath(); cxV.moveTo(gx + ux * 0.5 * VW, gy + uy * 0.5 * VW); cxV.lineTo(ende[0], ende[1]); cxV.stroke();
+            if (!flamme) return;
+            cxV.strokeStyle = 'rgba(110,170,255,.95)'; cxV.lineWidth = 0.3 * VW;
+            cxV.beginPath(); cxV.moveTo(ende[0], ende[1]); cxV.lineTo(zx, zy); cxV.stroke();
+            cxV.strokeStyle = '#ffffff'; cxV.lineWidth = 0.1 * VW;
+            cxV.beginPath(); cxV.moveTo(ende[0], ende[1]); cxV.lineTo(zx - ux * 0.15 * VW, zy - uy * 0.15 * VW); cxV.stroke();
+            // grelles, flackerndes Licht auf der Kachel
+            const r = (1.3 + 0.8 * Math.random()) * VW;
+            const g = cxV.createRadialGradient(zx, zy, 0, zx, zy, r * 2.6);
+            g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(0.2, 'rgba(255,200,110,.7)'); g.addColorStop(1, 'rgba(255,120,40,0)');
+            cxV.fillStyle = g; cxV.beginPath(); cxV.arc(zx, zy, r * 2.6, 0, 6.283); cxV.fill();
+            for (let i = 0; i < 7; i++) glutFunken.push({x: zx, y: zy, vx: zufall(-8, 8) * VW, vy: zufall(-9, 1.5) * VW, alter: 0, dauer: zufall(0.5, 1.3)});
+            if (Math.random() < 0.15) staub.push({x: zx, y: zy - 0.5 * VW, vx: zufall(-0.4, 0.4) * VW, vy: -zufall(1.5, 2.5) * VW, r: zufall(0.4, 0.7) * VW, alter: 0, dauer: zufall(1.2, 2), grau: 90, a: 0.4});
+            if (Math.random() < 0.08) funkenStreuen(zx, zy, 2, 'gold');
+        }
+        function liegenderBrennerMalen(d) {
+            const c = Math.cos(d.bw), sn = Math.sin(d.bw);
+            cxV.lineCap = 'round';
+            cxV.strokeStyle = '#3b3f44'; cxV.lineWidth = 0.34 * VW;
+            cxV.beginPath(); cxV.moveTo(d.bx, d.by); cxV.lineTo(d.bx + c * 0.9 * VW, d.by + sn * 0.9 * VW); cxV.stroke();
+            cxV.strokeStyle = '#b9c1c8'; cxV.lineWidth = 0.14 * VW;
+            cxV.beginPath(); cxV.moveTo(d.bx + c * 0.5 * VW, d.by + sn * 0.5 * VW); cxV.lineTo(d.bx + c * 2.2 * VW, d.by + sn * 2.2 * VW); cxV.stroke();
+        }
+        function schlauchMalen(d, gx, gy) {
+            const x0 = d.flasche, y0 = LAUF_BODEN - 2.8 * VW;
+            const my = Math.min(LAUF_BODEN - 0.2 * VW, Math.max(y0, gy) + 2.5 * VW);
+            for (const [off, farbe] of [[-0.07, '#8e1b1b'], [0.07, '#1f3f7a']]) {
+                cxV.strokeStyle = farbe; cxV.lineWidth = 0.1 * VW;
+                cxV.beginPath(); cxV.moveTo(x0 + off * VW, y0); cxV.quadraticCurveTo((x0 + gx) / 2, my, gx + off * VW, gy); cxV.stroke();
+            }
+        }
+        function absperrungMalen() {
+            if (absperr <= 0) return;
+            const y = LAUF_BODEN - 0.1 * VW;
+            cxV.globalAlpha = Math.min(1, absperr * 1.5);
+            const pfosten = [pfA, pfB];
+            if (pfB - pfA > 14 * VW) pfosten.push((pfA + pfB) / 2);
+            for (const x of pfosten) {
+                cxV.fillStyle = '#5d656c'; cxV.fillRect(x - 0.12 * VW, y - 2.7 * VW, 0.24 * VW, 2.7 * VW);
+                cxV.fillStyle = '#3b3f44'; cxV.fillRect(x - 0.55 * VW, y - 0.25 * VW, 1.1 * VW, 0.25 * VW);
+            }
+            // blau-weißes Flatterband mit POLIZEI, rollt sich vom nahen Pfosten aus ab
+            const by = y - 2.4 * VW, bh = 0.62 * VW, seg = 2.6 * VW, L = (pfB - pfA) * Math.min(1, absperr);
+            const a0 = s > 0 ? pfA : pfB - L;
+            cxV.save();
+            cxV.beginPath(); cxV.rect(a0, by - 0.2 * VW, L, bh + 0.4 * VW); cxV.clip();
+            cxV.font = `bold ${(0.42 * VW).toFixed(1)}px sans-serif`; cxV.textAlign = 'center'; cxV.textBaseline = 'middle';
+            for (let x = pfA, i = 0; x < pfB; x += seg, i++) {
+                const w = Math.min(seg, pfB - x);
+                cxV.fillStyle = i % 2 ? '#ffffff' : '#1e4fa3';
+                cxV.fillRect(x, by, w, bh);
+                if (i % 2 === 0 && w > 1.9 * VW) { cxV.fillStyle = '#ffffff'; cxV.fillText('POLIZEI', x + w / 2, by + bh / 2 + 0.03 * VW); }
+            }
+            cxV.strokeStyle = 'rgba(0,0,0,.3)'; cxV.lineWidth = 0.04 * VW; cxV.strokeRect(pfA, by, pfB - pfA, bh);
+            cxV.restore();
+            // gelbe Beweis-Aufsteller neben dem liegenden Werkzeug
+            for (const d of diebe) {
+                if (d.weg) continue;
+                const x = d.flasche + (d.links ? 1.5 : -1.5) * VW;
+                cxV.fillStyle = '#ffd21f'; cxV.strokeStyle = '#8a6d00'; cxV.lineWidth = 0.05 * VW;
+                cxV.beginPath(); cxV.moveTo(x - 0.5 * VW, y); cxV.lineTo(x - 0.3 * VW, y - 1.1 * VW); cxV.lineTo(x + 0.3 * VW, y - 1.1 * VW); cxV.lineTo(x + 0.5 * VW, y); cxV.closePath(); cxV.fill(); cxV.stroke();
+                cxV.fillStyle = '#1d1d1d'; cxV.font = `bold ${(0.6 * VW).toFixed(1)}px sans-serif`; cxV.textAlign = 'center'; cxV.textBaseline = 'middle';
+                cxV.fillText(String(d.nr), x, y - 0.5 * VW);
+            }
+            cxV.globalAlpha = 1;
+        }
+        // Kiste „BEWEISE“: das sichergestellte Werkzeug ragt heraus (Wunsch Jonas: klar erkennbar)
+        function kisteMalen(x, yb, inhalt) {
+            const w = 3 * VW, h = 1.9 * VW, top = yb - h;
+            if (inhalt >= 1) {
+                cxV.fillStyle = '#b3261e'; cxV.fillRect(x - 1.05 * VW, top - 1 * VW, 0.7 * VW, 1.2 * VW);
+                cxV.beginPath(); cxV.arc(x - 0.7 * VW, top - 1 * VW, 0.35 * VW, Math.PI, 0); cxV.fill();
+                cxV.strokeStyle = '#b9c1c8'; cxV.lineWidth = 0.14 * VW; cxV.lineCap = 'round';
+                cxV.beginPath(); cxV.moveTo(x + 0.2 * VW, top + 0.3 * VW); cxV.lineTo(x + 1.4 * VW, top - 1.5 * VW); cxV.stroke();
+                cxV.strokeStyle = '#3b3f44'; cxV.lineWidth = 0.3 * VW;
+                cxV.beginPath(); cxV.moveTo(x + 0.2 * VW, top + 0.3 * VW); cxV.lineTo(x + 0.55 * VW, top - 0.2 * VW); cxV.stroke();
+            }
+            if (inhalt >= 2) {
+                cxV.fillStyle = '#2f5fa8'; cxV.fillRect(x - 0.25 * VW, top - 0.8 * VW, 0.7 * VW, 1 * VW);
+                cxV.beginPath(); cxV.arc(x + 0.1 * VW, top - 0.8 * VW, 0.35 * VW, Math.PI, 0); cxV.fill();
+                cxV.strokeStyle = '#b9c1c8'; cxV.lineWidth = 0.14 * VW;
+                cxV.beginPath(); cxV.moveTo(x - 0.4 * VW, top + 0.3 * VW); cxV.lineTo(x - 1.6 * VW, top - 1.3 * VW); cxV.stroke();
+            }
+            cxV.fillStyle = '#b8864b'; cxV.strokeStyle = '#7a5a2e'; cxV.lineWidth = 0.07 * VW;
+            cxV.fillRect(x - w / 2, top, w, h); cxV.strokeRect(x - w / 2, top, w, h);
+            cxV.fillStyle = '#a0723c'; cxV.fillRect(x - w / 2, top, w, 0.3 * VW);
+            cxV.fillStyle = '#ffffff'; cxV.fillRect(x - 1.25 * VW, top + 0.6 * VW, 2.5 * VW, 0.8 * VW);
+            cxV.fillStyle = '#c0392b'; cxV.font = `bold ${(0.52 * VW).toFixed(1)}px sans-serif`; cxV.textAlign = 'center'; cxV.textBaseline = 'middle';
+            cxV.fillText('BEWEISE', x, top + 1.02 * VW);
+        }
+        // Blaulicht strahlt auf Boden und Kacheln
+        function blaulichtMalen(x, t, ph) {
+            const an = Math.floor((t + ph) / 0.2) % 2;
+            const f = an ? 0.47 : 0.56;
+            const lx = x + (s < 0 ? 1 - f : f) * pB, ly = polY + 2 / 38 * pH;
+            const g = cxV.createRadialGradient(lx, ly, 0, lx, ly, 6 * VW);
+            g.addColorStop(0, 'rgba(110,165,255,.6)'); g.addColorStop(0.35, 'rgba(70,130,255,.22)'); g.addColorStop(1, 'rgba(60,120,255,0)');
+            cxV.fillStyle = g; cxV.beginPath(); cxV.arc(lx, ly, 6 * VW, 0, 6.283); cxV.fill();
+        }
+        let t0 = null, pstart = 0, phase = 'anfahrt', fertig = false;
+
+        return {
+            leiter: true,
+            get fertig() { return fertig; },
+            stop() {
+                van.remove();
+                for (const a of autos) a.e.remove();
+                for (const o of polizisten) o.e.remove();
+                for (const b of blasen) b.el.remove();
+                for (const d of diebe) if (!d.tr.weg) d.tr.entfernen();
+                if (heli) heli.remove();
+                el.style.transform = alt.transform; el.style.transition = alt.transition;
+                delete el.dataset.fxStory;
+            },
+            schritt(dt, t) {
+                if (t0 === null) { t0 = t; pstart = t; }
+                if (!el.isConnected || t - t0 > 180) { fertig = true; return; }
+                const ps = t - pstart;
+                const weiter = (ph) => { phase = ph; pstart = t; };
+                const front = diebe.length ? diebe.reduce((a, d) => a + d.front, 0) / diebe.length : 0;
+                if (phase === 'anfahrt') {
+                    // rückwärts eingeparkt, die Nase zur Flucht
+                    const rest = (vanX - vanZiel) * s;
+                    const v = Math.min(9 * VW, Math.sqrt(2 * 6 * VW * Math.max(0, rest)) + 0.3 * VW);
+                    vanX -= s * Math.min(v * dt, Math.max(0, rest));
+                    if (rest <= 0.05 * VW) { vanX = vanZiel; van.classList.remove('fx-faehrt', 'fx-rueckwaerts'); weiter('aussteigen'); }
+                } else if (phase === 'aussteigen') {
+                    if (!diebe.length && ps > 0.6) diebNeu(s < 0, t);
+                    if (diebe.length === 1 && ps > 1.2) diebNeu(s > 0, t);
+                    if (diebe.length === 2) weiter('klettern');
+                } else if (phase === 'klettern') {
+                    if (diebe.every((d) => d.tr.oben()) || ps > 25) weiter('schneiden');
+                } else if (phase === 'schneiden' || phase === 'alarm') {
+                    heiss = 1;
+                    for (const d of diebe) if (d.tr.oben()) d.front = Math.min(1, d.front + dt / 7);
+                    // je weiter geschnitten, desto mehr wackelt die Kachel; am Ende hängt sie schief
+                    ruettel = front > 0.4 ? 0.09 * VW * (front - 0.4) / 0.6 : 0;
+                    const lose = glatt((front - 0.7) / 0.3);
+                    sack = 0.8 * VW * lose; kipp = kippR * 3.2 * lose;
+                    if (phase === 'schneiden' && ps > 6) {
+                        // Martinshorn: erst zu hören, dann zu sehen
+                        alarm = t;
+                        const randX = s > 0 ? 4 * VW : W - 4 * VW;
+                        blase(['TATÜÜ!', 'TATAA!'], 9, () => {
+                            const a = autos.find((x) => x.e.isConnected);
+                            return a ? [a.x + pB / 2, polY - 0.6 * VW] : [randX, UNTEN - 5 * VW];
+                        }, '#1e4fa3');
+                        weiter('alarm');
+                    } else if (phase === 'alarm' && ps > 1.6) {
+                        const d0 = diebe[0];
+                        const [sx, sy] = d0.tr.spitze();
+                        blase('Die Polizei! Nix wie weg!', 2.6, () => [sx, sy - 4.6 * VW]);
+                        for (const d of diebe) {
+                            // das Werkzeug fällt herunter und bleibt liegen
+                            if (d.tr.oben()) { const [gx, gy] = d.tr.spitze(); d.bx = gx; d.by = gy; d.bvx = (d.links ? 1 : -1) * zufall(0.5, 1.5) * VW; d.bvy = -2 * VW; d.bw = zufall(-1.2, 1.2); d.brenner = 'faellt'; }
+                            else { d.bx = d.flasche + (d.links ? 0.8 : -2.8) * VW; d.by = LAUF_BODEN - 0.3 * VW; d.bw = 0; d.brenner = 'liegt'; }
+                            d.da = 1;
+                            d.tr.freigabe = true;
+                        }
+                        weiter('flucht');
+                    }
+                } else if (phase === 'flucht') {
+                    heiss = Math.max(0, heiss - dt / 3);
+                    ruettel = 0;
+                    for (const d of diebe) {
+                        if (!d.drin && d.tr.kphase === 'weg' && (d.tr.kx + KIND_B * VW / 2 - vanMitte()) * s >= 0) { d.tr.entfernen(); d.tr.weg = true; d.drin = true; }
+                        if (!d.drin && ps > 12) { d.tr.entfernen(); d.tr.weg = true; d.drin = true; }
+                    }
+                    if (vanPhase === 'rueckwaerts' && diebe.every((d) => d.drin)) {
+                        // Vollgas, mit qualmenden Reifen
+                        vanPhase = 'flucht'; van.classList.add('fx-faehrt');
+                        for (let i = 0; i < 14; i++) puff(vanX + (s > 0 ? 0.2 : 0.8) * vB + zufall(-1, 1) * VW, UNTEN - zufall(0, 1.2) * VW, 'reifen');
+                        blase('Vollgas!', 1.6, () => [vanMitte(), vanY - 0.4 * VW]);
+                    }
+                    if (vanPhase === 'weg' && polizisten.length >= 2 && polizisten.every((o) => o.modus === 'normal')) {
+                        polizisten[0].ziel = imBild(nahPfosten - s * 1.2 * VW);
+                        polizisten[1].ziel = imBild(fernPfosten + s * 1.2 * VW);
+                        weiter('hinlaufen');
+                    }
+                } else if (phase === 'hinlaufen') {
+                    heiss = Math.max(0, heiss - dt / 3);
+                    if (polizisten.every((o) => Math.abs(o.ziel - o.x) < 0.2 * VW)) weiter('absperren');
+                } else if (phase === 'absperren') {
+                    absperr = Math.min(1, ps / 1.4);
+                    for (const o of polizisten) o.arm = -140 + Math.sin(t * 5) * 10;
+                    if (ps > 1.6) { for (const o of polizisten) o.arm = null; weiter('sichern'); }
+                } else if (phase === 'sichern') {
+                    // die Kachel ruckelt zurück an ihren Platz; das Werkzeug kommt in die Beweis-Kiste
+                    const f = 1 - glatt(ps / 1.5);
+                    sack = Math.min(sack, 0.8 * VW * f); kipp = kippR * Math.min(Math.abs(kipp), 3.2 * f);
+                    const A = polizisten[0], B = polizisten[1];
+                    const offen = diebe.filter((d) => !d.weg).sort((a, b) => Math.abs(a.flasche - A.x) - Math.abs(b.flasche - A.x));
+                    if (offen.length) {
+                        A.ziel = offen[0].flasche + (offen[0].links ? -1 : 1) * 0.6 * VW;
+                        if (Math.abs(A.ziel - A.x) < 0.2 * VW) {
+                            A.warte += dt; A.arm = -170;
+                            if (A.warte > 0.8) { offen[0].weg = true; A.warte = 0; A.arm = null; A.kiste += 1; A.e.classList.remove('fx-traegt'); }
+                        }
+                    } else A.ziel = imBild(nahPfosten - s * 1.2 * VW);
+                    if (ps > 1.5 && !B.notiert) { B.notiert = true; blase('Tatort gesichert!', 2.4, () => [B.x, LAUF_BODEN - KAH - 0.4 * VW]); }
+                    B.arm = ps > 1.5 && ps < 4 ? -90 + Math.sin(t * 7) * 8 : null;
+                    if (!offen.length && Math.abs(A.ziel - A.x) < 0.2 * VW && ps > 6) { B.arm = null; weiter('abbauen'); }
+                } else if (phase === 'abbauen') {
+                    absperr = Math.max(0, 1 - ps / 1.2);
+                    polizisten[1].arm = -140 + Math.sin(t * 5) * 10;
+                    if (heliPhase === 'schwebt') heliPhase = 'ab';
+                    if (ps > 1.4) {
+                        absperr = 0;
+                        for (const o of polizisten) { o.arm = null; o.ziel = o.auto.x + pB / 2; }
+                        weiter('einsteigen');
+                    }
+                } else if (phase === 'einsteigen') {
+                    for (const o of polizisten) if (!o.drin && Math.abs(o.ziel - o.x) < 0.2 * VW) { o.drin = true; o.e.remove(); }
+                    if (polizisten.every((o) => o.drin)) {
+                        autos.forEach((a, k) => { if (a.phase === 'steht') { a.phase = 'abwarten'; a.ab = t + 0.4 + k * 0.5; } });
+                        weiter('abfahrt');
+                    }
+                } else if (phase === 'abfahrt') {
+                    spurA = Math.max(0, spurA - dt / 3);
+                    // der Hubschrauber fliegt spätestens jetzt ab
+                    if (heli && heliPhase === 'pause') { heli.remove(); heli = null; heliPhase = 'weg'; }
+                    else if (heli && (heliPhase === 'an' || heliPhase === 'schwebt')) heliPhase = 'ab';
+                    if (!autos.length && !heli && !blasen.length && spurA <= 0) { fertig = true; return; }
+                }
+                // Fluchtwagen
+                if (vanPhase === 'flucht') {
+                    vanV = Math.min(22 * VW, vanV + 12 * VW * dt);
+                    vanX += s * vanV * dt;
+                    if (Math.random() < dt * 12) puff(vanX + (s > 0 ? 0 : vB), UNTEN - 0.6 * VW, 'reifen');
+                    if (vanX > W + 3 * VW || vanX < -vB - 3 * VW) { van.remove(); vanPhase = 'weg'; }
+                }
+                if (vanPhase !== 'weg') van.style.transform = `translate(${vanX.toFixed(1)}px, ${vanY.toFixed(1)}px)${s < 0 ? ' scale(-1, 1)' : ''}`;
+                // Polizei: vier Wagen nacheinander, dazu der Hubschrauber
+                if (alarm !== null) {
+                    while (autosGekommen < 4 && t - alarm > AUTO_START[autosGekommen]) { autoNeu(autosGekommen); autosGekommen += 1; }
+                    if (heliPhase === null && t - alarm > 3.2) {
+                        heli = svgAusText(polizeiHeliSvg());
+                        heli.style.width = `${POLHELI_B}vw`;
+                        domV.appendChild(heli);
+                        // erst jagt er dem Fluchtwagen nach, dann kommt er zurück und leuchtet den Tatort aus
+                        hd = s; hx = s > 0 ? -hB - 2 * VW : W + 2 * VW; hy = 0.6 * VW; heliPhase = 'verfolgen';
+                    }
+                }
+                // Bremsspuren
+                for (const b of bremsspuren) {
+                    cxV.strokeStyle = `rgba(30,30,30,${(0.5 * spurA).toFixed(2)})`; cxV.lineWidth = 0.28 * VW; cxV.lineCap = 'round';
+                    cxV.beginPath(); cxV.moveTo(b.a, UNTEN - 0.15 * VW); cxV.lineTo(b.b, UNTEN - 0.15 * VW); cxV.stroke();
+                }
+                for (let k = autos.length - 1; k >= 0; k--) {
+                    const a = autos[k];
+                    if (a.phase === 'fahrt') {
+                        if (a.ziel === null) {
+                            // die Verfolger: bleiben hinter dem Fluchtwagen, bis der losrast
+                            const v = vanPhase === 'flucht' || vanPhase === 'weg' ? 22 * VW : 16 * VW;
+                            a.x += s * v * dt;
+                            if (vanPhase !== 'flucht' && vanPhase !== 'weg') {
+                                const grenze = s > 0 ? vanX - 2.5 * VW - pB - (a.i - 2) * (pB + 1 * VW) : vanX + vB + 2.5 * VW + (a.i - 2) * (pB + 1 * VW);
+                                if ((a.x - grenze) * s > 0) { a.x = grenze; a.e.classList.remove('fx-faehrt'); } else a.e.classList.add('fx-faehrt');
+                            } else a.e.classList.add('fx-faehrt');
+                            if (a.x > W + 3 * VW || a.x < -pB - 3 * VW) { a.e.remove(); autos.splice(k, 1); continue; }
+                        } else {
+                            // scharf bremsen: quietschende Reifen, Bremsspur und Qualm
+                            const rest = (a.ziel - a.x) * s;
+                            const v = Math.min(20 * VW, Math.sqrt(2 * 16 * VW * Math.max(0, rest)) + 0.3 * VW);
+                            a.x += s * Math.min(v * dt, Math.max(0, rest));
+                            const hinten = a.x + (s > 0 ? 0.22 : 0.78) * pB, vorn = a.x + (s > 0 ? 0.8 : 0.2) * pB;
+                            if (v < 19.5 * VW) {
+                                if (a.spur === null) { a.spur = [hinten, vorn]; bremsspuren.push({a: hinten, b: hinten}, {a: vorn, b: vorn}); a.spurNr = bremsspuren.length - 2; }
+                                bremsspuren[a.spurNr].b = hinten; bremsspuren[a.spurNr + 1].b = vorn;
+                                if (Math.random() < dt * 25) puff(hinten, UNTEN - 0.4 * VW, 'reifen');
+                            }
+                            if (rest <= 0.05 * VW) {
+                                a.x = a.ziel; a.phase = 'steht'; a.e.classList.remove('fx-faehrt');
+                                // sofort springt ein Polizist heraus und rennt der Bande nach
+                                const o = polizistNeu(a.x + pB / 2, a);
+                                if (o.modus === 'jagen' && !gerufen) { gerufen = true; blase('Halt! Stehen bleiben!', 2.2, () => [o.x, LAUF_BODEN - KAH - 0.4 * VW]); }
+                            }
+                        }
+                    } else if (a.phase === 'abwarten') {
+                        if (t > a.ab) { a.phase = 'ab'; a.v = 0; a.e.classList.add('fx-faehrt'); }
+                    } else if (a.phase === 'ab') {
+                        a.v = Math.min(16 * VW, a.v + 7 * VW * dt);
+                        a.x += s * a.v * dt;
+                        if (a.x > W + 3 * VW || a.x < -pB - 3 * VW) { a.e.remove(); autos.splice(k, 1); continue; }
+                    }
+                    a.e.style.transform = `translate(${a.x.toFixed(1)}px, ${polY.toFixed(1)}px)${s < 0 ? ' scale(-1, 1)' : ''}`;
+                    if (phase !== 'abfahrt' || a.phase !== 'ab') blaulichtMalen(a.x, t, a.ph);
+                }
+                // Hubschrauber
+                if (heli) {
+                    if (heliPhase === 'verfolgen') {
+                        licht = 1;
+                        hx += hd * 15 * VW * dt;
+                        if (hx > W + 3 * VW || hx < -hB - 3 * VW) { heliPhase = 'pause'; heliUhr = 0; licht = 0; }
+                    } else if (heliPhase === 'pause') {
+                        heliUhr += dt;
+                        if (heliUhr > 2) { heliPhase = 'an'; hd = -s; hx = s > 0 ? W + 2 * VW : -hB - 2 * VW; hy = heliZielY; }
+                    } else if (heliPhase === 'an') {
+                        const rest = (heliZielX - hx) * hd;
+                        const v = Math.min(14 * VW, Math.sqrt(2 * 6 * VW * Math.max(0, rest)) + 0.2 * VW);
+                        hx += hd * Math.min(v * dt, Math.max(0, rest));
+                        if (rest <= 0.05 * VW) heliPhase = 'schwebt';
+                    } else if (heliPhase === 'schwebt') {
+                        licht = Math.min(1, licht + dt);
+                    } else if (heliPhase === 'ab') {
+                        licht = Math.max(0, licht - dt * 2);
+                        hv = Math.min(16 * VW, hv + 7 * VW * dt);
+                        hx += hd * hv * dt; hy -= hv * 0.25 * dt;
+                        if (hx > W + 3 * VW || hx < -hB - 3 * VW || hy < -hH - 2 * VW) { heli.remove(); heli = null; heliPhase = 'weg'; }
+                    }
+                }
+                if (heli) {
+                    const yy = hy + Math.sin(t * 1.6) * 0.25 * VW;
+                    heli.style.transform = `translate(${hx.toFixed(1)}px, ${yy.toFixed(1)}px)${hd > 0 ? ' scale(-1, 1)' : ''}`;
+                    if (licht > 0) {
+                        // Suchscheinwerfer: erst auf den Fluchtwagen, dann auf den Tatort
+                        const bx = hx + (hd > 0 ? 98 : 62) / 160 * hB, by = yy + 58 / 72 * hH;
+                        let zx, zy, zw, zh;
+                        if (heliPhase === 'verfolgen') {
+                            const ziel = vanPhase !== 'weg' ? vanMitte() : bx + hd * 8 * VW;
+                            zx = ziel; zy = UNTEN - 1.5 * VW; zw = 5 * VW; zh = 1.6 * VW;
+                        } else { zx = tcx + Math.sin(t * 0.9) * T.w * 0.15; zy = T.y + T.h * 0.5; zw = T.w * 0.3; zh = T.h * 0.5; }
+                        cxV.fillStyle = `rgba(255,250,205,${(0.22 * licht).toFixed(3)})`;
+                        cxV.beginPath(); cxV.moveTo(bx - 0.4 * VW, by); cxV.lineTo(bx + 0.4 * VW, by);
+                        cxV.lineTo(zx + zw, zy + zh); cxV.lineTo(zx - zw, zy + zh); cxV.closePath(); cxV.fill();
+                        cxV.fillStyle = `rgba(255,250,215,${(0.2 * licht).toFixed(3)})`;
+                        cxV.beginPath(); cxV.ellipse(zx, zy, zw, zh, 0, 0, 6.283); cxV.fill();
+                    }
+                }
+                // Diebe, Werkzeug, Schnittspur
+                setTile(t);
+                for (const d of diebe) {
+                    if (!d.tr.weg) d.tr.schritt(dt, t);
+                    if (!d.tr.weg && d.tr.oben()) d.da = Math.min(1, d.da + dt * 2);
+                    if (d.brenner === 'faellt') {
+                        d.bvy += 30 * VW * dt; d.bx += d.bvx * dt; d.by += d.bvy * dt; d.bw *= Math.max(0, 1 - dt * 3);
+                        if (d.by >= LAUF_BODEN - 0.3 * VW) { d.by = LAUF_BODEN - 0.3 * VW; d.bw = 0; d.brenner = 'liegt'; funkenStreuen(d.bx + 1 * VW, d.by, 3, 'weiss'); }
+                    }
+                }
+                const L = Math.min(4.5 * VW, T.w * 0.3);
+                for (const d of diebe) {
+                    if (d.front <= 0 || spurA <= 0) continue;
+                    const inw = d.links ? 1 : -1, y = handY + sack, x1 = d.ecke + inw * L * d.front;
+                    cxV.globalAlpha = spurA;
+                    cxV.lineCap = 'round';
+                    cxV.strokeStyle = '#2e211b'; cxV.lineWidth = 0.24 * VW;
+                    cxV.beginPath(); cxV.moveTo(d.ecke, y); cxV.lineTo(x1, y); cxV.stroke();
+                    if (heiss > 0) {
+                        const x0 = x1 - inw * Math.min(1.6 * VW, L * d.front);
+                        cxV.strokeStyle = `rgba(255,140,40,${heiss.toFixed(2)})`; cxV.lineWidth = 0.32 * VW;
+                        cxV.beginPath(); cxV.moveTo(x0, y); cxV.lineTo(x1, y); cxV.stroke();
+                        cxV.strokeStyle = `rgba(255,236,160,${heiss.toFixed(2)})`; cxV.lineWidth = 0.12 * VW;
+                        cxV.beginPath(); cxV.moveTo(x0 + inw * 0.5 * VW, y); cxV.lineTo(x1, y); cxV.stroke();
+                    }
+                    cxV.globalAlpha = 1;
+                }
+                for (const d of diebe) {
+                    if (d.weg) continue;
+                    flaschenMalen(d);
+                    if (d.brenner === 'hand' && !d.tr.weg && d.tr.oben()) {
+                        const [gx, gy] = d.tr.spitze();
+                        schlauchMalen(d, gx, gy);
+                        const schneidet = phase === 'schneiden' || phase === 'alarm';
+                        brennerMalen(gx, gy, d.ecke + (d.links ? 1 : -1) * L * d.front, handY + sack, schneidet, t);
+                    } else if (d.brenner !== 'hand') {
+                        schlauchMalen(d, d.bx, d.by);
+                        liegenderBrennerMalen(d);
+                    }
+                }
+                for (let i = glutFunken.length - 1; i >= 0; i--) {
+                    const f = glutFunken[i];
+                    f.alter += dt; f.vy += 30 * VW * dt; f.x += f.vx * dt; f.y += f.vy * dt;
+                    if (f.alter > f.dauer || f.y > LAUF_BODEN) { glutFunken.splice(i, 1); continue; }
+                    cxV.strokeStyle = `rgba(255,${Math.round(220 - 140 * f.alter / f.dauer)},60,${(1 - f.alter / f.dauer).toFixed(2)})`;
+                    cxV.lineWidth = 0.14 * VW; cxV.lineCap = 'round';
+                    cxV.beginPath(); cxV.moveTo(f.x, f.y); cxV.lineTo(f.x - f.vx * 0.025, f.y - f.vy * 0.025); cxV.stroke();
+                }
+                for (let i = staub.length - 1; i >= 0; i--) {
+                    const r = staub[i];
+                    r.alter += dt;
+                    if (r.alter > r.dauer) { staub.splice(i, 1); continue; }
+                    r.x += r.vx * dt; r.y += r.vy * dt;
+                    const f = r.alter / r.dauer, g = Math.round(r.grau);
+                    cxV.fillStyle = `rgba(${g},${g},${g},${(r.a * (1 - f)).toFixed(2)})`;
+                    cxV.beginPath(); cxV.arc(r.x, r.y, r.r * (1 + f * 1.5), 0, 6.283); cxV.fill();
+                }
+                absperrungMalen();
+                // Polizisten
+                for (const o of polizisten) {
+                    if (o.drin) continue;
+                    if (o.modus === 'jagen') {
+                        // hinter den Dieben her bis zum Fluchtwagen – zu spät
+                        const frei = diebe.filter((d) => !d.drin);
+                        if (frei.length) {
+                            const xs = frei.map((d) => d.tr.kx + KIND_B * VW / 2);
+                            o.ziel = imBild(s > 0 ? Math.min(...xs) - 2.8 * VW : Math.max(...xs) + 2.8 * VW);
+                        } else o.ziel = imBild(vanZiel + vB / 2 - s * (vB / 2 + 1 * VW));
+                        o.arm = -95 + Math.sin(t * 9) * 12;
+                        if (vanPhase !== 'rueckwaerts' && Math.abs(o.ziel - o.x) < 0.3 * VW) {
+                            o.modus = 'verpasst'; o.warte = 0;
+                            if (!verpasstGerufen) { verpasstGerufen = true; blase('Mist! Entwischt!', 2, () => [o.x, LAUF_BODEN - KAH - 0.4 * VW]); }
+                        }
+                    } else if (o.modus === 'verpasst') {
+                        o.warte += dt; o.arm = -150 + Math.sin(t * 14) * 18; o.r = s;
+                        if (o.warte > 1.8) { o.modus = 'normal'; o.arm = null; }
+                    }
+                    gehe(o, dt);
+                    const y = LAUF_BODEN - KAH * 0.97 + (o.gehen ? Math.abs(Math.sin(t * (o.modus === 'jagen' ? 15 : 11))) * -0.14 * VW : 0);
+                    o.e.style.transform = `translate(${(o.x - KA / 2).toFixed(1)}px, ${y.toFixed(1)}px)${o.r > 0 ? ' scale(-1, 1)' : ''}`;
+                    o.e.classList.toggle('fx-geht', o.gehen);
+                    if (o.arm !== null) { o.armL.style.transition = 'none'; o.armL.style.transform = `rotate(${o.arm.toFixed(1)}deg)`; }
+                    else { o.armL.style.transition = ''; o.armL.style.transform = ''; }
+                    if (o.kiste) kisteMalen(o.x, y + 0.2 * KAH, o.kiste);
+                }
+                // Sprechblasen
+                for (let i = blasen.length - 1; i >= 0; i--) {
+                    const b = blasen[i];
+                    b.rest -= dt;
+                    if (b.rest <= 0) { b.el.remove(); blasen.splice(i, 1); continue; }
+                    if (Array.isArray(b.text)) b.el.textContent = b.text[Math.floor(t / 0.45) % b.text.length];
+                    const [x, y] = b.folge();
+                    const w = b.el.offsetWidth, h = b.el.offsetHeight;
+                    const lx = Math.max(0.5 * VW, Math.min(W - 0.5 * VW - w, x - w / 2));
+                    b.el.style.transform = `translate(${lx.toFixed(1)}px, ${(y - h).toFixed(1)}px)`;
+                    b.el.style.opacity = b.rest < 0.3 ? (b.rest / 0.3).toFixed(2) : '1';
+                }
+            },
+        };
+    }
+
     // ==================================================================
     // Steuerung
 
     const BAUER = {schnee: Schnee, regen: Regen, gewitter: Gewitter, hitze: Hitze, sturm: Sturm, glatteis: Glatteis, frost: Frost};
-    const STORY_BAUER = {roehre: Roehre, kiesel: Kiesel, rohrbruch: Rohrbruch, gondel: Gondel, spinne: Spinne, schief: SchiefeKachel, taube: Taube, maus: Maus, raupe: Raupe, ballon: Luftballon, blasen: Seifenblasen, heissluft: Heissluftballon, ufo: Ufo, abflug: Abflugtafel};
+    const STORY_BAUER = {roehre: Roehre, kiesel: Kiesel, rohrbruch: Rohrbruch, gondel: Gondel, spinne: Spinne, schief: SchiefeKachel, taube: Taube, maus: Maus, raupe: Raupe, ballon: Luftballon, blasen: Seifenblasen, heissluft: Heissluftballon, ufo: Ufo, abflug: Abflugtafel, brand: Brand, kran: Baustelle, bienen: Bienenstock, diebstahl: Diebstahl};
     // Im Schulhaus kommen die Storys nur in den Pausen, nach dem Tagesplan des Servers
     // (alle Flur-Monitore gleich, jede Story höchstens einmal am Tag). In der Vorschau
     // und im Test läuft die gewählte Story immer wieder.

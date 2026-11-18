@@ -22,7 +22,7 @@ module MonitorEffekte
     EFFEKTE = %w(schnee regen gewitter hitze sturm glatteis frost).freeze
     FESTE = %w(weihnachten nikolaus ostern valentinstag fasching sommerferien schulanfang adventskonzert forschertag).freeze
     # Storys: kleine Geschichten, die die Monitore von selbst ab und zu zeigen
-    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug).freeze
+    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug brand kran bienen diebstahl).freeze
     # Storys nur in den Pausen (Jonas, 18.11.): [von, bis, wie viele]; zufällig im Zeitraum,
     # jede Story höchstens einmal am Tag, alle Flur-Monitore nach demselben Plan
     STORY_PAUSEN = [['07:46', '08:00', 3], ['08:45', '08:50', 1], ['10:20', '10:23', 1], ['10:35', '10:40', 2],
@@ -30,9 +30,9 @@ module MonitorEffekte
                     ['14:25', '14:35', 2]].freeze
     STORY_DAUER = 65     # Sekunden: so lange läuft eine Story höchstens; sie endet vor dem Pausenende
     STORY_LUECKE = 5     # Sekunden zwischen zwei Storys in derselben Pause
-    # einzelne Storys dürfen länger dauern (Jonas, 18.11.: die Abflugtafel läuft gut eine Minute;
+    # einzelne Storys dürfen länger dauern (Jonas, 18.11.: die Abflugtafel läuft 75–80 s;
     # höchstens 30 s normal, kaputt und Reparatur, danach 15 s gut) – mit etwas Reserve
-    STORY_DAUER_JE = {'abflug' => 80}.freeze
+    STORY_DAUER_JE = {'abflug' => 90, 'kran' => 70}.freeze
     # Zeiten, in denen eine Story nicht kommen darf (Jonas, 18.11.: die Abflugtafel nicht
     # zwischen 7:45 und 8:00 Uhr); gilt für jede Pause, die diese Zeit berührt
     STORY_SPERRZEITEN = {'abflug' => [['07:45', '08:00']]}.freeze

@@ -448,12 +448,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ist die Musik zu Ende, nimmt der Shuffler keine Tasten mehr an: Der
         // Plan steht, jetzt lässt er sich drucken (nach der letzten Bewegung).
         // Ohne Musik gibt es kein Ende - dann ab dem ersten Auslosen.
+        // Übernehmen geht schon nach jedem Auslosen (das zuletzt Ausgeloste),
+        // ohne auf das Ende der Musik zu warten.
         let shuffled = false;
+        let show_adopt = function() {
+            if (shuffle_adoptable) setTimeout(function() { $('#bu_adopt_shuffle').show(); }, 1100);
+        };
         let show_print = function() {
-            setTimeout(function() {
-                $('#bu_print_shuffle').show();
-                if (shuffle_adoptable) $('#bu_adopt_shuffle').show();
-            }, 1100);
+            setTimeout(function() { $('#bu_print_shuffle').show(); }, 1100);
+            show_adopt();
         };
         $('#audio').on('ended', show_print);
         $('#audio').on('error', function() { if (shuffled) show_print(); });
@@ -511,6 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 shuffle_plan();
                 audio.play();
                 shuffled = true;
+                show_adopt();
                 if (audio.error) show_print();
             }
             if (e.code === 'KeyA') {

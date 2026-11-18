@@ -233,8 +233,8 @@ class MonitorEffekteTest < Minitest::Test
     end
 
     def test_story_plan_long_story
-        # die Abflugtafel darf 80 s dauern und bekommt in ihrer Pause so viel Platz
-        assert_equal 80, MonitorEffekte.story_dauer('abflug')
+        # die Abflugtafel darf 90 s dauern und bekommt in ihrer Pause so viel Platz
+        assert_equal 90, MonitorEffekte.story_dauer('abflug')
         assert_equal MonitorEffekte::STORY_DAUER, MonitorEffekte.story_dauer('roehre')
         (0..30).each do |i|
             tag = Date.new(2026, 11, 16) + i
@@ -244,7 +244,7 @@ class MonitorEffekteTest < Minitest::Test
             plan.each { |e| assert e[:sekunde] >= a && e[:sekunde] + MonitorEffekte.story_dauer(e[:story]) <= a + 180 }
             plan.each_cons(2) { |x, y| assert y[:sekunde] - x[:sekunde] >= MonitorEffekte.story_dauer(x[:story]) + MonitorEffekte::STORY_LUECKE - 1 }
         end
-        # sechs Storys normaler Länge passen in 7 Minuten (415 s), mit der langen nicht mehr (430 s):
+        # sechs Storys normaler Länge passen in 7 Minuten (415 s), mit der langen nicht mehr (440 s):
         # dann fällt die lange für heute aus
         voll = MonitorEffekte.story_plan(Date.new(2026, 11, 16), %w(abflug a b c d e), [['10:00', '10:07', 6]])
         assert_equal %w(a b c d e), voll.map { |e| e[:story] }.sort
@@ -252,14 +252,18 @@ class MonitorEffekteTest < Minitest::Test
 
     def test_story_plan_blocked_times
         # die Abflugtafel kommt nie zwischen 7:45 und 8:00 Uhr, aber an Schultagen trotzdem
+        # (gibt es mehr Storys als Plätze, fällt jeden Tag eine andere aus – auch mal die Abflugtafel)
         tage = (0..60).map { |i| Date.new(2026, 11, 16) + i }.reject { |d| d.saturday? || d.sunday? }
+        mit_abflug = 0
         tage.each do |tag|
             plan = MonitorEffekte.story_plan(tag)
             abflug = plan.select { |e| e[:story] == 'abflug' }
-            assert_equal 1, abflug.size, "#{tag}: Abflugtafel fehlt"
+            assert abflug.size <= 1, "#{tag}: Abflugtafel doppelt"
+            mit_abflug += abflug.size
             abflug.each { |e| assert e[:sekunde] >= 8 * 3600, "#{tag}: Abflugtafel um #{e[:sekunde] / 3600}:#{e[:sekunde] % 3600 / 60}" }
             assert_equal plan.size, plan.map { |e| e[:story] }.uniq.size
         end
+        assert mit_abflug >= tage.size * 0.8, "Abflugtafel nur an #{mit_abflug} von #{tage.size} Tagen"
         # nur die gesperrte Pause: dann fällt sie aus
         nur_frueh = MonitorEffekte.story_plan(Date.new(2026, 11, 16), %w(abflug roehre), [['07:46', '08:00', 3]])
         assert_equal ['roehre'], nur_frueh.map { |e| e[:story] }

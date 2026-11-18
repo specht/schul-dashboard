@@ -1,4 +1,21 @@
 class Main < Sinatra::Base
+    # Neues Design: the script line /lessons adds for the preview (the
+    # course's name for the header of preview/lessons.js); '' otherwise, so
+    # that the page stays exactly as it was
+    def lessons_preview_js(lesson_key)
+        return '' unless ui_preview?
+        info = @@lessons[:lesson_keys][lesson_key] || {}
+        data = {:title => info[:pretty_folder_name] || lesson_key}
+        "\nvar pv_lessons = #{data.to_json.gsub('</', '<\\/')};"
+    end
+
+    # the new design's part of /lessons (preview/lessons.js), only for those
+    # who see it
+    def lessons_preview_script
+        return '' unless ui_preview?
+        "\n<script src='#{preview_asset('/preview/lessons.js')}'></script>"
+    end
+
     post '/api/save_lesson_data' do
         require_teacher!
         data = parse_request_data(:required_keys => [:lesson_key, :lesson_offsets, :data],

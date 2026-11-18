@@ -124,6 +124,13 @@ hierher übernehmen, wenn sie angegangen werden.
       die Tabelle im bisherigen Design zeigt dann „1 Teilnehmer“ an
       (`include/event.rb`, `organized_events`). Das neue Design zählt nur
       echte Teilnehmende.
+- [ ] Kursbuch (bisheriges Design): „Speichern“ wird nur bei `keyup`/`change`
+      aktiv – nach Einfügen per Kontextmenü bleibt es deaktiviert, bis das
+      Feld den Fokus verliert (`lessons.html`, `.pane_items .form-control`).
+      Das neue Design hört zusätzlich auf `input` (`preview/lessons.js`).
+- [ ] Kursbuch (bisheriges Design): „… aus dem Verlauf entfernen“ löscht
+      ohne Rückfrage die Einträge und Kommentare der Stunde; das neue Design
+      fragt vorher nach.
 - [ ] Neuigkeiten: `/api/store_news_entry` verwendet den Zeitstempel in
       Sekunden als Schlüssel; zwei Einträge in derselben Sekunde scheitern am
       Unique-Constraint. Betrifft praktisch nur Skripte.

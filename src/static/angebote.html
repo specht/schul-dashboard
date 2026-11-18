@@ -34,7 +34,7 @@
                 <tbody class='angebote-here'>
                 </tbody>
                 </table>
-            </div>
+            </div>#{angebote_preview_html}
         </div>
     </div>
 </div>
@@ -94,7 +94,7 @@ var net_recipients_list = [];
 var old_name = ''
 var old_recipients_list = [];
 var old_aid = null;
-var stored_angebote = #{stored_angebote.to_json};
+var stored_angebote = #{stored_angebote.to_json.gsub('</', '<\\/')};
 var force_close = false;
 var display_name_for_email = #{Hash[@@user_info.map { |email, info| [email, info[:display_name]] }].to_json};
 var klasse_for_email = #{Hash[@@user_info.map { |email, info| [email, tr_klasse(info[:klasse])] }].to_json};
@@ -109,8 +109,22 @@ function pending_changes() {
     return flag;
 }
 
+// the responsible person (co-owners may edit, but not delete)
+function is_angebot_owner(aid) {
+    return stored_angebote.some((a) => a.aid === aid && a.owner === '#{@session_user[:email]}');
+}
+
+// the responsible person or someone it is shared with
+function may_edit_angebot(angebot) {
+    return angebot.owner === '#{@session_user[:email]}' || (angebot.co_owners || []).indexOf('#{@session_user[:email]}') >= 0;
+}
+
 function update_buttons() {
-    if (old_aid) {
+    if (old_aid && !is_angebot_owner(old_aid)) {
+        $('#bu_delete_angebot').prop('disabled', true).hide();
+        $('#bu_discard_angebot span').html('Änderungen verwerfen');
+        $('#bu_save_angebot span').html('Änderungen speichern');
+    } else if (old_aid) {
         $('#bu_delete_angebot').prop('disabled', false).show().removeClass('btn-outline-secondary').addClass('btn-danger');
         $('#bu_discard_angebot span').html('Änderungen verwerfen');
         $('#bu_save_angebot span').html('Änderungen speichern');
@@ -296,13 +310,15 @@ function update_stored_angebote() {
     for (angebot of stored_angebote) {
         let row = $('<tr>');
         let cell = $('<td>');
+        // the responsible person, then those it is shared with
+        let responsible = [angebot.owner].concat(angebot.co_owners || []).map((email) => display_name_for_email[email] ?? email).join(', ');
         cell.append($('<span>').text(angebot.info.name));
-        cell.append($(`<div class='xs-show'>`).html(`${display_name_for_email[angebot.owner] ?? angebot.owner}`));
+        cell.append($(`<div class='xs-show'>`).text(responsible));
         row.append(cell);
-        row.append($(`<td class='xs-hide'>`).html(`${display_name_for_email[angebot.owner] ?? angebot.owner}`));
-        row.append($(`<td style='white-space: normal;'>`).html(angebot.recipients.map((email) => { return `${display_name_for_email[email] ?? email} (${klasse_for_email[email]})`; }).join(', ')));
+        row.append($(`<td class='xs-hide'>`).text(responsible));
+        row.append($(`<td style='white-space: normal;'>`).text(angebot.recipients.map((email) => { return `${display_name_for_email[email] ?? email} (${klasse_for_email[email]})`; }).join(', ')));
         row.data('aid', angebot.aid);
-        if (angebot.owner === '#{@session_user[:email]}') {
+        if (may_edit_angebot(angebot)) {
             row.addClass('clickable');
             (function(angebot) {
                 row.click(function(e) {

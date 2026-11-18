@@ -58,3 +58,13 @@ test('Kursplanung springt zur heutigen Stunde', async ({ page }) => {
   await expect(today).toBeAttached();
   await expect(today).toBeInViewport({ timeout: 5_000 });
 });
+
+// No or an unknown course in the address: to the start page, not a server error
+test('Kursbuch ohne oder mit unbekanntem Kurs führt zur Startseite', async ({ page }) => {
+  await login(page, ACCOUNTS.teacher);
+  for (const path of ['/lessons/', '/lessons/gibt-es-nicht']) {
+    const response = await page.goto(path);
+    expect(response!.status(), path).toBeLessThan(500);
+    await expect(page).toHaveURL(/\/$/);
+  }
+});

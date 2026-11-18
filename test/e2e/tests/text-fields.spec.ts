@@ -5,7 +5,9 @@ import {
 // Lesson topics (from the course planning) are shown as text in the timetable.
 test('Stundenthema erscheint im Stundenplan als Text', async ({ page, newUserPage }) => {
   const stamp = Date.now().toString(36);
-  const topic = `<b>Bruchrechnung</b> ${stamp}`;
+  // with a web address: a link to a new tab, the full stop stays text
+  const url = `https://example.org/ab?n=${stamp}`;
+  const topic = `<b>Bruchrechnung</b> ${stamp} ${url}.`;
   await login(page, ACCOUNTS.admin);
   await page.goto('/lessons/Ma_5a');
   const week = displayedSchoolWeek();
@@ -34,6 +36,10 @@ test('Stundenthema erscheint im Stundenplan als Text', async ({ page, newUserPag
     await expect(modal).toContainText(topic, { timeout: 2_000 });
   }).toPass({ timeout: 30_000 });
   await expect(modal.locator('b', { hasText: 'Bruchrechnung' })).toHaveCount(0);
+  const link = modal.locator(`a[href="${url}"]`);
+  await expect(link).toHaveText(url);
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', /noopener/);
 });
 
 // Problem reports from the technology duty are shown as text to the admins.

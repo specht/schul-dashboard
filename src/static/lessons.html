@@ -29,7 +29,7 @@ var single_selected_offset = null;
 var stored_breakout_room_config_json = null;
 var booked_tablet_sets_config = [];
 var stored_booked_tablet_sets_config = JSON.stringify([]);
-var tablet_set_info = #{@@tablet_sets.to_json};
+var tablet_set_info = #{@@tablet_sets.to_json};#{lessons_preview_js(show_lesson_key)}
 
 </script>
 
@@ -2340,4 +2340,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     update_present_amt_rows(); */
 });
-</script>
+</script>#{lessons_preview_script}

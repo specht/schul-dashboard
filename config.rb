@@ -290,7 +290,9 @@ if ENABLE_NEXTCLOUD_SANDBOX
         "NEXTCLOUD_ADMIN_PASSWORD=#{NEXTCLOUD_SANDBOX_INSTALL_ADMIN_PASSWORD}",
     ]
     docker_compose[:services][:nextcloud][:user] = "#{UID}"
-    docker_compose[:services][:nextcloud][:ports] = ['127.0.0.1:8024:80']
+    # the same address as the dev nginx: this machine only, unless the
+    # instance's owner opted in to the network (NGINX_HOST_ADDRESS)
+    docker_compose[:services][:nextcloud][:ports] = ["#{DEV_NGINX_ADDRESS}:8024:80"]
 end
 
 unless DOCKER_NETWORK_SUBNET.nil?

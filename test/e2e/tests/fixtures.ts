@@ -1,4 +1,4 @@
-import { test as base, expect, Page, APIRequestContext } from '@playwright/test';
+import { test as base, expect, Page, APIRequestContext, Locator } from '@playwright/test';
 import crypto from 'crypto';
 
 // The test stack runs in production mode: login codes are random and sent by
@@ -25,7 +25,7 @@ export const ACCOUNTS = {
 // Further role accounts, only in the test stack's copy of the example data
 // (test/prepare_example_data.rb). All log in with an e-mail code.
 export const ROLE_ACCOUNTS: Record<string, string> = {
-  zeugnis_admin: 'zeugnis.admin@beispielschule.de', // teacher: report cards, OKO, Kurslisten, Projekttage, Lab8/9
+  zeugnis_admin: 'zeugnis.admin@beispielschule.de', // teacher: report cards, OKO, Kurslisten, Projekttage, Lab8/9, Antikenfahrt
   technikteam: 'technik@beispielschule.de', // teacher: technology team, aula, news, monitors
   sekretariat: 'sekretariat@beispielschule.de', // staff: Sekretariat, lunch, photos
   bibliothek: 'bibliothek@beispielschule.de', // staff: library management
@@ -111,6 +111,19 @@ async function checkWatched(watched: ReturnType<typeof watchPage>, testInfo: any
 // The dialog of dashboardAlert()/dashboardConfirm() (#__template_modal).
 export function dashboardDialog(page: Page) {
   return page.locator('#__template_modal');
+}
+
+// Neues Design, lists with actions (pv_list in preview.js): an action of a
+// row – in the row on larger screens, otherwise in its "•••" menu (on phones
+// the sheet with all actions).
+export async function listAction(page: Page, row: Locator, name: string) {
+  const inRow = row.locator(':scope > .pv-lrow-actions > .pv-lact', { hasText: name });
+  if (await inRow.count() > 0 && await inRow.first().isVisible()) {
+    await inRow.first().click();
+    return;
+  }
+  await row.locator(':scope > .pv-lrow-actions > .pv-lmore').click();
+  await page.locator('.pv-amenu').getByRole('menuitem', { name, exact: true }).click();
 }
 
 // The week the timetable shows first: the current one, or the next one on

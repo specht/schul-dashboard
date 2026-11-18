@@ -43,6 +43,25 @@ MERGE (b:Booking {datum: datum, start_time: '09:00', end_time: '10:30', reason: 
 MERGE (b)-[:BOOKED]->(t)
 MERGE (b)-[:BOOKED_BY]->(u);
 
+// Neues Design, lists with an archive (design-preview-polls/-news.spec.ts):
+// a poll of the admin from an earlier school year, and website news of two
+// earlier years (/manage_news loads them by year).
+MATCH (u:User {email: 'clarke@beispielschule.de'})
+MERGE (p:Poll {id: 'e2earchivpoll'})
+SET p.title = 'Archiv-Umfrage Schuljahr 2023/24', p.items = '[]',
+    p.created = 1696150800, p.updated = 1696150800
+MERGE (p)-[:ORGANIZED_BY]->(u);
+
+UNWIND [
+  [1556704800, '2019-05-01 12:00:00', 'Archiv-Beitrag 2019 Nr. 1'],
+  [1559383200, '2019-06-01 12:00:00', 'Archiv-Beitrag 2019 Nr. 2'],
+  [1561975200, '2019-07-01 12:00:00', 'Archiv-Beitrag 2019 Nr. 3'],
+  [1527847200, '2018-06-01 12:00:00', 'Archiv-Beitrag 2018 Nr. 1']
+] AS n
+MERGE (e:NewsEntry {timestamp: n[0]})
+SET e.date = n[1], e.title = n[2], e.content = 'Ein Beitrag aus dem Archiv.',
+    e.sticky = false, e.published = true;
+
 // A seating plan from before there were plans of one's own in a subject room
 // (no lehrer): Clarke made it in 323, where he teaches 5a. It stays visible
 // to him there (sitzplan-fachraum.spec.ts).
@@ -52,3 +71,15 @@ SET sc.klasse = '5a', sc.raum = '323', sc.mode = 'manual', sc.created_at = 17300
     sc.saved_at = 1730000000, sc.seats = '{}', sc.unresolved = '[]', sc.satisfied_emails = '[]',
     sc.forced_pairs = '[]', sc.forbidden_pairs = '[]', sc.fixed_rules = '[]'
 MERGE (sc)-[:STARTED_BY]->(u);
+
+// AGs und Angebote: AGs whose responsible teacher left the school (no longer
+// in the school's data), which another teacher may take over – one per
+// Playwright project for angebote.spec.ts ('Verwaiste AG …') and for
+// design-preview-angebote.spec.ts ('Verwaiste Pv-AG …').
+MERGE (u:User {email: 'ehemalig.ag@beispielschule.de'})
+WITH u
+UNWIND [['e2everwaist', 'Verwaiste AG '], ['e2everwaistpv', 'Verwaiste Pv-AG ']] AS kind
+UNWIND ['desktop', 'mobile'] AS project
+MERGE (a:Angebot {id: kind[0] + project})
+SET a.name = kind[1] + project, a.created = 1696150800, a.updated = 1696150800
+MERGE (a)-[:DEFINED_BY]->(u);

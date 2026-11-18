@@ -1,0 +1,1134 @@
+/* Neues Design (Vorschau): the Kursbuch (/lessons/<course>) – loaded after
+   preview.css for users with the preview (include/design_preview.rb), together
+   with preview/lessons.js, which sets the classes used here (.pv-kb on the
+   page, .pv-kb-sheet, the cells .pv-kb-…). Today's table and pane stay the
+   engine; they only look different.
+
+   Page type "Lesen und Verlauf" with the editor beside it: the lessons as
+   rows (date and lesson on the left, then Thema, Stundenthema, Hausaufgaben,
+   Notiz and a quiet line of facts), headings per month, holidays quiet, a
+   line for today. From 1024 px the pane stands beside the list (sticky, its
+   own scroll, the buttons at its foot); below that it opens as a sheet when a
+   lesson is tapped: on tablets a panel from the right, on phones the whole
+   screen. Decisions only for this page:
+   - the table is the engine (selection with Umschalt/Strg, Strg+A), so its
+     rows become grid rows; the old cells stay in the DOM, hidden;
+   - the internal Thema is the row's title (it is what teachers plan with),
+     Stundenthema, Hausaufgaben and Notiz follow with a quiet label;
+   - Speichern is the one accent action of the pane, Umplanen a menu;
+   - from 900 px of list (a container query, not the window) the lessons
+     are a table (page type "Tabelle"): Nr., Datum, Thema, Stundenthema,
+     Hausaufgaben and "Weiteres" (Notiz, Durchführung, Kommentare,
+     Rückmeldungen as quiet icons with tooltip), a sticky row of headings,
+     empty cells empty, texts at most three lines. */
+
+/* ---------- The page ---------- */
+.ui-preview .container-fluid.solid.pv-kb {
+    padding: 0 0 0 24px;
+}
+
+.ui-preview .pv-kb > .row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    margin: 0;
+}
+
+/* the admins' quick switch between the designs: above the pane's footer
+   (Umplanen, Verwerfen, Speichern), which reaches the window's right edge */
+@media (min-width: 1024px) {
+    body.ui-preview:has(.pv-kb) .design-quick-toggle {
+        bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+.ui-preview .pv-kb .lc_table {
+    position: static;
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 20px 24px 48px 0;
+    overflow: visible !important;
+    background: transparent !important;
+}
+
+.ui-preview .pv-kb .pv-kb-col {
+    order: 2;
+    flex: 0 0 400px;
+    max-width: 400px;
+    margin: 0 !important;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+}
+
+/* the header: the course, today, the PDF */
+.ui-preview .pv-kb-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px 16px;
+    margin-bottom: 8px;
+}
+
+.ui-preview .pv-kb-head-titles {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ui-preview .container-fluid .pv-kb-head h2 {
+    margin: 0 !important;
+}
+
+.ui-preview .pv-kb-head-facts {
+    margin-top: 2px;
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+}
+
+.ui-preview .pv-kb-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-top: 2px;
+}
+
+.ui-preview #main_container .pv-kb-head-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--acc-text);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.ui-preview #main_container .pv-kb-head-actions .btn:hover,
+.ui-preview #main_container .pv-kb-head-actions .btn:focus-visible {
+    background: var(--pv-hover);
+    color: var(--acc-text);
+    text-decoration: none;
+}
+
+.ui-preview .pv-kb-head-actions .btn i {
+    margin: 0;
+    font-size: 1.15em;
+}
+
+/* ---------- The list: today's table as rows ---------- */
+.ui-preview .pv-kb .lesson_table_table {
+    display: block;
+    width: 100%;
+    margin: 0;
+    background: transparent;
+}
+
+.ui-preview .pv-kb .lesson_table_table thead {
+    display: none;
+}
+
+.ui-preview .pv-kb .lesson_table,
+.ui-preview .pv-kb .lesson_table tr {
+    display: block;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson {
+    display: grid;
+    grid-template-columns: 2.2rem 6.4rem minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: start;
+    padding: 11px 12px 11px 0;
+    border-top: 1px solid var(--pv-line);
+    background: transparent;
+    cursor: pointer;
+    scroll-margin-top: 80px;
+    scroll-margin-bottom: 40px;
+}
+
+/* the old cells stay (today's page writes into them), hidden */
+.ui-preview .pv-kb .lesson_table tr.lesson > td {
+    display: none;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson > td.pv-kb-cell {
+    display: block;
+    border: 0;
+    padding: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    vertical-align: top;
+    user-select: none;
+}
+
+/* no stripes per day: hairlines; another day begins with a slightly
+   stronger one */
+/* (dark.css darkens every other day with !important) */
+.ui-preview .pv-kb .lesson_table tr.lesson.odd {
+    background: transparent !important;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson.sep {
+    border-top-color: color-mix(in srgb, var(--pv-ink) 20%, var(--pv-surface));
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson:hover,
+.ui-preview .pv-kb .lesson_table tr.lesson.odd:hover {
+    background: var(--pv-hover) !important;
+    outline: 0;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson.selected,
+.ui-preview .pv-kb .lesson_table tr.lesson.odd.selected {
+    background: var(--acc-soft) !important;
+    box-shadow: inset 3px 0 0 var(--acc-text);
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson.current:not(.selected) {
+    box-shadow: none;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson:focus {
+    outline: none;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: -2px;
+    border-radius: 6px;
+}
+
+/* the cells */
+.ui-preview .pv-kb .pv-kb-nr {
+    text-align: right;
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    line-height: 1.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-kb .pv-kb-when {
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+}
+
+.ui-preview .pv-kb .pv-kb-day {
+    font-weight: 600;
+    color: var(--pv-ink);
+    padding-top: 1px;
+}
+
+.ui-preview .pv-kb .pv-kb-hour {
+    font-size: 0.82rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-kb .pv-kb-what {
+    min-width: 0;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-kb .pv-kb-title {
+    font-weight: 600;
+    padding-top: 1px;
+}
+
+.ui-preview .pv-kb .pv-kb-line {
+    font-size: 0.92rem;
+    margin-top: 2px;
+}
+
+.ui-preview .pv-kb .pv-kb-title + .pv-kb-line,
+.ui-preview .pv-kb .pv-kb-what > .pv-kb-line:first-child {
+    margin-top: 1px;
+}
+
+.ui-preview .pv-kb .pv-kb-k {
+    margin-right: 6px;
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ui-preview .pv-kb .pv-kb-note .pv-kb-v,
+.ui-preview .pv-kb .pv-kb-extra {
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-kb .pv-kb-what a {
+    color: var(--acc-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    user-select: text;
+}
+
+.ui-preview .pv-kb .pv-kb-facts {
+    margin-top: 3px;
+    font-size: 0.82rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-kb .pv-kb-empty {
+    color: var(--pv-muted);
+    font-size: 0.92rem;
+    padding-top: 1px;
+}
+
+/* a heading per month */
+.ui-preview .pv-kb .lesson_table tr.pv-kb-month td {
+    display: block;
+    border: 0;
+    padding: 26px 0 8px;
+    font: 700 1rem/1.3 var(--pv-display);
+    color: var(--pv-ink);
+    white-space: normal;
+}
+
+.ui-preview .pv-kb .lesson_table tr.pv-kb-month:first-child td {
+    padding-top: 12px;
+}
+
+/* holidays and days without lessons: a quiet line */
+.ui-preview .pv-kb .lesson_table tr.lesson-table-info-row {
+    background: transparent;
+    text-align: left;
+    font-size: 0.85rem;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson-table-info-row td {
+    display: block;
+    padding: 9px 0 9px calc(2.2rem + 6.4rem + 24px);
+    border-top: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    white-space: normal;
+}
+
+/* today: a line in the accent */
+.ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today td {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0 6px;
+    border-top: 0;
+    color: var(--acc-text);
+    font-weight: 700;
+    scroll-margin-top: 60px;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today {
+    scroll-margin-top: 60px;
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today td::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--acc);
+}
+
+.ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today + tr.lesson {
+    border-top-color: transparent;
+}
+
+/* what only the table shows (below) */
+.ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead,
+.ui-preview .pv-kb .pv-kb-hw-meta,
+.ui-preview .pv-kb .pv-kb-marks {
+    display: none;
+}
+
+/* the further lessons of a day: no date (in the table an empty slot) */
+.ui-preview .pv-kb .pv-kb-day:empty {
+    display: none;
+}
+
+/* ---------- Wide lists: a table ----------
+   From 900 px of list (not of window: beside the sidebar and the pane that
+   is a window of about 1600 px) the lessons are a table: Nr., Datum, Thema,
+   Stundenthema, Hausaufgaben and a narrow column of quiet icons for the
+   rest, with a sticky row of headings. The rows keep their elements (the
+   cell with the entries becomes display: contents, its parts go into the
+   columns), so selection, hover and the tests stay the same. Empty cells
+   stay empty; long texts end after three lines (the pane shows them
+   whole). */
+.ui-preview .pv-kb .lc_table {
+    container: pv-kb-list / inline-size;
+}
+
+@container pv-kb-list (min-width: 900px) {
+    .ui-preview .pv-kb .lesson_table_table {
+        --kb-nr: 2.2rem;
+        --kb-when: 10rem;
+        --kb-more: 7rem;
+        --kb-gap: 16px;
+        --kb-cols: var(--kb-nr) var(--kb-when) minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.35fr) var(--kb-more);
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead {
+        display: block;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: var(--pv-surface);
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr {
+        display: none;
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead {
+        display: grid;
+        grid-template-columns: var(--kb-cols);
+        column-gap: var(--kb-gap);
+        padding: 0 12px 0 0;
+        border-bottom: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead th {
+        padding: 10px 0 7px;
+        border: 0;
+        background: transparent;
+        color: var(--pv-muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-align: left;
+        vertical-align: bottom;
+    }
+
+    .ui-preview .pv-kb .lesson_table_table thead tr.pv-kb-colhead th.pv-kb-h-nr {
+        text-align: right;
+    }
+
+    .ui-preview .pv-kb .pv-kb-h-who {
+        font-weight: 400;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson {
+        grid-template-columns: var(--kb-cols);
+        column-gap: var(--kb-gap);
+        align-items: baseline;
+        padding: 8px 12px 8px 0;
+        scroll-margin-top: 110px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson > td.pv-kb-what {
+        display: contents;
+    }
+
+    /* Datum: weekday and date, the lesson quietly beside */
+    .ui-preview .pv-kb .lesson_table tr.lesson > td.pv-kb-when {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        line-height: 1.4;
+    }
+
+    .ui-preview .pv-kb .pv-kb-day {
+        flex: 0 0 5.3rem;
+        padding-top: 0;
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-kb .pv-kb-day:empty {
+        display: block;
+    }
+
+    .ui-preview .pv-kb .pv-kb-hour {
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-kb .pv-kb-nr {
+        line-height: 1.4;
+    }
+
+    /* the columns */
+    .ui-preview .pv-kb .pv-kb-what > * {
+        grid-row: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-title {
+        grid-column: 3;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-topic {
+        grid-column: 4;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-hw {
+        grid-column: 5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 10px;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-marks {
+        grid-column: 6;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 10px;
+        color: var(--pv-muted);
+        font-size: 0.82rem;
+    }
+
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-k,
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-note,
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-facts,
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-empty,
+    .ui-preview .pv-kb .pv-kb-what .pv-kb-k,
+    .ui-preview .pv-kb .pv-kb-what .pv-kb-extra {
+        display: none;
+    }
+
+    /* long texts: three lines at most */
+    .ui-preview .pv-kb .pv-kb-what > .pv-kb-title,
+    .ui-preview .pv-kb .pv-kb-topic .pv-kb-v,
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-v {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        overflow: hidden;
+    }
+
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-v {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-v:empty {
+        display: none;
+    }
+
+    /* the homework's time and places, quietly after the text */
+    .ui-preview .pv-kb .pv-kb-hw .pv-kb-hw-meta {
+        display: flex;
+        flex: 0 1 auto;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 10px;
+        min-width: 0;
+        color: var(--pv-muted);
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-kb .pv-kb-min {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .ui-preview .pv-kb .pv-kb-tag {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 3px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ui-preview .pv-kb .pv-kb-tag > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ui-preview .pv-kb .pv-kb-tag i,
+    .ui-preview .pv-kb .pv-kb-ic i {
+        position: relative;
+        top: 0.12em;
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .ui-preview .pv-kb .pv-kb-ic {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 2px;
+        cursor: default;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* holidays: their text in the column of the Thema */
+    .ui-preview .pv-kb .lesson_table tr.lesson-table-info-row td {
+        padding: 8px 0 8px calc(var(--kb-nr) + var(--kb-when) + 2 * var(--kb-gap));
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today td {
+        padding: 10px 0 6px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.pv-kb-month td {
+        padding: 22px 0 6px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.pv-kb-month:first-child td {
+        padding-top: 14px;
+    }
+}
+
+/* ---------- The pane (beside the list or in the sheet) ---------- */
+.ui-preview .lesson_pane {
+    position: relative;
+    right: auto;
+    top: auto;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: none;
+    border-left: 1px solid var(--pv-line);
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-kb-pane-head {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 20px 20px 12px;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-kb-pane-titles {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ui-preview .lesson_pane .pv-kb-pane-title {
+    margin: 0;
+    font: 700 1.12rem/1.3 var(--pv-display);
+    color: var(--pv-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-kb-pane-sub {
+    margin-top: 2px;
+    color: var(--pv-muted);
+    font-size: 0.85rem;
+}
+
+.ui-preview .pv-kb-pane-sub:empty {
+    display: none;
+}
+
+.ui-preview #main_container .pv-kb-close {
+    display: none;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    margin: -6px -8px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--pv-muted);
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.ui-preview #main_container .pv-kb-close:hover,
+.ui-preview #main_container .pv-kb-close:focus-visible {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-kb-pane-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 20px 20px;
+}
+
+.ui-preview .pv-kb-hint {
+    margin: 16px 0 0;
+    color: var(--pv-muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.ui-preview .lesson_pane .status_label,
+.ui-preview .lesson_pane .pv-kb-pane-body > hr {
+    display: none;
+}
+
+.ui-preview .pv-kb-pane-foot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+}
+
+/* nothing selected: a hint instead of empty, disabled fields */
+body.pv-kb-none .lesson_pane .pane_items,
+body.pv-kb-none .pv-kb-pane-foot {
+    display: none;
+}
+
+body:not(.pv-kb-none) .pv-kb-hint {
+    display: none;
+}
+
+/* the buttons: Umplanen (a menu) left, Verwerfen and Speichern right */
+.ui-preview #main_container .pv-kb-pane-foot .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    margin: 0;
+    font-weight: 600;
+    white-space: nowrap;
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.ui-preview .pv-kb-pane-foot .btn > i:not(.ti-chevron-down) {
+    display: none;
+}
+
+.ui-preview #main_container .pv-kb-pane-foot .pv-kb-umplanen {
+    margin-right: auto;
+    padding-left: 8px;
+    padding-right: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .pv-kb-pane-foot .pv-kb-umplanen:hover:not(:disabled),
+.ui-preview #main_container .pv-kb-pane-foot .pv-kb-umplanen[aria-expanded='true'] {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-kb-umplanen i {
+    color: var(--pv-muted);
+}
+
+.ui-preview #main_container .pv-kb-pane-foot .bu-discard-changes {
+    background: var(--pv-hover);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .pv-kb-pane-foot .bu-save-changes {
+    background: var(--acc);
+    border: 1px solid var(--acc);
+    color: var(--acc-ink);
+}
+
+.ui-preview #main_container .pv-kb-pane-foot .bu-save-changes:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--acc) 85%, #000);
+}
+
+.ui-preview #main_container .pv-kb-pane-foot .btn:disabled {
+    opacity: 0.45;
+}
+
+/* unsaved changes: said in words below the title */
+.ui-preview .pv-kb-dirty-label {
+    display: none;
+    margin-top: 2px;
+    color: var(--acc-text);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.ui-preview .lesson_pane.pv-kb-dirty .pv-kb-dirty-label {
+    display: block;
+}
+
+/* a click on another lesson while there are changes: the note stands out */
+.ui-preview .lesson_pane.pv-kb-attention .pv-kb-dirty-label {
+    display: table;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--acc);
+    color: var(--acc-ink);
+}
+
+/* ---------- The fields: sections without boxes ---------- */
+.ui-preview .lesson_pane .pane_items > hr,
+.ui-preview .lesson_pane .pane_items .form-group > hr {
+    display: none;
+}
+
+.ui-preview .lesson_pane .pane_items > .form-group {
+    margin: 0;
+    padding: 16px 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .lesson_pane .pane_items > .form-group:first-child {
+    border-top: 0;
+}
+
+/* students' feedback (only for one lesson): no section when there is none */
+.ui-preview .lesson_pane .pane_items > .form-group:has(.sus_feedback_label:empty),
+.ui-preview .lesson_pane .pane_items > .form-group:has(.sus_feedback_label[style*='display: none']) {
+    display: none;
+}
+
+.ui-preview .lesson_pane .pane_items label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--pv-ink);
+}
+
+.ui-preview .lesson_pane .pane_items label b {
+    font-weight: 700;
+}
+
+.ui-preview .lesson_pane .pv-kb-who {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: var(--pv-muted) !important;
+}
+
+.ui-preview .lesson_pane .pane_items .form-control {
+    border-radius: 10px;
+    font-size: 0.95rem;
+}
+
+.ui-preview .lesson_pane .pane_items textarea.form-control {
+    min-height: 84px;
+    resize: vertical;
+    margin-bottom: 10px !important;
+}
+
+.ui-preview .lesson_pane .explanation {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--pv-muted);
+    margin: 0 0 8px !important;
+}
+
+/* "verschiedene Werte": a quiet chip that opens the choice */
+.ui-preview .lesson_pane .dropdown {
+    top: -2px;
+}
+
+.ui-preview #main_container .lesson_pane .pv-kb-mixed,
+.ui-preview .lesson_pane .pv-kb-mixed {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px 1px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.ui-preview .lesson_pane .pv-kb-mixed::after {
+    display: none;
+}
+
+.ui-preview .lesson_pane .dropdown-menu {
+    max-width: min(320px, 80vw);
+    white-space: normal;
+}
+
+.ui-preview .lesson_pane .dropdown-item {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.ui-preview .lesson_pane .dropdown-item.checked {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+/* the chosen entry: marked by its background (no drawn check) */
+.ui-preview .lesson_pane .dropdown-item.checked::before {
+    display: none;
+}
+
+/* switches (fester Termin, Jitsi, Nextcloud …): a chip that is on or off,
+   its explanation beside it */
+.ui-preview .lesson_pane .button-with-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-height: 0;
+    margin: 6px 0;
+    padding: 0;
+}
+
+.ui-preview #main_container .lesson_pane .button-with-label > .btn,
+.ui-preview .lesson_pane .button-with-label > .btn {
+    position: static;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 9.6rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    box-shadow: none;
+}
+
+.ui-preview .lesson_pane .button-with-label .btn i {
+    position: static;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.ui-preview #main_container .lesson_pane .button-with-label > .btn-outline-secondary {
+    background: transparent;
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .lesson_pane .button-with-label > .btn-outline-secondary i {
+    color: var(--pv-muted);
+}
+
+.ui-preview #main_container .lesson_pane .button-with-label > .btn-info,
+.ui-preview #main_container .lesson_pane .button-with-label > .btn-success {
+    background: var(--acc-soft);
+    border: 1px solid transparent;
+    color: var(--acc-text);
+}
+
+/* several lessons with different values */
+.ui-preview #main_container .lesson_pane .button-with-label > .btn.half {
+    opacity: 1;
+    background: transparent;
+    border: 1px dashed var(--acc-text);
+    color: var(--acc-text);
+}
+
+.ui-preview #main_container .lesson_pane .button-with-label > .btn:disabled {
+    opacity: 0.5;
+}
+
+.ui-preview .lesson_pane .button-with-label > span {
+    display: block;
+    position: static;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding-top: 5px;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--pv-muted);
+}
+
+.ui-preview .lesson_pane .button-with-label > input {
+    position: static;
+    flex: none;
+    width: 9.6rem;
+    height: 32px !important;
+    border-radius: 10px;
+}
+
+.ui-preview .lesson_pane .tablet-set-booking-status:not(:empty) {
+    margin: 4px 0 8px;
+}
+
+.ui-preview .lesson_pane .tablet-set-booking-status b.bg-warning {
+    background: var(--acc-soft) !important;
+    color: var(--acc-text);
+}
+
+.ui-preview .lesson_pane .na-on-multi-select {
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--pv-muted) !important;
+    padding: 0 !important;
+}
+
+/* ---------- Tablets and phones: the pane as a sheet ---------- */
+@media (max-width: 1023px) {
+    .ui-preview .container-fluid.solid.pv-kb {
+        padding: 0 0 0 20px;
+    }
+
+    .ui-preview .pv-kb .pv-kb-col {
+        display: none;
+    }
+
+    .ui-preview .pv-kb .lc_table {
+        padding-right: 20px;
+    }
+
+    .ui-preview .pv-kb-sheet {
+        position: fixed;
+        z-index: 8040;
+        display: flex;
+        flex-direction: column;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .pv-kb-sheet[hidden],
+    .ui-preview .pv-kb-veil[hidden] {
+        display: none;
+    }
+
+    .ui-preview .pv-kb-veil {
+        position: fixed;
+        inset: 0;
+        z-index: 8035;
+        background: rgba(0, 0, 0, 0.35);
+        touch-action: none;
+    }
+
+    .ui-preview .pv-kb-sheet .lesson_pane {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+        border-left: 0;
+    }
+
+    .ui-preview #main_container .pv-kb-sheet .pv-kb-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* tablets: a panel from the right */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .ui-preview .pv-kb-sheet {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(460px, 92vw);
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.2);
+        animation: pv-kb-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+}
+
+/* phones: a sheet over the whole screen */
+@media (max-width: 767px) {
+    .ui-preview .container-fluid.solid.pv-kb {
+        padding: 0 16px;
+    }
+
+    .ui-preview .pv-kb .lc_table {
+        padding: 16px 0 24px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson {
+        grid-template-columns: 5.6rem minmax(0, 1fr);
+        column-gap: 10px;
+        padding-right: 4px;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson > td.pv-kb-nr {
+        display: none;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson-table-info-row td {
+        padding-left: calc(5.6rem + 10px);
+    }
+
+    .ui-preview .pv-kb-head h2 {
+        font-size: 1.35rem;
+    }
+
+    .ui-preview .pv-kb-sheet {
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 20px 20px 0 0;
+        overflow: hidden;
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .ui-preview .pv-kb-pane-head {
+        padding: 16px 16px 10px;
+    }
+
+    .ui-preview .pv-kb-pane-body {
+        padding: 0 16px 16px;
+    }
+
+    .ui-preview .pv-kb-pane-foot {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    /* the main action of a sheet may take the room that is left */
+    .ui-preview #main_container .pv-kb-pane-foot .bu-save-changes {
+        flex: 0 1 auto;
+    }
+}
+
+@keyframes pv-kb-in {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-preview .pv-kb-sheet {
+        animation: none !important;
+    }
+}
+
+/* ---------- The page's other dialogs (feedback, Gruppenräume, Geräte) ---------- */
+.ui-preview .pv-kb-modal .table {
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-kb-modal .table-striped tbody tr:nth-of-type(odd) {
+    background: transparent;
+}
+
+.ui-preview .pv-kb-modal .schueler_table tr td {
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-kb-modal #recording_row {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-kb-modal #recording_row td {
+    border-top: 0;
+    box-shadow: none;
+}
+
+/* the weekday in front of the date: narrower than elsewhere (two letters) */
+.ui-preview .pv-kb .pv-kb-day .pv-weekday {
+    min-width: 1.6em;
+}
+
+.ui-preview .pv-kb-sheet:focus {
+    outline: none;
+}

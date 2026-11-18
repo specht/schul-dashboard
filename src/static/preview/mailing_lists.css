@@ -1,0 +1,240 @@
+/* Neues Design (Vorschau): E-Mail-Verteiler (/mailing_lists) – loaded after
+   preview.css for users with the preview (include/design_preview.rb). Uses
+   the tokens and the list parts of preview.css (".pv-lrow", ".pv-lgroup").
+   The page is drawn by preview/mailing_lists.js; everything here is scoped
+   to its own classes (.pv-ml-…) or to the page's .ml-table.
+
+   A list with actions (doc/Gestaltung.md, 6a): a quiet line instead of the
+   yellow box, a search, one folded section per class or group of lists
+   (one's own classes open). A row: the list's name, below it the address as
+   a quiet button (one click copies it, a green check for a moment) and how many
+   it reaches, spaced apart instead of a separator. "Empfänger" opens a
+   dialog, a sheet on phones, where the row itself opens it. */
+
+/* today's yellow box and table: not in the new design */
+.ui-preview .col-md-12:has(> .ml-table) > .alert {
+    display: none;
+}
+
+.pv-ml-intro {
+    margin: 0 0 12px;
+    color: var(--pv-muted);
+    max-width: 60ch;
+}
+
+/* ---------- the search (the page's and the dialog's) ---------- */
+.pv-ml-search {
+    position: relative;
+    margin: 0 0 14px;
+    max-width: 420px;
+}
+
+.pv-ml-search > .ti {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--pv-muted);
+    pointer-events: none;
+}
+
+.ui-preview .pv-ml-search input {
+    height: 40px;
+    padding-left: 36px;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-ml-search input::placeholder {
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+.ui-preview .pv-ml-search input:focus {
+    border-color: var(--acc-text);
+    box-shadow: 0 0 0 3px var(--acc-soft);
+}
+
+/* ---------- a row: name, then address and count ---------- */
+.pv-ml-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 2px 14px;
+}
+
+.pv-ml-count {
+    flex: none;
+    padding: 2px 0;
+}
+
+/* the address: the copy field of preview.css (.pv-copy, pv_copy) */
+.ui-preview .pv-ml-addr {
+    margin: 4px 0 2px;
+    font-size: inherit;
+}
+
+/* the rows' only action is "Empfänger": on phones the row itself opens it,
+   so no "•••" */
+.pv-ml-page .pv-lmore {
+    display: none;
+}
+
+/* ---------- the recipients: a dialog, a sheet on phones ---------- */
+@media (min-width: 768px) {
+    .ui-preview .pv-ml-modal .modal-dialog {
+        max-width: 600px;
+    }
+}
+
+.pv-ml-modal-head {
+    min-width: 0;
+}
+
+.ui-preview .pv-ml-modal .modal-title {
+    overflow-wrap: anywhere;
+}
+
+.pv-ml-modal-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 2px 14px;
+    margin-top: 4px;
+    font-size: 0.88rem;
+    color: var(--pv-muted);
+}
+
+/* the search stays at the top while the list scrolls */
+.pv-ml-modal .pv-ml-people-search {
+    position: sticky;
+    top: -1rem;
+    z-index: 2;
+    max-width: none;
+    margin: -1rem -1rem 4px;
+    padding: 1rem 1rem 8px;
+    background: var(--pv-surface);
+}
+
+/* the icon in the field, not in the middle of the padded box */
+.pv-ml-modal .pv-ml-people-search > .ti {
+    top: calc(1rem + 20px);
+    left: calc(1rem + 12px);
+}
+
+.pv-ml-person {
+    padding: 8px 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-ml-people .pv-lblocks > .pv-ml-person:first-child {
+    border-top: 0;
+}
+
+.pv-ml-person-name {
+    font-weight: 600;
+    color: var(--pv-ink);
+    overflow-wrap: anywhere;
+}
+
+.pv-ml-person-addr {
+    font-size: 0.85rem;
+}
+
+.pv-ml-people .pv-lempty:first-child {
+    border-top: 0;
+}
+
+.pv-ml-bcc {
+    margin: 14px 0 0;
+    font-size: 0.82rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-ml-modal #bu_ml_copy_all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@media (max-width: 767px) {
+    /* the address above the row's button (the whole row opens the list) */
+    .ui-preview .pv-ml-page .pv-ml-addr {
+        position: relative;
+        z-index: 1;
+        max-width: none;
+    }
+
+    .pv-ml-line {
+        row-gap: 0;
+    }
+
+    .pv-ml-count {
+        padding: 2px 0;
+    }
+
+    .pv-ml-search {
+        max-width: none;
+    }
+}
+
+/* ---------- wide screens: one line per list, aligned columns ----------
+   name | address (copy field) | count | Empfänger; the folded classes close
+   together with hairlines instead of loose headings */
+.pv-ml-page .pv-lgroup + .pv-lgroup {
+    margin-top: 0;
+}
+
+.ui-preview .container .pv-ml-page .pv-lgroup-head {
+    margin: 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-ml-page .pv-lgroup-toggle {
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+.pv-ml-page .pv-lgroup-body {
+    margin-bottom: 14px;
+}
+
+@media (min-width: 1100px) {
+    .pv-ml-page .pv-ml-row {
+        align-items: center;
+        padding-top: 7px;
+        padding-bottom: 7px;
+    }
+
+    .pv-ml-page .pv-ml-row .pv-lrow-text {
+        display: grid;
+        grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr);
+        align-items: center;
+        column-gap: 20px;
+    }
+
+    .pv-ml-page .pv-ml-line {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .ui-preview .pv-ml-page .pv-ml-line .pv-ml-addr {
+        flex: 1 1 auto;
+        max-width: 30rem;
+        margin: 0;
+    }
+
+    .pv-ml-page .pv-ml-count {
+        flex: none;
+        min-width: 7.5rem;
+        padding: 0;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pv-ml-page .pv-ml-row .pv-lrow-actions {
+        align-self: center;
+    }
+}

@@ -6,6 +6,23 @@ the server only).
 
 ## What the maintainer decided so far
 
+The rules that follow from these decisions, for everyone changing pages, are
+in [doc/Gestaltung.md](../../doc/Gestaltung.md).
+
+- **One surface per page (2026-11-17).** No card inside the page panel and no
+  grey box inside a card: sections, hairlines and spacing instead; facts as a
+  quiet line with commas; actions in lists as quiet text buttons, delete as a
+  red icon. First applied to the polls list.
+- **Page types (2026-11-17).** The maintainer accepted all six recommendations
+  of the page pattern proposal: one or two visible actions plus a ••• menu
+  (delete always inside), the main action in the page header on phones,
+  width by page type (lists, forms, reading at most about 980 px; tables,
+  timetable, admin overviews full width), current sub-items as rows with
+  finished ones folded, short forms in a dialog / long editors full height,
+  tables as list rows on phones (real matrices scroll sideways). Long lists:
+  current first, older by school year, blocks of 50. Written up in
+  doc/Gestaltung.md, "Seitentypen".
+
 - **Opt-in first, switch at the end.** Users try the new design voluntarily;
   only when it has proven itself does it become the default, with a way back
   for a while, and then the old look goes away.
@@ -38,9 +55,56 @@ the server only).
   script swaps the icons in the browser (also those created by JavaScript), so
   the pages need no change yet; converted pages write Tabler icons directly;
   Fork Awesome goes away at the switch.
+  Kept after a comparison (2026-11-18): 73 of the dashboard's icons in nine
+  sets (Phosphor, Material Symbols, Lucide, Remix, Iconoir, Heroicons, Tabler
+  filled and outline at 2 and 2.5) – the maintainer stays with Tabler outline.
+  Only Tabler icons, never CSS-drawn or text glyphs (doc/Gestaltung.md, 11).
 - **Admins first.** The preview starts with admins only; the next stages
   (teachers, everyone) are one constant (\`UI_PREVIEW_FOR\` in
   \`include/design_preview.rb\`).
+- **A curated set of colour palettes (2026-11-17).** Deriving everything from
+  each of the 46 existing schemes gives uneven results (some muddy, some
+  too dark). The new design gets a small, hand-designed set of palettes
+  (each again three colours, so backdrops keep working); every existing
+  scheme maps automatically to the closest new one, and people can pick
+  again. An admin page shows all schemes and their mapping side by side to
+  tune the set before rollout. Buttons stay dark with light type (solid
+  accent); tonal buttons were tried and rejected.
+  As built: 16 existing schemes form the set (Shadows dropped as too plain) (\`DesignTokens::CURATED\`,
+  chosen from usage and measurements; three with tuned colours). All other
+  schemes stay usable as one's own, and kids can still make their own from
+  three colours (profile, new design); the profile suggests the closest
+  scheme of the set. Light, strong colours (yellow, orange, light green) keep
+  their colour with dark text instead of being darkened for white text.
+- **One switch for light and dark (2026-11-17).** In the new design the
+  backdrop follows light / dark mode; the separate "Hintergrund" setting is
+  not shown.
+- **The timetable (2026-11-17).** Phones: the day as an agenda with a header
+  on the backdrop (date, a line with lessons / duty / changes, profile
+  picture), a day strip Mo–Fr, a "Plan" button (own Kürzel, classes and rooms
+  first, the rest behind "Alle …"). Larger screens: the week only (no day
+  view), a header with the plan menu, and on wide screens a column beside
+  the week (now / next, changes of the week; for students their homework
+  first). The topic of a lesson is visible in the block; status markers like
+  "Stundenthema fehlt" need the Kursbuch's internal topic in the timetable
+  data and are not built yet.
+- **Messages (2026-11-17).** The new design shows every message in its own
+  type, whatever was pasted (fonts, sizes, colours dropped; paragraphs,
+  bold, italics, links and lists kept); pasting into a new message keeps
+  only that structure. Stored messages are not changed.
+- **Messages as an inbox (2026-11-18).** A list like a mail app (picture,
+  sender, first line, time, unread dot; headings Heute, Gestern, Diese
+  Woche, then months), 50 rows at a time, a search over the list; "Eingang"
+  and "Gesendet" use the same list. From 840 px content width the opened
+  message stands beside the list, below that it replaces the list (tablets)
+  or covers the screen (phones); the address (`#nachricht/…`,
+  `#gesendet/…`) keeps it on reload, back closes it. Received messages say
+  "an mich": recipients of others' messages are not shown to recipients.
+- **Feedback** is given from the profile (next to the switch); the floating
+  button was in the way.
+- **Development instances** offer the preview to every account (still opt-in),
+  so that every role's pages can be checked with real data; production
+  stays at the stage set in \`UI_PREVIEW_FOR\`.
 
 ## What the inventory shows
 
@@ -99,7 +163,9 @@ or unused here although they matter; check before retiring anything.
 
 - What the setting is called, and whether parents and external accounts are
   part of the opt-in.
-- When the monitors follow.
+- When the monitors follow. Since 2026-11-18 a hallway monitor can opt in on
+  its own with `?design=neu` / `?design=neu-dunkel` in its address
+  (doc/Gestaltung.md, 12a); without it nothing changes.
 - Which of the pages without visits are seasonal and which can be retired.
 
 ## Inventory

@@ -83,6 +83,15 @@ hierher übernehmen, wenn sie angegangen werden.
       (z. B. `/directory` ohne Klasse, `/lessons/<unbekannt>`, `/c/<unbekannt>`);
       unbekannte Seiten liefern eine leere Seite. Freundliche 404/500-Seiten
       im Stil der Neustart-Seite
+- [ ] Klassenliste einer Klasse ohne Schüler:innen (Beispieldaten: `/directory/5b`)
+      endet für Lehrkräfte im bisherigen Design in HTTP 500
+      (`mail_addresses_table`: `@@schueler_for_klasse[klasse].size`); das neue
+      Design zeigt einen leeren Zustand
+- [ ] `/api/print_email_letters`: der `reject!`-Block verlässt mit `return true`
+      die ganze Route, statt die Adresse auszusortieren – Lehrkräfte ohne
+      Klassenleitung bekommen statt einer Fehlermeldung eine leere Antwort
+      (»Alle E-Mail-Briefe« zeigt das neue Design nur Klassenleitung,
+      Admins und Sekretariat)
 - [ ] Zugangsprüfungen per `require_…!`/`assert` auf Seiten führen zu
       HTTP 500 statt zu Umleitung oder Hinweis – laut Smoke-Test 153 Fälle
       über alle Rollen (`bib_*`, `kurslisten`, `pk5`, `lab8/9`, `aula*`,
@@ -111,6 +120,25 @@ hierher übernehmen, wenn sie angegangen werden.
       Schullogo und Name werden links abgeschnitten. Darüber hilft
       `code.js` (Suche) nacheinander: ohne „Suchen“, ohne Menü-Icons, ohne
       Schulnamen neben dem Logo
+- [ ] Termine ohne Teilnehmende: Die Abfrage liefert `recipients: [null]`,
+      die Tabelle im bisherigen Design zeigt dann „1 Teilnehmer“ an
+      (`include/event.rb`, `organized_events`). Das neue Design zählt nur
+      echte Teilnehmende.
+- [ ] Kursbuch (bisheriges Design): „Speichern“ wird nur bei `keyup`/`change`
+      aktiv – nach Einfügen per Kontextmenü bleibt es deaktiviert, bis das
+      Feld den Fokus verliert (`lessons.html`, `.pane_items .form-control`).
+      Das neue Design hört zusätzlich auf `input` (`preview/lessons.js`).
+- [ ] Kursbuch (bisheriges Design): „… aus dem Verlauf entfernen“ löscht
+      ohne Rückfrage die Einträge und Kommentare der Stunde; das neue Design
+      fragt vorher nach.
+- [ ] Bibliothek, Nutzerseite (`bib_user.html`): Hat die Person aufgehobene
+      Ausleihen, überschreibt die Tabelle dafür die Variable `table` – neu
+      gescannte Ausleihen erscheinen dann in »Aufgehobene Ausleihen« statt
+      in »Ausgeliehene Medien« (gebucht wird richtig, nur die Anzeige ist
+      falsch, bis die Seite neu geladen wird).
+- [ ] Neuigkeiten: `/api/store_news_entry` verwendet den Zeitstempel in
+      Sekunden als Schlüssel; zwei Einträge in derselben Sekunde scheitern am
+      Unique-Constraint. Betrifft praktisch nur Skripte.
 
 ### Wünsche
 

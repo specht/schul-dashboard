@@ -1,4 +1,17 @@
 class Main < Sinatra::Base
+    # Neues Design (Vorschau): /tests hands its calendar options to
+    # preview/tests.js, which only that design loads; in today's design both
+    # are empty and the page stays byte for byte as it was.
+    def tests_preview_options_js
+        return '' unless ui_preview?
+        "\n    if (window.pv_tests) pv_tests.options(options);"
+    end
+
+    def tests_preview_script
+        return '' unless ui_preview?
+        "\n<script src='#{preview_asset('/preview/tests.js')}'></script>"
+    end
+
     post '/api/get_tests' do
         require_teacher!
         data = parse_request_data(:required_keys => [:start_date, :klasse])

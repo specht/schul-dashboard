@@ -180,7 +180,7 @@ var old_jitsi = null;
 var old_recipients_list = [];
 var old_description = '';
 var old_eid = null;
-var stored_events = #{stored_events.to_json};
+var stored_events = #{stored_events.to_json};#{events_preview_js(pv_events_archive)}
 var external_users_for_session_user = #{external_users_for_session_user.to_json};
 var antikenfahrt_recipients = #{@@antikenfahrt_recipients.to_json};
 CAN_HANDLE_EXTERNAL_USERS = true;
@@ -538,6 +538,13 @@ function new_event() {
     force_close = false;
     old_recipients_list = [];
     old_description = $('#summernote').summernote('code');
+    // the defaults just filled in are the starting point: nothing changed yet
+    // (otherwise »Schließen« was disabled from the start)
+    old_title = '';
+    old_date = $('#ti_date').val();
+    old_start_time = $('#ti_start_time').val();
+    old_end_time = $('#ti_end_time').val();
+    old_jitsi = ($('#ti_event_jitsi').data('state') === 'yes');
     old_eid = null;
     $('#ti_recipients').val('');
     $('#ti_title').focus();
@@ -546,7 +553,7 @@ function new_event() {
 
 document.addEventListener('DOMContentLoaded', function() {
     $('#summernote').summernote({
-        placeholder: 'Bitte geben Sie die Terminbeschreibung ein',
+        placeholder: '#{ui_preview? ? 'Beschreibung des Termins (optional)' : 'Bitte geben Sie die Terminbeschreibung ein'}',
         callbacks: {
             onChange: function() {
                 update_buttons();
@@ -747,4 +754,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, external_users_for_session_user);
 });
-</script>
+</script>#{events_preview_script(pv_events_archive)}

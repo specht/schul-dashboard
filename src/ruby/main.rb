@@ -15,6 +15,7 @@ require 'kramdown'
 require 'mail'
 require './lesson_mail_templates.rb'
 require './design_tokens.rb'
+require './fach_code.rb'
 require './mail_guard.rb'
 require './mail_text.rb'
 require './page_template.rb'
@@ -119,6 +120,7 @@ require './include/angebote.rb'
 require './include/at.rb'
 require './include/aula.rb'
 require './include/bib_login.rb'
+require './include/bib_preview.rb'
 require './include/color.rb'
 require './include/color-schemes.rb'
 require './include/comment.rb'
@@ -149,6 +151,7 @@ require './include/mail_account_creation.rb'
 require './include/message.rb'
 require './include/mittagessen.rb'
 require './include/monitor.rb'
+require './include/monitor_neu.rb'
 require './include/otp.rb'
 require './include/otp_nudge.rb'
 require './include/design_preview.rb'
@@ -2282,7 +2285,9 @@ class Main < Sinatra::Base
                                         @session_user[:color_scheme] = results.first['u'][:color_scheme]
                                         @session_user[:new_design] = results.first['u'][:new_design]
                                         @session_user[:ui_preview] = results.first['u'][:ui_preview]
+                                        @session_user[:ui_preview_granted] = results.first['u'][:ui_preview_granted]
                                         @session_user[:ui_preview_quick] = results.first['u'][:ui_preview_quick]
+                                        @session_user[:ui_vividness] = results.first['u'][:ui_vividness]
                                         @session_user[:dark] = results.first['u'][:dark]
                                         @session_user[:hue] = results.first['u'][:hue]
                                         @session_user[:saturation] = results.first['u'][:saturation]
@@ -2702,7 +2707,7 @@ class Main < Sinatra::Base
                         io.puts "</li>"
                     end
                 elsif x == :quick_search
-                    io.puts "<li class='nav-item nav-quick-search-item'><a href='#' role='button' id='bu_quick_search' class='nav-link nav-icon nav-quick-search' title='Suchen (Taste /)'><div class='icon'><i class='fa fa-search'></i></div><span class='nav-quick-search-label'>Suchen</span></a></li>"
+                    io.puts "<li class='nav-item nav-quick-search-item'><a href='#' role='button' id='bu_quick_search' class='nav-link nav-icon nav-quick-search' title='Suchen (/ oder Strg+K)'><div class='icon'><i class='fa fa-search'></i></div><span class='nav-quick-search-label'>Suchen</span></a></li>"
                 elsif x == :profile
                     io.puts "<li class='nav-item dropdown'>"
                     io.puts "<a class='nav-link nav-icon dropdown-toggle' href='#' id='navbarDropdownProfile' role='button' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>"
@@ -2816,7 +2821,6 @@ class Main < Sinatra::Base
                         if zg_can_use?(ZG_KOLLEGIUM)
                             io.puts "<a class='dropdown-item nav-icon' href='/zufallsgruppen/kollegium'><div class='icon'><i class='fa fa-random'></i></div><span class='label'>Gruppenbildung Kollegium</span></a>"
                         end
-                        io.puts "<a class='dropdown-item nav-icon' href='/prepare_vote'><div class='icon'><i class='fa fa-hand-paper-o'></i></div><span class='label'>Abstimmungen</span></a>"
                         if user_with_role_logged_in?(:can_use_mailing_lists)
                             io.puts "<a class='dropdown-item nav-icon' href='/mailing_lists'><div class='icon'><i class='fa fa-envelope'></i></div><span class='label'>E-Mail-Verteiler</span></a>"
                         end
@@ -2848,12 +2852,23 @@ class Main < Sinatra::Base
                         io.puts "</a>"
                         io.puts "<div class='dropdown-menu' aria-labelledby='navbarDropdownKurse'>"
                         taken_lesson_keys = Set.new()
+                        # team meetings ("Team Klasse 6") are no lessons: data-meeting
+                        # (the new design leaves them out of the Kursbuch entries)
+                        # the position of the course's first class in the school's order
+                        # (grade 5 first): data-order, the new design sorts by it
+                        class_order = lambda do |info|
+                            (info[:klassen] || []).map { |k| @@klassen_order.index(k) || 999 }.min || 999
+                        end
+                        meeting = lambda do |info|
+                            ((info[:klassen] || []).any? { |k| k.to_s.downcase == 'team' } ||
+                             (@@faecher[info[:fach]] || info[:fach]).to_s =~ /\Ateam\b/i) ? " data-meeting='1'" : ''
+                        end
                         (@@lessons_for_shorthand[@session_user[:shorthand]] || []).each do |lesson_key|
                             lesson_info = @@lessons[:lesson_keys][lesson_key]
                             if lesson_info
                                 fach = lesson_info[:fach]
                                 fach = @@faecher[fach] if @@faecher[fach]
-                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
+                                io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}' data-order='#{class_order.call(lesson_info)}'#{meeting.call(lesson_info)}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{lesson_info[:pretty_folder_name]}</span></a>"
                                 taken_lesson_keys << lesson_key
                             end
                         end
@@ -2872,7 +2887,7 @@ class Main < Sinatra::Base
                                     if lesson_info
                                         fach = lesson_info[:fach]
                                         fach = @@faecher[fach] if @@faecher[fach]
-                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
+                                        io.puts "<a class='dropdown-item nav-icon' href='/lessons/#{CGI.escape(lesson_key)}' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}' data-order='#{class_order.call(lesson_info)}'#{meeting.call(lesson_info)}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{fach} (#{lesson_info[:klassen].map { |x| tr_klasse(x) }.join(', ')})</span></a>"
                                     end
                                 end
                             end
@@ -2882,7 +2897,16 @@ class Main < Sinatra::Base
                     end
                 elsif x == :directory
                     remaining_klassen = KLASSEN_ORDER.dup
-                    klassen = @@klassen_for_shorthand[@session_user[:shorthand]] || []
+                    # a copy: adding 11 and 12 below must not change the shared list
+                    klassen = (@@klassen_for_shorthand[@session_user[:shorthand]] || []).dup
+                    # one's own classes, and the group sizes (data-own, data-count: the
+                    # new design's "Kurse" sheet shows them)
+                    # in the upper school a year (11, 12) is reached through courses: the
+                    # course is one's group, the year only if one leads it
+                    own_klassen = Set.new(klassen.reject do |klasse|
+                        klasse.to_s.to_i >= 11 && !(@@klassenleiter[klasse] || []).include?(@session_user[:shorthand])
+                    end)
+                    group_size = lambda { |klasse| (@@schueler_for_klasse[klasse] || []).size }
                     if user_who_can_manage_antikenfahrt_logged_in?
                         klassen << '11'
                         klassen << '12'
@@ -2897,7 +2921,7 @@ class Main < Sinatra::Base
                         klassen = @@klassen_order
                     end
                     klassen.each do |klasse|
-                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}'#{own_klassen.include?(klasse) ? " data-own='1'" : ''}><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         remaining_klassen.delete(klasse)
                     end
                     _first = true
@@ -2906,12 +2930,12 @@ class Main < Sinatra::Base
                     end.each do |lesson_key|
                         io.puts "<div class='dropdown-divider'></div>" if _first
                         _first = false
-                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{CGI.escape(lesson_key)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/directory/#{CGI.escape(lesson_key)}' data-own='1' data-count='#{(@@schueler_for_lesson[lesson_key] || []).size}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>#{@@lessons[:lesson_keys][lesson_key][:pretty_folder_name]}</span></a>"
                     end
                     unless remaining_klassen.empty?
                         io.puts "<div class='dropdown-divider'></div>"
                         remaining_klassen.each do |klasse|
-                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
+                            io.puts "<a class='dropdown-item nav-icon' href='/directory/#{klasse}' data-count='#{group_size.call(klasse)}'><div class='icon'><i class='fa fa-address-book'></i></div><span class='label'>Klasse #{tr_klasse(klasse)}</span></a>"
                         end
                     end
                     io.puts "</div>"
@@ -3792,7 +3816,9 @@ class Main < Sinatra::Base
 
         now = Time.now.to_i - MESSAGE_DELAY
         sent_messages = []
+        messages_preview = {:new_ids => [], :nc_logins => {}}
         stored_events = []
+        pv_events_archive = nil
         stored_groups = []
         stored_angebote = []
         stored_polls = []
@@ -3836,7 +3862,9 @@ class Main < Sinatra::Base
         elsif path == 'lessons'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.path.split('/')
-            show_lesson_key = CGI::unescape(parts[2])
+            show_lesson_key = CGI::unescape(parts[2] || '')
+            # no or an unknown course: to the start page, like without permission
+            redirect "#{WEB_ROOT}/", 302 unless @@lessons[:lesson_keys][show_lesson_key]
             lesson_key_id = @@lessons[:lesson_keys][show_lesson_key][:id]
             lesson_data = Main.get_lesson_data(show_lesson_key)
             unless may_edit_lessons?(show_lesson_key)
@@ -3982,6 +4010,21 @@ class Main < Sinatra::Base
             unless @session_user
                 redirect "#{WEB_ROOT}/", 302
             else
+                # new design: which messages are new (before this visit marks
+                # them as seen) and the senders' profile pictures
+                if ui_preview?
+                    messages_preview[:new_ids] = get_unread_messages(Time.now.to_i + 1)
+                    neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).each do |row|
+                        MATCH (c)-[:TO]->(:User {email: $email})
+                        WHERE (c:TextComment OR c:AudioComment OR c:Message)
+                        MATCH (c)-[:FROM]->(a:User)
+                        RETURN DISTINCT a.email
+                    END_OF_QUERY
+                        nc_login = (@@user_info[row['a.email']] || {})[:nc_login]
+                        next if nc_login.nil? || nc_login.empty?
+                        messages_preview[:nc_logins][row['a.email']] = nc_login
+                    end
+                end
                 neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email])
                     MATCH (c)-[ruc:TO]->(:User {email: $email})
                     WHERE (c:TextComment OR c:AudioComment OR c:Message)
@@ -4006,6 +4049,8 @@ class Main < Sinatra::Base
                             :dow => t.wday,
                             :mid => x[:info][:id]
                         }
+                        # new design: the time in the list of sent messages
+                        temp[x[:info][:id]][:timestamp] = x[:info][:created] if ui_preview?
                         temp_order << x[:info][:id]
                     end
                     temp[x[:info][:id]][:recipients] << x[:recipient]
@@ -4016,37 +4061,15 @@ class Main < Sinatra::Base
             unless user_with_role_logged_in?(:can_create_events)
                 redirect "#{WEB_ROOT}/", 302
             else
-                stored_events = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email]).map { |x| {:info => x['e'], :recipient => x['u.email']} }
-                    MATCH (e:Event)-[:ORGANIZED_BY]->(ou:User {email: $email})
-                    WHERE COALESCE(e.deleted, false) = false
-                    WITH e
-                    OPTIONAL MATCH (u)-[r:IS_PARTICIPANT]->(e)
-                    WHERE (u:User OR u:ExternalUser OR u:PredefinedExternalUser) AND COALESCE(r.deleted, false) = false
-                    RETURN e, u.email
-                    ORDER BY e.date DESC, e.start_time DESC, e.id;
-                END_OF_QUERY
+                if ui_preview?
+                    # Neues Design: what is coming and the last four weeks,
+                    # older events on demand (/api/get_events_archive)
+                    stored_events = organized_events(@session_user[:email], events_recent_from, nil)
+                    pv_events_archive = organized_events_archive_years(@session_user[:email], events_recent_from)
+                else
+                    stored_events = organized_events(@session_user[:email])
+                end
                 external_users_for_session_user = external_users_for_session_user()
-                temp = {}
-                temp_order = []
-                stored_events.each do |x|
-                    unless temp[x[:info][:id]]
-                        t = Time.parse(x[:info][:date])
-                        temp[x[:info][:id]] = {
-                            :recipients => [],
-                            :eid => x[:info][:id],
-                            :info => x[:info],
-                            :dow => t.wday
-                        }
-                        temp_order << x[:info][:id]
-                    end
-                    temp[x[:info][:id]][:recipients] << x[:recipient]
-                end
-                stored_events = temp_order.map do |x|
-                    e = temp[x]
-                    e[:info][:start_time] = fix_h_to_hh(e[:info][:start_time])
-                    e[:info][:end_time] = fix_h_to_hh(e[:info][:end_time])
-                    e
-                end
             end
         elsif path == 'groups'
             unless user_with_role_logged_in?(:can_write_messages)

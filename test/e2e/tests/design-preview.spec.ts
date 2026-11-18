@@ -22,11 +22,13 @@ test('Neues Design: Admin schaltet die Vorschau ein, gibt Feedback, schaltet sie
   // colours computed from the colour scheme
   expect(await page.locator('#design_tokens').textContent()).toMatch(/--acc: #[0-9a-f]{6};.*--subj-ma: #[0-9a-f]{6};/);
 
-  // feedback, with the wish to be contacted
-  await page.locator('#bu_design_feedback').click();
+  // feedback, with the wish to be contacted – from the profile; the floating
+  // button is hidden for now
+  await expect(page.locator('#bu_design_feedback')).toBeHidden();
+  await page.locator('#bu_profile_design_feedback').click();
   const dialog = page.locator('#designFeedbackModal');
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator('#ti_design_feedback')).toHaveAttribute('placeholder', /Ihnen/);
+  await expect(dialog.locator('#ti_design_feedback')).toHaveAttribute('placeholder', /gefällt dir/);
   // nothing is sent without text
   await dialog.locator('#bu_send_design_feedback').click();
   await expect(dialog.locator('.design-feedback-thanks')).toBeHidden();
@@ -73,6 +75,42 @@ test('Neues Design: vorerst nur für Admins', async ({ page, newUserPage }) => {
   }
 });
 
+// Admins give the new design to single persons for testing (/design_feedback,
+// »Testpersonen«): switched on at once, the person may switch it on and off
+// like an admin; taking it back switches it off. Only admins may do that.
+test('Neues Design: Admins geben es einzelnen Personen zum Testen', async ({ page, newUserPage }) => {
+  await login(page, ACCOUNTS.admin);
+  const student = await newUserPage();
+  await login(student, ACCOUNTS.schueler);
+  // not for students themselves
+  expect((await student.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.schueler, mode: 'on' } })).status()).not.toBe(200);
+  try {
+    await page.goto('/design_feedback');
+    await page.locator('#ti_preview_tester').fill(ACCOUNTS.schueler);
+    await page.locator('#bu_add_tester').click();
+    await expect(page.locator('#pv_testers li', { hasText: 'eingeschaltet' })).toHaveCount(1);
+    await student.goto('/');
+    await expect(student.locator('body')).toHaveClass(/ui-preview/);
+    // the person may switch it off and on again
+    expect((await student.request.post('/api/set_ui_preview', { data: { mode: 'off' } })).status()).toBe(200);
+    await student.goto('/');
+    await expect(student.locator('body')).not.toHaveClass(/ui-preview/);
+    expect((await student.request.post('/api/set_ui_preview', { data: { mode: 'on' } })).status()).toBe(200);
+    await student.goto('/profil');
+    await expect(student.locator('body')).toHaveClass(/ui-preview/);
+    // taken back: off, and not to be switched on again
+    await page.goto('/design_feedback');
+    await page.locator('#pv_testers .bu-remove-tester').first().click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Entfernen' }).click();
+    await expect(page.locator('#pv_testers_empty')).toBeVisible();
+    await student.goto('/');
+    await expect(student.locator('body')).not.toHaveClass(/ui-preview/);
+    expect((await student.request.post('/api/set_ui_preview', { data: { mode: 'on' } })).status()).not.toBe(200);
+  } finally {
+    await page.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.schueler, mode: 'off' } });
+  }
+});
+
 // The colour sliders (Farbton, Sepia, Analog …) lay a filter over the whole
 // page. The new design computes readable colours per scheme; a filter would
 // undo that, so the preview shows the page without them.
@@ -96,7 +134,9 @@ test('Neues Design: ohne die Farbfilter aus den Farbeinstellungen', async ({ pag
     await page.goto('/');
     expect(await look()).toEqual({ filter: 'none', grain: '0' });
     await page.goto('/profil');
-    await expect(page.locator('#color_options_preview_note')).toBeVisible();
+    // the sliders are left out entirely
+    await expect(page.locator('#ti_hue')).toBeHidden();
+    await expect(page.locator('h2', { hasText: 'Farbeinstellungen' })).toBeHidden();
     expect(await look()).toEqual({ filter: 'none', grain: '0' });
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
@@ -125,6 +165,9 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       expect(box.width).toBeLessThan(300);
       const main = (await page.locator('#main_container').boundingBox())!;
       expect(main.x).toBeGreaterThanOrEqual(box.width - 1);
+      // the page's panel keeps a margin to the window's edge (Bootstrap sizes it by the window)
+      const panel = (await page.locator('#main_container .container').first().boundingBox())!;
+      expect(panel.x + panel.width).toBeLessThanOrEqual(viewport.width - 16);
       await expect(page.locator('.pv-tabbar')).toBeHidden();
       // the current page is marked, the profile sits at the bottom
       await expect(nav.locator('.nav-link.pv-active')).toContainText('Nachrichten');
@@ -135,30 +178,50 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       expect(search.y).toBeGreaterThan(viewport.height / 2);
       expect(search.y).toBeLessThan(profile.y);
       expect(profile.y - (search.y + search.height)).toBeLessThan(30);
-      // menus open as a panel next to the sidebar, at full length (in columns
-      // if needed), above the footer; the sidebar itself never scrolls
+      // the profile menu opens upwards, its bottom level with the sidebar's
       await page.locator('#navbarDropdownProfile').click();
-      await expect(nav.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();
-      const foot = (await page.locator('.foot').boundingBox())!;
+      const profileMenu = nav.locator('[aria-labelledby="navbarDropdownProfile"]');
+      await expect(profileMenu).toBeVisible();
+      await page.waitForTimeout(100);
+      const pm = (await profileMenu.boundingBox())!;
+      expect(pm.x).toBeGreaterThanOrEqual(box.width - 1);
+      expect(Math.abs(viewport.height - (pm.y + pm.height) - 8)).toBeLessThan(3);
+      await page.keyboard.press('Escape');
+      await expect(profileMenu).toBeHidden();
+      // the old admin menu is gone: its tools sit in the "Verwaltung" section,
+      // folded (unless the current page is one of them), and it remembers
+      await expect(page.locator('#navbarDropdownAdmin')).toBeHidden();
+      const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
+      await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
+      await verwaltung.locator('button.pv-nav-heading').click();
+      await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
+      await page.reload();
+      await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
+      await verwaltung.locator('button.pv-nav-heading').click();
+      await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
+      // menus open as a panel next to the sidebar, inside the window above
+      // the footer (in columns, or scrolling where even that is too long);
+      // the sidebar itself never scrolls
+      // (the old footer is hidden in the new design; its line is in the sidebar)
+      const footHeight = (await page.locator('.foot').boundingBox())?.height ?? 0;
+      const groupsMenu = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
       for (const height of [viewport.height, 420]) {
         await page.setViewportSize({ width: viewport.width, height });
-        await page.locator('#navbarDropdownAdmin').click();
-        const adminMenu = nav.locator('[aria-labelledby="navbarDropdownAdmin"]');
-        await expect(adminMenu).toBeVisible();
+        await page.locator('#navbarDropdownKlassen').click();
+        await expect(groupsMenu).toBeVisible();
         await page.waitForTimeout(100);
-        const panel = (await adminMenu.boundingBox())!;
+        const panel = (await groupsMenu.boundingBox())!;
         expect(panel.x).toBeGreaterThanOrEqual(box.width - 1);
         expect(panel.y).toBeGreaterThanOrEqual(0);
-        expect(panel.y + panel.height).toBeLessThanOrEqual(height - foot.height + 1);
-        expect(await adminMenu.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+        expect(panel.y + panel.height).toBeLessThanOrEqual(height - footHeight + 1);
+        expect(await groupsMenu.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 || ['auto', 'scroll'].includes(getComputedStyle(el).overflowY))).toBe(true);
         if (height === 420) break;
         expect(await nav.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
         await page.keyboard.press('Escape');
-        await expect(adminMenu).toBeHidden();
+        await expect(groupsMenu).toBeHidden();
       }
-      const adminMenu = nav.locator('[aria-labelledby="navbarDropdownAdmin"]');
       // long names wrap instead of being cut off
-      expect(await adminMenu.locator('.dropdown-item').evaluateAll((els) => els.every((el) => el.scrollWidth <= el.clientWidth + 1))).toBe(true);
+      expect(await groupsMenu.locator('.dropdown-item').evaluateAll((els) => els.every((el) => el.scrollWidth <= el.clientWidth + 1))).toBe(true);
     } else {
       const tabs = page.locator('.pv-tabbar');
       await expect(tabs).toBeVisible();
@@ -172,12 +235,146 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await expect(menu).toContainText('Administration');
       await tabs.locator('#bu_pv_more').click();
       await expect(menu).toBeHidden();
-      // the tabs lead where they say
-      await tabs.getByText('Profil').click();
-      await expect(page).toHaveURL(/\/profil$/);
-      await expect(page.locator('.pv-tabbar .pv-tab.pv-active')).toContainText('Profil');
+      // like the lesson sheet: a veil behind it; pulled down, it closes
+      await tabs.locator('#bu_pv_more').click();
+      await expect(menu).toHaveClass(/\bshow\b/);
+      await expect(page.locator('.pv-menu-veil')).toBeVisible();
+      const sheet = (await menu.boundingBox())!;
+      // the sheet lies above the veil, not under it
+      await page.waitForTimeout(350);
+      expect(await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)!.closest('#navbarTogglerDemo02'), [sheet.x + sheet.width / 2, sheet.y + 30])).toBe(true);
+      const cdp = await page.context().newCDPSession(page);
+      const x = sheet.x + sheet.width / 2, y = sheet.y + 8;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      for (let i = 1; i <= 8; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 25 }] });
+        await page.waitForTimeout(30);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await expect(menu).toBeHidden();
+      await expect(page.locator('.pv-menu-veil')).toBeHidden();
+      // teachers: Heute · Woche · Nachrichten · Kurse · Mehr (as in the mockups)
+      await expect(tabs.locator('.pv-tab')).toHaveText(['Heute', 'Woche', 'Nachrichten', 'Kurse', 'Mehr']);
+      // the search: at the top of "Mehr" (no icon in the top bar)
+      await expect(page.locator('.nav-quick-search-nav .nav-quick-search')).toBeHidden();
+      await tabs.locator('#bu_pv_more').click();
+      await page.locator('.pv-more-search').click();
+      await expect(page.locator('#ti_quick_search')).toBeVisible();
+      await page.locator('#ti_quick_search').press('Escape');
+      // "Kurse": Kursbuch and class lists as a sheet
+      await tabs.locator('#bu_pv_courses').click();
+      const courses = page.locator('.pv-link-sheet');
+      await expect(courses).toContainText('Kursbuch');
+      await expect(courses.locator('a[href^="/lessons/"]').first()).toBeVisible();
+      await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
+      await expect(courses).toHaveCount(0);
+      // "Woche": the days of the week one below the other
+      await tabs.getByText('Woche').click();
+      await expect(page).toHaveURL(/\/#woche$/);
+      await expect(page.locator('#pv_agenda .pv-week-day')).toHaveCount(5);
+      await expect(page.locator('.pv-tabbar .pv-tab.pv-active')).toContainText('Woche');
+      // on the start page the search sits in the header
+      await page.locator('#pv_day_band .pv-band-search').click();
+      await expect(page.locator('#ti_quick_search')).toBeVisible();
     }
   } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Tablets: the sidebar as an icon rail. The sections (Unterricht, Schule,
+// Verwaltung) are one icon each and open as a panel beside the rail, without
+// changing the folds the full sidebar remembers.
+test('Neues Design: Abschnitte in der Symbolleiste am Tablet', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'tablet width');
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/messages');
+    const nav = page.locator('nav.navbar');
+    const rail = (await nav.boundingBox())!;
+    expect(rail.width).toBeLessThan(100);
+    // no text sticks out of the rail or is cut off in it
+    expect(await nav.evaluate((navEl) => {
+      const right = navEl.getBoundingClientRect().right;
+      return [...navEl.querySelectorAll('*')].filter((el) => {
+        const r = el.getBoundingClientRect();
+        const text = [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent!.trim());
+        return text && r.width > 0 && r.height > 0 && (r.right > right + 1 || el.scrollWidth > el.clientWidth + 1);
+      }).length;
+    })).toBe(0);
+    const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
+    const heading = verwaltung.locator('button.pv-nav-heading');
+    const body = verwaltung.locator('.pv-nav-body');
+    await expect(body).toBeHidden();
+    await heading.click();
+    await expect(body).toBeVisible();
+    const panel = (await body.boundingBox())!;
+    expect(panel.x).toBeGreaterThanOrEqual(rail.width - 1);
+    expect(panel.y + panel.height).toBeLessThanOrEqual(1180);
+    await expect(body.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
+    // one panel at a time; Escape and a click elsewhere close it
+    await nav.locator('.pv-nav-section[data-section="unterricht"] button.pv-nav-heading').click();
+    await expect(body).toBeHidden();
+    // Lerngruppen opens beside the panel, not over it
+    const unterricht = nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body');
+    await page.locator('#navbarDropdownKlassen').click();
+    const groups = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
+    await expect(groups).toBeVisible();
+    const u = (await unterricht.boundingBox())!;
+    expect((await groups.boundingBox())!.x).toBeGreaterThanOrEqual(u.x + u.width - 1);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await expect(unterricht).toBeHidden();
+    await heading.click();
+    await expect(body).toBeVisible();
+    await page.mouse.click(600, 900);
+    await expect(body).toBeHidden();
+    // the full sidebar keeps its own folds
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(body).toBeHidden();
+    await expect(nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body')).toBeVisible();
+    await expect(heading).toContainText('Verwaltung');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Profile pictures come from Nextcloud. The new design shows them larger and
+// on phones with three pixels per point: 64 px looked blurred, so it asks for
+// 128 px; the old design keeps 64.
+test('Neues Design: Profilbilder in 128 px', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const avatar = page.locator('.nav_avatar .avatar-md');
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/profil');
+  expect(await avatar.getAttribute('style')).toMatch(/\/index\.php\/avatar\/[^/)]+\/64\)/);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/profil');
+    expect(await avatar.getAttribute('style')).toMatch(/\/index\.php\/avatar\/[^/)]+\/128\)/);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// A scheme outside the curated set stays one's own scheme of three colours;
+// the profile says so and names the closest scheme of the set.
+test('Neues Design: eigenes Farbschema bleibt, mit Hinweis im Profil', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.goto('/profil');
+  const before = await page.evaluate(() => (window as any).color_scheme as string);
+  try {
+    await page.request.post('/api/set_color_scheme', { data: { scheme: 'l1122334455667788990' } });
+    await page.goto('/profil');
+    const note = page.locator('.pv-scheme-note');
+    await expect(note).toContainText('Dein eigenes Farbschema besteht aus drei Farben, du kannst sie unten anpassen.');
+    await expect(note).toContainText('Ähnlich in der Auswahl:');
+    await expect(note).not.toContainText('gehört nicht');
+  } finally {
+    await page.request.post('/api/set_color_scheme', { data: { scheme: before } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
@@ -233,7 +430,8 @@ test('Neues Design: eigene Schriften', async ({ page }) => {
     const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '')));
     expect(loaded).toContain('Atkinson Hyperlegible Next');
     expect(loaded).toContain('Bricolage Grotesque');
-    await expect(page.locator('#font_preview_note')).toBeVisible();
+    // no font choice in the new design (it has its own type)
+    await expect(page.locator('.bu_set_font').first()).toBeHidden();
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
@@ -272,7 +470,8 @@ test('Neues Design: Fächer im Stundenplan in ihren Farben', async ({ page }, te
     // computed for it), not the scheme's text colour
     const text = await page.locator('.fc-event', { hasText: 'Mathematik' }).first().locator('.fc-event-main')
       .evaluate((el) => getComputedStyle(el).color);
-    expect(text).toBe('rgb(255, 255, 255)');
+    const ink = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--subj-ma-ink').trim());
+    expect(text).toBe(hex2rgb(ink));
     // a substitution takes the colour of the subject that takes place
     const swapped = await page.evaluate(() => {
       const w = window as unknown as { preview_subject_color: (e: object) => string | null };
@@ -435,10 +634,56 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
     const duty = page.locator('#pv_agenda .pv-ag-duty');
     await expect(duty).toContainText('Hof Nord');
     await expect(duty).toContainText('7:30–7:45');
+    // a changed room as a notice in the card; changes of the coming days below the day
+    await page.evaluate(() => {
+      const w = window as any;
+      const d = new Date(w.calendar.getDate());
+      const lesson = w.calendar.getEvents().find((e: any) => !e.allDay && e.extendedProps.lesson && !e.extendedProps.pausenaufsicht);
+      const a = new Date(d); a.setHours(16, 0, 0, 0);
+      w.calendar.addEvent({ start: a, end: new Date(a.getTime() + 45 * 60000), extendedProps: { ...lesson.extendedProps, raum: '<s>108</s> 211' } });
+      const b = new Date(d); b.setDate(b.getDate() + 1); b.setHours(16, 0, 0, 0);
+      w.calendar.addEvent({ start: b, end: new Date(b.getTime() + 45 * 60000), extendedProps: { ...lesson.extendedProps, entfall: true } });
+    });
+    await expect(page.locator('#pv_agenda .pv-ag-change').first()).toHaveText('Raum 211 statt 108');
+    // no notices of coming days below the day (the next day is a swipe away)
+    await expect(page.locator('#pv_agenda .pv-ag-notice')).toHaveCount(0);
+    const cardColour = await card.evaluate((el) => getComputedStyle(el).borderLeftColor);
     await card.click();
     await expect(page.locator('#lessonModal')).toBeVisible();
     await expect(page.locator('#lessonModal .lesson-label')).not.toBeEmpty();
-    await page.locator('#lessonModal').getByRole('button', { name: 'Schließen' }).click();
+    // the dialog: a band in the lesson's colour, a sheet from the bottom on phones
+    await page.waitForTimeout(400);
+    const dialog = await page.evaluate(() => {
+      const header = document.querySelector('#lessonModal .modal-header')!;
+      const content = document.querySelector('#lessonModal .modal-content')!.getBoundingClientRect();
+      return { band: getComputedStyle(header).borderTopColor, bottom: content.bottom, height: window.innerHeight };
+    });
+    expect(dialog.band).toBe(cardColour);
+    expect(Math.abs(dialog.bottom - dialog.height)).toBeLessThan(2);
+    // nothing lies on top of the sheet, not even the tab bar
+    expect(await page.evaluate(() => !!document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 20)!.closest('#lessonModal'))).toBe(true);
+    // pulled down by its header, the sheet closes
+    const header = (await page.locator('#lessonModal .modal-header').boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const hx = header.x + header.width / 2, hy = header.y + 20;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: hx, y: hy }] });
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: hx, y: hy + i * 20 }] });
+      await page.waitForTimeout(30);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(page.locator('#lessonModal')).toBeHidden();
+    // also when pulled down on the veil above it
+    await card.click();
+    await expect(page.locator('#lessonModal')).toBeVisible();
+    await page.waitForTimeout(400);
+    const top = (await page.locator('#lessonModal .modal-content').boundingBox())!.y;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: hx, y: top / 2 }] });
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: hx, y: top / 2 + i * 20 }] });
+      await page.waitForTimeout(30);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect(page.locator('#lessonModal')).toBeHidden();
     // swiping left: the next school day, its date as the heading
     const day = () => page.evaluate(() => (window as any).moment((window as any).calendar.getDate()).format('YYYY-MM-DD'));
@@ -460,7 +705,9 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
       const d = (window as any).calendar.getDate();
       return ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][d.getDay()] + ', ' + d.getDate() + '.';
     });
-    await expect(page.locator('#pv_agenda .pv-ag-day')).toContainText(heading);
+    await expect(page.locator('#pv_day_band h1')).toContainText(heading);
+    // the day strip marks the shown day
+    await expect(page.locator('#pv_day_strip .pv-strip-active')).toContainText(String(await page.evaluate(() => (window as any).calendar.getDate().getDate())));
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
@@ -490,15 +737,468 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
-    for (const path of ['/monitor', '/monitor/lz']) {
+    for (const path of ['/monitor', '/monitor/lz', '/monitor/sek', '/monitor?design=neu', '/monitor?design=alt']) {
       const html = await (await page.request.get(path)).text();
       expect(html, path).not.toContain('ui-preview');
       expect(html, path).not.toContain('pv-tabbar');
       expect(html, path).not.toContain('/preview.css');
+      // the hallway monitor in its own new design (monitor-neu.spec.ts):
+      // with ?design=neu, or for someone with the new design switched on
+      // (the previews in manage_monitor) – not with ?design=alt, never on the
+      // Lehrerzimmer and Sekretariat monitors
+      const neu = path === '/monitor' || path.includes('design=neu');
+      if (neu) expect(html, path).toContain('/preview/monitor/');
+      else expect(html, path).not.toContain('/preview/monitor/');
     }
+    // without the new design switched on: today's monitor
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    expect(await (await page.request.get('/monitor')).text()).not.toContain('/preview/monitor/');
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/ui-preview/);
   } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Phones: other plans (Kürzel, classes, rooms) through a "Plan" button in the
+// header – a sheet with search, the shown plan in the accent; no chip panel
+// Back (button or swipe from the edge) closes what opened like a screen –
+// "Mehr", the plan menu – and stays on the page; closing one in the page
+// leaves no extra history entry behind (preview.js, pv_back).
+test('Neues Design: Zurück schließt Sheets am Handy', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Sheets nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/messages');
+    await page.goto('/');
+    const more = page.locator('#navbarTogglerDemo02');
+    await page.locator('#bu_pv_more').click();
+    await expect(more).toHaveClass(/\bshow\b/);
+    await page.goBack({ waitUntil: 'commit' });
+    await expect(more).toBeHidden();
+    expect(new URL(page.url()).pathname).toBe('/');
+    const plan = page.locator('#pv_day_band .pv-band-plan');
+    await plan.click();
+    await expect(page.locator('.pv-plan-menu')).toBeVisible();
+    await page.goBack({ waitUntil: 'commit' });
+    await expect(page.locator('.pv-plan-menu')).toHaveCount(0);
+    expect(new URL(page.url()).pathname).toBe('/');
+    // closed in the page: the next back leaves the page as usual
+    await page.locator('#bu_pv_more').click();
+    await expect(more).toHaveClass(/\bshow\b/);
+    await page.locator('#bu_pv_more').click();
+    await expect(more).toBeHidden();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/messages$/);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// The tab "Woche" lives in the address: a reload stays on it.
+test('Neues Design: Woche bleibt nach dem Neuladen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Tabs nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    // load the page with the preview first (a bare hash change doesn't reload)
+    await page.goto('/');
+    await page.goto('/#woche');
+    await expect(page.locator('#pv_agenda.pv-agenda-week')).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/#woche$/);
+    await expect(page.locator('#pv_agenda.pv-agenda-week')).toBeVisible();
+    await expect(page.locator('.pv-tabbar .pv-tab.pv-active')).toContainText('Woche');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Behind an open sheet the page stands still and is back at the same place
+// when it closes (preview.js).
+test('Neues Design: Seite steht hinter offenem Sheet still', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Sheets nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/hilfe');
+    await page.evaluate(() => window.scrollTo(0, 300));
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(300);
+    const top = await page.evaluate(() => Math.round(document.querySelector('#main_container')!.getBoundingClientRect().top));
+    await page.locator('#bu_pv_more').click();
+    await expect(page.locator('#navbarTogglerDemo02')).toHaveClass(/\bshow\b/);
+    // the page behind keeps its place, scrolling moves nothing
+    await page.evaluate(() => window.scrollBy(0, 400));
+    expect(await page.evaluate(() => Math.round(document.querySelector('#main_container')!.getBoundingClientRect().top))).toBe(top);
+    await page.locator('.pv-menu-veil').click({ position: { x: 20, y: 20 } });
+    await expect(page.locator('#navbarTogglerDemo02')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(300);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+test('Neues Design: Plan wählen am Handy', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'am Desktop das Menü im Kopf (eigener Test)');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const button = page.locator('#pv_day_band .pv-band-plan');
+    await expect(button).toContainText('Plan');
+    await expect(page.locator('.timetable_chooser .ttc').first()).toBeHidden();
+    await button.click();
+    const menu = page.locator('.pv-plan-menu');
+    await expect(menu).toBeVisible();
+    const look = await menu.locator('.pv-plan-chip.active').evaluate((el) => {
+      const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
+      return { bg: getComputedStyle(el).backgroundColor, acc: `rgb(${[1, 3, 5].map((i) => parseInt(acc.slice(i, i + 2), 16)).join(', ')})` };
+    });
+    expect(look.bg).toBe(look.acc);
+    // the menu lies above the tab bar, at the bottom (after sliding up)
+    await page.waitForTimeout(400);
+    const box = (await menu.boundingBox())!;
+    expect(Math.abs(box.y + box.height - page.viewportSize()!.height)).toBeLessThan(2);
+    // like every sheet: a veil behind it; tapping it or pulling the sheet down closes it
+    await expect(page.locator('.pv-plan-veil')).toBeVisible();
+    await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
+    await expect(menu).toHaveCount(0);
+    await button.click();
+    await expect(menu).toBeVisible();
+    await page.waitForTimeout(400);
+    const top = (await menu.boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const x = top.x + top.width / 2, y = top.y + 10;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    for (let i = 1; i <= 8; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 25 }] });
+      await page.waitForTimeout(30);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(menu).toHaveCount(0);
+    await expect(page.locator('.pv-plan-veil')).toHaveCount(0);
+    await button.click();
+    await menu.locator('.pv-plan-chip', { hasText: /^5a$/ }).click();
+    await expect(menu).toHaveCount(0);
+    await expect(page.locator('#pv_day_band .pv-band-plan')).toContainText('Plan 5a');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Desktop: a header above the timetable – week and calendar week, Tag/Woche,
+// the plan as a menu instead of the chips, Heute and arrows
+test('Neues Design: Kopf über dem Stundenplan am Desktop', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'am Handy der Kopf mit Datum und Tagesleiste');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const head = page.locator('#pv_week_head');
+    await expect(head.locator('h2')).toHaveText(/\d+\.(–\d+\.)? \S+|\d+\. \S+ – \d+\. \S+/);
+    await expect(head).toContainText('Kalenderwoche');
+    await expect(page.locator('.fc-header-toolbar')).toBeHidden();
+    await expect(page.locator('.timetable_chooser .ttc').first()).toBeHidden();
+    // the week only (a single day is the phone's agenda)
+    await expect(head.getByRole('button', { name: 'Tag', exact: true })).toHaveCount(0);
+    // the plan menu: search and pick a class
+    await page.locator('.pv-plan-button').click();
+    await page.locator('.pv-plan-menu input').fill('5a');
+    await page.locator('.pv-plan-menu .pv-plan-chip', { hasText: /^5a$/ }).click();
+    await expect(page.locator('.pv-plan-menu')).toHaveCount(0);
+    await expect(page.locator('#pv_week_head')).toContainText('Plan 5a');
+    // the arrows move the week, Heute comes back
+    const before = await page.locator('#pv_week_head h2').textContent();
+    await page.locator('#pv_week_head').getByRole('button', { name: 'Weiter' }).click();
+    await expect(page.locator('#pv_week_head h2')).not.toHaveText(before!);
+    await page.locator('#pv_week_head').getByRole('button', { name: 'Heute' }).click();
+    await expect(page.locator('#pv_week_head h2')).toHaveText(before!);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// One switch: in the new design the backdrop follows light / dark mode
+// (today a separate "Hintergrund" setting picks its variant)
+test('Neues Design: der Hintergrund folgt hell und dunkel', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_color_scheme', { data: { scheme: 'da2c6e80d60aea2c6e80' } });
+  try {
+    const backdrop = () => page.evaluate(() => getComputedStyle(document.body).backgroundImage);
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.goto('/');
+    expect(await backdrop()).toContain('bg-la2c6e8');
+    await page.request.post('/api/set_dark_css', { data: { mode: 'dark' } });
+    await page.goto('/');
+    expect(await backdrop()).toContain('bg-da2c6e8');
+    // the separate setting is not offered in the new design
+    await page.goto('/profil');
+    await expect(page.locator('.toggle:has(#dark_switch)')).toBeHidden();
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Choosing a scheme or the Farbigkeit in the profile: the colours change at
+// once, without loading the page again (the server computes them)
+test('Neues Design: Farbschema und Farbigkeit wirken sofort', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Desktop reicht');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+  try {
+    await page.goto('/profil');
+    let loads = 0;
+    page.on('load', () => loads++);
+    const tok = (k: string) => page.evaluate((k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim(), k);
+    const de = await tok('--subj-de');
+    const slider = page.locator('#ti_ui_vividness');
+    await slider.fill('0');
+    await slider.dispatchEvent('input');
+    await slider.dispatchEvent('change');
+    await expect.poll(() => tok('--subj-de')).not.toBe(de);
+    const acc = await tok('--acc');
+    await page.locator('.swatches .swatch', { hasText: 'Gryffindor' }).click();
+    await expect.poll(() => tok('--acc')).not.toBe(acc);
+    expect(loads).toBe(0);
+    // saved: a new page has the calm colours too
+    await page.reload();
+    expect(await tok('--subj-de')).not.toBe(de);
+  } finally {
+    await page.request.post('/api/set_ui_vividness', { data: { value: 100 } });
+    await page.request.post('/api/set_color_scheme', { data: { scheme: 'la2c6e80d60aea2c6e80' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Light / dark in the profile: switched in place, the tiles show the
+// backdrops of the new mode
+test('Neues Design: hell und dunkel im Profil ohne Neuladen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Desktop reicht');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+  try {
+    await page.goto('/profil');
+    await page.waitForLoadState('load');
+    let loads = 0;
+    page.on('load', () => loads++);
+    const tileBg = () => page.locator('.swatches .swatch').first().evaluate((el) => getComputedStyle(el).getPropertyValue('--pv-bg'));
+    await page.locator('.toggle:has(#dark_css_switch)').click();
+    await expect(page.locator('body')).toHaveClass(/dark/);
+    await expect.poll(tileBg).toContain('/bg-d');
+    expect(loads).toBe(0);
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// »Dunkel« / »Hell« in the menu (desktop: the own menu, phones: a tile in
+// »Mehr«) switches in place too: colours from the server, the entry turns
+// into the other one, the timetable draws its lessons again in the new
+// colours. The old design still loads the page again.
+test('Neues Design: hell und dunkel aus dem Menü ohne Neuladen', async ({ page }, testInfo) => {
+  const phone = testInfo.project.name === 'mobile';
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+  const open = async () => {
+    if (phone) {
+      if (!(await page.locator('#navbarTogglerDemo02.show').count())) await page.locator('#bu_pv_more').click();
+    } else if (!(await page.locator('[aria-labelledby="navbarDropdownProfile"].show').count())) {
+      await page.locator('#navbarDropdownProfile').click();
+    }
+  };
+  try {
+    await page.goto('/');
+    await page.waitForLoadState('load');
+    let loads = 0;
+    page.on('load', () => loads++);
+    const tokens = () => page.locator('#design_tokens').evaluate((el) => el.textContent);
+    const before = await tokens();
+    await open();
+    await page.locator('.nav-dark').click();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+    await expect.poll(tokens).not.toBe(before);
+    await expect(page.locator('link[href="/dark.css"]')).toHaveCount(1);
+    await open();
+    await expect(page.locator('.nav-light .label')).toHaveText('Hell');
+    await expect(page.locator('.nav-dark')).toHaveCount(0);
+    await page.locator('.nav-light').click();
+    await expect(page.locator('body')).not.toHaveClass(/\bdark\b/);
+    await expect.poll(tokens).toBe(before);
+    await expect(page.locator('link[href="/dark.css"]')).toHaveCount(0);
+    expect(loads).toBe(0);
+    // stored: a reload keeps it
+    await open();
+    await page.locator('.nav-dark').click();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+    await page.reload();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// One's own scheme: three colours to select, the Cling palette (as in the
+// Hackschule sprite editor) and HSL sliders for the selected one, in view at
+// once – no system colour dialog.
+test('Neues Design: eigenes Farbschema mit Palette und HSL-Reglern', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.goto('/profil');
+  const before = await page.evaluate(() => (window as any).color_scheme as string);
+  try {
+    const own = page.locator('.pv-scheme-own');
+    await expect(own.locator('input[type="color"]')).toHaveCount(0);
+    await expect(own.locator('.pv-cling-colour')).toHaveCount(42);
+    await expect(own.locator('.pv-cling-colour').first()).toBeVisible();
+    await expect(own.locator('#ti_hsl_h')).toBeVisible();
+    // the middle one is selected at first; select the left one
+    await expect(own.locator('.pv-scheme-slot[data-slot="main"]')).toHaveAttribute('aria-checked', 'true');
+    await own.locator('.pv-scheme-slot[data-slot="left"]').click();
+    await expect(own.locator('.pv-scheme-slot[data-slot="left"]')).toHaveAttribute('aria-checked', 'true');
+    // a colour of the palette
+    await own.locator('.pv-cling-colour[data-hex="#4aa03f"]').click();
+    await expect(own.locator('#ti_scheme_left')).toHaveValue('#4aa03f');
+    await expect(own.locator('.pv-cling-colour[data-hex="#4aa03f"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(own.locator('#ti_scheme_hex')).toHaveValue('#4aa03f');
+    expect(await own.locator('.pv-scheme-slot[data-slot="left"] .pv-scheme-chip').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(74, 160, 63)');
+    // the sliders follow it and change it
+    expect(Number(await own.locator('#ti_hsl_h').inputValue())).toBeGreaterThan(100);
+    await own.locator('#ti_hsl_h').fill('0');
+    expect(await own.locator('#ti_scheme_left').inputValue()).not.toBe('#4aa03f');
+    await expect(own.locator('.pv-cling-colour[data-hex="#4aa03f"]')).toHaveAttribute('aria-pressed', 'false');
+    // a code typed in
+    await own.locator('#ti_scheme_hex').fill('#0d60ae');
+    await expect(own.locator('#ti_scheme_left')).toHaveValue('#0d60ae');
+    // saved: the page's scheme starts with the three colours
+    await own.locator('#bu_apply_own_scheme').click();
+    await expect.poll(() => page.evaluate(() => (window as any).color_scheme as string)).toMatch(/^[ld]0d60ae/);
+  } finally {
+    await page.request.post('/api/set_color_scheme', { data: { scheme: before } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// The search with the sidebar (tablet rail, desktop): it opened below the
+// navigation – with the sidebar that is the bottom edge of the window, so it
+// was open but out of sight. Now in view, results included.
+test('Neues Design: Suche am Tablet und Desktop sichtbar', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Seitenleiste');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    for (const [w, h] of [[820, 1180], [1024, 768], [1280, 900]]) {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto('/');
+      await page.locator('#bu_quick_search').click();
+      const input = page.locator('#ti_quick_search');
+      await input.fill('Mathe');
+      const panel = page.locator('#quick_search_panel');
+      await expect(panel.locator('.quick-search-row').first()).toBeVisible();
+      const box = (await panel.boundingBox())!;
+      expect(box.y, `${w}`).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height, `${w}`).toBeLessThanOrEqual(h);
+      expect(box.x + box.width, `${w}`).toBeLessThanOrEqual(w);
+      // nothing lies over the input
+      const i = (await input.boundingBox())!;
+      expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.id, [i.x + 10, i.y + i.height / 2])).toBe('ti_quick_search');
+      await page.keyboard.press('Escape');
+      await expect(panel).toBeHidden();
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// The profile's own switch follows when light/dark is changed from the menu.
+test('Neues Design: Schalter im Profil folgt hell und dunkel aus dem Menü', async ({ page }, testInfo) => {
+  const phone = testInfo.project.name === 'mobile';
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+  try {
+    await page.goto('/profil');
+    const sw = page.locator('#dark_css_switch');
+    await expect(sw).not.toBeChecked();
+    if (phone) await page.locator('#bu_pv_more').click();
+    else await page.locator('#navbarDropdownProfile').click();
+    await page.locator('.nav-dark').click();
+    await expect(page.locator('body')).toHaveClass(/\bdark\b/);
+    await expect(sw).toBeChecked();
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Termine in the day's agenda (phones): they have a title of their own
+// (event_title) and no subject. They showed as empty cards with a dot; now
+// the title, the room and a calendar icon in the chip – no text glyph.
+test('Neues Design: Termine in der Agenda mit Titel und Symbol', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Agenda am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  // the day the agenda shows first: today, on weekends the next Monday
+  const day = new Date();
+  while (day.getDay() === 0 || day.getDay() === 6) day.setDate(day.getDate() + 1);
+  const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+  const title = `Sprechstunde Probe ${Date.now().toString(36)}`;
+  const saved = await page.request.post('/api/save_event', {
+    data: { title, jitsi: 'no', date, start_time: '15:00', end_time: '15:45', recipients: [ACCOUNTS.admin], description: '' },
+  });
+  expect(saved.status()).toBe(200);
+  const eid = (await saved.json()).event.eid;
+  try {
+    await page.route('**/gen/**', (route) => route.continue());
+    const card = page.locator('#pv_agenda .pv-ag-card', { hasText: title });
+    await expect(async () => {
+      await page.goto('/');
+      await expect(card).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 30_000 });
+    await expect(card.locator('.pv-ag-subj .ti-calendar-event')).toHaveCount(1);
+    expect(await page.locator('#pv_agenda').innerText()).not.toMatch(/[•·]/);
+  } finally {
+    await page.request.post('/api/delete_event', { data: { eid } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Dark mode: dark.css paints every .active grey (!important). The current or
+// chosen element of the new design keeps the accent (the class in the
+// Klassenarbeiten menu) or its own colour (the chosen palette colour).
+test('Neues Design: Gewähltes bleibt dunkel sichtbar', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Klassenmenü als Sheet');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'dark' } });
+  try {
+    await page.goto('/tests/5a');
+    await page.locator('.pv-tests-klasse').first().click();
+    const active = page.locator('.pv-tests-menu-klasse.active');
+    await expect(active).toBeVisible();
+    const [bg, acc] = await active.evaluate((el) => {
+      const probe = document.createElement('span');
+      probe.style.color = getComputedStyle(el).getPropertyValue('--acc');
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return [getComputedStyle(el).backgroundColor, c];
+    });
+    expect(bg).toBe(acc);
+    await page.goto('/profil');
+    await page.locator('.pv-cling-colour[data-hex="#faaa21"]').click();
+    expect(await page.locator('.pv-cling-colour.active').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(250, 170, 33)');
+  } finally {
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

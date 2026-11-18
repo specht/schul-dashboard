@@ -68,3 +68,15 @@ test('Falscher Code wird abgelehnt', async ({ page, serverErrors }) => {
   await page.goto('/');
   await expect(page.locator('#email')).toBeVisible();
 });
+
+// The API refuses with {error: …} (HTTP 200); the login page used to take that for
+// a success and opened /c/undefined (HTTP 500) instead of saying why.
+test('Unbekannte Adresse: Hinweis statt Fehlerseite', async ({ page }) => {
+  await page.goto('/');
+  await typeEmail(page, 'niemand@example.org');
+  await page.locator('#submit').click();
+  await expect(page.locator('.api_messages')).toContainText('Mit dieser E-Mail-Adresse kannst du dich nicht anmelden');
+  await expect(page).toHaveURL(/\/$/);
+  // the field can be corrected right away
+  await expect(page.locator('#email')).toBeEnabled();
+});

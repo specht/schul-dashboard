@@ -1,0 +1,454 @@
+/* Neues Design der Flurmonitore (Vorschau, include/monitor_neu.rb).
+   Nur geladen, wenn die Adresse des Monitors ?design=neu oder
+   ?design=neu-dunkel trägt; dann sind die Styles und das Skript von
+   monitor.html abgeschaltet und monitor.js zeichnet alles neu.
+
+   - Alles in vw: dieselbe Seite läuft auf Full-HD-Monitoren und in den
+     kleinen Vorschauen auf „Monitore verwalten“.
+   - Der Hintergrund des Farbschemas liegt zwischen deckenden Kästen; Schrift
+     auf dem Hintergrund (Kopf) in --band-ink mit --band-shadow.
+   - Feste Kacheln: jede Klasse immer an derselben Stelle, auch ohne Änderungen.
+   - Blättern statt Scrollen: Seiten mit sichtbarer Standzeit (Balken unten).
+   - Farben nur aus Tokens (design_tokens.rb und die neutralen unten). */
+
+body.mn-aktiv {
+    overflow: hidden;
+    padding: 0 !important;
+    margin: 0;
+    /* wie --mn-paper (unten, auf .mn) */
+    background: #f3f5f8;
+}
+
+body.mn-aktiv .navbar,
+body.mn-aktiv .foot,
+body.mn-aktiv .embed-responsive {
+    display: none !important;
+}
+
+.mn {
+    --mn-paper: #f3f5f8;
+    --mn-surface: #ffffff;
+    --mn-sunken: #eef1f5;
+    --mn-ink: #131b26;
+    --mn-muted: #5b6573;
+    --mn-line: #dfe3e8;
+    --mn-warn: #8f5605;
+    --mn-warn-soft: #fbefd8;
+    --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.12);
+    --mn-text: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mn-display: 'Bricolage Grotesque', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+    --mn-mono: 'Atkinson Hyperlegible Mono', ui-monospace, Menlo, Consolas, monospace;
+    --mn-rand: 2.4vw;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 56.25vw;
+    overflow: hidden;
+    z-index: 10;
+    font-family: var(--mn-text);
+    font-size: 1.2vw;
+    line-height: 1.3;
+    letter-spacing: normal;
+    color: var(--mn-ink);
+    /* ein leichter Schleier links hinter dem Kopf, das Bild des Schemas, darunter Papier */
+    background:
+        linear-gradient(90deg, rgba(var(--band-scrim), var(--band-scrim-a)), rgba(var(--band-scrim), 0) 55%) 0 0 / 100% 8.75vw no-repeat,
+        var(--mn-backdrop) 50% 0 / 100% auto no-repeat,
+        var(--mn-paper);
+    user-select: none;
+}
+
+.mn [hidden] {
+    display: none !important;
+}
+
+.mn.mn-dunkel {
+    --mn-paper: #0e131a;
+    --mn-surface: #161d27;
+    --mn-sunken: #1f2733;
+    --mn-ink: #e6ebf2;
+    --mn-muted: #9aa5b4;
+    --mn-line: #2a3442;
+    --mn-warn: #e6ad55;
+    --mn-warn-soft: #2d2213;
+    --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+}
+
+body.mn-aktiv.mn-dunkel-seite {
+    background: #0e131a;
+}
+
+/* ---------- Kopf: Titel, Datum, Uhr, laufende Stunde ---------- */
+
+.mn-kopf {
+    position: absolute;
+    left: var(--mn-rand);
+    right: var(--mn-rand);
+    top: 1.5vw;
+    height: 6.6vw;
+    display: flex;
+    align-items: center;
+    gap: 2vw;
+    color: var(--band-ink);
+    text-shadow: var(--band-shadow);
+}
+
+.mn-kopf h1 {
+    margin: 0;
+    font: 800 2.7vw/1 var(--mn-display);
+    letter-spacing: -0.01em;
+    color: inherit;
+}
+
+.mn-datum {
+    margin-top: 0.5vw;
+    font-size: 1.45vw;
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+}
+
+.mn-uhr {
+    margin-left: auto;
+    font: 800 5.4vw/1 var(--mn-display);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.mn-stunde {
+    min-width: 13vw;
+    font-size: 1.4vw;
+    line-height: 1.3;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.mn-stunde > div:last-child {
+    opacity: 0.85;
+}
+
+.mn-stunde b {
+    font-weight: 700;
+}
+
+/* ---------- Raster: feste Kacheln wie auf dem bisherigen Monitor ----------
+   KLASSEN_ORDER der Reihe nach in Spalten zu je sieben Klassen, vier Spalten
+   (--mn-spalten setzt monitor.js, mehr nur bei mehr als 28 Klassen); 11 und
+   12 höher. Jede Klasse hat immer ihre Kachel an derselben Stelle, auch ohne
+   Änderungen. Lage und Höhe jeder Kachel in Prozent der Spalte (monitor.js),
+   in denselben Verhältnissen wie bisher. */
+
+.mn-raster {
+    position: absolute;
+    left: var(--mn-rand);
+    right: var(--mn-rand);
+    top: 9vw;
+    bottom: 5vw;
+    display: grid;
+    grid-template-columns: repeat(var(--mn-spalten, 4), minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    gap: 1.1vw;
+}
+
+.mn-spalte {
+    position: relative;
+    min-height: 0;
+}
+
+.mn-spalte > .mn-kachel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+}
+
+/* ---------- Kästen und Kacheln ---------- */
+
+.mn-kasten {
+    flex: none;
+    position: relative;
+    background-color: var(--mn-surface);
+    border: 1px solid var(--mn-line);
+    border-radius: 1.05vw;
+    box-shadow: var(--mn-shadow);
+    padding: 0.7vw 0.95vw 0.8vw;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4vw;
+    min-height: 0;
+}
+
+/* die Kästen bleiben deckend, auch wenn ein Effekt sie „schmelzen“ lässt */
+.mn .mn-kasten.fx-geschmolzen {
+    background-color: var(--mn-surface) !important;
+}
+
+.mn-kasten h2 {
+    margin: 0;
+    font: 800 1.7vw/1.05 var(--mn-display);
+    color: var(--mn-ink);
+}
+
+/* Name links (darunter die Punkte der Seiten), Einträge rechts daneben */
+.mn-kachel {
+    display: grid;
+    grid-template-columns: 3.6vw minmax(0, 1fr);
+    /* die Zeile ist so hoch wie die Kachel: was nicht passt, kommt auf die nächste Seite */
+    grid-template-rows: minmax(0, 1fr);
+    column-gap: 0.6vw;
+    padding: 0.4vw 0.75vw;
+    overflow: hidden;
+}
+
+.mn-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4vw;
+    min-width: 0;
+}
+
+.mn-kachel .mn-zeilen {
+    min-height: 0;
+    overflow: hidden;
+    font-size: 1.15vw;
+    /* drei Einträge passen in eine normale Kachel */
+    line-height: 1.18;
+    row-gap: 0.1vw;
+    transition: opacity 0.3s;
+}
+
+.mn-kachel .mn-zeilen.mn-weg {
+    opacity: 0;
+}
+
+/* ohne Änderungen: die Kachel bleibt an ihrem Platz, nur der Name, leise */
+.mn-kachel.mn-still h2 {
+    color: var(--mn-muted);
+    font-weight: 700;
+}
+
+.mn-zeilen {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    column-gap: 0.6vw;
+    row-gap: 0.3vw;
+    align-items: start;
+    align-content: start;
+}
+
+.mn-zeile {
+    display: contents;
+}
+
+.mn-st {
+    font-family: var(--mn-display);
+    font-weight: 700;
+    color: var(--mn-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mn-was {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.mn-was b {
+    font-weight: 700;
+}
+
+.mn-text {
+    color: var(--mn-muted);
+}
+
+.mn-marke {
+    display: inline-block;
+    margin-right: 0.4vw;
+    padding: 0.18vw 0.4vw;
+    border-radius: 0.4vw;
+    font: 700 0.8vw/1 var(--mn-text);
+    vertical-align: 0.1vw;
+    white-space: nowrap;
+}
+
+.mn-m-v {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.mn-m-e {
+    background: var(--mn-sunken);
+    color: var(--mn-muted);
+}
+
+.mn-m-r {
+    background: var(--mn-warn-soft);
+    color: var(--mn-warn);
+}
+
+/* Seiten einer Kachel: Punkte, der aktuelle breit in der Akzentfarbe */
+.mn-punkte {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3vw;
+}
+
+.mn-punkte.mn-viele {
+    font-size: 0.8vw;
+    line-height: 1.2;
+    color: var(--mn-muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.mn-punkte i {
+    width: 0.5vw;
+    height: 0.5vw;
+    border-radius: 0.25vw;
+    background: var(--mn-line);
+}
+
+.mn-punkte i.mn-an {
+    width: 1.3vw;
+    background: var(--acc);
+}
+
+/* ---------- Fuß: Seite, Standzeit, Nachrichten, Farbschema ---------- */
+
+.mn-fuss {
+    position: absolute;
+    left: var(--mn-rand);
+    right: var(--mn-rand);
+    bottom: 0.9vw;
+    height: 3.2vw;
+    box-sizing: border-box;
+    padding: 0 1.1vw;
+    display: flex;
+    align-items: center;
+    gap: 1.2vw;
+    background: var(--mn-surface);
+    border: 1px solid var(--mn-line);
+    border-radius: 1vw;
+    box-shadow: var(--mn-shadow);
+    font-size: 1.05vw;
+    color: var(--mn-muted);
+    white-space: nowrap;
+}
+
+.mn-seite {
+    font-variant-numeric: tabular-nums;
+}
+
+.mn-balken {
+    flex: none;
+    width: 9vw;
+    height: 0.4vw;
+    border-radius: 0.2vw;
+    background: var(--mn-sunken);
+    overflow: hidden;
+}
+
+.mn-balken b {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--acc);
+}
+
+.mn-nachricht {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 1.4vw;
+    font-weight: 700;
+    color: var(--mn-ink);
+}
+
+/* lange Nachrichten laufen einmal durch und blenden am Rand aus */
+.mn-nachricht.mn-lang {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 2.5vw), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 2.5vw), transparent);
+}
+
+.mn-nachricht span {
+    display: inline-block;
+    will-change: transform;
+}
+
+.mn-nachricht .ti {
+    margin-right: 0.5vw;
+    color: var(--acc-text);
+    font-weight: normal;
+}
+
+.mn-schema {
+    flex: none;
+}
+
+/* ---------- Bilder (aus „Monitore verwalten“): über dem Plan, unter dem Fuß ---------- */
+
+.mn-bild {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: 50% 50%;
+    transition: opacity 3s linear;
+    z-index: 61;
+}
+
+.mn .mn-fuss {
+    z-index: 62;
+}
+
+/* ---------- Zeugniskonferenzen ---------- */
+
+.mn-zk {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: min-content;
+    gap: 1vw;
+    align-content: start;
+}
+
+.mn-zk .mn-kasten {
+    gap: 0.5vw;
+    padding: 1vw 1.2vw;
+}
+
+.mn-zk-zeit {
+    font: 800 2.4vw/1 var(--mn-display);
+    font-variant-numeric: tabular-nums;
+}
+
+.mn-zk-klasse {
+    font-size: 1.6vw;
+    font-weight: 700;
+}
+
+.mn-zk-stand {
+    display: flex;
+    align-items: center;
+    gap: 0.5vw;
+    font-size: 1.3vw;
+    color: var(--mn-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.mn-zk .mn-kasten.mn-jetzt {
+    background-color: var(--acc-soft);
+    border-color: var(--acc);
+    box-shadow: inset 0.35vw 0 0 var(--acc), var(--mn-shadow);
+}
+
+.mn-zk .mn-jetzt .mn-zk-stand {
+    color: var(--acc-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mn-kachel .mn-zeilen, .mn-bild {
+        transition: none;
+    }
+}

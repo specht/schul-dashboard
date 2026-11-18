@@ -1,0 +1,527 @@
+/* Neues Design (Vorschau): login – loaded after preview.css for users with the preview
+   (include/design_preview.rb). Uses the tokens and helpers of preview.css.
+
+   The login pages (login.html, c.html, login_otp.html) as one calm card:
+   the school, the title, one field and one solid button, then the hints as
+   rows with an icon. Logged out (body.pv-public: the look remembered by the
+   ui_preview cookie) there is no navigation at all: a centred card on the
+   backdrop, the legal line at the bottom right of the window (on phones
+   below the card). */
+
+/* ---------- Logged out: no sidebar, no tab bar ---------- */
+body.ui-preview.pv-public {
+    padding-left: 0 !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+}
+
+body.ui-preview.pv-public .navbar,
+body.ui-preview.pv-public .pv-tabbar {
+    display: none !important;
+}
+
+body.ui-preview.pv-public #main_container {
+    padding-bottom: 0;
+}
+
+/* the legal line: no bar, small and quiet, on a soft pill (readable on
+   every backdrop). Logged out the page's own footer line is shown (bottom
+   right on larger screens, below the card on phones); the copy preview.js
+   makes for the navigation stays hidden. */
+body.ui-preview.pv-public .pv-legal {
+    display: none !important;
+}
+
+body.ui-preview.pv-public .foot {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    position: fixed;
+    left: auto;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 4px 12px;
+    border: 0;
+    border-radius: 999px;
+    box-shadow: none;
+    background: color-mix(in srgb, var(--pv-surface) 88%, transparent);
+    color: var(--pv-muted) !important;
+    font-size: 0.75rem;
+    z-index: 10;
+}
+
+body.ui-preview.pv-public .foot span {
+    float: none !important;
+    position: static;
+    margin: 0;
+}
+
+body.ui-preview.pv-public .foot .timetable_updated:empty {
+    display: none;
+}
+
+body.ui-preview.pv-public .foot a {
+    color: var(--pv-muted);
+}
+
+body.ui-preview.pv-public .foot a:hover {
+    color: var(--pv-ink);
+}
+
+@media (max-width: 767px) {
+    body.ui-preview.pv-public .foot {
+        position: static;
+        width: fit-content;
+        margin: 0 auto calc(16px + env(safe-area-inset-bottom, 0px));
+        justify-content: center;
+    }
+}
+
+/* the explanation page for code apps (otp.html) logged out: the school above
+   it, a way back */
+body.ui-preview.pv-public .otp-page {
+    padding-top: 20px;
+}
+
+/* ---------- The card ---------- */
+.ui-preview #main_container > .container.pv-login {
+    max-width: 520px;
+    padding: 28px 28px 22px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container.pv-login {
+        margin-top: max(48px, 10vh);
+    }
+
+    /* logged in (»Zusätzliche Anmeldung«, beside the sidebar): room for the
+       explanations, not a narrow column in a wide window */
+    body.ui-preview:not(.pv-public) #main_container > .container.pv-login {
+        max-width: 680px;
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview #main_container > .container.pv-login {
+        max-width: none;
+        margin: 16px 12px 20px;
+        padding: 22px 20px 18px;
+    }
+}
+
+.ui-preview .pv-login > .row {
+    margin: 0;
+}
+
+.ui-preview .pv-login > .row > [class*='col'] {
+    flex: 1 1 100%;
+    max-width: 100%;
+    margin-left: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ui-preview .pv-login hr {
+    display: none;
+}
+
+.ui-preview .pv-login em {
+    font-style: normal;
+}
+
+.ui-preview .pv-login a:not(.btn):not(.pv-login-brand) {
+    color: var(--acc-text);
+}
+
+/* the school, a way back to the start */
+.pv-login-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    align-self: flex-start;
+    margin: 0 0 22px;
+    color: var(--pv-ink) !important;
+    font-family: var(--pv-display);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none !important;
+}
+
+.pv-login-brand img {
+    width: 28px;
+    height: 28px;
+}
+
+.otp-page .pv-login-brand {
+    margin-bottom: 18px;
+}
+
+.ui-preview .container.pv-login h2 {
+    margin: 0 0 10px !important;
+    font-size: 1.6rem;
+    line-height: 1.2;
+}
+
+/* ---------- Order: the action first, the explanations below ----------
+   login.html / login_otp.html; the code page keeps its own order */
+.ui-preview .pv-login:not(.pv-login-code) #sms_gateway_notice { order: 1; }
+.ui-preview .pv-login:not(.pv-login-code) form { order: 2; }
+.ui-preview .pv-login:not(.pv-login-code) .api_messages { order: 3; }
+.ui-preview .pv-login:not(.pv-login-code) .pv-login-intro { order: 4; }
+.ui-preview .pv-login:not(.pv-login-code) .pv-login-note { order: 5; }
+.ui-preview .pv-login:not(.pv-login-code) .pv-login-tip { order: 6; }
+.ui-preview .pv-login:not(.pv-login-code) .pv-login-help { order: 7; }
+
+.ui-preview .pv-login-code #form { order: 1; }
+.ui-preview .pv-login-code #div_forced_2fa { order: 2; }
+.ui-preview .pv-login-code .api_messages { order: 3; }
+.ui-preview .pv-login-code .pv-login-resend { order: 4; }
+.ui-preview .pv-login-code #login_hint { order: 5; }
+
+/* ---------- Field and button: stacked, large enough for thumbs ---------- */
+.ui-preview .pv-login form {
+    margin-top: 12px;
+}
+
+.ui-preview .pv-login .input-group {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 0 !important;
+}
+
+.ui-preview .pv-login .input-group > .form-control {
+    width: 100%;
+    flex: none;
+    height: 52px;
+    padding: 0 16px;
+    font-size: 1.05rem;
+    border-radius: 12px !important;
+}
+
+.ui-preview .pv-login .input-group > .input-group-append {
+    display: block;
+    margin: 0;
+}
+
+.ui-preview .pv-login .input-group > .input-group-append > .btn {
+    width: 100%;
+    min-height: 52px;
+    margin: 0;
+    border-radius: 12px !important;
+    border: 1px solid var(--acc) !important;
+    background: var(--acc) !important;
+    color: var(--acc-ink) !important;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.ui-preview .pv-login .input-group > .input-group-append > .btn:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--acc) 85%, #000) !important;
+    background: color-mix(in srgb, var(--acc) 85%, #000) !important;
+}
+
+.ui-preview .pv-login .input-group > .input-group-append > .btn:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+/* before an address is typed: quiet, not a washed-out accent */
+.ui-preview .pv-login .input-group > .input-group-append > .btn:disabled {
+    border-color: var(--pv-line) !important;
+    background: var(--pv-hover) !important;
+    color: var(--pv-muted) !important;
+    opacity: 1;
+}
+
+/* ---------- The code: big digits, easy to check ---------- */
+.ui-preview .pv-login-code #code,
+.ui-preview .pv-login-code #code2 {
+    height: 60px;
+    font-family: var(--pv-mono) !important;
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-align: center;
+}
+
+.ui-preview .pv-login-code #code::placeholder,
+.ui-preview .pv-login-code #code2::placeholder {
+    font-family: var(--pv-text);
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: normal;
+}
+
+/* the first code is accepted, the second factor follows: the first field
+   stays to read, without its (now useless) button */
+.ui-preview .pv-login-code #form:has(#code[readonly]) .input-group-append {
+    display: none;
+}
+
+.ui-preview .pv-login-code #form:has(#code[readonly]) #code {
+    height: 48px;
+    font-size: 1.2rem;
+}
+
+.ui-preview .pv-login-code #div_forced_2fa {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-login-code #div_forced_2fa > p {
+    margin-bottom: 4px;
+}
+
+/* other ways to get a code: calm buttons, side by side when they fit */
+.ui-preview .pv-login-code #div_forced_2fa > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 12px 0 0 !important;
+}
+
+.ui-preview .pv-login-code .btn-outline-secondary {
+    min-height: 44px;
+    padding: 8px 16px;
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.ui-preview .pv-login-code .btn-outline-secondary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-login-code .btn-outline-secondary:disabled {
+    background: transparent;
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+.ui-preview .pv-login-code .pv-login-resend {
+    margin-top: 16px;
+}
+
+.ui-preview .pv-login-code .send-code-via-email-confirmation {
+    margin: 10px 0 0;
+    color: var(--pv-ink);
+}
+
+/* ---------- Hints: rows with an icon at the top of the text ---------- */
+.ui-preview .pv-login .pv-login-intro,
+.ui-preview .pv-login .pv-login-note,
+.ui-preview .pv-login .pv-login-tip,
+.ui-preview .pv-login .pv-login-help {
+    position: relative;
+    margin: 0 0 14px;
+    padding-left: 32px !important;
+    color: var(--pv-muted) !important;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.ui-preview .pv-login .pv-login-intro::before,
+.ui-preview .pv-login .pv-login-note::before,
+.ui-preview .pv-login .pv-login-tip::before {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: 'tabler-icons';
+    font-size: 1.25rem;
+    line-height: 1.15;
+    color: var(--pv-muted);
+    -webkit-font-smoothing: antialiased;
+}
+
+.ui-preview .pv-login .pv-login-intro::before { content: "\eae2"; } /* lock */
+.ui-preview .pv-login .pv-login-note::before { content: "\eae5"; } /* mail */
+.ui-preview .pv-login .pv-login-tip::before { content: "\eb11"; } /* qrcode */
+
+.ui-preview .pv-login .pv-login-help > i {
+    left: 0 !important;
+    top: 0 !important;
+    font-size: 1.25rem !important;
+    line-height: 1.15;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-login .pv-login-help {
+    margin-bottom: 0;
+}
+
+/* the hints below the form begin after a line; on the code page the
+   first paragraph says where the code went: plain text above the field */
+.ui-preview .pv-login:not(.pv-login-code) .pv-login-intro,
+.ui-preview .pv-login:not(.pv-login-code):not(:has(.pv-login-intro)) .pv-login-note {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-login:not(.pv-login-code) .pv-login-intro::before,
+.ui-preview .pv-login:not(.pv-login-code):not(:has(.pv-login-intro)) .pv-login-note::before {
+    top: 18px;
+}
+
+.ui-preview .pv-login-code .pv-login-intro {
+    padding-left: 0 !important;
+    margin-bottom: 6px;
+    color: var(--pv-ink) !important;
+    font-size: 1rem;
+}
+
+.ui-preview .pv-login-code .pv-login-intro::before {
+    content: none;
+}
+
+/* ---------- Notices and errors: calm boxes, an icon at the top ---------- */
+.ui-preview .pv-login #sms_gateway_notice {
+    position: relative;
+    margin: 8px 0 4px;
+    padding: 12px 14px 12px 46px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--pv-hover) !important;
+    color: var(--pv-ink) !important;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.ui-preview .pv-login .api_messages {
+    position: relative;
+    margin-top: 12px;
+    border: 0 !important;
+    border-radius: 12px;
+    background: transparent !important;
+    box-shadow: none;
+}
+
+.ui-preview .pv-login .api_messages > div {
+    position: relative;
+    padding: 12px 44px 12px 46px !important;
+    border-radius: 12px;
+    background: var(--acc-soft) !important;
+    color: var(--pv-ink) !important;
+    text-align: left !important;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.ui-preview .pv-login #sms_gateway_notice::before,
+.ui-preview .pv-login .api_messages > div::before {
+    position: absolute;
+    left: 14px;
+    top: 11px;
+    font-family: 'tabler-icons';
+    font-size: 1.3rem;
+    line-height: 1.15;
+    color: var(--acc-text);
+}
+
+.ui-preview .pv-login #sms_gateway_notice::before { content: "\ea06"; } /* alert-triangle */
+.ui-preview .pv-login .api_messages > div::before { content: "\eac5"; } /* info-circle */
+
+.ui-preview .pv-login .api_messages > button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 1;
+    width: 40px !important;
+    height: 40px;
+    margin: 0 !important;
+    padding: 0;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--pv-muted) !important;
+}
+
+.ui-preview .pv-login .api_messages > button:hover {
+    color: var(--pv-ink) !important;
+}
+
+/* the hint about code apps (teachers, include/otp_nudge.rb) */
+.ui-preview .pv-login #login_hint {
+    margin-top: 18px !important;
+}
+
+.ui-preview .pv-login .otp-nudge {
+    gap: 12px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.ui-preview .pv-login .otp-nudge-icon {
+    font-size: 1.3rem;
+    line-height: 1.15;
+    color: var(--acc-text);
+    opacity: 1;
+}
+
+.ui-preview .pv-login .otp-nudge .btn {
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    font-weight: 600;
+    white-space: normal;
+    text-align: left;
+}
+
+/* "Einen Moment bitte …" while waiting (code.js): plain, no box */
+.ui-preview .pv-login .api_messages > div.text-muted {
+    padding: 10px 0 !important;
+    background: transparent !important;
+    color: var(--pv-muted) !important;
+    text-align: center !important;
+}
+
+.ui-preview .pv-login .api_messages > div.text-muted::before {
+    content: none;
+}
+
+/* no Bootstrap glow after a tap; the keyboard focus has its outline */
+.ui-preview .pv-login .btn:focus:not(:focus-visible) {
+    box-shadow: none !important;
+}
+
+.ui-preview .pv-login-code .btn-outline-secondary:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+    box-shadow: none !important;
+}
+
+/* a long page (otp.html): the legal line at its end, not over the text */
+body.ui-preview.pv-public:has(.otp-page) .foot {
+    position: static;
+    width: fit-content;
+    margin: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) auto;
+}
+
+/* under the address field: the beginning is enough (the server completes a
+   unique prefix, include/login.rb) */
+.ui-preview .pv-login .pv-login-field-hint {
+    margin: -4px 2px 2px;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: var(--pv-muted);
+}

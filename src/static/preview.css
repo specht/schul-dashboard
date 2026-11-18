@@ -11,6 +11,82 @@
     color: var(--acc-ink);
 }
 
+/* Buttons in pages: dark (the accent, always dark enough for white text)
+   with light type. Red (btn-danger) stays red. */
+.ui-preview #main_container .btn-primary,
+.ui-preview #main_container .btn-success,
+.ui-preview #main_container .btn-info,
+.ui-preview #main_container .btn-warning {
+    background-color: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+    font-weight: 600;
+}
+
+.ui-preview #main_container .btn-primary:hover,
+.ui-preview #main_container .btn-success:hover,
+.ui-preview #main_container .btn-info:hover,
+.ui-preview #main_container .btn-warning:hover,
+.ui-preview #main_container .btn-primary:focus-visible,
+.ui-preview #main_container .btn-success:focus-visible {
+    background-color: color-mix(in srgb, var(--acc) 85%, #000);
+    border-color: color-mix(in srgb, var(--acc) 85%, #000);
+    color: var(--acc-ink);
+}
+
+.ui-preview #main_container .btn-secondary,
+.ui-preview .btn-clipboard {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn-secondary:hover,
+.ui-preview .btn-clipboard:hover {
+    background-color: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn {
+    border-radius: 10px;
+}
+
+/* form labels wrap instead of being cut off: styles.css keeps them on one
+   line, and a button floated into the label (Termine: »Externe
+   Teilnehmer…«) then lies under the overflowing text and takes no taps */
+.ui-preview .form-group label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* a button inside a field's label is a side action: neutral, not the accent */
+.ui-preview #main_container .form-group label > .btn-success,
+.ui-preview #main_container .form-group label > .btn-primary {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+    font-weight: 500;
+    margin: 0 0 6px 12px;
+}
+
+.ui-preview #main_container .form-group label > .btn-success:hover,
+.ui-preview #main_container .form-group label > .btn-primary:hover {
+    background-color: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* the main action of a dialog: solid accent */
+.ui-preview #main_container .modal-footer .btn-primary,
+.ui-preview #main_container .modal-footer .btn-success,
+.ui-preview .modal-footer .btn-primary,
+.ui-preview .modal-footer .btn-success {
+    background-color: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+}
+
 /* The colour sliders in the profile (Farbton, Sättigung, Helligkeit, Kontrast,
    Sepia, Analog) filter the whole page. The new design leaves them out: its
    colours are computed per scheme to stay readable, a filter would undo that
@@ -74,6 +150,7 @@ html {
    menu). The pages themselves appear unchanged in the content area. */
 
 .ui-preview {
+    --pv-sidebar: 288px;
     --pv-surface: #ffffff;
     --pv-line: #dfe3e8;
     --pv-ink: #131b26;
@@ -130,10 +207,45 @@ html {
     border-color: var(--pv-line);
 }
 
-/* the separate search button of today's phone header: in the new frame the
-   sidebar (desktop) or the tab bar (phone) offers the search */
+/* the separate search slot of the phone's top bar (code.js moves the search
+   there): an icon on the right of the white bar; on the start page the day's
+   header has the icon, on larger screens the sidebar the search */
 .ui-preview .nav-quick-search-nav {
     display: none !important;
+}
+
+@media (max-width: 767px) {
+    body.ui-preview:not(.pv-agenda-on) .navbar .nav-quick-search-nav.pv-unused {
+        display: flex !important;
+        position: absolute;
+        right: calc(10px + env(safe-area-inset-right, 0px));
+        /* level with the school's name: the bar below the safe area */
+        top: env(safe-area-inset-top, 0px);
+        bottom: 0;
+        align-items: center;
+        margin: 0;
+    }
+
+    body.ui-preview:not(.pv-agenda-on) .nav-quick-search-nav .nav-quick-search {
+        width: 40px;
+        height: 40px;
+        padding: 0 !important;
+        display: grid !important;
+        place-items: center;
+        border: 0 !important;
+        border-radius: 50%;
+        color: var(--pv-ink) !important;
+    }
+
+    body.ui-preview:not(.pv-agenda-on) .nav-quick-search-nav .nav-quick-search-label {
+        display: none !important;
+    }
+
+    body.ui-preview:not(.pv-agenda-on) .nav-quick-search-nav .icon {
+        position: static;
+        margin: 0;
+        font-size: 20px;
+    }
 }
 
 /* the tab bar exists only on phones */
@@ -144,7 +256,7 @@ html {
 @media (min-width: 768px) {
     .ui-preview {
         padding-top: 0;
-        padding-left: 264px;
+        padding-left: var(--pv-sidebar);
     }
 
     .ui-preview .navbar {
@@ -153,7 +265,7 @@ html {
         bottom: 0;
         left: 0;
         right: auto;
-        width: 264px;
+        width: var(--pv-sidebar);
         flex-direction: column;
         flex-wrap: nowrap;
         align-items: stretch;
@@ -200,6 +312,29 @@ html {
     .ui-preview .navbar .nav-item {
         width: 100%;
         border: 0 !important;
+        /* styles.css spaces the items of the old horizontal bar */
+        padding: 0;
+        margin: 0;
+    }
+
+    /* menus open to the side: a chevron pointing there, at the right edge */
+    .ui-preview .navbar .navbar-collapse .dropdown-toggle::after {
+        content: "\ea61";
+        font-family: "tabler-icons" !important;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        margin-left: auto;
+        border: 0;
+        font-size: 1.05em;
+        color: var(--pv-muted);
+        vertical-align: middle;
+        flex: none;
+    }
+
+    .ui-preview .navbar .nav-item.dropdown.show > .dropdown-toggle::after {
+        color: var(--pv-ink);
     }
 
     .ui-preview .navbar .nav-link {
@@ -276,7 +411,7 @@ html {
        the sidebar itself stays short and never scrolls */
     .ui-preview .navbar .dropdown-menu {
         position: fixed !important;
-        left: 264px !important;
+        left: var(--pv-menu-left, var(--pv-sidebar)) !important;
         top: var(--pv-menu-top, 12px) !important;
         right: auto !important;
         transform: none !important;
@@ -284,7 +419,7 @@ html {
         margin: 0 0 0 6px;
         padding: 6px;
         min-width: 236px;
-        max-width: calc(100vw - 264px - 24px);
+        max-width: calc(100vw - var(--pv-sidebar) - 24px);
         max-height: var(--pv-menu-max, calc(100vh - 24px)) !important;
         overflow-y: auto !important;
         column-gap: 4px;
@@ -296,6 +431,15 @@ html {
     }
 
     .ui-preview .navbar .dropdown-menu > * {
+        break-inside: avoid;
+    }
+
+    /* the unfolded "Weitere Lerngruppen" may flow on into the next column */
+    .ui-preview .navbar .dropdown-menu > .pv-more-groups-list {
+        break-inside: auto;
+    }
+
+    .ui-preview .navbar .pv-more-groups-list > * {
         break-inside: avoid;
     }
 
@@ -314,11 +458,11 @@ html {
     }
 
     .ui-preview .foot {
-        left: 264px;
+        left: var(--pv-sidebar);
     }
 
     .ui-preview .design-feedback-button {
-        left: calc(264px + 12px);
+        left: calc(var(--pv-sidebar) + 12px);
     }
 }
 
@@ -342,19 +486,65 @@ html {
         transition: none !important;
     }
 
+    /* down to the screen's edge behind the tab bar (no gap whatever the
+       tab bar's height), the last entries above it */
     .ui-preview .navbar .navbar-collapse {
         position: fixed;
         left: 0;
         right: 0;
-        bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-        max-height: 75vh;
+        bottom: 0;
+        max-height: 85vh;
         overflow-y: auto;
         background: var(--pv-surface);
         border-top: 1px solid var(--pv-line);
         border-radius: 16px 16px 0 0;
         box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
-        padding: 10px 14px;
+        padding: 10px 12px calc(84px + env(safe-area-inset-bottom, 0px));
         z-index: 7500;
+    }
+
+    /* slides up like the lesson sheet, down again when closing (design_preview.rb) */
+    .ui-preview .navbar .navbar-collapse.show {
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .ui-preview .navbar .navbar-collapse.show.pv-closing {
+        transform: translateY(100%);
+        transition: transform 0.18s ease-in;
+    }
+
+    .pv-menu-veil {
+        position: fixed;
+        inset: 0;
+        z-index: 7990;
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    /* the entries: full width, even spacing (styles.css spaces the items of
+       the old horizontal bar) */
+    .ui-preview .navbar .navbar-collapse .nav-item {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-link {
+        display: flex !important;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px !important;
+        border-radius: 10px;
+        color: var(--pv-ink) !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-link.pv-active {
+        color: var(--acc-text) !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-link .icon {
+        position: static;
+        flex: none;
+        margin: 0 !important;
     }
 
     .pv-tabbar {
@@ -365,7 +555,10 @@ html {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 7600;
+        /* layers (the template sets .navbar and .modal to 8000): veil 7990,
+           navbar with the "Mehr" sheet 8000, tab bar 8001, dialog backdrop
+           8050, dialogs and sheets 8100 */
+        z-index: 8001;
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
         background: var(--pv-surface);
         border-top: 1px solid var(--pv-line);
@@ -506,7 +699,10 @@ html {
     --c: var(--pv-line);
     width: 100%;
     min-width: 0;
-    overflow-wrap: anywhere;
+    /* German hyphenation first ("Gesellschafts-wissenschaften"), breaking
+       only what cannot be hyphenated (addresses, links) */
+    hyphens: auto;
+    overflow-wrap: break-word;
     border-left: 5px solid var(--c) !important;
     background: var(--pv-surface);
     border: 1px solid var(--pv-line);
@@ -516,7 +712,7 @@ html {
 }
 
 .pv-ag-card.pv-ag-running {
-    border: 2px solid var(--acc);
+    border: 2px solid var(--acc-text);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
@@ -538,29 +734,38 @@ html {
     background: repeating-linear-gradient(135deg, var(--pv-hover) 0 6px, var(--pv-surface) 6px 12px);
 }
 
+/* chip, title and "Jetzt" at the top, also when the title wraps */
 .pv-ag-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
 }
 
 .pv-ag-subj {
     flex: none;
-    min-width: 38px;
+    /* one width for every subject, so the titles start in one column;
+       four-letter codes (Nawi, StrA) get a smaller size to fit */
+    width: 44px;
     height: 38px;
-    padding: 0 6px;
+    padding: 0 2px;
     box-sizing: border-box;
     border-radius: 11px;
     display: grid;
     place-items: center;
     font: 800 13px/1 var(--pv-display);
-    /* the subject colours are made for white text (light) / dark text (dark) */
-    color: #ffffff;
+    /* white or dark, whichever the subject colour is made for (--ci from
+       the subject's -ink token, timetable.html) */
+    color: var(--ci, #ffffff);
     background: var(--c);
 }
 
 .dark .pv-ag-subj {
-    color: #0a1222;
+    color: var(--ci, #0a1222);
+}
+
+.pv-ag-subj.pv-ag-subj-long {
+    font-size: 11.5px;
+    letter-spacing: -0.01em;
 }
 
 /* no subject colour (cancelled, events): a quiet chip */
@@ -650,7 +855,7 @@ html {
 .pv-ag-progress b {
     display: block;
     height: 100%;
-    background: var(--acc);
+    background: var(--acc-text);
 }
 
 .pv-ag-left {
@@ -721,4 +926,5070 @@ html {
 .pv-ag-time {
     color: var(--pv-muted);
     font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Timetable: toolbar and the switcher (Kürzel, classes, rooms) ---------- */
+.ui-preview .fc .fc-button-primary,
+.ui-preview .fc .fc-button-primary:not(:disabled):active,
+.ui-preview .fc .fc-button-primary:not(:disabled).fc-button-active {
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.ui-preview .fc .fc-button-primary:hover {
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview .fc .fc-button-primary:disabled {
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+    opacity: 0.7;
+}
+
+.ui-preview .fc .fc-button {
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-weight: 600;
+}
+
+.ui-preview .fc .fc-button-group > .fc-button:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.ui-preview .fc .fc-button-group > .fc-button:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: -1px;
+}
+
+.ui-preview .fc .fc-button:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+}
+
+/* the switcher as a panel of its own */
+.ui-preview .timetable_chooser > div:not(.hint) {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.ui-preview .timetable_chooser hr {
+    border-top: 1px solid var(--pv-line);
+    margin: 8px 0 10px;
+}
+
+.ui-preview .ttc {
+    width: auto;
+    min-width: 44px;
+    padding: 4px 10px;
+    margin: 0 2px 6px 0;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    box-shadow: none;
+    font-weight: 600;
+    text-align: center;
+}
+
+.ui-preview .ttc:hover {
+    background: var(--acc-soft);
+    border-color: transparent;
+    color: var(--acc-text);
+}
+
+.ui-preview .ttc.active {
+    background: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+    box-shadow: none;
+    font-weight: 700;
+}
+
+/* pills, also against the general button radius in pages */
+.ui-preview #main_container .ttc {
+    border-radius: 999px;
+}
+
+/* "Alle Lehrkräfte", "Alle Klassen", "Alle Räume": quiet text buttons */
+.ui-preview .ttc[class*='bu-show-alle'] {
+    min-width: 0;
+    background: transparent;
+    border: 1px solid var(--pv-line);
+    color: var(--acc-text);
+    font-weight: 600;
+    padding: 3px 10px !important;
+}
+
+/* ---------- Dialogs ---------- */
+.ui-preview .modal-content {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.ui-preview .modal-header {
+    border-bottom: 1px solid var(--pv-line);
+    padding: 16px 20px 12px;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.ui-preview .modal-title {
+    font-family: var(--pv-display);
+    font-weight: 700;
+}
+
+.ui-preview .modal-body hr {
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .modal-footer {
+    border-top: 1px solid var(--pv-line);
+    padding: 10px 16px;
+    gap: 6px;
+}
+
+.ui-preview .modal-footer > * {
+    margin: 0;
+}
+
+.ui-preview .modal-footer .btn {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* the lesson dialog: a band in the subject colour, the room as a chip,
+   quiet buttons and one accent action */
+.ui-preview #lessonModal .modal-header {
+    border-top: 6px solid var(--c, var(--acc));
+}
+
+.ui-preview #lessonModal .zeitpunkt {
+    font-family: var(--pv-text);
+    font-weight: normal;
+    color: var(--pv-muted);
+    margin-top: 4px;
+}
+
+.ui-preview #lessonModal .raum-label:not(:empty) {
+    flex: none;
+    font-size: 1rem !important;
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--pv-hover);
+}
+
+/* the substitution note: a band across the whole dialog, right below the
+   header (body padding 1rem + column padding 15px) */
+.ui-preview #lessonModal .vertretungs-text:not(:empty) {
+    margin: -1rem calc(-15px - 1rem) 1rem;
+    padding: 12px calc(15px + 1rem);
+    border: 0;
+    border-radius: 0;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+.ui-preview #lessonModal .modal-body {
+    box-shadow: none;
+}
+
+.ui-preview #lessonModal .modal-footer .btn-warning,
+.ui-preview #lessonModal .modal-footer .btn-secondary {
+    background: var(--pv-hover);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #lessonModal .modal-footer .btn-success {
+    background: var(--acc);
+    border: 1px solid var(--acc);
+    color: var(--acc-ink);
+}
+
+/* phones: dialogs with .pv-sheet (lesson, parent mail) as a sheet from the bottom */
+@media (max-width: 767px) {
+    /* styles.css keeps dialogs 1.5em off the bottom edge */
+    .ui-preview .pv-sheet {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .ui-preview .pv-sheet .modal-dialog {
+        margin: 0;
+        max-width: none;
+        min-height: 100%;
+        height: 100%;
+        /* Bootstrap leaves 1rem free below scrollable dialogs */
+        max-height: none;
+        justify-content: flex-end;
+        align-items: stretch;
+    }
+
+    /* the grab handle: pull down to close (preview.js) */
+    .ui-preview .pv-sheet .modal-content::before {
+        content: "";
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        margin-left: -20px;
+        border-radius: 2px;
+        background: var(--pv-line);
+        z-index: 1;
+    }
+
+    .ui-preview .pv-sheet .modal-header {
+        padding-top: 26px;
+    }
+
+    .ui-preview .pv-sheet .modal-content {
+        border-radius: 20px 20px 0 0;
+        max-height: 90svh;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* slides up from the bottom edge (these dialogs have no Bootstrap fade) */
+    .ui-preview .pv-sheet.show .modal-content {
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .ui-preview .pv-sheet .modal-footer {
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 10px 12px;
+    }
+
+    .ui-preview .pv-sheet .modal-footer .btn {
+        flex: none;
+        font-size: 0.9rem;
+        padding: 6px 10px;
+    }
+
+    /* no "Schließen" on phones: the sheet closes by pulling it down or
+       tapping above it. Still there for keyboards and screen readers, and
+       shown when it gets keyboard focus. */
+    .ui-preview .pv-sheet .modal-footer [data-dismiss='modal']:not(:focus-visible) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* nothing left in the row: no row */
+    .ui-preview .pv-sheet .modal-footer:not(:has(.btn:not([data-dismiss='modal']):not([style*='display: none']), .ha-amt-container:not([style*='display: none']))) {
+        padding: 0;
+        border-top: 0;
+        min-height: 0;
+    }
+}
+
+/* nothing floats over an open dialog */
+.ui-preview.modal-open .design-feedback-button {
+    display: none;
+}
+
+@keyframes pv-sheet-up {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-preview .navbar .navbar-collapse.show,
+    .ui-preview .pv-sheet.show .modal-content {
+        animation: none;
+    }
+}
+
+/* ---------- Timetable grid (the week on desktop) ---------- */
+.ui-preview .fc .fc-view-harness {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: 16px;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.ui-preview .fc table {
+    background: transparent;
+}
+
+.ui-preview .fc-scrollgrid {
+    border-radius: 16px;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.ui-preview .fc-theme-standard td,
+.ui-preview .fc-theme-standard th,
+.ui-preview .fc-theme-standard .fc-scrollgrid {
+    border-color: var(--pv-line);
+}
+
+.ui-preview .fc .fc-col-header-cell-cushion {
+    color: var(--pv-ink);
+    font-family: var(--pv-display);
+    font-weight: 700;
+    padding: 8px 4px;
+}
+
+.ui-preview .fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+    color: var(--acc-text);
+}
+
+.ui-preview .fc-timegrid-col.fc-day-today,
+.ui-preview .fc-daygrid-day.fc-day-today {
+    background-color: color-mix(in srgb, var(--acc-soft) 55%, transparent) !important;
+}
+
+.ui-preview .fc .fc-timegrid-slot-label-cushion,
+.ui-preview .fc .fc-timegrid-axis-cushion {
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .fc .fc-timegrid-now-indicator-line {
+    border-color: var(--acc-text);
+    border-width: 2px 0 0;
+}
+
+.ui-preview .fc .fc-timegrid-now-indicator-arrow {
+    border-color: var(--acc-text);
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+}
+
+/* the lessons: rounded blocks, a little lift, no outline */
+/* a little air between the all-day row and the first lesson: in the
+   divider row (FullCalendar doesn't measure it; padding inside the time
+   grid itself makes it re-measure endlessly) */
+.ui-preview .fc .fc-timegrid-divider {
+    padding-bottom: 12px;
+    /* air, not a shaded band: the surface, a hairline below the day's events */
+    background: var(--pv-surface);
+    border-top: 1px solid var(--pv-line);
+    border-bottom: 0;
+}
+
+.ui-preview .fc-timegrid-event-harness {
+    box-shadow: none;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.ui-preview .fc-v-event {
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.ui-preview .fc-timegrid-event-harness-inset .fc-timegrid-event {
+    box-shadow: 0 0 0 1px var(--pv-surface), 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* events, birthdays, cancelled lessons, duties: calm surfaces (timetable.html,
+   preview_text_color); only lessons carry colour */
+.ui-preview .fc-event.pv-quiet {
+    box-shadow: inset 3px 0 0 var(--pv-line);
+}
+
+.ui-preview .fc-v-event.pv-quiet {
+    box-shadow: inset 3px 0 0 var(--pv-line), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.ui-preview .fc-event.pv-off {
+    background: repeating-linear-gradient(135deg, var(--pv-hover) 0 6px, var(--pv-surface) 6px 12px) !important;
+}
+
+.ui-preview .fc-daygrid-event {
+    border: 0;
+    border-radius: 6px;
+    padding: 1px 4px;
+    margin-bottom: 2px;
+}
+
+.ui-preview .fc-daygrid-event .fc-event-title,
+.ui-preview .fc-daygrid-event .fc-event-time {
+    color: var(--pv-ink);
+}
+
+/* ---------- Hints next to the timetable (weekend, homework) ---------- */
+.ui-preview .hint,
+.ui-preview .weekend_events {
+    font-size: 0.92em;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 0;
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.ui-preview .hint hr,
+.ui-preview .weekend_events hr {
+    border-top: 1px solid var(--pv-line);
+    margin: 8px 0;
+}
+
+.ui-preview .hint b:first-child,
+.ui-preview .weekend_events > p:first-child b {
+    font-family: var(--pv-display);
+}
+
+/* ---------- Pages: the content panel ---------- */
+.ui-preview .container {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: 16px;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.14);
+}
+
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container,
+    .ui-preview #main_container > div > .container {
+        margin-top: 24px;
+        margin-bottom: 48px;
+    }
+}
+
+.ui-preview .container hr {
+    border-top: 1px solid var(--pv-line);
+}
+
+/* ---------- Messages ---------- */
+/* Posteingang / Postausgang as a segmented switch (messages.html swaps
+   btn-primary and btn-outline-secondary) */
+.ui-preview .btn-group:has(#bu-inbox) {
+    background: var(--pv-hover);
+    border-radius: 12px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.ui-preview .btn-group:has(#bu-inbox) .btn {
+    border: 0;
+    border-radius: 9px !important;
+    background: transparent;
+    color: var(--pv-muted);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.ui-preview .btn-group:has(#bu-inbox) .btn.btn-primary {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* the switch and "Neue Nachricht" in one row (wrapping on narrow screens),
+   the divider below them */
+.ui-preview div:has(> .btn-group #bu-inbox) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.ui-preview div:has(> .btn-group #bu-inbox) > hr {
+    flex-basis: 100%;
+    margin: 4px 0 0;
+}
+
+.ui-preview .bu-compose-message {
+    margin-left: auto;
+    background: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+    font-weight: 600;
+    border-radius: 10px;
+}
+
+.ui-preview .messages-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 1;
+    border: 0;
+    margin: 18px 0 10px;
+    color: var(--pv-muted);
+    font-size: 0.82em;
+    font-weight: 600;
+}
+
+.ui-preview .messages-date::before,
+.ui-preview .messages-date::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--pv-line);
+}
+
+.ui-preview .text-comment,
+.ui-preview .audio-player {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    box-shadow: none;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+.ui-preview .text-comment .from {
+    background: transparent;
+    box-shadow: none;
+    border-bottom: 1px solid var(--pv-line);
+    margin: -12px -16px 10px;
+    padding: 12px 16px 10px;
+    border-radius: 14px 14px 0 0;
+    font-weight: 700;
+}
+
+.ui-preview .text-comment .from .buttons {
+    top: -3px;
+    left: 4px;
+}
+
+.ui-preview .text-comment .from .buttons .btn,
+.ui-preview .outbox-messages-here .btn {
+    border-radius: 999px;
+    background: var(--pv-hover);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview .text-comment .message {
+    overflow-wrap: anywhere;
+}
+
+/* phones: the switch and "Neue Nachricht" side by side, compact */
+@media (max-width: 767px) {
+    .ui-preview .btn-group:has(#bu-inbox) .btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+
+    .ui-preview .bu-compose-message {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+}
+
+/* ---------- Pages: headings and forms ---------- */
+.ui-preview .container h2 {
+    font-family: var(--pv-display);
+    font-weight: 700;
+    font-size: 1.55rem;
+    letter-spacing: -0.01em;
+    margin-top: 36px !important;
+    margin-bottom: 14px !important;
+}
+
+/* the page title: no space above it */
+.ui-preview .container > .row > [class*='col'] > h2:first-child {
+    margin-top: 0 !important;
+}
+
+.ui-preview .container h3,
+.ui-preview .container h4 {
+    font-family: var(--pv-display);
+    font-weight: 700;
+}
+
+.ui-preview .container label {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--pv-muted);
+    margin-bottom: 4px;
+}
+
+.ui-preview .form-control,
+.ui-preview .custom-select {
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background-color: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .form-control:focus,
+.ui-preview .custom-select:focus {
+    border-color: var(--acc-text);
+    box-shadow: 0 0 0 3px var(--acc-soft);
+}
+
+.ui-preview .form-control[readonly],
+.ui-preview .form-control:disabled {
+    background-color: var(--pv-hover);
+    border-color: transparent;
+    color: var(--pv-ink);
+}
+
+.ui-preview .form-control::placeholder {
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+/* the profile picture: round, a little shadow */
+.ui-preview .avatar-lg {
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- Switches (Bootstrap Toggle) as real switches ----------
+   A compact track without text: the knob on the right and the accent
+   colour mean "on"; the row's label says what "on" is (doc/Gestaltung.md).
+   Bootstrap Toggle slides a group twice as wide as the switch; its knob
+   sits in the middle of that group, i.e. on the switch's edge – moved in
+   by half a knob plus the gap (11 + 3 px). */
+.ui-preview .toggle.btn {
+    flex: none;
+    width: 46px !important;
+    height: 28px !important;
+    min-height: 0 !important;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.ui-preview .toggle .toggle-on,
+.ui-preview .toggle .toggle-off {
+    border: 0 !important;
+    border-radius: 0;
+    padding: 0 !important;
+    font-size: 0 !important;
+    color: transparent !important;
+    box-shadow: none;
+}
+
+.ui-preview .toggle .toggle-on {
+    background: var(--acc) !important;
+}
+
+.ui-preview .toggle .toggle-off {
+    background: color-mix(in srgb, var(--pv-ink) 22%, var(--pv-surface)) !important;
+}
+
+.ui-preview .toggle .toggle-handle {
+    width: 22px !important;
+    height: 22px;
+    top: 3px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transform: translateX(-14px);
+}
+
+.ui-preview .toggle.off .toggle-handle {
+    transform: translateX(14px);
+}
+
+.ui-preview .toggle:focus-within {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+}
+
+/* no general button style may reach the switch's parts: the ID-based
+   ".ui-preview #main_container .btn" (10 px corners) and inherited borders,
+   shadows or press effects otherwise turn the knob into a rounded square
+   and show a light strip above the track */
+.ui-preview .toggle.btn,
+.ui-preview #main_container .toggle.btn {
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.ui-preview #main_container .toggle .toggle-group {
+    top: 0 !important;
+    bottom: 0 !important;
+}
+
+.ui-preview #main_container .toggle .toggle-on,
+.ui-preview #main_container .toggle .toggle-off {
+    top: 0 !important;
+    bottom: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.ui-preview .toggle .toggle-handle,
+.ui-preview #main_container .toggle .toggle-handle {
+    /* placed absolutely in the middle of the group (= the track's edge),
+       not on the text baseline, which put it about 2 px too low */
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 22px !important;
+    height: 22px !important;
+    margin: -11px 0 0 -11px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* profile, "Darstellung": settings rows – label (and description) left,
+   the switch right, level with the first line; every row full width */
+.ui-preview .col-md-4:has(> div > .toggle),
+.ui-preview .col-md-12:has(> div > .toggle) {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-top: 0 !important;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .col-md-4:has(> div > .toggle) > div,
+.ui-preview .col-md-12:has(> div > .toggle) > div {
+    align-items: flex-start !important;
+    gap: 16px;
+}
+
+.ui-preview .col-md-4:has(> div > .toggle) label,
+.ui-preview .col-md-12:has(> div > .toggle) label {
+    margin: 2px 0 0 !important;
+    font-weight: 600 !important;
+    color: var(--pv-ink);
+}
+
+/* ---------- Colour schemes and patterns (profile) ---------- */
+.ui-preview .swatch {
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.ui-preview .swatch.active {
+    box-shadow: 0 0 0 3px var(--pv-surface), 0 0 0 5px var(--acc-text);
+}
+
+.ui-preview .swatch:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--pv-surface), 0 0 0 5px var(--acc-text);
+}
+
+/* ---------- Tables ---------- */
+.ui-preview .container table,
+.ui-preview .modal table {
+    background: transparent;
+    color: var(--pv-ink);
+}
+
+.ui-preview .table td,
+.ui-preview .table th {
+    border-top-color: var(--pv-line);
+}
+
+.ui-preview .table thead th {
+    border-bottom: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.ui-preview .table-striped tbody tr:nth-of-type(odd) {
+    background-color: color-mix(in srgb, var(--pv-hover) 75%, transparent);
+}
+
+.ui-preview .table-hover tbody tr:hover {
+    background-color: var(--acc-soft);
+}
+
+/* ---------- Lesson blocks: time and room (timetable.html) ---------- */
+.ui-preview .pv-ev-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    opacity: 1 !important;
+    font-family: var(--pv-text);
+    font-size: 0.78em;
+    line-height: 1.5;
+}
+
+.ui-preview .pv-ev-time {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-ev-room {
+    position: static !important;
+    flex: none;
+    margin-left: auto;
+    font-family: var(--pv-text);
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 0 5px !important;
+    background-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.ui-preview.dark .pv-subject .pv-ev-room {
+    background-color: rgba(0, 0, 0, 0.14) !important;
+}
+
+.ui-preview .pv-quiet .pv-ev-room {
+    background-color: var(--pv-surface) !important;
+    box-shadow: inset 0 0 0 1px var(--pv-line);
+}
+
+.ui-preview .pv-ev-room s {
+    opacity: 0.7;
+    font-weight: normal;
+}
+
+/* the subject line in the normal font, too */
+.ui-preview .fc-timegrid-event .condensed {
+    font-family: var(--pv-text);
+}
+
+/* ---------- Profile: own colour scheme (new design) ---------- */
+.ui-preview .pv-scheme-note {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.ui-preview .pv-scheme-own {
+    margin-top: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+}
+
+.ui-preview .pv-scheme-own h3 {
+    font-size: 1.15rem;
+    margin: 0 0 4px;
+}
+
+.ui-preview .pv-scheme-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 8px 0 10px;
+}
+
+.ui-preview .pv-scheme-strip {
+    height: 14px;
+    border-radius: 7px;
+    margin-bottom: 12px;
+}
+
+/* ---------- Profile: no colour sliders, compact scheme and pattern tiles ---------- */
+.ui-preview h2:has(+ #color_options_preview_note),
+.ui-preview #color_options_preview_note,
+.ui-preview #color_options_preview_note + .col-md-12 {
+    display: none !important;
+}
+
+.ui-preview .swatches,
+.ui-preview .style_swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 0 0 16px;
+}
+
+.ui-preview .swatches > [class*='col'],
+.ui-preview .style_swatches > [class*='col'] {
+    max-width: none;
+    padding: 0;
+}
+
+.ui-preview .swatches .swatch,
+.ui-preview .style_swatches .swatch {
+    margin-bottom: 0;
+    height: 72px;
+}
+
+.ui-preview .swatches .swatch .label {
+    font-size: 0.9em;
+    line-height: 1.2;
+}
+
+/* ---------- Tablets: the sidebar as an icon rail ----------
+   Between phone and desktop the full sidebar takes too much room from the
+   timetable. The rail shows the icons only (names as tooltips, preview.js;
+   the text stays for screen readers); menus still open beside it. */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview {
+        --pv-sidebar: 76px;
+    }
+
+    .ui-preview .navbar {
+        padding: 12px 8px;
+    }
+
+    .ui-preview .navbar .navbar-brand {
+        margin: 0 auto 12px;
+        padding: 6px;
+    }
+
+    .ui-preview .navbar .brand-brand {
+        display: none;
+    }
+
+    .ui-preview .navbar .navbar-brand img {
+        margin: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link {
+        font-size: 0;
+        justify-content: center;
+        padding: 10px 0 !important;
+        gap: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link .icon {
+        font-size: 18px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link::after,
+    .ui-preview .navbar .nav-quick-search-label {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .nav-quick-search {
+        border: 0 !important;
+    }
+
+    .ui-preview .navbar .dropdown-menu {
+        font-size: 1rem;
+    }
+}
+
+/* the sections in the rail: one icon each; a tap opens the section as a
+   panel beside the rail, like the menus (preview.js, rail_panel) */
+.ui-preview .navbar button.pv-nav-heading > .icon {
+    display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .navbar .pv-nav-section {
+        margin-top: 2px !important;
+    }
+
+    .ui-preview .navbar .pv-nav-section:first-of-type {
+        margin-top: 10px !important;
+        padding-top: 8px;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .navbar button.pv-nav-heading {
+        justify-content: center;
+        padding: 10px 0;
+        border-radius: 10px;
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .label,
+    .ui-preview .navbar button.pv-nav-heading::after {
+        display: none;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        font-size: 18px;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .navbar .pv-nav-section > .pv-nav-body {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > .pv-nav-body {
+        display: block !important;
+        position: fixed;
+        left: calc(var(--pv-sidebar) + 6px);
+        top: var(--pv-rail-top, 12px);
+        width: 272px;
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
+        padding: 6px;
+        background: var(--pv-surface);
+        border: 1px solid var(--pv-line);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+        z-index: 1055;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-sub {
+        padding-left: 42px;
+    }
+
+    /* Lerngruppen in the panel: a normal entry, its menu beside the panel */
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .nav-item > .nav-link {
+        font-size: 0.95rem;
+        justify-content: flex-start;
+        padding: 7px 10px !important;
+        gap: 10px;
+    }
+}
+
+/* ---------- Kursbuch (lessons.html): the side pane ----------
+   styles.css fixes the pane to the right with 25 % of the window, sized
+   for today's top bar; next to the sidebar that is more than its column
+   and covers the table. */
+.ui-preview .lesson_pane {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+@media (min-width: 768px) {
+    .ui-preview .lesson_pane {
+        top: 0;
+        width: calc((100vw - var(--pv-sidebar)) * 0.25);
+        height: 100vh;
+        margin-top: 0;
+        padding-top: 24px;
+        box-shadow: -1px 0 0 var(--pv-line), -8px 0 24px rgba(0, 0, 0, 0.06);
+    }
+}
+
+/* ---------- Dark mode: dark.css overrides with !important ----------
+   (.active dark grey, input fields half black, dotted grid lines); the new
+   design's tokens win here. FullCalendar's sticky header takes its colour
+   from --fc-page-bg-color (white by default). */
+.ui-preview .fc {
+    --fc-page-bg-color: var(--pv-surface);
+    --fc-neutral-bg-color: var(--pv-hover);
+    --fc-border-color: var(--pv-line);
+}
+
+.ui-preview.dark .fc-theme-standard td,
+.ui-preview.dark .fc-theme-standard th {
+    border-style: solid;
+}
+
+.ui-preview.dark .ttc.active {
+    background-color: var(--acc) !important;
+    border-color: var(--acc) !important;
+    color: var(--acc-ink) !important;
+}
+
+/* the same for every other "current" or "chosen" element of the new design
+   (dark.css paints every .active grey with !important) */
+.ui-preview.dark .pv-plan-chip.active,
+.ui-preview.dark .pv-tests-menu-klasse.active {
+    background-color: var(--acc) !important;
+    color: var(--acc-ink) !important;
+}
+
+.ui-preview.dark .pv-sheet-links a.active,
+.ui-preview.dark #atNotesModal .bu-at-note.active,
+.ui-preview.dark #main_container .btn-outline-primary.active,
+.ui-preview.dark #main_container .btn-outline-success.active,
+.ui-preview.dark #main_container .btn-outline-info.active,
+.ui-preview.dark #main_container .btn-outline-warning.active,
+.ui-preview.dark .modal .btn-outline-primary.active,
+.ui-preview.dark .modal .btn-outline-success.active,
+.ui-preview.dark .modal .btn-outline-info.active,
+.ui-preview.dark .modal .btn-outline-warning.active {
+    background-color: var(--acc-soft) !important;
+    color: var(--acc-text) !important;
+}
+
+/* the chosen colour of the palette keeps its colour (--sw, set per swatch) */
+.ui-preview.dark .pv-cling-colour.active {
+    background-color: var(--sw) !important;
+}
+
+.ui-preview.dark .form-control {
+    background-color: var(--pv-surface) !important;
+    color: var(--pv-ink) !important;
+    border-color: var(--pv-line) !important;
+}
+
+.ui-preview.dark .form-control[readonly],
+.ui-preview.dark .form-control:disabled {
+    background-color: var(--pv-hover) !important;
+    border-color: transparent !important;
+}
+
+/* ---------- Small things the sweep found (contrast) ---------- */
+/* links that look like buttons ("Später" in the authenticator hint) */
+.ui-preview .btn-link {
+    color: var(--acc-text);
+}
+
+/* Kursbuch markers (NC, LR, Jitsi): light turquoise with white text was 3:1 */
+.ui-preview span.bv {
+    background-color: var(--acc-soft);
+    color: var(--acc-text);
+    font-family: var(--pv-text);
+}
+
+/* phones: the page panel with a margin like the agenda, so its rounded
+   corners are not cut off at the screen's edges */
+@media (max-width: 767px) {
+    .ui-preview #main_container > .container,
+    .ui-preview #main_container > div > .container {
+        width: auto;
+        max-width: none;
+        margin: 12px 12px 24px;
+    }
+}
+
+/* the floating feedback button is in the way; for now feedback is given
+   from the profile (next to the switch) */
+.ui-preview .design-feedback-button {
+    display: none !important;
+}
+
+/* dialogs above the tab bar (see the layers at .pv-tabbar) */
+.ui-preview .modal {
+    z-index: 8100;
+}
+
+.ui-preview .modal-backdrop {
+    z-index: 8050;
+}
+
+/* ---------- Phones, the day: header on the backdrop and the day strip ----------
+   (timetable.html, render_preview_day_band / _strip) */
+.pv-day-band,
+.pv-day-strip {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    /* the white top bar gives way to the header */
+    body.ui-preview.pv-agenda-on {
+        padding-top: 0;
+    }
+
+    .ui-preview.pv-agenda-on .navbar {
+        min-height: 0;
+        height: 0;
+        padding: 0;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .ui-preview.pv-agenda-on .navbar .navbar-brand,
+    .ui-preview.pv-agenda-on #calendar .fc-header-toolbar {
+        display: none;
+    }
+
+    .ui-preview.pv-agenda-on #calendar {
+        margin-bottom: 0 !important;
+    }
+
+    /* the header: no box of its own – the shade lies seamlessly over the
+       top of the backdrop (body::after below) */
+    .ui-preview.pv-agenda-on .pv-day-band:not([hidden]) {
+        display: block;
+        margin: 0 -15px 14px;
+        padding: calc(10px + env(safe-area-inset-top, 0px)) 18px 4px;
+        color: var(--band-ink);
+        text-shadow: var(--band-shadow);
+    }
+
+    body.ui-preview.pv-agenda-on {
+        position: relative;
+    }
+
+    /* the shade for the text on the backdrop: only behind the day and its
+       line (as on the desktop's week title), not across the whole top – a
+       light shade there washed the scheme's colours out */
+    .pv-band-text {
+        width: fit-content;
+        max-width: calc(100% + 28px);
+        margin: 0 -14px;
+        padding: 6px 14px 8px;
+        border-radius: 16px;
+        background: rgba(var(--band-scrim), var(--band-scrim-a));
+    }
+
+    .pv-band-title .pv-band-text {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .pv-band-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 40px;
+        margin-bottom: 14px;
+    }
+
+    .pv-day-band h1 {
+        margin: 0;
+        font: 800 1.75rem/1.12 var(--pv-display);
+        letter-spacing: -0.015em;
+        color: inherit;
+        text-wrap: balance;
+    }
+
+    .pv-band-sub {
+        margin-top: 4px;
+        font-size: 0.95rem;
+        opacity: 0.92;
+    }
+
+    .pv-band-avatar {
+        flex: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 1px 4px rgba(0, 0, 0, 0.18);
+        display: grid;
+        place-items: center;
+        background: var(--pv-surface);
+    }
+
+    .pv-band-avatar > * {
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 50%;
+        background-size: cover;
+    }
+
+    .ui-preview.pv-agenda-on .pv-day-strip:not([hidden]) {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+
+    .pv-strip-day {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+        padding: 6px 0 7px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+        font: inherit;
+    }
+
+    .pv-strip-name {
+        font-size: 0.75rem;
+        color: var(--pv-muted);
+    }
+
+    .pv-strip-day b {
+        font: 800 1.15rem/1.1 var(--pv-display);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pv-strip-dots {
+        display: flex;
+        gap: 3px;
+        height: 5px;
+        margin-top: 3px;
+    }
+
+    .pv-strip-dots i {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.55;
+    }
+
+    .pv-strip-today:not(.pv-strip-active) {
+        box-shadow: inset 0 0 0 2px var(--acc-text);
+    }
+
+    /* the shown day: the accent's text variant – always set off from the
+       backdrop, which often has the accent's own colour (yellow on yellow) */
+    .pv-strip-active {
+        background: var(--acc-text);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+    }
+
+    .dark .pv-strip-active {
+        color: #0a1222;
+    }
+
+    .pv-strip-active .pv-strip-name {
+        color: inherit;
+        opacity: 0.85;
+    }
+}
+
+/* ---------- Found by the sweep on real data (dark mode, contrast, overflow) ---------- */
+/* outline buttons ("Verwerfen", "Speichern", "Umplanen" in the Kursbuch …) */
+.ui-preview .btn-outline-secondary {
+    color: var(--pv-ink);
+    border-color: var(--pv-line);
+}
+
+.ui-preview .btn-outline-secondary:hover {
+    background-color: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+/* the other outline buttons (Bootstrap green, blue, cyan): calm like the
+   grey ones (doc/Gestaltung.md, "Knöpfe"); a selected one (.active, e.g. the
+   chosen sign-in method) in the accent's soft tone. Outline-danger: calm red
+   type, full red only in the confirmation. */
+.ui-preview #main_container .btn-outline-primary,
+.ui-preview #main_container .btn-outline-success,
+.ui-preview #main_container .btn-outline-info,
+.ui-preview #main_container .btn-outline-warning,
+.ui-preview .modal .btn-outline-primary,
+.ui-preview .modal .btn-outline-success,
+.ui-preview .modal .btn-outline-info,
+.ui-preview .modal .btn-outline-warning {
+    background-color: transparent;
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn-outline-primary:hover,
+.ui-preview #main_container .btn-outline-success:hover,
+.ui-preview #main_container .btn-outline-info:hover,
+.ui-preview #main_container .btn-outline-warning:hover,
+.ui-preview .modal .btn-outline-primary:hover,
+.ui-preview .modal .btn-outline-success:hover,
+.ui-preview .modal .btn-outline-info:hover,
+.ui-preview .modal .btn-outline-warning:hover {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview #main_container .btn-outline-primary.active,
+.ui-preview #main_container .btn-outline-success.active,
+.ui-preview #main_container .btn-outline-info.active,
+.ui-preview #main_container .btn-outline-warning.active,
+.ui-preview .modal .btn-outline-primary.active,
+.ui-preview .modal .btn-outline-success.active,
+.ui-preview .modal .btn-outline-info.active,
+.ui-preview .modal .btn-outline-warning.active {
+    background-color: var(--acc-soft);
+    border-color: var(--acc);
+    color: var(--acc-text);
+}
+
+.ui-preview #main_container .btn-outline-danger,
+.ui-preview .modal .btn-outline-danger {
+    background-color: transparent;
+    border-color: var(--pv-line);
+    color: #b42318;
+}
+
+.ui-preview.dark #main_container .btn-outline-danger,
+.ui-preview.dark .modal .btn-outline-danger {
+    color: #ff8f8f;
+}
+
+.ui-preview #main_container .btn-outline-danger:hover,
+.ui-preview .modal .btn-outline-danger:hover {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+}
+
+/* a button with a menu, and buttons in table cells: on one line (a count
+   like »839 Nutzer« with its chevron must not wrap) */
+.ui-preview #main_container .btn.dropdown-toggle,
+.ui-preview #main_container td .btn {
+    white-space: nowrap;
+}
+
+/* grey hints: the template fixes .text-muted at #666 */
+.ui-preview .text-muted {
+    color: var(--pv-muted) !important;
+}
+
+/* links in page text */
+.ui-preview #main_container a:where(:not(.btn, .nav-link, .dropdown-item, .pv-band-avatar)) {
+    color: var(--acc-text);
+}
+
+/* not in the timetable (day numbers, events keep their colours) */
+.ui-preview #main_container .fc a {
+    color: inherit;
+}
+
+
+/* error messages */
+.ui-preview .text-danger {
+    color: #b42318 !important;
+}
+
+.ui-preview.dark .text-danger {
+    color: #ff8f8f !important;
+}
+
+.ui-preview.dark .bg-light {
+    background-color: var(--pv-hover) !important;
+}
+
+/* long words (addresses, links) wrap instead of widening the page on phones */
+.ui-preview .container,
+.ui-preview .text-comment .message {
+    overflow-wrap: break-word;
+}
+
+.ui-preview .text-comment .message img,
+.ui-preview .text-comment .message table {
+    max-width: 100%;
+}
+
+/* colour scheme tiles: all three colours as a gradient, the name on a pill
+   (profil.html sets --g1..--g3; the circles of today's tiles are hidden) */
+.ui-preview .swatches .swatch {
+    background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)) !important;
+}
+
+.ui-preview .swatches .swatch > div:not(:has(> .label)) {
+    display: none;
+}
+
+.ui-preview .swatches .swatch > div:has(> .label) {
+    left: 8px !important;
+    right: 8px !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: center;
+}
+
+.ui-preview .swatches .swatch .label {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100%;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.88) !important;
+    color: #131b26 !important;
+    font-size: 0.82em;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    hyphens: none;
+}
+
+.ui-preview .swatches .swatch .label div {
+    margin-top: 0 !important;
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------- Desktop: the header above the timetable (render_preview_week_head) ---------- */
+.pv-week-head {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .ui-preview.pv-week-head-on #calendar .fc-header-toolbar {
+        display: none;
+    }
+
+    /* the plan menu replaces the chips; empty side columns give way */
+    .ui-preview.pv-week-head-on .timetable_chooser > div:not(.hint) {
+        display: none;
+    }
+
+    .ui-preview.pv-week-head-on .pv-col-empty {
+        display: none !important;
+    }
+
+    .ui-preview.pv-week-head-on .row > div:has(> #calendar) {
+        flex: 1 1 0;
+        max-width: none;
+    }
+
+    .ui-preview .pv-week-head:not([hidden]) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 16px;
+        margin: 4px 0 14px;
+    }
+
+    /* on the backdrop: the same soft shade behind the text as on phones */
+    .pv-wh-title {
+        color: var(--band-ink);
+        text-shadow: var(--band-shadow);
+        padding: 8px 16px 10px;
+        border-radius: 14px;
+        background: rgba(var(--band-scrim), max(var(--band-scrim-a), 0.18));
+    }
+
+    .pv-wh-title h2 {
+        margin: 0;
+        font: 800 1.7rem/1.1 var(--pv-display);
+        letter-spacing: -0.01em;
+        color: inherit;
+    }
+
+    .pv-wh-sub {
+        margin-top: 3px;
+        font-size: 0.92rem;
+        opacity: 0.92;
+    }
+
+    .pv-wh-tools {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pv-wh-seg {
+        display: inline-flex;
+        background: var(--pv-surface);
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+        overflow: hidden;
+    }
+
+    .pv-wh-seg button,
+    .pv-wh-btn {
+        border: 0;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+        font: 600 0.92rem/1 var(--pv-text);
+        padding: 9px 12px;
+        cursor: pointer;
+    }
+
+    .pv-wh-seg button + button {
+        border-left: 1px solid var(--pv-line);
+    }
+
+    .pv-wh-seg button[aria-pressed='true'] {
+        background: var(--acc);
+        color: var(--acc-ink);
+    }
+
+    .pv-wh-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+    }
+
+    .pv-wh-btn:disabled {
+        color: var(--pv-muted);
+        cursor: default;
+    }
+
+    .pv-wh-seg button:hover,
+    .pv-wh-btn:hover:not(:disabled) {
+        background: var(--pv-hover);
+    }
+
+    .pv-wh-seg button[aria-pressed='true']:hover {
+        background: var(--acc);
+    }
+
+    .pv-plan-wrap {
+        position: relative;
+    }
+}
+
+
+
+/* dark mode: the backdrop fades into the dark ground further down (over the
+   backdrop, under the content; scrolls with the page) */
+body.ui-preview.dark {
+    position: relative;
+    min-height: 100vh;
+    /* the ground below the page (the scheme's light variant would be #f8f8f8) */
+    background-color: #0e131a !important;
+    /* no margin below the page: the backdrop would show there, outside the fade */
+    margin-bottom: 0;
+    padding-bottom: 24px;
+    /* its own layer: otherwise the body paints its backdrop over the fade
+       below (::before, z-index -1) and the backdrop stays bright all the way
+       down */
+    isolation: isolate;
+}
+
+body.ui-preview.dark::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(14, 19, 26, 0) 0, rgba(14, 19, 26, 0.55) 260px, #0e131a 620px);
+}
+
+/* ---------- Agenda: changes and actions ---------- */
+/* "Raum 211 statt 108" – a change one should notice */
+.pv-ag-mark.pv-ag-change {
+    background: #fff1d6;
+    color: #7a4b00;
+}
+
+.dark .pv-ag-mark.pv-ag-change {
+    background: #4a3510;
+    color: #ffd58a;
+}
+
+/* the own running lesson: Kursbuch and Mail in the card */
+.pv-ag-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pv-ag-action {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink) !important;
+    font: 600 0.9rem/1 var(--pv-text);
+    text-decoration: none !important;
+}
+
+.pv-ag-action:hover {
+    background: var(--pv-hover);
+}
+
+/* coming changes of the week, below the day */
+.pv-ag-coming {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.pv-ag-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: inherit;
+    font-size: 0.92em;
+    text-align: left;
+}
+
+.pv-ag-notice i {
+    margin-top: 3px;
+    color: var(--pv-muted);
+}
+
+/* Kursbuch side pane: explanations and the labels next to its buttons are
+   fixed dark grey (#444) in styles.css – unreadable in dark mode */
+.ui-preview .lesson_pane .explanation,
+.ui-preview .lesson_pane .button-with-label span {
+    color: var(--pv-muted);
+}
+
+/* ---------- Desktop, wide screens: the column beside the week (render_preview_side) ---------- */
+.pv-side {
+    display: none;
+}
+
+@media (min-width: 1200px) {
+    .ui-preview.pv-week-head-on .timetable_chooser:not(.pv-col-empty) {
+        flex: 0 0 272px;
+        max-width: 272px;
+    }
+
+    .ui-preview .pv-side:not([hidden]) {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    /* the column: level with the timetable, scrolls on its own and stays in
+       view while the page scrolls */
+    .ui-preview.pv-week-head-on .timetable_chooser:not(.pv-col-empty) {
+        position: sticky;
+        top: 12px;
+        align-self: flex-start;
+        margin-top: var(--pv-head-h, 90px);
+        max-height: calc(100vh - 12px - 40px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        padding-bottom: 12px;
+    }
+
+    .ui-preview.pv-week-head-on .timetable_chooser > .hint {
+        margin-bottom: 12px;
+    }
+
+    .pv-side-box {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .pv-side-box h3 {
+        margin: 0 2px;
+        font: 700 0.78rem/1.2 var(--pv-text);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--pv-muted);
+    }
+
+    .pv-side-lesson,
+    .pv-side-change {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 6px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .pv-side-lesson:hover,
+    .pv-side-change:hover {
+        background: var(--pv-hover);
+    }
+
+    .pv-side-lesson:not([style*='--c']) .pv-ag-subj {
+        background: var(--acc);
+    }
+
+    .pv-side-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.25;
+    }
+
+    .pv-side-text b {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pv-side-text small {
+        color: var(--pv-muted);
+        font-size: 0.82rem;
+    }
+
+    .pv-side-tag {
+        flex: none;
+        min-width: 52px;
+        padding: 3px 6px;
+        border-radius: 8px;
+        background: #fff1d6;
+        color: #7a4b00;
+        font: 700 0.72rem/1.1 var(--pv-text);
+        text-align: center;
+    }
+
+    .dark .pv-side-tag {
+        background: #4a3510;
+        color: #ffd58a;
+    }
+
+    .pv-side-tag.pv-side-tag-off {
+        background: var(--pv-hover);
+        color: var(--pv-muted);
+    }
+
+    .pv-side-empty {
+        margin: 0 4px;
+        font-size: 0.88rem;
+        color: var(--pv-muted);
+    }
+}
+
+/* larger screens, "Tag": the agenda at a readable width below the header */
+@media (min-width: 768px) {
+    .ui-preview .pv-agenda {
+        max-width: 760px;
+        min-height: 0;
+    }
+}
+
+.ui-preview.pv-agenda-on #calendar {
+    margin-bottom: 0 !important;
+}
+
+/* ---------- The plan menu (render_preview_week_head / _day_band) ---------- */
+.pv-plan-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 1000;
+    width: 340px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+}
+
+.pv-plan-group {
+    margin: 10px 2px 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--pv-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pv-plan-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.pv-plan-chip {
+    border: 0;
+    border-radius: 999px;
+    padding: 4px 10px;
+    min-width: 40px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    cursor: pointer;
+}
+
+.pv-plan-chip:hover {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.pv-plan-chip.active {
+    background: var(--acc);
+    color: var(--acc-ink);
+}
+
+.pv-plan-more {
+    border: 0;
+    background: none;
+    padding: 6px 4px;
+    color: var(--acc-text);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    cursor: pointer;
+}
+
+/* phones: a sheet from below, above the tab bar */
+@media (max-width: 767px) {
+    .pv-plan-menu {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: auto;
+        bottom: 0;
+        width: auto;
+        max-height: 75vh;
+        z-index: 8100;
+        border-radius: 20px 20px 0 0;
+        padding: 14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    /* calmer than pills: plain entries in an even grid, the shown plan marked */
+    .pv-plan-chips {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+        gap: 2px;
+    }
+
+    .pv-plan-chip {
+        min-width: 0;
+        padding: 10px 4px;
+        border-radius: 10px;
+        background: transparent;
+        font-size: 1rem;
+    }
+
+    .pv-plan-more {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+
+    /* the chips below the agenda give way to the menu */
+    .ui-preview.pv-agenda-on .timetable_chooser > div:not(.hint) {
+        display: none;
+    }
+
+    .pv-band-plan {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 0;
+        padding: 7px 12px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        color: #131b26;
+        font: 600 0.9rem/1 var(--pv-text);
+        text-shadow: none;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .dark .pv-band-plan {
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+    }
+}
+
+/* larger screens: Bootstrap sizes .container by the window (up to 1140 px),
+   not by the room next to the sidebar – it would reach the window's edge */
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container,
+    .ui-preview #main_container > div > .container {
+        max-width: min(1140px, calc(100% - 48px));
+    }
+}
+
+/* ---------- Text editor (Summernote) ---------- */
+.ui-preview .note-editor.note-frame {
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.ui-preview .note-toolbar {
+    background: var(--pv-hover);
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.ui-preview .note-toolbar .btn,
+.ui-preview .note-toolbar .note-btn {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-color: var(--pv-line);
+}
+
+.ui-preview .note-toolbar .btn:hover,
+.ui-preview .note-toolbar .note-btn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .note-editing-area .note-editable {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .note-statusbar {
+    background: var(--pv-hover) !important;
+    border-top: 1px solid var(--pv-line) !important;
+}
+
+.ui-preview .note-dropdown-menu,
+.ui-preview .note-popover .popover-content {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+/* the compose dialog's buttons in one row on phones */
+@media (max-width: 767px) {
+    .ui-preview #composeModal .modal-footer {
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    .ui-preview #composeModal .modal-footer #publish_message_btn_container {
+        display: flex;
+        gap: 6px;
+        margin-right: auto;
+    }
+
+    .ui-preview #composeModal .modal-footer .btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+}
+
+/* ---------- Lesson blocks in the grid: a calmer inside (timetable.html, eventContent) ---------- */
+.ui-preview .fc-timegrid-event .fc-event-main {
+    padding: 4px 6px 5px;
+}
+
+.ui-preview .pv-ev-meta {
+    margin-bottom: 1px;
+}
+
+/* the room chip at the right edge of the padded block */
+.ui-preview .fc-timegrid-event .pv-ev-room {
+    right: 4px !important;
+}
+
+.ui-preview .pv-ev-title {
+    line-height: 1.25;
+}
+
+.ui-preview .fc-timegrid-event .line2 {
+    margin-top: 2px;
+}
+
+/* markers (HA, topic, NC, LR …): small soft chips */
+.ui-preview .fc-timegrid-event .cem span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 3px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: color-mix(in srgb, currentColor 14%, transparent) !important;
+    font: 700 0.72rem/1.6 var(--pv-text);
+    opacity: 1 !important;
+}
+
+/* topic and homework below the title: space instead of a line */
+.ui-preview .pv-ev-details {
+    border-top: 0 !important;
+    margin-top: 2px !important;
+    font-family: var(--pv-text);
+}
+
+/* the markers' row: markers on the right; gone when empty */
+.ui-preview .fc-timegrid-event .line2.pv-ev-row:not(:has(.pv-ev-inline-topic, .cem > *, span:not(.cem))) {
+    display: none;
+}
+
+.ui-preview .fc-timegrid-event .line2.pv-ev-row .cem {
+    position: static;
+    flex: none;
+    margin: 0 0 0 auto;
+    padding: 0 0 0 4px;
+}
+
+.ui-preview .pv-ev-detail-text {
+    left: 6px !important;
+    right: 6px;
+    width: auto !important;
+    padding: 4px 0 0 !important;
+}
+
+.ui-preview .pv-ev-label {
+    margin-top: 4px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ui-preview .pv-ev-desc {
+    opacity: 0.92 !important;
+    border-top: 0 !important;
+    font-size: 0.9em;
+    line-height: 1.3;
+}
+
+/* the break inside a double lesson: a soft band */
+.ui-preview .fc-timegrid-event .bgdiv {
+    border-color: color-mix(in srgb, currentColor 20%, transparent) !important;
+    background-color: color-mix(in srgb, currentColor 7%, transparent) !important;
+}
+
+/* single lessons: the topic in the markers' row, shortened with …, the
+   markers (HA …) on the right */
+.ui-preview .fc-timegrid-event .line2.pv-ev-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 0;
+}
+
+.ui-preview .pv-ev-inline-topic {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font: 0.78rem/1.4 var(--pv-text);
+    opacity: 0.92;
+}
+
+.ui-preview .line2.pv-ev-row .cem {
+    flex: none;
+    font-size: 0.72rem;
+}
+
+.ui-preview .fc-timegrid-event .pv-ev-detail-text {
+    white-space: normal !important;
+}
+
+/* ---------- Behind the island / status bar (viewport-fit=cover) ----------
+   Everything fixed to the top or bottom keeps the safe areas free. */
+@media (max-width: 767px) {
+    /* pages with the white top bar: the bar reaches up, its content below the island */
+    /* no top bar on phones: the tab bar is the navigation; pages start
+       with their content, clear of the status bar */
+    body.ui-preview {
+        padding-top: env(safe-area-inset-top, 0px) !important;
+    }
+
+    .ui-preview .navbar {
+        min-height: 0;
+        height: 0;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .ui-preview .navbar .navbar-brand,
+    .ui-preview .navbar .nav-quick-search-nav {
+        display: none !important;
+    }
+
+    /* the agenda's header has its own top padding with the inset (pv-day-band) */
+    .ui-preview .pv-plan-menu,
+    .ui-preview .navbar .navbar-collapse {
+        padding-left: calc(14px + env(safe-area-inset-left, 0px));
+        padding-right: calc(14px + env(safe-area-inset-right, 0px));
+    }
+}
+
+/* landscape on phones: content clear of the camera at the side */
+.ui-preview #main_container {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* ---------- Messages: one look, whatever was pasted ----------
+   Messages often carry the fonts, sizes, colours and spacing of where they
+   were copied from; the new design shows their structure (paragraphs, bold,
+   italics, links, lists) in its own type. */
+.ui-preview .text-comment .message {
+    font-family: var(--pv-text);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--pv-ink);
+}
+
+.ui-preview .text-comment .message *:not(img):not(svg):not(svg *) {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    background-color: transparent !important;
+    text-indent: 0 !important;
+    letter-spacing: normal !important;
+}
+
+.ui-preview .text-comment .message p,
+.ui-preview .text-comment .message div,
+.ui-preview .text-comment .message ul,
+.ui-preview .text-comment .message ol {
+    margin: 0 0 0.6em !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.ui-preview .text-comment .message h1,
+.ui-preview .text-comment .message h2,
+.ui-preview .text-comment .message h3,
+.ui-preview .text-comment .message h4 {
+    font-weight: 700;
+    margin: 0.4em 0 0.4em !important;
+}
+
+.ui-preview .text-comment .message a {
+    color: var(--acc-text) !important;
+    text-decoration: underline;
+}
+
+.ui-preview .text-comment .message > :last-child,
+.ui-preview .text-comment .message p:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* ---------- Solid pages (Kursbuch, class lists: .container-fluid.solid) ----------
+   They are meant to be calm surfaces without the backdrop. */
+.ui-preview .container-fluid.solid,
+.ui-preview .container-fluid.solid.white {
+    /* dark.css forces #000 on .white */
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink);
+    min-height: 100vh;
+}
+
+.ui-preview .container-fluid.solid table {
+    background: transparent;
+    color: var(--pv-ink);
+}
+
+/* Kursbuch and student tables: rows, week separators, selection */
+.ui-preview .lesson_table tr td,
+.ui-preview .schueler_table tr td {
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .lesson_table tr.sep td {
+    border-top: 2px solid color-mix(in srgb, var(--pv-ink) 22%, transparent);
+}
+
+.ui-preview .lesson_table tr.odd,
+.ui-preview .schueler_table tr.odd {
+    background-color: color-mix(in srgb, var(--pv-hover) 70%, transparent);
+}
+
+.ui-preview .lesson_table tr.lesson:hover,
+.ui-preview .schueler_table tr.schueler:hover {
+    outline: 0;
+    background-color: var(--pv-hover);
+}
+
+.ui-preview .lesson_table tr.selected,
+.ui-preview .lesson_table tr.odd.selected,
+.ui-preview .schueler_table tr.selected,
+.ui-preview .schueler_table tr.odd.selected {
+    background: var(--acc-soft) !important;
+    box-shadow: inset 3px 0 0 var(--acc-text);
+}
+
+.ui-preview .lesson_table tr.current,
+.ui-preview .schueler_table tr.current {
+    outline: 0 !important;
+    box-shadow: inset 3px 0 0 var(--pv-muted);
+}
+
+
+/* the plan sheet on phones above its veil; nothing floats over an open sheet */
+@media (max-width: 767px) {
+    .pv-plan-veil {
+        z-index: 8090;
+    }
+}
+
+body.pv-sheet-open #bu_design_quick_toggle {
+    display: none;
+}
+
+/* solid pages (Kursbuch, class lists) are calm surfaces all the way down: the
+   table is positioned absolutely and can be longer than the page panel, so
+   no backdrop behind it at all */
+body.ui-preview:has(.container-fluid.solid) {
+    background-image: none !important;
+    background-color: var(--pv-surface) !important;
+}
+
+body.ui-preview:has(.container-fluid.solid)::before {
+    display: none;
+}
+
+.ui-preview .lc_table,
+.ui-preview .lesson_pane {
+    background-color: var(--pv-surface) !important;
+}
+
+/* ---------- Input groups: field and button as one unit ---------- */
+.ui-preview .input-group > .form-control:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.ui-preview .input-group > .input-group-append > .btn,
+.ui-preview .input-group > .input-group-append > .input-group-text {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
+    margin-left: -1px;
+}
+
+.ui-preview .input-group > .input-group-prepend > .btn,
+.ui-preview .input-group > .input-group-prepend > .input-group-text {
+    border-radius: 10px 0 0 10px !important;
+}
+
+.ui-preview .input-group > .form-control:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* a read-only address with its copy button: one calm pill */
+.ui-preview .input-group:has(.btn-clipboard) > .form-control[readonly] {
+    border: 1px solid var(--pv-line);
+    border-right: 0;
+}
+
+.ui-preview .input-group .btn-clipboard {
+    position: relative;
+    border: 1px solid var(--pv-line) !important;
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+}
+
+/* "copied": a check in the accent over the button (code: btn-clipboard-check) */
+.ui-preview .btn-clipboard-check {
+    position: absolute;
+    inset: -1px;
+    display: grid;
+    place-items: center;
+    border-radius: inherit;
+    background: var(--acc-soft) !important;
+    color: var(--acc-text) !important;
+    border: 0 !important;
+}
+
+/* disabled main buttons (e.g. "Code zusenden" before an address): quiet,
+   not a washed-out accent */
+.ui-preview #main_container .btn-primary:disabled,
+.ui-preview #main_container .btn-success:disabled {
+    background-color: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+/* ---------- Scrollbars: thin, rounded, in the design's colours ---------- */
+.ui-preview,
+.ui-preview * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--pv-ink) 28%, transparent) transparent;
+}
+
+.ui-preview ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.ui-preview ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ui-preview ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--pv-ink) 28%, transparent);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+}
+
+.ui-preview ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--pv-ink) 45%, transparent);
+}
+
+/* table cells centred in their row (rows are taller than the text: avatars,
+   copy fields, buttons) – not in the Kursbuch, where long topics wrap */
+.ui-preview .table td,
+.ui-preview .table th {
+    vertical-align: middle;
+}
+
+.ui-preview .lesson_table td {
+    vertical-align: top;
+}
+
+/* figures of equal width wherever numbers are read in columns (dates, times,
+   rooms): tables, the timetable, the agenda, the side column, fields */
+.ui-preview table,
+.ui-preview .fc,
+.ui-preview .pv-agenda,
+.ui-preview .pv-side,
+.ui-preview .pv-day-strip,
+.ui-preview .form-control {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Phones: header corner (search, profile picture) ---------- */
+.pv-band-corner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+}
+
+.pv-band-search {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.92);
+    color: #131b26;
+    font-size: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.dark .pv-band-search {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+/* ---------- Phones, tab "Woche": the days one below the other ---------- */
+.pv-week-days {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pv-week-day {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pv-week-head-day {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 2px 4px 6px;
+    border: 0;
+    border-bottom: 1px solid var(--pv-line);
+    margin-bottom: 4px;
+    background: none;
+    color: var(--pv-ink);
+    font: inherit;
+    text-align: left;
+}
+
+.pv-week-head-day b {
+    font: 800 1.05rem/1.2 var(--pv-display);
+}
+
+.pv-week-head-day span {
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+}
+
+.pv-week-today .pv-week-head-day b {
+    color: var(--acc-text);
+}
+
+.pv-week-none {
+    padding: 4px;
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+}
+
+.pv-week-row {
+    display: grid;
+    /* fixed columns: every title starts at the same place */
+    grid-template-columns: 42px 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 5px 4px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--pv-ink);
+    font: inherit;
+    text-align: left;
+}
+
+.pv-week-row:hover,
+.pv-week-row:active {
+    background: var(--pv-hover);
+}
+
+.pv-week-row .pv-ag-subj {
+    min-width: 0;
+    width: 40px;
+    height: 28px;
+    padding: 0 2px;
+    border-radius: 8px;
+    font-size: 11px;
+    overflow: hidden;
+}
+
+/* no subject colour (cancelled): a quiet chip, as in the day */
+.pv-week-row:not([style*='--c']) .pv-ag-subj {
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+}
+
+.pv-week-room {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.pv-week-time {
+    font-size: 0.88rem;
+    color: var(--pv-muted);
+    text-align: right;
+}
+
+.pv-week-title {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 0.95rem;
+}
+
+.pv-week-room {
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+    font-weight: 600;
+}
+
+.pv-week-room-changed {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #fff1d6;
+    color: #7a4b00;
+}
+
+.dark .pv-week-room-changed {
+    background: #4a3510;
+    color: #ffd58a;
+}
+
+.pv-week-row.pv-ag-off .pv-week-title {
+    text-decoration: line-through;
+    color: var(--pv-muted);
+}
+
+/* the "Kurse" sheet: its links as list rows */
+.pv-sheet-links {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 6px;
+}
+
+.pv-sheet-links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 8px;
+    border-radius: 10px;
+    color: var(--pv-ink) !important;
+    text-decoration: none !important;
+    font-size: 1rem;
+}
+
+.pv-sheet-links a + a {
+    border-top: 1px solid var(--pv-line);
+}
+
+.pv-sheet-links a > span {
+    flex: 1;
+    min-width: 0;
+}
+
+.pv-sheet-count {
+    flex: none;
+    min-width: 28px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-sheet-links a::after {
+    content: "\ea61";
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    flex: none;
+    font-size: 1.05em;
+    color: var(--pv-muted);
+}
+
+.pv-sheet-links a.active {
+    background: var(--acc-soft);
+    color: var(--acc-text) !important;
+    font-weight: 700;
+}
+
+.pv-link-sheet {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* team meetings are no lessons: not among the Kursbuch entries (main.rb, data-meeting) */
+.ui-preview .navbar .dropdown-item[data-meeting] {
+    display: none !important;
+}
+
+/* tabs and header buttons: the focus frame for keyboards only */
+.pv-tab:focus:not(:focus-visible),
+.pv-band-plan:focus:not(:focus-visible),
+.pv-band-search:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ---------- Double lessons: taller, and said in words ---------- */
+.pv-ag-card.pv-ag-double {
+    min-height: 128px;
+}
+
+.pv-ag-room > span + span::before {
+    content: ", ";
+}
+
+.pv-ag-length {
+    font-weight: 600;
+}
+
+.pv-week-time {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.pv-week-time b {
+    font-weight: 600;
+    color: var(--pv-ink);
+}
+
+.pv-week-time span {
+    font-size: 0.78rem;
+}
+
+.pv-week-row.pv-week-double {
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+/* a double lesson: two single chips tied together – exactly twice the
+   height, a notch left and right in the middle and a faint seam */
+.pv-week-row.pv-week-double .pv-ag-subj {
+    height: 56px;
+}
+
+.pv-week-row.pv-week-double .pv-ag-subj,
+.pv-ag-card.pv-ag-double .pv-ag-subj {
+    position: relative;
+    place-items: start center;
+    padding-top: 8px;
+    -webkit-mask:
+        radial-gradient(circle 3px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 3px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+    mask:
+        radial-gradient(circle 3px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
+        radial-gradient(circle 3px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+}
+
+.pv-week-row.pv-week-double .pv-ag-subj::after,
+.pv-ag-card.pv-ag-double .pv-ag-subj::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    top: 50%;
+    border-top: 1px dashed currentColor;
+    opacity: 0.45;
+}
+
+.pv-ag-card.pv-ag-double .pv-ag-subj {
+    height: 76px;
+    padding-top: 12px;
+}
+
+/* double lessons in the week: everything at the top, level with the start time */
+.pv-week-row.pv-week-double {
+    align-items: start;
+}
+
+.pv-week-row.pv-week-double .pv-week-title,
+.pv-week-row.pv-week-double .pv-week-room {
+    padding-top: 4px;
+}
+
+/* ---------- Red only where one confirms (calm UI) ----------
+   In pages and editors a delete button is a calm button with red type;
+   the solid red stays for the confirmation dialog's button. */
+.ui-preview .btn-danger:not(.modal-footer .btn-danger) {
+    background-color: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    color: #b42318;
+}
+
+.ui-preview.dark .btn-danger:not(.modal-footer .btn-danger) {
+    color: #ff8f8f;
+}
+
+.ui-preview .btn-danger:not(.modal-footer .btn-danger):hover {
+    background-color: color-mix(in srgb, #b42318 10%, var(--pv-surface));
+    border-color: color-mix(in srgb, #b42318 35%, var(--pv-line));
+}
+
+/* dialogs: no inner shadow at the edge of the scrolling part */
+.ui-preview .modal-body {
+    box-shadow: none !important;
+}
+
+/* polls: a word when there are none yet */
+.ui-preview .polls-here:empty::after {
+    content: "Noch keine Umfragen – mit »Neue Umfrage« legen Sie eine an.";
+    display: block;
+    padding: 6px 0;
+    color: var(--pv-muted);
+}
+
+/* the poll editor's divider below the entries: a fine line, no shadow */
+.ui-preview hr.poll-entry-divider {
+    box-shadow: none !important;
+    border-top: 1px solid var(--pv-line);
+}
+
+/* ---------- "Mehr" on phones: every entry a full touch row (44 px) ---------- */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse .dropdown-menu {
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+        margin: 0 0 6px;
+        padding: 0 0 0 30px;
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 44px;
+        padding: 8px 12px !important;
+        border-radius: 10px;
+        font-size: 1rem;
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-item .icon {
+        position: static;
+        flex: none;
+        width: 22px;
+        margin: 0 !important;
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-item .label {
+        position: static;
+    }
+
+    .ui-preview .navbar .navbar-collapse .dropdown-divider {
+        margin: 6px 12px;
+    }
+
+    /* chevrons instead of the triangles; turned while the part is open */
+    .ui-preview .navbar .navbar-collapse .dropdown-toggle::after {
+        content: "\ea5f";
+        font-family: "tabler-icons" !important;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        margin-left: auto;
+        border: 0;
+        font-size: 1.1em;
+        color: var(--pv-muted);
+        transition: transform 0.15s;
+        flex: none;
+    }
+
+    .ui-preview .navbar .navbar-collapse .nav-item.show > .dropdown-toggle::after {
+        transform: rotate(180deg);
+    }
+}
+
+/* "Weitere Lerngruppen (N)" in the Lerngruppen menu (preview.js) */
+.ui-preview .pv-more-groups {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    background: none;
+    color: var(--acc-text) !important;
+    font-weight: 600;
+    text-align: left;
+}
+
+.ui-preview .pv-more-groups::after {
+    content: "\ea5f";
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    margin-left: auto;
+    font-size: 1.05em;
+    transition: transform 0.15s;
+}
+
+.ui-preview .pv-more-groups[aria-expanded='true']::after {
+    transform: rotate(180deg);
+}
+
+/* "Mehr" on phones: only what the tab bar doesn't offer already
+   (Stundenplan → Heute/Woche, Nachrichten → tab, Planung/Lerngruppen → Kurse) */
+@media (max-width: 767px) {
+    body.ui-preview:has(.pv-tabbar a.pv-tab[href='/']) .navbar-collapse .nav-item:has(> a.nav-link[href='/']),
+    body.ui-preview:has(.pv-tabbar a.pv-tab[href='/messages']) .navbar-collapse .nav-item:has(> a.nav-link[href='/messages']),
+    body.ui-preview:has(#bu_pv_courses) .navbar-collapse .nav-item:has(> #navbarDropdownKurse),
+    body.ui-preview:has(#bu_pv_courses) .navbar-collapse .nav-item:has(> #navbarDropdownKlassen) {
+        display: none !important;
+    }
+}
+
+/* the day and the profile picture in one row (no plan, no search) */
+.pv-band-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 10px;
+}
+
+/* ---------- Navigation by task (preview.js, regroup_navigation) ---------- */
+.ui-preview .pv-nav-hidden,
+.ui-preview .navbar .dropdown-item.pv-nav-moved {
+    display: none !important;
+}
+
+.ui-preview .pv-nav-section {
+    width: 100%;
+    margin-top: 10px !important;
+}
+
+.ui-preview .pv-nav-heading {
+    padding: 6px 10px 4px;
+    font: 700 0.72rem/1.2 var(--pv-text);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--pv-muted);
+}
+
+.ui-preview .navbar .pv-nav-entry {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px !important;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: var(--pv-ink) !important;
+    font-size: 0.95rem;
+    text-align: left;
+    white-space: normal;
+}
+
+.ui-preview .navbar .pv-nav-entry:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .navbar .pv-nav-entry.pv-active {
+    background: var(--acc-soft);
+    color: var(--acc-text) !important;
+    font-weight: 700;
+}
+
+.ui-preview .navbar .pv-nav-entry .icon {
+    position: static;
+    flex: none;
+    width: 22px;
+    margin: 0 !important;
+    color: var(--pv-muted);
+}
+
+.ui-preview .navbar .pv-nav-entry .label {
+    position: static;
+}
+
+.ui-preview .pv-nav-courses .pv-nav-extra {
+    display: none !important;
+}
+
+.ui-preview .pv-nav-courses.pv-nav-all .pv-nav-extra {
+    display: flex !important;
+}
+
+.ui-preview .navbar .pv-nav-more {
+    color: var(--acc-text) !important;
+    font-weight: 600;
+}
+
+/* Lerngruppen inside "Unterricht" */
+.ui-preview .pv-nav-section .nav-item {
+    margin: 0 !important;
+}
+
+/* phones: "Unterricht" is the Kurse tab */
+@media (max-width: 767px) {
+    body.ui-preview:has(#bu_pv_courses) .pv-nav-section[data-section='unterricht'] {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .pv-nav-entry {
+        min-height: 44px;
+        font-size: 1rem;
+        padding: 8px 12px !important;
+    }
+}
+
+/* icons next to text that may wrap: at the top, level with the first line */
+.ui-preview .navbar .pv-nav-entry,
+.ui-preview .navbar .nav-link.nav-icon,
+.ui-preview .navbar .dropdown-item.nav-icon,
+.ui-preview .pv-sheet-links a {
+    align-items: flex-start !important;
+}
+
+.ui-preview .navbar .pv-nav-entry .icon,
+.ui-preview .navbar .nav-link.nav-icon .icon,
+.ui-preview .navbar .dropdown-item.nav-icon .icon {
+    height: 1.4em !important;
+    display: flex;
+    align-items: center;
+}
+
+.ui-preview .navbar .nav-link,
+.ui-preview .navbar .dropdown-item {
+    line-height: 1.4;
+}
+
+/* the chevrons (Tabler, 1.05em in a 1.4 line) stay level with the first
+   line too */
+.ui-preview .pv-sheet-links a::after,
+.ui-preview .navbar .dropdown-toggle::after {
+    align-self: flex-start;
+    margin-top: 0.17em;
+}
+
+/* foldable sections and their sub-groups */
+.ui-preview .navbar button.pv-nav-heading {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    border-radius: 8px;
+    text-align: left;
+}
+
+.ui-preview .navbar button.pv-nav-heading:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .navbar button.pv-nav-heading::after {
+    content: "\ea5f";
+    font-family: "tabler-icons" !important;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    margin-left: auto;
+    font-size: 1.15em;
+    letter-spacing: 0;
+    transition: transform 0.15s;
+}
+
+.ui-preview .navbar button.pv-nav-heading[aria-expanded='true']::after {
+    transform: rotate(180deg);
+}
+
+.ui-preview .pv-nav-sub {
+    padding: 8px 10px 2px 42px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--pv-muted);
+}
+
+/* ---------- Profile pictures ---------- */
+.ui-preview img.avatar-lg,
+.ui-preview div.avatar-lg {
+    width: 112px !important;
+    height: 112px !important;
+    max-width: none;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.ui-preview .pv-avatar-hint {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+}
+
+/* the section headings: no focus frame after a click */
+.ui-preview .pv-nav-heading:focus:not(:focus-visible),
+.ui-preview .pv-more-groups:focus:not(:focus-visible),
+.ui-preview .pv-nav-more:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+}
+
+@media (max-width: 767px) {
+    body.ui-preview:not(.pv-agenda-on) .nav-quick-search-nav .nav-item {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+}
+
+/* a picture that does not load: a calm grey circle, not the cut-off
+   "missing image" symbol (alt text and icon hidden) */
+.ui-preview img.avatar-lg {
+    background: var(--pv-hover);
+    color: transparent;
+    font-size: 0;
+    overflow: hidden;
+}
+
+/* ---------- Profile, new design ---------- */
+.ui-preview .pv-old-only {
+    display: none !important;
+}
+
+/* schemes and patterns: wide tiles, the scheme as backdrop with one's pattern */
+.ui-preview .swatches,
+.ui-preview .style_swatches {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 12px;
+}
+
+.ui-preview .swatches .swatch,
+.ui-preview .style_swatches .swatch {
+    height: 104px;
+}
+
+.ui-preview .swatches .swatch {
+    background: var(--pv-bg, none), linear-gradient(90deg, var(--g1), var(--g2), var(--g3)) !important;
+    background-size: cover, cover !important;
+    background-position: 50% 30%, center !important;
+}
+
+.ui-preview .style_swatches .swatch {
+    background-size: cover !important;
+    background-position: 50% 30% !important;
+}
+
+/* own scheme: three colours to select (with swap buttons between them),
+   a palette and HSL sliders for the selected one */
+.ui-preview .pv-scheme-own {
+    display: grid;
+    gap: 12px;
+}
+
+.ui-preview .pv-scheme-own-head p {
+    margin: 2px 0 0;
+}
+
+.ui-preview .pv-scheme-inputs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.ui-preview .pv-scheme-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pv-muted);
+    cursor: pointer;
+}
+
+.ui-preview .pv-scheme-chip {
+    display: block;
+    width: 100%;
+    height: 56px;
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+}
+
+/* the colour being changed: a ring around it, its name in ink */
+.ui-preview .pv-scheme-slot[aria-checked='true'] .pv-scheme-chip {
+    outline: 2px solid var(--pv-ink);
+    outline-offset: 2px;
+}
+
+.ui-preview .pv-scheme-slot-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.ui-preview .pv-scheme-slot[aria-checked='true'] .pv-scheme-slot-name {
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-scheme-slot:focus {
+    outline: none;
+}
+
+.ui-preview .pv-scheme-slot:focus-visible .pv-scheme-chip {
+    outline: 2px solid var(--acc);
+}
+
+/* the palette (Cling, as in the Hackschule sprite editor): always in view */
+.ui-preview .pv-cling {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+/* wider: two rows of the phone's in one, three rows in all */
+@media (min-width: 576px) {
+    .ui-preview .pv-cling {
+        grid-template-columns: repeat(14, 1fr);
+    }
+}
+
+.ui-preview .pv-cling-colour {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    min-height: 36px;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+}
+
+.ui-preview .pv-cling-colour.pv-cling-light {
+    color: #1b2430;
+}
+
+.ui-preview .pv-cling-colour > .ti {
+    font-size: 1.2rem;
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 0.12s, transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.ui-preview .pv-cling-colour.active > .ti {
+    opacity: 1;
+    transform: none;
+}
+
+.ui-preview .pv-cling-colour.active {
+    box-shadow: 0 0 0 2px var(--pv-surface), 0 0 0 4px var(--pv-ink);
+}
+
+/* fine-tuning: hue, saturation, lightness and the code */
+.ui-preview .pv-hsl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px 14px;
+}
+
+.ui-preview .pv-hsl label {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-hsl input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 14px;
+    margin: 0;
+    border: 1px solid var(--pv-line);
+    border-radius: 7px;
+    background: var(--pv-hsl-track);
+    cursor: pointer;
+}
+
+.ui-preview .pv-hsl .pv-hsl-h {
+    --pv-hsl-track: linear-gradient(90deg, hsl(0 85% 50%), hsl(60 85% 50%), hsl(120 85% 50%), hsl(180 85% 50%), hsl(240 85% 50%), hsl(300 85% 50%), hsl(359 85% 50%));
+}
+
+.ui-preview .pv-hsl .pv-hsl-s {
+    --pv-hsl-track: var(--pv-hsl-s);
+}
+
+.ui-preview .pv-hsl .pv-hsl-l {
+    --pv-hsl-track: var(--pv-hsl-l);
+}
+
+.ui-preview .pv-hsl input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ui-preview .pv-hsl input[type='range']::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ui-preview .pv-hsl .pv-hsl-hex {
+    max-width: 9rem;
+    font-family: var(--pv-mono, ui-monospace, monospace);
+}
+
+.ui-preview .pv-scheme-swap {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 22px;
+    border: 1px solid var(--pv-line);
+    border-radius: 50%;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    display: grid;
+    place-items: center;
+}
+
+.ui-preview .pv-scheme-strip {
+    height: 14px;
+    margin: 0;
+}
+
+.ui-preview .pv-scheme-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* ---------- "Mehr" on phones: an overview, not a folded list ---------- */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* oneself first: picture, name and the personal entries, always open */
+    .ui-preview .navbar .navbar-collapse .nav-item.dropdown:has(> #navbarDropdownProfile) {
+        order: -1;
+        margin-bottom: 10px !important;
+        padding: 6px !important;
+        border-radius: 16px;
+        background: var(--pv-hover);
+    }
+
+    .ui-preview #navbarDropdownProfile {
+        pointer-events: none;
+        font-weight: 700;
+    }
+
+    .ui-preview #navbarDropdownProfile::after {
+        display: none !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        display: block !important;
+        padding: 0 0 0 6px !important;
+    }
+
+    /* the sections always open, without fold buttons */
+    .ui-preview .pv-nav-section .pv-nav-body[hidden] {
+        display: grid !important;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading {
+        pointer-events: none;
+        padding-left: 4px;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading::after {
+        display: none;
+    }
+
+    /* the entries as tiles, three in a row */
+    .ui-preview .pv-nav-section .pv-nav-body {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 4px 0 6px;
+    }
+
+    .ui-preview .pv-nav-sub {
+        grid-column: 1 / -1;
+        padding: 6px 4px 0;
+    }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry {
+        flex-direction: column;
+        align-items: center !important;
+        justify-content: center;
+        gap: 6px;
+        min-height: 82px;
+        padding: 10px 4px !important;
+        border-radius: 14px;
+        background: var(--pv-hover);
+        font-size: 0.8rem;
+        line-height: 1.2;
+        text-align: center;
+        hyphens: auto;
+    }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry .icon {
+        width: 26px;
+        height: 26px !important;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--acc-text);
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ---------- "Mehr" on phones, consistent: everything a tile, one heading level ---------- */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    /* full rows: oneself, the sections, the search slot */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.dropdown:has(> #navbarDropdownProfile),
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-nav-section,
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-quick-search-item {
+        grid-column: 1 / -1;
+    }
+
+    /* top-level entries (Datentresor …) as tiles */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link {
+        flex-direction: column;
+        align-items: center !important;
+        justify-content: center;
+        gap: 6px;
+        height: 100%;
+        min-height: 82px;
+        padding: 10px 4px !important;
+        border-radius: 14px;
+        background: var(--pv-hover);
+        font-size: 0.8rem;
+        line-height: 1.2;
+        text-align: center;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown) > .nav-link .icon {
+        width: 26px;
+        height: 26px !important;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--acc-text);
+    }
+
+    /* one heading level: the sub-groups only as spacing */
+    .ui-preview .pv-nav-sub {
+        font-size: 0;
+        padding: 0;
+        height: 2px;
+    }
+
+    .ui-preview .pv-nav-section {
+        margin-top: 8px !important;
+    }
+
+    /* oneself: the card opens the profile, the personal actions as small tiles */
+    .ui-preview .navbar .navbar-collapse .nav-item.dropdown:has(> #navbarDropdownProfile) {
+        margin-bottom: 4px !important;
+        padding: 10px !important;
+    }
+
+    .ui-preview #navbarDropdownProfile {
+        pointer-events: auto;
+        font-size: 1.05rem;
+        padding: 4px 6px !important;
+    }
+
+    .ui-preview #navbarDropdownProfile::before {
+        content: "Profil und Einstellungen";
+        order: 3;
+        margin-left: auto;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--acc-text);
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+        gap: 6px;
+        margin-top: 8px !important;
+        padding: 0 !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-divider,
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] a.dropdown-item[href='/profil'] {
+        display: none !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item {
+        flex-direction: column;
+        align-items: center !important;
+        justify-content: center;
+        gap: 4px;
+        min-height: 64px;
+        padding: 8px 4px !important;
+        border-radius: 12px;
+        background: var(--pv-surface);
+        font-size: 0.74rem;
+        line-height: 1.15;
+        text-align: center;
+        white-space: normal;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .icon {
+        width: auto;
+        height: 20px !important;
+        justify-content: center;
+        font-size: 17px;
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item,
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .label {
+        font-size: 0.74rem !important;
+        line-height: 1.15;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .icon {
+        width: 100% !important;
+        display: flex;
+        justify-content: center;
+        color: var(--acc-text) !important;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .label {
+        display: block;
+        width: 100%;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        text-align: center;
+        max-width: none !important;
+    }
+}
+
+/* tiles tinted per group – colours from the scheme's subject palette, so
+   they are readable in every scheme, light and dark */
+@media (max-width: 767px) {
+    .ui-preview .pv-nav-entry[data-tone='schule-0'] { --tone: var(--subj-de); }
+    .ui-preview .pv-nav-entry[data-tone='schule-1'] { --tone: var(--subj-bio); }
+    .ui-preview .pv-nav-entry[data-tone='schule-2'] { --tone: var(--subj-ku); }
+    .ui-preview .pv-nav-entry[data-tone='schule-3'] { --tone: var(--subj-ge); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-0'] { --tone: var(--subj-en); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-1'] { --tone: var(--subj-phy); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-2'] { --tone: var(--subj-ma); }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry[data-tone] {
+        background: color-mix(in srgb, var(--tone) 11%, var(--pv-surface));
+    }
+
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry[data-tone] .icon {
+        color: var(--tone) !important;
+    }
+
+    .ui-preview.dark .navbar .pv-nav-body .pv-nav-entry[data-tone] {
+        background: color-mix(in srgb, var(--tone) 16%, var(--pv-surface));
+    }
+}
+
+/* "Farbigkeit" in the profile */
+.ui-preview .pv-vividness {
+    margin: 4px 0 14px;
+}
+
+.ui-preview .pv-vividness label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.ui-preview .pv-vividness-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-vividness-row input[type='range'] {
+    flex: 1;
+    accent-color: var(--acc-text);
+}
+
+.ui-preview .pv-vividness p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+}
+
+/* the subjects at the chosen Farbigkeit, live */
+.ui-preview .pv-vivid-sample {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.ui-preview .pv-vivid-sample span {
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    font: 700 0.72rem/1 var(--pv-display);
+}
+
+/* input groups with several buttons: only the outer corners are round,
+   field and buttons share one outline */
+.ui-preview .input-group > .input-group-append > .btn,
+.ui-preview .input-group > .input-group-append > .input-group-text {
+    border-radius: 0 !important;
+    margin-left: -1px;
+    border: 1px solid var(--pv-line) !important;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview .input-group > .input-group-append:last-child > .btn:last-child,
+.ui-preview .input-group > .input-group-append:last-child > .input-group-text:last-child {
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
+}
+
+.ui-preview .input-group > .input-group-append > .btn:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .input-group > .form-control,
+.ui-preview .input-group > .form-control[readonly] {
+    border: 1px solid var(--pv-line) !important;
+}
+
+.ui-preview .input-group > .form-control:not(:last-child) {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+/* menus whose entries are written as buttons (poll editor "Eintrag
+   hinzufügen"): calm menu entries */
+.ui-preview .dropdown-menu .dropdown-item.btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    border: 0 !important;
+    border-radius: 8px;
+    background: transparent !important;
+    color: var(--pv-ink) !important;
+    font-weight: normal;
+    text-align: left;
+    padding: 8px 12px;
+}
+
+.ui-preview .dropdown-menu .dropdown-item.btn:hover {
+    background: var(--pv-hover) !important;
+}
+
+.ui-preview .dropdown-menu .dropdown-item.btn i {
+    width: 18px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .dropdown-menu:not(.navbar .dropdown-menu) {
+    background: var(--pv-surface);
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+    padding: 6px;
+}
+
+/* move up / down: calm buttons everywhere (the poll editor's entries used
+   the main colour) */
+.ui-preview .btn:has(> .fa-arrow-up),
+.ui-preview .btn:has(> .fa-arrow-down) {
+    background: var(--pv-surface) !important;
+    border: 1px solid var(--pv-line) !important;
+    color: var(--pv-ink) !important;
+}
+
+.ui-preview .btn:has(> .fa-arrow-up):disabled,
+.ui-preview .btn:has(> .fa-arrow-down):disabled {
+    color: var(--pv-muted) !important;
+    opacity: 0.5;
+}
+
+/* the search at the top of "Mehr" on phones (preview.js) */
+.pv-more-search {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-more-search {
+        display: flex;
+        grid-column: 1 / -1;
+        order: -2;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 46px;
+        padding: 0 14px;
+        border: 1px solid var(--pv-line);
+        border-radius: 12px;
+        background: var(--pv-surface);
+        color: var(--pv-muted);
+        font: inherit;
+        text-align: left;
+    }
+}
+
+/* weekdays in front of dates (Termine, Kursbuch …): a fixed width, so the
+   dates stand in a column */
+.ui-preview .pv-weekday {
+    display: inline-block;
+    min-width: 2.2em;
+}
+
+/* ---------- Desktop sidebar: search and oneself always in view ----------
+   (preview.js moves them into a footer; only the list above it scrolls) */
+@media (min-width: 768px) {
+    .ui-preview .navbar {
+        overflow: hidden !important;
+        padding-bottom: 8px;
+    }
+
+    .ui-preview .navbar .navbar-collapse {
+        min-height: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav:not(.pv-nav-foot) {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav.pv-nav-foot {
+        flex: none !important;
+        margin-top: 0 !important;
+        padding-top: 8px;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .pv-nav-foot .nav-quick-search-item,
+    .ui-preview .pv-nav-foot .nav-item.dropdown {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        border-top: 0 !important;
+    }
+
+    /* one heading level: the groups inside a section only as spacing */
+    .ui-preview .pv-nav-sub {
+        font-size: 0;
+        padding: 0;
+        height: 8px;
+    }
+}
+
+/* ---------- "Mehr" on phones: the top calm and even ---------- */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item {
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+        gap: 10px !important;
+        min-height: 46px !important;
+        padding: 8px 12px !important;
+        text-align: left !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .icon {
+        width: 20px !important;
+        flex: none;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item .label {
+        text-align: left !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Hilfe: a tile next to Datentresor (preview.js) */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] a.dropdown-item[href='/hilfe'] {
+        display: none !important;
+    }
+}
+
+.pv-help-tile {
+    display: none !important;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-help-tile {
+        display: block !important;
+    }
+}
+
+/* other accounts one is signed in with: a full row each, above the actions */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session {
+        grid-column: 1 / -1;
+        min-height: 44px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .icon .avatar-sm {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-size: cover;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session::after {
+        content: "wechseln";
+        margin-left: auto;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--acc-text);
+    }
+}
+
+/* the footer's menu (oneself) above the page's grey footer line */
+.ui-preview .pv-nav-foot .dropdown-menu {
+    z-index: 100001 !important;
+}
+
+/* other sessions: the picture stays a circle, "wechseln" on one line */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .icon {
+        flex: none !important;
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .icon > * {
+        flex: none;
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session::after {
+        flex: none;
+        white-space: nowrap;
+        hyphens: none;
+    }
+}
+
+/* every small profile picture in the new design: a circle, never stretched */
+.ui-preview .avatar-sm,
+.ui-preview .avatar-md {
+    flex: none;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+}
+
+/* ---------- No footer bar: its line sits in the navigation (preview.js) ---------- */
+.ui-preview .foot,
+.ui-preview a.github {
+    display: none !important;
+}
+
+.ui-preview .pv-legal {
+    padding: 6px 10px 2px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-legal a {
+    color: var(--pv-muted) !important;
+    text-decoration: none;
+}
+
+.ui-preview .pv-legal a:hover {
+    color: var(--pv-ink) !important;
+    text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-legal {
+        grid-column: 1 / -1;
+        padding: 14px 4px 4px;
+        text-align: center;
+    }
+}
+
+.ui-preview .pv-legal .pv-legal-icon {
+    font-size: 0.95rem;
+    vertical-align: -1px;
+}
+
+/* the footer line in the sidebar: the very bottom, below oneself, quiet */
+@media (min-width: 768px) {
+    .ui-preview .pv-nav-foot .pv-legal {
+        padding: 4px 12px 0;
+        justify-content: flex-start;
+        font-size: 0.68rem;
+        opacity: 0.8;
+    }
+}
+
+/* the icon rail: only Impressum and the icon, stacked */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .pv-nav-foot .pv-legal {
+        flex-direction: column;
+        padding: 6px 0 0;
+        gap: 4px;
+    }
+
+    .ui-preview .pv-legal > a:not(.pv-legal-icon):not([href='/impressum']) {
+        display: none;
+    }
+}
+
+.ui-preview .pv-legal {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4px 14px;
+}
+
+/* ---------- "Mehr" on phones: oneself without a box (doc/Gestaltung.md, "Flächen") ----------
+   One's own row (picture, name, "Profil und Einstellungen" below, chevron),
+   other accounts as plain rows, the personal actions as tiles directly on
+   the sheet like the groups below. */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse .nav-item.dropdown:has(> #navbarDropdownProfile) {
+        padding: 0 !important;
+        border-radius: 0;
+        background: transparent;
+        margin-bottom: 4px !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile {
+        position: relative;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-content: center;
+        column-gap: 12px;
+        min-height: 64px;
+        padding: 8px 4px 8px 62px !important;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.2;
+        row-gap: 0;
+    }
+
+    /* the picture beside the two lines, out of the grid */
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile > .icon {
+        position: absolute;
+        left: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 46px !important;
+        height: 46px !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile > .icon > * {
+        width: 46px !important;
+        height: 46px !important;
+        border-radius: 50%;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile > .menu-user-name {
+        grid-column: 1;
+        grid-row: 1;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.2 !important;
+        overflow-wrap: anywhere;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile::before {
+        grid-column: 1;
+        grid-row: 2;
+        order: 0;
+        margin: 0;
+        line-height: 1.3;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile::after {
+        display: block !important;
+        grid-column: 2;
+        grid-row: 1 / 3;
+        align-self: center;
+        content: "\ea61";
+        font-family: "tabler-icons" !important;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        margin: 0 4px 0 0;
+        border: 0;
+        font-size: 1.1em;
+        color: var(--pv-muted);
+    }
+
+    /* other accounts: plain rows with a hairline, "wechseln" at the end */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session {
+        min-height: 44px !important;
+        padding: 8px 4px !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        border-top: 1px solid var(--pv-line);
+        align-items: center !important;
+    }
+
+    /* space after the last account row, on the row itself: a margin on the
+       first tile would put it lower than its neighbour */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session:has(+ .dropdown-item:not(.switch-session)) {
+        margin-bottom: 6px;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item.switch-session .label {
+        font-size: 0.9rem !important;
+    }
+
+    /* the personal actions: quiet tiles on the sheet, icon level with the
+       first line */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] {
+        padding: 0 !important;
+        margin-top: 0 !important;
+        gap: 8px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item:not(.switch-session) {
+        align-items: flex-start !important;
+        background: var(--pv-hover) !important;
+        border-radius: 12px !important;
+        min-height: 48px !important;
+        padding: 12px !important;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item:not(.switch-session) .icon {
+        height: 1.15em !important;
+        margin-top: 1px;
+        align-items: center;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] .dropdown-item:not(.switch-session) .label {
+        line-height: 1.2 !important;
+        font-size: 0.88rem !important;
+    }
+}
+
+/* ---------- Lists with actions (doc/Gestaltung.md, 6a; pv_list in preview.js) ----------
+   The parts of the page type "Liste mit Aktionen", the same on every page:
+   .pv-page-list   the page: at most about 980 px wide on desktop (tables
+                   and the timetable keep the full width)
+   .pv-lhead       the title and the main action in one row; on phones the
+                   main action with its short label (»Neu«)
+   .pv-lrow        a row: title, a quiet line of facts (commas), one or two
+                   visible quiet text actions (.pv-lact) and »•••« (.pv-lmore)
+                   for the rest; on phones the row opens the item (»›«) and
+                   every action is in the sheet
+   .pv-lrow-sub    a sub-row (a poll's run) with a status chip (.pv-lchip)
+   .pv-lfold       »2 beendete Durchführungen anzeigen«
+   .pv-lgroup      a group with a heading (»Schuljahr 2024/25«), foldable
+   .pv-lblocks     a long list in blocks of 50, »Ältere … laden« below
+   .pv-amenu       the »•••« menu: beside its button, a sheet on phones;
+                   Löschen in calm red at its end */
+
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container.pv-page-list {
+        max-width: min(980px, calc(100% - 48px));
+    }
+}
+
+.ui-preview .pv-lhead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    margin-bottom: 10px;
+}
+
+.ui-preview .container .pv-lhead h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+}
+
+.pv-lhead-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.ui-preview #main_container .pv-lhead .pv-lhead-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-preview #main_container .pv-lhead .pv-lhead-main > i {
+    margin: 0;
+}
+
+/* further actions of the page: quiet text buttons */
+.ui-preview #main_container .pv-lhead .pv-lhead-quiet {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+.ui-preview #main_container .pv-lhead .pv-lhead-quiet:hover,
+.ui-preview #main_container .pv-lhead .pv-lhead-quiet:focus-visible {
+    background: var(--pv-hover);
+    color: var(--acc-text);
+}
+
+.pv-l-short {
+    display: none;
+}
+
+/* a row */
+.pv-lrow {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.pv-lrow-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.pv-lrow-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ui-preview .pv-lrow-title {
+    display: block;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    text-align: left;
+    color: var(--pv-ink);
+    font: 600 1.02rem/1.35 var(--pv-text);
+    overflow-wrap: anywhere;
+}
+
+.ui-preview button.pv-lrow-title {
+    cursor: pointer;
+}
+
+.ui-preview button.pv-lrow-title:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--pv-muted);
+    text-underline-offset: 3px;
+}
+
+.ui-preview .pv-lrow-title:focus-visible,
+.ui-preview .pv-lact:focus-visible,
+.ui-preview .pv-lmore:focus-visible,
+.ui-preview .pv-lfold:focus-visible,
+.ui-preview .pv-lgroup-toggle:focus-visible,
+.ui-preview .pv-lblocks-more:focus-visible,
+.ui-preview .pv-amenu-item:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* the focus frame for keyboards only (Bootstrap draws one on every focus) */
+.ui-preview .pv-lrow-title:focus:not(:focus-visible),
+.ui-preview .pv-lact:focus:not(:focus-visible),
+.ui-preview .pv-lmore:focus:not(:focus-visible),
+.ui-preview .pv-lfold:focus:not(:focus-visible),
+.ui-preview .pv-lgroup-toggle:focus:not(:focus-visible),
+.ui-preview .pv-lblocks-more:focus:not(:focus-visible),
+.pv-amenu:focus {
+    outline: none;
+}
+
+.pv-lrow-facts {
+    font-size: 0.85em;
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+/* the actions: level with the title's first line */
+.pv-lrow-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: -5px -6px -5px 0;
+}
+
+.ui-preview .pv-lact,
+.ui-preview .pv-lmore {
+    flex: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    padding: 5px 9px;
+    min-height: 31px;
+    background: transparent;
+    color: var(--acc-text);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-preview .pv-lmore {
+    min-width: 36px;
+    padding: 5px 8px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-lmore > .ti {
+    font-size: 1.2rem;
+    vertical-align: middle;
+}
+
+.ui-preview .pv-lact:hover,
+.ui-preview .pv-lmore:hover,
+.ui-preview .pv-lmore[aria-expanded='true'] {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-lmore[aria-expanded='true'] {
+    color: var(--pv-ink);
+}
+
+.pv-lrow-chev {
+    display: none;
+}
+
+/* a sub-row: indented, the status as a chip; running ones with a slim
+   accent line at the left edge */
+.pv-lrow-sub {
+    margin-left: 16px;
+    padding-left: 12px;
+}
+
+.ui-preview .pv-lrow-sub .pv-lrow-title {
+    font-size: 0.95rem;
+}
+
+.pv-lrow-sub.pv-state-running::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--acc);
+}
+
+.pv-lchip {
+    flex: none;
+    margin-top: 1px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+    /* the same width for "läuft" and "geplant": the times form a column */
+    min-width: 4.6em;
+    text-align: center;
+}
+
+.pv-lchip-running {
+    background: var(--acc-soft);
+    color: var(--acc-text);
+}
+
+.pv-lchip-planned {
+    color: var(--pv-ink);
+}
+
+/* "2 beendete Durchführungen anzeigen" */
+.ui-preview .pv-lfold {
+    display: block;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    background: none;
+    margin: 2px 0 2px 28px;
+    padding: 6px 0;
+    color: var(--acc-text);
+    font: 600 0.85rem/1.3 var(--pv-text);
+    cursor: pointer;
+}
+
+.ui-preview .pv-lfold:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* a group (school year): heading, count, folded or open */
+.pv-lgroup + .pv-lgroup {
+    margin-top: 22px;
+}
+
+.ui-preview .container .pv-lgroup-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 4px;
+    font-size: 1.02rem;
+    line-height: 1.3;
+}
+
+.ui-preview .pv-lgroup-toggle {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: 0 0 0 -8px;
+    padding: 6px 8px;
+    background: none;
+    color: var(--pv-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-lgroup-toggle:hover {
+    background: var(--pv-hover);
+}
+
+.pv-lgroup-count {
+    font: 400 0.85rem/1.3 var(--pv-text);
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* the fold chevron (Tabler): pointing right when folded, down when open */
+.pv-lgroup-chev {
+    flex: none;
+    align-self: center;
+    color: var(--pv-muted);
+    font-size: 1.1rem;
+    transition: transform 0.15s;
+}
+
+[aria-expanded='true'] > .pv-lgroup-chev {
+    transform: rotate(90deg);
+}
+
+/* phones: the whole heading is the button, the chevron at the right edge */
+@media (max-width: 767px) {
+    .ui-preview .container .pv-lgroup-head > .pv-lgroup-toggle {
+        display: flex;
+        flex: 1 1 auto;
+        width: calc(100% + 16px);
+        margin-right: -8px;
+    }
+
+    .ui-preview .pv-lgroup-toggle > .pv-lgroup-chev {
+        margin-left: auto;
+    }
+}
+
+.pv-lempty {
+    margin: 0;
+    padding: 12px 0;
+    border-top: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.9em;
+}
+
+/* blocks of 50: "Ältere … laden" as a calm grey button */
+.pv-lblocks-foot {
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-lblocks-more {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 10px;
+    padding: 7px 14px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: 600 0.9rem/1.2 var(--pv-text);
+    cursor: pointer;
+}
+
+.ui-preview .pv-lblocks-more:hover {
+    background: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+}
+
+/* the "•••" menu: beside its button */
+.pv-amenu {
+    position: fixed;
+    z-index: 8095;
+    min-width: 200px;
+    max-width: 320px;
+    padding: 6px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+}
+
+.ui-preview .pv-amenu-item {
+    display: block;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    margin: 0;
+    padding: 8px 12px;
+    background: none;
+    color: var(--pv-ink);
+    font: 500 0.92rem/1.3 var(--pv-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-amenu-item:hover,
+.ui-preview .pv-amenu-item:focus {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-amenu-item.pv-amenu-danger {
+    color: #b42318;
+}
+
+.ui-preview.dark .pv-amenu-item.pv-amenu-danger {
+    color: #ff8f8f;
+}
+
+.pv-amenu-sep {
+    height: 1px;
+    margin: 6px 4px;
+    background: var(--pv-line);
+}
+
+.pv-amenu-title {
+    padding: 2px 12px 10px;
+    font: 700 1rem/1.3 var(--pv-display);
+    color: var(--pv-ink);
+    overflow-wrap: anywhere;
+}
+
+/* tablets: the shorter labels in the rows */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .pv-lact .pv-l-long {
+        display: none;
+    }
+
+    .pv-lact .pv-l-short {
+        display: inline;
+    }
+}
+
+/* phones: the row opens the item, every action is in the sheet */
+@media (max-width: 767px) {
+    .pv-lhead {
+        flex-wrap: wrap;
+    }
+
+    .ui-preview .container .pv-lhead h2 {
+        flex: 1 1 0;
+        font-size: 1.4rem;
+    }
+
+    .pv-lhead-actions {
+        display: contents;
+    }
+
+    .ui-preview #main_container .pv-lhead .pv-lhead-main {
+        order: 1;
+        flex: none;
+    }
+
+    .pv-lhead::after {
+        content: "";
+        order: 2;
+        flex-basis: 100%;
+        height: 0;
+    }
+
+    .ui-preview #main_container .pv-lhead .pv-lhead-quiet {
+        order: 3;
+        margin-left: -12px;
+        margin-right: 6px;
+    }
+
+    .pv-lhead-main .pv-l-long {
+        display: none;
+    }
+
+    .pv-lhead-main .pv-l-short {
+        display: inline;
+    }
+
+    .pv-lrow {
+        gap: 4px 6px;
+        min-height: 48px;
+    }
+
+    .pv-lact {
+        display: none !important;
+    }
+
+    /* the whole row is the title's button */
+    .ui-preview button.pv-lrow-title::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+    }
+
+    .ui-preview button.pv-lrow-title:hover {
+        text-decoration: none;
+    }
+
+    .pv-lrow:has(> .pv-lrow-main button.pv-lrow-title:active) {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .pv-lmore {
+        position: relative;
+        z-index: 1;
+        min-width: 40px;
+        min-height: 36px;
+    }
+
+    .pv-lrow-chev {
+        display: block;
+        flex: none;
+        color: var(--pv-muted);
+        font-size: 1.15rem;
+        line-height: 1;
+        margin-top: 2px;
+    }
+
+    .pv-lrow-sub {
+        margin-left: 8px;
+    }
+
+    .ui-preview .pv-lfold {
+        margin-left: 20px;
+    }
+
+    .pv-amenu.pv-amenu-sheet {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        min-width: 0;
+        max-width: none;
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 8110;
+        padding: 26px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+        border-radius: 20px 20px 0 0;
+        border-width: 1px 0 0;
+        animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    /* the grab handle: pull down to close */
+    .pv-amenu.pv-amenu-sheet::before {
+        content: "";
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        margin-left: -20px;
+        border-radius: 2px;
+        background: var(--pv-line);
+    }
+
+    .ui-preview .pv-amenu-sheet .pv-amenu-item {
+        min-height: 48px;
+        padding: 13px 12px;
+        font-size: 1rem;
+    }
+
+    .pv-amenu-veil {
+        position: fixed;
+        inset: 0;
+        z-index: 8105;
+        background: rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* larger screens: "•••" only where something is left for it */
+@media (min-width: 768px) {
+    .pv-lmore.pv-lmore-phone {
+        display: none;
+    }
+}
+
+/* "Mehr" on phones, the personal tiles: settings first (Passwörter, hell /
+   dunkel), then signing in and out side by side; all the same height */
+@media (max-width: 767px) {
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > * {
+        order: 5;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .switch-session {
+        order: 0;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[href='/passwoerter'] {
+        order: 1;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .nav-dark,
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .nav-light {
+        order: 2;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[href='/login'] {
+        order: 3;
+    }
+
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > a[onclick*='perform_logout'] {
+        order: 4;
+    }
+
+    /* two lines of label fit; one-line tiles keep the same height */
+    .ui-preview [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        min-height: 68px !important;
+    }
+}
+
+/* ---------- "Mehr" on phones: one tile concept, rows without gaps ----------
+   Six columns; a tile spans two, preview.js (balance_tiles) widens the last
+   tiles of a group so that every row is full. The personal tiles look like
+   all the others: icon centred above the label. */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav,
+    .ui-preview .pv-nav-section .pv-nav-body,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+
+    .ui-preview .navbar .pv-span-2 { grid-column: span 2; }
+    .ui-preview .navbar .pv-span-3 { grid-column: span 3; }
+    .ui-preview .navbar .pv-span-6 { grid-column: span 6; }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        min-height: 82px !important;
+        padding: 10px 6px !important;
+        border-radius: 14px !important;
+        background: var(--pv-hover) !important;
+        text-align: center !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) .icon {
+        width: 26px !important;
+        height: 26px !important;
+        margin: 0 !important;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--acc-text) !important;
+        /* as strong as the other tiles (menu icons elsewhere are quieter) */
+        opacity: 1;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) .label {
+        text-align: center !important;
+        font-size: 0.8rem !important;
+        line-height: 1.2 !important;
+    }
+}
+
+/* ---------- "Mehr" on phones: oneself and the first tiles in one grid ----------
+   The profile's item and menu dissolve (display: contents), so its tiles and
+   the top-level tiles (Datentresor, Hilfe) share the six-column grid: rows
+   of three like the sections below. The order: search, oneself, other
+   accounts, then Datentresor, Passwörter, Dunkel / Hilfe, Anmeldung,
+   Abmelden; everything else (the sections, the legal line) after. */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > * {
+        order: 20;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-more-search {
+        order: 0;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.dropdown:has(> #navbarDropdownProfile),
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] {
+        display: contents !important;
+    }
+
+    .ui-preview .navbar .navbar-collapse #navbarDropdownProfile {
+        order: 1;
+        grid-column: 1 / -1;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .switch-session {
+        order: 2;
+        grid-column: 1 / -1;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) {
+        order: 3;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[href='/passwoerter'] {
+        order: 4;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .nav-dark,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .nav-light {
+        order: 5;
+    }
+
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .pv-help-tile {
+        order: 6;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[href='/login'] {
+        order: 7;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[onclick*='perform_logout'] {
+        order: 8;
+    }
+
+    /* the profile's other entries (Meine Klasse, Mittagessen …) join the
+       first tiles, next to Datentresor */
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > :not(.switch-session):not(a[href='/passwoerter']):not(.nav-dark):not(.nav-light):not(a[href='/login']):not(a[onclick*='perform_logout']) {
+        order: 3;
+    }
+
+    /* the top-level tiles take the size of the personal ones */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link {
+        min-height: 82px;
+    }
+}
+
+@media (max-width: 767px) {
+    /* Hilfe after the settings (more specific than the rule for top-level tiles) */
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item.pv-help-tile:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) {
+        order: 6;
+    }
+
+    /* every tile starts at the top: the icons of a row stand on one line,
+       also when a label takes two lines */
+    .ui-preview .navbar .pv-nav-body .pv-nav-entry,
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item:not(.dropdown):not(.pv-nav-section):not(.nav-quick-search-item) > .nav-link,
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .dropdown-item:not(.switch-session) {
+        justify-content: flex-start !important;
+        padding-top: 16px !important;
+    }
+}
+
+/* behind an open sheet the page stands still (preview.js): scrolling inside
+   a sheet stops at its edges, the veil takes no scroll gestures (a tap still
+   closes the sheet) */
+.ui-preview .pv-sheet .modal-body,
+.ui-preview .pv-sheet .modal-dialog,
+.ui-preview .pv-plan-menu,
+.ui-preview .pv-plan-list,
+.ui-preview .pv-link-sheet {
+    overscroll-behavior: contain;
+}
+
+.ui-preview .pv-menu-veil,
+.ui-preview .modal-backdrop {
+    touch-action: none;
+}
+
+/* ---------- Copying (doc/Gestaltung.md, 7; pv_copy in preview.js) ----------
+   .pv-copy        an address as a quiet one-line field: grey field, the copy
+                   segment at its end; a tap anywhere copies. A long address
+                   ends in "…" (the copy takes all of it, the title shows it).
+   .pv-copied      for a moment after copying: a green check (ti-check) in
+                   place of the copy icon, the same size, so nothing moves */
+.ui-preview {
+    --pv-ok: #1a7f37;
+}
+
+.ui-preview.dark {
+    --pv-ok: #4ac26b;
+}
+
+.ui-preview .pv-copy {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: 34rem;
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: inherit;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pv-copy-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 7px 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pv-copy-end {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    border-left: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+}
+
+.pv-copy-end > .ti,
+.ui-preview .pv-copied .pv-copy-ok {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+@media (hover: hover) {
+    .ui-preview .pv-copy:hover .pv-copy-end {
+        background: var(--pv-hover);
+        color: var(--pv-ink);
+    }
+}
+
+.ui-preview .pv-copy:active .pv-copy-end {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-copy:focus {
+    outline: none;
+}
+
+.ui-preview .pv-copy:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-copy-ok {
+    display: none;
+    color: var(--pv-ok);
+}
+
+.ui-preview .pv-copied .pv-copy-ok {
+    display: inline-block;
+    animation: pv-copy-snap 0.24s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.ui-preview .pv-copied .pv-copy-icon {
+    display: none;
+}
+
+@keyframes pv-copy-snap {
+    from { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-preview .pv-copied .pv-copy-ok {
+        animation: none;
+    }
+}
+
+/* ---------- The search (code.js, quick_search_open) ----------
+   It opens below the top bar of the old design; with the sidebar (tablet
+   rail, desktop) there is no top bar and "below the navigation" is the bottom
+   edge of the window. Here: centred over the page, a little below the top. */
+@media (min-width: 768px) {
+    .ui-preview #quick_search_panel {
+        top: max(48px, 10vh) !important;
+        left: calc((100vw + var(--pv-sidebar, 0px)) / 2);
+        right: auto;
+        transform: translateX(-50%);
+        width: min(36em, calc(100vw - var(--pv-sidebar, 0px) - 32px));
+        max-width: none;
+        background: var(--pv-surface);
+        border: 1px solid var(--pv-line);
+        border-radius: 14px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+    }
+}
+
+/* ---------- Allgemeiner Teil (timetable.html, #atNotesModal) ----------
+   The page's own styles give the name column a white background and the
+   hint rows a grey band; here: the surface, hairlines, quiet hints, the
+   chosen grade in the accent's soft tone, "missing" in calm red. */
+.ui-preview #atNotesModal .table {
+    color: var(--pv-ink);
+    margin-bottom: 0;
+}
+
+.ui-preview #atNotesModal .table thead th {
+    background: var(--pv-surface);
+    border-top: 0;
+    border-bottom: 1px solid var(--pv-line);
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ui-preview #atNotesModal .table td {
+    background: var(--pv-surface);
+    border-top: 1px solid var(--pv-line);
+    vertical-align: middle;
+}
+
+.ui-preview #atNotesModal .sticky_col {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+}
+
+.ui-preview #atNotesModal tr.hint_row td {
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+    font-style: normal;
+    opacity: 1;
+    padding: 4px 8px;
+    border-top: 1px dashed var(--pv-line);
+}
+
+.ui-preview #atNotesModal .bu-at-note.active,
+.ui-preview #atNotesModal .bu-sort-at-table-by-recency.btn-secondary {
+    background: var(--acc-soft);
+    border-color: var(--acc);
+    color: var(--acc-text);
+}
+
+.ui-preview #atNotesModal .bu-at-missing.btn-danger {
+    background: color-mix(in srgb, #b42318 12%, var(--pv-surface));
+    border-color: #b42318;
+    color: #b42318;
+}
+
+.ui-preview.dark #atNotesModal .bu-at-missing.btn-danger {
+    background: color-mix(in srgb, #ff8f8f 16%, var(--pv-surface));
+    border-color: #ff8f8f;
+    color: #ff8f8f;
+}
+
+/* the legal line in the tablet rail: only a quiet info icon for the
+   Impressum (preview.js, legal_line); elsewhere the icon is hidden */
+.ui-preview .pv-legal .pv-legal-rail {
+    display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .pv-nav-foot .pv-legal > :not(.pv-legal-rail) {
+        display: none !important;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal .pv-legal-rail {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 32px;
+        margin: 0 auto;
+        border-radius: 8px;
+        color: var(--pv-muted);
+        font-size: 18px;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal .pv-legal-rail:hover {
+        background: var(--pv-hover);
+        color: var(--pv-ink);
+    }
+}
+
+/* the profile on tablets: the whole panel, not two thirds of it in the
+   middle (profil.html: col-md-8 offset-md-2) */
+@media (min-width: 768px) and (max-width: 1199px) {
+    body.ui-preview:has(#dark_css_switch) #main_container .col-md-8.offset-md-2 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-left: 0;
+    }
+}
+
+/* ---------- Dialogs on tablets ----------
+   Bootstrap keeps them at 500 px below 992 px (modal-lg included), a narrow
+   column in a wide window: large dialogs take the room beside the rail,
+   normal ones a little more than before. Phones: sheets (above). */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .modal-dialog:not(.modal-sm) {
+        max-width: min(620px, calc(100vw - var(--pv-sidebar, 0px) - 48px));
+    }
+
+    .ui-preview .modal-dialog.modal-lg,
+    .ui-preview .modal-dialog.modal-xl {
+        max-width: min(960px, calc(100vw - var(--pv-sidebar, 0px) - 48px));
+    }
+}
+
+/* a card without a subject (a Termin): a Tabler icon in a quiet chip */
+.ui-preview .pv-ag-subj.pv-ag-subj-icon {
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-ag-subj.pv-ag-subj-icon .ti {
+    font-size: 1.15em;
+    line-height: 1;
+}
+
+/* the text editor (Summernote): no text and highlight colours, no font
+   family and size in the new design – colours and type come from the design,
+   emphasis is bold (as in the message editor) */
+.ui-preview .note-editor .note-btn-group.note-color,
+.ui-preview .note-editor .note-btn-group.note-fontname,
+.ui-preview .note-editor .note-btn-group.note-fontsize {
+    display: none !important;
 }

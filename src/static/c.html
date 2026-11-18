@@ -1,8 +1,9 @@
-<div class='container'>
+<div class='container pv-login pv-login-code'>
     <div class='row'>
         <div class='col-md-8 offset-md-2'>
+            #{design_preview_public_brand}
             <h2 style='margin-bottom: 30px;'>Bestätige deine Anmeldung</h2>
-            <p>
+            <p class='pv-login-intro'>
                 #{{
                     'sms' => 'Wir haben dir einen <strong>Code per SMS</strong> gesendet.',
                     'email' => 'Wir haben dir einen <strong>Code per E-Mail</strong> gesendet.',
@@ -11,7 +12,7 @@
             </p>
             <form id='form'>
                 <div class="input-group mb-3">
-                    <input type="number" id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
+                    <input #{design_preview_code_input_type} id='code' class="form-control" placeholder="Bitte gib deinen Code ein" style='text-align: center;'>
                     <div class="input-group-append">
                         <button id='submit' class="btn btn-primary" type="submit">Anmelden</button>
                     </div>
@@ -21,7 +22,7 @@
                 <p>Als Lehrkraft benötigst du einen zweiten Faktor für die Anmeldung. <span id="span_sent"></span></p>
                 <form id='form2'>
                     <div class="input-group mb-3">
-                        <input type="number" id='code2' class="form-control" placeholder="Bitte gib deinen zweiten Faktor ein" style='text-align: center;'>
+                        <input #{design_preview_code_input_type} id='code2' class="form-control" placeholder="Bitte gib deinen zweiten Faktor ein" style='text-align: center;'>
                         <div class="input-group-append">
                             <button id='submit2' class="btn btn-primary" type="submit">Anmelden</button>
                         </div>
@@ -32,7 +33,7 @@
                     <button style='display: none;' id='bu_force_2fa_email' class="btn btn-outline-secondary btn-sm">Code per E-Mail senden</button>
                 </div>
             </div>
-            <div style="text-align: center; display: #{login_method == 'email' ? 'none' : 'block'};">
+            <div class='pv-login-resend' style="text-align: center; display: #{login_method == 'email' ? 'none' : 'block'};">
                 <button class="bu-send-code-via-email btn btn-sm btn-outline-secondary">Code per E-Mail senden</button>
                 <div class='alert send-code-via-email-confirmation' style="display: none;">
                     Der Code wurde dir per E-Mail zugesendet.

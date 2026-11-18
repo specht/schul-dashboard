@@ -111,6 +111,11 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
 
 **Pages (`src/static/*.html`)**
 
+- **New design:** everything that runs with `ui_preview?` follows
+  [doc/Gestaltung.md](doc/Gestaltung.md) (calm buttons, one surface per page,
+  sheets on phones, top alignment, tokens instead of colours, no "·"
+  separators, the old design unchanged). New design decisions go there.
+
 - `#{…}` in pages and `_template.html` is evaluated as **Ruby**, also inside
   JavaScript and HTML comments. Use `${…}` in JS, never output `#{`.
 - Escape values from the database or from users for HTML or JSON when they
@@ -128,7 +133,9 @@ Further reading: [doc/Architektur.md](doc/Architektur.md),
   inside a button would yield the icon).
 - Stable selectors for tests: `bu_…` (buttons), `ti_…` (inputs), `…Modal`;
   add `data-testid` where needed.
-- The UI is German; students are addressed with "du".
+- The UI is German; the dashboard addresses everyone with "du" (students,
+  parents, teachers). Old texts saying "Sie" are adapted when a page comes
+  into the new design.
 - Pages must work with custom color schemes, in dark mode (`body.dark`) and
   on phones.
 

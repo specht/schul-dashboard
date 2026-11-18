@@ -6,7 +6,7 @@
 </style>
 <div class='container-fluid solid white'>
     <div>
-        #{mail_addresses_table(klasse)}
+        #{ui_preview? ? directory_preview_html(klasse) : mail_addresses_table(klasse)}
     </div>
 </div>
 
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                          : 'Für diesen Raum sind noch keine Tische angelegt.';
                 else if (too_small && is_klassenleitung)
                     hint = `Zu wenige Plätze: Raum ${raum} hat ${layout.length} Plätze, die Klasse ${n} Schülerinnen und Schüler. ` +
-                        (can_edit_room ? 'Weitere Plätze legen Sie auf der Sitzplan-Seite unter „Tische im Raum ändern“ an.' : 'Die Tische dieses Raums kann nur die Administration ändern.');
+                        (can_edit_room ? 'Weitere Plätze #{ui_preview? ? "legst du" : "legen Sie"} auf der Sitzplan-Seite unter „Tische im Raum ändern“ an.' : 'Die Tische dieses Raums kann nur die Administration ändern.');
                 if (buttons.length === 0 && !hint) continue;
                 let kind = is_klassenleitung
                     ? 'Ihren Sitzplan hier sehen alle Lehrkräfte der Klasse.'

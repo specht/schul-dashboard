@@ -10,10 +10,35 @@
 <div class='container-fluid solid white'>
     <div class='row'>
         <div class='col-md-12'>
-            <h2>Feedback zum neuen Design</h2>
+            <h2>Neues Design: Testpersonen und Feedback</h2>
             <p>Rückmeldungen aus der Vorschau des neuen Designs (Profil → »Neues Design (Vorschau)«), neueste zuerst. Gespeichert sind die Seite, das Gerät, hell oder dunkel, das Farbschema und die Rolle; einen Namen nur, wenn die Person angesprochen werden möchte.</p>
             <div class='api_messages' style='display: none;'></div>
             #{print_design_feedback()}
         </div>
     </div>
 </div>
+<script>
+// Testpersonen: add one by e-mail address (the list offers names), remove one
+// (after the page has loaded: jQuery comes with the template's scripts)
+window.addEventListener('load', function() {
+    let input = $('#ti_preview_tester');
+    let known = new Set($('#dl_preview_tester option').map(function() { return this.value; }).get());
+    input.on('input', function() {
+        $('#bu_add_tester').prop('disabled', !known.has(input.val().trim().toLowerCase()));
+    });
+    let set = function(email, mode) {
+        api_call('/api/set_ui_preview_tester', {email: email, mode: mode}, function(data) {
+            if (data.success) location.reload();
+        });
+    };
+    $('#bu_add_tester').on('click', function() { set(input.val().trim().toLowerCase(), 'on'); });
+    input.on('keydown', function(e) {
+        if (e.key === 'Enter' && !$('#bu_add_tester').prop('disabled')) set(input.val().trim().toLowerCase(), 'on');
+    });
+    $('.bu-remove-tester').on('click', function(e) {
+        let email = e.currentTarget.dataset.email;
+        dashboardConfirm('Das neue Design für diese Person wieder abschalten?', function() { set(email, 'off'); },
+                         {title: 'Testperson entfernen', confirm: 'Entfernen', cancel: 'Abbrechen'});
+    });
+});
+</script>

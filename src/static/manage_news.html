@@ -144,6 +144,155 @@
         }
     }
 
+    function open_news_entry(timestamp) {
+        api_call('/api/get_news_entry', { timestamp: timestamp }, function (data) {
+            if (data.success) {
+                $('.ti_title').val(data.title);
+                $('#ta_markdown').val(data.content);
+                $('#preview_heading').text(data.title);
+                $('#ta_preview').html(data.content_html);
+                old_timestamp = timestamp;
+                old_title = data.title;
+                old_content = data.content;
+                preview_title = data.title;
+                preview_content = data.content;
+                force_close = false;
+                
+                update_buttons();
+                $('#editModal').modal('show');
+            }
+        });
+    }
+
+    // ---------- Neues Design: a list with actions (preview.js, pv_list) ----------
+    // The entries of this year first, earlier years folded and loaded when
+    // opened (/api/get_news with a year); today's table stays hidden.
+    var PV = document.body.classList.contains('ui-preview');
+    var pv_news = {};           // year → entries (loaded years only)
+    var pv_news_years = [];     // [{year, count}]
+    var pv_news_open = {};      // the years someone opened or closed
+
+    function pv_news_load(year, callback) {
+        api_call('/api/get_news', { year: year }, function (data) {
+            if (!data.success) return;
+            pv_news[year] = data.news;
+            pv_news_years = data.years;
+            callback();
+        });
+    }
+
+    function pv_news_update(entry, changes) {
+        Object.assign(entry, changes);
+        pv_news_render();
+    }
+
+    function pv_news_row(entry, year) {
+        let title = entry.title || '(ohne Titel)';
+        let open = function () {
+            row_title_element = { text: function (t) { pv_news_update(entry, { title: t }); } };
+            open_news_entry(entry.timestamp);
+        };
+        let row = pv_list.row({
+            title: title,
+            cls: 'pv-news-entry',
+            facts: [moment(entry.date.substr(0, 10)).locale('de').format('dd, D.M.'),
+                entry.published ? 'veröffentlicht' : 'nicht veröffentlicht',
+                entry.sticky ? 'angeheftet' : null],
+            open: open,
+            actions: [
+                { label: 'Bearbeiten', visible: true, cls: 'pv-bu-edit-news', run: open },
+                {
+                    label: entry.published ? 'Zurückziehen' : 'Veröffentlichen', visible: true, cls: 'pv-bu-publish-news', run: function () {
+                        api_call('/api/set_news_published', { timestamp: entry.timestamp, published: entry.published ? 'no' : 'yes' }, function (data) {
+                            if (data.success) pv_news_update(entry, { published: data.published });
+                        });
+                    }
+                },
+                {
+                    label: entry.sticky ? 'Nicht mehr anheften' : 'Anheften', cls: 'pv-bu-sticky-news', run: function () {
+                        api_call('/api/set_news_sticky', { timestamp: entry.timestamp, sticky: entry.sticky ? 'no' : 'yes' }, function (data) {
+                            if (data.success) pv_news_update(entry, { sticky: data.sticky });
+                        });
+                    }
+                },
+                {
+                    label: 'Löschen', danger: true, cls: 'pv-bu-delete-news', run: function () {
+                        pv_list.confirm_delete(`Den Beitrag »${title}« löschen?`, function () {
+                            api_call('/api/delete_news_entry', { timestamp: entry.timestamp }, function (data) {
+                                if (data.success) {
+                                    pv_news[year] = pv_news[year].filter(function (x) { return x.timestamp !== entry.timestamp; });
+                                    for (let y of pv_news_years)
+                                        if (y.year === year) y.count -= 1;
+                                    pv_news_render();
+                                }
+                            });
+                        }, 'Beitrag löschen');
+                    }
+                },
+            ],
+        });
+        row.setAttribute('data-timestamp', `${entry.timestamp}`);
+        return row;
+    }
+
+    function pv_news_render() {
+        let root = document.querySelector('.pv-news-list');
+        root.textContent = '';
+        let this_year = moment().year();
+        let counts = {};
+        for (let y of pv_news_years) counts[y.year] = y.count;
+        if (!(this_year in counts)) counts[this_year] = 0;
+        let years = Object.keys(counts).map(function (y) { return parseInt(y); }).sort(function (a, b) { return b - a; });
+        // open at first: this year, or the latest year with entries
+        let first_open = (counts[this_year] > 0 || years.length === 1) ? this_year : years.find(function (y) { return counts[y] > 0; });
+        let count = function (n) { return `${n} ${n === 1 ? 'Beitrag' : 'Beiträge'}`; };
+        let fill = function (body, year) {
+            body.textContent = '';
+            let list = pv_news[year] || [];
+            if (list.length === 0) {
+                $('<p>').addClass('pv-lempty').text(year === this_year ? 'In diesem Jahr noch keine Beiträge. Mit »Artikel schreiben« legst du einen an.' : 'Keine Beiträge.').appendTo(body);
+                return;
+            }
+            pv_list.blocks(body, list, function (entry) { return pv_news_row(entry, year); }, { more: 'Ältere Beiträge laden', keep: `year:${year}` });
+        };
+        for (let y of years) {
+            if (y !== this_year && counts[y] === 0 && !pv_news[y]) continue;
+            let open = (y in pv_news_open) ? pv_news_open[y] : (y === first_open);
+            pv_list.group(root, {
+                label: `${y}`, count: count(pv_news[y] ? pv_news[y].length : counts[y]), folded: true, open: open,
+                cls: 'pv-news-year', on_toggle: function (o) { pv_news_open[y] = o; },
+                render: function (body) {
+                    if (pv_news[y]) { fill(body, y); return; }
+                    $('<p>').addClass('pv-lempty').text('Wird geladen …').appendTo(body);
+                    pv_news_load(y, function () {
+                        fill(body, y);
+                        let c = body.parentNode.querySelector('.pv-lgroup-count');
+                        if (c) c.textContent = count(pv_news[y].length);
+                    });
+                },
+            }).section.setAttribute('data-year', `${y}`);
+        }
+    }
+
+    function pv_news_init() {
+        let container = document.querySelector('#main_container > .container');
+        let table = document.querySelector('#news_here').closest('table').parentNode;
+        table.hidden = true;
+        $('<div>').addClass('pv-news-list').insertAfter(table);
+        pv_list.page(container, {
+            main: document.querySelector('.bu-compose'),
+            extra: [document.querySelector('.bu-refresh-staging'), document.querySelector('.bu-refresh-live')],
+        });
+        let this_year = moment().year();
+        pv_news_load(this_year, function () {
+            let first = pv_news_years.find(function (y) { return y.count > 0; });
+            if (pv_news[this_year].length === 0 && first && first.year !== this_year)
+                pv_news_load(first.year, pv_news_render);
+            else
+                pv_news_render();
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         $('#editModal').on('hide.bs.modal', function (e) {
             if ($(e.target).attr('id') === 'editModal' && pending_changes() && (!force_close)) {
@@ -154,6 +303,9 @@
             }
         });
 
+        if (PV)
+            pv_news_init();
+        else {
         api_call('/api/get_news', {}, function (data) {
             let tbody = $('#news_here');
             tbody.empty();
@@ -223,26 +375,11 @@
                     let row = $(e.target).closest('tr');
                     let timestamp = row.data('timestamp');
                     row_title_element = row.find('.row-title-here');
-                    api_call('/api/get_news_entry', { timestamp: timestamp }, function (data) {
-                        if (data.success) {
-                            $('.ti_title').val(data.title);
-                            $('#ta_markdown').val(data.content);
-                            $('#preview_heading').text(data.title);
-                            $('#ta_preview').html(data.content_html);
-                            old_timestamp = timestamp;
-                            old_title = data.title;
-                            old_content = data.content;
-                            preview_title = data.title;
-                            preview_content = data.content;
-                            force_close = false;
-                            
-                            update_buttons();
-                            $('#editModal').modal('show');
-                        }
-                    });
+                    open_news_entry(timestamp);
                 });
             }
         });
+        }
         $('.bu-compose').click(function (e) {
             old_timestamp = null;
             old_title = '';

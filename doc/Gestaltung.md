@@ -235,7 +235,11 @@ Umfragen, Termine, News verwalten)
   eigenes Eingabefeld. Adressen stehen dafür als einzeiliges graues Feld
   mit dem Kopier-Feld am Ende da; lange Adressen enden in »…«, der Tooltip
   zeigt sie ganz (`pv_copy` in `preview.js`, `.pv-copy` in `preview.css`;
-  Beispiele: Verteiler, Klassenliste).
+  Beispiele: Verteiler, Klassenliste, Passwörter).
+- **Passwörter** stehen im selben Kopier-Feld, aber als Punkte, bis man
+  daneben auf das leise »Anzeigen« tippt (dann »Verbergen«). Kopieren geht
+  auch verdeckt; Tooltip und Screenreader nennen nie das Passwort selbst,
+  nur »Passwort kopieren« (Beispiel: Passwörter).
 
 ## 8. Dialoge, Sheets und Menüs
 

@@ -81,6 +81,8 @@ class Main < Sinatra::Base
     # Nextcloud: login data and resetting the own password to the initial
     # one – no questions asked (POST /api/reset_nc_password, main.rb)
     def print_nextcloud_password_section
+        # the new design draws the whole page in one (see below)
+        return print_password_page_preview if ui_preview?
         return '' unless user_with_role_logged_in?(:can_use_nextcloud)
         nc_login = CGI.escapeHTML(@session_user[:nc_login].to_s)
         password = CGI.escapeHTML(@session_user[:initial_nc_password].to_s)
@@ -147,6 +149,8 @@ class Main < Sinatra::Base
     end
 
     def print_mail_password_reset_page
+        # the new design: part of print_password_page_preview
+        return '' if ui_preview?
         return '' unless may_use_mail_password_reset?
         StringIO.open do |io|
             io.puts "<h3 style='margin-top: 1.5em;'>E-Mail-Postfach</h3>"
@@ -174,6 +178,107 @@ class Main < Sinatra::Base
             if admin_logged_in?
                 io.puts "<p class='alert alert-secondary mail-admin-link'><i class='fa fa-inbox'></i>&nbsp;&nbsp;Anfragen bearbeiten und E-Mail-Briefe suchen: <a href='#{WEB_ROOT}/postfaecher'>Postfächer (Administration)</a></p>"
             end
+            io.string
+        end
+    end
+
+    # ---- Neues Design (Vorschau) ----
+    # The whole page for the new design in one piece (doc/Gestaltung.md),
+    # made to work by preview/passwoerter.js: print_nextcloud_password_section
+    # returns it and print_mail_password_reset_page nothing, so that the page
+    # (and its script, which finds none of its elements here) stays exactly as
+    # it was for everyone else. The same roles, requests and states as today.
+
+    # a copy field (.pv-copy, pv_copy in preview.js): one tap copies
+    def password_preview_copy_field(text, what, id = nil)
+        t = CGI.escapeHTML(text.to_s)
+        id_attr = id ? " id='#{id}'" : ''
+        "<button type='button'#{id_attr} class='pv-copy pv-pw-copy' data-copy='#{t}' data-what='#{CGI.escapeHTML(what)}' title='#{t} kopieren' aria-label='#{CGI.escapeHTML(what)} kopieren'>" +
+            "<span class='pv-copy-text'>#{t}</span>" +
+            "<span class='pv-copy-end'><i class='ti ti-copy pv-copy-icon' aria-hidden='true'></i><i class='ti ti-check pv-copy-ok' aria-hidden='true'></i></span></button>"
+    end
+
+    def password_preview_nextcloud(io)
+        nc_login = @session_user[:nc_login].to_s
+        login_url = CGI.escapeHTML("#{NEXTCLOUD_URL}/index.php/login?user=#{CGI.escape(nc_login)}")
+        io.puts "<section class='pv-pw-section' id='pv_pw_nextcloud'>"
+        io.puts "<h3 class='pv-pw-h'>Nextcloud</h3>"
+        io.puts "<p class='pv-pw-text'>Mit diesen Zugangsdaten meldest du dich in der Nextcloud an.</p>"
+        io.puts "<dl class='pv-pw-facts'>"
+        io.puts "<div class='pv-pw-fact'><dt>Adresse</dt><dd>#{password_preview_copy_field(NEXTCLOUD_URL, 'Adresse', 'bu_pv_nc_url')}</dd></div>"
+        io.puts "<div class='pv-pw-fact'><dt>Login</dt><dd>#{password_preview_copy_field(nc_login, 'Login', 'bu_pv_nc_login')}</dd></div>"
+        # the password: dots until »Anzeigen« (preview/passwoerter.js)
+        io.puts "<div class='pv-pw-fact'><dt>Initialpasswort</dt><dd id='pv_nc_password' data-secret='#{CGI.escapeHTML(@session_user[:initial_nc_password].to_s)}'></dd></div>"
+        io.puts "</dl>"
+        io.puts "<div class='pv-pw-actions'><a href='#{login_url}' target='_blank' rel='noopener' class='btn btn-primary' id='bu_pv_nc_login_page'><i class='ti ti-login' aria-hidden='true'></i><span>Zur Nextcloud-Anmeldung</span><i class='ti ti-external-link pv-pw-ext' aria-hidden='true'></i></a></div>"
+        io.puts "<div class='pv-pw-forgot'>"
+        io.puts "<p class='pv-pw-forgot-title'>Passwort vergessen?</p>"
+        io.puts "<p class='pv-pw-text'>Du kannst dein Nextcloud-Passwort jederzeit in der Nextcloud ändern. Hast du ein selbst gewähltes Passwort vergessen, setzt du es hier sofort wieder auf dein Initialpasswort zurück.</p>"
+        io.puts "<div class='pv-pw-actions'><button type='button' class='btn btn-secondary' id='bu_pv_reset_nc_password'><i class='ti ti-key' aria-hidden='true'></i><span>Nextcloud-Passwort zurücksetzen</span></button></div>"
+        io.puts "<p class='pv-pw-result' id='pv_nc_reset_result' role='status' hidden></p>"
+        io.puts "</div>"
+        io.puts "</section>"
+    end
+
+    def password_preview_maintainer
+        "#{WEBSITE_MAINTAINER_NAME_AKKUSATIV} (#{CGI.escapeHTML(WEBSITE_MAINTAINER_EMAIL)})"
+    end
+
+    def password_preview_student_count(n)
+        n == 1 ? '1 Schülerin oder Schüler' : "#{n} Schülerinnen und Schüler"
+    end
+
+    def password_preview_mail(io)
+        klassen = mail_password_reset_klassen
+        io.puts "<section class='pv-pw-section' id='pv_pw_mail'>"
+        io.puts "<h3 class='pv-pw-h'>#{schueler_logged_in? ? 'E-Mail-Postfach' : 'E-Mail-Postfächer'}</h3>"
+        if schueler_logged_in?
+            email = @session_user[:email]
+            io.puts "<p class='pv-pw-text'>Wenn du das Passwort für dein schulisches E-Mail-Postfach vergessen hast, kannst du hier beantragen, dass es auf dein ursprüngliches Passwort zurückgesetzt wird – das aus deinem E-Mail-Brief. Die Administration prüft jede Anfrage; danach geht es meistens schnell. Deine Eltern bekommen anschließend eine kurze Nachricht an ihre E-Mail-Adresse.</p>"
+            io.puts "<div class='pv-pw-own' data-mailbox='#{CGI.escapeHTML(email)}' data-label='#{CGI.escapeHTML(@session_user[:display_name].to_s)}'>"
+            io.puts "<dl class='pv-pw-facts'><div class='pv-pw-fact'><dt>Dein Postfach</dt><dd>#{password_preview_copy_field(email, 'Adresse')}</dd></div></dl>"
+            io.puts "<div class='pv-pw-own-state'></div>"
+            io.puts "<div class='pv-pw-own-action'></div>"
+            io.puts "</div>"
+            io.puts "<p class='pv-pw-note' id='pv_pw_parents_hint'><i class='ti ti-info-circle' aria-hidden='true'></i><span>Haben deine Eltern das Passwort für ihr Postfach <b>eltern.#{CGI.escapeHTML(email)}</b> vergessen? Dann sag bitte deiner Klassenleitung Bescheid, sie kann es zurücksetzen lassen. Deine Eltern können auch eine E-Mail an #{password_preview_maintainer} schreiben.</span></p>"
+        end
+        unless klassen.empty?
+            io.puts "<p class='pv-pw-text'>Hier kannst du beantragen, dass das Postfach einer Schülerin oder eines Schülers oder das Eltern-Postfach auf das ursprüngliche Passwort aus dem E-Mail-Brief zurückgesetzt wird. Die Administration prüft jede Anfrage; sobald es erledigt ist, kannst du das Passwort hier anzeigen.</p>"
+            io.puts "<p class='pv-pw-note' id='pv_pw_forward_hint'><i class='ti ti-mail-forward' aria-hidden='true'></i><span>Bekommst du eine E-Mail mit der Bitte, ein Passwort zurückzusetzen, leite sie bitte an #{password_preview_maintainer} weiter.</span></p>"
+        end
+        klassen.each do |klasse|
+            students = @@schueler_for_klasse[klasse] || []
+            io.puts "<div class='pv-pw-class' data-klasse='#{CGI.escapeHTML(klasse)}'>"
+            io.puts "<h4 class='pv-pw-sub'>Klasse #{CGI.escapeHTML(tr_klasse(klasse))}<span class='pv-pw-count'>#{password_preview_student_count(students.size)}</span></h4>"
+            io.puts "<table class='pv-pw-students'>"
+            io.puts "<thead><tr><th>Schüler:in</th><th>Postfach</th><th>Eltern-Postfach</th></tr></thead><tbody>"
+            students.each do |student|
+                name = CGI.escapeHTML(@@user_info[student][:display_name].to_s)
+                io.puts "<tr class='pv-pw-student' data-student='#{CGI.escapeHTML(student)}' data-name='#{name}'>"
+                io.puts "<td class='pv-pw-who'><div class='pv-pw-name'>#{name}</div>"
+                io.puts "<button type='button' class='pv-pw-open'><span class='pv-pw-open-text'><span class='pv-pw-open-name'>#{name}</span><span class='pv-pw-row-facts' hidden></span></span><i class='ti ti-chevron-right' aria-hidden='true'></i></button></td>"
+                [[student, 'Postfach', name], ["eltern.#{student}", 'Eltern-Postfach', "Eltern von #{name}"]].each do |mailbox, title, label|
+                    io.puts "<td class='pv-pw-cell' data-mailbox='#{CGI.escapeHTML(mailbox)}' data-label='#{label}' data-title='#{title}'></td>"
+                end
+                io.puts "</tr>"
+            end
+            io.puts "</tbody></table>"
+            io.puts "</div>"
+        end
+        if admin_logged_in?
+            io.puts "<p class='pv-pw-note' id='pv_pw_admin_link'><i class='ti ti-inbox' aria-hidden='true'></i><span>Anfragen bearbeiten und E-Mail-Briefe suchen: <a href='#{WEB_ROOT}/postfaecher'>Postfächer (Administration)</a></span></p>"
+        end
+        io.puts "</section>"
+    end
+
+    def print_password_page_preview
+        StringIO.open do |io|
+            io.puts "<div class='pv-pw'>"
+            password_preview_nextcloud(io) if user_with_role_logged_in?(:can_use_nextcloud)
+            password_preview_mail(io) if may_use_mail_password_reset?
+            io.puts "</div>"
+            io.puts "<script>var pv_passwoerter = #{{:student => schueler_logged_in?}.to_json};</script>"
+            io.puts "<script src='#{preview_asset('/preview/passwoerter.js')}'></script>"
             io.string
         end
     end

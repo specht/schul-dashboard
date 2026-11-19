@@ -209,8 +209,8 @@ class MonitorEffekteTest < Minitest::Test
     def test_story_plan_only_in_breaks
         montag = Date.new(2026, 11, 16)
         plan = MonitorEffekte.story_plan(montag)
-        assert_equal [MonitorEffekte::STORYS.size, 17].min, plan.size
-        assert_equal plan.size, plan.map { |e| e[:story] }.uniq.size, 'jede Story höchstens einmal am Tag'
+        assert_equal 17, plan.size, 'alle Plätze belegt'
+        plan.each_cons(2) { |x, y| refute_equal x[:story], y[:story], 'nie zweimal hintereinander' }
         assert_equal plan, MonitorEffekte.story_plan(montag), 'gleicher Plan für dasselbe Datum'
         pausen = MonitorEffekte::STORY_PAUSEN.map { |v, b, _| [v, b].map { |z| h, m = z.split(':').map(&:to_i); (h * 60 + m) * 60 } }
         plan.each do |e|
@@ -263,15 +263,43 @@ class MonitorEffekteTest < Minitest::Test
         tage.each do |tag|
             plan = MonitorEffekte.story_plan(tag)
             abflug = plan.select { |e| e[:story] == 'abflug' }
-            assert abflug.size <= 1, "#{tag}: Abflugtafel doppelt"
-            mit_abflug += abflug.size
+            mit_abflug += [abflug.size, 1].min
             abflug.each { |e| assert e[:sekunde] >= 8 * 3600, "#{tag}: Abflugtafel um #{e[:sekunde] / 3600}:#{e[:sekunde] % 3600 / 60}" }
-            assert_equal plan.size, plan.map { |e| e[:story] }.uniq.size
+            plan.each_cons(2) { |x, y| refute_equal x[:story], y[:story] }
         end
-        assert mit_abflug >= tage.size * 0.8, "Abflugtafel nur an #{mit_abflug} von #{tage.size} Tagen"
+        # 17 Plätze für alle Storys: jede kommt etwa an 17/Anzahl der Tage, die Abflugtafel ebenso
+        assert mit_abflug >= tage.size * [1.0, 17.0 / MonitorEffekte::STORYS.size].min * 0.8, "Abflugtafel nur an #{mit_abflug} von #{tage.size} Tagen"
         # nur die gesperrte Pause: dann fällt sie aus
         nur_frueh = MonitorEffekte.story_plan(Date.new(2026, 11, 16), %w(abflug roehre), [['07:46', '08:00', 3]])
-        assert_equal ['roehre'], nur_frueh.map { |e| e[:story] }
+        assert nur_frueh.any?
+        assert nur_frueh.all? { |e| e[:story] == 'roehre' }
+    end
+
+    def test_storys_gleich_in_js_und_ruby
+        # dieselben Storys auf dem Server und auf den Monitoren (sonst fehlen sie im Tagesplan)
+        datei = ['/static/monitor_effekte.js', File.join(__dir__, '../../../static/monitor_effekte.js')].find { |f| File.exist?(f) }
+        js = File.read(datei)
+        liste = js[/const STORYS = \[([^\]]*)\]/, 1].scan(/'([a-z]+)'/).flatten
+        assert_equal liste, MonitorEffekte::STORYS
+        bauer = js[/const STORY_BAUER = \{([^}]*)\}/, 1].scan(/(\w+):/).flatten
+        assert_equal liste.sort, bauer.sort
+    end
+
+    def test_story_plan_mischt_immer
+        # wenige Storys: trotzdem alle Plätze belegt, jede kommt mehrmals, nie zweimal hintereinander,
+        # und jede erst wieder, wenn alle anderen dran waren
+        tage = (0..30).map { |i| Date.new(2026, 11, 16) + i }.reject { |d| d.saturday? || d.sunday? }
+        tage.each do |tag|
+            plan = MonitorEffekte.story_plan(tag, %w(a b c))
+            assert_equal 17, plan.size
+            plan.each_cons(2) { |x, y| refute_equal x[:story], y[:story] }
+            plan.map { |e| e[:story] }.each_slice(3) { |s| assert_equal s.size, s.uniq.size }
+            assert_equal plan, MonitorEffekte.story_plan(tag, %w(a b c)), 'gleicher Plan für dasselbe Datum'
+        end
+        # verschiedene Tage, verschiedene Reihenfolge
+        assert tage.map { |tag| MonitorEffekte.story_plan(tag, %w(a b c)).map { |e| e[:story] } }.uniq.size > 1
+        # nur eine Story: dann eben die immer
+        assert_equal 17, MonitorEffekte.story_plan(Date.new(2026, 11, 16), %w(a)).size
     end
 
     def test_storys_einzeln_aus

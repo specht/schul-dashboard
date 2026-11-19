@@ -12800,7 +12800,7 @@
     const BAUER = {schnee: Schnee, regen: Regen, gewitter: Gewitter, hitze: Hitze, sturm: Sturm, glatteis: Glatteis, frost: Frost};
     const STORY_BAUER = {roehre: Roehre, kiesel: Kiesel, rohrbruch: Rohrbruch, gondel: Gondel, spinne: Spinne, schief: SchiefeKachel, taube: Taube, maus: Maus, raupe: Raupe, ballon: Luftballon, blasen: Seifenblasen, heissluft: Heissluftballon, ufo: Ufo, abflug: Abflugtafel, brand: Brand, kran: Baustelle, bienen: Bienenstock, diebstahl: Diebstahl, brom: Brom, ballspiel: Ballspiel, strom: Stromausfall, schatz: Schatzsuche, umzug: Umzugshelfer, graffiti: Graffiti};
     // Im Schulhaus kommen die Storys nur in den Pausen, nach dem Tagesplan des Servers
-    // (alle Flur-Monitore gleich, jede Story höchstens einmal am Tag). In der Vorschau
+    // (alle Flur-Monitore gleich, zufällig gemischt, nie zweimal hintereinander). In der Vorschau
     // und im Test läuft die gewählte Story immer wieder.
     // Jede Story endet von selbst, wenn alle Figuren aus dem Bild sind. Die Grenze von 180 s in
     // jeder Story ist nur ein Notausgang, falls etwas hängt; sie liegt bewusst weit hinter der

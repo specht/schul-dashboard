@@ -22,9 +22,10 @@ module MonitorEffekte
     EFFEKTE = %w(schnee regen gewitter hitze sturm glatteis frost).freeze
     FESTE = %w(weihnachten nikolaus ostern valentinstag fasching sommerferien schulanfang adventskonzert forschertag).freeze
     # Storys: kleine Geschichten, die die Monitore von selbst ab und zu zeigen
-    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug brand kran bienen diebstahl brom ballspiel).freeze
+    STORYS = %w(roehre kiesel rohrbruch gondel spinne schief taube maus raupe ballon blasen heissluft ufo abflug brand kran bienen diebstahl brom ballspiel strom schatz umzug graffiti).freeze
     # Storys nur in den Pausen (Jonas, 18.11.): [von, bis, wie viele]; zufällig im Zeitraum,
-    # jede Story höchstens einmal am Tag, alle Flur-Monitore nach demselben Plan
+    # alle Plätze immer zufällig gemischt belegt (Jonas, 19.11.: nicht mehr „jede höchstens einmal
+    # am Tag“), nie dieselbe zweimal hintereinander, alle Flur-Monitore nach demselben Plan
     STORY_PAUSEN = [['07:46', '08:00', 3], ['08:45', '08:50', 1], ['10:20', '10:23', 1], ['10:35', '10:40', 2],
                     ['12:10', '12:15', 2], ['12:45', '12:50', 2], ['13:05', '13:10', 2], ['13:35', '13:40', 2],
                     ['14:25', '14:35', 2]].freeze
@@ -67,7 +68,6 @@ module MonitorEffekte
     def self.story_plan(datum, storys = STORYS, pausen = STORY_PAUSEN)
         return [] if datum.saturday? || datum.sunday? || storys.empty?
         rng = Random.new(datum.strftime('%Y%m%d').to_i * 7919 + 17)
-        reihe = storys.shuffle(random: rng)
         sek = lambda { |z| z.split(':').map(&:to_i).inject { |h, m| h * 60 + m } * 60 }
         # Plätze je Pause: so viele, wie Storys normaler Länge hineinpassen
         plaetze = []
@@ -76,10 +76,15 @@ module MonitorEffekte
             anzahl -= 1 while anzahl > 0 && anzahl * STORY_DAUER + (anzahl - 1) * STORY_LUECKE > frei
             anzahl.times { plaetze << pi }
         end
-        # weniger Storys als Plätze: zufällig über alle Pausen des Tages verteilen
-        if reihe.size < plaetze.size
-            plaetze = plaetze.each_with_index.to_a.sample(reihe.size, random: rng).sort_by(&:last).map(&:first)
+        # alle Plätze belegen: immer wieder neu gemischt, jede kommt erst wieder, wenn alle
+        # anderen dran waren; an der Nahtstelle nie zweimal dieselbe hintereinander
+        reihe = []
+        while reihe.size < plaetze.size
+            runde = storys.shuffle(random: rng)
+            runde.push(runde.shift) if reihe.any? && runde.size > 1 && runde.first == reihe.last
+            reihe.concat(runde)
         end
+        reihe = reihe.first(plaetze.size)
         belegung = plaetze.each_with_index.map { |pi, i| [pi, reihe[i]] }
         # gesperrte Pausen: mit einer Story aus einer erlaubten Pause tauschen; geht das nicht,
         # fällt die Story heute aus

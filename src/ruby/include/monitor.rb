@@ -443,7 +443,7 @@ class Main < Sinatra::Base
                    :bereit => !daten.nil? || !MONITOR_DWD_WARNCELL,
                    :vorschau => @@monitor_effekte_vorschau,
                    :jetzt_ms => (Time.now.to_f * 1000).to_i}
-        # Storys: Tagesplan (nur in den Pausen, jede höchstens einmal am Tag) – aber nicht,
+        # Storys: Tagesplan (nur in den Pausen, alle Plätze zufällig gemischt) – aber nicht,
         # solange ein Wettereffekt oder ein besonderer Tag zu sehen ist (Wunsch Jonas)
         pausen = monitor_story_pausen()
         storys_aus = monitor_storys_aus()

@@ -362,3 +362,64 @@ test('Sitzplan anzeigen: auch ein großer Raum passt ganz ins Fenster', async ({
     await saveDesks(page.request, FACHRAUM, OWN_DESKS);
   }
 });
+
+// Whole names often don't fit on small seats (big room, projector): the
+// display can show first names only – and the last name where two children
+// share a first name. The choice is remembered.
+test('Sitzplan anzeigen: nur Vornamen, bei gleichen Vornamen der Nachname', async ({ page }) => {
+  await login(page, FACHLEHRKRAFT);
+  await removeOwnPlans(page);
+  await saveDesks(page.request, FACHRAUM, OWN_DESKS);
+  try {
+    const state = await (await page.request.post('/api/sph_get_state', { data: { klasse: KLASSE, raum: FACHRAUM } })).json();
+    const seats = Object.fromEntries(state.sus.map((s: any, i: number) => [s.email, i]));
+    const started = await (await page.request.post('/api/sph_start_cycle', { data: { klasse: KLASSE, raum: FACHRAUM, mode: 'manual' } })).json();
+    const saved = await page.request.post('/api/sph_save_cycle', {
+      data: { cycle_id: started.cycle_id, seats: JSON.stringify(seats), unresolved: '[]' },
+    });
+    expect(saved.status()).toBe(200);
+    // the example class has no two children with the same first name: give
+    // the second one the first one's
+    await page.route('**/api/sph_get_public_plan', async (route) => {
+      const response = await route.fetch();
+      const data = await response.json();
+      data.places[1].first_name = data.places[0].first_name;
+      await route.fulfill({ response, json: data });
+    });
+    await page.goto(`/sitzplananzeige/${KLASSE}/${FACHRAUM}`);
+    const names = page.locator('#spa_seats .spa-card-name');
+    await expect(names).toHaveCount(3);
+    await page.evaluate(() => localStorage.removeItem('sitzplananzeige_names'));
+    await page.reload();
+    const places = (await (await page.request.post('/api/sph_get_public_plan', { data: { klasse: KLASSE, raum: FACHRAUM } })).json()).places;
+    const shown = async () => (await names.allTextContents()).map((t) => t.trim());
+
+    // whole names by default
+    await expect(page.locator('#bu_spa_names_full')).toHaveClass(/active/);
+    expect(await shown()).toEqual([
+      `${places[0].first_name} ${places[0].last_name}`,
+      `${places[0].first_name} ${places[1].last_name}`,
+      `${places[2].first_name} ${places[2].last_name}`,
+    ]);
+
+    await page.locator('#bu_spa_names_first').click();
+    await expect(page.locator('#bu_spa_names_first')).toHaveClass(/active/);
+    expect(await shown()).toEqual([places[0].last_name, places[1].last_name, places[2].first_name]);
+
+    // remembered, also for printing; the buttons are not printed
+    await page.reload();
+    await expect(names).toHaveCount(3);
+    expect(await shown()).toEqual([places[0].last_name, places[1].last_name, places[2].first_name]);
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('#spa_name_choice')).toBeHidden();
+    await page.emulateMedia({ media: 'screen' });
+    await page.locator('#bu_spa_names_full').click();
+    expect(await shown()).toEqual([
+      `${places[0].first_name} ${places[0].last_name}`,
+      `${places[0].first_name} ${places[1].last_name}`,
+      `${places[2].first_name} ${places[2].last_name}`,
+    ]);
+  } finally {
+    await removeOwnPlans(page);
+  }
+});

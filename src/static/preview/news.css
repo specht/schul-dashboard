@@ -568,3 +568,136 @@ body.ui-preview.dark .pv-nb-icon.bu_nb_remove:hover {
         transition: none;
     }
 }
+
+/* ---------- choosing an image (news.js, open_picker) ----------
+   over the editor, inside its dialog: the uploaded images as a grid of
+   pictures with their names, a search above, uploading below */
+.ui-preview .pv-nb-editor .modal-content {
+    position: relative;
+}
+
+.ui-preview .pv-nb-picker {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: inherit;
+}
+
+.ui-preview .pv-nb-picker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px 6px 20px;
+}
+
+.ui-preview .pv-nb-picker-head h5 {
+    margin: 0;
+    font: 700 1.1rem/1.3 var(--pv-display);
+}
+
+.ui-preview .pv-nb-picker-search {
+    padding: 6px 20px 10px;
+}
+
+.ui-preview .pv-nb-picker-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 2px 20px 12px;
+}
+
+.ui-preview .pv-nb-picker-note {
+    margin: 4px 0 10px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-nb-picker-note:empty {
+    display: none;
+}
+
+.ui-preview .pv-nb-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.ui-preview .pv-nb-pick {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 4px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--pv-ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-nb-pick:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-nb-pick:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-nb-pick img {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    border-radius: 7px;
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-nb-pick span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-nb-pick[aria-pressed='true'] img {
+    box-shadow: 0 0 0 3px var(--acc);
+}
+
+.ui-preview .pv-nb-pick[aria-pressed='true'] span {
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+.ui-preview .bu_nb_picker_more {
+    margin-top: 12px;
+}
+
+.ui-preview .pv-nb-picker-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--pv-line);
+}
+
+.ui-preview .bu_nb_pick {
+    flex: none;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .pv-nb-picker-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    /* the name, »Bild wählen« and the thumbnail: the button below the name */
+    .ui-preview .pv-nb-row:has(> .bu_nb_pick) {
+        flex-wrap: wrap;
+    }
+}

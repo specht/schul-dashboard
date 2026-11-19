@@ -368,3 +368,77 @@ test('Neues Design: eine Bilderreihe mit Format und Bildausschnitt', async ({ pa
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Choosing an image: »Bild wählen« shows the uploaded images as pictures
+// (newest first) with a search; a click puts the name into the field. The
+// editor stays open behind it; Escape closes only the picker.
+test('Neues Design: Bilder im Editor als Bilder auswählen', async ({ page }, testInfo) => {
+  await page.route(/\/gen\/i\//, (route) => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><rect width="900" height="600" fill="#579"/></svg>',
+  }));
+  await page.route('**/api/get_all_images', (route) => route.fulfill({
+    json: { images: [
+      { slug: 'sportfest-start', size: 1000, timestamp: '2026-11-18' },
+      { slug: 'sportfest-ziel', size: 1000, timestamp: '2026-11-17' },
+      { slug: 'theater-probe', size: 1000, timestamp: '2026-11-10' },
+    ] },
+  }));
+  try {
+    await openNew(page);
+    await block(page, 0).locator('textarea').fill('Das Sportfest der 7. Klassen.');
+    await addBlock(page, 'Bild');
+    const image = block(page, 2);
+    await pane(page, 'edit');
+    await image.locator('.bu_nb_pick').click();
+    const picker = page.locator('.pv-nb-picker');
+    await expect(picker).toBeVisible();
+    await expect(picker.locator('h5')).toHaveText('Bild wählen');
+    const picks = picker.locator('.pv-nb-pick');
+    await expect(picks).toHaveCount(3);
+    await expect(picks.first()).toContainText('sportfest-start');
+    await expect(picks.first().locator('img')).toHaveAttribute('src', '/gen/i/sportfest-start-256.jpg');
+    await expect(page.locator('#ti_nb_picker_search')).toBeFocused();
+    // the search narrows the pictures down
+    await page.locator('#ti_nb_picker_search').fill('ziel');
+    await expect(picks).toHaveCount(1);
+    await page.locator('#ti_nb_picker_search').fill('nichts');
+    await expect(picks).toHaveCount(0);
+    await expect(picker.locator('.pv-nb-picker-note')).toHaveText('Kein Bild passt zur Suche.');
+    await page.locator('#ti_nb_picker_search').fill('sportfest');
+    await expect(picks).toHaveCount(2);
+    // uploading new images is a page of its own, in a new tab
+    await expect(picker.getByRole('link', { name: 'Bilder hochladen' })).toHaveAttribute('target', '_blank');
+    // a click: the name in the field, in the text, the picker gone
+    await picks.nth(1).click();
+    await expect(picker).toHaveCount(0);
+    await expect(image.locator('.ti_nb_slug')).toHaveValue('sportfest-ziel');
+    expect(await markdown(page)).toContain('image{sportfest-ziel');
+    await expect(image.locator('.pv-nb-thumb')).toBeVisible();
+    // again: the chosen one is marked; Escape closes the picker, not the editor
+    await image.locator('.bu_nb_pick').click();
+    await expect(picker.locator('.pv-nb-pick[aria-pressed="true"]')).toContainText('sportfest-ziel');
+    await page.keyboard.press('Escape');
+    await expect(picker).toHaveCount(0);
+    await expect(page.locator('#editModal')).toBeVisible();
+    // the gallery's fields choose the same way
+    await addBlock(page, 'Galerie');
+    const gallery = block(page, 3);
+    await gallery.locator('.bu_nb_pick').nth(1).click();
+    await picker.locator('.pv-nb-pick', { hasText: 'theater-probe' }).click();
+    await expect(gallery.locator('.ti_nb_gallery_slug').nth(1)).toHaveValue('theater-probe');
+    if (testInfo.project.name === 'mobile') {
+      // phones: two pictures side by side, inside the sheet
+      await gallery.locator('.bu_nb_pick').first().click();
+      const cols = await picker.locator('.pv-nb-picker-grid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+      expect(cols).toBe(2);
+      const box = (await picker.boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
+      await picker.locator('.bu_nb_picker_close').click();
+      await expect(picker).toHaveCount(0);
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

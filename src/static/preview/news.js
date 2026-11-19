@@ -507,6 +507,92 @@
         return img;
     }
 
+    // ---------- choosing an image: the uploaded images as pictures ----------
+    // »Bild wählen« beside every image name opens the uploaded images (newest
+    // first) over the editor, with a search; a click puts the name into the
+    // field. The name field stays for typing. New images are uploaded on
+    // »Bilder hochladen« (a new tab), »Neu laden« fetches the list again.
+    var uploaded = null;        // the picker's list: [{slug, timestamp}], newest first
+    var PICK_BLOCK = 48;
+    function fetch_images(fresh) {
+        if (uploaded && !fresh) return Promise.resolve(uploaded);
+        return fetch('/api/get_all_images', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) { uploaded = (data && data.images) || []; return uploaded; })
+            .catch(function () { return uploaded || []; });
+    }
+
+    function open_picker(current, on_pick, opener) {
+        var host = $('#editModal .modal-content');
+        host.find('.pv-nb-picker').remove();
+        var panel = $('<div>').addClass('pv-nb-picker').attr('role', 'dialog').attr('aria-modal', 'true').attr('aria-label', 'Bild wählen');
+        var close = function (back) {
+            panel.remove();
+            if (window.pv_back && back !== false) window.pv_back.closed('nb-picker');
+            if (opener) opener.focus();
+        };
+        var head = $('<div>').addClass('pv-nb-picker-head')
+            .append($('<h5>').text('Bild wählen'))
+            .append(icon_button('Schließen', 'x', 'bu_nb_picker_close').on('click', function () { close(); }));
+        var search = $('<input type="search" class="form-control" id="ti_nb_picker_search">')
+            .attr('placeholder', 'Bilder durchsuchen').attr('aria-label', 'Bilder durchsuchen');
+        var grid = $('<div>').addClass('pv-nb-picker-grid');
+        var more = quiet_button('Weitere Bilder', 'chevron-down', 'bu_nb_picker_more').attr('hidden', true);
+        var note = $('<p>').addClass('pv-nb-picker-note');
+        var foot = $('<div>').addClass('pv-nb-picker-foot')
+            .append($('<a target="_blank" rel="noopener" href="/upload_images">').addClass('btn pv-nb-quiet').append(icon('upload')).append($('<span>').text('Bilder hochladen')))
+            .append(quiet_button('Neu laden', 'refresh', 'bu_nb_picker_reload').on('click', function () {
+                note.text('Wird geladen …');
+                fetch_images(true).then(function () { shown = PICK_BLOCK; draw(); });
+            }));
+        panel.append(head).append($('<div>').addClass('pv-nb-picker-search').append(search))
+            .append($('<div>').addClass('pv-nb-picker-scroll').append(note).append(grid).append(more)).append(foot);
+        var shown = PICK_BLOCK;
+        var draw = function () {
+            var words = search.val().toLowerCase().split(/\s+/).filter(function (w) { return w; });
+            var hits = (uploaded || []).filter(function (x) {
+                var name = x.slug.toLowerCase();
+                return words.every(function (w) { return name.indexOf(w) >= 0; });
+            });
+            grid.empty();
+            hits.slice(0, shown).forEach(function (x) {
+                var pick = $('<button type="button">').addClass('pv-nb-pick').attr('data-slug', x.slug)
+                    .attr('aria-pressed', x.slug === current ? 'true' : 'false')
+                    .append($('<img alt="" loading="lazy">').attr('src', `/gen/i/${x.slug}-256.jpg`))
+                    .append($('<span>').text(x.slug));
+                pick.on('click', function (e) {
+                    on_pick(e.currentTarget.getAttribute('data-slug'));
+                    close();
+                });
+                grid.append(pick);
+            });
+            more.attr('hidden', hits.length <= shown);
+            note.text(uploaded === null ? 'Wird geladen …'
+                : (hits.length === 0 ? (words.length ? 'Kein Bild passt zur Suche.' : 'Noch keine Bilder hochgeladen.') : ''));
+        };
+        search.on('input', function () { shown = PICK_BLOCK; draw(); });
+        more.on('click', function () { shown += PICK_BLOCK; draw(); });
+        // Escape closes the picker, not the editor behind it
+        panel.on('keydown', function (e) {
+            if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); }
+        });
+        host.append(panel);
+        if (window.pv_back) window.pv_back.opened('nb-picker', function () { close(false); });
+        draw();
+        fetch_images(false).then(draw);
+        search.trigger('focus');
+    }
+
+    function pick_button(input) {
+        var b = quiet_button('Bild wählen', 'photo', 'bu_nb_pick');
+        b.on('click', function (e) {
+            open_picker(clean_slug(input.val()), function (slug) {
+                input.val(slug).trigger('input').trigger('change');
+            }, e.currentTarget);
+        });
+        return b;
+    }
+
     function block_body(b, index) {
         var body = $('<div>').addClass('pv-nb-body');
         if (b.type === 'lead') {
@@ -517,7 +603,7 @@
             body.append(line_input(b, 'text', 'Zwischenüberschrift').addClass('ti_nb_heading').attr('aria-label', 'Zwischenüberschrift'));
         } else if (b.type === 'image') {
             var slug = line_input(b, 'slug', 'zum Beispiel sportfest-start', 'pv_nb_images').addClass('ti_nb_slug');
-            body.append($('<div>').addClass('pv-nb-row').append(field('Bildname', slug, 'pv-nb-grow')).append(thumb(slug)));
+            body.append($('<div>').addClass('pv-nb-row').append(field('Bildname', slug, 'pv-nb-grow')).append(pick_button(slug)).append(thumb(slug)));
             var layouts = $('<div>').addClass('pv-nb-layouts').attr('role', 'radiogroup').attr('aria-label', 'Wo das Bild steht');
             [['full', 'Groß'], ['left', 'Links neben Text'], ['right', 'Rechts neben Text']].forEach(function (l) {
                 var opt = $('<button type="button">').addClass('btn pv-nb-layout').attr('role', 'radio')
@@ -535,7 +621,7 @@
                 var input = $('<input type="text" class="form-control ti_nb_gallery_slug">').attr('list', 'pv_nb_images')
                     .attr('placeholder', `Bildname ${i + 1}`).attr('aria-label', `Bildname ${i + 1}`).val(s);
                 input.on('input', function (e) { b.slugs[i] = e.currentTarget.value; changed(); });
-                var row = $('<div>').addClass('pv-nb-row').append(input).append(thumb(input));
+                var row = $('<div>').addClass('pv-nb-row').append(input).append(pick_button(input)).append(thumb(input));
                 if (b.slugs.length > 2)
                     row.append(icon_button('Foto entfernen', 'x', 'bu_nb_gallery_remove').on('click', function () {
                         b.slugs.splice(i, 1);
@@ -574,7 +660,7 @@
                 slug.on('input', function (e) { item.slug = e.currentTarget.value; changed(); });
                 slug.on('change', function () { picker.trigger('pv-nb-slug'); });
                 cap.on('input', function (e) { item.caption = e.currentTarget.value; changed(); });
-                var head = $('<div>').addClass('pv-nb-row').append(slug);
+                var head = $('<div>').addClass('pv-nb-row').append(slug).append(pick_button(slug));
                 if (b.items.length > 2)
                     head.append(icon_button('Bild entfernen', 'x', 'bu_nb_row_remove').on('click', function () {
                         b.items.splice(i, 1);

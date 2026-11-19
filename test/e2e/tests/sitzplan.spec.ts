@@ -154,8 +154,11 @@ test('Sitzplan: Wunschrunde, Wunsch von SuS, Plan erzeugen und speichern', async
   for (const name of ['Max', 'Elli', 'Mallory']) {
     await expect(page.locator('#spa_seats')).toContainText(name);
   }
-  // printing is a button of its own on the seating plan page, not here
-  await expect(page.locator('.spa-container button')).toHaveCount(0);
+  // printing is a button of its own on the seating plan page, not here; the
+  // only buttons are the choice between whole names and first names
+  await expect(page.locator('.spa-container').getByRole('button', { name: /Drucken/ })).toHaveCount(0);
+  await expect(page.locator('.spa-container button')).toHaveCount(2);
+  await expect(page.locator('#spa_name_choice button')).toHaveCount(2);
 });
 
 test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Verteilung im Raum', async ({ page }) => {

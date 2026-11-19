@@ -85,6 +85,9 @@ body.dark .spa-card-name {
 .spa-card-name span {
     display: block;
 }
+.spa-name-choice {
+    margin-top: 0.3em;
+}
 .spa-empty-hint {
     color: #666;
     margin-top: 2em;
@@ -144,6 +147,12 @@ body.dark .spa-card-name {
     <h1>Sitzplan <span id="spa_label"></span></h1>
     <div class='api_messages'></div>
     <p id="spa_saved_at" class="text-muted"></p>
+    <!-- Ganze Namen passen in großen Räumen (kleine Plätze, Beamer) oft nicht.
+         Die Wahl gilt auch für den Ausdruck und wird im Browser gemerkt. -->
+    <div class="btn-group btn-group-sm spa-name-choice spa-no-print" role="group" aria-label="Namen" id="spa_name_choice" style="display: none;">
+        <button type="button" class="btn btn-outline-secondary" id="bu_spa_names_full" data-mode="full">Ganze Namen</button>
+        <button type="button" class="btn btn-outline-secondary" id="bu_spa_names_first" data-mode="first" title="Nur der Vorname; haben zwei denselben Vornamen, steht bei ihnen der Nachname">Nur Vornamen</button>
+    </div>
     <span class="spa-tafel">Tafel</span>
     <div class="spa-seat-scroll"><div id="spa_seats"></div></div>
     <p class="spa-empty-hint" id="spa_empty_hint" style="display: none;">Für diese Klasse/diesen Raum wurde noch kein Sitzplan gespeichert.</p>
@@ -189,6 +198,13 @@ document.addEventListener('DOMContentLoaded', function () {
             $('#spa_saved_at').text(`Stand: ${d.toLocaleDateString('de-DE')}`);
         }
         places = data.places;
+        $('#spa_name_choice').show();
+        set_name_mode(name_mode);
+        $('#spa_name_choice button').click(function (e) {
+            set_name_mode($(e.currentTarget).data('mode'));
+            try { localStorage.setItem('sitzplananzeige_names', name_mode); } catch (err) {}
+            render_seats(printing);
+        });
         render_seats(false);
         // Für den Ausdruck auf eine Querformat-Seite zugeschnitten zeichnen,
         // danach wieder in Bildschirmgröße.
@@ -211,6 +227,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
 var places = [];
 var printing = false;
+// 'full': Vor- und Nachname; 'first': nur der Vorname, bei gleichen
+// Vornamen in der Klasse der Nachname.
+var name_mode = 'full';
+try { if (localStorage.getItem('sitzplananzeige_names') === 'first') name_mode = 'first'; } catch (err) {}
+
+function set_name_mode(mode) {
+    name_mode = mode === 'first' ? 'first' : 'full';
+    $('#spa_name_choice button').each(function () {
+        let on = $(this).data('mode') === name_mode;
+        $(this).toggleClass('active', on).attr('aria-pressed', on ? 'true' : 'false');
+    });
+}
+
+// Vornamen, die im Plan mehr als einmal vorkommen.
+function duplicate_first_names() {
+    let count = {};
+    for (let p of places) {
+        let key = (p.first_name || '').trim().toLowerCase();
+        if (key) count[key] = (count[key] || 0) + 1;
+    }
+    return new Set(Object.keys(count).filter((k) => count[k] > 1));
+}
 // Die Foto-Elemente bleiben beim Umzeichnen (Bildschirm/Druck) dieselben,
 // damit sie nicht neu laden müssen, während der Druck schon läuft.
 var photo_for_place = {};
@@ -268,11 +306,12 @@ function render_seats(for_print) {
         // werden große Räume eben klein (die Namen passen sich an).
         let container_width = $('.spa-container').width() || 900;
         let top = container.offset().top;
-        let height = Math.max(window.innerHeight * 0.5, window.innerHeight - Math.max(top, 0) - 60);
+        let height = Math.max(window.innerHeight * 0.5, window.innerHeight - Math.max(top, 0) - 90);
         scale = Math.max(10, Math.min(130, container_width / w, height / h));
     }
     container.css('height', `${h * scale}px`).css('width', `${w * scale}px`);
     let size = scale * 0.9;
+    let duplicates = duplicate_first_names();
     for (let place of places) {
         let seat = seats[place.seat_index];
         if (!seat) continue;
@@ -286,7 +325,13 @@ function render_seats(for_print) {
         photo.style.width = photo.style.height = `${photo_size}px`;
         div.append(photo);
         let name = $('<div>').addClass('spa-card-name').css('font-size', `${Math.max(8, Math.min(20, size * 0.155))}px`);
-        if (place.first_name || place.last_name) {
+        let first = (place.first_name || '').trim();
+        if (name_mode === 'first' && first) {
+            // Eine Zeile reicht, die Schrift darf größer sein.
+            let same = duplicates.has(first.toLowerCase()) && place.last_name;
+            name.css('font-size', `${Math.max(8, Math.min(28, size * 0.2))}px`)
+                .append($('<span>').text(same ? place.last_name : first));
+        } else if (place.first_name || place.last_name) {
             name.append($('<span>').text(place.first_name || ''))
                 .append(document.createTextNode(' '))
                 .append($('<span>').text(place.last_name || ''));

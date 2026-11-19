@@ -44,9 +44,12 @@ hierher übernehmen, wenn sie angegangen werden.
       Fehlerbehandlung (eine fehlerhafte Mail bzw. Einladung hält die anderen
       nicht mehr auf) ist bisher nur von Hand geprüft.
 
-- [ ] E2E, selten: `sitzplan.spec.ts` »Vorgaben je Werkzeug« hing am Handy
-      einmal 28 s beim Klick auf »Liste löschen« (19.11.2026, in 40
-      Wiederholungen nicht wieder aufgetreten) – beobachten
+- [x] E2E: `sitzplan.spec.ts` »Vorgaben je Werkzeug« hing am Handy beim Klick
+      auf »Liste löschen«: die Seite klappte »Vorgaben« nach dem Klick wieder
+      zu (neuer Plan). Behoben mit `openVorgaben()` (sitzplan-helpers.ts).
+- [ ] E2E, selten: `design-preview.spec.ts` »eigenes Farbschema bleibt«
+      fand am Desktop einmal `.pv-scheme-note` im Profil nicht (19.11.2026,
+      danach 29 + 6 Läufe ohne Fehler) – beobachten
 
 ## 2. UI/UX
 

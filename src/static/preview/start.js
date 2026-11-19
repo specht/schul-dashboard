@@ -202,7 +202,8 @@
             fold.setAttribute('aria-controls', 'pv_todo_list');
             var answered = rows.filter(function (item) { return item.answered || done[item_key(item)]; }).length;
             var label = open > 0
-                ? open + (open === 1 ? ' Aufgabe offen' : ' Aufgaben offen') + (answered > 0 ? ', ' + answered + ' erledigt' : '')
+                // not "Aufgaben": that is the students' homework tab
+                ? 'Zu erledigen (' + open + ')' + (answered > 0 ? ', ' + answered + ' erledigt' : '')
                 : 'Alles erledigt';
             fold.appendChild(icon('list-check'));
             fold.appendChild(node('span', 'pv-todo-fold-label', label));

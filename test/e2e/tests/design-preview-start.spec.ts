@@ -133,7 +133,7 @@ test('Neues Design: mehr als zwei Aufgaben falten sich am Handy und Tablet zu ei
     const fold = todo.locator('.pv-todo-fold');
     await expect(fold).toBeVisible();
     await expect(fold).toHaveAttribute('aria-expanded', 'false');
-    await expect(fold).toContainText(`${open} Aufgaben offen`);
+    await expect(fold).toContainText(`Zu erledigen (${open})`);
     await expect(fold.locator('i.ti.ti-chevron-down')).toBeVisible();
     await expect(todo.locator('.pv-todo-row').first()).toBeHidden();
     await fold.click();

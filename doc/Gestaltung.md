@@ -440,7 +440,8 @@ Umfragen, Termine, News verwalten)
   leise Faktenzeile mit der Frist (»bis Fr 14:00«, kurz vor Schluss als
   Countdown »noch 45 min« im Akzent) und ein ruhiger Knopf (»Teilnehmen«).
 - **Mehr als zwei Zeilen** falten sich am Handy und Tablet zu einer Zeile
-  (»3 Aufgaben offen«, Pfeil nach unten), die sie aufklappt.
+  (»Zu erledigen (3)«, Pfeil nach unten; nicht »Aufgaben«, so heißen die
+  Hausaufgaben der Schülerinnen und Schüler), die sie aufklappt.
 - **Erledigtes und Ausgeblendetes:** Beantwortete Umfragen bleiben bis zum
   Ende stehen (»beantwortet«, Knopf »Ändern«), zählen aber nicht mehr.
   Ausgeblendete stehen hinter einer leisen Zeile »1 ausgeblendete Umfrage

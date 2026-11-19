@@ -45,7 +45,9 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
   Sheets, Menüs). Seitenlogik bleibt in der Seite. Muss eine Seite im alten
   Design Byte für Byte gleich bleiben, steht ihr Teil für das neue Design in
   `src/static/preview/<seite>.js`, den die Seite nur im neuen Design lädt
-  (Beispiel: Termine).
+  (Beispiel: Termine). Braucht der Teil keine eigenen Daten vom Server,
+  genügt `#{design_preview_page_script('<seite>')}` am Ende der Seite
+  (Beispiel: Klassenmemory).
 - **Achtung Tailwind:** Die Entwicklungsinstanz erzeugt `tailwind.css` neu,
   sobald sich Dateien unter `src/static` ändern, und liest dabei jedes Wort
   als möglichen Klassennamen, auch in Skripten (`if (!grid)` ergibt eine

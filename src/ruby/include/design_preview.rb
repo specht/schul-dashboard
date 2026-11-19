@@ -103,6 +103,15 @@ class Main < Sinatra::Base
         "<a class='pv-login-brand' href='/'><img src='/#{ui_dark? ? DARK_SCHUL_ICON : SCHUL_ICON}' alt=''><span>#{CGI.escapeHTML(SCHUL_NAME)}</span></a>"
     end
 
+    # a page's own part of the new design (src/static/preview/<name>.js), for
+    # pages that need no data of their own for it (Klassenmemory): only in the
+    # new design, '' otherwise, so that the page stays byte for byte as it was
+    def design_preview_page_script(name)
+        return '' unless ui_preview?
+        assert(name =~ /\A[a-z0-9_]+\z/)
+        "\n<script src='#{preview_asset("/preview/#{name}.js")}'></script>"
+    end
+
     # code fields (c.html): in the new design a text field with the numeric
     # keyboard (a number field shows spin arrows and
     # changes on scrolling) that phones can fill from an SMS or mail

@@ -1,5 +1,7 @@
 import { test as base, expect, Page, APIRequestContext, Locator } from '@playwright/test';
+import type { Cookie } from '@playwright/test';
 import crypto from 'crypto';
+import path from 'path';
 
 // The test stack runs in production mode: login codes are random and sent by
 // mail to the Mailpit container, teachers need a second factor. See
@@ -239,7 +241,46 @@ export async function typeEmail(page: Page, email: string) {
   await page.locator('#email').pressSequentially(email);
 }
 
-export async function login(page: Page, email: string) {
+// Sessions of real logins, reused by later tests in this worker: a UI login
+// costs about a second (the login page, typing, the code mail, the start
+// page), and the suite logs in several hundred times. A reused session is
+// checked on the way: the start page shows the login form when it has ended
+// (logged out, purged), then login() logs in for real. Only cookies with a
+// single session are kept – after switching accounts in one context the sid
+// cookie lists several. Specs that test logging in, sessions or the second
+// factor always log in for real, and E2E_FRESH_LOGINS=1 turns reuse off.
+const SESSIONS = new Map<string, Cookie[]>();
+const FRESH_LOGIN_SPECS = new Set(['login.spec.ts', 'session.spec.ts', 'otp-nudge.spec.ts', 'design-preview-login.spec.ts']);
+
+function reusesSessions(fresh?: boolean) {
+  if (fresh || process.env.E2E_FRESH_LOGINS === '1' || process.env.LOGIN_CODE) return false;
+  try {
+    return !FRESH_LOGIN_SPECS.has(path.basename(test.info().file));
+  } catch {
+    return false; // outside a test
+  }
+}
+
+export async function login(page: Page, email: string, options: { fresh?: boolean } = {}) {
+  const reuse = reusesSessions(options.fresh);
+  const saved = reuse ? SESSIONS.get(email) : undefined;
+  if (saved) {
+    await page.context().addCookies(saved);
+    // where a real login ends, too
+    await page.goto('/');
+    if ((await page.locator('#email').count()) === 0) return;
+    SESSIONS.delete(email);
+    await page.context().clearCookies();
+  }
+  await loginWithCode(page, email);
+  if (reuse) {
+    const cookies = await page.context().cookies();
+    const sid = cookies.find((c) => c.name === 'sid');
+    if (sid && !sid.value.includes(',') && !decodeURIComponent(sid.value).includes(',')) SESSIONS.set(email, cookies);
+  }
+}
+
+async function loginWithCode(page: Page, email: string) {
   const factors = LOGIN_FACTORS[email] || { first: 'email' };
   await clearLoginMails(email);
   await page.goto('/');

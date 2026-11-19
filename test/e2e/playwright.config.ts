@@ -20,7 +20,9 @@ export default defineConfig({
   projects: [
     // browser tests (*.spec.ts) on desktop and phone
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // (the hallway monitors are no phones: their specs set the screen size
+    // themselves and would only run twice)
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: /monitor(-neu|-effekte)?\.spec\.ts$/ },
     // request-only checks (*.smoke.ts), no browser, run once
     { name: 'smoke', testMatch: /.*\.smoke\.ts/ },
     // screenshots for UI/UX reviews (*.screens.ts), only when asked for

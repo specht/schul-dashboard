@@ -38,6 +38,8 @@
     let fest = null;              // laufender Festeffekt
     let zustand = {wetter: '', fest: ''};
     let vorschau = false;
+    let testLauf = false;          // Test im Schulhaus: alles kommt gleich, wie in der Vorschau
+    let storyEinmal = false;       // Test im Schulhaus: die Story läuft genau einmal
     let laeuft = false;
     let letzte = 0;
     let funken = [];              // Glitzer auf der vorderen Leinwand
@@ -69,7 +71,7 @@
     function neueId(name) { idZaehler += 1; return `fx-${name}-${idZaehler}`; }
 
     // Zeitraffer in der Vorschau: aus Minuten werden Sekunden
-    function dauer(echt, vorschauWert) { return vorschau ? vorschauWert : echt; }
+    function dauer(echt, vorschauWert) { return (vorschau || testLauf) ? vorschauWert : echt; }
 
     // ------------------------------------------------------------------
     // Gestaltung (CSS wird einmal in die Seite gelegt)
@@ -790,7 +792,7 @@
         let t0 = null, berg = 0, bergGesetzt = false;
         const huegel = [0, 1, 2].map(() => ({f: zufall(0.7, 1.6), p: zufall(0, 6.28), a: zufall(0.5, 1.1)}));
         // Schlitten bzw. Winterdienst: einer nach dem anderen, etwa alle 90 Sekunden
-        let rodel = null, naechster = vorschau ? 2 : zufall(20, 60), gastNr = 0;
+        let rodel = null, naechster = (vorschau || testLauf) ? 2 : zufall(20, 60), gastNr = 0;
         const staub = [];
         let fahrzeuge = [];
         const spuren = [];
@@ -910,7 +912,7 @@
                         if (f.y > bergHoehe(f.x) - VW) f.y = zufall(-5, bergHoehe(f.x) / VW - 1) * VW;
                     }
                 }
-                berg += (zielBerg - berg) * Math.min(1, dt * (vorschau ? 4 : 0.25));
+                berg += (zielBerg - berg) * Math.min(1, dt * ((vorschau || testLauf) ? 4 : 0.25));
                 zeitrafferUhr(tagAnteil(t0, t));
                 // der Berg selbst (hinter den Kacheln)
                 const oben = UNTEN * (1 - berg) - 1.5 * VW;
@@ -1175,7 +1177,7 @@
         let uboot = null, enten = null;
         // U-Boot (ab Rot) und Entenfamilie teilen sich einen Zeitslot: nie beide zugleich,
         // alle 60–90 Sekunden einer von beiden; ab Rot abwechselnd (Wunsch Jonas)
-        let slotNaechster = vorschau ? 2 : zufall(30, 60), zuletzt = 'enten';
+        let slotNaechster = (vorschau || testLauf) ? 2 : zufall(30, 60), zuletzt = 'enten';
         let wasser = 0;     // 0 trocken … 1 Board voll
         let wasserGesetzt = false;
         let t0 = null;
@@ -1277,7 +1279,7 @@
                 if (t0 === null) t0 = t;
                 const ziel = wasserZiel(t);
                 if (!wasserGesetzt) { wasserGesetzt = true; wasser = ziel; }
-                wasser += (ziel - wasser) * Math.min(1, dt * (vorschau ? 4 : 0.25));
+                wasser += (ziel - wasser) * Math.min(1, dt * ((vorschau || testLauf) ? 4 : 0.25));
                 if (flut) zeitrafferUhr(tagAnteil(t0, t));
                 const see = flut ? glatt(0.93, 1, wasser) : 0;   // 1 = Blick von oben auf den See
                 // trübere Stimmung
@@ -2133,7 +2135,7 @@
         const tropfen = setInterval(() => dekorieren('hitze', (el, w, h) => schmelzen(el, w, staerke, schmelzStand)), 2000);
         // alle 3 bis 5 Minuten fährt unten ein Eiswagen vorbei
         let wagen = null;
-        let naechsterWagen = vorschau ? 2 : zufall(30, 120);
+        let naechsterWagen = (vorschau || testLauf) ? 2 : zufall(30, 120);
         return {
             stop() { clearInterval(tropfen); sonne.remove(); toenung.remove(); glanz.remove(); if (wagen) wagen.el.remove(); dekoEntfernen(); uhrWeg(); },
             schritt(dt, t) {
@@ -3110,7 +3112,7 @@
                 }
                 if (boe && t - boe.start > boe.dauer + 0.7) boeEnde();
                 // Schülertrupp: nur zwischen den Böen losschicken, eine Kachel nach der anderen
-                if (truppAb === null) truppAb = t + (vorschau ? 0 : truppAbstand());
+                if (truppAb === null) truppAb = t + ((vorschau || testLauf) ? 0 : truppAbstand());
                 if (!trupp && !boe && t >= truppAb && !storyLeiter()) {
                     for (const [el, f] of weg) {
                         if (f.fertig && f.rueckholen && t >= f.rueckholen) {
@@ -3196,8 +3198,8 @@
 
     function Glatteis(staerke) {
         const laeufer = [];
-        let naechsteGruppe = vorschau ? 2 : zufall(40, 150);
-        let streuer = null, streuerNaechster = vorschau ? 26 : zufall(60, 300);
+        let naechsteGruppe = (vorschau || testLauf) ? 2 : zufall(40, 150);
+        let streuer = null, streuerNaechster = (vorschau || testLauf) ? 26 : zufall(60, 300);
         const splitt = [];
         function streuerSchritt(dt) {
             const f = streuer, bw = 9 * VW, bh = bw * 56 / 110;
@@ -3477,10 +3479,10 @@
             staub.push({x: zufall(0, 100), y: zufall(0, 100), vx: zufall(0.15, 0.6), vy: zufall(-0.12, 0.18), r: zufall(0.05, 0.12),
                 p: zufall(0, 6.28), v: zufall(0.6, 1.8), vorne: Math.random() < 0.15});
         }
-        let kind = null, kindNaechster = vorschau ? 3 : zufall(30, 120);
+        let kind = null, kindNaechster = (vorschau || testLauf) ? 3 : zufall(30, 120);
         const atem = [];
         // Enteisen: ein Kind mit Leiter schlägt das Eis von einer leeren Kachel
-        let trupp = null, truppNaechster = vorschau ? 12 : zufall(30, 90);
+        let trupp = null, truppNaechster = (vorschau || testLauf) ? 12 : zufall(30, 90);
         const splitter = [];
         const LAUF_E = 11, TAKT_E = 0.3;      // vw/s, s je Sprosse
         function truppStarten(t) {
@@ -3928,7 +3930,7 @@
 
     function Weihnachten(nah) {
         let flug = null;
-        let naechster = vorschau ? 1.5 : zufall(10, 60);
+        let naechster = (vorschau || testLauf) ? 1.5 : zufall(10, 60);
         // der Weihnachtsmann fliegt erst ab dem 16. Dezember („nah“), davor nur die
         // Lichterkette; dann alle 60–90 Sekunden
         const abstand = () => dauer(zufall(60, 90), 26);   // alle 60–90 Sekunden (Wunsch Jonas)
@@ -4466,7 +4468,7 @@
         const advent = Weihnachten(false);
         const noten = [];
         for (let i = 0; i < 12; i++) noten.push({x: zufall(0, 100), linie: Math.floor(zufall(0, 5)), art: Math.floor(zufall(0, 3)), p: zufall(0, 6.28)});
-        let chor = null, chorNaechster = vorschau ? 1 : zufall(20, 60);
+        let chor = null, chorNaechster = (vorschau || testLauf) ? 1 : zufall(20, 60);
         const singen = [];
         const band = (x, t, i) => H * 0.38 + Math.sin(x / (W * 0.16) + t * 0.35) * 4 * VW + Math.sin(x / (W * 0.07) - t * 0.2) * 0.8 * VW + (i - 2) * 0.85 * VW;
         return {
@@ -4874,7 +4876,7 @@
 
     function Ostern(nah) {
         let auftritt = null;
-        let naechster = vorschau ? 1.5 : zufall(60, 240);
+        let naechster = (vorschau || testLauf) ? 1.5 : zufall(60, 240);
         const abstand = () => dauer(nah ? zufall(7, 9) * 60 : zufall(13, 17) * 60, 30);
         const eier = [];
         const MAX_EIER = 9;
@@ -5084,10 +5086,10 @@
         const herzen = [];
         for (let i = 0; i < 26; i++) herzen.push({x: zufall(0, 100) * VW, y: zufall(0, 100) * H / 100, s: zufall(0.6, 1.6) * VW, v: zufall(2, 4.5) * VW, p: zufall(0, 6.28), f: auswahl(HERZ_FARBEN)});
         let ballons = null;
-        let naechster = vorschau ? 2 : zufall(20, 90);
+        let naechster = (vorschau || testLauf) ? 2 : zufall(20, 90);
         // Amor: alle 60 Sekunden (Wunsch Jonas), in der Vorschau alle 12 Sekunden; die
         // getroffene Klasse bleibt markiert und wirft Herzen aus, bis er die nächste trifft
-        let amor = null, amorNaechster = vorschau ? 1 : zufall(5, 20), verliebt = null;
+        let amor = null, amorNaechster = (vorschau || testLauf) ? 1 : zufall(5, 20), verliebt = null;
         const funkeln = [];        // kleine Herzen am Treffpunkt (vorne)
         const getroffen = new Set();   // jedes Mal eine andere Kachel, bis alle einmal dran waren
         let herzRegen = null;          // aus der getroffenen Kachel rieseln Herzen nach unten
@@ -5293,7 +5295,7 @@
             f: auswahl(KONFETTI_FARBEN), b: zufall(0.3, 0.45) * VW, h: zufall(0.15, 0.22) * VW});
         for (let i = 0; i < 110; i++) stuecke.push(neu({}, false));
         const schuss = [];
-        let naechster = vorschau ? 2 : zufall(20, 90);
+        let naechster = (vorschau || testLauf) ? 2 : zufall(20, 90);
         const deko = setInterval(() => dekorieren('fasching', luftschlange), 2000);
         dekorieren('fasching', luftschlange);
         function konfetti(ctx, st) {
@@ -5396,7 +5398,7 @@
         sonne.appendChild(Object.assign(document.createElement('div'), {className: 'fx-sonne-strahlen'}));
         domH.appendChild(sonne);
         let flug = null;
-        let naechster = vorschau ? 1.5 : zufall(20, 60);
+        let naechster = (vorschau || testLauf) ? 1.5 : zufall(20, 60);
         return {
             stop() { sonne.remove(); if (flug) flug.el.remove(); },
             schritt(dt, t) {
@@ -12892,7 +12894,7 @@
             if (fest) fest.schritt(dt, t);
             if (story) {
                 story.schritt(dt, t);
-                if (story.fertig) { story.stop(); story = null; if (storyArt === 'plan') planWecker(); else if (storyArt) storyPlanen(4); }
+                if (story.fertig) { story.stop(); story = null; if (storyArt === 'plan') planWecker(); else if (storyArt && storyEinmal) storyArt = ''; else if (storyArt) storyPlanen(4); }
             }
             funkenZeichnen(dt);
         } catch (e) {
@@ -12940,6 +12942,7 @@
             zustand.fest = f;
         }
         // Storys: in der Vorschau und im Test die gewählte immer wieder, im Schulhaus ab und zu
+        storyEinmal = !!soll.storyEinmal;
         storysSetzen(soll.story || (soll.storysPlan ? 'plan' : ''));
         // kein zusätzlicher Hinweis am Monitor (Wunsch Jonas): die Effekte sprechen für sich
         if (wetter || fest) schleifeStarten();
@@ -13033,10 +13036,13 @@
                 if (folgen && vorschau) return;
                 if (testUhr) { clearTimeout(testUhr); testUhr = null; }
                 if (d.test && d.test.rest_ms > 0) testUhr = setTimeout(abfragen, d.test.rest_ms + 1500);
+                // beim Test kommt alles gleich (wie in der Vorschau), danach wieder im normalen Takt
+                const test = !!(d.test && d.test.rest_ms > 0);
+                if (test !== testLauf) { testLauf = test; anwenden({wetter: null, fest: null, story: null, storysPlan: false}); }
                 // Effekte und Storys haben je einen eigenen Schalter
                 const an = d.an !== false;
                 planSetzen(d.storyplan || [], d.jetzt_ms);
-                anwenden({wetter: an ? d.wetter || null : null, fest: an ? d.fest || null : null, story: d.story || null, storysPlan: d.storys !== false});
+                anwenden({wetter: an ? d.wetter || null : null, fest: an ? d.fest || null : null, story: d.story || null, storyEinmal: !!(testLauf && d.story), storysPlan: d.storys !== false});
                 // direkt nach dem Start des Servers sind die Warnungen evtl. noch unterwegs
                 if (d.bereit === false) setTimeout(abfragen, 30 * 1000);
             })

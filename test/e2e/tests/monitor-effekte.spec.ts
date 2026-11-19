@@ -7,7 +7,7 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 
 const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost',
   'weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang',
-  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug', 'brand', 'kran', 'bienen', 'diebstahl', 'brom', 'ballspiel', 'rundgang'];
+  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug', 'brand', 'kran', 'bienen', 'diebstahl', 'brom', 'ballspiel', 'strom', 'schatz', 'umzug', 'graffiti', 'rundgang'];
 
 for (const effekt of EFFEKTE) {
   test(`Monitor-Effekt ${effekt}: läuft hinter den Kästen, die Einträge bleiben lesbar`, async ({ page }) => {
@@ -136,9 +136,18 @@ test('Monitor-Effekte: Stand abfragen und auf „Monitore verwalten“ ab- und e
   const mitTest = await (await page.request.get('/api/monitor_effekte')).json();
   expect(mitTest.test.effekt).toBe('gewitter');
   expect(mitTest.wetter.effekt).toBe('gewitter');
-  expect(mitTest.test.rest_ms).toBeGreaterThan(4 * 60 * 1000);
-  await page.locator('.bu_fx_test_beenden').click();
+  // a test is a single run, not five minutes
+  expect(mitTest.test.rest_ms).toBeGreaterThan(30 * 1000);
+  expect(mitTest.test.rest_ms).toBeLessThan(60 * 1000);
+  // the test can be stopped right where it was started (and from the hint at the top)
+  const beenden = page.getByTestId('monitor-effekt-test-beenden');
+  await expect(beenden).toBeVisible();
+  await expect(page.locator('.bu_fx_test_starten')).toBeHidden();
+  await expect(page.getByTestId('monitor-effekt-test').locator('.bu_fx_test_beenden')).toBeVisible();
+  await beenden.click();
   await expect(page.getByTestId('monitor-effekt-test')).toBeHidden();
+  await expect(beenden).toBeHidden();
+  await expect(page.locator('.bu_fx_test_starten')).toBeVisible();
   const ohneTest = await (await page.request.get('/api/monitor_effekte')).json();
   expect(ohneTest.test).toBeUndefined();
   expect(ohneTest.wetter).toBeNull();

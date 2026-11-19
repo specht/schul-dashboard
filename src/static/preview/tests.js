@@ -5,7 +5,7 @@
 //
 // Desktop and tablet: the month as a grid on one panel, with a calm header
 // (month, the class as a menu, today, back and forth, »Eintragen«). Phones:
-// the month as an agenda, week by week; details and the form are sheets.
+// one week at a time as an agenda, swiped like the timetable's week; details and the form are sheets.
 // Entries keep their kinds apart: class tests (KA, LEK, MSA, Vera) in the
 // subject's colour, other entries of the class (Exkursion, Fahrt …) as a
 // quiet surface with the subject colour at the edge, the school's own dates
@@ -16,6 +16,7 @@
     var MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
     var WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
     var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    var MONTHS_SHORT = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
     var TYPES = { KA: 'Klassenarbeit' };
     var EXAMS = ['KA', 'LEK', 'MSA', 'Vera'];
     // the order within a day: holidays, the school's dates, tests, other
@@ -30,6 +31,7 @@
     var klassen = [];          // [{key, label, active}]
     var active_label = '';
     var manage_href = null;
+    var loaded = null;         // the range the last answer covers
 
     function el(tag, cls, text) {
         var e = document.createElement(tag);
@@ -271,7 +273,7 @@
         ui.today = el('button', 'pv-tests-btn', 'Heute');
         ui.today.type = 'button';
         ui.today.id = 'bu_pv_tests_today';
-        ui.today.addEventListener('click', function() { calendar.today(); });
+        ui.today.addEventListener('click', function() { calendar.gotoDate(today_target()); });
         tools.appendChild(ui.today);
 
         var seg = el('div', 'pv-tests-seg');
@@ -282,6 +284,7 @@
         prev.title = 'Voriger Monat';
         prev.appendChild(icon('chevron-left'));
         prev.addEventListener('click', function() { calendar.prev(); });
+        ui.prev = prev;
         var next = el('button');
         next.type = 'button';
         next.id = 'bu_pv_tests_next';
@@ -289,6 +292,7 @@
         next.title = 'Nächster Monat';
         next.appendChild(icon('chevron-right'));
         next.addEventListener('click', function() { calendar.next(); });
+        ui.next = next;
         seg.appendChild(prev);
         seg.appendChild(next);
         tools.appendChild(seg);
@@ -308,9 +312,13 @@
         panel.appendChild(head);
 
         panel.appendChild(old);
+        // phones: one week at a time, swiped like the timetable's week; the
+        // frame keeps the neighbouring week's slide inside the panel
+        ui.frame = el('div', 'pv-tests-agenda-frame');
         ui.agenda = el('div', 'pv-tests-agenda');
         ui.agenda.id = 'pv_tests_agenda';
-        panel.appendChild(ui.agenda);
+        ui.frame.appendChild(ui.agenda);
+        panel.appendChild(ui.frame);
 
         var foot = el('div', 'pv-tests-foot');
         var legend = el('div', 'pv-tests-legend');
@@ -351,17 +359,57 @@
         opts.dateClick({ dateStr: ymd(d), date: d, allDay: true, view: view });
     }
 
+    function week_view() {
+        return !!calendar && calendar.view.type === 'dayGridWeek';
+    }
+
+    // »Heute«: today; on a weekend on phones the coming week (the past one
+    // is over)
+    function today_target() {
+        var d = new Date();
+        d.setHours(0, 0, 0, 0);
+        if (PHONE.matches) while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+        return d;
+    }
+
+    // '2.–6. Nov.', '30. Nov. – 4. Dez.' (like the timetable's week)
+    function week_label(monday) {
+        var fri = new Date(monday);
+        fri.setDate(fri.getDate() + 4);
+        return monday.getMonth() === fri.getMonth()
+            ? monday.getDate() + '.–' + fri.getDate() + '. ' + MONTHS_SHORT[fri.getMonth()]
+            : monday.getDate() + '. ' + MONTHS_SHORT[monday.getMonth()] + ' – ' + fri.getDate() + '. ' + MONTHS_SHORT[fri.getMonth()];
+    }
+
     function render_head() {
         var view = calendar.view;
-        var start = view.currentStart;
-        ui.title.textContent = MONTHS[start.getMonth()] + ' ' + start.getFullYear();
-        var now = new Date();
-        ui.today.disabled = now >= view.currentStart && now < view.currentEnd;
+        var start = view.currentStart, end = view.currentEnd;
+        var week = week_view();
+        var t = today_target();
+        ui.today.disabled = t >= start && t < end;
         var exams = calendar.getEvents().filter(function(e) {
-            return e.extendedProps.pv_kind === 'exam' && e.start >= view.currentStart && e.start < view.currentEnd;
+            return e.extendedProps.pv_kind === 'exam' && e.start >= start && e.start < end;
         }).length;
-        var count = exams === 0 ? 'keine Arbeiten in diesem Monat' : (exams === 1 ? '1 Arbeit in diesem Monat' : exams + ' Arbeiten in diesem Monat');
-        ui.sub.textContent = (active_label ? 'Klasse ' + active_label + ', ' : '') + count;
+        var parts = [];
+        if (week) {
+            var monday = monday_of(start);
+            ui.title.textContent = week_label(monday);
+            parts.push('Kalenderwoche\u00a0' + iso_week(monday));
+            var sw = calendar.getEvents().filter(function(e) { return e.extendedProps.pv_kind === 'week' && e.start < end && (e.end || e.start) > start; })[0];
+            if (sw) parts.push(sw.title);
+            if (active_label) parts.push('Klasse\u00a0' + active_label);
+            parts.push(exams === 0 ? 'keine\u00a0Arbeiten' : (exams === 1 ? '1\u00a0Arbeit' : exams + '\u00a0Arbeiten'));
+        } else {
+            ui.title.textContent = MONTHS[start.getMonth()] + ' ' + start.getFullYear();
+            if (active_label) parts.push('Klasse ' + active_label);
+            parts.push(exams === 0 ? 'keine Arbeiten in diesem Monat' : (exams === 1 ? '1 Arbeit in diesem Monat' : exams + ' Arbeiten in diesem Monat'));
+        }
+        ui.sub.textContent = parts.join(', ');
+        var unit = week ? ['Vorige Woche', 'Nächste Woche'] : ['Voriger Monat', 'Nächster Monat'];
+        ui.prev.setAttribute('aria-label', unit[0]);
+        ui.prev.title = unit[0];
+        ui.next.setAttribute('aria-label', unit[1]);
+        ui.next.title = unit[1];
     }
 
     function monday_of(d) {
@@ -378,11 +426,8 @@
         return Math.ceil(((t - y) / 86400000 + 1) / 7);
     }
 
+    // in a week the weekday reads best (today stands out in the accent)
     function day_heading(d) {
-        var now = new Date();
-        if (same_day(d, now)) return 'Heute';
-        var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        if (same_day(d, tomorrow)) return 'Morgen';
         return WEEKDAYS[d.getDay()] + ', ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
     }
 
@@ -409,65 +454,130 @@
         return row;
     }
 
-    // phones: the month week by week, the days with entries
+    // phones: one week (monday: its Monday) into box, the five school days
+    // with their entries (a weekend day only if something starts on it).
+    // An entry over several days stands on its first day in the week; the
+    // other days it covers name it quietly. Also draws the neighbouring week
+    // while swiping (agenda_ghost).
+    function fill_week(box, monday, events) {
+        var lo = new Date(monday), hi = new Date(monday);
+        hi.setDate(hi.getDate() + 7);
+        var list_of = events.filter(function(e) {
+            return e.extendedProps.pv_kind !== 'week' && e.start < hi && (e.end || e.start) > lo;
+        });
+        var anchor = function(e) { return e.start < lo ? lo : e.start; };
+        for (var i = 0; i < 7; i++) {
+            var d = new Date(monday);
+            d.setDate(d.getDate() + i);
+            var on_day = list_of.filter(function(e) { return same_day(anchor(e), d); }).sort(function(a, b) {
+                return (a.extendedProps.pv_order - b.extendedProps.pv_order) || (a.start - b.start);
+            });
+            if (i >= 5 && on_day.length === 0) continue;
+            box.appendChild(el('div', 'pv-ta-day' + (same_day(d, new Date()) ? ' pv-ta-today' : ''), day_heading(d)));
+            if (on_day.length === 0) {
+                var d_end = new Date(d);
+                d_end.setDate(d_end.getDate() + 1);
+                var covering = list_of.filter(function(e) { return e.start < d && (e.end || e.start) >= d_end; })[0];
+                box.appendChild(el('div', 'pv-ta-empty', covering ? title_of(covering) : 'Nichts eingetragen'));
+                continue;
+            }
+            var list = el('div', 'pv-ta-list');
+            on_day.forEach(function(e) { list.appendChild(agenda_row(e)); });
+            box.appendChild(list);
+        }
+    }
+
     function render_agenda() {
         var box = ui.agenda;
         box.textContent = '';
-        var view = calendar.view;
-        var start = view.currentStart, end = view.currentEnd;
-        var events = calendar.getEvents().filter(function(e) {
-            return e.start < end && (e.end || e.start) > start;
-        });
-        var anything = false;
-        for (var w = monday_of(start); w < end; w.setDate(w.getDate() + 7)) {
-            var lo = w < start ? new Date(start) : new Date(w);
-            var w_end = new Date(w);
-            w_end.setDate(w_end.getDate() + 7);
-            var hi = w_end > end ? end : w_end;
-            var fri = new Date(w);
-            fri.setDate(fri.getDate() + 4);
-            var shown_to = fri < hi ? fri : new Date(hi.getTime() - 86400000);
-            var in_week = events.filter(function(e) {
-                if (e.extendedProps.pv_kind === 'week') return false;
-                var anchor = e.start < start ? start : e.start;
-                return anchor >= lo && anchor < hi;
-            }).sort(function(a, b) {
-                var aa = a.start < start ? start : a.start, bb = b.start < start ? start : b.start;
-                return (aa - bb) || (a.extendedProps.pv_order - b.extendedProps.pv_order);
-            });
-            // a week that is only a weekend of this month, with nothing in it
-            if (in_week.length === 0 && lo > shown_to) continue;
-            var sw = events.filter(function(e) { return e.extendedProps.pv_kind === 'week' && e.start < hi && e.end > lo; })[0];
-            var head = el('div', 'pv-ta-week');
-            var range = lo > shown_to ? lo.getDate() + '. ' + MONTHS[lo.getMonth()]
-                : (same_day(lo, shown_to) ? lo.getDate() + '. ' + MONTHS[lo.getMonth()]
-                    : lo.getDate() + '. bis ' + shown_to.getDate() + '. ' + MONTHS[shown_to.getMonth()]);
-            head.appendChild(el('b', null, 'KW ' + iso_week(w)));
-            head.appendChild(el('span', null, range + (sw ? ', ' + sw.title : '')));
-            box.appendChild(head);
-            if (in_week.length === 0) {
-                box.appendChild(el('div', 'pv-ta-empty', 'Nichts eingetragen.'));
-                continue;
+        if (!week_view()) return;
+        fill_week(box, monday_of(calendar.view.currentStart), calendar.getEvents());
+    }
+
+    // the neighbouring week as a picture beside the agenda while swiping
+    // (dir: 1 = next, -1 = previous); its entries are there if the last
+    // answer reached it (events: four weeks back, about four ahead)
+    function agenda_ghost(dir) {
+        var ghost = el('div', 'pv-tests-agenda pv-tests-agenda-ghost');
+        ghost.setAttribute('aria-hidden', 'true');
+        var monday = monday_of(calendar.view.currentStart);
+        monday.setDate(monday.getDate() + 7 * dir);
+        var sunday = new Date(monday);
+        sunday.setDate(sunday.getDate() + 7);
+        if (!loaded || monday < loaded.from || sunday > loaded.to) ghost.appendChild(el('div', 'pv-ta-empty', '…'));
+        else fill_week(ghost, monday, calendar.getEvents());
+        return ghost;
+    }
+
+    // swiping the week: it follows the finger with the neighbouring week
+    // beside it; far enough (or quick), and that one slides into place
+    function install_swipe() {
+        var box = ui.agenda, frame = ui.frame;
+        box.style.touchAction = 'pan-y pinch-zoom';
+        var start = null, dragging = false, ghost = null, ghost_dir = 0;
+        var width = function() { return frame.offsetWidth; };
+        var place = function(node, x, ms) {
+            node.style.transition = ms ? 'transform ' + ms + 'ms ease-out' : 'none';
+            node.style.transform = x ? 'translateX(' + x + 'px)' : '';
+        };
+        var drop_ghost = function() {
+            if (ghost) ghost.remove();
+            ghost = null;
+            ghost_dir = 0;
+        };
+        var ensure_ghost = function(dir) {
+            if (ghost && ghost_dir === dir) return;
+            drop_ghost();
+            ghost = agenda_ghost(dir);
+            ghost_dir = dir;
+            frame.appendChild(ghost);
+        };
+        var move = function(x, ms) {
+            place(box, x, ms);
+            if (ghost) place(ghost, x + ghost_dir * width(), ms);
+        };
+        box.addEventListener('touchstart', function(e) {
+            start = (e.touches.length === 1 && week_view()) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+            // the system's back gesture starts at the screen edge
+            if (start && (start.x < 24 || start.x > window.innerWidth - 24)) start = null;
+            dragging = false;
+        }, { passive: true });
+        box.addEventListener('touchmove', function(e) {
+            if (!start || e.touches.length !== 1) return;
+            var dx = e.touches[0].clientX - start.x, dy = e.touches[0].clientY - start.y;
+            if (!dragging) {
+                if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { start = null; return; }
+                if (Math.abs(dx) < 10) return;
+                dragging = true;
             }
-            anything = true;
-            var day = null, list = null;
-            in_week.forEach(function(e) {
-                var anchor = e.start < start ? start : e.start;
-                if (!day || !same_day(day, anchor)) {
-                    day = anchor;
-                    var h = el('div', 'pv-ta-day' + (same_day(anchor, new Date()) ? ' pv-ta-today' : ''), day_heading(anchor));
-                    box.appendChild(h);
-                    list = el('div', 'pv-ta-list');
-                    box.appendChild(list);
-                }
-                list.appendChild(agenda_row(e));
-            });
-        }
-        if (!anything) {
-            box.insertBefore(el('p', 'pv-ta-none', can_add()
-                ? 'In diesem Monat ist für die Klasse noch nichts eingetragen. Mit »Neu« trägst du eine Arbeit ein.'
-                : 'In diesem Monat ist für die Klasse noch nichts eingetragen.'), box.firstChild);
-        }
+            ensure_ghost(dx < 0 ? 1 : -1);
+            move(dx, 0);
+        }, { passive: true });
+        var cancel = function() {
+            move(0, 150);
+            setTimeout(drop_ghost, 150);
+        };
+        box.addEventListener('touchend', function(e) {
+            if (!start) return;
+            var s0 = start;
+            start = null;
+            if (!dragging) return;
+            dragging = false;
+            var dx = (e.changedTouches[0] || {}).clientX - s0.x;
+            var quick = Date.now() - s0.t < 250 && Math.abs(dx) > 40;
+            if (!(Math.abs(dx) > box.offsetWidth * 0.25 || quick)) { cancel(); return; }
+            var dir = dx < 0 ? 1 : -1;
+            ensure_ghost(dir);
+            move(-dir * width(), 160);
+            setTimeout(function() {
+                if (dir > 0) calendar.next(); else calendar.prev();
+                render_head();
+                render_agenda();
+                place(box, 0, 0);
+                drop_ghost();
+            }, 160);
+        });
+        box.addEventListener('touchcancel', function() { if (start) { start = null; dragging = false; cancel(); } });
     }
 
     var pending = null;
@@ -525,10 +635,25 @@
             opts = options;
             build();
             var page_events = options.events;
+            // the server answers 60 days from the start: for a week, ask from
+            // four weeks before, so both neighbours are there for swiping
             options.events = function(info, ok, fail) {
-                page_events(info, function(list) { ok(list.map(classify)); }, fail);
+                var from = new Date(info.start);
+                if (info.end - info.start < 20 * 86400000) from.setDate(from.getDate() - 28);
+                var asked = { start: from, end: info.end, startStr: ymd(from), endStr: info.endStr, timeZone: info.timeZone };
+                page_events(asked, function(list) {
+                    var to = new Date(from);
+                    to.setDate(to.getDate() + 60);
+                    loaded = { from: from, to: to };
+                    ok(list.map(classify));
+                }, fail);
             };
-            options.initialView = 'dayGridMonth';
+            // phones: a week at a time (like the timetable's week), else the month
+            options.initialView = PHONE.matches ? 'dayGridWeek' : 'dayGridMonth';
+            if (PHONE.matches) {
+                var first = options.initialDate ? new Date(options.initialDate) : new Date();
+                if (same_day(first, new Date())) options.initialDate = ymd(today_target());
+            }
             options.headerToolbar = false;
             options.fixedWeekCount = false;
             // rows as high as their entries (preview/tests.css gives each day
@@ -538,7 +663,9 @@
             options.dayHeaderContent = function(arg) { return WD[arg.date.getDay()]; };
             options.eventDidMount = mount;
             options.datesSet = function(info) {
+                var first = !calendar;
                 calendar = info.view.calendar;
+                if (first) install_swipe();
                 refresh();
             };
             options.eventsSet = refresh;
@@ -581,7 +708,11 @@
         });
         var on_change = function() {
             close_menu(false);
-            if (calendar) calendar.updateSize();
+            if (calendar) {
+                var want = PHONE.matches ? 'dayGridWeek' : 'dayGridMonth';
+                if (calendar.view.type !== want) calendar.changeView(want);
+                calendar.updateSize();
+            }
             refresh();
         };
         if (PHONE.addEventListener) PHONE.addEventListener('change', on_change); else PHONE.addListener(on_change);

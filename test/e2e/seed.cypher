@@ -83,3 +83,15 @@ UNWIND ['desktop', 'mobile'] AS project
 MERGE (a:Angebot {id: kind[0] + project})
 SET a.name = kind[1] + project, a.created = 1696150800, a.updated = 1696150800
 MERGE (a)-[:DEFINED_BY]->(u);
+
+// Klassenmemory (design-preview-klassenmemory.spec.ts): the placeholder photos
+// of test/prepare_example_data.rb (KLASSENMEMORY_PHOTOS, keep both lists in
+// step), assigned to their students: the three of 5a and the Gruppentest and
+// Labtest students of class 11.
+UNWIND ['max.mustermann', 'elli.mustermann', 'anonymous.2342',
+        'anna.gruppentest', 'ben.gruppentest', 'cem.gruppentest',
+        'dana.gruppentest', 'emil.gruppentest', 'fiona.gruppentest',
+        'anna.labtest', 'ben.labtest', 'cem.labtest',
+        'dana.labtest', 'emil.labtest', 'fiona.labtest'] AS account
+MATCH (u:User {email: account + '@mail.beispielschule.de'})
+SET u.foto_path = 'beispielfoto-' + account;

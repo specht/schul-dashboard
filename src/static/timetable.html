@@ -148,7 +148,7 @@
             <div id='pv_agenda' class='pv-agenda' aria-live='polite' hidden></div>
         </div>
         <div class='#{tablet_logged_in? ? 'col-md-6' : 'col-lg-2 col-md-12 side-panel'} timetable_chooser tablet_timetable_chooser' style='#{tablet_logged_in? ? 'display: none;' : ''}'>
-            <aside id='pv_side' class='pv-side' aria-label='Heute und Änderungen' hidden></aside>
+            <aside id='pv_side' class='pv-side' aria-label='Heute und Änderungen' hidden></aside>#{start_page_todo_script}
             <div class='hint weekend_events' style='display: none;'></div>
             <div class='hint future_homework' style='display: none;'></div>
             #{print_timetable_chooser()}
@@ -347,10 +347,10 @@
               <div class='row'>
                   <div class='col-md-12'>
                     <p>
-                    Sie können nun den Zugang zum Datentresor für <strong><span class="ad_hoc_login_name_here"></span></strong> (<span id="ad_hoc_login_email_here"></span>) freischalten.
+                    #{ui_preview? ? 'Du kannst' : 'Sie können'} nun den Zugang zum Datentresor für <strong><span class="ad_hoc_login_name_here"></span></strong> (<span id="ad_hoc_login_email_here"></span>) freischalten.
                     </p>
                     <div class='alert alert-warning'>
-                          <i class='fa fa-exclamation-circle'></i>&nbsp;&nbsp;<b>Achtung!</b> Bitte vergewissern Sie sich, dass Sie die richtige Person am Telefon haben.
+                          <i class='fa fa-exclamation-circle'></i>&nbsp;&nbsp;<b>Achtung!</b> #{ui_preview? ? 'Bitte vergewissere dich, dass du' : 'Bitte vergewissern Sie sich, dass Sie'} die richtige Person am Telefon haben.
                     </div>
                     <div class='alert alert-secondary div_ad_hoc_fresh_sms'>
                         Für <span class="ad_hoc_login_name_here"></span> wurde heute eine neue Telefonnummer hinterlegt, die erst ab morgen zur Anmeldung am Datentresor verwendet werden kann.
@@ -718,6 +718,8 @@ function render_preview_agenda() {
         document.body.classList.remove('pv-agenda-on');
         $('#pv_agenda').attr('hidden', true);
     }
+    // "Zu erledigen" (preview/start.js) follows the agenda
+    if (window.pv_todo) window.pv_todo.place();
 }
 
 function render_preview_agenda_inner() {
@@ -1113,6 +1115,7 @@ function render_preview_week_head() {
     tools.append(today, nav);
     head.append(tools);
     render_preview_side();
+    if (window.pv_todo) window.pv_todo.place();
     // the column beside the week starts level with the timetable (below this header)
     document.documentElement.style.setProperty('--pv-head-h', Math.round(head.outerHeight(true)) + 'px');
     // side columns with nothing visible give their room to the timetable
@@ -1144,8 +1147,15 @@ function preview_chip(x) {
 
 // the title of a card: a lesson's label (built by the server), otherwise the
 // Termin's title (typed by a person: as text)
+// a lesson's label is HTML from the server, its changed parts as <s>old</s>
+// new (pv-diff): a lesson cancelled for oneself but taught by someone else
+// crosses out only those parts, the replacement stays readable
 function preview_title(el, x, e) {
-    if (x.label) return el.html(x.label);
+    if (x.label) {
+        el.html(x.label);
+        if (el.find('s').length) el.addClass('pv-diff');
+        return el;
+    }
     return el.text(e.title || x.event_title || '');
 }
 
@@ -1251,6 +1261,8 @@ function render_preview_side() {
     let homework = side.parent().find('.future_homework').first();
     if (sus_logged_in && homework.length) side.insertAfter(homework); else side.parent().prepend(side);
     side.removeAttr('hidden');
+    // "Zu erledigen" (preview/start.js) at the top of the column
+    if (window.pv_todo) window.pv_todo.place();
 }
 
 // Phones, tab "Woche": the school days of the shown week one below the
@@ -3282,6 +3294,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 update_moment_countdowns();
             }
             update_new_messages_indicators(data.unread_ids || []);
+            if (data.todo && window.pv_todo) window.pv_todo.update(data.todo);
         });
         if (window.calendar) {
             let today = moment().format('YYYY-MM-DD');

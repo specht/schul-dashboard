@@ -1111,7 +1111,9 @@ class Main < Sinatra::Base
         redirect "#{WEB_ROOT}/poll/#{prid}/#{code}", 302
     end
     
-    def print_current_polls()
+    # the polls running now for the session user (start page: the panel in
+    # today's design, "Zu erledigen" in the new one, include/start_todo.rb)
+    def current_poll_entries()
         require_user!
         today = Date.today.strftime('%Y-%m-%d')
         now = Time.now.strftime('%Y-%m-%dT%H:%M:%S')
@@ -1131,6 +1133,11 @@ class Main < Sinatra::Base
             pr = entry[:poll_run]
             now >= "#{pr[:start_date]}T#{pr[:start_time]}:00" && now <= "#{pr[:end_date]}T#{pr[:end_time]}:00"
         end
+        entries
+    end
+
+    def print_current_polls()
+        entries = current_poll_entries()
         return '' if entries.empty?
         hidden_entries = entries.select { |x| x[:hidden] }
         StringIO.open do |io|

@@ -252,6 +252,12 @@ DEMO_ACCOUNT_FIXED_PIN = nil
 DEVELOPMENT_MAIL_DELIVERY_POSITIVE_LIST = []
 
 SCHOOL_WEBSITE_API_URL = ''
+# Öffentliche Website der Schule: »Link kopieren« bei veröffentlichten
+# News-Beiträgen (<URL>/beitrag-<id>); ohne diesen Eintrag gibt es den Link nicht
+SCHOOL_WEBSITE_URL = 'https://www.beispielschule.de'
+# true, sobald die Website die Artikelseiten /beitrag-<id> ausliefert
+# (vorher gibt es »Link kopieren« und »Beitrag öffnen« nicht)
+WEBSITE_ARTICLE_LINKS = false
 
 UNTIS_VERTRETUNGSPLAN_BASE_URL = 'https://beispielschule.de/vertretungsplan_lehrer'
 UNTIS_VERTRETUNGSPLAN_USERNAME = nil

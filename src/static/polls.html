@@ -336,6 +336,14 @@
     var PV = document.body.classList.contains('ui-preview');
 
     // ---------- Neues Design: the list of polls ----------
+    // when a poll was created: its node's timestamp (seconds), else the
+    // page's day
+    function pv_poll_created(poll) {
+        let ts = poll.poll && poll.poll.created;
+        if (typeof ts === 'number') return moment.unix(ts);
+        return poll.created ? moment(poll.created) : moment();
+    }
+
     function pv_poll_run_state(poll_run) {
         let now = moment().unix();
         let start = moment(`${poll_run.info.start_date}T${poll_run.info.start_time}:00`).unix();
@@ -424,7 +432,7 @@
         let row = pv_list.row({
             title: title,
             cls: 'pv-poll-row',
-            facts: [`Erstellt am ${moment(poll.created).locale('de').format('D.M.YYYY')}`,
+            facts: [`Erstellt am ${pv_poll_created(poll).locale('de').format('D.M.YYYY')}`,
                 `${n_items} ${n_items === 1 ? 'Eintrag' : 'Einträge'}`,
                 n_runs === 0 ? 'noch nicht durchgeführt' : `${n_runs} ${n_runs === 1 ? 'Durchführung' : 'Durchführungen'}`],
             open: function () { edit_poll(pid); },
@@ -475,12 +483,16 @@
                 // planned: the next one first; otherwise the latest first
                 return (a.state === 'planned' ? 1 : -1) * (ka < kb ? -1 : ka > kb ? 1 : 0);
             });
-            // the last thing that happened: created or run
-            let last = poll.created || '';
-            for (let r of runs)
-                if (r.pr.info.start_date > last) last = r.pr.info.start_date;
+            // the last thing that happened: created (to the second) or run
+            // (a poll just created has no »created« of the page yet, only
+            // its node's timestamp)
+            let last = pv_poll_created(poll).format('YYYY-MM-DDTHH:mm:ss');
+            for (let r of runs) {
+                let k = `${r.pr.info.start_date}T${r.pr.info.start_time}`;
+                if (k > last) last = k;
+            }
             let active = runs.some(function (r) { return r.state !== 'complete'; });
-            return { poll: poll, runs: runs, last: last, active: active, year: pv_list.school_year(last || moment().format('YYYY-MM-DD')) };
+            return { poll: poll, runs: runs, last: last, active: active, year: pv_list.school_year(last.substr(0, 10)) };
         });
         if (items.length === 0) {
             $('<p>').addClass('pv-lempty').text('Noch keine Umfragen. Mit »Neue Umfrage« legst du die erste an.').appendTo(root);

@@ -1,0 +1,643 @@
+/* Neues Design (Vorschau): Klassenmemory (/klassenmemory_assign, teachers;
+   preview/klassenmemory_assign.js adds the parts named .pv-km-…). Every rule
+   is scoped to body.pv-km-page, which only that script sets, so that no
+   other page and today's design are touched.
+
+   The page: one panel with the title, a quiet line and »Quiz« as the main
+   action (once the photos are open); the password with a label; the classes
+   as pills (on phones one row that scrolls sideways); the photos as an even
+   grid, the name on the photo, a tap on it edits it.
+
+   The quiz: a dialog over a veil, top-aligned so that it doesn't jump when
+   the number of answers changes; on phones a screen of its own above the
+   tab bar (doc/Gestaltung.md, 6a: long editors). The start: the three ways
+   to play as rows (two unfold the classes), the Hall of Fame beside them
+   (below on phones), its table scrolling sideways inside itself. Playing:
+   back, which class, the photo as large as fits with the answers below it
+   in the window; a right answer in the accent, a wrong one in quiet red. */
+
+/* ---------- the page ---------- */
+.pv-km-page #main_container > .container.pv-km {
+    background: var(--pv-surface) !important;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.14) !important;
+    max-width: 1400px !important;
+    padding: 18px 22px 22px;
+    color: var(--pv-ink);
+}
+
+/* title and »Quiz« in one row (also on phones), the quiet line below */
+.pv-km-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px 16px;
+}
+
+.pv-km-head h2.pv-km-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding-top: 3px;
+    font: 800 1.6rem/1.15 var(--pv-display);
+    color: var(--pv-ink);
+}
+
+.pv-km-sub {
+    margin: 4px 0 16px;
+    max-width: 65ch;
+    color: var(--pv-muted);
+}
+
+.pv-km-tools {
+    display: flex;
+    gap: 8px;
+}
+
+.pv-km-page #main_container .pv-km-quiz {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 16px;
+}
+
+.pv-km-page.pv-km-unlocked #main_container .pv-km-quiz {
+    display: inline-flex;
+}
+
+.pv-km-quiz .ti {
+    font-size: 1.1rem;
+}
+
+.pv-km .api_messages:not(:empty) {
+    margin-bottom: 12px;
+}
+
+/* the password: a label, the field and the button as one unit, left */
+.pv-km > .row > .col-md-6.offset-md-3 {
+    flex: 0 1 34rem;
+    max-width: 100%;
+    margin-left: 0;
+}
+
+.pv-km-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.pv-km-page #password {
+    height: 44px;
+    text-align: left !important;
+    border-color: var(--pv-line);
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    font-size: 1rem;
+}
+
+.pv-km-page #password::placeholder {
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+.pv-km-page #main_container #submit_password {
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+/* the classes: pills, the shown one marked; on phones one sideways row */
+.pv-km-page #klassen-div {
+    text-align: left !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 12px;
+}
+
+.pv-km-page #klassen-div .ttc {
+    min-height: 36px;
+    min-width: 48px;
+    margin: 0 4px 6px 0 !important;
+}
+
+/* the photos: an even grid, each photo 2 : 3, the name on it */
+.pv-km-page #stage {
+    text-align: left;
+    margin-bottom: 0 !important;
+}
+
+.pv-km-page #sus_here {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+}
+
+.pv-km-page #sus_here > div {
+    display: block !important;
+    min-width: 0;
+}
+
+.pv-km-page .sus-frame {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    margin: 0;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px var(--pv-line);
+    background: var(--pv-hover);
+}
+
+.pv-km-page .sus-foto-sm,
+.pv-km-page .sus-foto-md {
+    width: 100%;
+    height: 100%;
+    background-color: var(--pv-hover);
+    box-shadow: none;
+}
+
+.pv-km-page .sus-label {
+    padding: 7px 8px 8px;
+    background: color-mix(in srgb, var(--pv-surface) 92%, transparent);
+    color: var(--pv-ink);
+    box-shadow: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+}
+
+#sus_here .sus-label {
+    cursor: pointer;
+}
+
+#sus_here .sus-label:hover {
+    background: color-mix(in srgb, var(--pv-surface) 80%, var(--acc-soft));
+}
+
+/* no name yet: a quiet invitation in the accent, not red */
+.pv-km-page .sus-label.nodata {
+    color: var(--acc-text);
+    font-weight: 600;
+}
+
+.pv-km-page .sus-label:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: -2px;
+}
+
+.pv-km-page .sus-edit {
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    width: auto;
+    min-height: 40px;
+    padding: 6px 8px;
+    border: 1px solid var(--acc-text);
+    border-radius: 8px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    /* 16 px: phones don't zoom into the field */
+    font-size: 16px;
+    box-shadow: 0 0 0 3px var(--acc-soft);
+    outline: none;
+}
+
+.pv-km-page .sus-edit::placeholder {
+    color: var(--pv-muted);
+    opacity: 1;
+}
+
+/* ---------- the quiz: a veil and a dialog ---------- */
+.pv-km-page #quiz-curtain {
+    z-index: 8090;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.pv-km-page #main_container #div_quiz_root,
+.pv-km-page #main_container #div_quiz_play {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    right: auto;
+    z-index: 8100;
+    transform: translateX(-50%);
+    width: min(1040px, calc(100vw - 48px));
+    max-width: none;
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    margin: 0;
+    padding: 18px 24px 24px;
+    overflow: auto !important;
+    overscroll-behavior: contain;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.pv-km-quiz-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.pv-km-page .pv-km-quiz-head h1,
+.pv-km-page .pv-km-quiz-head h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding-top: 4px;
+    font: 800 1.45rem/1.2 var(--pv-display);
+    color: var(--pv-ink);
+}
+
+/* close and back: quiet round icon buttons, 40 px to tap */
+.pv-km-page .div_quiz .right-top-button {
+    position: static;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font-size: 1.25rem;
+    box-shadow: none;
+}
+
+.pv-km-page .div_quiz .right-top-button:hover {
+    border: 0;
+    box-shadow: none;
+    color: var(--pv-ink);
+    background: color-mix(in srgb, var(--pv-ink) 10%, var(--pv-surface));
+}
+
+.pv-km-page .div_quiz .right-top-button:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+}
+
+.pv-km-intro {
+    max-width: 75ch;
+    color: var(--pv-muted);
+}
+
+.pv-km-page .div_quiz hr {
+    border-top: 1px solid var(--pv-line);
+}
+
+/* the ways to play: rows with a hairline, the note quiet below */
+.pv-km-page #main_container .pv-km-mode {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 0 4px;
+    border: 0;
+    background: transparent;
+    color: var(--pv-ink);
+    font: 700 1.05rem/1.3 var(--pv-display);
+    text-align: left;
+    cursor: pointer;
+}
+
+.pv-km-mode-text {
+    flex: 1 1 auto;
+}
+
+.pv-km-mode .ti {
+    flex: none;
+    margin-top: 2px;
+    color: var(--pv-muted);
+    transition: transform 0.2s ease;
+}
+
+.pv-km-mode[aria-expanded='true'] .ti {
+    transform: rotate(180deg);
+}
+
+.pv-km-page #main_container .pv-km-mode:hover .pv-km-mode-text {
+    color: var(--acc-text);
+}
+
+.pv-km-page #main_container .pv-km-mode:focus:not(:focus-visible),
+.pv-km-switch:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.pv-km-page #main_container .pv-km-mode:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+.pv-km-page .div_quiz p.pv-km-mode-note {
+    margin: 0 0 10px !important;
+    line-height: 1.35 !important;
+    color: var(--pv-muted);
+    font-size: 0.92rem;
+}
+
+.pv-km-page .klassen-buttons-here,
+.pv-km-page .klassenstufen-buttons-here {
+    padding-bottom: 6px;
+}
+
+.pv-km-page .klassen-buttons-here .ttc,
+.pv-km-page .klassenstufen-buttons-here .ttc {
+    min-height: 36px;
+    min-width: 48px;
+    margin: 0 4px 6px 0 !important;
+}
+
+.pv-km-page .div_quiz .col-md-4 hr {
+    margin: 8px 0;
+}
+
+/* the Hall of Fame: heading, the setting as a switch, the table */
+.pv-km-page #div_quiz_root .col-md-8 {
+    display: flex;
+    flex-direction: column;
+}
+
+.pv-km-page #div_quiz_root .col-md-8 h3 {
+    order: -2;
+    margin: 6px 0 2px;
+    font: 800 1.2rem/1.2 var(--pv-display);
+}
+
+.pv-km-switch {
+    order: -1;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 40px;
+    margin: 0 0 8px -8px;
+    padding: 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--pv-ink);
+    font-size: 0.92rem;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pv-km-switch:hover {
+    background: var(--pv-hover);
+}
+
+.pv-km-switch:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 0;
+}
+
+.pv-km-switch .ti {
+    flex: none;
+    font-size: 1.35rem;
+    line-height: 1;
+    margin-top: -2px;
+    color: var(--pv-muted);
+}
+
+.pv-km-switch[aria-checked='true'] .ti {
+    color: var(--acc-text);
+}
+
+.pv-km-page #hall-of-fame {
+    min-width: 0;
+}
+
+.pv-km-page #hall-of-fame .table-responsive {
+    margin-bottom: 0;
+}
+
+.pv-km-page #hall-of-fame table {
+    margin-bottom: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-km-page #hall-of-fame th,
+.pv-km-page #hall-of-fame td {
+    padding: 6px 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.pv-km-page #hall-of-fame td:first-child {
+    color: var(--pv-muted);
+    text-align: right;
+}
+
+.pv-km-page #hall-of-fame tr.palerow td {
+    color: var(--pv-muted);
+}
+
+/* how many of a grade: the accent, stronger the more */
+.pv-km-page #hall-of-fame td.pv-km-share {
+    background-color: color-mix(in srgb, var(--acc) calc(var(--km-share, 0) * 45%), transparent);
+}
+
+/* the picture beside the Hall of Fame: in the panel, never over the table */
+.pv-km-page #div_quiz_root .col-md-8 > img {
+    position: static !important;
+    align-self: flex-end;
+    height: 120px !important;
+    margin-top: 8px;
+}
+
+/* ---------- playing ---------- */
+.pv-km-play-head {
+    align-items: flex-start;
+}
+
+.pv-km-play-titles {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pv-km-play-what {
+    margin-top: 2px;
+    color: var(--pv-muted);
+    font-size: 0.92rem;
+}
+
+.pv-km-page #div_quiz_play hr {
+    display: none;
+}
+
+.pv-km-page #quiz-foto {
+    margin-bottom: 12px !important;
+}
+
+/* the photo as large as fits: room below it for the answers */
+.pv-km-page #quiz-foto .sus-frame-md {
+    --km-photo: min(300px, 56vw, calc((100vh - 360px) / 1.5));
+    --km-photo: min(300px, 56vw, calc((100dvh - 360px) / 1.5));
+    width: max(140px, var(--km-photo));
+    height: auto;
+    aspect-ratio: 2 / 3;
+    border-radius: 14px;
+}
+
+.pv-km-page #quiz-foto .sus-label {
+    padding: 8px 10px 10px;
+    font-size: 1.05rem !important;
+}
+
+.pv-km-page #name-buttons-here {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    min-height: 0 !important;
+}
+
+.pv-km-page #main_container #name-buttons-here .btn {
+    min-height: 44px;
+    min-width: 48px !important;
+    margin: 0 !important;
+    padding: 8px 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.pv-km-page #name-buttons-here .quiz-no-photos {
+    margin: 8px 0 0;
+    color: var(--pv-muted);
+}
+
+/* a right answer in the accent, a wrong one in quiet red */
+.pv-km-page #main_container #name-buttons-here .btn-success {
+    background: var(--acc);
+    border-color: var(--acc);
+    color: var(--acc-ink);
+}
+
+.pv-km-page #main_container #name-buttons-here .btn-danger {
+    background: var(--pv-surface);
+    border-color: currentColor;
+    color: #b42318;
+}
+
+.pv-km-page #main_container #name-buttons-here .btn:focus:not(:focus-visible) {
+    box-shadow: none;
+}
+
+/* after an answer the other names leave the row instead of leaving gaps */
+.pv-km-page #main_container #name-buttons-here .btn.name-button-gone {
+    display: none;
+}
+
+.pv-km-page.dark #main_container #name-buttons-here .btn-danger {
+    color: #ff8f8f;
+}
+
+.pv-km-page #main_container #name-buttons-here .pv-km-aside {
+    background: transparent;
+    border-color: var(--pv-line);
+    color: var(--pv-muted);
+}
+
+.pv-km-page #main_container #name-buttons-here .pv-km-aside:hover {
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+.pv-km-page #main_container #name-buttons-here .btn:disabled {
+    opacity: 0.45;
+}
+
+/* ---------- phones: the quiz a screen of its own, the classes one row ---------- */
+@media (max-width: 767px) {
+    .pv-km-page #main_container > .container.pv-km {
+        padding: 14px 14px 18px;
+    }
+
+    .pv-km-head h2.pv-km-title {
+        font-size: 1.4rem;
+    }
+
+    .pv-km-page #klassen-div {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        margin: 0 -14px 10px;
+        padding: 0 14px 4px !important;
+        scrollbar-width: none;
+    }
+
+    .pv-km-page #klassen-div::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pv-km-page #klassen-div .ttc {
+        flex: none;
+    }
+
+    .pv-km-page #sus_here {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
+    }
+
+    .pv-km-page #main_container #div_quiz_root,
+    .pv-km-page #main_container #div_quiz_play {
+        inset: 0;
+        transform: none;
+        width: auto;
+        max-height: none;
+        border-radius: 0;
+        padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+        box-shadow: none;
+    }
+
+    .pv-km-page .pv-km-quiz-head h1,
+    .pv-km-page .pv-km-quiz-head h2 {
+        font-size: 1.3rem;
+    }
+
+    .pv-km-page #div_quiz_root .col-md-8 {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .pv-km-page #div_quiz_root .col-md-8 > img {
+        height: 96px !important;
+    }
+
+    .pv-km-page #quiz-foto .sus-frame-md {
+        --km-photo: min(260px, 62vw, calc((100vh - 330px) / 1.5));
+        --km-photo: min(260px, 62vw, calc((100dvh - 330px) / 1.5));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pv-km-mode .ti {
+        transition: none;
+    }
+}
+
+/* no secure connection: the photos can't be decrypted, a calm notice */
+.pv-km-page #sus_here > .km-no-crypto {
+    grid-column: 1 / -1;
+    margin: 4px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}

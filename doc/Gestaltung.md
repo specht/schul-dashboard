@@ -45,7 +45,9 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
   Sheets, Menüs). Seitenlogik bleibt in der Seite. Muss eine Seite im alten
   Design Byte für Byte gleich bleiben, steht ihr Teil für das neue Design in
   `src/static/preview/<seite>.js`, den die Seite nur im neuen Design lädt
-  (Beispiel: Termine).
+  (Beispiel: Termine). Braucht der Teil keine eigenen Daten vom Server,
+  genügt `#{design_preview_page_script('<seite>')}` am Ende der Seite
+  (Beispiel: Klassenmemory).
 - **Achtung Tailwind:** Die Entwicklungsinstanz erzeugt `tailwind.css` neu,
   sobald sich Dateien unter `src/static` ändern, und liest dabei jedes Wort
   als möglichen Klassennamen, auch in Skripten (`if (!grid)` ergibt eine
@@ -58,16 +60,20 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
 ## 3. Der Rahmen
 
 - **Desktop:** eine Seitenleiste links. Oben die Schule, dann Stundenplan,
-  Nachrichten und Datentresor, darunter aufklappbare Abschnitte (Unterricht,
-  Schule, Verwaltung) mit Untergruppen nur als Abstand. Unten fest: Suche,
+  Nachrichten und Datentresor, darunter nach einer Linie je ein Eintrag für
+  Unterricht, Lerngruppen, Schule und Verwaltung. Jeder öffnet sich wie ein
+  Menü als Feld rechts daneben, nicht nach unten in der Leiste;
+  Untergruppen darin nur als kleine Überschrift. Der Eintrag, in dem die
+  aktuelle Seite liegt, ist in der Akzentfarbe markiert. Klassenarbeiten
+  gehören zu »Schule«. Unten fest: Suche,
   die eigene Person (das Menü öffnet sich nach oben, unten bündig) und ganz
   unten eine leise Zeile mit ©, Impressum und dem GitHub-Symbol. Nur die
   Liste darüber scrollt. Menüs öffnen sich als Feld neben der Leiste, auf
   Höhe ihres Eintrags; sind sie länger als das Fenster, in Spalten.
 - **Tablet:** dieselbe Leiste als schmale Symbolleiste, die Namen als
-  Tooltip.
+  Tooltip; die Felder öffnen sich genauso daneben.
 - **Handy:** keine Kopfleiste. Unten eine Tab-Leiste (Lehrkräfte: Heute,
-  Woche, Nachrichten, Kurse, Mehr; Schülerinnen und Schüler: Heute, Woche,
+  Woche, Nachrichten, Unterricht, Mehr; Schülerinnen und Schüler: Heute, Woche,
   Aufgaben, Nachrichten, Mehr). »Mehr« ist ein Sheet mit Suche oben und den
   Einträgen als Kacheln, farbig nach Gruppe. Alle Kacheln folgen einem
   Muster (Symbol mittig über der Beschriftung, gleiche Höhe, die Symbole
@@ -75,7 +81,7 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
   Reihe ist voll: Bleiben in einer Gruppe Kacheln übrig, werden die
   letzten breiter (zwei übrig: je halbe Breite; eine übrig: die letzten
   vier als zwei Reihen zu zwei).
-- **Suche:** überall mit `/` oder `Strg+K`. Sie findet Seiten, Kurse,
+- **Suche:** überall mit `/` oder `Strg+K`. Sie findet Seiten, Lerngruppen,
   Personen und Links nach Name und Stichwort.
 - **Die Seite selbst** steht auf einem Panel (`--pv-surface`, Radius 14 bis
   16 px) über dem Hintergrund des Farbschemas.
@@ -117,7 +123,7 @@ und dunkel auf Kontrast geprüft.
 - Text in `--pv-text`, Überschriften in `--pv-display`, Code und Kürzel bei
   Bedarf in `--pv-mono`. Nie eine Schrift fest eintragen: die Variablen
   wechseln mit der gewählten Schrift.
-- Im Profil (»Darstellung«, »Schrift«) gibt es vier Schriftpaare
+- Im Profil (»Darstellung«, »Schrift«) gibt es fünf Schriftpaare
   (Überschrift und Text), gespeichert in `u.ui_font`, auf der Seite als
   Klasse `pv-font-…` am `body` (`preview.css`, `include/fonts-v2/fonts.css`):
   - **Klar** (Standard): Bricolage Grotesque und Atkinson Hyperlegible Next.
@@ -126,12 +132,15 @@ und dunkel auf Kontrast geprüft.
     in der Größe angeglichen (`size-adjust`).
   - **Sachlich**: Inter Tight und Inter.
   - **Buch**: Literata (Serifenschrift für das Lesen am Bildschirm).
-  - **Freundlich**: M PLUS Rounded 1c (gerundet) und Ubuntu Sans.
+  - **Freundlich**: M PLUS Rounded 1c (gerundet) und Manrope.
+  - **Feder**: Alegreya (kalligrafische Überschriften) und Alegreya Sans.
+  Manrope hat kein polytonisches Griechisch und einzelne seltene Akzente
+  nicht; dafür springt Fira Sans ein.
 - Pflicht für jede Schrift: Latin-1 und Latin Extended-A (Akzente
   europäischer Sprachen, Makron ā ē ī ō ū für Latein) und Griechisch mit
   Tonos (U+0386–U+03CE, z. B. Ελληνικά, ά έ ή ί ό ύ ώ). Polytonisches
   Griechisch (Greek Extended, z. B. ἀρετή, ῥῆμα, ᾠδή) ist erwünscht, aber
-  keine Bedingung; die vier Paare haben es alle. Eine neue Schrift kommt nur
+  keine Bedingung; Fira Sans springt ein, wo eine Schrift es nicht hat. Eine neue Schrift kommt nur
   dazu, wenn ihre Dateien das nachweislich abdecken (mit fontTools geprüft,
   nicht nach Angabe der Anbieter), unter freier Lizenz (SIL OFL o. ä.),
   selbst gehostet als woff2 in den Teilmengen latin, latin-ext, greek (und
@@ -197,6 +206,16 @@ Aktionen und das Verhalten am Handy.
 - Kurze Formulare in einem Dialog, am Handy als Sheet.
 - Lange Editoren als Dialog in voller Höhe, am Handy als Sheet über den
   ganzen Bildschirm; »Speichern« bleibt immer sichtbar.
+- **Editoren aus Bausteinen** (Beispiel: Website-News): Man setzt den Inhalt
+  aus Bausteinen zusammen (Absatz, Bild, Galerie …), jeder mit Symbol,
+  Namen und leisen Knöpfen zum Verschieben, Einfügen und Entfernen.
+  Zu jedem Baustein steht ein kurzer Hinweis, wie er wirkt; Prüfungen
+  erscheinen leise darunter, nie blockierend, wo möglich mit einem Knopf,
+  der das Problem behebt. Angeboten wird nur, was auf jeder Breite gut
+  aussieht. Gespeichert wird das bisherige Textformat; »Text bearbeiten«
+  bleibt als Ausweg. Die Vorschau zeigt Handy, Tablet und Desktop; am
+  Handy sind »Bearbeiten« und »Vorschau« zwei Reiter, und nur das Sheet
+  selbst scrollt.
 
 **Tabelle**
 
@@ -213,13 +232,40 @@ Aktionen und das Verhalten am Handy.
   leise Angaben mit ihrem Spaltennamen davor; die Zeile öffnet, was sie
   vorher geöffnet hat.
 
+- **Seiten, die noch nicht umgebaut sind,** bekommen dieses Verhalten
+  allgemein (`plain_tables` in `preview.js`): jede Bootstrap-Tabelle mit
+  einer Kopfzeile wird in schmalen Listen zu Listenzeilen, Bedienelemente
+  stehen am Ende der Zeile, leere Angaben (»–«) fallen weg. Tabellen mit
+  mehr als zehn Spalten gelten als Matrix und scrollen in ihrem Rahmen
+  seitlich, die erste Spalte bleibt stehen. Eine Tabelle ohne Zeilen zeigt
+  »Keine Einträge.« statt eines leeren Kopfes. Die Seite selbst scrollt nie
+  seitlich. Tabellen mit eigener Gestaltung (Klassen mit `pv-`, Kursbuch,
+  Klassenliste, Kalender, Dialoge) bleiben unberührt; wer eine Seite
+  umbaut, ersetzt das durch eine eigene Lösung.
+- Seiten in einem weißen Streifen über die ganze Breite
+  (`.container-fluid.white`) bekommen die Fläche wie alle anderen Seiten.
+- Schwebende Meldungen (`.api_messages`, die über der Seite liegen) stehen
+  als ruhige Karte unten: am Handy über der Tab-Leiste, sonst neben der
+  Seitenleiste – nie über Titel und Reitern der Seite.
+
 **Bereiche mit eigener Navigation** (Beispiel: Bibliothek)
 
-- Die Seiten eines Bereichs stehen als Zeile leiser Reiter oben auf dem
-  Panel, die eigenen Seiten zuerst, die Verwaltung nach einer Haarlinie;
-  der aktuelle Reiter in der leisen Akzentfläche. Am Handy scrollt jede
-  Gruppe als eigene Zeile seitlich. Links, die nur eine Seite hat
-  (»Metadaten bearbeiten«), stehen als zweite, kleinere Zeile darunter.
+- Zwei Ebenen, nie zwei gleich schwere Zeilen. Oben auf dem Panel stehen
+  die eigenen Seiten des Bereichs als Umschalter (wie Posteingang und
+  Postausgang): eine leise Spur, das aktuelle Segment hervorgehoben. Wer
+  den Bereich verwaltet, hat darin ein Segment mehr, »Verwaltung«; es
+  führt zur ersten Seite der Verwaltung. Nur innerhalb der Verwaltung
+  stehen deren Seiten als zweite Zeile darunter, als Reiter auf einer
+  Haarlinie, der aktuelle unterstrichen in der Akzentfarbe. Wer nichts
+  verwaltet, sieht nur den Umschalter.
+- Die aktuelle Seite ist immer markiert, auch Unterseiten ohne eigenen
+  Reiter (ein Buch gehört zum Katalog, eine Person zu »Nutzer«).
+- Reiter sind keine Textlinks: nie in der Linkfarbe, nie unterstrichen
+  außer der aktuelle Reiter der zweiten Ebene.
+- Am Handy bleibt jede Zeile eine Zeile und scrollt seitlich, das aktuelle
+  Segment im Blick; der Umschalter füllt die Breite, solange er passt.
+- Links, die nur eine Seite hat (»Metadaten bearbeiten«), stehen als
+  dritte, kleinere Zeile darunter.
 - Geräte eines Bereichs (die Ausleihstation der Bibliothek) zeigen keine
   Navigation des Dashboards, nur ihre Leiste mit der angemeldeten Person.
 
@@ -337,6 +383,10 @@ Umfragen, Termine, News verwalten)
 - Die Oberfläche ist deutsch. Das Dashboard spricht alle mit »du« an,
   Schülerinnen und Schüler, Eltern und Lehrkräfte. Alte Texte mit »Sie«
   werden angepasst, wenn eine Seite ins neue Design kommt.
+- **Feste Begriffe:** Gruppen von Schülerinnen und Schülern (Klassen und
+  Kurse) heißen als Bereich »Lerngruppen«, die einzelne Gruppe bleibt
+  »Klasse 6a« oder »Informatik LK (11, 12)«. Der eigene Unterricht (die
+  Kursbücher) heißt »Unterricht«, nicht »Kurse«.
 - **Kein Mittelpunkt »·« als Trenner**, nirgends in sichtbarem Text. Statt
   dessen Kommas, kurze Wörter (»um«, »statt«, »bis«) oder Abstand.
 - Kurz, sachlich, freundlich. Keine Ausrufezeichen-Kaskaden, keine
@@ -401,6 +451,37 @@ Umfragen, Termine, News verwalten)
 - **Maße in `vw`**, damit dieselbe Seite auf Full HD und in den kleinen
   Vorschauen auf »Monitore verwalten« gleich aussieht. Einträge mindestens
   1,15 vw (22 px auf Full HD, heute 20 px).
+
+## 12b. Aufgaben und dringende Anfragen
+
+- **Ein Ort für das, was zu tun ist.** Offene Umfragen, Bücher, die die
+  Bibliothek zurückbraucht, Fristen und Hinweise zur Anmeldung stehen als
+  »Zu erledigen« beim Stundenplan, nie als eigene Spalte daneben: der
+  Stundenplan behält immer seine Breite.
+  - Desktop: oben in der Spalte neben der Woche, über »Geändert diese Woche«.
+  - Handy: oben im ersten Tag der Agenda (»Heute«), über der ersten Stunde.
+  - Tablet und dazwischen: über der Woche.
+- **Eine Zeile pro Aufgabe**, alle nach einem Muster: Profilbild (Umfragen,
+  das Bild der Person, die sie gestellt hat) oder Symbol, der Titel, eine
+  leise Faktenzeile mit der Frist (»bis Fr 14:00«, kurz vor Schluss als
+  Countdown »noch 45 min« im Akzent) und ein ruhiger Knopf (»Teilnehmen«).
+- **Mehr als zwei Zeilen** falten sich am Handy und Tablet zu einer Zeile
+  (»Zu erledigen (3)«, Pfeil nach unten; nicht »Aufgaben«, so heißen die
+  Hausaufgaben der Schülerinnen und Schüler), die sie aufklappt.
+- **Erledigtes und Ausgeblendetes:** Beantwortete Umfragen bleiben bis zum
+  Ende stehen (»beantwortet«, Knopf »Ändern«), zählen aber nicht mehr.
+  Ausgeblendete stehen hinter einer leisen Zeile »1 ausgeblendete Umfrage
+  anzeigen«.
+- **Zähler:** ein kleines Abzeichen mit der Zahl der offenen Aufgaben an
+  »Stundenplan« in der Seitenleiste und an »Heute« in der Tab-Leiste, auf
+  jeder Seite.
+- **Dringende Anfragen** (jemand wartet jetzt, etwa am Telefon auf eine
+  Freigabe) stehen als Leiste oben auf jeder Seite, nur für die, die sie
+  bearbeiten können: wer wartet, seit wann, und ein Knopf, der den Dialog
+  öffnet. Am Handy ist die Leiste eine schmale Karte unter der Statusleiste,
+  die die Seite nicht verdeckt. Sie verschwindet, sobald die Anfrage
+  erledigt oder abgelaufen ist. Der Dialog selbst bleibt, wo er ist; von
+  anderen Seiten führt der Knopf dorthin und öffnet ihn.
 
 ## 13. Bewegung
 

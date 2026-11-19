@@ -177,7 +177,7 @@
     }
     if (document.readyState === 'complete') slide_sheets_down(); else window.addEventListener('load', slide_sheets_down);
 
-    // ---------- A sheet of links (phones), e.g. "Kurse" in the tab bar ----------
+    // ---------- A sheet of links (phones), e.g. "Unterricht" in the tab bar ----------
     // groups: [[title, [[label, href], …]], …]; closes like every sheet
     window.pv_close_plan_menu = window.pv_close_plan_menu || function(animate) {
         var menu = document.querySelector('.pv-plan-menu');
@@ -193,6 +193,8 @@
         }
     };
 
+    // a group with {folded: true} as third part shows only its name with the
+    // count, its links open on a tap (e.g. "Weitere Lerngruppen")
     window.pv_open_link_sheet = function(title, groups) {
         window.pv_close_plan_menu(false);
         var veil = document.createElement('div');
@@ -204,12 +206,25 @@
         menu.setAttribute('aria-label', title);
         groups.forEach(function(g) {
             if (g[1].length === 0) return;
-            var head = document.createElement('div');
+            var folded = !!(g[2] && g[2].folded);
+            var head = document.createElement(folded ? 'button' : 'div');
             head.className = 'pv-plan-group';
             head.textContent = g[0];
             menu.appendChild(head);
             var list = document.createElement('div');
             list.className = 'pv-sheet-links';
+            if (folded) {
+                head.type = 'button';
+                head.className = 'pv-more-groups pv-sheet-fold';
+                head.textContent = g[0] + ' (' + g[1].length + ')';
+                head.setAttribute('aria-expanded', 'false');
+                list.hidden = true;
+                head.addEventListener('click', function() {
+                    list.hidden = !list.hidden;
+                    head.setAttribute('aria-expanded', list.hidden ? 'false' : 'true');
+                    if (!list.hidden) head.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                });
+            }
             g[1].forEach(function(item) {
                 var a = document.createElement('a');
                 a.href = item[1];
@@ -273,7 +288,13 @@
         menu.dataset.pvFolded = '1';
         var items = Array.prototype.slice.call(menu.querySelectorAll('a.dropdown-item'));
         var own = items.filter(function(a) { return a.getAttribute('data-own') === '1'; });
-        var others = items.filter(function(a) { return a.getAttribute('data-own') !== '1'; });
+        // the others in the school's order (the server lists the years 11
+        // and 12 apart for some, before the rest)
+        var order = function(a) { return parseInt(a.getAttribute('data-order') || '999', 10); };
+        var others = items.filter(function(a) { return a.getAttribute('data-own') !== '1'; })
+            .map(function(a, i) { return [a, i]; })
+            .sort(function(x, y) { return order(x[0]) - order(y[0]) || x[1] - y[1]; })
+            .map(function(x) { return x[0]; });
         if (others.length === 0) return;
         var own_classes = own.filter(function(a) { return /^Klasse\b/.test(a.textContent.trim()); });
         var own_courses = own.filter(function(a) { return own_classes.indexOf(a) < 0; });
@@ -315,22 +336,139 @@
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fold_group_menu); else fold_group_menu();
 
-    // ---------- The navigation by task (new design) ----------
-    // Heute · Nachrichten · Datentresor, then sections: Unterricht (my courses,
-    // Klassenarbeiten, Lerngruppen), Schule, Verwaltung; the profile menu keeps
-    // only what concerns oneself. The links are the server's own (same
-    // permissions): tools are copied into the sections, Lerngruppen is moved;
-    // the original menus stay in the page, hidden (the Kurse sheet and the
-    // search read them).
-    var SCHULE = /^\/(events|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
-    var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpost|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound)(\/|$)/;
-    var MAX_COURSES = 6;
-    var RAIL = window.matchMedia('(min-width: 768px) and (max-width: 1199px)');
-    var RAIL_ICONS = { unterricht: 'fa-graduation-cap', schule: 'fa-building', verwaltung: 'fa-cog' };
+    // ---------- Waiting for the server ----------
+    // api_call (code.js) writes "Einen Moment bitte …" into the page's
+    // message area after half a second, which pushes the page down. The new
+    // design shows a thin bar at the top edge instead (preview.css); the old
+    // design keeps its box.
+    function busy_bar() {
+        if (!document.body || !document.body.classList.contains('ui-preview') || document.querySelector('.pv-busy')) return;
+        var bar = document.createElement('div');
+        bar.className = 'pv-busy';
+        bar.hidden = true;
+        bar.setAttribute('role', 'progressbar');
+        bar.setAttribute('aria-label', 'Wird geladen');
+        document.body.appendChild(bar);
+        var update = function() {
+            var busy = !!document.querySelector('.api_messages .fa-spin');
+            if (bar.hidden === busy) bar.hidden = !busy;
+        };
+        new MutationObserver(update).observe(document.body, { childList: true, subtree: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', busy_bar); else busy_bar();
 
-    // the tablet rail: at most one section open as a panel, level with its
-    // icon and inside the window; a click elsewhere or Escape closes it
-    function rail_panel(sec) {
+    // ---------- Plain tables (pages not yet built for the new design) ----------
+    // A Bootstrap table with one header row: every cell gets its column's
+    // name (data-label). Where the list is narrow (a container query in
+    // preview.css), each row becomes a list row: the first cell as its
+    // title, the others as labelled facts, controls at the end. Matrices
+    // (more than ten columns) scroll sideways with their first column in
+    // place. A table without rows says so instead of showing a bare header.
+    // Tables with a design of their own (pv-…, the library, Kursbuch and
+    // class lists, calendars, dialogs) are left alone.
+    function plain_tables() {
+        if (!document.body || !document.body.classList.contains('ui-preview')) return;
+        var main = document.getElementById('main_container');
+        if (!main || main.dataset.pvTables) return;
+        main.dataset.pvTables = '1';
+        // the library styles its tables itself (preview/bib.js, which may
+        // come later); Kursbuch and class lists are solid pages of their own
+        if (document.body.classList.contains('pv-bib')) return;
+        var OWN = '.fc, .modal, .container-fluid.solid, .lesson_table, .lesson_table_table, .schueler_table, .schueler_table_table, [class*="pv-"]';
+        var busy = function() { return !!document.querySelector('.api_messages .fa-spin'); };
+        var header_row = function(table) {
+            if (table.tHead) return table.tHead.rows.length === 1 ? table.tHead.rows[0] : null;
+            var first = table.tBodies[0] && table.tBodies[0].rows[0];
+            if (first && first.cells.length > 1 && [].every.call(first.cells, function(c) { return c.tagName === 'TH'; })) {
+                first.classList.add('pv-gt-headrow');
+                return first;
+            }
+            return null;
+        };
+        var body_rows = function(table) {
+            var rows = [];
+            [].forEach.call(table.tBodies, function(tb) {
+                [].forEach.call(tb.rows, function(tr) { if (!tr.classList.contains('pv-gt-headrow')) rows.push(tr); });
+            });
+            return rows;
+        };
+        var update = function(table) {
+            var names = table._pv_names;
+            var rows = body_rows(table);
+            rows.forEach(function(tr) {
+                if (tr.dataset.pvGt) return;
+                tr.dataset.pvGt = '1';
+                var col = 0;
+                [].forEach.call(tr.cells, function(td, i) {
+                    if (!td.hasAttribute('data-label')) td.setAttribute('data-label', names[col] || '');
+                    if (i === 0) td.classList.add('pv-gt-first');
+                    if (td.colSpan >= names.length && names.length > 1) td.classList.add('pv-gt-span');
+                    if (td.querySelector('button, .btn, select, input[type=checkbox], input[type=radio]')) td.classList.add('pv-gt-act');
+                    if (td.querySelector('input[type=text], input:not([type]), .input-group, textarea')) td.classList.add('pv-gt-field');
+                    var t = td.textContent.trim();
+                    if (i > 0 && (t === '–' || t === '-' || (t === '' && !td.querySelector('*')))) td.classList.add('pv-gt-none');
+                    col += td.colSpan || 1;
+                });
+            });
+            // empty: only once it stays empty (rows often come a moment later)
+            var wrap = table.parentElement;
+            var shown = rows.filter(function(tr) { return !tr.hidden && tr.style.display !== 'none'; }).length;
+            clearTimeout(table._pv_empty);
+            if (shown > 0) wrap.classList.remove('pv-gt-is-empty');
+            else table._pv_empty = setTimeout(function() {
+                if (!busy() && body_rows(table).filter(function(tr) { return !tr.hidden && tr.style.display !== 'none'; }).length === 0) wrap.classList.add('pv-gt-is-empty');
+            }, 700);
+        };
+        var adopt = function(table) {
+            if (table.dataset.pvGt) { update(table); return; }
+            var own = table.closest(OWN);
+            if (own && main.contains(own)) return;
+            if (table.querySelector('[rowspan]')) return;
+            var head = header_row(table);
+            if (!head || head.cells.length < 2) return;
+            table.dataset.pvGt = '1';
+            table._pv_names = [].map.call(head.cells, function(th) { return th.textContent.trim(); });
+            var wrap = table.parentElement;
+            if (!wrap.classList.contains('table-responsive') || wrap.children.length > 1) {
+                wrap = document.createElement('div');
+                table.parentNode.insertBefore(wrap, table);
+                wrap.appendChild(table);
+            }
+            wrap.classList.add('pv-gt-wrap');
+            table.classList.add('pv-gt', table._pv_names.length > 10 ? 'pv-gt-matrix' : 'pv-gt-list');
+            var note = document.createElement('p');
+            note.className = 'pv-gt-empty-note';
+            note.textContent = 'Keine Einträge.';
+            wrap.appendChild(note);
+            update(table);
+        };
+        var scan = function() { main.querySelectorAll('table.table').forEach(adopt); };
+        var pending = null;
+        new MutationObserver(function() {
+            if (pending) return;
+            pending = setTimeout(function() { pending = null; scan(); }, 50);
+        }).observe(main, { childList: true, subtree: true });
+        scan();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', plain_tables); else plain_tables();
+
+    // ---------- The navigation by task (new design) ----------
+    // Heute, Nachrichten, Datentresor, then one entry each for Unterricht (my
+    // courses), Lerngruppen, Schule (Klassenarbeiten and the school's tools)
+    // and Verwaltung: each opens as a panel beside the sidebar, like the menus.
+    // The profile menu keeps only what concerns oneself. The links are the
+    // server's own (same permissions): tools are copied into the sections,
+    // Lerngruppen is moved; the original menus stay in the page, hidden (the
+    // Unterricht sheet and the search read them). Phones show the sections in
+    // "Mehr" as tiles.
+    var SCHULE = /^\/(tests|events|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
+    var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpost|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound)(\/|$)/;
+    var SECTION_ICONS = { unterricht: 'ti-school', schule: 'ti-building', verwaltung: 'ti-settings' };
+
+    // a section's panel: at most one open, level with its entry, inside the
+    // window (in columns if it is longer than the window is high); a click
+    // elsewhere or Escape closes it
+    function section_panel(sec) {
         document.querySelectorAll('.pv-nav-section.pv-rail-open').forEach(function(open) {
             if (open === sec) return;
             open.classList.remove('pv-rail-open');
@@ -338,22 +476,58 @@
         });
         if (!sec) return;
         var button = sec.querySelector('button.pv-nav-heading');
-        var panel = sec.querySelector('.pv-nav-body');
+        // one panel at a time: an open menu (Lerngruppen, oneself) closes
+        if (window.jQuery) {
+            window.jQuery('.navbar .dropdown-menu.show').each(function() {
+                var t = this.parentElement && this.parentElement.querySelector('[data-toggle="dropdown"]');
+                if (t) window.jQuery(t).dropdown('hide');
+            });
+        }
         sec.classList.add('pv-rail-open');
         button.setAttribute('aria-expanded', 'true');
+        place_section_panel(sec);
+    }
+    function place_section_panel(sec) {
+        var button = sec.querySelector('button.pv-nav-heading');
+        var panel = sec.querySelector('.pv-nav-body');
         var room = window.innerHeight - 24;
+        panel.style.columnCount = '';
+        panel.style.width = '';
+        var lines = panel.querySelectorAll('.pv-nav-sub, .dropdown-divider');
+        lines.forEach(function(line) { line.classList.remove('pv-col-top'); });
+        var columns = Math.min(3, Math.max(1, Math.ceil(panel.scrollHeight / room)));
+        if (columns > 1) {
+            panel.style.columnCount = columns;
+            panel.style.width = (columns * 272) + 'px';
+            // a line between groups that lands at the top of a column
+            // separates nothing there
+            var top_of = panel.getBoundingClientRect().top + (parseFloat(getComputedStyle(panel).paddingTop) || 0);
+            lines.forEach(function(line) {
+                if (line.offsetParent && line.getBoundingClientRect().top - top_of < 12) line.classList.add('pv-col-top');
+            });
+        }
+        var height = Math.min(panel.scrollHeight, room);
         var top = button.getBoundingClientRect().top - 6;
-        top = Math.max(12, Math.min(top, window.innerHeight - 12 - Math.min(panel.scrollHeight, room)));
+        top = Math.max(12, Math.min(top, window.innerHeight - 12 - height));
         panel.style.setProperty('--pv-rail-top', Math.round(top) + 'px');
     }
     document.addEventListener('click', function(e) {
         var open = document.querySelector('.pv-nav-section.pv-rail-open');
-        if (open && !open.contains(e.target)) rail_panel(null);
+        if (open && !open.contains(e.target)) section_panel(null);
     });
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') rail_panel(null);
+        if (e.key === 'Escape') section_panel(null);
     });
-    RAIL.addEventListener('change', function() { rail_panel(null); });
+    // and a menu opening closes an open panel
+    var close_panels_with_menus = function() {
+        if (window.jQuery) window.jQuery(document).on('show.bs.dropdown', function() { section_panel(null); });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', close_panels_with_menus); else close_panels_with_menus();
+    SIDEBAR.addEventListener('change', function() { section_panel(null); });
+    window.addEventListener('resize', function() {
+        var open = document.querySelector('.pv-nav-section.pv-rail-open');
+        if (open) place_section_panel(open);
+    });
 
     function regroup_navigation() {
         var collapse = document.getElementById('navbarTogglerDemo02');
@@ -388,38 +562,62 @@
         var schule = section('schule', 'Schule');
         var verwaltung = section('verwaltung', 'Verwaltung');
 
-        // my courses (Kursbuch), in class order, without team meetings
-        var courses = Array.prototype.slice.call(collapse.querySelectorAll('[aria-labelledby="navbarDropdownKurse"] a.dropdown-item[href]:not([data-meeting])'));
-        var current = courses.filter(function(a) { return !a.closest('.dropdown-menu') || true; });
+        // my courses (Kursbuch), in class order, without team meetings; the
+        // earlier ones (after the divider) folded behind "Früherer Unterricht"
+        var course_menu = collapse.querySelector('[aria-labelledby="navbarDropdownKurse"]');
+        var current = [], earlier = [];
+        if (course_menu) {
+            var past_divider = false;
+            Array.prototype.forEach.call(course_menu.children, function(el) {
+                if (el.classList.contains('dropdown-divider')) { past_divider = true; return; }
+                if (!el.matches('a.dropdown-item[href]:not([data-meeting])')) return;
+                (past_divider ? earlier : current).push(el);
+            });
+        }
         var list = document.createElement('div');
         list.className = 'pv-nav-courses';
-        current.forEach(function(a, i) {
-            var e = entry(a);
-            if (i >= MAX_COURSES) e.classList.add('pv-nav-extra');
-            list.appendChild(e);
+        current.forEach(function(a) {
+            list.appendChild(entry(a));
             seen[a.getAttribute('href')] = true;
         });
-        if (current.length > MAX_COURSES) {
+        if (earlier.length) {
             var more = document.createElement('button');
             more.type = 'button';
-            more.className = 'nav-link pv-nav-entry pv-nav-more';
+            more.className = 'pv-more-groups pv-more-lessons';
             more.setAttribute('aria-expanded', 'false');
-            more.textContent = 'Alle Kurse (' + current.length + ')';
-            more.addEventListener('click', function() {
-                var open = list.classList.toggle('pv-nav-all');
-                more.setAttribute('aria-expanded', open ? 'true' : 'false');
+            more.textContent = 'Früherer Unterricht (' + earlier.length + ')';
+            var box = document.createElement('div');
+            box.className = 'pv-more-lessons-list';
+            box.hidden = true;
+            earlier.forEach(function(a) {
+                box.appendChild(entry(a));
+                seen[a.getAttribute('href')] = true;
             });
+            more.addEventListener('click', function() {
+                box.hidden = !box.hidden;
+                more.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
+                var sec = more.closest('.pv-nav-section.pv-rail-open');
+                if (sec) place_section_panel(sec);
+                if (!box.hidden) more.scrollIntoView({ block: 'nearest' });
+            });
+            if (current.length) {
+                var d = document.createElement('div');
+                d.className = 'dropdown-divider';
+                list.appendChild(d);
+            }
             list.appendChild(more);
+            list.appendChild(box);
         }
-        if (current.length) unterricht.appendChild(list);
-        links.forEach(function(a) {
-            var href = a.getAttribute('href') || '';
-            if (seen[href] || a.closest('[aria-labelledby="navbarDropdownKurse"], [aria-labelledby="navbarDropdownKlassen"]')) return;
-            if (href === '/tests') { unterricht.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
-        });
-        // Lerngruppen: the whole menu moves (own groups first, the rest folded)
+        if (current.length || earlier.length) unterricht.appendChild(list);
+        // Lerngruppen: the whole menu moves, as an entry of its own (own
+        // groups first, the rest folded)
         var groups = document.getElementById('navbarDropdownKlassen');
-        if (groups) unterricht.appendChild(groups.closest('.nav-item'));
+        var groups_item = groups ? groups.closest('.nav-item') : null;
+        if (groups) {
+            groups_item.classList.add('pv-nav-groups');
+            var gi = groups.querySelector('.icon');
+            if (gi) gi.innerHTML = "<i class='ti ti-users-group'></i>";
+        }
         links.forEach(function(a) {
             var href = a.getAttribute('href') || '';
             if (seen[href] || a.closest('[aria-labelledby="navbarDropdownKurse"], [aria-labelledby="navbarDropdownKlassen"]')) return;
@@ -434,7 +632,7 @@
         // sections before the search / profile at the bottom
         var anchor = main_nav.querySelector('.nav-quick-search-item') || main_nav.querySelector('.nav-item.dropdown:last-child');
         // "Schule": the most used first, the seasonal ones last
-        var ORDER = ['/events', '/polls', '/bibliothek', '/mailing_lists', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
+        var ORDER = ['/events', '/tests', '/polls', '/bibliothek', '/mailing_lists', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
         var rank = function(a) {
             var href = a.getAttribute('href') || '';
             for (var i = 0; i < ORDER.length; i++) if (href.indexOf(ORDER[i]) === 0) return i;
@@ -446,7 +644,7 @@
         // sub-groups of the larger sections, in this order
         var SUB = {
             schule: [
-                ['Planen & Abstimmen', /^\/(events|polls|mailing_lists|groups|zufallsgruppen|kurslisten)/],
+                ['Planen & Abstimmen', /^\/(events|tests|polls|mailing_lists|groups|zufallsgruppen|kurslisten)/],
                 ['Angebote', /^\/(bibliothek|angebote|lehrbuchverein|mittagessen|klassenmemory_assign|salzh)/],
                 ['Projekte & Aktionen', /^\/(projekttage|pk5|lab8|lab9|up)(\/|_|$)/],
                 ['Gremien', /^\/(gev|agr_app)|^https:\/\/sv\./],
@@ -482,23 +680,31 @@
                 sec.appendChild(a);
             });
         });
-        // the sections fold: Unterricht open, the others closed unless the
-        // current page is in them; one's choice is remembered in this browser
-        var folds = {};
-        try { folds = JSON.parse(localStorage.getItem('pv_nav_folds') || '{}'); } catch (e) {}
+        // each section one entry; it is marked when the current page is in it
         var here_path = location.pathname.replace(/\/$/, '') || '/';
-        [unterricht, schule, verwaltung].forEach(function(sec) {
+        var first_section = true;
+        [unterricht, 'groups', schule, verwaltung].forEach(function(sec) {
+            if (sec === 'groups') {
+                if (!groups_item) return;
+                main_nav.insertBefore(groups_item, anchor);
+                if (first_section) groups_item.classList.add('pv-nav-first');
+                first_section = false;
+                var in_groups = Array.prototype.some.call(groups_item.querySelectorAll('.dropdown-menu a[href]'), function(a) {
+                    return (a.getAttribute('href') || '').replace(/\/$/, '') === here_path;
+                });
+                if (in_groups) groups.classList.add('pv-here');
+                return;
+            }
             if (sec.children.length <= 1) return;
             var key = sec.dataset.section;
             var head = sec.querySelector('.pv-nav-heading');
             var button = document.createElement('button');
             button.type = 'button';
             button.className = 'pv-nav-heading';
-            // the icon shows only in the tablet rail (preview.css), the name
-            // everywhere else
+            button.setAttribute('aria-haspopup', 'true');
             var icon = document.createElement('div');
             icon.className = 'icon';
-            icon.innerHTML = "<i class='fa " + (RAIL_ICONS[key] || 'fa-folder-o') + "'></i>";
+            icon.innerHTML = "<i class='ti " + (SECTION_ICONS[key] || 'ti-folder') + "'></i>";
             var name = document.createElement('span');
             name.className = 'label';
             name.textContent = head.textContent;
@@ -513,24 +719,16 @@
             var contains_here = Array.prototype.some.call(body.querySelectorAll('a[href]'), function(a) {
                 return (a.getAttribute('href') || '').replace(/\/$/, '') === here_path;
             });
-            var open = key in folds ? folds[key] : (key === 'unterricht');
-            if (contains_here) open = true;
-            body.hidden = !open;
-            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (contains_here) button.classList.add('pv-here');
+            button.setAttribute('aria-expanded', 'false');
             button.addEventListener('click', function(e) {
                 e.preventDefault();
-                e.stopPropagation();
-                // the tablet rail: the section opens as a panel beside it,
-                // without touching the remembered folds of the sidebar
-                if (RAIL.matches) {
-                    rail_panel(sec.classList.contains('pv-rail-open') ? null : sec);
-                    return;
-                }
-                body.hidden = !body.hidden;
-                button.setAttribute('aria-expanded', body.hidden ? 'false' : 'true');
-                folds[key] = !body.hidden;
-                try { localStorage.setItem('pv_nav_folds', JSON.stringify(folds)); } catch (err) {}
+                // phones show every section open ("Mehr")
+                if (!SIDEBAR.matches) return;
+                section_panel(sec.classList.contains('pv-rail-open') ? null : sec);
             });
+            if (first_section) sec.classList.add('pv-nav-first');
+            first_section = false;
             main_nav.insertBefore(sec, anchor);
         });
         // the profile menu: its moved tools hidden, empty dividers too
@@ -564,7 +762,7 @@
 
     // The sidebar keeps its place across page loads (it is longer than the
     // window for many): its scroll position per tab, and the current entry
-    // always in view; opened "Alle Kurse" / "Weitere Lerngruppen" stay open.
+    // always in view; opened "Früherer Unterricht" / "Weitere Lerngruppen" stay open.
     function keep_sidebar_place() {
         var nav = document.querySelector('.ui-preview nav.navbar');
         if (!nav || !SIDEBAR.matches) return;
@@ -572,8 +770,8 @@
         var KEY = 'pv_sidebar';
         var state = {};
         try { state = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch (e) {}
-        if (state.courses) { var c = nav.querySelector('.pv-nav-courses'); var m = nav.querySelector('.pv-nav-more'); if (c && m) { c.classList.add('pv-nav-all'); m.setAttribute('aria-expanded', 'true'); } }
-        if (state.groups) { var t = nav.querySelector('.pv-more-groups'); var b = nav.querySelector('.pv-more-groups-list'); if (t && b) { b.hidden = false; t.setAttribute('aria-expanded', 'true'); } }
+        if (state.courses) { var m = nav.querySelector('.pv-more-lessons'); var c = nav.querySelector('.pv-more-lessons-list'); if (c && m) { c.hidden = false; m.setAttribute('aria-expanded', 'true'); } }
+        if (state.groups) { var t = nav.querySelector('[aria-labelledby="navbarDropdownKlassen"] .pv-more-groups'); var b = nav.querySelector('.pv-more-groups-list'); if (t && b) { b.hidden = false; t.setAttribute('aria-expanded', 'true'); } }
         if (typeof state.top === 'number') nav.scrollTop = state.top;
         var active = nav.querySelector('.pv-active');
         if (active) {
@@ -584,8 +782,8 @@
             try {
                 sessionStorage.setItem(KEY, JSON.stringify({
                     top: nav.scrollTop,
-                    courses: !!nav.querySelector('.pv-nav-courses.pv-nav-all'),
-                    groups: !!nav.querySelector('.pv-more-groups[aria-expanded="true"]'),
+                    courses: !!nav.querySelector('.pv-more-lessons[aria-expanded="true"]'),
+                    groups: !!nav.querySelector('[aria-labelledby="navbarDropdownKlassen"] .pv-more-groups[aria-expanded="true"]'),
                 }));
             } catch (e) {}
         };

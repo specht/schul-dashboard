@@ -48,6 +48,13 @@ hierher übernehmen, wenn sie angegangen werden.
 
 ### Fehler
 
+- [ ] Datentresor ohne Zeugnislisten (außerhalb der Zeugniszeit,
+      `determine_zeugnislisten` kehrt früh zurück): Die Zeugnisübersicht zeigt
+      nur ihre Überschrift, der Zeugnislisten-Teil der Zeugnisformulare bleibt
+      leer, ein Klick auf eine Klasse im Zeugnisdruck bricht ab – jeweils mit
+      einem JavaScript-Fehler (`zeugnisliste_for_klasse` ist leer). Das neue
+      Design sagt stattdessen, dass es gerade keine Zeugnislisten gibt; das
+      alte Design sollte das auch.
 - [ ] Externe Nutzer:innen hinzufügen: Steht statt einer E-Mail-Adresse etwas
       anderes im Feld (z. B. ein Gruppenname wie „Eltern 10a“), endet
       `/api/add_external_users` mit HTTP 500 (`Mail::AddressList` in
@@ -57,6 +64,11 @@ hierher übernehmen, wenn sie angegangen werden.
       Textfeld den Fokus verliert (`change`), vorher bleibt „Absenden“
       deaktiviert. Besser auf `input` reagieren (`_template.html`,
       `textarea.change(…)`).
+- [ ] Klassenmemory, Hall of Fame: Der Server zählt die Klassen 11 und 12
+      als Stufe „OS“ (`/api/get_recognize_hall_of_fame`), die Seite bildet
+      ihre Spalten aber als „11“ und „12“ – für die Oberstufe steht deshalb
+      immer „–“, obwohl die Erkannten in „Gesamt“ mitzählen. Außerdem prüft
+      der Server `!@@user_info[:teacher]` statt der erkannten Person.
 - [ ] Klick auf das Icon in einem Button liefert `undefined`: Handler lesen
       `$(e.target).data(…)` (rund 90 Stellen) statt `e.currentTarget`,
       z. B. `.bu-launch-poll` (`_template.html`), `.btn-impersonate`
@@ -210,6 +222,48 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] Einheitliche Schreibweisen: „Nutzer“/„Nutzer:innen“, „...“/„…“,
       Fehlermeldungen
 - [ ] `data-testid` an Navigation, Template-Modals und Haupt-Buttons
+
+### Neues Design: Seiten, die noch fehlen (Durchsicht 19.11.2026)
+
+Alle Seiten mit Beispieldaten in drei Breiten (Handy, Tablet, Desktop)
+fotografiert und gegen `doc/Gestaltung.md` geprüft.
+
+- [x] Gemeinsam (erledigt): Fläche für `container-fluid white`, einfache
+      Tabellen als Listenzeilen und leere Tabellen mit Satz
+      (`plain_tables`), schwebende Fehlermeldungen unten neben der Seitenleiste,
+      keine zweite „Karteikarte“, ruhiger Link zur Übersicht
+- [ ] Noch ohne Fläche (bewusst „solid“ oder Gerät): `inactive_sus`,
+      `sus_ohne_kurse`, `unterrichtsmails` (eigene Seiten mit Titel und
+      Fläche wären besser), `aula_progress`, `aula_light`
+- [ ] Kursbuch: das Schließen-Kreuz der schwebenden Fehlermeldung
+      reagiert nicht
+- [ ] `lab8`: zwei Trennlinien zwischen Feldern und Bearbeitungshistorie
+- [ ] Viel genutzt, noch altes Design: `bookings` (am Handy kaputt: Titel
+      bricht im Wort, Buchungen abgeschnitten), `techpost`, `jitsi`
+      (alle, „Sie“, Hinweiskästen), `groups`, `prepare_vote`,
+      `upload_images`, `upload_files`, `email_overview`,
+      `show_login_codes`, `kurslisten`, `gev`
+- [ ] Verwaltung, noch altes Design: `admin`, `stats`, `email_accounts`,
+      `postfaecher`, `inactive_sus`, `sus_ohne_kurse`, `dienste`,
+      `techpostadmin`, `manage_calendar`, `manage_test_calendar`,
+      `manage_monitor` („Sie“), `show_all_login_codes`, `lehrbuchverein`
+- [ ] Zeitweise genutzt: Lab 8/9, PK5, Projekttage (Karteikarten und
+      Übersichten), `anmeldung`/`anmeldungen`, `up`
+- [ ] Kaputt: `agr_markup` (Knopfraster ragt rechts aus der Seite, scrollt
+      seitlich), `aula_light` (`padding: 1vh 80vh`, scrollt seitlich),
+      `bib_scan_isbn` (JS-Fehler ohne Buch in der Adresse, `data.book`
+      ungeprüft)
+- [ ] Kleinigkeiten auf fast fertigen Seiten: `manage_news` (»Artikel
+      schreiben« nicht in der Titelzeile), `angebote` (Linie unter
+      »Meine …« zu kurz, Suche über »Meine …«), `tests` (Tablet:
+      »Eintragen« rutscht unter den Titel), `directory` (Sitzplan-Hinweis
+      mit „Sie“, doppelt), `passwoerter` (Aktionen in Linkfarbe),
+      `hilfe`/`impressum` (Lesebreite höchstens 980 px), `profil` (leere
+      Tabelle »Schulinterne Links«), `timetable` (überlappende Stunden
+      am Tablet abgeschnitten)
+- [ ] Nicht geprüft (im Teststack nicht erreichbar): Bibliothek-Verwaltung,
+      Zeugnisse, Datentresor, Sitzplan-Seiten, Mittagessen,
+      Zufallsgruppen, AGR-App
 
 ### Aufräumen
 

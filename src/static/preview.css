@@ -102,7 +102,7 @@ html {
 }
 
 /* Fonts of the new design (include/fonts-v2): very readable text, a font
-   with character for headings. Four pairs to choose from in the profile
+   with character for headings. Five pairs to choose from in the profile
    (u.ui_font, body class pv-font-…; the old design keeps its own choice),
    every one with accents and Greek (also polytonic). "Klar" is the default:
    Atkinson and Bricolage have no Greek, Fira Sans fills in behind them. The
@@ -127,8 +127,14 @@ html {
 
 .ui-preview.pv-font-freundlich,
 .ui-preview .pv-font-tile[data-font='freundlich'] {
-    --pv-text: 'Ubuntu Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    --pv-display: 'M PLUS Rounded 1c', 'Ubuntu Sans', system-ui, sans-serif;
+    --pv-text: 'Manrope', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'M PLUS Rounded 1c', 'Manrope', 'Fira Sans Fallback Display', system-ui, sans-serif;
+}
+
+.ui-preview.pv-font-feder,
+.ui-preview .pv-font-tile[data-font='feder'] {
+    --pv-text: 'Alegreya Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'Alegreya', 'Alegreya Sans', Georgia, serif;
 }
 
 .ui-preview {
@@ -221,9 +227,16 @@ html {
     line-height: 1.25;
 }
 
-/* many items in a menu share one icon (all courses): keep it quiet */
+/* menu icons in the quiet grey; where many items share one icon (courses,
+   Lerngruppen) a little quieter still. Never dimmed: the own picture and
+   the icons of the personal menu, each of them different. */
 .ui-preview .navbar .dropdown-item.nav-icon .icon {
     color: var(--pv-muted);
+}
+
+.ui-preview .navbar [aria-labelledby='navbarDropdownKlassen'] .dropdown-item.nav-icon .icon,
+.ui-preview .navbar [aria-labelledby='navbarDropdownKurse'] .dropdown-item.nav-icon .icon,
+.ui-preview .navbar .pv-nav-courses .pv-nav-entry .icon {
     opacity: 0.6;
 }
 
@@ -775,7 +788,9 @@ html {
     color: var(--pv-muted);
 }
 
-.pv-ag-card.pv-ag-off .pv-ag-title b {
+/* cancelled: the title crossed out – unless the server marked what changed
+   itself (<s>, pv-diff in timetable.html): then only that */
+.pv-ag-card.pv-ag-off .pv-ag-title b:not(.pv-diff) {
     text-decoration: line-through;
 }
 
@@ -1953,81 +1968,6 @@ html {
     }
 }
 
-/* the sections in the rail: one icon each; a tap opens the section as a
-   panel beside the rail, like the menus (preview.js, rail_panel) */
-.ui-preview .navbar button.pv-nav-heading > .icon {
-    display: none;
-}
-
-@media (min-width: 768px) and (max-width: 1199px) {
-    .ui-preview .navbar .pv-nav-section {
-        margin-top: 2px !important;
-    }
-
-    .ui-preview .navbar .pv-nav-section:first-of-type {
-        margin-top: 10px !important;
-        padding-top: 8px;
-        border-top: 1px solid var(--pv-line);
-    }
-
-    .ui-preview .navbar button.pv-nav-heading {
-        justify-content: center;
-        padding: 10px 0;
-        border-radius: 10px;
-        color: var(--pv-ink);
-    }
-
-    .ui-preview .navbar button.pv-nav-heading > .label,
-    .ui-preview .navbar button.pv-nav-heading::after {
-        display: none;
-    }
-
-    .ui-preview .navbar button.pv-nav-heading > .icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        font-size: 18px;
-    }
-
-    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading {
-        background: var(--pv-hover);
-    }
-
-    .ui-preview .navbar .pv-nav-section > .pv-nav-body {
-        display: none !important;
-    }
-
-    .ui-preview .navbar .pv-nav-section.pv-rail-open > .pv-nav-body {
-        display: block !important;
-        position: fixed;
-        left: calc(var(--pv-sidebar) + 6px);
-        top: var(--pv-rail-top, 12px);
-        width: 272px;
-        max-height: calc(100vh - 24px);
-        overflow-y: auto;
-        padding: 6px;
-        background: var(--pv-surface);
-        border: 1px solid var(--pv-line);
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
-        z-index: 1055;
-    }
-
-    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-sub {
-        padding-left: 42px;
-    }
-
-    /* Lerngruppen in the panel: a normal entry, its menu beside the panel */
-    .ui-preview .navbar .pv-rail-open > .pv-nav-body .nav-item > .nav-link {
-        font-size: 0.95rem;
-        justify-content: flex-start;
-        padding: 7px 10px !important;
-        gap: 10px;
-    }
-}
-
 /* ---------- Kursbuch (lessons.html): the side pane ----------
    styles.css fixes the pane to the right with 25 % of the window, sized
    for today's top bar; next to the sidebar that is more than its column
@@ -2196,13 +2136,14 @@ html {
     /* the shade for the text on the backdrop: only behind the day and its
        line (as on the desktop's week title), not across the whole top – a
        light shade there washed the scheme's colours out */
-    /* its edge level with the plan button and the day tiles, the text level
-       with the button's text */
+    /* with a shade: its edge level with the plan button and the day tiles,
+       the text inset; without one (--band-scrim-a 0): no inset, the text
+       itself level with them */
     .pv-band-text {
         width: fit-content;
         max-width: 100%;
         margin: 0;
-        padding: 6px 12px 8px;
+        padding: 6px calc(12px * min(1, var(--band-scrim-a, 1) * 100)) 8px;
         border-radius: 16px;
         background: rgba(var(--band-scrim), var(--band-scrim-a));
     }
@@ -3347,16 +3288,25 @@ body.ui-preview:has(.container-fluid.solid)::before {
     color: var(--pv-muted);
 }
 
-/* "copied": a check in the accent over the button (code: btn-clipboard-check) */
+/* "copied": a green check over the button (code: btn-clipboard-check) –
+   green says it worked, the accent would read as a warning in warm schemes */
 .ui-preview .btn-clipboard-check {
     position: absolute;
     inset: -1px;
     display: grid;
     place-items: center;
     border-radius: inherit;
-    background: var(--acc-soft) !important;
-    color: var(--acc-text) !important;
+    background: color-mix(in srgb, #2f7d32 14%, var(--pv-surface)) !important;
+    color: #2f7d32 !important;
     border: 0 !important;
+    /* (an icon rule elsewhere gives it padding-top: 7px – off centre) */
+    padding: 0 !important;
+    line-height: 1;
+}
+
+.ui-preview.dark .btn-clipboard-check {
+    background: color-mix(in srgb, #4caf50 24%, var(--pv-surface)) !important;
+    color: #8fdc96 !important;
 }
 
 /* disabled main buttons (e.g. "Code zusenden" before an address): quiet,
@@ -3568,8 +3518,11 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 .pv-week-row.pv-ag-off .pv-week-title {
-    text-decoration: line-through;
     color: var(--pv-muted);
+}
+
+.pv-week-row.pv-ag-off .pv-week-title:not(.pv-diff) {
+    text-decoration: line-through;
 }
 
 /* the "Kurse" sheet: its links as list rows */
@@ -3682,36 +3635,40 @@ body.ui-preview:has(.container-fluid.solid)::before {
 }
 
 /* a double lesson: two single chips tied together – exactly twice the
-   height, a notch left and right in the middle and a faint seam */
+   height, a notch left and right in the middle and a perforation between
+   them: real holes (the mask), showing what lies behind like the notches,
+   on every subject colour. Four quarters with the notches, and the line of
+   the perforation: paper and holes in turn. */
 .pv-week-row.pv-week-double .pv-ag-subj {
     height: 56px;
 }
 
 .pv-week-row.pv-week-double .pv-ag-subj,
 .pv-ag-card.pv-ag-double .pv-ag-subj {
+    --pv-perf: 1px;
+    /* paper and holes fit the chip exactly (it is 40 or 44 px wide, the line
+       runs between the notches): paper at both ends, five or six holes */
+    --pv-perf-paper: 2.5px;
+    --pv-perf-hole: 3.8px;
     position: relative;
     place-items: start center;
     padding-top: 8px;
     -webkit-mask:
-        radial-gradient(circle 3px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
-        radial-gradient(circle 3px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
+        radial-gradient(circle 3px at 0 calc(100% + var(--pv-perf)), #0000 96%, #000) left top / 51% calc(50% - var(--pv-perf)) no-repeat,
+        radial-gradient(circle 3px at 100% calc(100% + var(--pv-perf)), #0000 96%, #000) right top / 51% calc(50% - var(--pv-perf)) no-repeat,
+        radial-gradient(circle 3px at 0 calc(0% - var(--pv-perf)), #0000 96%, #000) left bottom / 51% calc(50% - var(--pv-perf)) no-repeat,
+        radial-gradient(circle 3px at 100% calc(0% - var(--pv-perf)), #0000 96%, #000) right bottom / 51% calc(50% - var(--pv-perf)) no-repeat,
+        repeating-linear-gradient(90deg, #000 0 var(--pv-perf-paper), #0000 var(--pv-perf-paper) calc(var(--pv-perf-paper) + var(--pv-perf-hole))) center / calc(100% - 6px) calc(2 * var(--pv-perf) + 0.5px) no-repeat;
     mask:
-        radial-gradient(circle 3px at 0 50%, #0000 96%, #000) left / 51% 100% no-repeat,
-        radial-gradient(circle 3px at 100% 50%, #0000 96%, #000) right / 51% 100% no-repeat;
-}
-
-.pv-week-row.pv-week-double .pv-ag-subj::after,
-.pv-ag-card.pv-ag-double .pv-ag-subj::after {
-    content: "";
-    position: absolute;
-    left: 4px;
-    right: 4px;
-    top: 50%;
-    border-top: 1px dashed currentColor;
-    opacity: 0.45;
+        radial-gradient(circle 3px at 0 calc(100% + var(--pv-perf)), #0000 96%, #000) left top / 51% calc(50% - var(--pv-perf)) no-repeat,
+        radial-gradient(circle 3px at 100% calc(100% + var(--pv-perf)), #0000 96%, #000) right top / 51% calc(50% - var(--pv-perf)) no-repeat,
+        radial-gradient(circle 3px at 0 calc(0% - var(--pv-perf)), #0000 96%, #000) left bottom / 51% calc(50% - var(--pv-perf)) no-repeat,
+        radial-gradient(circle 3px at 100% calc(0% - var(--pv-perf)), #0000 96%, #000) right bottom / 51% calc(50% - var(--pv-perf)) no-repeat,
+        repeating-linear-gradient(90deg, #000 0 var(--pv-perf-paper), #0000 var(--pv-perf-paper) calc(var(--pv-perf-paper) + var(--pv-perf-hole))) center / calc(100% - 6px) calc(2 * var(--pv-perf) + 0.5px) no-repeat;
 }
 
 .pv-ag-card.pv-ag-double .pv-ag-subj {
+    --pv-perf-hole: 3.42px;
     height: 76px;
     padding-top: 12px;
 }
@@ -3925,19 +3882,6 @@ body.ui-preview:has(.container-fluid.solid)::before {
     position: static;
 }
 
-.ui-preview .pv-nav-courses .pv-nav-extra {
-    display: none !important;
-}
-
-.ui-preview .pv-nav-courses.pv-nav-all .pv-nav-extra {
-    display: flex !important;
-}
-
-.ui-preview .navbar .pv-nav-more {
-    color: var(--acc-text) !important;
-    font-weight: 600;
-}
-
 /* Lerngruppen inside "Unterricht" */
 .ui-preview .pv-nav-section .nav-item {
     margin: 0 !important;
@@ -4014,9 +3958,6 @@ body.ui-preview:has(.container-fluid.solid)::before {
     transition: transform 0.15s;
 }
 
-.ui-preview .navbar button.pv-nav-heading[aria-expanded='true']::after {
-    transform: rotate(180deg);
-}
 
 .ui-preview .pv-nav-sub {
     padding: 8px 10px 2px 42px;
@@ -4044,8 +3985,7 @@ body.ui-preview:has(.container-fluid.solid)::before {
 
 /* the section headings: no focus frame after a click */
 .ui-preview .pv-nav-heading:focus:not(:focus-visible),
-.ui-preview .pv-more-groups:focus:not(:focus-visible),
-.ui-preview .pv-nav-more:focus:not(:focus-visible) {
+.ui-preview .pv-more-groups:focus:not(:focus-visible) {
     outline: none;
     box-shadow: none;
 }
@@ -4977,6 +4917,27 @@ body.ui-preview:has(.container-fluid.solid)::before {
         justify-content: flex-start;
         font-size: 0.68rem;
         opacity: 0.8;
+    }
+
+    /* one line with every font, the three parts spread from left to right;
+       the school's name gives way (…) */
+    .ui-preview .pv-nav-foot .pv-legal {
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        column-gap: 10px !important;
+        font-size: 0.62rem !important;
+        white-space: nowrap;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal > * {
+        flex: none;
+    }
+
+    .ui-preview .pv-nav-foot .pv-legal > :first-child {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 
@@ -6135,4 +6096,432 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .ui-preview .note-editor .note-btn-group.note-fontname,
 .ui-preview .note-editor .note-btn-group.note-fontsize {
     display: none !important;
+}
+
+/* ---------- The sidebar's sections (preview.js, regroup_navigation) ----------
+   Unterricht, Lerngruppen, Schule, Verwaltung: one entry each, like the
+   other entries; a click opens the section as a panel beside the sidebar
+   (in the tablet rail: only the icon). Phones show them as tiles in "Mehr". */
+@media (max-width: 767px) {
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        display: none;
+    }
+}
+
+@media (min-width: 768px) {
+    .ui-preview .navbar .pv-nav-section {
+        margin: 0 !important;
+    }
+
+    /* a line between the pages and the sections */
+    .ui-preview .navbar .navbar-nav > .pv-nav-first {
+        margin-top: 8px !important;
+        padding-top: 8px !important;
+        border-top: 1px solid var(--pv-line) !important;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 9px;
+        font: inherit;
+        line-height: 1.4;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--pv-ink);
+        white-space: nowrap;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        position: static;
+        display: flex;
+        align-items: center;
+        flex: none;
+        width: 22px;
+        height: 1.4em;
+        margin: 0;
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .navbar button.pv-nav-heading::after {
+        content: "\ea61";
+        align-self: flex-start;
+        margin-top: 0.17em;
+        font-size: 1.05em;
+        color: var(--pv-muted);
+        transition: none;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading {
+        background: var(--pv-hover);
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > button.pv-nav-heading::after {
+        color: var(--pv-ink);
+    }
+
+    /* the current page lies in the section */
+    .ui-preview .navbar button.pv-nav-heading.pv-here,
+    .ui-preview .navbar .nav-link.pv-here {
+        color: var(--acc-text) !important;
+        font-weight: 700;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading.pv-here > .icon,
+    .ui-preview .navbar .nav-link.pv-here .icon {
+        color: var(--acc-text);
+    }
+
+    .ui-preview .navbar .pv-nav-section > .pv-nav-body {
+        display: none !important;
+    }
+
+    .ui-preview .navbar .pv-nav-section.pv-rail-open > .pv-nav-body {
+        display: block !important;
+        position: fixed;
+        left: calc(var(--pv-sidebar) + 6px);
+        top: var(--pv-rail-top, 12px);
+        width: 272px;
+        max-width: calc(100vw - var(--pv-sidebar) - 24px);
+        max-height: calc(100vh - 24px);
+        overflow-y: auto;
+        column-gap: 4px;
+        padding: 6px;
+        background: var(--pv-surface);
+        border: 1px solid var(--pv-line);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+        z-index: 1055;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body > *,
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-courses > * {
+        break-inside: avoid;
+    }
+
+    /* the groups of a section: a line between them, as in the menus */
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-nav-sub {
+        height: 1px;
+        margin: 6px -6px;
+        padding: 0;
+        font-size: 0;
+        background: var(--pv-line);
+        break-after: avoid;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body > .pv-nav-sub:first-child,
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-col-top {
+        display: none;
+    }
+
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .dropdown-divider {
+        margin: 6px -6px;
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .navbar .pv-more-lessons {
+        padding: 7px 10px;
+        border-radius: 9px;
+        font-size: 0.95rem;
+    }
+
+    .ui-preview .navbar .pv-more-lessons:hover {
+        background: var(--pv-hover);
+    }
+}
+
+/* the tablet rail: the sections as icons too */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .navbar button.pv-nav-heading {
+        justify-content: center;
+        padding: 10px 0;
+        border-radius: 10px;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .label,
+    .ui-preview .navbar button.pv-nav-heading::after {
+        display: none;
+    }
+
+    .ui-preview .navbar button.pv-nav-heading > .icon {
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        font-size: 18px;
+    }
+}
+
+/* the lines in the sidebar's menus and panels: across the whole width */
+@media (min-width: 768px) {
+    .ui-preview .navbar .dropdown-menu > .dropdown-divider,
+    .ui-preview .navbar .navbar-collapse .dropdown-menu > .dropdown-divider {
+        margin: 6px -6px;
+        border-top: 1px solid var(--pv-line);
+    }
+}
+
+/* "Weitere Lerngruppen" in the Unterricht sheet: folded, a row like the
+   group names, the chevron at the right */
+.ui-preview .pv-link-sheet .pv-sheet-fold {
+    min-height: 48px;
+    margin-top: 6px;
+    padding: 10px 6px;
+    border-radius: 10px;
+    font-size: 1rem;
+}
+
+.ui-preview .pv-link-sheet .pv-sheet-fold:hover {
+    background: var(--pv-hover);
+}
+
+/* ---------- Waiting for the server (preview.js, busy_bar) ----------
+   No "Einen Moment bitte" box in the page: a thin bar runs along the top
+   edge while a request takes longer than half a second. */
+.ui-preview .api_messages:has(.fa-spin) {
+    display: none !important;
+}
+
+.pv-busy {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100003;
+    height: 4px;
+    overflow: hidden;
+    pointer-events: none;
+    /* on its own surface: an accent bar alone vanishes on a backdrop of the
+       same colour (an orange scheme on an orange backdrop) */
+    background: color-mix(in srgb, var(--acc, #0d60ae) 14%, var(--pv-surface, #fff));
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.pv-busy::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 40%;
+    border-radius: 0 3px 3px 0;
+    background: var(--acc, #0d60ae);
+    animation: pv-busy-run 1.1s ease-in-out infinite;
+}
+
+@keyframes pv-busy-run {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pv-busy::before {
+        width: 100%;
+        animation: none;
+        opacity: 0.6;
+    }
+}
+
+/* ---------- Pages not yet built for the new design ----------
+   What helps many of them at once, until each gets its own design. */
+
+/* pages in a full-width white strip (.container-fluid.white): a panel like
+   every other page, full width (they are tables and overviews). The solid
+   pages (Kursbuch, class lists) stay surfaces of their own. */
+.ui-preview #main_container > .container-fluid.white:not(.solid) {
+    width: auto;
+    margin: 24px 24px 48px;
+    padding: 18px 20px 20px;
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.14);
+}
+
+@media (max-width: 767px) {
+    .ui-preview #main_container > .container-fluid.white:not(.solid) {
+        margin: 12px 12px 24px;
+        padding: 14px;
+    }
+}
+
+/* the old project card (Lab 8/9, PK5, Projekttage): no second card in the
+   panel, and the way to the overview a calm button above the text */
+.ui-preview .karteikarte {
+    padding: 0;
+    margin-bottom: 0;
+    border: 0;
+    background: transparent !important;
+}
+
+.ui-preview #main_container a.btn-success.pull-right[href$="_overview"] {
+    float: none !important;
+    display: inline-flex;
+    margin: 0 0 12px !important;
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* error and success messages of api_call where they float over the page
+   (.api_messages.overlay, the library's): a calm card at the bottom of the
+   content (above the tab bar on phones, beside the sidebar on larger
+   screens), never over the page's title and tabs */
+.ui-preview .api_messages.overlay,
+.ui-preview.pv-bib .api_messages {
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: 640px;
+    margin: 0 auto;
+    overflow: hidden;
+    border: 0;
+    border-radius: 14px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.22);
+}
+
+@media (min-width: 768px) {
+    .ui-preview .api_messages.overlay,
+    .ui-preview.pv-bib .api_messages {
+        bottom: 24px;
+        left: calc(var(--pv-sidebar) + 24px);
+        right: 24px;
+    }
+}
+
+.ui-preview .api_messages .bg-light {
+    background: transparent !important;
+}
+
+.ui-preview .api_messages .text-danger {
+    color: #b42318 !important;
+    font-weight: 600;
+}
+
+.ui-preview.dark .api_messages .text-danger {
+    color: #ff8f8f !important;
+}
+
+.ui-preview .api_messages > button {
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--pv-muted) !important;
+}
+
+.ui-preview .api_messages > button .fa-times::before {
+    content: "\eb55";
+    font-family: "tabler-icons";
+}
+
+/* plain tables (preview.js, plain_tables): never wider than the page, an
+   empty one says so */
+.ui-preview .pv-gt-wrap {
+    container-type: inline-size;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.ui-preview .pv-gt-wrap > table.pv-gt {
+    margin-bottom: 0;
+}
+
+.ui-preview .pv-gt-empty-note {
+    display: none;
+    margin: 6px 0 14px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-gt-wrap.pv-gt-is-empty > table {
+    display: none !important;
+}
+
+.ui-preview .pv-gt-wrap.pv-gt-is-empty > .pv-gt-empty-note {
+    display: block;
+}
+
+/* matrices (one column per day …): the first column stays in place */
+.ui-preview table.pv-gt-matrix tr > :first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--pv-surface);
+}
+
+/* narrow lists: each row a list row */
+@container (max-width: 620px) {
+    .ui-preview table.pv-gt-list,
+    .ui-preview table.pv-gt-list > tbody {
+        display: block !important;
+        width: auto !important;
+    }
+
+    .ui-preview table.pv-gt-list > thead,
+    .ui-preview table.pv-gt-list tr.pv-gt-headrow {
+        display: none !important;
+    }
+
+    .ui-preview table.pv-gt-list > tbody > tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 14px;
+        padding: 10px 0;
+        border-top: 1px solid var(--pv-line);
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .ui-preview table.pv-gt-list > tbody > tr[hidden] {
+        display: none;
+    }
+
+    .ui-preview table.pv-gt-list > tbody > tr > td,
+    .ui-preview table.pv-gt-list > tbody > tr > th {
+        display: block;
+        max-width: 100%;
+        padding: 0;
+        border: 0 !important;
+        background: transparent !important;
+        color: var(--pv-muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-first,
+    .ui-preview table.pv-gt-list td.pv-gt-span {
+        flex: 1 0 100%;
+        color: var(--pv-ink);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-none {
+        display: none;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-field {
+        flex: 1 0 100%;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-act {
+        order: 10;
+    }
+
+    .ui-preview table.pv-gt-list td[data-label]:not(.pv-gt-first):not(.pv-gt-span):not(.pv-gt-act):not(:empty)::before {
+        content: attr(data-label) " ";
+        font-weight: 600;
+        font-size: 0.78rem;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-field[data-label]::before {
+        display: block;
+    }
 }

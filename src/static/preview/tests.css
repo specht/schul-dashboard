@@ -386,7 +386,7 @@
     color: var(--pv-muted);
 }
 
-/* ---------- phones: the month as an agenda ---------- */
+/* ---------- phones: the week as an agenda ---------- */
 .pv-tests-agenda {
     display: none;
 }
@@ -414,6 +414,10 @@
     margin: 10px 0 2px;
     font: 700 1rem/1.25 var(--pv-display);
     color: var(--pv-ink);
+}
+
+.pv-ta-day:first-child {
+    margin-top: 4px;
 }
 
 .pv-ta-day.pv-ta-today {
@@ -529,6 +533,22 @@
 
     .pv-tests-agenda {
         display: block;
+    }
+
+    /* the week slides out at the panel's edge, the neighbour comes in */
+    .pv-tests-agenda-frame {
+        position: relative;
+        margin: 0 -14px;
+        padding: 0 14px;
+        overflow-x: clip;
+    }
+
+    .pv-tests-agenda-ghost {
+        position: absolute;
+        top: 0;
+        left: 14px;
+        right: 14px;
+        pointer-events: none;
     }
 
     /* the month and »Neu« in the first line, the controls below */

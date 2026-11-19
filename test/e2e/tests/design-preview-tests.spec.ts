@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { CDPSession, Page } from '@playwright/test';
 import { test, expect, login, ACCOUNTS, dashboardDialog, isoDate } from './fixtures';
 
 // Neues Design (Vorschau): Klassenarbeiten (/tests, preview/tests.js). One
@@ -22,9 +22,26 @@ async function saveTest(page: Page, data: Record<string, string>) {
   return (await r.json()).test.tid as string;
 }
 
-// shows the month of `day`
-async function showMonthOf(page: Page, day: Date) {
-  const want = `${MONTHS[day.getMonth()]} ${day.getFullYear()}`;
+const MONTHS_SHORT = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+
+function mondayOf(d: Date) {
+  const m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
+  return m;
+}
+
+// '2.–6. Nov.', '30. Nov. – 4. Dez.': the week's title on phones
+function weekLabel(d: Date) {
+  const mo = mondayOf(d);
+  const fr = new Date(mo.getFullYear(), mo.getMonth(), mo.getDate() + 4);
+  return mo.getMonth() === fr.getMonth()
+    ? `${mo.getDate()}.–${fr.getDate()}. ${MONTHS_SHORT[fr.getMonth()]}`
+    : `${mo.getDate()}. ${MONTHS_SHORT[mo.getMonth()]} – ${fr.getDate()}. ${MONTHS_SHORT[fr.getMonth()]}`;
+}
+
+// shows the month of `day` (phones: its week)
+async function showMonthOf(page: Page, day: Date, phone = false) {
+  const want = phone ? weekLabel(day) : `${MONTHS[day.getMonth()]} ${day.getFullYear()}`;
   for (let i = 0; i < 3 && (await page.locator('#pv_tests_title').textContent()) !== want; i++) {
     await page.locator('#bu_pv_tests_next').click();
   }
@@ -57,13 +74,16 @@ test('Neues Design: Klassenarbeiten als ruhiger Monat, am Handy als Agenda', asy
     // the header replaces FullCalendar's toolbar and the chip cloud
     await expect(page.locator('.fc-header-toolbar')).toHaveCount(0);
     await expect(page.locator('.ttc[data-klasse]').first()).toBeHidden();
-    await expect(page.locator('#pv_tests_title')).toHaveText(/^(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember) \d{4}$/);
+    // phones: a week at a time, like the timetable's week
+    await expect(page.locator('#pv_tests_title')).toHaveText(phone
+      ? /^\d{1,2}\.(–| \S+ – )\d{1,2}\. \S+$/
+      : /^(Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember) \d{4}$/);
     await expect(page.locator('#bu_pv_tests_klasse')).toHaveText('Klasse 5a');
     await expect(page.locator('#bu_pv_tests_add')).toBeVisible();
     await expect(page.locator(phone ? '#bu_pv_tests_add .pv-tests-add-short' : '#bu_pv_tests_add .pv-tests-add-long')).toBeVisible();
     await expect(page.locator(phone ? '#bu_pv_tests_add .pv-tests-add-long' : '#bu_pv_tests_add .pv-tests-add-short')).toBeHidden();
     await expect(page.locator('#bu_pv_tests_manage')).toHaveAttribute('href', '/manage_test_calendar');
-    await showMonthOf(page, day);
+    await showMonthOf(page, day, phone);
 
     let exam;
     if (phone) {
@@ -154,7 +174,7 @@ test('Neues Design: Klassenarbeiten als ruhiger Monat, am Handy als Agenda', asy
     await menu.locator('a', { hasText: '5b' }).click();
     await page.waitForURL(/\/tests\/5b$/);
     await expect(page.locator('#bu_pv_tests_klasse')).toHaveText('Klasse 5b');
-    await showMonthOf(page, day);
+    await showMonthOf(page, day, phone);
     await expect(page.locator(`text=Brüche ${tag}`)).toHaveCount(0);
   } finally {
     for (const id of ids) await page.request.post('/api/delete_test', { data: { id } });
@@ -200,5 +220,90 @@ test('Neues Design: Klassenarbeiten für eine Lehrkraft ohne Unterricht in der K
   } finally {
     await page.request.post('/api/delete_test', { data: { id } });
     await page.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.teacher, mode: 'off' } });
+  }
+});
+
+async function drag(client: CDPSession, page: Page, from: { x: number; y: number }, to: { x: number; y: number }, ms: number) {
+  const steps = 10;
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [from] });
+  for (let i = 1; i <= steps; i++) {
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: from.x + ((to.x - from.x) * i) / steps, y: from.y + ((to.y - from.y) * i) / steps }],
+    });
+    await page.waitForTimeout(ms / steps);
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
+// Phones: one week per page, like the timetable's week: the five school
+// days, swiped to the neighbouring week (which comes in beside it while the
+// finger moves), the arrows go week by week.
+test('Neues Design: Klassenarbeiten am Handy Woche für Woche, wischbar', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'the week agenda and touch only on phones');
+  test.setTimeout(120_000);
+  const tag = Date.now().toString(36);
+  const today = new Date();
+  while (today.getDay() === 0 || today.getDay() === 6) today.setDate(today.getDate() + 1);
+  const nextTuesday = mondayOf(today);
+  nextTuesday.setDate(nextTuesday.getDate() + 8);
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  const id = await saveTest(page, {
+    klasse: '5a', datum: isoDate(nextTuesday), end_datum: isoDate(nextTuesday), fach: 'Ma',
+    kommentar: `Wischen ${tag}`, typ: 'KA', public_for_klasse: 'no',
+  });
+  try {
+    await page.goto('/tests/5a');
+    const title = page.locator('#pv_tests_title');
+    await expect(title).toHaveText(weekLabel(today));
+    await expect(page.locator('.pv-tests-sub')).toHaveText(/^Kalenderwoche\s\d+, .*Klasse\s5a, /);
+    await expect(page.locator('#bu_pv_tests_today')).toBeDisabled();
+    await expect(page.locator('#bu_pv_tests_next')).toHaveAttribute('aria-label', 'Nächste Woche');
+    // the five school days, each with its entries or a quiet note
+    const agenda = page.locator('#pv_tests_agenda');
+    await expect(agenda.locator('.pv-ta-day')).toHaveCount(5);
+    await expect(agenda).not.toContainText(`Wischen ${tag}`);
+
+    const box = (await agenda.boundingBox())!;
+    const y = box.y + 40;
+    const right = { x: box.x + box.width - 20, y };
+    const left = { x: box.x + 20, y };
+    const client = await page.context().newCDPSession(page);
+
+    // while the finger is down, the next week comes in beside it
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [right] });
+    for (let i = 1; i <= 4; i++) {
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: right.x - i * 15, y }] });
+      await page.waitForTimeout(80);
+    }
+    const ghost = page.locator('.pv-tests-agenda-ghost');
+    await expect(ghost).toHaveCount(1);
+    await expect(ghost).toContainText(`Wischen ${tag}`);
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    // not far enough: the week stays
+    await expect(ghost).toHaveCount(0);
+    await expect(title).toHaveText(weekLabel(today));
+
+    // a swipe to the left: the next week
+    await drag(client, page, right, left, 200);
+    await expect(title).toHaveText(weekLabel(nextTuesday));
+    await expect(agenda.locator('.pv-ta-row', { hasText: `Wischen ${tag}` })).toBeVisible();
+    await expect(ghost).toHaveCount(0);
+    await expect(page.locator('.pv-tests-sub')).toContainText('1\u00a0Arbeit');
+    await expect(page.locator('#bu_pv_tests_today')).toBeEnabled();
+    // the page did not get wider than the screen
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    // and back to the right; the arrows go week by week too
+    await drag(client, page, left, right, 200);
+    await expect(title).toHaveText(weekLabel(today));
+    await page.locator('#bu_pv_tests_next').click();
+    await expect(title).toHaveText(weekLabel(nextTuesday));
+    await page.locator('#bu_pv_tests_today').click();
+    await expect(title).toHaveText(weekLabel(today));
+  } finally {
+    await page.request.post('/api/delete_test', { data: { id } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

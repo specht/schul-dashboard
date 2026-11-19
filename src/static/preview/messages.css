@@ -115,7 +115,7 @@
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 10px 10px 10px 4px;
+    padding: 10px 10px 10px 8px;
     border-bottom: 1px solid var(--pv-line);
     color: var(--pv-ink);
     text-decoration: none;
@@ -144,12 +144,21 @@
     box-shadow: inset 3px 0 0 var(--acc);
 }
 
+/* the dot takes no room: the picture stands level with the headings, the
+   dot sits on its upper left edge (with a ring in the surface colour) */
 .pv-messages-page .pv-mrow-dot {
-    flex: none;
-    width: 8px;
-    height: 8px;
-    margin-top: 8px;
+    position: absolute;
+    left: 4px;
+    top: 8px;
+    z-index: 1;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
+    pointer-events: none;
+}
+
+.pv-messages-page .pv-mrow.pv-unread .pv-mrow-dot {
+    box-shadow: 0 0 0 2px var(--pv-surface);
 }
 
 .pv-messages-page .pv-mrow.pv-unread .pv-mrow-dot {

@@ -694,6 +694,55 @@
         }, 0);
     }
 
+    // phones and tablets: pulled down (by its head, or anywhere while its
+    // content is scrolled to the top), the sheet closes like every sheet –
+    // with unsaved changes it springs back and asks first
+    var drag = null;
+    function sheet_shift(dy, ms) {
+        sheet.style.transition = ms ? 'transform ' + ms + 'ms ease-out' : 'none';
+        sheet.style.transform = dy ? 'translateY(' + dy + 'px)' : '';
+    }
+    document.addEventListener('touchstart', function (e) {
+        drag = null;
+        if (!open || !sheet || e.touches.length !== 1 || !sheet.contains(e.target)) return;
+        if (e.target.closest('textarea, input, select, [contenteditable], .note-editor, .pv-amenu')) return;
+        var body = pane.querySelector('.pv-kb-pane-body');
+        if (body && body.contains(e.target) && body.scrollTop > 0) return;
+        if (pane.querySelector('.pv-kb-pane-foot') && pane.querySelector('.pv-kb-pane-foot').contains(e.target)) return;
+        drag = { y: e.touches[0].clientY, t: Date.now(), dy: 0, dragging: false };
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+        if (!drag || e.touches.length !== 1) return;
+        var dy = e.touches[0].clientY - drag.y;
+        if (!drag.dragging) {
+            if (dy < -8) { drag = null; return; }
+            if (dy < 8) return;
+            drag.dragging = true;
+        }
+        e.preventDefault();
+        drag.dy = Math.max(0, dy);
+        sheet_shift(drag.dy, 0);
+    }, { passive: false });
+    function drag_end() {
+        if (!drag) return;
+        var d = drag;
+        drag = null;
+        if (!d.dragging) return;
+        var quick = Date.now() - d.t < 250 && d.dy > 30;
+        if ((d.dy > 90 || quick) && !window.pending_changes) {
+            sheet_shift(sheet.offsetHeight + 20, 180);
+            setTimeout(function () {
+                close_sheet(false);
+                sheet_shift(0, 0);
+            }, 180);
+        } else {
+            sheet_shift(0, 160);
+            if (d.dy > 90 || quick) request_close(false);
+        }
+    }
+    document.addEventListener('touchend', drag_end);
+    document.addEventListener('touchcancel', drag_end);
+
     function build_sheet() {
         veil = el('div', 'pv-kb-veil');
         veil.hidden = true;

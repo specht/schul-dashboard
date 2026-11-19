@@ -71,6 +71,58 @@ test('Neues Design: News nach Jahren, ältere nachgeladen, Aktionen im Menü', a
   }
 });
 
+// Published entries: their address on the website, beitrag-<timestamp in
+// base 36> below SCHOOL_WEBSITE_URL (test stack: src/ruby/test/credentials.rb).
+test('Neues Design: Link eines veröffentlichten Beitrags kopieren und öffnen', async ({ page }, testInfo) => {
+  const title = `Link ${testInfo.project.name} ${Date.now().toString(36)}`;
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  expect((await page.request.post('/api/store_news_entry', { data: { title, content: 'Am Freitag.' } })).status()).toBe(200);
+  const entry = await newsEntry(page, title);
+  const url = `https://website.test.invalid/beitrag-${entry.timestamp.toString(36)}`;
+  try {
+    await page.goto('/manage_news');
+    // copying and opening are caught, nothing leaves the browser
+    await page.evaluate(() => {
+      (window as any).__copied = [];
+      (window as any).__opened = [];
+      navigator.clipboard.writeText = async (t: string) => { (window as any).__copied.push(t); };
+      window.open = ((u: string) => { (window as any).__opened.push(u); return null; }) as any;
+    });
+    const row = page.locator('.pv-news-entry', { hasText: title });
+    await expect(row).toBeVisible();
+
+    // not published: no link yet
+    await row.locator('.pv-lmore').click();
+    await expect(page.locator('.pv-amenu').getByRole('menuitem', { name: 'Löschen' })).toBeVisible();
+    await expect(page.locator('.pv-amenu').getByRole('menuitem', { name: 'Link kopieren' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.pv-amenu')).toHaveCount(0);
+    let loaded = page.waitForResponse('**/api/get_news_entry');
+    await listAction(page, row, 'Bearbeiten');
+    await loaded;
+    await expect(page.locator('.pv-nb-link')).toHaveText(`Nach dem Veröffentlichen unter ${url}`);
+    await page.locator('#editModal').evaluate((m) => (window as any).$(m).modal('hide'));
+    await expect(page.locator('#editModal')).toBeHidden();
+
+    // published: copy (the check takes the place of »•••«) and open
+    await listAction(page, row, 'Veröffentlichen');
+    await expect(row.locator('.pv-lrow-facts')).toContainText(/, veröffentlicht/);
+    await listAction(page, row, 'Link kopieren');
+    await expect.poll(() => page.evaluate(() => (window as any).__copied)).toEqual([url]);
+    await expect(row.locator('.pv-lmore')).toHaveClass(/pv-copied/);
+    await listAction(page, row, 'Beitrag öffnen');
+    await expect.poll(() => page.evaluate(() => (window as any).__opened)).toEqual([url]);
+    loaded = page.waitForResponse('**/api/get_news_entry');
+    await listAction(page, row, 'Bearbeiten');
+    await loaded;
+    await expect(page.locator('.pv-nb-link .pv-copy')).toContainText(url);
+  } finally {
+    await page.request.post('/api/delete_news_entry', { data: { timestamp: entry.timestamp } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('News ohne Vorschau: die Tabelle mit allen Beiträgen wie bisher', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

@@ -261,6 +261,15 @@ export function fakeBib(): FakeBib {
       return { body: { book: pub(b), new_exemplar: fresh, proposed_isbn: [], book_photos: [], locations: b.locations || [] } };
     },
     '/jwt/get_shelves': () => ({ body: { shelves: [] } }),
+    // the overview's statistics: an empty school year (no charts, no
+    // summoned books) – enough for the page to draw itself
+    '/jwt/get_stats': () => ({
+      body: {
+        all_ts_keys: [], ts_checked_out: {}, ts_confirmed: {}, ts_returned: {}, ts_summoned: {}, ts_discarded: {},
+        ts_removed_ausleihe: {}, confirmed_count_for_user: {}, ausleihe_count_for_user: {}, books_for_user: {},
+        book_details: {}, actions_for_durations: {}, summoned_books: [],
+      },
+    }),
   };
 
   const cors = {

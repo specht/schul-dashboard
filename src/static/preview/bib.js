@@ -6,8 +6,10 @@
 // The pages keep their markup and their scripts – every function, role
 // check and scanner flow stays theirs. This file only changes how they are
 // drawn:
-// - the library's own navigation as a row of quiet tabs on the panel (the
-//   page's extra links, e.g. »Metadaten bearbeiten«, as a second row),
+// - the library's own navigation on the panel: one's own pages as a
+//   segmented switch (with »Verwaltung« for the staff), the management's
+//   pages as a row of tabs below it, the page's extra links (»Metadaten
+//   bearbeiten«) as a smaller row after that,
 // - books as list rows with a small cover (create_book_div), tables calm
 //   and, where the list is narrow, as list rows (SortableTable), names as
 //   text, shelves and states as single chips,
@@ -114,10 +116,50 @@
     }
 
     // ---------- the library's navigation ----------
-    // the template's submenu (links shown per role by the server) as one row
-    // of quiet tabs at the top of the panel: one's own (Meine Bücher,
-    // Katalog, Bestellungen), then the library's management
+    // the template's submenu (links shown per role by the server), drawn in
+    // two levels at the top of the panel:
+    // - one's own pages (Meine Bücher, Katalog, Bestellungen) as a segmented
+    //   switch; for those who manage the library one more segment
+    //   »Verwaltung« (to its first page),
+    // - within the management, its pages (Übersicht, Medien, Nutzer …) as a
+    //   second row of underlined tabs below.
+    // Without own pages (the phone at the shelves) the management's pages
+    // are the switch themselves. The current page is always marked: its
+    // segment and, in the management, its tab. On phones each row stays one
+    // line and scrolls sideways, the current entry in view.
     var NAV_LABELS = { '/bib_all_orders': 'Alle Bestellungen', '/bib_scan': 'Scannen' };
+    // pages without a tab of their own belong to one (the first one shown)
+    var BELONGS = {
+        bib_confirm: ['/bibliothek'], bib_book: ['/bib_browse', '/bib_books'], bib_exemplar: ['/bib_browse', '/bib_books'],
+        bib_book_edit: ['/bib_books'], bib_add_exemplare: ['/bib_books'], bib_print_label: ['/bib_books'],
+        bib_user: ['/bib_users'], bib_process_order: ['/bib_all_orders'], bib_shelves: ['/bib_overview'],
+    };
+
+    function nav_row(cls, label) {
+        var ul = el('ul', 'pv-bib-tabs ' + cls);
+        if (label) ul.setAttribute('aria-label', label);
+        return ul;
+    }
+
+    function nav_link(ul, href, text, current) {
+        var li = el('li');
+        var link = el('a', 'pv-bib-tab', text);
+        link.href = href;
+        if (current) link.setAttribute('aria-current', current);
+        li.appendChild(link);
+        ul.appendChild(li);
+        return link;
+    }
+
+    // a row that scrolls sideways (phones): its current entry in view
+    function scroll_current(row) {
+        var current = q('[aria-current]', row);
+        if (!current || row.scrollWidth <= row.clientWidth) return;
+        var r = current.getBoundingClientRect();
+        var box = row.getBoundingClientRect();
+        if (r.left < box.left || r.right > box.right) row.scrollLeft += r.left - box.left - 24;
+    }
+
     function build_nav() {
         var menu = qa('ul.submenu').filter(function (u) { return !u.closest('#subsubmenu'); })[0];
         var p = panel();
@@ -126,50 +168,50 @@
         var old = menu.closest('.container');
         if (old) old.classList.add('pv-bib-oldnav');
         if (!section || section.style.display === 'none') return;
+        // the template's groups: one's own, then (after an empty li) the
+        // management
         var groups = [[], []];
         var g = 0;
         qa(':scope > li', menu).forEach(function (li) {
             if (li.style.display === 'none') return;
             var a = q('a[href]', li);
             if (!a) { if (groups[0].length) g = 1; return; }
-            groups[g].push(a);
+            var href = a.getAttribute('href');
+            groups[g].push({ href: href, text: NAV_LABELS[href] || a.textContent.replace(/\s+/g, ' ').trim() });
         });
         // only staff links, no own ones: one group
         if (!groups[0].length) { groups[0] = groups[1]; groups[1] = []; }
-        if (groups[0].length + groups[1].length < 2) return;
-        var nav = el('nav', 'pv-bib-nav');
-        nav.setAttribute('aria-label', 'Bibliothek');
+        var own = groups[0];
+        var staff = groups[1];
+        if (own.length + staff.length < 2) return;
+
         var here = location.pathname.replace(/\/$/, '');
-        // pages without a tab of their own belong to one
-        var BELONGS = {
-            bib_confirm: ['/bibliothek'], bib_book: ['/bib_browse', '/bib_books'], bib_exemplar: ['/bib_browse', '/bib_books'],
-            bib_book_edit: ['/bib_books'], bib_add_exemplare: ['/bib_books'], bib_print_label: ['/bib_books'],
-            bib_user: ['/bib_users'], bib_process_order: ['/bib_all_orders'], bib_shelves: ['/bib_overview'],
-        };
-        var all = groups[0].concat(groups[1]).map(function (a) { return a.getAttribute('href'); });
+        var all = own.concat(staff).map(function (l) { return l.href; });
         var target = all.filter(function (href) { return here === href || here.indexOf(href + '/') === 0; })[0] ||
             (BELONGS[PAGE] || []).filter(function (href) { return all.indexOf(href) >= 0; })[0];
-        groups.forEach(function (links, i) {
-            if (!links.length) return;
-            var ul = el('ul', 'pv-bib-tabs' + (i === 1 ? ' pv-bib-tabs-staff' : ''));
-            if (i === 1 && groups[0].length) ul.setAttribute('aria-label', 'Verwaltung');
-            links.forEach(function (a) {
-                var href = a.getAttribute('href');
-                var li = el('li');
-                var link = el('a', 'pv-bib-tab', NAV_LABELS[href] || a.textContent.replace(/\s+/g, ' ').trim());
-                link.href = href;
-                if (href === target) link.setAttribute('aria-current', href === here ? 'page' : 'true');
-                li.appendChild(link);
-                ul.appendChild(li);
-            });
-            nav.appendChild(ul);
-        });
-        p.insertBefore(nav, p.firstChild);
-        // phones: the current tab in view (the row scrolls sideways)
-        var current = q('[aria-current]', nav);
-        if (current && nav.scrollWidth > nav.clientWidth) {
-            nav.scrollLeft = Math.max(0, current.getBoundingClientRect().left - nav.getBoundingClientRect().left - 24);
+        function current(href) { return href === target ? (href === here ? 'page' : 'true') : null; }
+        var in_staff = staff.some(function (l) { return l.href === target; });
+
+        var nav = el('nav', 'pv-bib-nav');
+        nav.setAttribute('aria-label', 'Bibliothek');
+        var main = nav_row('pv-bib-tabs-main');
+        own.forEach(function (l) { nav_link(main, l.href, l.text, current(l.href)); });
+        if (staff.length) {
+            var manage = nav_link(main, staff[0].href, 'Verwaltung', in_staff ? 'true' : null);
+            manage.classList.add('pv-bib-tab-manage');
+            manage.id = 'bu_pv_bib_manage';
         }
+        nav.appendChild(main);
+        var rows = [main];
+        if (in_staff) {
+            var sub = nav_row('pv-bib-tabs-staff', 'Verwaltung');
+            staff.forEach(function (l) { nav_link(sub, l.href, l.text, current(l.href)); });
+            nav.appendChild(sub);
+            rows.push(sub);
+            nav.classList.add('pv-bib-nav-staff');
+        }
+        p.insertBefore(nav, p.firstChild);
+        rows.forEach(scroll_current);
     }
 
     // the page's extra links (book: Buch, Metadaten bearbeiten …; overview:

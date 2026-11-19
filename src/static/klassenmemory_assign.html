@@ -517,12 +517,22 @@ function pickNextTask() {
         list = {'all': Object.keys(user_info).filter((x) => user_info[x].teacher === false)};
         which = 'all';
     }
-    quiz_list = list[which];
+    quiz_list = list[which] ?? [];
     for (let email of quiz_list)
         if (email in email_for_foto_paths_rev)
             if (email !== quiz_solution)
                 photos.push(email);
+    // only one photo: it comes again
+    if (photos.length === 0 && quiz_list.indexOf(quiz_solution) >= 0 && quiz_solution in email_for_foto_paths_rev)
+        photos.push(quiz_solution);
     photos = photos.sort((a, b) => ((Math.floor((my_recognized_emails[a] ?? 0) / 3600.0)) + Math.random()) - ((Math.floor((my_recognized_emails[b] ?? 0) / 3600.0)) + Math.random()));
+    if (photos.length === 0) {
+        // no photo with a name in this class (yet)
+        quiz_solution = null;
+        $('#quiz-foto').empty().css('opacity', 1);
+        $('#name-buttons-here').empty().append($('<p class="quiz-no-photos">').text('Für diese Auswahl gibt es noch keine Fotos mit Namen.'));
+        return;
+    }
     quiz_solution = photos[0];
     quiz_prefix = '';
     updatePrefix();
@@ -532,7 +542,7 @@ function pickNextTask() {
         let div = $(`<div style='display: inline-block;'>`);
         div.append(frame);
         frame.append(photo);
-        let label = $(`<div class="sus-label sus-quiz-label" style="font-size: calc(min(80vw, 50vh) * 0.06);">${user_info[quiz_solution].display_name} (${KLASSEN_TR[user_info[quiz_solution].klasse] ?? user_info[quiz_solution].klasse})</div>`);
+        let label = $(`<div class="sus-label sus-quiz-label" style="font-size: calc(min(80vw, 50vh) * 0.06);">`).text(`${user_info[quiz_solution].display_name} (${KLASSEN_TR[user_info[quiz_solution].klasse] ?? user_info[quiz_solution].klasse})`);
         frame.append(label);
         $('#quiz-foto').empty().append(div);
         $('#quiz-foto').css('opacity', 1);
@@ -571,6 +581,14 @@ window.addEventListener('load', function() {
         e.preventDefault();
         passphrase = $('#password').val().trim().toLowerCase();
         $('#form').hide();
+        // the photos are decrypted in the browser (Web Crypto): only on a
+        // secure connection (https or localhost), otherwise nothing would
+        // appear without a word
+        if (!(window.crypto && window.crypto.subtle)) {
+            $('#stage').show();
+            $('#sus_here').empty().append($('<p>').addClass('km-no-crypto').text('Die Fotos lassen sich nur über eine sichere Verbindung entschlüsseln. Bitte öffne das Dashboard über https.'));
+            return;
+        }
         $('#stage').show();
         $('#klassen-div').show();
         refresh();
@@ -597,7 +615,8 @@ window.addEventListener('load', function() {
             klassenstufen.push(stufe);
 
         schueler_for_klassenstufe[stufe] ??= [];
-        for (let email of schueler_for_klasse[original_klasse])
+        // a class without students (yet) has no list
+        for (let email of schueler_for_klasse[original_klasse] ?? [])
             schueler_for_klassenstufe[stufe].push(email);
         klassenstufe_for_klasse[original_klasse] = stufe;
 
@@ -707,7 +726,7 @@ window.addEventListener('load', function() {
             let name = `${user_info[email].display_first_name} ${user_info[email].last_name}`;
             email_for_name[name] = email;
             if (!(email in email_for_foto_paths_rev)) {
-                $('#current_names').append($(`<option value='${name}'>`));
+                $('#current_names').append($('<option>').attr('value', name));
             }
         }
     }
@@ -795,4 +814,4 @@ window.addEventListener('load', function() {
         });
     }
 });
-</script>
+</script>#{design_preview_page_script('klassenmemory_assign')}

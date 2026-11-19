@@ -186,18 +186,22 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       const pm = (await profileMenu.boundingBox())!;
       expect(pm.x).toBeGreaterThanOrEqual(box.width - 1);
       expect(Math.abs(viewport.height - (pm.y + pm.height) - 8)).toBeLessThan(3);
+      // its icons and one's picture at full strength (only the long lists of
+      // courses and groups have quieter icons)
+      expect(await profileMenu.locator('.dropdown-item .icon').evaluateAll((els) => els.map((el) => getComputedStyle(el).opacity))).not.toContain('0.6');
       await page.keyboard.press('Escape');
       await expect(profileMenu).toBeHidden();
       // the old admin menu is gone: its tools sit in the "Verwaltung" section,
-      // folded (unless the current page is one of them), and it remembers
+      // one entry that opens as a panel beside the sidebar, like the menus
       await expect(page.locator('#navbarDropdownAdmin')).toBeHidden();
       const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
       await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
       await verwaltung.locator('button.pv-nav-heading').click();
       await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
-      await page.reload();
-      await expect(verwaltung.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
-      await verwaltung.locator('button.pv-nav-heading').click();
+      const vp = (await verwaltung.locator('.pv-nav-body').boundingBox())!;
+      expect(vp.x).toBeGreaterThanOrEqual(box.width - 1);
+      expect(vp.y + vp.height).toBeLessThanOrEqual(viewport.height);
+      await page.keyboard.press('Escape');
       await expect(verwaltung.locator('.pv-nav-body')).toBeHidden();
       // menus open as a panel next to the sidebar, inside the window above
       // the footer (in columns, or scrolling where even that is too long);
@@ -253,19 +257,31 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       await expect(menu).toBeHidden();
       await expect(page.locator('.pv-menu-veil')).toBeHidden();
-      // teachers: Heute · Woche · Nachrichten · Kurse · Mehr (as in the mockups)
-      await expect(tabs.locator('.pv-tab')).toHaveText(['Heute', 'Woche', 'Nachrichten', 'Kurse', 'Mehr']);
+      // teachers: Heute, Woche, Nachrichten, Unterricht, Mehr (as in the mockups)
+      await expect(tabs.locator('.pv-tab')).toHaveText(['Heute', 'Woche', 'Nachrichten', 'Unterricht', 'Mehr']);
       // the search: at the top of "Mehr" (no icon in the top bar)
       await expect(page.locator('.nav-quick-search-nav .nav-quick-search')).toBeHidden();
       await tabs.locator('#bu_pv_more').click();
       await page.locator('.pv-more-search').click();
       await expect(page.locator('#ti_quick_search')).toBeVisible();
       await page.locator('#ti_quick_search').press('Escape');
-      // "Kurse": Kursbuch and class lists as a sheet
+      // "Unterricht": one's courses (Kursbuch) and the class lists as a sheet
       await tabs.locator('#bu_pv_courses').click();
       const courses = page.locator('.pv-link-sheet');
-      await expect(courses).toContainText('Kursbuch');
+      await expect(courses.locator('.pv-plan-group')).toContainText(['Mein Unterricht', 'Meine Lerngruppen']);
       await expect(courses.locator('a[href^="/lessons/"]').first()).toBeVisible();
+      // the other groups folded, open on a tap
+      const fold = courses.locator('.pv-sheet-fold');
+      await expect(fold).toHaveText(/^Weitere Lerngruppen \(\d+\)$/);
+      await expect(fold).toHaveAttribute('aria-expanded', 'false');
+      await expect(courses.locator('a[href="/directory/11"]')).toBeHidden();
+      await fold.click();
+      await expect(courses.locator('a[href="/directory/11"]')).toBeVisible();
+      // in the school's order: the years 11 and 12 after the classes
+      const others = await courses.locator('.pv-sheet-links').last().locator('a').evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+      expect(others.indexOf('/directory/5b')).toBeGreaterThanOrEqual(0);
+      expect(others.indexOf('/directory/11')).toBeGreaterThan(others.indexOf('/directory/5b'));
+      expect(others.indexOf('/directory/12')).toBeGreaterThan(others.indexOf('/directory/11'));
       await page.locator('.pv-plan-veil').click({ position: { x: 20, y: 20 } });
       await expect(courses).toHaveCount(0);
       // "Woche": the days of the week one below the other
@@ -282,60 +298,131 @@ test('Neues Design: Seitenleiste am Desktop, Tab-Leiste am Handy', async ({ page
   }
 });
 
-// Tablets: the sidebar as an icon rail. The sections (Unterricht, Schule,
-// Verwaltung) are one icon each and open as a panel beside the rail, without
-// changing the folds the full sidebar remembers.
-test('Neues Design: Abschnitte in der Symbolleiste am Tablet', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile', 'tablet width');
-  await page.setViewportSize({ width: 820, height: 1180 });
+// The sidebar's sections: Unterricht, Lerngruppen, Schule and Verwaltung are
+// one entry each and open as a panel to the right, like the menus (on
+// tablets the sidebar is an icon rail, the panels the same). Klassenarbeiten
+// belong to Schule; the entry of the current page's section is marked.
+for (const [name, width, height] of [['Desktop', 1280, 900], ['Tablet', 820, 1180]] as const) {
+  test(`Neues Design: Abschnitte der Seitenleiste als Menüs nach rechts (${name})`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'mobile', 'sidebar widths');
+    await page.setViewportSize({ width, height });
+    await login(page, ACCOUNTS.admin);
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+    try {
+      await page.goto('/tests');
+      const nav = page.locator('nav.navbar');
+      const side = (await nav.boundingBox())!;
+      if (name === 'Tablet') {
+        expect(side.width).toBeLessThan(100);
+        // no text sticks out of the rail or is cut off in it
+        expect(await nav.evaluate((navEl) => {
+          const right = navEl.getBoundingClientRect().right;
+          return [...navEl.querySelectorAll('*')].filter((el) => {
+            const r = el.getBoundingClientRect();
+            const text = [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent!.trim());
+            return text && r.width > 0 && r.height > 0 && (r.right > right + 1 || el.scrollWidth > el.clientWidth + 1);
+          }).length;
+        })).toBe(0);
+      }
+      // one entry each, in this order, below the pages
+      const order = await nav.locator('.navbar-nav > .pv-nav-section, .navbar-nav > .pv-nav-groups').evaluateAll((els) =>
+        els.map((el) => (el as HTMLElement).dataset.section || 'lerngruppen'));
+      expect(order).toEqual(['unterricht', 'lerngruppen', 'schule', 'verwaltung']);
+      if (name === 'Desktop') {
+        await expect(nav.locator('.navbar-nav > .pv-nav-section > button.pv-nav-heading')).toHaveText(['Unterricht', 'Schule', 'Verwaltung']);
+        await expect(nav.locator('#navbarDropdownKlassen')).toHaveText('Lerngruppen');
+      }
+      // the bodies stay closed until one opens them
+      for (const key of ['unterricht', 'schule', 'verwaltung']) {
+        await expect(nav.locator(`.pv-nav-section[data-section="${key}"] .pv-nav-body`)).toBeHidden();
+      }
+      const unterricht = nav.locator('.pv-nav-section[data-section="unterricht"]');
+      const schule = nav.locator('.pv-nav-section[data-section="schule"]');
+      // Klassenarbeiten: in Schule, not in Unterricht; the page lies in Schule
+      await expect(unterricht.locator('a[href="/tests"]')).toHaveCount(0);
+      await expect(schule.locator('button.pv-nav-heading')).toHaveClass(/pv-here/);
+      await expect(unterricht.locator('button.pv-nav-heading')).not.toHaveClass(/pv-here/);
+      // Unterricht: the courses, as a panel to the right, level with its entry
+      const ubutton = unterricht.locator('button.pv-nav-heading');
+      await ubutton.click();
+      const ubody = unterricht.locator('.pv-nav-body');
+      await expect(ubody).toBeVisible();
+      await expect(ubody.locator('a.pv-nav-entry[href^="/lessons/"]').first()).toBeVisible();
+      const ub = (await ubody.boundingBox())!, uh = (await ubutton.boundingBox())!;
+      expect(ub.x).toBeGreaterThanOrEqual(side.width - 1);
+      expect(Math.abs(ub.y - uh.y)).toBeLessThan(20);
+      // one panel at a time
+      await schule.locator('button.pv-nav-heading').click();
+      await expect(ubody).toBeHidden();
+      const sbody = schule.locator('.pv-nav-body');
+      await expect(sbody.locator('a.pv-nav-entry[href="/tests"]')).toBeVisible();
+      await expect(sbody.locator('a.pv-nav-entry[href="/tests"]')).toHaveClass(/pv-active/);
+      const sb = (await sbody.boundingBox())!;
+      expect(sb.y + sb.height).toBeLessThanOrEqual(height);
+      // Lerngruppen closes it and opens its own menu to the right
+      await page.locator('#navbarDropdownKlassen').click();
+      await expect(sbody).toBeHidden();
+      const groups = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
+      await expect(groups).toBeVisible();
+      expect((await groups.boundingBox())!.x).toBeGreaterThanOrEqual(side.width - 1);
+      // and the other way round: a panel closes the open menu
+      await schule.locator('button.pv-nav-heading').click();
+      await expect(sbody).toBeVisible();
+      await expect(groups).toBeHidden();
+      // the groups of a section: lines across the whole panel
+      const line = sbody.locator('.pv-nav-sub:visible').first();
+      if (await line.count()) {
+        const l = (await line.boundingBox())!, p = (await sbody.boundingBox())!;
+        expect(l.height).toBeLessThanOrEqual(2);
+        expect(l.width).toBeGreaterThanOrEqual(p.width - 4);
+      }
+      await page.keyboard.press('Escape');
+      await expect(sbody).toBeHidden();
+      // Escape and a click elsewhere close a panel
+      await ubutton.click();
+      await expect(ubody).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(ubody).toBeHidden();
+      await ubutton.click();
+      await expect(ubody).toBeVisible();
+      await page.mouse.click(width - 40, height - 40);
+      await expect(ubody).toBeHidden();
+      // a link in the panel leads there
+      await ubutton.click();
+      await ubody.locator('a.pv-nav-entry[href^="/lessons/"]').first().click();
+      await expect(page).toHaveURL(/\/lessons\//);
+      await expect(nav.locator('.pv-nav-section[data-section="unterricht"] button.pv-nav-heading')).toHaveClass(/pv-here/);
+    } finally {
+      await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    }
+  });
+}
+
+// A section longer than the window stands in columns; a line between groups
+// that lands at the top of a column separates nothing there and is left out.
+test('Neues Design: keine Trennlinie oben in einer Spalte der Seitenleiste', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the panels beside the sidebar');
+  await page.setViewportSize({ width: 1280, height: 480 });
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
-    await page.goto('/messages');
-    const nav = page.locator('nav.navbar');
-    const rail = (await nav.boundingBox())!;
-    expect(rail.width).toBeLessThan(100);
-    // no text sticks out of the rail or is cut off in it
-    expect(await nav.evaluate((navEl) => {
-      const right = navEl.getBoundingClientRect().right;
-      return [...navEl.querySelectorAll('*')].filter((el) => {
-        const r = el.getBoundingClientRect();
-        const text = [...el.childNodes].some((c) => c.nodeType === 3 && c.textContent!.trim());
-        return text && r.width > 0 && r.height > 0 && (r.right > right + 1 || el.scrollWidth > el.clientWidth + 1);
-      }).length;
-    })).toBe(0);
-    const verwaltung = nav.locator('.pv-nav-section[data-section="verwaltung"]');
-    const heading = verwaltung.locator('button.pv-nav-heading');
-    const body = verwaltung.locator('.pv-nav-body');
-    await expect(body).toBeHidden();
-    await heading.click();
+    await page.goto('/profil');
+    const sec = page.locator('nav.navbar .pv-nav-section[data-section="verwaltung"]');
+    await sec.locator('button.pv-nav-heading').click();
+    const body = sec.locator('.pv-nav-body');
     await expect(body).toBeVisible();
-    const panel = (await body.boundingBox())!;
-    expect(panel.x).toBeGreaterThanOrEqual(rail.width - 1);
-    expect(panel.y + panel.height).toBeLessThanOrEqual(1180);
-    await expect(body.locator('a.pv-nav-entry[href="/admin"]')).toBeVisible();
-    // one panel at a time; Escape and a click elsewhere close it
-    await nav.locator('.pv-nav-section[data-section="unterricht"] button.pv-nav-heading').click();
-    await expect(body).toBeHidden();
-    // Lerngruppen opens beside the panel, not over it
-    const unterricht = nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body');
-    await page.locator('#navbarDropdownKlassen').click();
-    const groups = nav.locator('[aria-labelledby="navbarDropdownKlassen"]');
-    await expect(groups).toBeVisible();
-    const u = (await unterricht.boundingBox())!;
-    expect((await groups.boundingBox())!.x).toBeGreaterThanOrEqual(u.x + u.width - 1);
-    await page.keyboard.press('Escape');
-    await page.keyboard.press('Escape');
-    await expect(unterricht).toBeHidden();
-    await heading.click();
-    await expect(body).toBeVisible();
-    await page.mouse.click(600, 900);
-    await expect(body).toBeHidden();
-    // the full sidebar keeps its own folds
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await expect(body).toBeHidden();
-    await expect(nav.locator('.pv-nav-section[data-section="unterricht"] .pv-nav-body')).toBeVisible();
-    await expect(heading).toContainText('Verwaltung');
+    const r = await body.evaluate((panel) => {
+      const top = panel.getBoundingClientRect().top + (parseFloat(getComputedStyle(panel).paddingTop) || 0);
+      const lines = [...panel.querySelectorAll('.pv-nav-sub, .dropdown-divider')].filter((l) => (l as HTMLElement).offsetParent);
+      return {
+        columns: parseInt(getComputedStyle(panel).columnCount) || 1,
+        lines: lines.length,
+        at_top: lines.filter((l) => l.getBoundingClientRect().top - top < 12).length,
+      };
+    });
+    expect(r.columns).toBeGreaterThan(1);
+    expect(r.lines).toBeGreaterThan(0);
+    expect(r.at_top).toBe(0);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
@@ -437,22 +524,25 @@ test('Neues Design: eigene Schriften', async ({ page }) => {
   }
 });
 
-// Four font pairs in the profile ("Schrift"), all with accents and Greek
-// (with tonos; polytonic is a plus, all four have it);
-// Atkinson and Bricolage have no Greek, Fira Sans fills in behind them. The
+// Five font pairs in the profile ("Schrift"), all with accents and modern
+// Greek (with tonos) in the pair's own fonts; Atkinson and Bricolage have no
+// Greek, Fira Sans fills in behind them. Polytonic Greek is a plus: where a
+// pair lacks it, Fira Sans fills in, never a system font. The
 // names as Chrome reports the fonts drawing the text (it may add its
-// renderer, e.g. "Inter (Fontations)")
+// renderer or the variable font's default instance, e.g. "Inter
+// (Fontations)", "Manrope ExtraLight (Fontations)")
 const FONT_PAIRS = [
   { key: 'klar', text: 'Atkinson Hyperlegible Next', display: 'Bricolage Grotesque', greekText: /^Fira Sans( \(|$)/, greekDisplay: /^Fira Sans( \(|$)/ },
   { key: 'sachlich', text: 'Inter', display: 'Inter Tight', greekText: /^Inter( \(|$)/, greekDisplay: /^Inter Tight( \(|$)/ },
   { key: 'buch', text: 'Literata', display: 'Literata', greekText: /^Literata( \(|$)/, greekDisplay: /^Literata( \(|$)/ },
-  { key: 'freundlich', text: 'Ubuntu Sans', display: 'M PLUS Rounded 1c', greekText: /^Ubuntu Sans( \(|$)/, greekDisplay: /Mplus/i },
+  { key: 'freundlich', text: 'Manrope', display: 'M PLUS Rounded 1c', greekText: /^Manrope( |$)/, greekDisplay: /Mplus/i },
+  { key: 'feder', text: 'Alegreya Sans', display: 'Alegreya', greekText: /^Alegreya Sans( \(|$)/, greekDisplay: /^Alegreya( \(|$)/ },
 ];
 
 test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page, serverErrors }) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_font', { data: { font: 'klar' } });
-  // only the four keys
+  // only the known keys
   for (const font of ['comic', '', 'klar; DROP', 'Inter']) {
     expect((await page.request.post('/api/set_ui_font', { data: { font } })).status()).not.toBe(200);
   }
@@ -470,7 +560,7 @@ test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page
   try {
     await page.goto('/profil');
     const tiles = page.locator('.pv-font-tile');
-    await expect(tiles).toHaveCount(4);
+    await expect(tiles).toHaveCount(FONT_PAIRS.length);
     await expect(page.locator(".pv-font-tile[aria-checked='true']")).toHaveAttribute('data-font', 'klar');
     await expect(page.locator('body')).toHaveClass(/\bpv-font-klar\b/);
     // every tile in its own fonts, with Greek
@@ -490,6 +580,12 @@ test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page
       const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
       return fonts.filter((f: { isCustomFont: boolean }) => f.isCustomFont).map((f: { familyName: string }) => f.familyName);
     };
+    const system = async (selector: string) => {
+      const { root } = await cdp.send('DOM.getDocument', { depth: 0 });
+      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+      const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+      return fonts.filter((f: { isCustomFont: boolean }) => !f.isCustomFont).map((f: { familyName: string }) => f.familyName);
+    };
     const bodyFont = () => page.evaluate(() => getComputedStyle(document.body).fontFamily);
     const headingFont = () => page.locator('h2').first().evaluate((el) => getComputedStyle(el).fontFamily);
     for (const pair of [...FONT_PAIRS.slice(1), FONT_PAIRS[0]]) {
@@ -506,19 +602,23 @@ test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page
         p.id = 'pv_greek_probe_text';
         p.className = 'pv-greek-probe';
         // Greek letters only: spaces and commas come from the Latin font
-        p.textContent = 'ΕλληνικάΑθήναἀρετήῥῆμαᾠδή';
+        p.textContent = 'ΕλληνικάΑθήνααρετήΆΈΉΊΌΎΏϊϋΐΰ';
         const h = document.createElement('h2');
         h.id = 'pv_greek_probe_heading';
         h.className = 'pv-greek-probe';
-        h.textContent = 'Ἀρετή';
+        h.textContent = 'ΑρετήΑθήνα';
+        const poly = document.createElement('p');
+        poly.id = 'pv_greek_probe_poly';
+        poly.className = 'pv-greek-probe';
+        poly.textContent = 'ἀρετήῥῆμαᾠδή';
         // next to the tiles (in view), outside them (they have fonts of their own)
-        document.querySelector('.pv-fonts')!.append(h, p);
+        document.querySelector('.pv-fonts')!.append(h, p, poly);
       });
       await page.evaluate(() => document.fonts.ready);
       await expect.poll(() => used('#pv_greek_probe_text')).toEqual([expect.stringMatching(pair.greekText)]);
       await expect.poll(() => used('#pv_greek_probe_heading')).toEqual([expect.stringMatching(pair.greekDisplay)]);
-      expect(await page.evaluate((family) => document.fonts.check(`16px "${family}"`, 'ἀρετή ῥῆμα'),
-        pair.key === 'klar' ? 'Fira Sans Fallback' : pair.text)).toBe(true);
+      await expect.poll(() => used('#pv_greek_probe_poly')).not.toEqual([]);
+      expect(await system('#pv_greek_probe_poly')).toEqual([]);
       // kept for the next page
       if (pair.key !== 'klar') {
         await page.reload();
@@ -1178,6 +1278,16 @@ test('Neues Design: eigenes Farbschema mit Palette und HSL-Reglern', async ({ pa
     // saved: the page's scheme starts with the three colours
     await own.locator('#bu_apply_own_scheme').click();
     await expect.poll(() => page.evaluate(() => (window as any).color_scheme as string)).toMatch(/^[ld]0d60ae/);
+    // changed again, then a preset chosen: everything shows the preset
+    await own.locator('.pv-cling-colour[data-hex="#4aa03f"]').click();
+    await page.locator('.swatches .swatch:not(.active)').first().click();
+    await expect.poll(() => page.evaluate(() => (window as any).color_scheme as string)).not.toMatch(/^[ld]0d60ae/);
+    const preset = '#' + (await page.evaluate(() => (window as any).color_scheme as string)).substring(1, 7);
+    await expect(own.locator('#ti_scheme_left')).toHaveValue(preset);
+    await expect(own.locator('#ti_scheme_hex')).toHaveValue(preset);
+    const rgb = 'rgb(' + [1, 3, 5].map((i) => parseInt(preset.substring(i, i + 2), 16)).join(', ') + ')';
+    await expect.poll(() => own.locator('.pv-scheme-slot[data-slot="left"] .pv-scheme-chip').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(rgb);
+    await expect(own.locator('.pv-cling-colour[data-hex="#4aa03f"]')).toHaveAttribute('aria-pressed', 'false');
   } finally {
     await page.request.post('/api/set_color_scheme', { data: { scheme: before } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
@@ -1312,11 +1422,15 @@ test('Neues Design: Tageskopf am Handy bündig', async ({ page }, testInfo) => {
     const x = await page.evaluate(() => {
       const left = (s: string) => Math.round(document.querySelector(s)!.getBoundingClientRect().x);
       const text = (s: string) => { const r = document.createRange(); r.selectNodeContents(document.querySelector(s)!); return Math.round(r.getBoundingClientRect().x); };
-      return { plan: left('.pv-band-plan'), pill: left('.pv-band-text'), tiles: left('.pv-strip-day'), planText: text('.pv-band-plan span'), title: text('.pv-band-text h1') };
+      const shade = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--band-scrim-a')) || 0;
+      return { plan: left('.pv-band-plan'), pill: left('.pv-band-text'), tiles: left('.pv-strip-day'), planText: text('.pv-band-plan span'), title: text('.pv-band-text h1'), shade };
     });
     expect(Math.abs(x.pill - x.plan)).toBeLessThanOrEqual(1);
     expect(Math.abs(x.pill - x.tiles)).toBeLessThanOrEqual(1);
-    expect(Math.abs(x.title - x.planText)).toBeLessThanOrEqual(1);
+    // with a shade the title is inset like the button's text; without one
+    // it stands at the edge itself (see "Tagestitel bündig mit und ohne Schatten")
+    if (x.shade > 0) expect(Math.abs(x.title - x.planText)).toBeLessThanOrEqual(1);
+    else expect(Math.abs(x.title - x.plan)).toBeLessThanOrEqual(1);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
@@ -1358,6 +1472,124 @@ test('Neues Design: Mehr öffnet ohne Flackern', async ({ page }, testInfo) => {
     expect(veils.length).toBeGreaterThan(3);
     expect(veils[0], veils.join(', ')).toBeLessThan(0.6);
     for (let i = 1; i < veils.length; i++) expect(veils[i], veils.join(', ')).toBeGreaterThanOrEqual(veils[i - 1] - 0.01);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Waiting for the server: the old design shows "Einen Moment bitte" in the
+// page after half a second (and pushes the page down); the new design a thin
+// bar along the top edge instead, gone when the answer is there.
+test('Neues Design: Warten als Leiste oben statt Kasten', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.route('**/api/pv_slow_probe', async (route) => {
+    await new Promise((r) => setTimeout(r, 1500));
+    await route.fulfill({ json: { ok: true } });
+  });
+  const call = () => page.evaluate(() => { (window as any).api_call('/api/pv_slow_probe', {}, () => { (window as any).pv_probe_done = true; }); });
+  // the old design: the box, as before
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  await page.goto('/profil');
+  await call();
+  await expect(page.locator('.api_messages').first()).toContainText('Einen Moment bitte');
+  await expect(page.locator('.pv-busy')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => (window as any).pv_probe_done === true)).toBe(true);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/profil');
+    const bar = page.locator('.pv-busy');
+    await expect(bar).toBeHidden();
+    await call();
+    await expect(bar).toBeVisible();
+    const box = (await bar.boundingBox())!;
+    expect(box.y).toBe(0);
+    expect(box.height).toBeLessThanOrEqual(4);
+    // on its own opaque track: an accent bar on a see-through track vanished
+    // on a backdrop of the accent's colour (only visible behind the sheet's
+    // dimming)
+    const alpha = await bar.evaluate((el) => {
+      const ctx = document.createElement('canvas').getContext('2d')!;
+      ctx.fillStyle = getComputedStyle(el).backgroundColor;
+      ctx.fillRect(0, 0, 1, 1);
+      return ctx.getImageData(0, 0, 1, 1).data[3];
+    });
+    expect(alpha).toBe(255);
+    // no box in the page
+    await expect(page.locator('.api_messages').first()).toBeHidden();
+    await expect.poll(() => page.evaluate(() => (window as any).pv_probe_done === true)).toBe(true);
+    await expect(bar).toBeHidden();
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// A lesson cancelled for oneself but taught by someone else (a swap): the
+// server marks the old parts itself (<s>Mathematik</s> Latein (9c)
+// <s>Sp</s>). Only those are crossed out, the replacement stays readable; a
+// plainly cancelled lesson is crossed out as a whole.
+test('Neues Design: Tausch durchgestrichen nur im Alten', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'agenda and week list on phones');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    const add = async () => page.evaluate(() => {
+      const w = window as any;
+      const d = new Date(w.calendar.getDate());
+      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+      const a = new Date(d); a.setHours(17, 0, 0, 0);
+      const b = new Date(d); b.setHours(18, 0, 0, 0);
+      w.calendar.addEvent({ start: a, end: new Date(a.getTime() + 45 * 60000),
+        extendedProps: { lesson: true, entfall: true, label: '<s>Mathematik</s> <b>Latein</b> (9c) <s>Sp</s> Xy', label_short: '<b>La</b>', raum: '216', pv_probe: 'swap' } });
+      w.calendar.addEvent({ start: b, end: new Date(b.getTime() + 45 * 60000),
+        extendedProps: { lesson: true, entfall: true, label: '<b>Mathematik</b> (9c)', label_short: '<b>Ma</b>', raum: '216', pv_probe: 'off' } });
+    });
+    const deco = (el: Element) => getComputedStyle(el).textDecorationLine;
+    // the day
+    await page.goto('/');
+    await expect(page.locator('#pv_agenda')).toBeVisible();
+    await add();
+    const swapDay = page.locator('#pv_agenda .pv-ag-card.pv-ag-off', { hasText: 'Latein' }).locator('.pv-ag-title b').first();
+    const offDay = page.locator('#pv_agenda .pv-ag-card.pv-ag-off', { hasText: 'Mathematik (9c)' }).filter({ hasNotText: 'Latein' }).locator('.pv-ag-title b').first();
+    await expect(swapDay).toBeVisible();
+    expect(await swapDay.evaluate(deco)).not.toContain('line-through');
+    expect(await swapDay.locator('s').first().evaluate(deco)).toContain('line-through');
+    expect(await offDay.evaluate(deco)).toContain('line-through');
+    // the week
+    await page.goto('/#woche');
+    await expect(page.locator('#pv_agenda .pv-week-day').first()).toBeVisible();
+    await add();
+    const swapWeek = page.locator('.pv-week-row.pv-ag-off .pv-week-title', { hasText: 'Latein' }).first();
+    const offWeek = page.locator('.pv-week-row.pv-ag-off .pv-week-title', { hasText: 'Mathematik (9c)' }).filter({ hasNotText: 'Latein' }).first();
+    await expect(swapWeek).toBeVisible();
+    expect(await swapWeek.evaluate(deco)).not.toContain('line-through');
+    expect(await offWeek.evaluate(deco)).toContain('line-through');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// The day's title on phones: with a shade behind it, the shade's edge is
+// level with the plan button and the day tiles; without one, the text itself.
+test('Neues Design: Tagestitel bündig mit und ohne Schatten', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'the day band on phones');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('#pv_day_band .pv-band-text')).toBeVisible();
+    const measure = (alpha: string) => page.evaluate((a) => {
+      document.documentElement.style.setProperty('--band-scrim-a', a);
+      const left = (s: string) => document.querySelector(s)!.getBoundingClientRect().left;
+      const range = document.createRange();
+      range.selectNodeContents(document.querySelector('#pv_day_band h1')!);
+      return { pill: left('#pv_day_band .pv-band-text'), text: range.getBoundingClientRect().left, plan: left('#pv_day_band .pv-band-top > *'), tile: left('.pv-day-strip > *') };
+    }, alpha);
+    const plain = await measure('0.00');
+    expect(Math.abs(plain.text - plain.plan)).toBeLessThan(1.5);
+    expect(Math.abs(plain.text - plain.tile)).toBeLessThan(1.5);
+    const shaded = await measure('0.35');
+    expect(Math.abs(shaded.pill - shaded.plan)).toBeLessThan(1.5);
+    expect(shaded.text - shaded.pill).toBeGreaterThan(6);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

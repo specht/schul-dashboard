@@ -13,6 +13,9 @@ $VERBOSE = nil
 # must match NGINX_HOST_PORT in env.test.rb
 WEB_ROOT = 'http://localhost:8125'
 
+# the website's read-only news feed (test/e2e/tests/website-news-feed.spec.ts)
+WEBSITE_READ_INFO_SECRET = 'test-website-read-secret'
+
 # the fake SMS gateway in test/e2e/tests/sms-usage.spec.ts
 SMS_GATEWAY_SECRET = 'test-sms-gateway-secret'
 # short heartbeat, so the tests needn't wait a minute
@@ -28,6 +31,8 @@ SMTP_SERVER = 'smtp.test.invalid'
 WEBSITE_HOST = 'dashboard.test.invalid'
 VOTING_WEBSITE_URL = 'https://abstimmung.test.invalid'
 TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.test.invalid'
+SCHOOL_WEBSITE_URL = 'https://website.test.invalid'
+WEBSITE_ARTICLE_LINKS = true
 NEXTCLOUD_URL = 'http://nextcloud.test.invalid'
 # the stand-in of the test stack (src/ruby/test/fake_nextcloud.ru)
 NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud'

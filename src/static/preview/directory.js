@@ -438,7 +438,7 @@
     if (data.students.length === 0) {
         students.appendChild(el('p', 'pv-lempty', data.is_klasse
             ? 'In dieser Klasse ist zurzeit niemand eingetragen.'
-            : 'In diesem Kurs ist zurzeit niemand eingetragen.'));
+            : 'In dieser Lerngruppe ist zurzeit niemand eingetragen.'));
     } else {
         var wrap = el('div', 'pv-dir-scroll');
         var table = el('table', 'pv-dir-table' + (teacher ? ' pv-dir-opens' : ''));

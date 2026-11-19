@@ -39,16 +39,62 @@
         <div class="modal-content">
             <div class="modal-body" style='height: 80vh;'>
                 <div class='row' style='height: 100%;'>
-                    <div class='col-md-5' style='height: 100%; display: flex; flex-direction: column;'>
+                    <div class='col-md-5 news-write-col' style='height: 100%; display: flex; flex-direction: column;'>
                         <input type='text' class='form-control ti_title' placeholder='Titel' value=''></input>
+                        <div class='news-blocks' role='toolbar' aria-label='Baustein einfügen'>
+                            <button type='button' class='btn btn-sm btn-outline-secondary bu_news_block' data-block='image_full' data-fa='picture-o' data-ti='photo' title='Ein Bild über die ganze Breite, zwischen zwei Absätzen'>Bild groß</button>
+                            <button type='button' class='btn btn-sm btn-outline-secondary bu_news_block' data-block='image_left' data-fa='align-left' data-ti='columns' title='Ein Bild links neben einem langen Absatz'>Bild links</button>
+                            <button type='button' class='btn btn-sm btn-outline-secondary bu_news_block' data-block='image_right' data-fa='align-right' data-ti='columns' title='Ein Bild rechts neben einem langen Absatz'>Bild rechts</button>
+                            <button type='button' class='btn btn-sm btn-outline-secondary bu_news_block' data-block='row' data-fa='columns' data-ti='columns' title='Zwei oder drei Bilder nebeneinander, gleich zugeschnitten'>Bilderreihe</button>
+                            <button type='button' class='btn btn-sm btn-outline-secondary bu_news_block' data-block='gallery' data-fa='th-large' data-ti='layout-grid' title='Mehrere Fotos als Raster, am besten am Ende'>Galerie</button>
+                            <button type='button' class='btn btn-sm btn-outline-secondary bu_news_block' data-block='file' data-fa='paperclip' data-ti='paperclip' title='Ein Link zum Herunterladen, etwa ein PDF'>Datei</button>
+                        </div>
                         <textarea id='ta_markdown' class='form-control'
-                            placeholder='Bitte geben Sie hier die Meldung im Markdown-Format ein'
+                            placeholder='Schreib hier deinen Artikel (Markdown). Wie ein guter Artikel aufgebaut ist, steht rechts unter »So baust du einen Artikel auf«.'
                             style='flex-grow: 1;'></textarea>
                     </div>
-                    <div class='col-md-7' style='height: 100%; display: flex; flex-direction: column;'>
-                        <h3 id='preview_heading' style='margin: 15px 0;'></h3>
-                        <div id='ta_preview' class='news-post'
+                    <div class='col-md-7 news-preview-col' style='height: 100%; display: flex; flex-direction: column;'>
+                        <details class='news-guide' id='news_guide'>
+                            <summary><i data-fa='question-circle-o' data-ti='help-circle'></i><span>So baust du einen Artikel auf</span><i class='news-guide-chevron' data-fa='chevron-down' data-ti='chevron-down'></i></summary>
+                            <div class='news-guide-body'>
+                                <ol class='news-guide-steps'>
+                                    <li><strong>Titel:</strong> kurz und konkret, zum Beispiel »Sportfest der 7. Klassen«.</li>
+                                    <li><strong>Einstieg:</strong> ein, zwei Sätze, was passiert ist: wer, was, wann. Sie stehen ganz oben, noch vor dem ersten Bild, und erscheinen als Beschreibung, wenn jemand den Link teilt; das erste Bild als Vorschaubild.</li>
+                                    <li><strong>Absätze:</strong> erzähl der Reihe nach. Zwischen zwei Absätzen steht eine leere Zeile, eine Zwischenüberschrift beginnt mit <code>## </code>.</li>
+                                    <li><strong>Bilder:</strong> groß zwischen zwei Absätzen oder als Galerie am Ende. Jedes Foto bekommt eine Bildunterschrift mit Fotonachweis (»Foto: Vorname Name«).</li>
+                                </ol>
+                                <h4>Wo ein Bild stehen kann</h4>
+                                <dl class='news-guide-places'>
+                                    <dt>Bild groß</dt>
+                                    <dd>Über die ganze Breite, zwischen zwei Absätzen. Passt fast immer, auch am Handy.<br><code>image{sportfest-start, "Der Start. Foto: Erika Beispiel"}</code></dd>
+                                    <dt>Bild links oder rechts neben dem Text</dt>
+                                    <dd>Nur neben einem Absatz mit mindestens fünf Zeilen, sonst bleibt neben dem Bild ein Loch. Nie zwei hintereinander. Die Zahl ist die Breite: 4 schmal, 5 mittel, 6 halbe Breite; <code>l</code> steht für links, <code>r</code> für rechts.<br><code>image{sportfest-ziel, l5, "Im Ziel. Foto: Erika Beispiel"}</code></dd>
+                                    <dt>Bilderreihe</dt>
+                                    <dd>Zwei oder drei Bilder nebeneinander, alle im selben Format zugeschnitten (<code>3:2</code>, <code>4:3</code>, <code>1:1</code> oder <code>16:9</code>), jedes mit eigener Bildunterschrift; am Handy untereinander. Mit <code>pos=x,y</code> (Prozent von links und oben) bestimmst du, welcher Teil eines Bildes beim Zuschneiden sichtbar bleibt; in den Bausteinen ziehst du das Bild dafür einfach im Rahmen zurecht.<br><code>images{3:2}{image{lauf-1, pos=50,30, "Foto: Erika Beispiel"} image{lauf-2, "Foto: Max Muster"}}</code></dd>
+                                    <dt>Galerie</dt>
+                                    <dd>Mehrere Fotos als Raster mit einer gemeinsamen Bildunterschrift, am besten am Ende des Artikels.<br><code>gallery{sportfest-1, sportfest-2, sportfest-3, "Fotos: Erika Beispiel"}</code></dd>
+                                    <dt>Datei</dt>
+                                    <dd>Ein Link zum Herunterladen, etwa ein Elternbrief als PDF.<br><code>file{elternbrief.pdf}{Der Elternbrief}</code></dd>
+                                </dl>
+                                <p>Die Knöpfe über dem Textfeld setzen den Baustein an der Stelle ein, an der du gerade schreibst. Ersetze dann <code>BILDNAME</code> durch den Namen des Bildes: Du findest ihn unter »Bilder hochladen«, Dateien unter »Dateien hochladen«. Unter der Vorschau stehen Hinweise, wenn am Aufbau etwas auffällt.</p>
+                                <h4>Beispiel</h4>
+                                <pre class='news-guide-example'>Am Freitag haben alle Klassen beim Sportfest um Punkte gekämpft. Am Ende lag die 7b vorn, knapp vor der 9a.
+
+Schon um acht Uhr standen die ersten Läuferinnen und Läufer am Start. Bis zum Mittag ging es Lauf um Lauf, Sprung um Sprung, und die Klassen feuerten sich gegenseitig an …
+
+image{sportfest-start, "Der Start zum 800-Meter-Lauf. Foto: Erika Beispiel"}
+
+## Die Siegerehrung
+
+Nach der Mittagspause kamen alle auf dem großen Platz zusammen …
+
+gallery{sportfest-1, sportfest-2, sportfest-3, "Fotos: Erika Beispiel"}</pre>
+                            </div>
+                        </details>
+                        <h3 id='preview_heading' lang='de' style='margin: 15px 0;'></h3>
+                        <div id='ta_preview' class='news-post' lang='de'
                             style='overflow-y: auto; flex-grow: 1; padding-right: 15px;'></div>
+                        <div id='news_hints' class='news-hints' aria-live='polite' hidden></div>
                     </div>
                 </div>
             </div>
@@ -82,7 +128,300 @@
         margin-bottom: 5px;
     }
 
-    #ta_preview {}
+    /* building blocks above the text, the guide and the hints (both designs) */
+    .news-blocks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 5px;
+    }
+
+    .news-blocks .btn i {
+        margin-right: 0.35em;
+    }
+
+    .news-guide {
+        flex-shrink: 0;
+        margin: 6px 0 0;
+    }
+
+    .news-guide summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
+        list-style: none;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .news-guide summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .news-guide[open] .news-guide-chevron {
+        transform: rotate(180deg);
+    }
+
+    .news-guide-body {
+        max-height: 42vh;
+        overflow-y: auto;
+        margin-top: 8px;
+        padding: 0 15px 8px 0;
+        font-size: 0.92em;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    .news-guide-body h4 {
+        font-size: 1em;
+        font-weight: bold;
+        margin: 12px 0 4px;
+    }
+
+    .news-guide-steps {
+        padding-left: 1.3em;
+        margin-bottom: 0;
+    }
+
+    .news-guide-places dt {
+        margin-top: 6px;
+    }
+
+    .news-guide-places dd {
+        margin-bottom: 0;
+    }
+
+    .news-guide-places code {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .news-guide-example {
+        white-space: pre-wrap;
+        font-size: 0.9em;
+        margin: 0;
+    }
+
+    .news-hints {
+        flex-shrink: 0;
+        max-height: 25%;
+        overflow-y: auto;
+        margin-top: 8px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(0, 0, 0, 0.125);
+        font-size: 0.88em;
+        opacity: 0.8;
+    }
+
+    .news-hints-title {
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+
+    .news-hints ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .news-hints li {
+        display: flex;
+        gap: 0.45em;
+        align-items: flex-start;
+        margin-top: 2px;
+    }
+
+    .news-hints li i {
+        flex: none;
+        line-height: inherit;
+    }
+
+    /* the article as the website shows it (src/ruby/include/website.rb,
+       the rules of gyst-website): a float wraps the text right after it and
+       the next image, heading or table starts below it; two floats right
+       after each other stand side by side; a gallery is a grid. Phones
+       (below 768 px): every image at full width. */
+    .news-post .image.pull-left,
+    .news-post .image.pull-right,
+    .news-post .image-full,
+    .news-post .image-gallery,
+    .news-post table,
+    .news-post iframe,
+    .news-post h1,
+    .news-post h2,
+    .news-post h3,
+    .news-post h4 {
+        clear: both;
+    }
+
+    .news-post .image.image-float + .image.image-float {
+        clear: none;
+    }
+
+    .news-post .news-float-group {
+        display: flow-root;
+    }
+
+    .news-post .image-float {
+        margin-bottom: 10px;
+    }
+
+    .news-post .image-full,
+    .news-post .image-gallery {
+        margin-bottom: 1rem;
+    }
+
+    .news-post .image-gallery .caption {
+        font-size: 90%;
+        line-height: 12pt;
+        margin-top: 3px;
+    }
+
+    /* a row of images: one ratio for all, each image placed in its frame
+       (pos=x,y: object-position on the img); phones: one below the other */
+    .news-post .image-row {
+        clear: both;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px 8px;
+        margin-bottom: 1rem;
+    }
+
+    .news-post .image-row.images-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .news-post .image-row > .image {
+        margin: 0;
+    }
+
+    .news-post .image-row > .image img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3 / 2;
+        object-fit: cover;
+    }
+
+    .news-post .image-row.ratio-4-3 > .image img {
+        aspect-ratio: 4 / 3;
+    }
+
+    .news-post .image-row.ratio-1-1 > .image img {
+        aspect-ratio: 1 / 1;
+    }
+
+    .news-post .image-row.ratio-16-9 > .image img {
+        aspect-ratio: 16 / 9;
+    }
+
+    .news-post .image-row > .image-row-caption {
+        grid-column: 1 / -1;
+        margin-top: 0;
+        font-size: 90%;
+        line-height: 12pt;
+    }
+
+    .news-post .gallery-items {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    .news-post .gallery-1 .gallery-items {
+        grid-template-columns: 1fr;
+    }
+
+    .news-post .gallery-2 .gallery-items,
+    .news-post .gallery-4 .gallery-items {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .news-post .gallery-item img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+    }
+
+    @media (max-width: 767px) {
+        body:not(.ui-preview) .news-post .image.image-float {
+            float: none !important;
+            width: 100%;
+            margin: 0 0 1rem;
+        }
+
+        body:not(.ui-preview) .news-post .gallery-items {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        body:not(.ui-preview) .news-post .image-row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        body:not(.ui-preview) .news-post .gallery-3 .gallery-item:first-child {
+            grid-column: 1 / -1;
+        }
+    }
+
+    #ta_preview {
+        display: flow-root;
+    }
+
+    /* the website hyphenates German text, headings only long compounds */
+    #ta_preview,
+    #preview_heading {
+        -webkit-hyphens: auto;
+        hyphens: auto;
+        hyphenate-limit-chars: 6 3 3;
+    }
+
+    #preview_heading,
+    #ta_preview h1,
+    #ta_preview h2,
+    #ta_preview h3,
+    #ta_preview h4 {
+        hyphenate-limit-chars: 10 4 4;
+    }
+
+    /* Neues Design: tokens instead of colours */
+    .ui-preview .news-guide summary {
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .news-guide summary .ti {
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .news-guide-chevron {
+        transition: transform 0.2s;
+    }
+
+    .ui-preview .news-guide-body,
+    .ui-preview .news-hints {
+        border-color: var(--pv-line);
+    }
+
+    .ui-preview .news-guide-body code,
+    .ui-preview .news-guide-example {
+        color: var(--pv-ink);
+        font-family: var(--pv-mono);
+    }
+
+    .ui-preview .news-hints {
+        opacity: 1;
+        color: var(--pv-muted);
+    }
+
+    .ui-preview .news-hints-title {
+        color: var(--pv-ink);
+        font-weight: 600;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ui-preview .news-guide-chevron {
+            transition: none;
+        }
+    }
 
     #news_here .btn {
         width: 32px;
@@ -107,6 +446,233 @@
     var preview_content = '';
     var force_close = false;
     var row_title_element = null;
+
+    // ---------- Writing help: building blocks, guide, hints (both designs) ----------
+    var NEWS_FLOAT_POSITIONS = ['l3', 'l4', 'l5', 'l6', 'r3', 'r4', 'r5', 'r6'];
+    // about five lines of text beside an image of five columns
+    var NEWS_SIDE_TEXT_MIN = 350;
+    var NEWS_CHARS_PER_LINE = 70;
+    var NEWS_PLACEHOLDERS = ['BILDNAME', 'BILD1', 'BILD2', 'BILD3', 'DATEINAME', 'Bildunterschrift', 'Foto: Name', 'Fotos: Name', 'Beschriftung'];
+    var NEWS_CAPTION = 'Bildunterschrift. Foto: Name';
+    // [text, the part to select after inserting it]
+    var NEWS_BLOCKS = {
+        image_full: [`image{BILDNAME, "${NEWS_CAPTION}"}`, 'BILDNAME'],
+        image_left: [`image{BILDNAME, l5, "${NEWS_CAPTION}"}`, 'BILDNAME'],
+        image_right: [`image{BILDNAME, r5, "${NEWS_CAPTION}"}`, 'BILDNAME'],
+        row: ['images{3:2}{image{BILD1, "Bildunterschrift. Foto: Name"} image{BILD2, "Bildunterschrift. Foto: Name"}}', '3:2'],
+        gallery: ['gallery{BILD1, BILD2, BILD3, "Bildunterschrift. Fotos: Name"}', 'BILD1, BILD2, BILD3'],
+        file: ['file{DATEINAME.pdf}{Beschriftung}', 'DATEINAME.pdf'],
+    };
+
+    function news_icon(el) {
+        let fa = el.getAttribute('data-fa'), ti = el.getAttribute('data-ti');
+        return PV ? `ti ti-${ti}` : `fa fa-${fa}`;
+    }
+
+    function news_init_icons() {
+        document.querySelectorAll('.bu_news_block').forEach(function (button) {
+            let i = document.createElement('i');
+            i.className = news_icon(button);
+            i.setAttribute('aria-hidden', 'true');
+            button.prepend(i);
+        });
+        document.querySelectorAll('.news-guide summary i[data-ti]').forEach(function (i) {
+            i.className = `${i.className} ${news_icon(i)}`.trim();
+            i.setAttribute('aria-hidden', 'true');
+        });
+    }
+
+    // Puts a block on its own line with a blank line before and after it:
+    // at the cursor if it stands at the start of a line, otherwise after the
+    // paragraph the cursor is in. Keeps the browser's undo where it can.
+    function news_insert_block(key) {
+        let ta = document.getElementById('ta_markdown');
+        let text = NEWS_BLOCKS[key][0], select = NEWS_BLOCKS[key][1];
+        let value = ta.value;
+        let pos = ta.selectionEnd;
+        if (pos > 0 && value[pos - 1] !== '\n') {
+            let end = value.substr(pos).search(/\n[ \t]*\n/);
+            pos = end < 0 ? value.length : pos + end;
+        }
+        let from = pos, to = pos;
+        while (from > 0 && /\s/.test(value[from - 1])) from -= 1;
+        while (to < value.length && /\s/.test(value[to])) to += 1;
+        let before = from > 0 ? '\n\n' : '';
+        let insert = `${before}${text}\n\n`;
+        ta.focus();
+        ta.setSelectionRange(from, to);
+        let done = false;
+        try { done = document.execCommand('insertText', false, insert); } catch (e) { done = false; }
+        if (!done || ta.value.substr(from, insert.length) !== insert)
+            ta.setRangeText(insert, from, to, 'end');
+        let start = from + before.length + text.indexOf(select);
+        ta.setSelectionRange(start, start + select.length);
+        update_buttons();
+    }
+
+    function news_parse_include(kind, body) {
+        if (kind === 'gallery') {
+            let caption = '';
+            let quote = body.indexOf('"');
+            if (quote >= 0) {
+                caption = body.substr(quote).trim();
+                caption = caption.substr(1, caption.length - 2).trim();
+                body = body.substr(0, quote);
+            }
+            let slugs = body.split(',').map(function (x) { return x.trim(); }).filter(function (x) { return x.length > 0; });
+            return { kind: 'gallery', slugs: slugs, caption: caption, float: false };
+        }
+        let image = news_parse_image(body);
+        return { kind: 'image', slug: image.slug, caption: image.caption, float: image.pos !== null };
+    }
+
+    // the inside of image{…} as website.rb (parse_news_image) reads it:
+    // slug, position (l3–l6, r3–r6), pos=x,y (the crop) before the caption,
+    // caption
+    function news_parse_image(body) {
+        let quote = body.indexOf('"');
+        let head = quote >= 0 ? body.substr(0, quote) : body;
+        let tail = quote >= 0 ? body.substr(quote) : '';
+        let crop = null;
+        let m = head.match(/,\s*pos=(\d{1,3}),(\d{1,3})\s*(,|$)/);
+        if (m) {
+            crop = [Math.min(100, parseInt(m[1], 10)), Math.min(100, parseInt(m[2], 10))];
+            head = head.replace(m[0], m[3] === ',' ? ',' : '');
+        }
+        let parts = (head + tail).split(',');
+        let slug = parts[0].trim();
+        let pos = (parts[1] || '').trim();
+        let caption;
+        if (NEWS_FLOAT_POSITIONS.indexOf(pos) >= 0) {
+            caption = parts.slice(2).join(',').trim();
+        } else {
+            caption = parts.slice(1).join(',').trim();
+            pos = null;
+        }
+        caption = caption.substr(1, caption.length - 2).trim();
+        return { slug: slug, pos: pos, caption: caption, crop: crop };
+    }
+
+    // images{3:2, "caption"}{image{…} image{…}}: two or three images in a row
+    var NEWS_ROW_RATIOS = ['3:2', '4:3', '1:1', '16:9'];
+    var NEWS_IMAGE_ROW = /images\{\s*([0-9]+:[0-9]+)\s*(?:,\s*"([^"{}]*)")?\s*\}\{((?:\s*image\{[^{}]*\}\s*)+)\}/;
+
+    function news_parse_row(text) {
+        let m = text.match(NEWS_IMAGE_ROW);
+        if (!m) return null;
+        let images = [];
+        m[3].replace(/image\{([^{}]*)\}/g, function (_, body) { images.push(news_parse_image(body)); return ''; });
+        if (NEWS_ROW_RATIOS.indexOf(m[1]) < 0 || images.length < 2 || images.length > 3) return null;
+        return { ratio: m[1], caption: (m[2] || '').trim(), images: images };
+    }
+
+    // The article as a sequence of text paragraphs, headings and images, the
+    // way render_news_includes and Markdown see it.
+    function news_items(markdown) {
+        let items = [];
+        let add_text = function (text) {
+            for (let block of text.split(/\n[ \t]*\n/)) {
+                // an embedded video or table: ends the text beside an image
+                if (/^\s*</.test(block) && /<(iframe|table)\b/i.test(block)) {
+                    items.push({ kind: 'embed' });
+                    continue;
+                }
+                let lines = block.split('\n');
+                while (lines.length > 0) {
+                    let line = lines[0].trim();
+                    if (/^#+\s/.test(line)) {
+                        items.push({ kind: 'text', heading: true, chars: 0 });
+                        lines.shift();
+                        continue;
+                    }
+                    let rest = lines.join('\n')
+                        .replace(/file\{[^}]*\}\{([^}]*)\}/g, '$1')
+                        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+                        .replace(/[*_`>]/g, '')
+                        .replace(/\s+/g, ' ').trim();
+                    if (rest.length > 0) items.push({ kind: 'text', heading: false, chars: rest.length });
+                    break;
+                }
+            }
+        };
+        let re = new RegExp(`${NEWS_IMAGE_ROW.source}|(image|gallery)\\{([^}]+)\\}`, 'g');
+        let last = 0, m;
+        while ((m = re.exec(markdown)) !== null) {
+            add_text(markdown.substring(last, m.index));
+            let row = m[4] ? null : news_parse_row(m[0]);
+            if (row) {
+                let captions = row.images.map(function (i) { return i.caption; });
+                items.push({ kind: 'row', slug: row.images[0].slug, float: false, row: row,
+                    caption: captions.every(function (c) { return c; }) || row.caption ? `${row.caption} ${captions.join(' ')}` : '' });
+            } else if (m[4]) {
+                items.push(news_parse_include(m[4], m[5]));
+            } else {
+                // not a valid row: its images count one by one
+                let inner = /image\{([^}]+)\}/g, i;
+                while ((i = inner.exec(m[0])) !== null) items.push(news_parse_include('image', i[1]));
+            }
+            last = m.index + m[0].length;
+        }
+        add_text(markdown.substr(last));
+        return items;
+    }
+
+    function news_hints(markdown) {
+        let hints = [];
+        let items = news_items(markdown || '');
+        if (items.length === 0) return hints;
+        let name = function (item) {
+            return item.kind === 'gallery' ? 'Die Galerie' : (item.kind === 'row' ? 'Die Bilderreihe' : `Das Bild »${item.slug}«`);
+        };
+        let placeholders = NEWS_PLACEHOLDERS.filter(function (p) { return markdown.indexOf(p) >= 0; });
+        if (placeholders.length > 0)
+            hints.push(`Im Text stehen noch Platzhalter (${placeholders.slice(0, 3).join(', ')}). Ersetze sie durch den Namen des Bildes oder der Datei und eine echte Bildunterschrift.`);
+        let first = items[0], last_item = items[items.length - 1];
+        if (first.kind === 'image' || first.kind === 'gallery' || first.kind === 'row' || first.heading)
+            hints.push(first.kind === 'text' ? 'Der Artikel beginnt mit einer Überschrift. Fang mit ein, zwei Sätzen an, worum es geht; der Titel steht schon darüber.' :
+                'Der Artikel beginnt mit einem Bild. Fang mit ein, zwei Sätzen an, worum es geht; das Bild kommt danach.');
+        items.forEach(function (item, index) {
+            if (item.kind !== 'image' && item.kind !== 'gallery' && item.kind !== 'row') return;
+            if (!item.caption)
+                hints.push(item.kind === 'row' ? 'In der Bilderreihe fehlt eine Bildunterschrift. Schreib zu jedem Bild oder gemeinsam darunter, was zu sehen ist und von wem die Fotos sind.' : `${name(item)} hat keine Bildunterschrift. Schreib dazu, was zu sehen ist und von wem das Foto ist (»Foto: Name«).`);
+            else if (!/foto|bild|grafik|quelle|©/i.test(item.caption))
+                hints.push(`${name(item)} hat keinen Fotonachweis. Ergänze in der Bildunterschrift, von wem das Foto ist (»Foto: Name«).`);
+            if (!item.float) return;
+            // the website: a float wraps the text right after it, up to the
+            // next image or heading; two floats right after each other
+            // stand side by side as a pair
+            let chars = 0, next = index + 1;
+            while (next < items.length && items[next].kind === 'text' && !items[next].heading) {
+                chars += items[next].chars;
+                next += 1;
+            }
+            if (chars === 0 && next < items.length && items[next].float) {
+                hints.push(`»${item.slug}« und »${items[next].slug}« stehen als Paar nebeneinander. Ist das nicht gewollt, setz eines groß oder nimm beide in eine Galerie.`);
+                return;
+            }
+            if (chars >= NEWS_SIDE_TEXT_MIN) return;
+            let lines = Math.round(chars / NEWS_CHARS_PER_LINE);
+            let amount = chars === 0 ? 'kein Text' : (lines <= 1 ? 'nur etwa eine Zeile' : `nur etwa ${lines} Zeilen`);
+            hints.push(`Neben dem Bild »${item.slug}« steht ${amount}, daneben bleibt Platz frei. Ein Bild neben dem Text braucht etwa fünf Zeilen (vier, fünf Sätze); sonst nimm »Bild groß«.`);
+        });
+        if (last_item.kind === 'image' && !last_item.float && items.length > 1)
+            hints.push('Der Artikel endet mit einem einzelnen Bild. Stell es zwischen zwei Absätze, oder sammle die Fotos am Ende als Galerie.');
+        return hints;
+    }
+
+    function news_show_hints(markdown) {
+        let box = document.getElementById('news_hints');
+        let hints = news_hints(markdown);
+        box.textContent = '';
+        box.hidden = hints.length === 0;
+        if (hints.length === 0) return;
+        $('<div>').addClass('news-hints-title').text(hints.length === 1 ? 'Ein Hinweis zum Aufbau' : `${hints.length} Hinweise zum Aufbau`).appendTo(box);
+        let ul = $('<ul>').appendTo(box);
+        for (let hint of hints) {
+            $('<li>').append($('<i>').addClass(PV ? 'ti ti-bulb' : 'fa fa-lightbulb-o').attr('aria-hidden', 'true'))
+                .append($('<span>').text(hint)).appendTo(ul);
+        }
+    }
 
     function pending_changes() {
         let flag = (old_title !== $('.ti_title').val().trim() ||
@@ -144,6 +710,44 @@
         }
     }
 
+    // As on the website: an image beside the text wraps only the text right
+    // after it (paragraphs and lists, up to the next image, heading or
+    // embed); the next block starts below it. Two images beside the text
+    // right after each other stand side by side.
+    function news_group_floats(root) {
+        let children = Array.from(root.children);
+        for (let i = 0; i < children.length; i++) {
+            if (!children[i].classList.contains('image-float')) continue;
+            let group = document.createElement('div');
+            group.className = 'news-float-group';
+            root.insertBefore(group, children[i]);
+            group.appendChild(children[i]);
+            while (i + 1 < children.length && children[i + 1].classList.contains('image-float'))
+                group.appendChild(children[++i]);
+            while (i + 1 < children.length && /^(P|UL|OL)$/.test(children[i + 1].tagName))
+                group.appendChild(children[++i]);
+        }
+    }
+
+    // the article as the website shows it, and the hints below it
+    // (quiet: the new design's editor calls this while someone types)
+    function news_render_preview(quiet) {
+        let markdown = $('#ta_markdown').val();
+        let title = $('.ti_title').val();
+        api_call('/api/get_news_preview', { markdown: markdown }, function (data) {
+            if (data.success) {
+                $('#preview_heading').text(title);
+                $('#ta_preview').html(data.html);
+                news_group_floats(document.getElementById('ta_preview'));
+                news_show_hints(markdown);
+                preview_title = title.trim();
+                preview_content = markdown.trim();
+                update_buttons();
+                document.dispatchEvent(new CustomEvent('news-preview-rendered'));
+            }
+        }, quiet ? { no_please_wait: true } : {});
+    }
+
     function open_news_entry(timestamp) {
         api_call('/api/get_news_entry', { timestamp: timestamp }, function (data) {
             if (data.success) {
@@ -151,13 +755,18 @@
                 $('#ta_markdown').val(data.content);
                 $('#preview_heading').text(data.title);
                 $('#ta_preview').html(data.content_html);
+                news_group_floats(document.getElementById('ta_preview'));
                 old_timestamp = timestamp;
                 old_title = data.title;
                 old_content = data.content;
                 preview_title = data.title;
                 preview_content = data.content;
                 force_close = false;
-                
+                document.getElementById('news_guide').open = false;
+                news_show_hints(data.content);
+                if (window.pv_news_editor) pv_news_editor.load(data.content, false, { timestamp: timestamp, published: data.published === true });
+                document.dispatchEvent(new CustomEvent('news-preview-rendered'));
+
                 update_buttons();
                 $('#editModal').modal('show');
             }
@@ -215,6 +824,11 @@
                         });
                     }
                 },
+                // published: its address on the website (pv_news_public_url)
+                ...(entry.published && pv_news_public_url(entry.timestamp) ? [
+                    { label: 'Link kopieren', cls: 'pv-bu-copy-news-link', run: function () { pv_news_copy_link(row, entry); } },
+                    { label: 'Beitrag öffnen', cls: 'pv-bu-open-news', run: function () { window.open(pv_news_public_url(entry.timestamp), '_blank', 'noopener'); } },
+                ] : []),
                 {
                     label: 'Löschen', danger: true, cls: 'pv-bu-delete-news', run: function () {
                         pv_list.confirm_delete(`Den Beitrag »${title}« löschen?`, function () {
@@ -232,7 +846,28 @@
             ],
         });
         row.setAttribute('data-timestamp', `${entry.timestamp}`);
+        // after »Link kopieren« the check takes the place of »•••« for a moment
+        let more = row.querySelector(':scope > .pv-lrow-actions > .pv-lmore');
+        if (more && more.querySelector('.ti-dots')) {
+            more.querySelector('.ti-dots').classList.add('pv-copy-icon');
+            let ok = document.createElement('i');
+            ok.className = 'ti ti-check pv-copy-ok';
+            ok.setAttribute('aria-hidden', 'true');
+            more.appendChild(ok);
+        }
         return row;
+    }
+
+    // the article page on the website: beitrag-<timestamp in base 36>;
+    // the base comes with preview/news.js (SCHOOL_WEBSITE_URL)
+    function pv_news_public_url(timestamp) {
+        let base = window.pv_news_public_base;
+        return base ? `${base}/beitrag-${Number(timestamp).toString(36)}` : null;
+    }
+
+    function pv_news_copy_link(row, entry) {
+        let more = row.querySelector(':scope > .pv-lrow-actions > .pv-lmore');
+        pv_copy.run(more, pv_news_public_url(entry.timestamp), { what: 'Link' });
     }
 
     function pv_news_render() {
@@ -294,6 +929,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        news_init_icons();
+        $('.bu_news_block').click(function (e) {
+            news_insert_block(e.currentTarget.getAttribute('data-block'));
+        });
         $('#editModal').on('hide.bs.modal', function (e) {
             if ($(e.target).attr('id') === 'editModal' && pending_changes() && (!force_close)) {
                 $('#save_news_btn_container').effect('shake', { direction: 'left', distance: 4 });
@@ -391,19 +1030,16 @@
             $('#ta_markdown').val('');
             $('#preview_heading').text('');
             $('#ta_preview').html('');
+            // a new article starts with the guide open
+            document.getElementById('news_guide').open = true;
+            news_show_hints('');
+            if (window.pv_news_editor) pv_news_editor.load('', true);
+            document.dispatchEvent(new CustomEvent('news-preview-rendered'));
             update_buttons();
             $('#editModal').modal('show');
         });
         $('#bu_render_preview').click(function (e) {
-            api_call('/api/get_news_preview', { markdown: $('#ta_markdown').val() }, function (data) {
-                if (data.success) {
-                    $('#preview_heading').text($('.ti_title').val());
-                    $('#ta_preview').html(data.html);
-                    preview_title = $('.ti_title').val().trim();
-                    preview_content = $('#ta_markdown').val().trim();
-                    update_buttons();
-                }
-            });
+            news_render_preview();
         });
         $('.ti_title').keydown(function (e) {
             if (e.keyCode === 13 && e.ctrlKey)
@@ -415,6 +1051,8 @@
                 $('#bu_render_preview').click();
             update_buttons();
         });
+        // typing, pasting, dropping: the buttons follow every change
+        $('.ti_title, #ta_markdown').on('input', function (e) { update_buttons(); });
         $('.ti_title').keyup(function (e) { update_buttons(); });
         $('#ta_markdown').keyup(function (e) { update_buttons(); });
         $('.ti_title').change(function (e) { update_buttons(); });
@@ -469,4 +1107,4 @@
             }
         });
     });
-</script>
+</script>#{news_editor_preview_script}

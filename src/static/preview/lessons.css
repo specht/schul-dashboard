@@ -169,7 +169,7 @@
    stronger one */
 /* (dark.css darkens every other day with !important) */
 .ui-preview .pv-kb .lesson_table tr.lesson.odd {
-    background: transparent !important;
+    background-color: transparent !important;
 }
 
 .ui-preview .pv-kb .lesson_table tr.lesson.sep {
@@ -1131,4 +1131,37 @@ body:not(.pv-kb-none) .pv-kb-hint {
 
 .ui-preview .pv-kb-sheet:focus {
     outline: none;
+}
+
+/* the list (tablets and phones): a chosen or hovered row reaches 10 px past
+   the text on both sides, so its tint and the accent line at its start
+   don't touch the text; the text stays where it was, the hairlines between
+   the rows keep their length (drawn as a background, inset like the text) */
+@media (max-width: 1023px) {
+    .ui-preview .pv-kb .lesson_table tr.lesson {
+        --pv-kb-line: var(--pv-line);
+        margin-inline: -10px;
+        padding-left: 10px;
+        padding-right: 22px;
+        border-top: 0;
+        border-radius: 0;
+        background-image: linear-gradient(var(--pv-kb-line), var(--pv-kb-line));
+        background-size: calc(100% - 20px) 1px;
+        background-position: 10px 0;
+        background-repeat: no-repeat;
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson.sep {
+        --pv-kb-line: color-mix(in srgb, var(--pv-ink) 20%, var(--pv-surface));
+    }
+
+    .ui-preview .pv-kb .lesson_table tr.lesson-table-info-row.today + tr.lesson {
+        --pv-kb-line: transparent;
+    }
+}
+
+@media (max-width: 767px) {
+    .ui-preview .pv-kb .lesson_table tr.lesson {
+        padding-right: 14px;
+    }
 }

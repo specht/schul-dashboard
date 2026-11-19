@@ -363,3 +363,52 @@ test('Kursbuch ohne Vorschau: wie bisher', async ({ page }) => {
   await expect(page.locator('.lesson_pane .bu-save-discard-container .bu-save-changes')).toHaveCount(1);
   await expect(page.locator('.lesson_pane a[href="/api/kursbuch_pdf/Ma_5a"]')).toHaveCount(1);
 });
+
+// Phones: the lesson sheet closes when pulled down by its head, like every
+// sheet; with unsaved changes it springs back and asks. The chosen row's
+// tint reaches past the text, so its accent line doesn't touch the text.
+test('Neues Design: Kursbuch-Sheet nach unten wischen, Auswahl mit Abstand', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'touch on phones');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/lessons/Ma_5a');
+    const row = weekRow(page);
+    const sheet = page.locator('.pv-kb-sheet');
+    const pull = async () => {
+      const head = (await page.locator('.pv-kb-pane-head').boundingBox())!;
+      const cdp = await page.context().newCDPSession(page);
+      const x = head.x + head.width / 2, y = head.y + 20;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      for (let i = 1; i <= 8; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 25 }] });
+        await page.waitForTimeout(30);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    };
+    await row.locator('.pv-kb-day').click();
+    await expect(sheet).toBeVisible();
+    // the chosen row: tint and line left of the text, the text where it was
+    await expect(row).toHaveClass(/selected/);
+    const other = page.locator('.pv-kb .lesson_table tr.lesson:not(.selected)').first();
+    const textX = async (r: typeof row) => (await r.locator('.pv-kb-day').boundingBox())!.x;
+    expect(Math.abs((await textX(row)) - (await textX(other)))).toBeLessThan(1);
+    expect((await textX(row)) - (await row.boundingBox())!.x).toBeGreaterThanOrEqual(8);
+    // pulled down: closed
+    await pull();
+    await expect(sheet).toBeHidden();
+    await expect(page.locator('body')).not.toHaveClass(/pv-sheet-open/);
+    // unsaved changes: it stays and asks
+    await row.locator('.pv-kb-day').click();
+    await expect(sheet).toBeVisible();
+    await page.locator('#ti_notizen').fill('nicht speichern');
+    await pull();
+    const dialog = dashboardDialog(page);
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('Änderungen verwerfen?');
+    await dialog.getByRole('button', { name: 'Verwerfen' }).click();
+    await expect(sheet).toBeHidden();
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

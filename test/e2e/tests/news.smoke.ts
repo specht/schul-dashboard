@@ -14,7 +14,7 @@ test('News-Vorschau wertet keinen Ruby-Code aus', async ({ baseURL }) => {
   expect(html).toContain('#{6*7}');
   expect(html).not.toContain('Ergebnis: 42');
   // the image include still works
-  expect(html).toContain('<div class="image">');
+  expect(html).toContain('<div class="image image-full">');
   expect(html).toContain('Eine Bildunterschrift');
   await request.dispose();
 });

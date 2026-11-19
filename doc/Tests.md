@@ -238,6 +238,17 @@ Beispieldaten im Produktionsmodus. `login(page, email)` und
 an: Code aus der Mail (Mailpit) oder aus der OTP-App (TOTP wird im Test
 berechnet), bei Lehrkräften mit zweitem Faktor.
 
+Schneller anmelden: `login()` meldet jedes Konto einmal pro Lauf wirklich an
+und nimmt danach dessen Sitzung wieder (Cookie). Ist die Sitzung inzwischen
+beendet (abgemeldet, gelöscht), zeigt die Startseite das Anmeldeformular und
+`login()` meldet sich neu an. Tests, die die Anmeldung, Sitzungen oder den
+zweiten Faktor prüfen (`login.spec.ts`, `session.spec.ts`,
+`otp-nudge.spec.ts`, `design-preview-login.spec.ts`), melden sich immer neu
+an; `login(page, email, { fresh: true })` erzwingt das für einen einzelnen
+Aufruf, `E2E_FRESH_LOGINS=1` für den ganzen Lauf. Die Monitor-Specs laufen
+nur im Desktop-Projekt (Monitore sind Bildschirme im Flur, die Specs setzen
+die Größe selbst).
+
 Abläufe, die zuerst abgedeckt werden (Desktop **und** Handy-Viewport):
 
 | Ablauf | Einstieg | Rolle |

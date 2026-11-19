@@ -44,6 +44,10 @@ hierher übernehmen, wenn sie angegangen werden.
       Fehlerbehandlung (eine fehlerhafte Mail bzw. Einladung hält die anderen
       nicht mehr auf) ist bisher nur von Hand geprüft.
 
+- [ ] E2E, selten: `sitzplan.spec.ts` »Vorgaben je Werkzeug« hing am Handy
+      einmal 28 s beim Klick auf »Liste löschen« (19.11.2026, in 40
+      Wiederholungen nicht wieder aufgetreten) – beobachten
+
 ## 2. UI/UX
 
 ### Fehler

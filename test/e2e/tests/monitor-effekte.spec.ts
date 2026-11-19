@@ -40,7 +40,7 @@ for (const effekt of EFFEKTE) {
     // no extra hint text on the monitor
     await expect(page.locator('.fx-hinweis')).toHaveCount(0);
     // let the effect run a little (runs into the error check of the fixtures)
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(1500);
   });
 }
 

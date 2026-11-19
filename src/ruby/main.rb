@@ -169,6 +169,7 @@ require './include/sitzplaneditor.rb'
 require './include/sitzplanhelfer.rb'
 require './include/zufallsgruppen.rb'
 require './include/sms.rb'
+require './include/start_todo.rb'
 require './include/techpost.rb'
 require './include/stats.rb'
 require './include/tablet.rb'
@@ -2560,7 +2561,8 @@ class Main < Sinatra::Base
             nav_items = []
             if user_logged_in?
                 unless external_user_logged_in?
-                    nav_items << ['/', 'Stundenplan', 'fa fa-calendar']
+                    # the new design: a badge with what is open (include/start_todo.rb)
+                    nav_items << ['/', "Stundenplan#{start_page_todo_nav_badge}", 'fa fa-calendar']
                 end
                 if teacher_logged_in?
                     nav_items << :kurse

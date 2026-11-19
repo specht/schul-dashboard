@@ -93,9 +93,11 @@ test('Neues Design: Umfrage anlegen, durchführen, beantworten, auswerten', asyn
     await expect(run.locator('.pv-lrow-facts')).toHaveText('2 Teilnehmer, mit Namen');
     await expect(run.locator('.pv-run-count')).toHaveText('0 von 2 beantwortet (0 %)');
 
-    // ---------- taking part: the hint on the start page, the answer sheet ----------
+    // ---------- taking part: "Zu erledigen" on the start page, the answer sheet ----------
     await page.goto('/');
-    await page.locator('.hint_poll', { hasText: title }).locator('.bu-launch-poll').click();
+    const todoFold = page.locator('#pv_todo .pv-todo-fold');
+    if (await todoFold.count() > 0 && (await todoFold.getAttribute('aria-expanded')) === 'false') await todoFold.click();
+    await page.locator('#pv_todo .pv-todo-row', { hasText: title }).getByRole('button', { name: 'Teilnehmen' }).click();
     const answer = page.locator('#pollResponseModal');
     await expect(answer).toBeVisible();
     await expect(answer).toHaveClass(/pv-sheet/);

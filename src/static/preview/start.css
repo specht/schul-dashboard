@@ -1,0 +1,470 @@
+/* Neues Design (Vorschau): what is open, and who is waiting.
+
+   "Zu erledigen" (preview/start.js): polls, books, deadlines and the hint
+   about the Authenticator app as rows of one pattern – the picture or an
+   icon, the title with a quiet line of facts, one calm button. Wide screens:
+   a box at the top of the column beside the week; phones: at the top of the
+   first day in the agenda, more than two rows folded into one line;
+   tablets: the same above the week. Never a column of its own.
+
+   The badges on "Stundenplan" (sidebar) and "Heute" (tab bar) count what is
+   open (include/start_todo.rb).
+
+   The Datentresor hotline (preview/hotline.js): a bar at the top of every
+   page for admins with the hotline role; on phones a slim card below the
+   status bar. */
+
+/* ---------- Zu erledigen ---------- */
+
+.pv-todo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--pv-ink);
+    container-type: inline-size;
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-todo-head {
+    margin: 0 2px 2px;
+    font: 700 0.78rem/1.2 var(--pv-text);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--pv-muted);
+}
+
+.pv-todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pv-todo-folded .pv-todo-list {
+    display: none;
+}
+
+/* one row: picture or icon, text, actions (below the text where it is
+   narrow, on the right where there is room) */
+.pv-todo-row {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: start;
+    padding: 6px;
+    border-radius: 10px;
+}
+
+.pv-todo-lead {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+    font-size: 18px;
+}
+
+.pv-todo-avatar {
+    display: block;
+    width: 32px;
+    height: 32px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--pv-hover) center / cover no-repeat;
+}
+
+.pv-todo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    padding-top: 1px;
+    line-height: 1.25;
+}
+
+.pv-todo-title {
+    font-weight: 700;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.pv-todo-facts,
+.pv-todo-note {
+    font-size: 0.82rem;
+    color: var(--pv-muted);
+}
+
+.pv-todo-note {
+    margin-top: 2px;
+}
+
+/* close to the end: the countdown in the accent */
+.pv-todo-facts .pv-todo-soon {
+    color: var(--acc-text);
+    font-weight: 700;
+}
+
+.pv-todo-done .pv-todo-title {
+    color: var(--pv-muted);
+    font-weight: 600;
+}
+
+.pv-todo-actions {
+    grid-column: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.pv-todo-row:not(:has(.pv-todo-actions)) .pv-todo-lead {
+    grid-row: auto;
+}
+
+@container (min-width: 440px) {
+    .pv-todo-row {
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+    }
+
+    .pv-todo-lead,
+    .pv-todo-row:not(:has(.pv-todo-actions)) .pv-todo-lead {
+        grid-row: auto;
+    }
+
+    .pv-todo-actions {
+        grid-column: 3;
+        grid-row: 1;
+        flex-wrap: nowrap;
+    }
+}
+
+/* calm buttons: grey, the "Später" only as text */
+.ui-preview .pv-todo-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 31px;
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font: 600 0.88rem/1.2 var(--pv-text);
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.ui-preview .pv-todo-btn:hover {
+    background: color-mix(in srgb, var(--pv-ink) 12%, var(--pv-surface));
+    color: var(--pv-ink);
+    text-decoration: none;
+}
+
+.ui-preview .pv-todo-btn.pv-todo-quiet {
+    background: transparent;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-todo-btn.pv-todo-quiet:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-todo-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* hidden polls: a quiet line, like folded runs (pv_list.fold) */
+.ui-preview .pv-todo-show-hidden {
+    align-self: flex-start;
+    margin: 2px 0 0 48px;
+    padding: 3px 6px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--pv-muted);
+    font: 0.82rem/1.2 var(--pv-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.ui-preview .pv-todo-show-hidden:hover {
+    color: var(--pv-ink);
+    text-decoration: underline;
+}
+
+/* folded (phones and tablets, more than two rows): one line */
+.ui-preview .pv-todo-fold {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--pv-ink);
+    font: 600 0.95rem/1.25 var(--pv-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ui-preview .pv-todo-fold:hover {
+        background: var(--pv-hover);
+    }
+}
+
+.ui-preview .pv-todo-fold > .ti:first-child {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-size: 18px;
+}
+
+.pv-todo-fold-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.ui-preview .pv-todo-fold > .ti-chevron-down {
+    flex: none;
+    color: var(--pv-muted);
+    font-size: 18px;
+    transition: transform 0.2s ease;
+}
+
+.ui-preview .pv-todo-fold[aria-expanded='true'] > .ti-chevron-down {
+    transform: rotate(180deg);
+}
+
+.ui-preview .pv-todo-btn:focus-visible,
+.ui-preview .pv-todo-fold:focus-visible,
+.ui-preview .pv-todo-show-hidden:focus-visible,
+.ui-preview .pv-hotline-btn:focus-visible {
+    outline: 2px solid var(--acc-text);
+    outline-offset: 2px;
+}
+
+.ui-preview .pv-todo-btn:focus:not(:focus-visible),
+.ui-preview .pv-todo-fold:focus:not(:focus-visible),
+.ui-preview .pv-todo-show-hidden:focus:not(:focus-visible),
+.ui-preview .pv-hotline-btn:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* phones (and "Tag"): the top of the day, a hairline before the lessons */
+.pv-todo-agenda {
+    margin: -2px 0 4px 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+/* tablets and in between: above the week, a panel like the week's */
+.pv-todo-top {
+    margin: 0 0 12px;
+    padding: 8px;
+    background: var(--pv-surface);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.pv-todo-top .pv-todo-head {
+    margin: 4px 8px 2px;
+}
+
+/* wide screens: the box in the column (.pv-side-box, preview.css) */
+.pv-todo-side {
+    gap: 4px;
+}
+
+.pv-todo-side .pv-todo-row {
+    margin: 0 -6px;
+    row-gap: 4px;
+}
+
+.ui-preview .pv-todo-side .pv-todo-btn {
+    min-height: 28px;
+    padding: 4px 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-preview .pv-todo-fold > .ti-chevron-down {
+        transition: none;
+    }
+}
+
+/* ---------- the badges ---------- */
+
+.pv-nav-badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: auto;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--acc);
+    color: var(--acc-ink);
+    font: 700 11px/1 var(--pv-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-nav-badge[hidden] {
+    display: none;
+}
+
+/* the tablet rail: at the icon's corner (the names are hidden there) */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link:has(> .pv-nav-badge) {
+        position: relative;
+    }
+
+    .ui-preview .navbar .nav-link > .pv-nav-badge {
+        position: absolute;
+        top: 3px;
+        left: calc(50% + 4px);
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        font-size: 10px;
+    }
+}
+
+/* ---------- Datentresor hotline ---------- */
+
+.pv-hotline {
+    position: sticky;
+    top: 0;
+    z-index: 7400;
+    padding: 10px 16px 0;
+    pointer-events: none;
+}
+
+.pv-hotline[hidden] {
+    display: none;
+}
+
+.pv-hotline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 760px;
+    margin: 0 auto 10px;
+    padding: 10px 12px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border-left: 4px solid var(--acc);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+    pointer-events: auto;
+}
+
+.pv-hotline-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-size: 20px;
+}
+
+.pv-hotline-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.25;
+}
+
+.pv-hotline-kicker {
+    font: 700 0.72rem/1.2 var(--pv-text);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--acc-text);
+}
+
+.pv-hotline-who {
+    overflow-wrap: break-word;
+}
+
+.pv-hotline-wait {
+    color: var(--pv-muted);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* the one thing to do now: the accent */
+.ui-preview .pv-hotline-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: none;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--acc);
+    color: var(--acc-ink);
+    font: 600 0.92rem/1.2 var(--pv-text);
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.ui-preview .pv-hotline-btn:hover {
+    background: color-mix(in srgb, var(--acc) 85%, #000);
+    color: var(--acc-ink);
+    text-decoration: none;
+}
+
+/* phones: a slim card below the status bar */
+@media (max-width: 767px) {
+    .pv-hotline {
+        top: env(safe-area-inset-top, 0px);
+        padding: 6px max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px));
+    }
+
+    .pv-hotline-row {
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+        padding: 7px 8px 7px 10px;
+        border-radius: 12px;
+    }
+
+    .pv-hotline-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 17px;
+    }
+
+    .pv-hotline-kicker {
+        font-size: 0.66rem;
+    }
+
+    .pv-hotline-who {
+        font-size: 0.92rem;
+    }
+
+    .ui-preview .pv-hotline-btn {
+        min-height: 34px;
+        padding: 6px 12px;
+    }
+}

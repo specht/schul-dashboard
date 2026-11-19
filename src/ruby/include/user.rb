@@ -492,6 +492,9 @@ class Main < Sinatra::Base
     # /api/refresh_start_page, so a page that stays open doesn't show a poll
     # that is long over.
     def start_page_panels_html()
+        # the new design shows them as "Zu erledigen" beside the timetable and
+        # the hotline as a bar on every page (include/start_todo.rb)
+        return '' if ui_preview?
         [
             print_ad_hoc_2fa_panel(),
             print_otp_nudge_panel(),
@@ -509,8 +512,10 @@ class Main < Sinatra::Base
     post '/api/refresh_start_page' do
         require_user!
         html = start_page_panels_html()
-        respond(:panels => html, :sha1 => Digest::SHA1.hexdigest(html),
-                :unread_ids => get_unread_messages(Time.now.to_i - MESSAGE_DELAY))
+        result = {:panels => html, :sha1 => Digest::SHA1.hexdigest(html),
+                  :unread_ids => get_unread_messages(Time.now.to_i - MESSAGE_DELAY)}
+        result[:todo] = start_page_todo_data if ui_preview?
+        respond(result)
     end
 
     def print_summoned_books_panel()
@@ -578,11 +583,29 @@ class Main < Sinatra::Base
         end
     end
 
+    # a deadline of the Datentresor ('2026-11-27T14:00:00') that is less than
+    # a week away and not over yet
+    def tresor_deadline_soon?(deadline)
+        Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
+    end
+
+    # the deadlines of the panel below, for "Zu erledigen" in the new design
+    # (include/start_todo.rb): [key, deadline]
+    def tresor_deadlines_soon()
+        return [] unless teacher_logged_in?
+        deadlines = []
+        deadlines << ['noteneingabe', DEADLINE_NOTENEINTRAGUNG] if tresor_deadline_soon?(DEADLINE_NOTENEINTRAGUNG)
+        deadlines << ['zeugniskonferenz', DEADLINE_CONSIDER] if tresor_deadline_soon?(DEADLINE_CONSIDER)
+        # (DEADLINE_SOZIALNOTEN is not defined everywhere)
+        deadlines << ['sozialverhalten', DEADLINE_SOZIALNOTEN] if need_sozialverhalten() && defined?(DEADLINE_SOZIALNOTEN) && tresor_deadline_soon?(DEADLINE_SOZIALNOTEN)
+        deadlines
+    end
+
     def print_tresor_countdown_panel()
         return '' unless teacher_logged_in?
         parts = []
         deadline = DEADLINE_NOTENEINTRAGUNG
-        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
+        if tresor_deadline_soon?(deadline)
             parts << StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
@@ -598,7 +621,7 @@ class Main < Sinatra::Base
             end
         end
         deadline = DEADLINE_CONSIDER
-        if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
+        if tresor_deadline_soon?(deadline)
             parts << StringIO.open do |io|
                 io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                 io.puts "<div class='hint'>"
@@ -615,7 +638,7 @@ class Main < Sinatra::Base
         end
         if need_sozialverhalten()
             deadline = DEADLINE_SOZIALNOTEN
-            if Time.now.strftime('%Y-%m-%dT%H:%M:%S') <= deadline && (DateTime.parse(deadline) - DateTime.now).to_f < 7.0
+            if tresor_deadline_soon?(deadline)
                 parts << StringIO.open do |io|
                     io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                     io.puts "<div class='hint'>"

@@ -223,6 +223,56 @@ hierher übernehmen, wenn sie angegangen werden.
       Fehlermeldungen
 - [ ] `data-testid` an Navigation, Template-Modals und Haupt-Buttons
 
+### Neues Design: Seiten, die noch fehlen (Durchsicht 19.11.2026)
+
+Alle Seiten mit Beispieldaten in drei Breiten (Handy, Tablet, Desktop)
+fotografiert und gegen `doc/Gestaltung.md` geprüft.
+
+- [ ] Gemeinsam, hilft vielen Seiten auf einmal:
+  - Seiten mit `container-fluid white` (oder ohne Hülle) bekommen keine
+    Fläche, nur einen weißen Streifen über die ganze Breite: `admin`,
+    `email_overview`, `inactive_sus`, `sus_ohne_kurse`, `lab8_overview`,
+    `lab9_overview`, `pk5_overview`, `pk5_termine`,
+    `projekttage_overview`, `techpostadmin`, `unterrichtsmails`,
+    `aula_progress`, `aula_light`
+  - Einfache Tabellen werden am Handy nicht zu Listenzeilen und laufen
+    rechts aus dem Bild (`admin`, `dienste`, `stats`, `anmeldungen`,
+    `manage_monitor`, `postfaecher`, `manage_calendar`, `prepare_vote`,
+    die Übersichten von Lab 8/9, PK5, Projekttage): die Regel der
+    Bibliothek allgemein anwenden
+  - Leere Tabellen zeigen nur ihren Kopf, ohne Satz, was hier erscheint
+  - Fehlermeldungen (`.api_messages`) überdecken am Desktop Titel und
+    Umschalter und ragen links in die Seitenleiste
+  - Die alte „Karteikarte“ bleibt als zweite Karte in der Fläche (`lab8`,
+    `lab9`, `projekttage`), der Link zur Übersicht ist ein Akzentknopf und
+    drückt den Text am Handy zusammen
+- [ ] Viel genutzt, noch altes Design: `bookings` (am Handy kaputt: Titel
+      bricht im Wort, Buchungen abgeschnitten), `techpost`, `jitsi`
+      (alle, „Sie“, Hinweiskästen), `groups`, `prepare_vote`,
+      `upload_images`, `upload_files`, `email_overview`,
+      `show_login_codes`, `kurslisten`, `gev`
+- [ ] Verwaltung, noch altes Design: `admin`, `stats`, `email_accounts`,
+      `postfaecher`, `inactive_sus`, `sus_ohne_kurse`, `dienste`,
+      `techpostadmin`, `manage_calendar`, `manage_test_calendar`,
+      `manage_monitor` („Sie“), `show_all_login_codes`, `lehrbuchverein`
+- [ ] Zeitweise genutzt: Lab 8/9, PK5, Projekttage (Karteikarten und
+      Übersichten), `anmeldung`/`anmeldungen`, `up`
+- [ ] Kaputt: `agr_markup` (Knopfraster ragt rechts aus der Seite, scrollt
+      seitlich), `aula_light` (`padding: 1vh 80vh`, scrollt seitlich),
+      `bib_scan_isbn` (JS-Fehler ohne Buch in der Adresse, `data.book`
+      ungeprüft)
+- [ ] Kleinigkeiten auf fast fertigen Seiten: `manage_news` (»Artikel
+      schreiben« nicht in der Titelzeile), `angebote` (Linie unter
+      »Meine …« zu kurz, Suche über »Meine …«), `tests` (Tablet:
+      »Eintragen« rutscht unter den Titel), `directory` (Sitzplan-Hinweis
+      mit „Sie“, doppelt), `passwoerter` (Aktionen in Linkfarbe),
+      `hilfe`/`impressum` (Lesebreite höchstens 980 px), `profil` (leere
+      Tabelle »Schulinterne Links«), `timetable` (überlappende Stunden
+      am Tablet abgeschnitten)
+- [ ] Nicht geprüft (im Teststack nicht erreichbar): Bibliothek-Verwaltung,
+      Zeugnisse, Datentresor, Sitzplan-Seiten, Mittagessen,
+      Zufallsgruppen, AGR-App
+
 ### Aufräumen
 
 - [ ] Nicht verlinkte Seiten prüfen: `wind`, `maze`, `badges`,

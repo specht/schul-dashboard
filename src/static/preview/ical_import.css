@@ -1,0 +1,84 @@
+/* Neues Design: an external calendar in one's own timetable
+   (ical_import.rb, include/ical_import.rb, preview/ical_import.js).
+   Profile: »Kalender einbinden«; timetable: the appointments quieter than
+   lessons (a dashed outline, no fill). */
+
+.ui-preview .pv-icim .pv-icim-lead {
+    max-width: 62ch;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-icim .pv-icim-state:empty {
+    display: none;
+}
+
+.ui-preview .pv-icim .pv-icim-state {
+    margin-bottom: 12px;
+}
+
+.ui-preview .pv-icim .pv-icim-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 4px;
+}
+
+.ui-preview .pv-icim .pv-icim-line .ti {
+    flex: none;
+    margin-top: 0.2em;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-icim .pv-icim-muted {
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-icim .pv-icim-error,
+.ui-preview .pv-icim .pv-icim-error .ti {
+    color: #b42318;
+}
+
+.ui-preview.dark .pv-icim .pv-icim-error,
+.ui-preview.dark .pv-icim .pv-icim-error .ti {
+    color: #ff8f8f;
+}
+
+.ui-preview .pv-icim .pv-icim-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 640px;
+}
+
+.ui-preview .pv-icim .pv-icim-form input {
+    flex: 1 1 18em;
+    min-width: 0;
+}
+
+.ui-preview .pv-icim .pv-icim-remove {
+    margin-top: 6px;
+    padding-left: 0;
+    color: #b42318;
+}
+
+.ui-preview.dark .pv-icim .pv-icim-remove {
+    color: #ff8f8f;
+}
+
+/* the appointments in the week grid and in the day's agenda */
+.ui-preview .fc .fc-event.pv-ical {
+    background: transparent !important;
+    border: 1px dashed var(--pv-muted) !important;
+    box-shadow: none !important;
+}
+
+.ui-preview .fc .fc-event.pv-ical,
+.ui-preview .fc .fc-event.pv-ical * {
+    color: var(--pv-ink) !important;
+}
+
+.ui-preview .pv-ag-card.pv-ag-ical {
+    background: transparent;
+    border: 1px dashed var(--pv-muted);
+    box-shadow: none;
+}

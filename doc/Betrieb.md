@@ -329,6 +329,27 @@ bisherige Design weiter funktioniert.
 Der ältere Schalter »Design: alt/neu« (`new_design.css`, seit 2024) ist davon
 unabhängig.
 
+## Externe Kalender einbinden
+
+Wer die Rolle `CAN_IMPORT_ICAL` hat (in `data/roles/roles.txt`), kann im
+Profil die Adresse eines eigenen Kalenders (iCal, `.ics`) eintragen – im
+neuen Design. Der Stundenplan-Dienst holt ihn alle 15 Minuten, beim Start und
+gleich nach dem Speichern (`src/ruby/ical_import.rb`, http(s) nur über
+`fetch_public_uri`, höchstens 2 MB) und legt die Termine in
+`internal/ical_import/` ab.
+
+- Die Termine stehen nur in der privaten Wochendatei der Person, nie in der
+  öffentlichen (die Kolleginnen und Kollegen und der Terminfinder lesen) und
+  nie im iCal-Export des Dashboards – was aus einem Kalender kommt, geht
+  nicht wieder hinaus.
+- Abgesagte Termine (`STATUS:CANCELLED`) fallen weg, vorläufige tragen
+  »(vorläufig)«. Terminserien (`RRULE`) werden noch nicht übernommen; das
+  Profil nennt ihre Zahl.
+- Die Rolle erst nach dem Deploy des Codes in `roles.txt` eintragen: eine
+  unbekannte Rolle hält das Dashboard beim Start an.
+- Ist ein Kalender nicht erreichbar, bleiben die zuletzt geholten Termine;
+  das Profil zeigt den Fehler und wann es zuletzt geklappt hat.
+
 ## Werkstatt (Entwürfe)
 
 Unter `/api/werkstatt` sehen Admins eine Seite mit Entwürfen und Ideen für

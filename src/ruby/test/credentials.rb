@@ -75,3 +75,8 @@ if defined? Mail
 end
 
 $VERBOSE = warn_level
+
+# External calendars (ical_import.rb): the fake Nextcloud serves the feeds of
+# the tests (/cal/<name>.ics) – an internal address, allowed in the test
+# stack only
+ICAL_IMPORT_TEST_HOSTS = ['nextcloud']

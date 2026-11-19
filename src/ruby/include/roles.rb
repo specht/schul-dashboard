@@ -53,6 +53,7 @@ AVAILABLE_ROLES = {
     :can_manage_lab8 => 'kann Lab8-Projekte verwalten',
     :can_manage_lab9 => 'kann Lab9-Projekte verwalten',
     :unterstufenparty => 'Unterstufenparty',
+    :can_import_ical => 'kann einen externen Kalender einbinden',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING

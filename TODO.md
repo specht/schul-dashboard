@@ -157,6 +157,9 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] Termine direkt im Stundenplan anlegen (Klick in den Kalender wie bei
       Google Kalender) für alle, die Termine erstellen dürfen – statt über
       die Seite „Termine“
+- [ ] Externe Kalender (`ical_import.rb`): Terminserien (`RRULE`, `EXDATE`)
+      übernehmen; bedingtes Abrufen (`If-None-Match`/`If-Modified-Since`),
+      damit unveränderte Kalender nichts kosten
 - [ ] Terminfinder (`/terminfinder`, bisher nur im neuen Design): für alle
       Lehrkräfte freigeben, sobald das neue Design für alle läuft; dann
       überlegen, ob der Tagesrahmen (bis 18 Uhr) einstellbar sein soll

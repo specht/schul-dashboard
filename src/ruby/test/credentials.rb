@@ -28,6 +28,8 @@ SMTP_SERVER = 'smtp.test.invalid'
 WEBSITE_HOST = 'dashboard.test.invalid'
 VOTING_WEBSITE_URL = 'https://abstimmung.test.invalid'
 TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.test.invalid'
+SCHOOL_WEBSITE_URL = 'https://website.test.invalid'
+WEBSITE_ARTICLE_LINKS = true
 NEXTCLOUD_URL = 'http://nextcloud.test.invalid'
 # the stand-in of the test stack (src/ruby/test/fake_nextcloud.ru)
 NEXTCLOUD_URL_FROM_RUBY_CONTAINER = 'http://nextcloud'

@@ -229,14 +229,22 @@ class Main < Sinatra::Base
         end
     end
     
-    def _include_image(slug, mode = nil, caption = nil)
+    # The website (gyst-website) styles this HTML with its own CSS: keep the
+    # classes that are there (image, iw-N, pull-left/right, caption) and
+    # only add new ones. image-full: an image without position (full
+    # width); image-float: an image beside the text. crop: [x, y] in
+    # percent, where the image sits when it is cropped (pos=x,y; data-pos on
+    # .image, object-position on the img).
+    def _include_image(slug, mode = nil, caption = nil, crop = nil)
         mode = nil if (mode || '').empty?
         caption = nil if (caption|| '').empty?
+        crop_attr = crop ? " data-pos='#{crop[0]} #{crop[1]}'" : ''
+        crop_options = crop ? {:x => crop[0], :y => crop[1]} : {}
         if mode.nil?
             StringIO.open do |io|
-                io.puts "<div class='image'>"
+                io.puts "<div class='image image-full'#{crop_attr}>"
 #                 io.puts "<img src='https://#{WEBSITE_HOST}/gen/i/#{slug}-1024.jpg' />"
-                io.puts _include_lazyload_image(slug)
+                io.puts _include_lazyload_image(slug, crop_options)
                 io.puts "<div class='caption'>#{caption}</div>" if caption
                 io.puts "</div>"
                 io.string
@@ -245,9 +253,9 @@ class Main < Sinatra::Base
             StringIO.open do |io|
                 width = mode[1]
                 align = mode[0] == 'r' ? 'right' : 'left'
-                io.puts "<div class='image iw-#{width} pull-#{align}'>"
+                io.puts "<div class='image image-float iw-#{width} pull-#{align}'#{crop_attr}>"
 #                 io.puts "<img src='https://#{WEBSITE_HOST}/gen/i/#{slug}-1024.jpg' />"
-                io.puts _include_lazyload_image(slug, :cols => width.to_i)
+                io.puts _include_lazyload_image(slug, crop_options.merge(:cols => width.to_i))
                 io.puts "<div class='caption'>#{caption}</div>" if caption
                 io.puts "</div>"
                 io.string
@@ -256,23 +264,138 @@ class Main < Sinatra::Base
         end
     end
     
-    # image{slug, [pos,] "caption"} and file{...}{...} in news texts become HTML by
-    # calling the helpers directly – the text itself is never evaluated as Ruby.
-    def render_news_includes(s)
-        s.gsub(/image{[^}]+}/) do |x|
-            m = x.match(/^image{([^}]+)}$/)
-            parts = m[1].split(',')
-            slug = parts[0].strip
-            pos = (parts[1] || '').strip
-            caption = nil
-            if ['l3', 'l4', 'l5', 'l6', 'r3', 'r4', 'r5', 'r6'].include?(pos)
-                caption = (parts[2, parts.size - 2] || []).join(',').strip
-            else
-                caption = (parts[1, parts.size - 1] || []).join(',').strip
-                pos = nil
+    # The public website's address of a news entry (the website's article
+    # page, beitrag-<timestamp in base 36>); nil without SCHOOL_WEBSITE_URL
+    # and until the website serves these pages (WEBSITE_ARTICLE_LINKS).
+    def self.news_public_url_base
+        return nil unless defined?(WEBSITE_ARTICLE_LINKS) && WEBSITE_ARTICLE_LINKS == true
+        base = defined?(SCHOOL_WEBSITE_URL) ? SCHOOL_WEBSITE_URL.to_s.strip.sub(/\/+\z/, '') : ''
+        base.empty? ? nil : base
+    end
+
+    def self.news_public_url(timestamp, base = news_public_url_base)
+        base && "#{base.sub(/\/+\z/, '')}/beitrag-#{timestamp.to_i.to_s(36)}"
+    end
+
+    # Neues Design: the news editor as building blocks (preview/news.js) and
+    # the base of the public links, only for those who see the new design
+    def news_editor_preview_script
+        return '' unless ui_preview?
+        "\n<script>var pv_news_public_base = #{self.class.news_public_url_base.to_json};</script>" +
+        "\n<script src='#{preview_asset('/preview/news.js')}'></script>"
+    end
+
+    NEWS_GALLERY_MAX_IMAGES = 12
+    # Several photos as a grid with one caption below (gallery{a, b, c, "Fotos: …"}).
+    # A wrapper of its own (not .image, so the website doesn't take the whole
+    # gallery for one image), laid out by the website's CSS; without that the
+    # photos stand one below the other. gallery-N gives the number of photos,
+    # so the CSS can pick the columns.
+    def _include_gallery(slugs, caption = nil)
+        caption = nil if (caption || '').empty?
+        cols = [2, 4].include?(slugs.size) ? 6 : (slugs.size == 1 ? 12 : 4)
+        StringIO.open do |io|
+            io.puts "<div class='image-gallery gallery-#{slugs.size}'>"
+            io.puts "<div class='gallery-items'>"
+            slugs.each do |slug|
+                io.puts "<div class='gallery-item'>"
+                io.puts _include_lazyload_image(slug, :cols => cols)
+                io.puts "</div>"
             end
-            caption = (caption[1, caption.size - 2] || '').strip
-            _include_image(slug, pos, caption)
+            io.puts "</div>"
+            io.puts "<div class='caption'>#{caption}</div>" if caption
+            io.puts "</div>"
+            io.string
+        end
+    end
+
+    NEWS_IMAGE_POSITIONS = %w(l3 l4 l5 l6 r3 r4 r5 r6)
+    NEWS_ROW_RATIOS = %w(3:2 4:3 1:1 16:9)
+    NEWS_SLUG = /\A[a-zA-Z0-9\-_]+\z/
+
+    # The inside of image{…}: slug, an optional position (l3–l6, r3–r6), an
+    # optional pos=x,y (where the image sits in a cropped frame, percent
+    # from left and top as in object-position; before the caption) and the
+    # caption in quotes. Returns [slug, pos, caption, crop].
+    def parse_news_image(body)
+        quote = body.index('"')
+        head = quote ? body[0, quote] : body
+        tail = quote ? body[quote..-1] : ''
+        crop = nil
+        m = head.match(/,\s*pos=(\d{1,3}),(\d{1,3})\s*(,|\z)/)
+        if m
+            crop = [m[1].to_i.clamp(0, 100), m[2].to_i.clamp(0, 100)]
+            head = head.sub(m[0], m[3] == ',' ? ',' : '')
+        end
+        parts = (head + tail).split(',')
+        slug = parts[0].to_s.strip
+        pos = (parts[1] || '').strip
+        if NEWS_IMAGE_POSITIONS.include?(pos)
+            caption = (parts[2, parts.size - 2] || []).join(',').strip
+        else
+            caption = (parts[1, parts.size - 1] || []).join(',').strip
+            pos = nil
+        end
+        caption = (caption[1, caption.size - 2] || '').strip
+        [slug, pos, caption, crop]
+    end
+
+    # Two or three images side by side, all cropped to one ratio
+    # (images{3:2, "shared caption"}{image{…} image{…}}): .image elements in
+    # a wrapper of their own; each keeps its caption and its position.
+    def _include_image_row(ratio, images, caption = nil)
+        caption = nil if (caption || '').empty?
+        cols = images.size == 2 ? 6 : 4
+        StringIO.open do |io|
+            io.puts "<div class='image-row ratio-#{ratio.tr(':', '-')} images-#{images.size}'>"
+            images.each do |slug, image_caption, crop|
+                crop ||= [50, 50]
+                io.puts "<div class='image image-in-row' data-pos='#{crop[0]} #{crop[1]}'>"
+                io.puts _include_lazyload_image(slug, :cols => cols, :x => crop[0], :y => crop[1])
+                io.puts "<div class='caption'>#{image_caption}</div>" unless (image_caption || '').empty?
+                io.puts "</div>"
+            end
+            io.puts "<div class='caption image-row-caption'>#{caption}</div>" if caption
+            io.puts "</div>"
+            io.string
+        end
+    end
+
+    NEWS_IMAGE_ROW = /images\{\s*([0-9]+:[0-9]+)\s*(?:,\s*"([^"{}]*)")?\s*\}\{((?:\s*image\{[^{}]*\}\s*)+)\}/
+
+    # images{…}{…}, image{slug, [l3–r6,] [pos=x,y,] "caption"},
+    # gallery{slug, slug, …, "caption"} and file{...}{...} in news texts
+    # become HTML by calling the helpers directly – the text itself is never
+    # evaluated as Ruby.
+    def render_news_includes(s)
+        s.gsub(NEWS_IMAGE_ROW) do |x|
+            ratio, caption, inner = $1, $2, $3
+            images = inner.scan(/image\{([^{}]*)\}/).map { |m| parse_news_image(m[0]) }
+            if NEWS_ROW_RATIOS.include?(ratio) && [2, 3].include?(images.size) && images.all? { |i| i[0] =~ NEWS_SLUG }
+                _include_image_row(ratio, images.map { |slug, _pos, image_caption, crop| [slug, image_caption, crop] }, caption)
+            else
+                x
+            end
+        end.gsub(/image{[^}]+}/) do |x|
+            m = x.match(/^image{([^}]+)}$/)
+            slug, pos, caption, crop = parse_news_image(m[1])
+            _include_image(slug, pos, caption, crop)
+        end.gsub(/gallery{[^}]+}/) do |x|
+            m = x.match(/^gallery{([^}]+)}$/)
+            body = m[1]
+            caption = nil
+            quote = body.index('"')
+            if quote
+                caption = body[quote..-1].strip
+                caption = (caption[1, caption.size - 2] || '').strip
+                body = body[0, quote]
+            end
+            slugs = body.split(',').map { |part| part.strip }.reject { |part| part.empty? }
+            if slugs.empty? || slugs.size > NEWS_GALLERY_MAX_IMAGES || slugs.any? { |slug| slug !~ /\A[a-zA-Z0-9\-_]+\z/ }
+                x
+            else
+                _include_gallery(slugs, caption)
+            end
         end.gsub(/file{[^}]+}{[^}]+}/) do |x|
             m = x.match(/^file{([^}]+)}{([^}]+)}$/)
             _include_file(m[1], m[2])

@@ -1,4 +1,4 @@
-FROM ruby:3.4.10-alpine3.24
+FROM ruby:3.4.13-alpine3.24
 
 RUN apk update && apk upgrade
 RUN apk add less curl bash curl-dev ruby-dev imagemagick build-base docker libreoffice openjdk11-jre libwebp-tools msttcorefonts-installer librsvg tzdata inkscape graphviz ffmpeg zip poppler-utils ghostscript && rm -rf /var/cache/apk/*

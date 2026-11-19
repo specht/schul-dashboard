@@ -346,6 +346,17 @@ class Main < Sinatra::Base
         MonitorEffekte.pausen_pruefen(liste) || MonitorEffekte::STORY_PAUSEN
     end
 
+    # Einzeln ausgeschaltete Storys (Monitore verwalten); ohne Eintrag sind alle an
+    def monitor_storys_aus
+        rows = neo4j_query(<<~END_OF_QUERY)
+            MATCH (m:MonitorEinstellung {key: 'storys_einzeln_aus'})
+            RETURN m.value AS wert;
+        END_OF_QUERY
+        wert = rows.first && rows.first['wert']
+        liste = begin; wert ? JSON.parse(wert) : nil; rescue JSON::ParserError; nil; end
+        MonitorEffekte.storys_aus_pruefen(liste) || []
+    end
+
     # Je Effekt: an/aus und ab welcher Warnstufe (MonitorEffekte::REGELN_STANDARD)
     # Schultermine für die Monitore (Adventskonzert, Forschertag …), je ein Tag
     def monitor_schultermine
@@ -435,11 +446,13 @@ class Main < Sinatra::Base
         # Storys: Tagesplan (nur in den Pausen, jede höchstens einmal am Tag) – aber nicht,
         # solange ein Wettereffekt oder ein besonderer Tag zu sehen ist (Wunsch Jonas)
         pausen = monitor_story_pausen()
+        storys_aus = monitor_storys_aus()
         antwort[:storys_ruhen] = !!(antwort[:an] && (wetter || fest))
         if antwort[:storys] && !antwort[:storys_ruhen]
             heute = Date.today
             mitternacht = Time.local(heute.year, heute.month, heute.day)
-            antwort[:storyplan] = MonitorEffekte.story_plan(heute, MonitorEffekte::STORYS, pausen).map { |e| {:ms => ((mitternacht + e[:sekunde]).to_f * 1000).to_i, :story => e[:story]} }
+            # einzeln ausgeschaltete Storys kommen nicht in den Tagesplan
+            antwort[:storyplan] = MonitorEffekte.story_plan(heute, MonitorEffekte::STORYS - storys_aus, pausen).map { |e| {:ms => ((mitternacht + e[:sekunde]).to_f * 1000).to_i, :story => e[:story]} }
         else
             antwort[:storyplan] = []
         end
@@ -457,6 +470,7 @@ class Main < Sinatra::Base
             antwort[:schultermine] = termine.select { |t| (t[:bis].to_s.empty? ? t[:datum] : t[:bis]) >= Date.today.to_s }
             antwort[:schultermin_motive] = MonitorEffekte::SCHULTERMIN_MOTIVE
             antwort[:story_pausen] = pausen
+            antwort[:storys_aus] = storys_aus
             antwort[:phaenomene] = MonitorEffekte::PHAENOMENE
             antwort[:phaenomene_ohne_effekt] = MonitorEffekte::PHAENOMENE_OHNE_EFFEKT
             antwort[:abgerufen] = daten ? @@monitor_wetter[:geholt] * 1000 : nil
@@ -492,6 +506,27 @@ class Main < Sinatra::Base
         END_OF_QUERY
         self.class.force_reload_monitors()
         respond(:storys => !result['aus'])
+    end
+
+    # Eine einzelne Story ein- oder ausschalten: story = Name, an = 'ja' oder 'nein'
+    post '/api/set_monitor_story_an' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:story, :an], :max_string_length => 16)
+        assert(MonitorEffekte::STORYS.include?(data[:story]))
+        assert(%w(ja nein).include?(data[:an]))
+        aus = monitor_storys_aus()
+        aus = data[:an] == 'ja' ? aus - [data[:story]] : aus + [data[:story]]
+        aus = MonitorEffekte.storys_aus_pruefen(aus)
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:wert => aus.to_json})
+            MERGE (m:MonitorEinstellung {key: 'storys_einzeln_aus'})
+            SET m.value = $wert
+            RETURN m.value AS wert;
+        END_OF_QUERY
+        # die Monitore holen sich den neuen Tagesplan
+        (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
+            info[:ws].send({:command => 'monitor_effekte_neu'}.to_json)
+        end
+        respond(:storys_aus => aus)
     end
 
     # Pausen für die Storys speichern: pausen = JSON-Text [[von, bis, anzahl], …]; '' = Standard

@@ -163,6 +163,11 @@
                     <button class='btn btn-sm btn-success mr-2 bu_fx_pausen_speichern'><i class='fa fa-check'></i>&nbsp;&nbsp;Speichern</button>
                     <span class='small fx-pausen-status' data-testid='monitor-story-pausen-status'></span>
                 </div>
+                <div class='fx-story-auswahl mb-2' data-testid='monitor-story-auswahl'>
+                    <span class='small'><b>Welche Storys kommen</b> (ohne Häkchen kommt eine Story nicht mehr in den Tagesplan; die Vorschau geht trotzdem):</span>
+                    <div class='fx-story-schalter small mt-1'></div>
+                    <span class='small fx-story-auswahl-status' data-testid='monitor-story-auswahl-status'></span>
+                </div>
                 <span class='mr-2'>Vorschau einer Story:</span>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='roehre'>Röhre tauschen</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='kiesel'>Klassenschild per Heli</button>
@@ -182,6 +187,12 @@
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='kran'>Baustelle</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='bienen'>Bienenstock</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='diebstahl'>Diebstahl</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='brom'>Brom</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='ballspiel'>Klassenschild als Ball</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='graffiti'>Graffiti</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='umzug'>Umzugshelfer</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='schatz'>Schatzsuche</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='strom'>Stromausfall</button>
             </div>
             <div class='fx-vorschau' data-testid='monitor-effekt-vorschau' style='display: none;'>
                 <p class='small mb-2'><span class='badge badge-secondary'>VORSCHAU</span>&nbsp; <b class='fx-vorschau-name'></b> – nur hier zu sehen, die Monitore im Schulhaus bleiben unverändert.
@@ -340,6 +351,7 @@
             if (d.storys_ruhen) plan_text = 'Gerade keine Storys: Es läuft ein Wettereffekt oder ein besonderer Tag.';
             $('.fx-storys-plan').text(d.storys === false ? '' : plan_text);
             if (!fx_pausen_geladen && d.story_pausen) { fx_pausen_zeigen(d.story_pausen); fx_pausen_geladen = true; }
+            if (d.storys_aus) fx_story_schalter_zeigen(d.storys_aus);
             effekte_warnungen_zeigen(d);
             effekte_termine_zeigen(d);
         }
@@ -467,6 +479,34 @@
         $('.bu_fx_pausen_standard').on('click', function() {
             api_call('/api/set_monitor_story_pausen', {pausen: ''}, function(data) {
                 if (data.success) { fx_pausen_zeigen(data.story_pausen); $('.fx-pausen-status').text('Standardzeiten wiederhergestellt.'); effekte_stand_laden(); }
+            });
+        });
+        // Einzelne Storys ein- und ausschalten (je ein Häkchen, Namen wie bei den Vorschau-Knöpfen)
+        function fx_story_schalter_zeigen(aus) {
+            const box = $('.fx-story-schalter');
+            if (box.children().length === 0) {
+                $('.fx-storys .bu_monitor_effekt_vorschau').each(function(_, knopf) {
+                    const story = $(knopf).data('effekt');
+                    if (!story) return;
+                    const id = `ti_fx_story_${story}`;
+                    $('<div>').addClass('custom-control custom-checkbox custom-control-inline mr-3').append(
+                        $(`<input type='checkbox' class='custom-control-input ti_fx_story_an'>`).attr('id', id).attr('data-story', story),
+                        $(`<label class='custom-control-label'>`).attr('for', id).text($(knopf).text())).appendTo(box);
+                });
+            }
+            box.find('.ti_fx_story_an').each(function(_, el) {
+                $(el).prop('disabled', false).prop('checked', aus.indexOf($(el).attr('data-story')) < 0);
+            });
+        }
+        $('.fx-story-schalter').on('change', '.ti_fx_story_an', function(e) {
+            const el = $(e.currentTarget).prop('disabled', true);
+            const an = el.prop('checked');
+            api_call('/api/set_monitor_story_an', {story: el.attr('data-story'), an: an ? 'ja' : 'nein'}, function(data) {
+                if (data.success) {
+                    fx_story_schalter_zeigen(data.storys_aus);
+                    $('.fx-story-auswahl-status').text(`„${el.next('label').text()}“ ${an ? 'kommt wieder' : 'kommt nicht mehr'}.`);
+                    effekte_stand_laden();
+                } else el.prop('disabled', false);
             });
         });
         $('.ti_monitor_storys').on('change', function(e) {

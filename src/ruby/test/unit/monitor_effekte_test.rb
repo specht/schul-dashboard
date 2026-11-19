@@ -269,6 +269,24 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal ['roehre'], nur_frueh.map { |e| e[:story] }
     end
 
+    def test_storys_einzeln_aus
+        # nur bekannte Namen, jeder einmal, in fester Reihenfolge; Unsinn wird abgelehnt
+        assert_equal %w(brand brom), MonitorEffekte.storys_aus_pruefen(%w(brom quatsch brand brom))
+        assert_equal [], MonitorEffekte.storys_aus_pruefen([])
+        assert_nil MonitorEffekte.storys_aus_pruefen('brom')
+        assert_nil MonitorEffekte.storys_aus_pruefen([1, 2])
+        # ausgeschaltete Storys kommen nie in den Tagesplan, die anderen weiterhin
+        aus = %w(brom diebstahl brand)
+        tage = (0..30).map { |i| Date.new(2026, 11, 16) + i }.reject { |d| d.saturday? || d.sunday? }
+        tage.each do |tag|
+            plan = MonitorEffekte.story_plan(tag, MonitorEffekte::STORYS - aus)
+            assert plan.size >= 10, "#{tag}: nur #{plan.size} Storys"
+            assert_empty plan.map { |e| e[:story] } & aus
+        end
+        # alle aus: keine Storys
+        assert_empty MonitorEffekte.story_plan(Date.new(2026, 11, 16), [])
+    end
+
     def test_easter_sunday
         assert_equal Date.new(2026, 4, 5), MonitorEffekte.ostersonntag(2026)
         assert_equal Date.new(2027, 3, 28), MonitorEffekte.ostersonntag(2027)

@@ -573,7 +573,7 @@ class Main < Sinatra::Base
         data = parse_request_data(:required_keys => [:effekt], :max_string_length => 16)
         effekt = data[:effekt]
         assert(effekt == '' || MonitorEffekte::EFFEKTE.include?(effekt) || MonitorEffekte::FESTE.include?(effekt) || MonitorEffekte::STORYS.include?(effekt))
-        @@monitor_effekte_test = effekt == '' ? nil : {:effekt => effekt, :bis => Time.now + MonitorEffekte::TEST_MINUTEN * 60}
+        @@monitor_effekte_test = effekt == '' ? nil : {:effekt => effekt, :bis => Time.now + MonitorEffekte.test_dauer(effekt)}
         # die Monitore fragen sofort neu ab
         (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
             info[:ws].send({:command => 'monitor_effekte_neu'}.to_json)

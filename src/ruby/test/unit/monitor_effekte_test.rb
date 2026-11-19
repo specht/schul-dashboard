@@ -199,6 +199,11 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal [nil, {:fest => 'nikolaus', :nah => true}], MonitorEffekte.test_soll('nikolaus')
         assert_equal [nil, nil], MonitorEffekte.test_soll('rundgang')
         assert_equal [nil, nil, 'roehre'], MonitorEffekte.test_soll('roehre')
+        # ein Test ist genau ein Durchlauf, keine fünf Minuten
+        assert_equal MonitorEffekte::STORY_DAUER + 10, MonitorEffekte.test_dauer('roehre')
+        assert_equal MonitorEffekte.story_dauer('abflug') + 10, MonitorEffekte.test_dauer('abflug')
+        assert MonitorEffekte.test_dauer('gewitter') <= 60
+        assert MonitorEffekte.test_dauer('nikolaus') <= 60
     end
 
     def test_story_plan_only_in_breaks

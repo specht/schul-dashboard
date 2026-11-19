@@ -287,7 +287,12 @@ module MonitorEffekte
     # Test auf den echten Monitoren („Monitore verwalten“): wie lange er läuft und
     # was er zeigt – [wetter, fest] wie bei echtem Wetter bzw. einem echten Fest,
     # bei einer Story [nil, nil, name].
-    TEST_MINUTEN = 5
+    # Test auf den echten Monitoren: genau ein Durchlauf (Jonas, 19.11.) – eine Story so lange,
+    # wie sie höchstens dauert, ein Wetter- oder Festeffekt so lange wie in der Vorschau
+    TEST_EFFEKT_SEKUNDEN = 45
+    def self.test_dauer(name)
+        STORYS.include?(name) ? story_dauer(name) + 10 : TEST_EFFEKT_SEKUNDEN
+    end
     def self.test_soll(name)
         if EFFEKTE.include?(name)
             w = {:effekt => name, :staerke => 2, :titel => 'Test', :bis => nil}

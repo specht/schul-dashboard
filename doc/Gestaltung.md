@@ -426,6 +426,36 @@ Umfragen, Termine, News verwalten)
   Vorschauen auf »Monitore verwalten« gleich aussieht. Einträge mindestens
   1,15 vw (22 px auf Full HD, heute 20 px).
 
+## 12b. Aufgaben und dringende Anfragen
+
+- **Ein Ort für das, was zu tun ist.** Offene Umfragen, Bücher, die die
+  Bibliothek zurückbraucht, Fristen und Hinweise zur Anmeldung stehen als
+  »Zu erledigen« beim Stundenplan, nie als eigene Spalte daneben: der
+  Stundenplan behält immer seine Breite.
+  - Desktop: oben in der Spalte neben der Woche, über »Geändert diese Woche«.
+  - Handy: oben im ersten Tag der Agenda (»Heute«), über der ersten Stunde.
+  - Tablet und dazwischen: über der Woche.
+- **Eine Zeile pro Aufgabe**, alle nach einem Muster: Profilbild (Umfragen,
+  das Bild der Person, die sie gestellt hat) oder Symbol, der Titel, eine
+  leise Faktenzeile mit der Frist (»bis Fr 14:00«, kurz vor Schluss als
+  Countdown »noch 45 min« im Akzent) und ein ruhiger Knopf (»Teilnehmen«).
+- **Mehr als zwei Zeilen** falten sich am Handy und Tablet zu einer Zeile
+  (»3 Aufgaben offen«, Pfeil nach unten), die sie aufklappt.
+- **Erledigtes und Ausgeblendetes:** Beantwortete Umfragen bleiben bis zum
+  Ende stehen (»beantwortet«, Knopf »Ändern«), zählen aber nicht mehr.
+  Ausgeblendete stehen hinter einer leisen Zeile »1 ausgeblendete Umfrage
+  anzeigen«.
+- **Zähler:** ein kleines Abzeichen mit der Zahl der offenen Aufgaben an
+  »Stundenplan« in der Seitenleiste und an »Heute« in der Tab-Leiste, auf
+  jeder Seite.
+- **Dringende Anfragen** (jemand wartet jetzt, etwa am Telefon auf eine
+  Freigabe) stehen als Leiste oben auf jeder Seite, nur für die, die sie
+  bearbeiten können: wer wartet, seit wann, und ein Knopf, der den Dialog
+  öffnet. Am Handy ist die Leiste eine schmale Karte unter der Statusleiste,
+  die die Seite nicht verdeckt. Sie verschwindet, sobald die Anfrage
+  erledigt oder abgelaufen ist. Der Dialog selbst bleibt, wo er ist; von
+  anderen Seiten führt der Knopf dorthin und öffnet ihn.
+
 ## 13. Bewegung
 
 - Sheets und Menüs gleiten kurz (0,2 bis 0,3 s); nichts blinkt oder hüpft.

@@ -89,9 +89,11 @@ class Main < Sinatra::Base
         end
     end
 
-    # Start page: teachers who still get codes by SMS.
-    def print_otp_nudge_panel
-        return '' unless teacher_logged_in?
+    # Start page: teachers who still get codes by SMS. 'switch' (has the app,
+    # first code by SMS), 'setup' (no app yet) or nil – for the panel here and
+    # for "Zu erledigen" in the new design (include/start_todo.rb)
+    def otp_nudge_kind
+        return nil unless teacher_logged_in?
         row = neo4j_query_expect_one(<<~END_OF_QUERY, {:email => @session_user[:email]})
             MATCH (u:User {email: $email})
             RETURN u.otp_token IS NOT NULL AS otp,
@@ -99,14 +101,19 @@ class Main < Sinatra::Base
                    COALESCE(u.preferred_login_method, 'email') AS preferred,
                    COALESCE(u.otp_nudge_snoozed_until, 0) AS snoozed_until;
         END_OF_QUERY
-        return '' if row['snoozed_until'] > Time.now.to_i
-        if row['otp'] && row['preferred'] == 'sms'
-            kind = 'switch'
+        return nil if row['snoozed_until'] > Time.now.to_i
+        return 'switch' if row['otp'] && row['preferred'] == 'sms'
+        return 'setup' if !row['otp'] && row['phone']
+        nil
+    end
+
+    def print_otp_nudge_panel
+        kind = otp_nudge_kind
+        if kind == 'switch'
             title = 'Deine Authenticator-App kann mehr'
             text = "Du hast schon eine Authenticator-App eingerichtet, bekommst deinen ersten Anmeldecode aber per SMS. Wenn du »Code per E-Mail« als Standard wählst, kommt der zweite Code aus deiner App – ganz ohne SMS."
             buttons = "<button class='btn btn-sm btn-success bu-otp-nudge-switch'><i class='fa fa-check'></i>&nbsp;&nbsp;Umstellen</button>"
-        elsif !row['otp'] && row['phone']
-            kind = 'setup'
+        elsif kind == 'setup'
             title = 'Anmelden ohne SMS'
             text = "Mit einer Authenticator-App steht dein Anmeldecode sofort auf dem Handy – auch ohne Netz und wenn der SMS-Versand ausfällt. #{otp_stats_sentence}"
             buttons = "<a href='/profil#anmeldung' class='btn btn-sm btn-success'><i class='fa fa-qrcode'></i>&nbsp;&nbsp;Einrichten</a>" +

@@ -6203,7 +6203,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
         break-after: avoid;
     }
 
-    .ui-preview .navbar .pv-rail-open > .pv-nav-body > .pv-nav-sub:first-child {
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body > .pv-nav-sub:first-child,
+    .ui-preview .navbar .pv-rail-open > .pv-nav-body .pv-col-top {
         display: none;
     }
 

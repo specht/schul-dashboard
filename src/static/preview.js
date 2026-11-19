@@ -398,10 +398,18 @@
         var room = window.innerHeight - 24;
         panel.style.columnCount = '';
         panel.style.width = '';
+        var lines = panel.querySelectorAll('.pv-nav-sub, .dropdown-divider');
+        lines.forEach(function(line) { line.classList.remove('pv-col-top'); });
         var columns = Math.min(3, Math.max(1, Math.ceil(panel.scrollHeight / room)));
         if (columns > 1) {
             panel.style.columnCount = columns;
             panel.style.width = (columns * 272) + 'px';
+            // a line between groups that lands at the top of a column
+            // separates nothing there
+            var top_of = panel.getBoundingClientRect().top + (parseFloat(getComputedStyle(panel).paddingTop) || 0);
+            lines.forEach(function(line) {
+                if (line.offsetParent && line.getBoundingClientRect().top - top_of < 12) line.classList.add('pv-col-top');
+            });
         }
         var height = Math.min(panel.scrollHeight, room);
         var top = button.getBoundingClientRect().top - 6;

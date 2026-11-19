@@ -398,6 +398,36 @@ for (const [name, width, height] of [['Desktop', 1280, 900], ['Tablet', 820, 118
   });
 }
 
+// A section longer than the window stands in columns; a line between groups
+// that lands at the top of a column separates nothing there and is left out.
+test('Neues Design: keine Trennlinie oben in einer Spalte der Seitenleiste', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the panels beside the sidebar');
+  await page.setViewportSize({ width: 1280, height: 480 });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/profil');
+    const sec = page.locator('nav.navbar .pv-nav-section[data-section="verwaltung"]');
+    await sec.locator('button.pv-nav-heading').click();
+    const body = sec.locator('.pv-nav-body');
+    await expect(body).toBeVisible();
+    const r = await body.evaluate((panel) => {
+      const top = panel.getBoundingClientRect().top + (parseFloat(getComputedStyle(panel).paddingTop) || 0);
+      const lines = [...panel.querySelectorAll('.pv-nav-sub, .dropdown-divider')].filter((l) => (l as HTMLElement).offsetParent);
+      return {
+        columns: parseInt(getComputedStyle(panel).columnCount) || 1,
+        lines: lines.length,
+        at_top: lines.filter((l) => l.getBoundingClientRect().top - top < 12).length,
+      };
+    });
+    expect(r.columns).toBeGreaterThan(1);
+    expect(r.lines).toBeGreaterThan(0);
+    expect(r.at_top).toBe(0);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Profile pictures come from Nextcloud. The new design shows them larger and
 // on phones with three pixels per point: 64 px looked blurred, so it asks for
 // 128 px; the old design keeps 64.

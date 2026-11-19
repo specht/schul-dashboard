@@ -71,6 +71,11 @@ test('Neues Design: Kursbuch, Stunde wählen, eintragen, Links, speichern', asyn
     const save = page.locator('.pv-kb-pane-foot .bu-save-changes');
     await expect(save).toBeVisible();
     await expect(save).toBeDisabled();
+    // the labels centred: no spaces left over from the hidden icon
+    for (const sel of ['.bu-discard-changes', '.bu-save-changes']) {
+      const label = await page.locator(`.pv-kb-pane-foot ${sel}`).evaluate((b) => b.textContent || '');
+      expect(label, sel).toMatch(/^(Verwerfen|Speichern)$/);
+    }
     await page.locator('#ti_thema').fill(thema);
     await page.locator('#ti_stundenthema_text').fill(topic);
     await page.locator('#ti_hausaufgaben_text').fill(homework);

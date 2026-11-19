@@ -463,8 +463,15 @@
         umplanen.addEventListener('click', umplanen_menu);
         foot.appendChild(umplanen);
         if (buttons) {
-            foot.appendChild(buttons.querySelector('.bu-discard-changes'));
-            foot.appendChild(buttons.querySelector('.bu-save-changes'));
+            ['.bu-discard-changes', '.bu-save-changes'].forEach(function (sel) {
+                var b = buttons.querySelector(sel);
+                // the icon is hidden here: without the spaces that followed it,
+                // otherwise the label sits off centre
+                Array.prototype.forEach.call(b.childNodes, function (n) {
+                    if (n.nodeType === 3) n.nodeValue = n.nodeValue.replace(/^[\s\u00a0]+/, '');
+                });
+                foot.appendChild(b);
+            });
             buttons.hidden = true;
         }
         pane.appendChild(foot);

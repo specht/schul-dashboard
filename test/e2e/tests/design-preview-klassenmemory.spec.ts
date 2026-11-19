@@ -244,3 +244,23 @@ test('Klassenmemory ohne Vorschau: wie bisher', async ({ page }) => {
   await start.locator('.right-top-button').click();
   await expect(start).toBeHidden();
 });
+
+// Without a secure connection (http to another address than localhost) the
+// browser has no Web Crypto and the photos can't be decrypted: the page says
+// so instead of staying silently empty – in both designs.
+for (const mode of ['on', 'off'] as const) {
+  test(`Klassenmemory ohne sichere Verbindung sagt es (Vorschau ${mode})`, async ({ page }) => {
+    await login(page, ACCOUNTS.admin);
+    await page.request.post('/api/set_ui_preview', { data: { mode } });
+    try {
+      await page.addInitScript(() => { Object.defineProperty(window.crypto, 'subtle', { value: undefined, configurable: true }); });
+      await page.goto('/klassenmemory_assign');
+      await page.locator('#password').fill(PASSWORD);
+      await page.locator('#submit_password').click();
+      await expect(page.locator('#sus_here .km-no-crypto')).toContainText('sichere Verbindung');
+      await expect(page.locator('#sus_here .sus-frame')).toHaveCount(0);
+    } finally {
+      await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    }
+  });
+}

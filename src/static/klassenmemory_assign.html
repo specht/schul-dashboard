@@ -581,6 +581,14 @@ window.addEventListener('load', function() {
         e.preventDefault();
         passphrase = $('#password').val().trim().toLowerCase();
         $('#form').hide();
+        // the photos are decrypted in the browser (Web Crypto): only on a
+        // secure connection (https or localhost), otherwise nothing would
+        // appear without a word
+        if (!(window.crypto && window.crypto.subtle)) {
+            $('#stage').show();
+            $('#sus_here').empty().append($('<p>').addClass('km-no-crypto').text('Die Fotos lassen sich nur über eine sichere Verbindung entschlüsseln. Bitte öffne das Dashboard über https.'));
+            return;
+        }
         $('#stage').show();
         $('#klassen-div').show();
         refresh();

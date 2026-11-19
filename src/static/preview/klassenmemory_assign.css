@@ -630,3 +630,14 @@
         transition: none;
     }
 }
+
+/* no secure connection: the photos can't be decrypted, a calm notice */
+.pv-km-page #sus_here > .km-no-crypto {
+    grid-column: 1 / -1;
+    margin: 4px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}

@@ -207,4 +207,78 @@ File.write(File.join(target, 'public_events', 'public_events.yaml'), [{
     }],
 }].to_yaml)
 
+# Klassenmemory (/klassenmemory_assign, design-preview-klassenmemory.spec.ts):
+# the example data has no class photos. Drawn placeholder portraits (a head
+# and shoulders, no real person), encrypted like the photos of a real photo
+# session with the password KLASSENMEMORY_PASSWORD (typed into the page;
+# FOTO_PASSWORD stays nil in the test stack). The ones named
+# "beispielfoto-<account>" are assigned to these students in
+# test/e2e/seed.cypher (keep both lists in step); two photos of 5a's photo
+# session have no name yet ("<year>-5a-<n>"). Plus /data/jauch.png, the
+# picture next to the Hall of Fame.
+require 'base64'
+require 'json'
+require 'openssl'
+require 'zlib'
+
+KLASSENMEMORY_PASSWORD = 'beispielfotos'
+KLASSENMEMORY_PHOTOS = %w(max.mustermann elli.mustermann anonymous.2342) +
+    GROUP_TEST_FIRST_NAMES.map { |n| "#{n.downcase}.gruppentest" } +
+    GROUP_TEST_FIRST_NAMES.map { |n| "#{n.downcase}.labtest" }
+
+def png_bytes(width, height)
+    rows = (0...height).map do |y|
+        "\0".b + (0...width).map { |x| yield(x, y).pack('C4') }.join
+    end
+    chunk = lambda do |type, data|
+        [data.bytesize].pack('N') + type.b + data + [Zlib.crc32(type + data)].pack('N')
+    end
+    "\x89PNG\r\n\x1a\n".b +
+        chunk.call('IHDR', [width, height, 8, 6, 0, 0, 0].pack('NNCCCCC')) +
+        chunk.call('IDAT', Zlib::Deflate.deflate(rows.join)) +
+        chunk.call('IEND', ''.b)
+end
+
+# head and shoulders on a soft background, each in colours of its own
+def placeholder_portrait(i)
+    hue = (i * 47) % 360
+    rgb = lambda do |s, l|
+        c = (1 - (2 * l - 1).abs) * s
+        x = c * (1 - ((hue / 60.0) % 2 - 1).abs)
+        r, g, b = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][hue / 60]
+        [r, g, b].map { |v| ((v + l - c / 2) * 255).round } + [255]
+    end
+    ground, person = rgb.call(0.45, 0.82), rgb.call(0.35, 0.42)
+    png_bytes(160, 240) do |x, y|
+        head = (x - 80)**2 + (y - 100)**2 <= 38**2
+        shoulders = ((x - 80) / 70.0)**2 + ((y - 245) / 85.0)**2 <= 1
+        head || shoulders ? person : ground
+    end
+end
+
+# as the page decrypts it: PBKDF2 (SHA-1, 20000 rounds), AES-256-CBC, the
+# image as base64 inside
+def encrypt_photo(bytes, password)
+    salt = OpenSSL::Random.random_bytes(16)
+    iv = OpenSSL::Random.random_bytes(16)
+    cipher = OpenSSL::Cipher.new('AES-256-CBC').encrypt
+    cipher.key = OpenSSL::PKCS5.pbkdf2_hmac_sha1(password, salt, 20000, 32)
+    cipher.iv = iv
+    data = cipher.update(Base64.strict_encode64(bytes)) + cipher.final
+    {:salt => Base64.strict_encode64(salt), :iv => Base64.strict_encode64(iv),
+     :data => Base64.strict_encode64(data)}.to_json
+end
+
+foto_dir = File.join(target, 'schueler', 'fotos')
+FileUtils.mkpath(foto_dir)
+(KLASSENMEMORY_PHOTOS.map { |account| "beispielfoto-#{account}" } +
+ (1..2).map { |n| "#{first_school_day.year}-5a-#{n}" }).each_with_index do |name, i|
+    File.write(File.join(foto_dir, name), encrypt_photo(placeholder_portrait(i), KLASSENMEMORY_PASSWORD))
+end
+File.binwrite(File.join(target, 'jauch.png'), png_bytes(120, 160) do |x, y|
+    head = (x - 60)**2 + (y - 40)**2 <= 24**2
+    body = ((x - 60) / 50.0)**2 + ((y - 175) / 105.0)**2 <= 1
+    head || body ? [120, 128, 140, 255] : [0, 0, 0, 0]
+end)
+
 puts "Example data for the test stack: school year #{first_school_day} – #{last_day}, with extra role accounts"

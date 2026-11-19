@@ -57,6 +57,11 @@ hierher übernehmen, wenn sie angegangen werden.
       Textfeld den Fokus verliert (`change`), vorher bleibt „Absenden“
       deaktiviert. Besser auf `input` reagieren (`_template.html`,
       `textarea.change(…)`).
+- [ ] Klassenmemory, Hall of Fame: Der Server zählt die Klassen 11 und 12
+      als Stufe „OS“ (`/api/get_recognize_hall_of_fame`), die Seite bildet
+      ihre Spalten aber als „11“ und „12“ – für die Oberstufe steht deshalb
+      immer „–“, obwohl die Erkannten in „Gesamt“ mitzählen. Außerdem prüft
+      der Server `!@@user_info[:teacher]` statt der erkannten Person.
 - [ ] Klick auf das Icon in einem Button liefert `undefined`: Handler lesen
       `$(e.target).data(…)` (rund 90 Stellen) statt `e.currentTarget`,
       z. B. `.bu-launch-poll` (`_template.html`), `.btn-impersonate`

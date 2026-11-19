@@ -1,4 +1,4 @@
-import { test, expect, login, ACCOUNTS } from './fixtures';
+import { test, expect, login, ACCOUNTS, displayedSchoolWeek } from './fixtures';
 
 // Neues Design (Vorschau): switched on in the profile – for now by admins only
 // (UI_PREVIEW_FOR in include/design_preview.rb). Then the template loads the
@@ -1590,6 +1590,31 @@ test('Neues Design: Tagestitel bündig mit und ohne Schatten', async ({ page }, 
     const shaded = await measure('0.35');
     expect(Math.abs(shaded.pill - shaded.plan)).toBeLessThan(1.5);
     expect(shaded.text - shaded.pill).toBeGreaterThan(6);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// The line of the current time: as wide as the lessons of its day, not across
+// the whole column (it reached into the next day's edge).
+test('Neues Design: Zeitlinie so breit wie die Stunden', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the week grid');
+  const wednesday = displayedSchoolWeek()[2];
+  wednesday.setHours(10, 0, 0, 0);
+  await page.clock.install({ time: wednesday });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const line = page.locator('.fc-timegrid-now-indicator-line');
+    await expect(line).toBeVisible();
+    const r = await line.evaluate((el) => {
+      const events = el.closest('.fc-timegrid-col')!.querySelector('.fc-timegrid-col-events')!.getBoundingClientRect();
+      const b = el.getBoundingClientRect();
+      return { left: b.left, right: b.right, eventsLeft: events.left, eventsRight: events.right };
+    });
+    expect(Math.abs(r.left - (r.eventsLeft + 2))).toBeLessThanOrEqual(1.5);
+    expect(Math.abs(r.right - (r.eventsRight - 2))).toBeLessThanOrEqual(1.5);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

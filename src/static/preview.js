@@ -357,6 +357,101 @@
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', busy_bar); else busy_bar();
 
+    // ---------- Plain tables (pages not yet built for the new design) ----------
+    // A Bootstrap table with one header row: every cell gets its column's
+    // name (data-label). Where the list is narrow (a container query in
+    // preview.css), each row becomes a list row: the first cell as its
+    // title, the others as labelled facts, controls at the end. Matrices
+    // (more than ten columns) scroll sideways with their first column in
+    // place. A table without rows says so instead of showing a bare header.
+    // Tables with a design of their own (pv-…, the library, Kursbuch and
+    // class lists, calendars, dialogs) are left alone.
+    function plain_tables() {
+        if (!document.body || !document.body.classList.contains('ui-preview')) return;
+        var main = document.getElementById('main_container');
+        if (!main || main.dataset.pvTables) return;
+        main.dataset.pvTables = '1';
+        // the library styles its tables itself (preview/bib.js, which may
+        // come later); Kursbuch and class lists are solid pages of their own
+        if (document.body.classList.contains('pv-bib')) return;
+        var OWN = '.fc, .modal, .container-fluid.solid, .lesson_table, .lesson_table_table, .schueler_table, .schueler_table_table, [class*="pv-"]';
+        var busy = function() { return !!document.querySelector('.api_messages .fa-spin'); };
+        var header_row = function(table) {
+            if (table.tHead) return table.tHead.rows.length === 1 ? table.tHead.rows[0] : null;
+            var first = table.tBodies[0] && table.tBodies[0].rows[0];
+            if (first && first.cells.length > 1 && [].every.call(first.cells, function(c) { return c.tagName === 'TH'; })) {
+                first.classList.add('pv-gt-headrow');
+                return first;
+            }
+            return null;
+        };
+        var body_rows = function(table) {
+            var rows = [];
+            [].forEach.call(table.tBodies, function(tb) {
+                [].forEach.call(tb.rows, function(tr) { if (!tr.classList.contains('pv-gt-headrow')) rows.push(tr); });
+            });
+            return rows;
+        };
+        var update = function(table) {
+            var names = table._pv_names;
+            var rows = body_rows(table);
+            rows.forEach(function(tr) {
+                if (tr.dataset.pvGt) return;
+                tr.dataset.pvGt = '1';
+                var col = 0;
+                [].forEach.call(tr.cells, function(td, i) {
+                    if (!td.hasAttribute('data-label')) td.setAttribute('data-label', names[col] || '');
+                    if (i === 0) td.classList.add('pv-gt-first');
+                    if (td.colSpan >= names.length && names.length > 1) td.classList.add('pv-gt-span');
+                    if (td.querySelector('button, .btn, select, input[type=checkbox], input[type=radio]')) td.classList.add('pv-gt-act');
+                    if (td.querySelector('input[type=text], input:not([type]), .input-group, textarea')) td.classList.add('pv-gt-field');
+                    var t = td.textContent.trim();
+                    if (i > 0 && (t === '–' || t === '-' || (t === '' && !td.querySelector('*')))) td.classList.add('pv-gt-none');
+                    col += td.colSpan || 1;
+                });
+            });
+            // empty: only once it stays empty (rows often come a moment later)
+            var wrap = table.parentElement;
+            var shown = rows.filter(function(tr) { return !tr.hidden && tr.style.display !== 'none'; }).length;
+            clearTimeout(table._pv_empty);
+            if (shown > 0) wrap.classList.remove('pv-gt-is-empty');
+            else table._pv_empty = setTimeout(function() {
+                if (!busy() && body_rows(table).filter(function(tr) { return !tr.hidden && tr.style.display !== 'none'; }).length === 0) wrap.classList.add('pv-gt-is-empty');
+            }, 700);
+        };
+        var adopt = function(table) {
+            if (table.dataset.pvGt) { update(table); return; }
+            var own = table.closest(OWN);
+            if (own && main.contains(own)) return;
+            if (table.querySelector('[rowspan]')) return;
+            var head = header_row(table);
+            if (!head || head.cells.length < 2) return;
+            table.dataset.pvGt = '1';
+            table._pv_names = [].map.call(head.cells, function(th) { return th.textContent.trim(); });
+            var wrap = table.parentElement;
+            if (!wrap.classList.contains('table-responsive') || wrap.children.length > 1) {
+                wrap = document.createElement('div');
+                table.parentNode.insertBefore(wrap, table);
+                wrap.appendChild(table);
+            }
+            wrap.classList.add('pv-gt-wrap');
+            table.classList.add('pv-gt', table._pv_names.length > 10 ? 'pv-gt-matrix' : 'pv-gt-list');
+            var note = document.createElement('p');
+            note.className = 'pv-gt-empty-note';
+            note.textContent = 'Keine Einträge.';
+            wrap.appendChild(note);
+            update(table);
+        };
+        var scan = function() { main.querySelectorAll('table.table').forEach(adopt); };
+        var pending = null;
+        new MutationObserver(function() {
+            if (pending) return;
+            pending = setTimeout(function() { pending = null; scan(); }, 50);
+        }).observe(main, { childList: true, subtree: true });
+        scan();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', plain_tables); else plain_tables();
+
     // ---------- The navigation by task (new design) ----------
     // Heute, Nachrichten, Datentresor, then one entry each for Unterricht (my
     // courses), Lerngruppen, Schule (Klassenarbeiten and the school's tools)

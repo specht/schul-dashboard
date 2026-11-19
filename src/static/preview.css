@@ -3288,16 +3288,25 @@ body.ui-preview:has(.container-fluid.solid)::before {
     color: var(--pv-muted);
 }
 
-/* "copied": a check in the accent over the button (code: btn-clipboard-check) */
+/* "copied": a green check over the button (code: btn-clipboard-check) –
+   green says it worked, the accent would read as a warning in warm schemes */
 .ui-preview .btn-clipboard-check {
     position: absolute;
     inset: -1px;
     display: grid;
     place-items: center;
     border-radius: inherit;
-    background: var(--acc-soft) !important;
-    color: var(--acc-text) !important;
+    background: color-mix(in srgb, #2f7d32 14%, var(--pv-surface)) !important;
+    color: #2f7d32 !important;
     border: 0 !important;
+    /* (an icon rule elsewhere gives it padding-top: 7px – off centre) */
+    padding: 0 !important;
+    line-height: 1;
+}
+
+.ui-preview.dark .btn-clipboard-check {
+    background: color-mix(in srgb, #4caf50 24%, var(--pv-surface)) !important;
+    color: #8fdc96 !important;
 }
 
 /* disabled main buttons (e.g. "Code zusenden" before an address): quiet,
@@ -6312,5 +6321,207 @@ body.ui-preview:has(.container-fluid.solid)::before {
         width: 100%;
         animation: none;
         opacity: 0.6;
+    }
+}
+
+/* ---------- Pages not yet built for the new design ----------
+   What helps many of them at once, until each gets its own design. */
+
+/* pages in a full-width white strip (.container-fluid.white): a panel like
+   every other page, full width (they are tables and overviews). The solid
+   pages (Kursbuch, class lists) stay surfaces of their own. */
+.ui-preview #main_container > .container-fluid.white:not(.solid) {
+    width: auto;
+    margin: 24px 24px 48px;
+    padding: 18px 20px 20px;
+    background: var(--pv-surface) !important;
+    color: var(--pv-ink);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.14);
+}
+
+@media (max-width: 767px) {
+    .ui-preview #main_container > .container-fluid.white:not(.solid) {
+        margin: 12px 12px 24px;
+        padding: 14px;
+    }
+}
+
+/* the old project card (Lab 8/9, PK5, Projekttage): no second card in the
+   panel, and the way to the overview a calm button above the text */
+.ui-preview .karteikarte {
+    padding: 0;
+    margin-bottom: 0;
+    border: 0;
+    background: transparent !important;
+}
+
+.ui-preview #main_container a.btn-success.pull-right[href$="_overview"] {
+    float: none !important;
+    display: inline-flex;
+    margin: 0 0 12px !important;
+    background: var(--pv-hover);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* error and success messages of api_call where they float over the page
+   (.api_messages.overlay, the library's): a calm card at the bottom of the
+   content (above the tab bar on phones, beside the sidebar on larger
+   screens), never over the page's title and tabs */
+.ui-preview .api_messages.overlay,
+.ui-preview.pv-bib .api_messages {
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: 640px;
+    margin: 0 auto;
+    overflow: hidden;
+    border: 0;
+    border-radius: 14px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.22);
+}
+
+@media (min-width: 768px) {
+    .ui-preview .api_messages.overlay,
+    .ui-preview.pv-bib .api_messages {
+        bottom: 24px;
+        left: calc(var(--pv-sidebar) + 24px);
+        right: 24px;
+    }
+}
+
+.ui-preview .api_messages .bg-light {
+    background: transparent !important;
+}
+
+.ui-preview .api_messages .text-danger {
+    color: #b42318 !important;
+    font-weight: 600;
+}
+
+.ui-preview.dark .api_messages .text-danger {
+    color: #ff8f8f !important;
+}
+
+.ui-preview .api_messages > button {
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--pv-muted) !important;
+}
+
+.ui-preview .api_messages > button .fa-times::before {
+    content: "\eb55";
+    font-family: "tabler-icons";
+}
+
+/* plain tables (preview.js, plain_tables): never wider than the page, an
+   empty one says so */
+.ui-preview .pv-gt-wrap {
+    container-type: inline-size;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.ui-preview .pv-gt-wrap > table.pv-gt {
+    margin-bottom: 0;
+}
+
+.ui-preview .pv-gt-empty-note {
+    display: none;
+    margin: 6px 0 14px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-gt-wrap.pv-gt-is-empty > table {
+    display: none !important;
+}
+
+.ui-preview .pv-gt-wrap.pv-gt-is-empty > .pv-gt-empty-note {
+    display: block;
+}
+
+/* matrices (one column per day …): the first column stays in place */
+.ui-preview table.pv-gt-matrix tr > :first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--pv-surface);
+}
+
+/* narrow lists: each row a list row */
+@container (max-width: 620px) {
+    .ui-preview table.pv-gt-list,
+    .ui-preview table.pv-gt-list > tbody {
+        display: block !important;
+        width: auto !important;
+    }
+
+    .ui-preview table.pv-gt-list > thead,
+    .ui-preview table.pv-gt-list tr.pv-gt-headrow {
+        display: none !important;
+    }
+
+    .ui-preview table.pv-gt-list > tbody > tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 14px;
+        padding: 10px 0;
+        border-top: 1px solid var(--pv-line);
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .ui-preview table.pv-gt-list > tbody > tr[hidden] {
+        display: none;
+    }
+
+    .ui-preview table.pv-gt-list > tbody > tr > td,
+    .ui-preview table.pv-gt-list > tbody > tr > th {
+        display: block;
+        max-width: 100%;
+        padding: 0;
+        border: 0 !important;
+        background: transparent !important;
+        color: var(--pv-muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-first,
+    .ui-preview table.pv-gt-list td.pv-gt-span {
+        flex: 1 0 100%;
+        color: var(--pv-ink);
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-none {
+        display: none;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-field {
+        flex: 1 0 100%;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-act {
+        order: 10;
+    }
+
+    .ui-preview table.pv-gt-list td[data-label]:not(.pv-gt-first):not(.pv-gt-span):not(.pv-gt-act):not(:empty)::before {
+        content: attr(data-label) " ";
+        font-weight: 600;
+        font-size: 0.78rem;
+    }
+
+    .ui-preview table.pv-gt-list td.pv-gt-field[data-label]::before {
+        display: block;
     }
 }

@@ -232,6 +232,22 @@ Aktionen und das Verhalten am Handy.
   leise Angaben mit ihrem Spaltennamen davor; die Zeile öffnet, was sie
   vorher geöffnet hat.
 
+- **Seiten, die noch nicht umgebaut sind,** bekommen dieses Verhalten
+  allgemein (`plain_tables` in `preview.js`): jede Bootstrap-Tabelle mit
+  einer Kopfzeile wird in schmalen Listen zu Listenzeilen, Bedienelemente
+  stehen am Ende der Zeile, leere Angaben (»–«) fallen weg. Tabellen mit
+  mehr als zehn Spalten gelten als Matrix und scrollen in ihrem Rahmen
+  seitlich, die erste Spalte bleibt stehen. Eine Tabelle ohne Zeilen zeigt
+  »Keine Einträge.« statt eines leeren Kopfes. Die Seite selbst scrollt nie
+  seitlich. Tabellen mit eigener Gestaltung (Klassen mit `pv-`, Kursbuch,
+  Klassenliste, Kalender, Dialoge) bleiben unberührt; wer eine Seite
+  umbaut, ersetzt das durch eine eigene Lösung.
+- Seiten in einem weißen Streifen über die ganze Breite
+  (`.container-fluid.white`) bekommen die Fläche wie alle anderen Seiten.
+- Schwebende Meldungen (`.api_messages`, die über der Seite liegen) stehen
+  als ruhige Karte unten: am Handy über der Tab-Leiste, sonst neben der
+  Seitenleiste – nie über Titel und Reitern der Seite.
+
 **Bereiche mit eigener Navigation** (Beispiel: Bibliothek)
 
 - Zwei Ebenen, nie zwei gleich schwere Zeilen. Oben auf dem Panel stehen

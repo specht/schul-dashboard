@@ -228,24 +228,16 @@ hierher übernehmen, wenn sie angegangen werden.
 Alle Seiten mit Beispieldaten in drei Breiten (Handy, Tablet, Desktop)
 fotografiert und gegen `doc/Gestaltung.md` geprüft.
 
-- [ ] Gemeinsam, hilft vielen Seiten auf einmal:
-  - Seiten mit `container-fluid white` (oder ohne Hülle) bekommen keine
-    Fläche, nur einen weißen Streifen über die ganze Breite: `admin`,
-    `email_overview`, `inactive_sus`, `sus_ohne_kurse`, `lab8_overview`,
-    `lab9_overview`, `pk5_overview`, `pk5_termine`,
-    `projekttage_overview`, `techpostadmin`, `unterrichtsmails`,
-    `aula_progress`, `aula_light`
-  - Einfache Tabellen werden am Handy nicht zu Listenzeilen und laufen
-    rechts aus dem Bild (`admin`, `dienste`, `stats`, `anmeldungen`,
-    `manage_monitor`, `postfaecher`, `manage_calendar`, `prepare_vote`,
-    die Übersichten von Lab 8/9, PK5, Projekttage): die Regel der
-    Bibliothek allgemein anwenden
-  - Leere Tabellen zeigen nur ihren Kopf, ohne Satz, was hier erscheint
-  - Fehlermeldungen (`.api_messages`) überdecken am Desktop Titel und
-    Umschalter und ragen links in die Seitenleiste
-  - Die alte „Karteikarte“ bleibt als zweite Karte in der Fläche (`lab8`,
-    `lab9`, `projekttage`), der Link zur Übersicht ist ein Akzentknopf und
-    drückt den Text am Handy zusammen
+- [x] Gemeinsam (erledigt): Fläche für `container-fluid white`, einfache
+      Tabellen als Listenzeilen und leere Tabellen mit Satz
+      (`plain_tables`), schwebende Fehlermeldungen unten neben der Seitenleiste,
+      keine zweite „Karteikarte“, ruhiger Link zur Übersicht
+- [ ] Noch ohne Fläche (bewusst „solid“ oder Gerät): `inactive_sus`,
+      `sus_ohne_kurse`, `unterrichtsmails` (eigene Seiten mit Titel und
+      Fläche wären besser), `aula_progress`, `aula_light`
+- [ ] Kursbuch: das Schließen-Kreuz der schwebenden Fehlermeldung
+      reagiert nicht
+- [ ] `lab8`: zwei Trennlinien zwischen Feldern und Bearbeitungshistorie
 - [ ] Viel genutzt, noch altes Design: `bookings` (am Handy kaputt: Titel
       bricht im Wort, Buchungen abgeschnitten), `techpost`, `jitsi`
       (alle, „Sie“, Hinweiskästen), `groups`, `prepare_vote`,

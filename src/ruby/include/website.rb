@@ -454,8 +454,10 @@ class Main < Sinatra::Base
     # before; with offset and limit (1..100) one page of them, and the number
     # of all published entries (total) – the website pages through them.
     get "/api/get_frontpage_news_entries/#{WEBSITE_READ_INFO_SECRET}" do
-        offset = [(params[:offset] || '0').to_s =~ /\A\d{1,7}\z/ ? params[:offset].to_i : 0, 0].max
-        limit = (params[:limit] || '20').to_s =~ /\A\d{1,4}\z/ ? params[:limit].to_i : 20
+        offset_s = params[:offset].to_s
+        limit_s = params[:limit].to_s
+        offset = offset_s =~ /\A\d{1,7}\z/ ? offset_s.to_i : 0
+        limit = limit_s =~ /\A\d{1,4}\z/ ? limit_s.to_i : 20
         limit = [[limit, 1].max, 100].min
         entries = neo4j_query(<<~END_OF_QUERY, {:offset => offset, :limit => limit}).map { |x| x['n'] }
             MATCH (n:NewsEntry)

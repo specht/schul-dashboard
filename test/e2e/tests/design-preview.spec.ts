@@ -1392,11 +1392,15 @@ test('Neues Design: Tageskopf am Handy bündig', async ({ page }, testInfo) => {
     const x = await page.evaluate(() => {
       const left = (s: string) => Math.round(document.querySelector(s)!.getBoundingClientRect().x);
       const text = (s: string) => { const r = document.createRange(); r.selectNodeContents(document.querySelector(s)!); return Math.round(r.getBoundingClientRect().x); };
-      return { plan: left('.pv-band-plan'), pill: left('.pv-band-text'), tiles: left('.pv-strip-day'), planText: text('.pv-band-plan span'), title: text('.pv-band-text h1') };
+      const shade = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--band-scrim-a')) || 0;
+      return { plan: left('.pv-band-plan'), pill: left('.pv-band-text'), tiles: left('.pv-strip-day'), planText: text('.pv-band-plan span'), title: text('.pv-band-text h1'), shade };
     });
     expect(Math.abs(x.pill - x.plan)).toBeLessThanOrEqual(1);
     expect(Math.abs(x.pill - x.tiles)).toBeLessThanOrEqual(1);
-    expect(Math.abs(x.title - x.planText)).toBeLessThanOrEqual(1);
+    // with a shade the title is inset like the button's text; without one
+    // it stands at the edge itself (see "Tagestitel bündig mit und ohne Schatten")
+    if (x.shade > 0) expect(Math.abs(x.title - x.planText)).toBeLessThanOrEqual(1);
+    else expect(Math.abs(x.title - x.plan)).toBeLessThanOrEqual(1);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

@@ -282,6 +282,9 @@ Klassenraum.
   Wünsche, Vorgaben oder Listen. Der Plan wird so groß gezeichnet, dass
   der ganze Raum ohne Scrollen ins Fenster passt (auch ein großer Raum am
   Beamer); bei einer Größenänderung des Fensters passt er sich neu an.
+  Oben lässt sich zwischen „Ganze Namen“ und „Nur Vornamen“ wählen (gilt
+  auch für den Ausdruck, der Browser merkt sich die Wahl). Bei „Nur
+  Vornamen“ steht bei Kindern mit demselben Vornamen der Nachname.
 - **SuS** sehen den Sitzplan im Dashboard nicht, weder die Seite noch den
   Endpunkt `sph_get_public_plan`.
 - **Gruppenbildung**: alle Lehrkräfte der Klasse (`zg_can_use?`).

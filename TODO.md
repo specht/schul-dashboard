@@ -250,7 +250,7 @@ fotografiert und gegen `doc/Gestaltung.md` geprüft.
 - [ ] `lab8`: zwei Trennlinien zwischen Feldern und Bearbeitungshistorie
 - [ ] Viel genutzt, noch altes Design: `bookings` (am Handy kaputt: Titel
       bricht im Wort, Buchungen abgeschnitten), `techpost`, `jitsi`
-      (alle, „Sie“, Hinweiskästen), `groups`, `prepare_vote`,
+      (alle, „Sie“, Hinweiskästen), `groups`,
       `upload_images`, `upload_files`, `email_overview`,
       `show_login_codes`, `kurslisten`, `gev`
 - [ ] Verwaltung, noch altes Design: `admin`, `stats`, `email_accounts`,

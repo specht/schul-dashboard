@@ -29,7 +29,6 @@ SCHUL_MAIL_LOGIN_SMTP_HOST = 'smtp.test.invalid'
 SCHUL_MAIL_LOGIN_IMAP_HOST = 'imap.test.invalid'
 SMTP_SERVER = 'smtp.test.invalid'
 WEBSITE_HOST = 'dashboard.test.invalid'
-VOTING_WEBSITE_URL = 'https://abstimmung.test.invalid'
 TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.test.invalid'
 SCHOOL_WEBSITE_URL = 'https://website.test.invalid'
 WEBSITE_ARTICLE_LINKS = true

@@ -108,9 +108,6 @@ WEBSITE_MAINTAINER_NAME = 'Herr Müller'
 WEBSITE_MAINTAINER_NAME_AKKUSATIV = 'Herrn Müller'
 WEBSITE_MAINTAINER_EMAIL = 'mueller@beispielschule.de'
 
-# Website mit Voting-System (muss noch veröffentlich werden)
-VOTING_WEBSITE_URL = 'https://abstimmung.beispielschule.de'
-
 # Website für Technikhilfe (Chat und Speedtest)
 TECHNIK_HILFE_WEBSITE_URL = 'https://hilfe.beispielschule.de'
 

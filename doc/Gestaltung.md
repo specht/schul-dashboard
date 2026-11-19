@@ -180,7 +180,7 @@ Aktionen und das Verhalten am Handy.
 
 | Typ | Beispiele | Breite am Desktop |
 |---|---|---|
-| Liste mit Aktionen | Umfragen, Abstimmungen, Termine, Verteiler, Gruppen | höchstens etwa 980 px |
+| Liste mit Aktionen | Umfragen, Termine, Verteiler, Gruppen | höchstens etwa 980 px |
 | Tabelle | Kurslisten, Klassenlisten, Statistiken, Admin-Übersichten | volle Breite |
 | Formular und Editor | Umfrage bearbeiten, Termin anlegen, Profil | höchstens etwa 980 px |
 | Lesen und Verlauf | Nachrichten, Kursbuch, Hilfe | höchstens etwa 980 px (Nachrichten: Liste und Nachricht nebeneinander) |

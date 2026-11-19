@@ -49,8 +49,13 @@ class Main < Sinatra::Base
 
     # Fetches a public http(s) address without following redirects and
     # returns [HTTP status, body]. The host is resolved once, every address
-    # is checked, and curl connects to exactly the checked address.
+    # is checked, and curl connects to exactly the checked address. A class
+    # method, so that the timetable service can use it too (ical_import.rb).
     def fetch_public_uri(uri_string)
+        Main.fetch_public_uri(uri_string)
+    end
+
+    def self.fetch_public_uri(uri_string, max_size = MAX_FETCHED_FILE_SIZE)
         uri = URI.parse(uri_string.to_s) rescue nil
         assert(uri.is_a?(URI::HTTP) && !uri.hostname.to_s.empty?, 'invalid uri')
         addresses = (Addrinfo.getaddrinfo(uri.hostname, uri.port, nil, :STREAM) rescue []).map do |a|
@@ -70,7 +75,7 @@ class Main < Sinatra::Base
         c.on_body do |chunk|
             body << chunk
             # a different count aborts the transfer
-            body.bytesize > MAX_FETCHED_FILE_SIZE ? 0 : chunk.bytesize
+            body.bytesize > max_size ? 0 : chunk.bytesize
         end
         c.perform
         [c.response_code, body]

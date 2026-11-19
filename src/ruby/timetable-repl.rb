@@ -8,6 +8,9 @@ require 'fileutils'
 require 'thread'
 
 PING_TIME = DEVELOPMENT ? 1 : 1
+# external calendars (ical_import.rb): fetched this often, and right after
+# someone saved or removed an address (/api/ical_import/<email>)
+ICAL_IMPORT_INTERVAL = defined?(ICAL_IMPORT_INTERVAL_SECONDS) ? ICAL_IMPORT_INTERVAL_SECONDS : 15 * 60
 DELAYED_UPDATE_TIME = DEVELOPMENT ? 0 : 0
 
 class TimetableRepl < Sinatra::Base
@@ -80,6 +83,23 @@ class TimetableRepl < Sinatra::Base
                 sleep PING_TIME
             end
         end
+        # External calendars in their own thread: a slow server never holds
+        # up the timetable. Changed appointments queue an update of that
+        # person's week files.
+        @@ical_queue = Queue.new
+        @@ical_queue << nil   # once at the start: all feeds
+        @@ical_thread = Thread.new do
+            while true do
+                which = @@ical_queue.pop(timeout: ICAL_IMPORT_INTERVAL)
+                begin
+                    changed = IcalImport.refresh(which)
+                    changed.each { |email| @@queue << {:which => "_#{email}"} }
+                rescue StandardError => e
+                    STDERR.puts "ical import: #{e}"
+                end
+            end
+        end
+        ServiceStatus.watch('ical_import', @@ical_thread)
         debug "REPL is ready."
     end
     
@@ -95,6 +115,13 @@ class TimetableRepl < Sinatra::Base
                 @@queue << {:which => which, :wait => (parts[1] == 'wait')}
             end
         end
+    end
+
+    # someone saved or removed the address of their calendar: fetch it now
+    get '/api/ical_import/*' do
+        email = CGI.unescape(request.path.sub('/api/ical_import/', ''))
+        @@ical_queue << email unless email.empty?
+        'ok'
     end
 
     get '/api/update_messages' do

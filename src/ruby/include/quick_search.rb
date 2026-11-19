@@ -106,6 +106,7 @@ class Main < Sinatra::Base
         '/bibliothek' => 'Bücher Buch ausleihen ausgeliehen Medien',
         '/tests' => 'Klassenarbeit Klausur Test Arbeiten Termine',
         '/events' => 'Termine Kalender Veranstaltung',
+        '/terminfinder' => 'Termin finden freie Zeit gemeinsam Besprechung Konferenz Treffen',
         '/polls' => 'Umfrage Abstimmung Fragebogen',
         '/groups' => 'Gruppen Verteiler',
         '/mailing_lists' => 'Verteiler Mail E-Mail Liste',

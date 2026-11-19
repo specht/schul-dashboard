@@ -1,0 +1,455 @@
+/* Neues Design: Terminfinder (/terminfinder, preview/terminfinder.js). Who,
+   how long, then the week: one row per day with a bar of the day (free for
+   all in the accent, busy darker the more people are busy) and the common
+   free times as buttons. */
+
+.ui-preview .pv-tf .pv-tf-lead {
+    max-width: 62ch;
+    margin: 0 0 18px;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-tf .pv-tf-label {
+    display: block;
+    margin: 0 0 6px;
+    color: var(--pv-ink);
+    font-weight: 700;
+}
+
+/* ---------- who ---------- */
+
+.ui-preview .pv-tf .pv-tf-people {
+    margin-bottom: 18px;
+}
+
+.ui-preview .pv-tf .pv-tf-search {
+    position: relative;
+    max-width: 520px;
+}
+
+.ui-preview .pv-tf .pv-tf-search > .ti-search {
+    position: absolute;
+    left: 12px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    color: var(--pv-muted);
+    pointer-events: none;
+}
+
+.ui-preview .pv-tf .pv-tf-search > input {
+    padding-left: 36px;
+}
+
+.ui-preview .pv-tf .pv-tf-results {
+    position: absolute;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    max-height: min(360px, 60vh);
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--pv-line);
+    border-radius: 12px;
+    background: var(--pv-surface);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.ui-preview .pv-tf .pv-tf-result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--pv-ink);
+    text-align: left;
+}
+
+.ui-preview .pv-tf .pv-tf-result:hover,
+.ui-preview .pv-tf .pv-tf-result.active {
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-tf .pv-tf-result-name {
+    font-weight: 600;
+}
+
+.ui-preview .pv-tf .pv-tf-result-sub,
+.ui-preview .pv-tf .pv-tf-result-none {
+    color: var(--pv-muted);
+    font-size: 0.88rem;
+}
+
+.ui-preview .pv-tf .pv-tf-result-none {
+    padding: 8px 10px;
+}
+
+.ui-preview .pv-tf .pv-tf-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.ui-preview .pv-tf .pv-tf-chips:empty {
+    display: none;
+}
+
+.ui-preview .pv-tf .pv-tf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    max-width: 100%;
+    padding: 3px 4px 3px 12px;
+    border-radius: 999px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+    font-size: 0.92rem;
+}
+
+.ui-preview .pv-tf .pv-tf-chip-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ui-preview .pv-tf .pv-tf-chip-remove {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-tf .pv-tf-chip-remove:hover {
+    background: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-tf .pv-tf-facts {
+    margin-top: 8px;
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+}
+
+/* ---------- how long: a segmented switch ---------- */
+
+.ui-preview .pv-tf .pv-tf-options {
+    margin-bottom: 22px;
+}
+
+.ui-preview .pv-tf .pv-tf-durations {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    max-width: 100%;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-tf .pv-tf-duration {
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--pv-muted);
+    font-weight: 600;
+    box-shadow: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-tf .pv-tf-duration.active {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- the week ---------- */
+
+.ui-preview .pv-tf .pv-tf-week-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-tf .pv-tf-week-title {
+    min-width: 9.5em;
+    text-align: center;
+}
+
+.ui-preview .pv-tf .pv-tf-week-label {
+    font: 700 1.1rem/1.25 var(--pv-display);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-tf .pv-tf-week-sub {
+    color: var(--pv-muted);
+    font-size: 0.85rem;
+}
+
+.ui-preview .pv-tf .pv-tf-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 10px;
+}
+
+.ui-preview .pv-tf .pv-tf-today {
+    margin-left: auto;
+}
+
+.ui-preview .pv-tf .pv-tf-frame {
+    overflow-x: clip;
+}
+
+.ui-preview .pv-tf .pv-tf-days {
+    position: relative;
+    transition: opacity 0.15s;
+}
+
+.ui-preview .pv-tf .pv-tf-days.pv-tf-loading {
+    opacity: 0.55;
+}
+
+.ui-preview .pv-tf .pv-tf-empty {
+    margin: 18px 0 6px;
+    color: var(--pv-muted);
+}
+
+/* the hours above the bars, aligned with them */
+.ui-preview .pv-tf .pv-tf-scale {
+    position: relative;
+    height: 1.6em;
+    margin: 10px 0 0 var(--pv-tf-head);
+    color: var(--pv-muted);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-tf .pv-tf-tick {
+    position: absolute;
+    bottom: 2px;
+    transform: translateX(-50%);
+}
+
+.ui-preview .pv-tf .pv-tf-tick:first-child {
+    transform: none;
+}
+
+.ui-preview .pv-tf .pv-tf-tick:last-child {
+    transform: translateX(-100%);
+}
+
+.ui-preview .pv-tf {
+    --pv-tf-head: 7.5rem;
+}
+
+.ui-preview .pv-tf .pv-tf-day {
+    display: grid;
+    grid-template-columns: var(--pv-tf-head) minmax(0, 1fr);
+    grid-template-areas: "head bar" "head slots";
+    align-items: start;
+    gap: 8px 0;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-tf .pv-tf-day-head {
+    grid-area: head;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 6px;
+    padding-right: 10px;
+    color: var(--pv-ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-tf .pv-tf-note {
+    flex-basis: 100%;
+    color: var(--pv-muted);
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.ui-preview .pv-tf .pv-tf-bar {
+    grid-area: bar;
+    position: relative;
+    height: 14px;
+    margin-top: 4px;
+    border-radius: 7px;
+    overflow: hidden;
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-tf .pv-tf-bar > span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.ui-preview .pv-tf .pv-tf-free {
+    background: color-mix(in srgb, var(--acc) 30%, var(--acc-soft));
+}
+
+.ui-preview .pv-tf .pv-tf-busy {
+    background: color-mix(in srgb, var(--pv-muted) calc(var(--share, 1) * 70%), transparent);
+}
+
+.ui-preview .pv-tf .pv-tf-slots {
+    grid-area: slots;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.ui-preview .pv-tf .pv-tf-none {
+    color: var(--pv-muted);
+    font-size: 0.92rem;
+}
+
+.ui-preview .pv-tf .pv-tf-none + .pv-tf-slot {
+    margin-left: 4px;
+}
+
+.ui-preview .pv-tf .pv-tf-slot {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 6px;
+    padding: 4px 12px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-tf .pv-tf-slot:hover {
+    border-color: var(--acc);
+}
+
+/* all but one free: quieter */
+.ui-preview .pv-tf .pv-tf-slot-near {
+    background: transparent;
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-tf .pv-tf-slot-except {
+    color: var(--pv-muted);
+    font-weight: 500;
+    font-size: 0.88em;
+}
+
+/* days that are over: one quiet line */
+.ui-preview .pv-tf .pv-tf-past {
+    grid-template-areas: "head slots";
+    padding: 8px 0;
+}
+
+.ui-preview .pv-tf .pv-tf-past .pv-tf-day-head {
+    color: var(--pv-muted);
+}
+
+/* ---------- the dialog of a time ---------- */
+
+.ui-preview #tfSlotModal .pv-tf-slot-who {
+    margin-bottom: 14px;
+}
+
+.ui-preview #tfSlotModal .pv-tf-slot-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+
+.ui-preview #tfSlotModal .pv-tf-slot-row label {
+    margin: 0;
+    font-weight: 600;
+}
+
+.ui-preview #tfSlotModal .pv-tf-slot-row select {
+    width: auto;
+    min-width: 8em;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview #tfSlotModal .pv-tf-slot-end {
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .pv-tf {
+        --pv-tf-head: 0px;
+    }
+    /* phones: the day's name above its bar */
+    .ui-preview .pv-tf .pv-tf-day {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "head" "bar" "slots";
+        gap: 6px;
+    }
+    .ui-preview .pv-tf .pv-tf-note {
+        flex-basis: auto;
+    }
+    .ui-preview .pv-tf .pv-tf-week-title {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .ui-preview .pv-tf .pv-tf-today {
+        margin-left: 0;
+    }
+    .ui-preview .pv-tf .pv-tf-past {
+        grid-template-areas: "head";
+    }
+    .ui-preview .pv-tf .pv-tf-past .pv-tf-slots {
+        display: none;
+    }
+    /* the durations in one row over the width */
+    .ui-preview .pv-tf .pv-tf-durations {
+        display: flex;
+        flex-wrap: nowrap;
+    }
+    .ui-preview .pv-tf .pv-tf-duration {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 5px 2px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+    /* the sheet as high as its content, »Termin anlegen« over the width */
+    .ui-preview #tfSlotModal .modal-dialog {
+        flex-direction: column;
+    }
+    /* Bootstrap's spacer of centred dialogs would push the sheet down */
+    .ui-preview #tfSlotModal .modal-dialog-centered::before {
+        display: none;
+    }
+    .ui-preview #tfSlotModal #bu_tf_create_event {
+        flex: 1 1 auto;
+    }
+}

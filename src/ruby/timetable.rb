@@ -1197,6 +1197,8 @@ class Timetable
         # per person: lesson keys of their timetable; directories already created
         user_lesson_keys = {}
         made_dirs = Set.new
+        # appointments from an external calendar, per person (ical_import.rb)
+        ical_weeks = {}
         # website events (three queries, two of them cleanups) – once per update, not per week
         all_website_events = nil
         aufsicht_start_date_index = 0
@@ -1454,6 +1456,13 @@ class Timetable
                                         :event_type => :event
                                         }
                             end
+                        end
+
+                        # an external calendar (ical_import.rb): only in the
+                        # person's private file, never in the public one
+                        if mode == :private && @@user_info[email] && user_has_role(email, :can_import_ical)
+                            ical_weeks[email] ||= (IcalImport.events_by_week(email) rescue {})
+                            (ical_weeks[email][p_yw] || []).each { |e| events << e.dup }
                         end
 
                         day_message_target = nil
@@ -1951,6 +1960,8 @@ class Timetable
                             sus_ical_without_lesson_data = user_has_role(email, :schueler)
                             ical_events[email] ||= []
                             write_events.each do |event|
+                                # what came from an external calendar does not go out again
+                                next if event[:event_type].to_s == 'agenda'
                                 # STDERR.puts event.keys.to_json
                                 event_str = StringIO.open do |io|
                                     # if event[:is_event]

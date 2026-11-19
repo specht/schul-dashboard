@@ -468,13 +468,15 @@ function refresh_jitsi_presence() {
 }
 
 // Neues Design (Vorschau): the grid shows the school day of the week shown
-// (earliest to latest lesson, at least 8:00–14:00) instead of 7:00–22:00
+// (earliest to latest lesson or Termin, also one from an external calendar;
+// at least 8:00–14:00) instead of 7:00–22:00 – a Termin after the last
+// lesson was outside the grid and not shown at all
 function preview_time_range(events) {
     if (!document.body || !document.body.classList.contains('ui-preview') || !window.calendar) return;
     let minutes = function(t) { return parseInt(t.substr(11, 2), 10) * 60 + parseInt(t.substr(14, 2), 10); };
     let lo = 8 * 60, hi = 14 * 60;
     for (let e of events) {
-        if (!e.lesson || !e.start || !e.end || e.start.length < 16) continue;
+        if (!(e.lesson || e.is_event) || !e.start || !e.end || e.start.length < 16) continue;
         lo = Math.min(lo, Math.floor(minutes(e.start) / 30) * 30);
         hi = Math.max(hi, Math.ceil(minutes(e.end) / 30) * 30);
     }
@@ -822,6 +824,8 @@ function preview_agenda_fill_day(box, day, all, now, open) {
         if (running) head.append($('<span>').addClass('pv-ag-now').text('Jetzt'));
         card.append(head);
         if (x.entfall) card.addClass('pv-ag-off');
+        // from an external calendar (ical_import.rb): quieter than lessons
+        if (x.source === 'ical') card.addClass('pv-ag-ical');
         if (x.vertretungs_text) card.append($('<div>').addClass('pv-ag-note').html(x.vertretungs_text));
         let data = x.data || {}, per_user = x.per_user || {};
         let marks = $('<div>').addClass('pv-ag-marks');
@@ -2533,7 +2537,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let wrote_something = (event.vertretungs_text || '').length > 0;
 
             if (event.is_event) {
-                body.append('<div>Einladung erhalten von: ' + event.organized_by + '</div>');
+                if (event.source === 'ical')
+                    body.append('<div>Aus deinem Kalender »' + event.organized_by + '«</div>');
+                else
+                    body.append('<div>Einladung erhalten von: ' + event.organized_by + '</div>');
                 body.append('<hr />');
                 if (event.jitsi) {
                     let jitsi_link = '/jitsi/event/' + event.eid;

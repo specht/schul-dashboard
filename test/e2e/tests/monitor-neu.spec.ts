@@ -24,8 +24,12 @@ function eintrag(klasse: string, i: number) {
     stunde, stunde_label: `${stunde}.`, klassen_alt: [klasse], klassen_neu: [klasse],
     fach_alt: fach, fach_neu: fach, lehrer_alt: [KUERZEL[i % KUERZEL.length]],
   };
-  if (art === 0) { e.lehrer_neu = [KUERZEL[(i + 3) % KUERZEL.length]]; e.raum_neu = RAEUME[i % RAEUME.length]; }
-  if (art === 1) { e.vertretungs_text = 'entfällt'; delete e.fach_neu; }
+  if (art === 0) {
+    e.lehrer_neu = [KUERZEL[(i + 3) % KUERZEL.length]]; e.raum_neu = RAEUME[i % RAEUME.length];
+    // now and then another subject too: »Ku statt D, Hb statt Se, 108«
+    if (klasse === '5b' && i === 0) e.fach_neu = 'Ku';
+  }
+  if (art === 1) { e.vertretungs_text = klasse === '12' ? 'entfällt; verlegt auf 6. Std.' : 'entfällt'; delete e.fach_neu; }
   if (art === 2) { e.raum_alt = RAEUME[i % RAEUME.length]; e.raum_neu = RAEUME[(i + 2) % RAEUME.length]; e.lehrer_neu = e.lehrer_alt; }
   if (art === 3) { e.vertretungs_text = 'Klausur'; e.lehrer_neu = e.lehrer_alt; e.raum_neu = RAEUME[(i + 5) % RAEUME.length]; }
   if (art === 4) { e.vertretungs_text = 'Aufgaben im Sekretariat abholen'; e.lehrer_neu = e.lehrer_alt; }
@@ -136,13 +140,28 @@ test('Flurmonitor, neues Design: Uhr, laufende Stunde, Kästen und Marken', asyn
   await expect(page.getByTestId('monitor-stunde')).toContainText('Pause ab');
   await expect(page.locator('.mn-datum')).toContainText('Stand 7:12 Uhr');
   const k5a = page.locator('.mn-kachel[data-klasse="5a"]');
-  await expect(k5a.locator('.mn-marke', { hasText: 'Vertretung' })).toHaveCount(1);
+  // a substitution without a mark (»Hb statt Se« says it), one line
+  await expect(k5a.locator('.mn-marke', { hasText: 'Vertretung' })).toHaveCount(0);
   await expect(k5a.locator('.mn-marke', { hasText: 'Entfall' })).toHaveCount(1);
   await expect(k5a.locator('.mn-marke', { hasText: 'Raum' })).toHaveCount(1);
+  // what replaces what: the new state in full, »statt …« quietly behind it
+  const vertretung = k5a.locator('.mn-was').first();
+  await expect(vertretung.locator('.mn-alt').first()).toHaveText(/^ statt \S+$/);
+  expect(await vertretung.evaluate((e) => e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight))).toBeLessThan(1.5);
+  const ink = await vertretung.evaluate((e) => getComputedStyle(e).color);
+  expect(await vertretung.locator('.mn-alt').first().evaluate((e) => getComputedStyle(e).color)).not.toBe(ink);
+  // another subject, another teacher: separated by a comma
+  await expect(page.locator('.mn-kachel[data-klasse="5b"] .mn-was').first()).toHaveText(/^Ku statt \S+, \S+ statt \S+, \S+$/);
+  // the mark says »Entfall«: the text does not repeat it
+  const entfall = page.locator('.mn-kachel[data-klasse="12"] .mn-was', { has: page.locator('.mn-marke', { hasText: 'Entfall' }) }).first();
+  await expect(entfall).toContainText('verlegt auf 6. Std.');
+  await expect(entfall).not.toContainText('entfällt');
   // every class has its tile, also without changes (then only the name)
   const k5c = page.locator('.mn-kachel[data-klasse="5c"]');
   await expect(k5c).toHaveClass(/mn-still/);
   await expect(k5c).toHaveText('5c');
+  // … and quiet: no white box like the tiles with changes
+  expect(await k5c.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe('rgb(255, 255, 255)');
   await expect(page.locator('.mn-kachel[data-klasse="11"] .mn-zeile').first()).toContainText('1.');
   // the message of "Monitore verwalten" in the foot, the scheme of the day
   await expect(page.locator('.mn-nachricht')).toContainText('Elternsprechtag');
@@ -171,15 +190,11 @@ test('Flurmonitor, neues Design: blättert statt zu scrollen', async ({ page }) 
   // a tile with more than fits pages inside itself, the tiles stay where they are
   const k11 = page.locator('.mn-kachel[data-klasse="11"]');
   const k5a = page.locator('.mn-kachel[data-klasse="5a"]');
-  // the tile's page: dots (the current one marked), with many pages a number
-  const an = (k: typeof k11) => k.locator('.mn-punkte').evaluate((p) => {
-    const m = /^(\d+) von \d+$/.exec(p.textContent || '');
-    return m ? parseInt(m[1], 10) - 1 : Array.from(p.children).findIndex((x) => x.classList.contains('mn-an'));
-  });
+  // the tile's page under its name: »1/3«
+  const an = (k: typeof k11) => k.locator('.mn-kseite').evaluate((p) => parseInt((/^(\d+)\/\d+$/.exec(p.textContent || '') || ['', '0'])[1], 10) - 1);
   expect(await an(k11)).toBe(0);
-  // many pages: the page as a number instead of dots
-  await expect(k5a.locator('.mn-punkte')).toHaveText(/^1 von \d+$/);
-  await expect(page.locator('.mn-kachel[data-klasse="5b"] .mn-punkte i.mn-an')).toHaveCount(1);
+  await expect(k5a.locator('.mn-kseite')).toHaveText(/^1\/\d+$/);
+  await expect(page.locator('.mn-kachel[data-klasse="5b"] .mn-kseite')).toHaveText(/^1\/\d+$/);
   await nichtsAbgeschnitten(page);
   const orte = await kachelOrte(page);
   const vorher11 = await k11.locator('.mn-zeilen').innerText();
@@ -189,7 +204,7 @@ test('Flurmonitor, neues Design: blättert statt zu scrollen', async ({ page }) 
   await expect(mn).toHaveAttribute('data-seite', '2');
   await expect(page.locator('.mn-seite')).toHaveText(`Seite 2 von ${seiten}`);
   expect(await an(k11)).toBe(1);
-  await expect(k5a.locator('.mn-punkte')).toHaveText(/^2 von \d+$/);
+  await expect(k5a.locator('.mn-kseite')).toHaveText(/^2\/\d+$/);
   expect(await k11.locator('.mn-zeilen').innerText()).not.toBe(vorher11);
   expect(await k5a.locator('.mn-zeilen').innerText()).not.toBe(vorher5a);
   await nichtsAbgeschnitten(page);

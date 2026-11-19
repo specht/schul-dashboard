@@ -165,10 +165,32 @@
         pv_list.page(container, { main: container.querySelector('.bu-new-event') });
     }
 
+    // a time from the Terminfinder (preview/terminfinder.js): a new event
+    // with its date, time and participants (through sessionStorage, so that
+    // no names end up in the address)
+    function from_terminfinder() {
+        var draft = null;
+        try {
+            draft = JSON.parse(sessionStorage.getItem('pv_terminfinder') || 'null');
+            sessionStorage.removeItem('pv_terminfinder');
+        } catch (e) { draft = null; }
+        if (!draft || !/^\d{4}-\d{2}-\d{2}$/.test(draft.date || '')) return;
+        new_event();
+        $('#ti_date').val(draft.date);
+        $('#ti_start_time').val(draft.start);
+        $('#ti_end_time').val(draft.end);
+        (draft.recipients || []).forEach(function (key) {
+            if (typeof key === 'string' && key in recipients) add_recipient(key);
+        });
+        $('#ti_title').focus();
+        update_buttons();
+    }
+
     var first = true;
     update_stored_events = function () {
         setup();
         render();
+        if (first && !pending_eid) from_terminfinder();
         // the first drawing happens once the recipients are known: now an
         // older event from /events#eid can be opened
         if (first && pending_eid) {

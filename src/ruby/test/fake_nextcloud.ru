@@ -6,6 +6,9 @@
 #   PUT    /ocs/v2.php/cloud/users/<login>   key=password&value=…   (OCS, XML)
 #   GET    /_requests                       recorded password changes (JSON)
 #   POST   /_fail?login=<login>             refuse the next change for <login>
+#   POST   /_ical?name=<name>               store a calendar (the body)
+#   GET    /cal/<name>.ics                  serve it (an external calendar for
+#                                           ical_import.rb; 404 when not stored)
 #
 # Reachable from the host on 127.0.0.1:8127 (tests), from the stack as
 # http://nextcloud.
@@ -15,6 +18,7 @@ require 'rack'
 
 RECORDED = []
 FAIL_NEXT = {}
+CALENDARS = {}
 LOCK = Mutex.new
 
 def ocs(status, statuscode, message)
@@ -46,6 +50,13 @@ run lambda { |env|
         end
     elsif request.get? && request.path == '/_requests'
         [200, {'content-type' => 'application/json'}, [LOCK.synchronize { RECORDED.to_json }]]
+    elsif request.post? && request.path == '/_ical'
+        LOCK.synchronize { CALENDARS[request.params['name'].to_s] = request.body.read }
+        [200, {'content-type' => 'application/json'}, ['{"ok":true}']]
+    elsif request.get? && request.path =~ %r{\A/cal/([A-Za-z0-9_-]+)\.ics\z}
+        text = LOCK.synchronize { CALENDARS[$1] }
+        next [404, {'content-type' => 'text/plain'}, ['not found']] if text.nil?
+        [200, {'content-type' => 'text/calendar; charset=utf-8'}, [text]]
     elsif request.post? && request.path == '/_fail'
         LOCK.synchronize { FAIL_NEXT[request.params['login'].to_s] = true }
         [200, {'content-type' => 'application/json'}, ['{"ok":true}']]

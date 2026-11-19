@@ -100,6 +100,8 @@ append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'SV_EDITOR' => ['elli.mustermann@mail.beispielschule.de'],
     # the admin also answers the Datentresor hotline (design-preview-start.spec.ts)
     'DATENTRESOR_HOTLINE' => ['clarke@beispielschule.de'],
+    # an external calendar in the timetable (design-preview-ical-import.spec.ts)
+    'CAN_IMPORT_ICAL' => ['clarke@beispielschule.de'],
 }.each_pair do |role, emails|
     append_lines(File.join(target, 'roles', 'roles.txt'), [">> #{role}"] + emails)
 end

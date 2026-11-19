@@ -80,7 +80,8 @@
         if (/klausur/i.test(text)) return ['Klausur', 'v'];
         if (/verleg/i.test(text)) return ['Verlegt', 'r'];
         if (/aufgabe/i.test(text)) return ['Aufgaben', 'v'];
-        if (la.length && ln.length && la.join(',') !== ln.join(',')) return ['Vertretung', 'v'];
+        // a substitution needs no mark: »Hb statt Se« says it, and the mark
+        // took a third of the line (entries wrapped, tiles paged)
         if (e.raum_alt && e.raum_neu && e.raum_alt !== e.raum_neu) return ['Raum', 'r'];
         return null;
     }
@@ -99,30 +100,44 @@
         if (m) was.appendChild(h('span', `mn-marke mn-m-${m[1]}`, m[0]));
         const testung = (e.fach_neu || '').substring(0, 5) === 'Test-';
         const fa = e.fach_alt || '', fn = testung ? '' : (e.fach_neu || '');
+        // what is now in full, what it replaces quietly behind it (»statt …«),
+        // so that the eye finds the new state first
         const teile = [];
-        if (fa && fn && fa !== fn) {
+        const statt = (neu, alt) => {
+            const f = document.createDocumentFragment();
+            f.appendChild(document.createTextNode(neu));
+            if (alt) f.appendChild(h('span', 'mn-alt', ` statt ${alt}`));
+            return f;
+        };
+        const fachStatt = !!(fa && fn && fa !== fn);
+        if (fachStatt) {
             was.appendChild(h('b', null, fn));
-            teile.push(`statt ${fa}`);
+            was.appendChild(h('span', 'mn-alt', ` statt ${fa}`));
         } else if (fn || fa) {
             was.appendChild(h('b', null, fn || fa));
         }
         const la = liste(e.lehrer_alt), ln = liste(e.lehrer_neu);
         if (!entfall && !testung) {
-            if (la.length && ln.length && la.join(',') !== ln.join(',')) teile.push(`${ln.join(', ')} statt ${la.join(', ')}`);
-            else if (ln.length) teile.push(ln.join(', '));
-            else if (la.length) teile.push(la.join(', '));
+            if (la.length && ln.length && la.join(',') !== ln.join(',')) teile.push(statt(ln.join(', '), la.join(', ')));
+            else if (ln.length) teile.push(statt(ln.join(', ')));
+            else if (la.length) teile.push(statt(la.join(', ')));
             const ra = e.raum_alt || '', rn = e.raum_neu || '';
-            if (ra && rn && ra !== rn) teile.push(`${rn} statt ${ra}`);
-            else if (rn || ra) teile.push(rn || ra);
+            if (ra && rn && ra !== rn) teile.push(statt(rn, ra));
+            else if (rn || ra) teile.push(statt(rn || ra));
         }
         // weitere Klassen derselben Stunde
         const andere = liste([].concat(e.klassen_neu || [], e.klassen_alt || []))
             .filter((k, i, a) => a.indexOf(k) === i && k !== klasse).map(tr);
-        if (andere.length) teile.push(`mit ${andere.join(', ')}`);
-        const rest = teile.join(', ');
-        if (rest) was.appendChild(document.createTextNode((was.lastChild && was.lastChild.tagName === 'B' ? ' ' : '') + rest));
+        if (andere.length) teile.push(statt(`mit ${andere.join(', ')}`));
+        teile.forEach((t, i) => {
+            // »Gewi statt Sp, Va statt Wg«: after a changed subject a comma
+            const vorne = i === 0 ? (fachStatt ? ', ' : (was.childNodes.length ? ' ' : '')) : ', ';
+            if (vorne) was.appendChild(document.createTextNode(vorne));
+            was.appendChild(t);
+        });
         let text = String(e.vertretungs_text || '').trim();
-        if (entfall && /^(entf[äa]llt|f[äa]llt aus|entfall)\.?$/i.test(text)) text = '';
+        // the mark says it already: »entfällt; verlegt auf …« → »verlegt auf …«
+        if (entfall) text = text.replace(/^(entf[äa]llt|f[äa]llt aus|entfall)\s*[.;,:–-]?\s*/i, '');
         if (text) {
             if (was.childNodes.length) was.appendChild(document.createTextNode(' '));
             was.appendChild(h('span', 'mn-text', text));
@@ -152,8 +167,6 @@
     // gestreckt, dass die höchste Spalte (mindestens sieben normale Kacheln)
     // den Platz zwischen Kopf und Fuß füllt
     const HOEHE = 62, HOEHE_HOCH = 98, ABSTAND = 10;
-    // mehr Seiten zeigt eine Kachel als Zahl statt als Punkte
-    const PUNKTE_HOECHSTENS = 6;
 
     function istHoch(k) { return k === '11' || k === '12'; }
 
@@ -162,7 +175,7 @@
         k.dataset.klasse = klasse;
         const name = h('div', 'mn-name');
         name.appendChild(h('h2', null, tr(klasse)));
-        const punkte = name.appendChild(h('div', 'mn-punkte'));
+        const punkte = name.appendChild(h('div', 'mn-kseite'));
         const box = h('div', 'mn-zeilen');
         k.appendChild(name);
         k.appendChild(box);
@@ -202,20 +215,14 @@
         const n = kachel.zeilen.length;
         const seiten = kachel.seiten.length;
         kachel.el.classList.toggle('mn-still', n === 0);
-        kachel.punkte.textContent = '';
-        kachel.punkte.classList.toggle('mn-viele', seiten > PUNKTE_HOECHSTENS);
-        if (seiten > PUNKTE_HOECHSTENS) {
-            // so viele Punkte passen nicht unter den Namen: die Seite als Zahl
-            kachel.punkte.textContent = `${seite + 1} von ${seiten}`;
-        } else if (seiten > 1) {
-            for (let i = 0; i < seiten; i++) kachel.punkte.appendChild(h('i', i === seite ? 'mn-an' : ''));
-        }
+        // a tile that pages: »1/2« under the name (dots read like a status)
+        kachel.punkte.textContent = seiten > 1 ? `${seite + 1}/${seiten}` : '';
     }
 
     // Seiten einer Kachel: so viele Zeilen, wie hineinpassen
     function kachelBerechnen(kachel) {
         kachel.zeilen = eintraege(kachel.klasse).map((e) => zeileBauen(e, kachel.klasse));
-        // zum Messen: Kopf und Punkte wie bei mehreren Seiten
+        // zum Messen: Kopf mit Seitenzahl wie bei mehreren Seiten
         kachel.seiten = [[0, 0], [0, 0]];
         kachelKopf(kachel, 0);
         const box = kachel.box;

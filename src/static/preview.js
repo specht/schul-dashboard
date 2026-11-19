@@ -461,7 +461,7 @@
     // Lerngruppen is moved; the original menus stay in the page, hidden (the
     // Unterricht sheet and the search read them). Phones show the sections in
     // "Mehr" as tiles.
-    var SCHULE = /^\/(tests|events|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
+    var SCHULE = /^\/(tests|events|terminfinder|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
     var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpost|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound)(\/|$)/;
     var SECTION_ICONS = { unterricht: 'ti-school', schule: 'ti-building', verwaltung: 'ti-settings' };
 
@@ -632,7 +632,7 @@
         // sections before the search / profile at the bottom
         var anchor = main_nav.querySelector('.nav-quick-search-item') || main_nav.querySelector('.nav-item.dropdown:last-child');
         // "Schule": the most used first, the seasonal ones last
-        var ORDER = ['/events', '/tests', '/polls', '/bibliothek', '/mailing_lists', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
+        var ORDER = ['/events', '/terminfinder', '/tests', '/polls', '/bibliothek', '/mailing_lists', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
         var rank = function(a) {
             var href = a.getAttribute('href') || '';
             for (var i = 0; i < ORDER.length; i++) if (href.indexOf(ORDER[i]) === 0) return i;
@@ -644,7 +644,7 @@
         // sub-groups of the larger sections, in this order
         var SUB = {
             schule: [
-                ['Planen & Abstimmen', /^\/(events|tests|polls|mailing_lists|groups|zufallsgruppen|kurslisten)/],
+                ['Planen & Abstimmen', /^\/(events|terminfinder|tests|polls|mailing_lists|groups|zufallsgruppen|kurslisten)/],
                 ['Angebote', /^\/(bibliothek|angebote|lehrbuchverein|mittagessen|klassenmemory_assign|salzh)/],
                 ['Projekte & Aktionen', /^\/(projekttage|pk5|lab8|lab9|up)(\/|_|$)/],
                 ['Gremien', /^\/(gev|agr_app)|^https:\/\/sv\./],

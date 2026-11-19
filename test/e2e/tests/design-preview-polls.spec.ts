@@ -314,3 +314,38 @@ test('Neues Design: Umfragen nach Schuljahr, frühere gefaltet, Seite höchstens
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// A poll just created comes out on top of the ones not running, without
+// reloading the page (its row had no creation date of the page yet and sank
+// to the end of »Aktuell«).
+test('Neues Design: eine neue Umfrage steht oben', async ({ page }, testInfo) => {
+  const tag = `${testInfo.project.name} ${Date.now().toString(36)}`;
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  const items = [{ type: 'radio', title: 'Frage', answers: ['Ja', 'Nein'] }];
+  const pids: string[] = [];
+  pids.push((await (await page.request.post('/api/save_poll', { data: { title: `Ältere ${tag}`, items: JSON.stringify(items) } })).json()).poll.pid);
+  try {
+    await page.goto('/polls');
+    await page.locator('.bu-new-poll').click();
+    const editor = page.locator('#composeModal');
+    await expect(editor).toBeVisible();
+    await page.locator('#ti_title').fill(`Frisch ${tag}`);
+    await editor.getByRole('button', { name: 'Eintrag hinzufügen' }).click();
+    await page.locator('.bu-poll-add-paragraph').click();
+    const saved = page.waitForResponse('**/api/save_poll');
+    await page.locator('#bu_save_poll').click();
+    const answer = await saved;
+    pids.push((await answer.json()).poll.pid);
+    await page.locator('#bu_close_poll_modal').evaluate((b: HTMLElement) => b.click());
+    await expect(editor).toBeHidden();
+    const titles = page.locator('.pv-polls-current .pv-poll .pv-poll-row');
+    const order = async () => (await titles.allInnerTexts()).map((t) => t.includes(`Frisch ${tag}`) ? 'frisch' : t.includes(`Ältere ${tag}`) ? 'älter' : null).filter(Boolean);
+    await expect.poll(order).toEqual(['frisch', 'älter']);
+    const today = new Date();
+    await expect(page.locator('.pv-poll', { hasText: `Frisch ${tag}` }).locator('.pv-lrow-facts')).toContainText(`Erstellt am ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`);
+  } finally {
+    for (const pid of pids) await page.request.post('/api/delete_poll', { data: { pid } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

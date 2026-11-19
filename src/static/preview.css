@@ -6280,10 +6280,13 @@ body.ui-preview:has(.container-fluid.solid)::before {
     left: 0;
     right: 0;
     z-index: 100003;
-    height: 3px;
+    height: 4px;
     overflow: hidden;
     pointer-events: none;
-    background: color-mix(in srgb, var(--acc, #0d60ae) 18%, transparent);
+    /* on its own surface: an accent bar alone vanishes on a backdrop of the
+       same colour (an orange scheme on an orange backdrop) */
+    background: color-mix(in srgb, var(--acc, #0d60ae) 14%, var(--pv-surface, #fff));
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
 .pv-busy::before {

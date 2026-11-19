@@ -1474,6 +1474,16 @@ test('Neues Design: Warten als Leiste oben statt Kasten', async ({ page }) => {
     const box = (await bar.boundingBox())!;
     expect(box.y).toBe(0);
     expect(box.height).toBeLessThanOrEqual(4);
+    // on its own opaque track: an accent bar on a see-through track vanished
+    // on a backdrop of the accent's colour (only visible behind the sheet's
+    // dimming)
+    const alpha = await bar.evaluate((el) => {
+      const ctx = document.createElement('canvas').getContext('2d')!;
+      ctx.fillStyle = getComputedStyle(el).backgroundColor;
+      ctx.fillRect(0, 0, 1, 1);
+      return ctx.getImageData(0, 0, 1, 1).data[3];
+    });
+    expect(alpha).toBe(255);
     // no box in the page
     await expect(page.locator('.api_messages').first()).toBeHidden();
     await expect.poll(() => page.evaluate(() => (window as any).pv_probe_done === true)).toBe(true);

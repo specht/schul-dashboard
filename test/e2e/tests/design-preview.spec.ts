@@ -1619,3 +1619,23 @@ test('Neues Design: Zeitlinie so breit wie die Stunden', async ({ page }, testIn
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// One's own lesson now or next: its planning and Mail without opening the
+// dialog. The button says »Planung« (»Unterricht« would not fit, »Kursbuch«
+// is the old word) and leads to the lesson in the Kursbuch.
+test('Neues Design: eigene Stunde mit »Planung« und »Mail«', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the side column »Jetzt / Als Nächstes«');
+  const time = displayedSchoolWeek()[2];
+  time.setHours(8, 5, 0, 0);
+  await page.clock.install({ time });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const actions = page.locator('.pv-side-box .pv-ag-action');
+    await expect(actions).toHaveText(['Planung', 'Mail']);
+    await expect(actions.first()).toHaveAttribute('href', /^\/lessons\/[^#]+#\d+$/);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

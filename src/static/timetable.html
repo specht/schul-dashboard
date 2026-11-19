@@ -839,11 +839,12 @@ function preview_agenda_fill_day(box, day, all, now, open) {
             let total = e.end - e.start, done = now - e.start;
             card.append($('<div>').addClass('pv-ag-progress').append($('<b>').css('width', Math.round(100 * done / total) + '%')));
             card.append($('<div>').addClass('pv-ag-left').text(Math.floor((now - e.start) / 60000) + ' min um, noch ' + Math.ceil((e.end - now) / 60000) + ' min'));
-            // the own lesson right now: Kursbuch and Mail without opening the dialog
+            // the own lesson right now: its planning (Kursbuch) and Mail without
+            // opening the dialog; »Planung« – »Unterricht« would not fit
             if (typeof my_lessons !== 'undefined' && my_lessons.indexOf(x.lesson_key) >= 0 && x.lesson_offset !== null && x.lesson_offset >= 0) {
                 let actions = $('<div>').addClass('pv-ag-actions');
                 actions.append($('<a>').addClass('pv-ag-action').attr('href', '/lessons/' + x.lesson_key + '#' + x.lesson_offset)
-                    .append($('<i>').addClass('fa fa-edit'), $('<span>').text('Kursbuch')).on('click', function(ev) { ev.stopPropagation(); }));
+                    .append($('<i>').addClass('fa fa-edit'), $('<span>').text('Planung')).on('click', function(ev) { ev.stopPropagation(); }));
                 if ('#{teacher_logged_in?}' === 'true') {
                     let mail = $('<button type="button">').addClass('pv-ag-action').append($('<i>').addClass('fa fa-envelope-o'), $('<span>').text('Mail'));
                     mail.on('click', function(ev) {
@@ -1215,7 +1216,7 @@ function render_preview_side() {
         }
         if (typeof my_lessons !== 'undefined' && my_lessons.indexOf(x.lesson_key) >= 0 && x.lesson_offset !== null && x.lesson_offset >= 0) {
             let actions = $('<div>').addClass('pv-ag-actions');
-            actions.append($('<a>').addClass('pv-ag-action').attr('href', '/lessons/' + x.lesson_key + '#' + x.lesson_offset).append($('<i>').addClass('fa fa-edit'), $('<span>').text('Kursbuch')));
+            actions.append($('<a>').addClass('pv-ag-action').attr('href', '/lessons/' + x.lesson_key + '#' + x.lesson_offset).append($('<i>').addClass('fa fa-edit'), $('<span>').text('Planung')));
             let mail = $('<button type="button">').addClass('pv-ag-action').append($('<i>').addClass('fa fa-envelope-o'), $('<span>').text('Mail'));
             mail.on('click', function(ev) {
                 open(e)(ev);

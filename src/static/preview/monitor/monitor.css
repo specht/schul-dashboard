@@ -35,6 +35,9 @@ body.mn-aktiv .embed-responsive {
     --mn-warn: #8f5605;
     --mn-warn-soft: #fbefd8;
     --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.12);
+    /* below the head the scheme's picture fades behind a calm veil, so that
+       it does not compete with the tiles */
+    --mn-veil: rgba(243, 245, 248, 0.88);
     --mn-text: 'Atkinson Hyperlegible Next', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --mn-display: 'Bricolage Grotesque', 'Fira Sans Fallback Display', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
     --mn-mono: 'Atkinson Hyperlegible Mono', 'Fira Sans Fallback', ui-monospace, Menlo, Consolas, monospace;
@@ -53,6 +56,7 @@ body.mn-aktiv .embed-responsive {
     color: var(--mn-ink);
     /* ein leichter Schleier links hinter dem Kopf, das Bild des Schemas, darunter Papier */
     background:
+        linear-gradient(180deg, transparent 7.6vw, var(--mn-veil) 10.5vw) 0 0 / 100% 100% no-repeat,
         linear-gradient(90deg, rgba(var(--band-scrim), var(--band-scrim-a)), rgba(var(--band-scrim), 0) 55%) 0 0 / 100% 8.75vw no-repeat,
         var(--mn-backdrop) 50% 0 / 100% auto no-repeat,
         var(--mn-paper);
@@ -73,6 +77,7 @@ body.mn-aktiv .embed-responsive {
     --mn-warn: #e6ad55;
     --mn-warn-soft: #2d2213;
     --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.45);
+    --mn-veil: rgba(14, 19, 26, 0.88);
     color-scheme: dark;
 }
 
@@ -186,18 +191,18 @@ body.mn-aktiv.mn-dunkel-seite {
 
 .mn-kasten h2 {
     margin: 0;
-    font: 800 1.7vw/1.05 var(--mn-display);
+    font: 800 1.85vw/1.05 var(--mn-display);
     color: var(--mn-ink);
 }
 
-/* Name links (darunter die Punkte der Seiten), Einträge rechts daneben */
+/* Name links (darunter die Seite, wenn die Kachel blättert), Einträge rechts daneben */
 .mn-kachel {
     display: grid;
-    grid-template-columns: 3.6vw minmax(0, 1fr);
+    grid-template-columns: 3.9vw minmax(0, 1fr);
     /* die Zeile ist so hoch wie die Kachel: was nicht passt, kommt auf die nächste Seite */
     grid-template-rows: minmax(0, 1fr);
     column-gap: 0.6vw;
-    padding: 0.4vw 0.75vw;
+    padding: 0.35vw 0.75vw;
     overflow: hidden;
 }
 
@@ -211,9 +216,9 @@ body.mn-aktiv.mn-dunkel-seite {
 .mn-kachel .mn-zeilen {
     min-height: 0;
     overflow: hidden;
-    font-size: 1.15vw;
-    /* drei Einträge passen in eine normale Kachel */
-    line-height: 1.18;
+    font-size: 1.22vw;
+    /* drei kurze Einträge passen in eine normale Kachel */
+    line-height: 1.14;
     row-gap: 0.1vw;
     transition: opacity 0.3s;
 }
@@ -222,10 +227,22 @@ body.mn-aktiv.mn-dunkel-seite {
     opacity: 0;
 }
 
-/* ohne Änderungen: die Kachel bleibt an ihrem Platz, nur der Name, leise */
+/* ohne Änderungen: die Kachel bleibt an ihrem Platz, nur der Name, leise –
+   kein weißer Kasten, damit die Kacheln mit Änderungen herausstechen */
+.mn-kachel.mn-still {
+    background-color: color-mix(in srgb, var(--mn-surface) 45%, transparent);
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.mn.mn-dunkel .mn-kachel.mn-still {
+    background-color: color-mix(in srgb, var(--mn-surface) 25%, transparent);
+}
+
 .mn-kachel.mn-still h2 {
     color: var(--mn-muted);
     font-weight: 700;
+    font-size: 1.55vw;
 }
 
 .mn-zeilen {
@@ -244,8 +261,8 @@ body.mn-aktiv.mn-dunkel-seite {
 
 .mn-st {
     font-family: var(--mn-display);
-    font-weight: 700;
-    color: var(--mn-muted);
+    font-weight: 800;
+    color: var(--mn-ink);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
@@ -259,16 +276,18 @@ body.mn-aktiv.mn-dunkel-seite {
     font-weight: 700;
 }
 
-.mn-text {
+.mn-text,
+.mn-alt {
     color: var(--mn-muted);
 }
 
 .mn-marke {
     display: inline-block;
-    margin-right: 0.4vw;
-    padding: 0.18vw 0.4vw;
-    border-radius: 0.4vw;
-    font: 700 0.8vw/1 var(--mn-text);
+    margin-right: 0.45vw;
+    /* no taller than a line of text: three entries still fit in a tile */
+    padding: 0.12vw 0.45vw;
+    border-radius: 0.45vw;
+    font: 700 0.95vw/1 var(--mn-text);
     vertical-align: 0.1vw;
     white-space: nowrap;
 }
@@ -278,9 +297,10 @@ body.mn-aktiv.mn-dunkel-seite {
     color: var(--acc-text);
 }
 
+/* Entfall: the one students look for, solid and dark */
 .mn-m-e {
-    background: var(--mn-sunken);
-    color: var(--mn-muted);
+    background: var(--mn-ink);
+    color: var(--mn-surface);
 }
 
 .mn-m-r {
@@ -288,31 +308,12 @@ body.mn-aktiv.mn-dunkel-seite {
     color: var(--mn-warn);
 }
 
-/* Seiten einer Kachel: Punkte, der aktuelle breit in der Akzentfarbe */
-.mn-punkte {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3vw;
-}
-
-.mn-punkte.mn-viele {
-    font-size: 0.8vw;
-    line-height: 1.2;
-    color: var(--mn-muted);
+/* die Seite einer Kachel, die blättert: »1/2« unter dem Namen */
+.mn-kseite {
+    font: 700 1vw/1.2 var(--mn-text);
+    color: var(--acc-text);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
-}
-
-.mn-punkte i {
-    width: 0.5vw;
-    height: 0.5vw;
-    border-radius: 0.25vw;
-    background: var(--mn-line);
-}
-
-.mn-punkte i.mn-an {
-    width: 1.3vw;
-    background: var(--acc);
 }
 
 /* ---------- Fuß: Seite, Standzeit, Nachrichten, Farbschema ---------- */

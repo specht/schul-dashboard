@@ -467,18 +467,30 @@ Umfragen, Termine, News verwalten)
   von `KLASSEN_ORDER` von oben nach unten in Spalten zu je sieben, vier
   Spalten nebeneinander, 11 und 12 höher (wie bisher 9,8 zu 6,2). Leere
   Plätze für Klassen, die es nicht gibt, kommen nicht vor.
+- **Ruhig, was nichts zu sagen hat.** Kacheln ohne Änderungen sind kein
+  weißer Kasten, nur der Name auf leiser Fläche; Kacheln mit Änderungen
+  sind weiß und heben sich ab. Unter dem Kopf liegt das Bild des
+  Farbschemas hinter einem ruhigen Schleier.
 - **Blättern statt Scrollen.** Was nicht in eine Kachel passt, blättert in
-  der Kachel (Punkte zeigen die Seite); alle Kacheln blättern im selben
+  der Kachel (»1/2« unter dem Namen zeigt die Seite; Punkte lasen sich wie
+  ein Status); alle Kacheln blättern im selben
   Takt, jede Seite steht 15 Sekunden, ein Balken im Fuß zeigt die
   Standzeit. Nichts wird abgeschnitten.
 - **Aufteilung:** Kopf mit Titel, Datum und Stand, großer Uhr und der
   laufenden Stunde auf dem Hintergrund des Farbschemas, darunter die
   Kacheln; im Fuß Nachrichten und das Farbschema.
-- **Zustände als Marke** (Vertretung, Entfall, Raum, Klausur, Verlegt,
-  Aufgaben) statt Durchgestrichenem; »Se statt Pe« in Worten.
+- **Zustände als Marke** (Entfall, Raum, Klausur, Verlegt, Aufgaben)
+  statt Durchgestrichenem; »Se statt Pe« in Worten. Eine Vertretung hat
+  keine Marke: »Hb statt Se« sagt es, und die Marke nahm ein Drittel der
+  Zeile (Einträge brachen um, Kacheln blätterten). Entfall ist
+  die dunkle, volle Marke (danach suchen alle), der Text wiederholt es
+  nicht (»verlegt auf 4. Std.« statt »entfällt; verlegt …«).
+- **Das Neue zuerst.** Stunde dunkel und fett, das Fach fett, was jetzt
+  gilt in voller Schrift, »statt …« leise dahinter.
 - **Maße in `vw`**, damit dieselbe Seite auf Full HD und in den kleinen
-  Vorschauen auf »Monitore verwalten« gleich aussieht. Einträge mindestens
-  1,15 vw (22 px auf Full HD, heute 20 px).
+  Vorschauen auf »Monitore verwalten« gleich aussieht. Einträge 1,22 vw
+  (23 px auf Full HD; größer hieße mehr Blättern), Marken 0,95 vw,
+  Klassen 1,85 vw.
 
 ## 12b. Aufgaben und dringende Anfragen
 

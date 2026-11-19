@@ -53,6 +53,11 @@ Beide Designs laufen nebeneinander, mit denselben Seiten.
   als möglichen Klassennamen, auch in Skripten (`if (!grid)` ergibt eine
   Klasse `!grid`). Ändert sich `tailwind.css` unerwartet, das Wort im Code
   umbenennen und die Datei zurücksetzen, nicht mit einchecken.
+- **Seiten, die es nur im neuen Design gibt** (Beispiel: Terminfinder):
+  in der ersten Zeile die Zugangsprüfung, direkt dahinter
+  `#{this_page_is_only_in_the_new_design}` (alle anderen landen auf der
+  Startseite); der Menüeintrag steht nur mit `ui_preview?` im Menü. Die
+  Seite selbst lädt ihr Skript mit `design_preview_page_script`.
 - **Prüfen, dass das alte Design gleich bleibt:** dieselbe Seite mit
   ausgeschalteter Vorschau vor und nach der Änderung vergleichen
   (Screenshots oder DOM), am Desktop und am Handy.
@@ -284,6 +289,22 @@ Aktionen und das Verhalten am Handy.
 - Ein Modus, der das Scannen ändert (Rückgabe: zurückbuchen oder nur
   prüfen), ist ein Schalter, der seinen Zustand in Worten sagt; »nur
   prüfen« ist leise hervorgehoben, damit man ihn nicht vergisst.
+
+**Gemeinsame Zeit finden** (Beispiel: Terminfinder)
+
+- Oben, wer dabei ist (Suche wie bei Termine, Gruppen als ein Chip mit
+  Anzahl, man selbst ist von Anfang an dabei), darunter die Dauer als
+  Umschalter, dann die Woche wie im Stundenplan (am Handy wischbar).
+- Je Tag eine Zeile: eine Leiste über den Tag (frei für alle in der
+  Akzentfarbe, belegt grau, dunkler, je mehr Personen belegt sind) und die
+  gemeinsamen freien Zeiten als Knöpfe. Gibt es keine, nennt die Zeile die
+  Zeiten, in denen alle bis auf eine Person frei sind, leiser und mit
+  »ohne …«. Vergangene Tage sind eine leise Zeile.
+- Es zählt nur der Stundenplan; der Server schickt nur belegte Zeiten,
+  nie, was jemand hat. Eine Zeit öffnet einen kleinen Dialog (am Handy ein
+  Sheet) mit dem Beginn und »Termin anlegen«, das Datum, Zeit und
+  Teilnehmer an »Neuer Termin« übergibt (über `sessionStorage`, nicht über
+  die Adresse).
 
 **Lange Listen und Archiv**
 

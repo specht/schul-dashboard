@@ -174,6 +174,7 @@ require './include/techpost.rb'
 require './include/stats.rb'
 require './include/tablet.rb'
 require './include/tablet_set.rb'
+require './include/terminfinder.rb'
 require './include/tests.rb'
 require './include/test_events.rb'
 require './include/theme.rb'
@@ -2817,6 +2818,10 @@ class Main < Sinatra::Base
                         end
                         if user_with_role_logged_in?(:can_create_events)
                             io.puts "<a class='dropdown-item nav-icon' href='/events'><div class='icon'><i class='fa fa-calendar-check-o'></i></div><span class='label'>Termine</span></a>"
+                        end
+                        # new design only, for now (include/terminfinder.rb)
+                        if teacher_logged_in? && ui_preview?
+                            io.puts "<a class='dropdown-item nav-icon' href='/terminfinder'><div class='icon'><i class='ti ti-clock'></i></div><span class='label'>Terminfinder</span></a>"
                         end
                         if user_with_role_logged_in?(:can_create_polls)
                             io.puts "<a class='dropdown-item nav-icon' href='/polls'><div class='icon'><i class='fa fa-bar-chart'></i></div><span class='label'>Umfragen</span></a>"

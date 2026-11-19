@@ -1,0 +1,67 @@
+#{this_is_a_page_for_logged_in_teachers}#{this_page_is_only_in_the_new_design}
+<div class='container pv-tf'>
+    <h2>Terminfinder</h2>
+    <p class='pv-tf-lead'>Wann haben alle frei? Füge Personen, Klassen oder Gruppen hinzu. Es zählt nur der Stundenplan mit Vertretungen und Ausfällen, Termine bleiben privat.</p>
+    <div class='api_messages' style='display: none;'></div>
+    <div class='pv-tf-people'>
+        <label class='pv-tf-label' for='ti_tf_search'>Wer?</label>
+        <div class='pv-tf-search'>
+            <i class='ti ti-search' aria-hidden='true'></i>
+            <input id='ti_tf_search' class='form-control' type='search' autocomplete='off' placeholder='Person, Klasse oder Gruppe suchen' aria-controls='tf_results' aria-expanded='false' />
+            <div id='tf_results' class='pv-tf-results' role='listbox' hidden></div>
+        </div>
+        <div class='pv-tf-chips' aria-live='polite'></div>
+        <div class='pv-tf-facts'></div>
+    </div>
+    <div class='pv-tf-options'>
+        <span class='pv-tf-label' id='lb_tf_duration'>Dauer</span>
+        <div class='pv-tf-durations' role='radiogroup' aria-labelledby='lb_tf_duration'>
+            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='30'>30 Min.</button>
+            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='45'>45 Min.</button>
+            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='60'>1 Std.</button>
+            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='90'>1½ Std.</button>
+            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='120'>2 Std.</button>
+        </div>
+    </div>
+    <div class='pv-tf-week'>
+        <div class='pv-tf-week-head'>
+            <button type='button' class='btn pv-tf-nav' id='bu_tf_prev' aria-label='Vorige Woche'><i class='ti ti-chevron-left' aria-hidden='true'></i></button>
+            <div class='pv-tf-week-title'>
+                <div class='pv-tf-week-label'></div>
+                <div class='pv-tf-week-sub'></div>
+            </div>
+            <button type='button' class='btn pv-tf-nav' id='bu_tf_next' aria-label='Nächste Woche'><i class='ti ti-chevron-right' aria-hidden='true'></i></button>
+            <button type='button' class='btn pv-tf-today' id='bu_tf_today'>Diese Woche</button>
+        </div>
+        <div class='pv-tf-frame'>
+            <div class='pv-tf-days' aria-live='polite'></div>
+        </div>
+    </div>
+</div>
+
+<div class='modal pv-sheet' id='tfSlotModal' tabindex='-1' role='dialog' aria-hidden='true' aria-labelledby='lb_tf_slot_title'>
+    <div class='modal-dialog modal-dialog-centered' role='document'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <h5 class='modal-title' id='lb_tf_slot_title'></h5>
+            </div>
+            <div class='modal-body'>
+                <p class='pv-tf-slot-who'></p>
+                <div class='pv-tf-slot-row'>
+                    <label for='ti_tf_slot_start'>Beginn</label>
+                    <select id='ti_tf_slot_start' class='form-control'></select>
+                    <span class='pv-tf-slot-end'></span>
+                </div>
+            </div>
+            <div class='modal-footer'>
+                <button type='button' class='btn btn-secondary' data-dismiss='modal' id='bu_tf_slot_cancel'>Abbrechen</button>
+                <button type='button' class='btn btn-success' id='bu_tf_create_event'><i class='ti ti-calendar-plus' aria-hidden='true'></i>&nbsp;Termin anlegen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var pv_tf_me = #{({:id => @session_user[:id], :email => @session_user[:email]}).to_json};
+var pv_tf_can_create_events = #{user_with_role_logged_in?(:can_create_events) ? 'true' : 'false'};
+</script>#{design_preview_page_script('terminfinder')}

@@ -157,6 +157,9 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] Termine direkt im Stundenplan anlegen (Klick in den Kalender wie bei
       Google Kalender) für alle, die Termine erstellen dürfen – statt über
       die Seite „Termine“
+- [ ] Terminfinder (`/terminfinder`, bisher nur im neuen Design): für alle
+      Lehrkräfte freigeben, sobald das neue Design für alle läuft; dann
+      überlegen, ob der Tagesrahmen (bis 18 Uhr) einstellbar sein soll
 
 ### Rückmeldung bei Laden und Fehlern
 
@@ -260,7 +263,8 @@ fotografiert und gegen `doc/Gestaltung.md` geprüft.
       mit „Sie“, doppelt), `passwoerter` (Aktionen in Linkfarbe),
       `hilfe`/`impressum` (Lesebreite höchstens 980 px), `profil` (leere
       Tabelle »Schulinterne Links«), `timetable` (überlappende Stunden
-      am Tablet abgeschnitten)
+      am Tablet abgeschnitten), `events` (Dialog »Neuer Termin«: Platzhalter
+      mit „Sie“, gelbe Teilnehmer-Chips, »Schließen« neben »Verwerfen«)
 - [ ] Nicht geprüft (im Teststack nicht erreichbar): Bibliothek-Verwaltung,
       Zeugnisse, Datentresor, Sitzplan-Seiten, Mittagessen,
       Zufallsgruppen, AGR-App

@@ -7,6 +7,18 @@ const KLASSE = '5a';
 // The class page links the seating plan of the homeroom; the room comes from
 // that link. Two rows with two desks of two seats each (the seat editor has
 // its own UI).
+// Opens the »Vorgaben« box. A new plan closes it again (sitzplanhelfer.html)
+// – sometimes just after a click opened it, so check that it stays open.
+async function openVorgaben(page: Page) {
+  const box = page.locator('#sph_vorgaben');
+  const isOpen = () => box.evaluate((d) => (d as HTMLDetailsElement).open);
+  await expect(async () => {
+    if (!(await isOpen())) await box.locator('> summary').click();
+    await page.waitForTimeout(300);
+    expect(await isOpen()).toBe(true);
+  }).toPass({ timeout: 10_000 });
+}
+
 async function setUpRoom(page: Page) {
   await page.goto(`/directory/${KLASSE}`);
   const link = page.locator(`a[href^="/sitzplanhelfer/${KLASSE}/"]`).first();
@@ -210,7 +222,7 @@ test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Vertei
   await startNewPlan(page, 'cycle');
   await expect(page.locator('#sph_seats .place.pinned')).toHaveCount(1);
   await expect(page.locator('#sph_plan_info')).toContainText('Noch kein Plan');
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_rules_list')).toContainText('genauer Platz');
   await page.locator('#sph_rules_list .rule-chip a').first().click();
   await expect(page.locator('#sph_rules_list')).not.toContainText('genauer Platz');
@@ -225,7 +237,7 @@ test('Sitzplan: Plätze mit Foto und vollem Namen, Ziehen, feste Plätze, Vertei
   await list.locator('select').selectOption({ label: 'Elli Mustermann' });
   await expect(list.locator('.pair-chip', { hasText: 'Elli Mustermann' })).toBeVisible();
   await page.reload();
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_groups_list .sph-group').first()).toContainText('Elli Mustermann');
   await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
   await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
@@ -240,7 +252,7 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   await openSeatingPlan(page, RAUM);
 
   // Vorgaben can be set without any plan or wish round
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await page.locator('#sph_pair_a').selectOption({ label: 'Elli Mustermann' });
   await page.locator('#sph_pair_b').selectOption({ label: 'Mallory Mustermann' });
   await page.locator('#sph_bu_add_forced').click();
@@ -268,7 +280,7 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
   expect(await box()).toEqual(before);
 
   // the Vorgabe from the start page applies here and to the next new plan
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
 
   // saving with students still in the list asks first
@@ -288,7 +300,7 @@ test('Sitzplan: von Hand verteilen, Vorgaben bleiben, Plan ändern', async ({ pa
 
   // the next new plan takes over the Vorgaben without asking
   await startNewPlan(page, 'spread');
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_forced_list')).toContainText('Elli Mustermann');
   // leave no Vorgaben behind for the other tests
   await page.locator('#sph_forced_list .pair-chip a').first().click();
@@ -310,7 +322,7 @@ test('Sitzplan: im Raum verteilen, Verstoß nach dem Umsetzen rot markiert', asy
     await expect(page.locator(`#sph_room_bar .sph-tools #${id}`)).toBeVisible();
 
   // a list on the start page, without any plan or wish round
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await page.locator('#sph_bu_add_group').click();
   const list = page.locator('#sph_groups_list .sph-group').first();
   await list.locator('select').selectOption({ label: 'Max Mustermann' });
@@ -354,7 +366,7 @@ test('Sitzplan: im Raum verteilen, Verstoß nach dem Umsetzen rot markiert', asy
   await expect(page.locator('#sph_seats .sph-list-tag')).toHaveCount(0);
 
   // leave no list behind for the other tests
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await page.locator('#sph_groups_list .sph-group').first().getByRole('button', { name: 'Liste löschen' }).click();
   await dashboardDialog(page).getByRole('button', { name: 'Löschen' }).click();
   await expect(page.locator('#sph_groups_list .sph-group')).toHaveCount(0);
@@ -367,7 +379,7 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
   await openSeatingPlan(page, RAUM);
 
   // the entries are made once, for all tools; without a plan there is no switch
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await page.locator('#sph_bu_add_group').click();
   const list = page.locator('#sph_groups_list .sph-group').first();
   await list.locator('select').selectOption({ label: 'Max Mustermann' });
@@ -378,7 +390,7 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
 
   // "Im Raum verteilen": Verteilung im Raum switched off for this tool
   await startNewPlan(page, 'spread');
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_area_spread')).toBeChecked();
   const switched = page.waitForResponse('**/api/sph_set_rule_area');
   await page.locator('label[for="sph_area_spread"]').click();
@@ -421,7 +433,7 @@ test('Sitzplan: Vorgaben je Werkzeug berücksichtigen oder nicht', async ({ page
   const started = page.waitForResponse('**/api/sph_start_cycle');
   await page.locator('#sph_bu_start_cycle').click();
   expect((await started).status()).toBe(200);
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_area_spread')).toBeChecked();
   await expect(page.locator('#sph_area_pairs')).not.toBeChecked();
   await expect(page.locator('#sph_groups_list .sph-group').first()).toContainText('Elli Mustermann');
@@ -445,7 +457,7 @@ test('Sitzplan: Widerspruch in den Vorgaben knallrot markiert', async ({ page })
   await openSeatingPlan(page, RAUM);
 
   // Max and Elli on the same list and at the same time a forced pair
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await page.locator('#sph_bu_add_group').click();
   const list = page.locator('#sph_groups_list .sph-group').first();
   await list.locator('select').selectOption({ label: 'Max Mustermann' });
@@ -461,7 +473,7 @@ test('Sitzplan: Widerspruch in den Vorgaben knallrot markiert', async ({ page })
   await expect(page.locator('#sph_seats .place.sph-conflict')).toHaveCount(2);
   await expect(page.locator('#sph_seats .place.sph-conflict').first()).toHaveAttribute('title', /Widerspruch in den Vorgaben/);
   await expect(page.locator('#sph_unresolved_summary .sph-conflict-list')).toContainText('Zwangspaar');
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_groups_list .sph-group-hint')).toContainText('Zwangspaar');
 
   // pairs not used by this tool: no conflict, no hint under the list
@@ -528,7 +540,7 @@ test('Shuffler: Regeln vor dem Start ansehen und ändern', async ({ page }) => {
 
   // kept, and the Vorgaben of the other tools are untouched
   await page.reload();
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_forced_list')).toContainText('keine');
   await expect(page.locator('#sph_rules_list')).toContainText('keine festen Plätze');
   await page.locator('#sph_link_shuffler').click();

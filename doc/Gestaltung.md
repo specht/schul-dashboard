@@ -211,7 +211,14 @@ Aktionen und das Verhalten am Handy.
   Namen und leisen Knöpfen zum Verschieben, Einfügen und Entfernen.
   Zu jedem Baustein steht ein kurzer Hinweis, wie er wirkt; Prüfungen
   erscheinen leise darunter, nie blockierend, wo möglich mit einem Knopf,
-  der das Problem behebt. Angeboten wird nur, was auf jeder Breite gut
+  der das Problem behebt – erst, wenn man im Baustein etwas eingetragen
+  hat; ein frisch hinzugefügter Baustein mahnt noch nicht (die Übersicht
+  unter der Vorschau nennt alles). Bilder wählt man als Bilder: die Kachel
+  mit dem Bild (leer: das Bild-Symbol) öffnet die hochgeladenen Bilder mit
+  Suche, der Name steht daneben zum Tippen. In der Fußzeile: »Verwerfen«
+  ruhig rot am Anfang und nur mit Ungespeichertem, »Schließen« nur ohne,
+  »Speichern« als einzige Hauptaktion am Ende (am Handy über die Breite).
+  Angeboten wird nur, was auf jeder Breite gut
   aussieht. Gespeichert wird das bisherige Textformat; »Text bearbeiten«
   bleibt als Ausweg. Die Vorschau zeigt Handy, Tablet und Desktop; am
   Handy sind »Bearbeiten« und »Vorschau« zwei Reiter, und nur das Sheet

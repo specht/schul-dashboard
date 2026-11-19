@@ -493,24 +493,10 @@
         return box;
     }
 
-    function thumb(slug_input) {
-        var img = $('<img alt="">').addClass('pv-nb-thumb').attr('hidden', true);
-        var show = function () {
-            var slug = clean_slug(slug_input.val());
-            img.attr('hidden', true);
-            if (slug) img.attr('src', `/gen/i/${slug}-256.jpg`);
-        };
-        img.on('load', function () { img.attr('hidden', false); });
-        img.on('error', function () { img.attr('hidden', true); });
-        slug_input.on('change', show);
-        show();
-        return img;
-    }
-
     // ---------- choosing an image: the uploaded images as pictures ----------
-    // »Bild wählen« beside every image name opens the uploaded images (newest
-    // first) over the editor, with a search; a click puts the name into the
-    // field. The name field stays for typing. New images are uploaded on
+    // The image tile beside every image name opens the uploaded images
+    // (newest first) over the editor, with a search; a click puts the name
+    // into the field. The name field stays for typing. New images are uploaded on
     // »Bilder hochladen« (a new tab), »Neu laden« fetches the list again.
     var uploaded = null;        // the picker's list: [{slug, timestamp}], newest first
     var PICK_BLOCK = 48;
@@ -583,8 +569,24 @@
         search.trigger('focus');
     }
 
+    // the image as a tile that opens the picker: the picture once chosen,
+    // else an empty tile with the image symbol; the name field stays beside it
     function pick_button(input) {
-        var b = quiet_button('Bild wählen', 'photo', 'bu_nb_pick');
+        var b = $('<button type="button">').addClass('pv-nb-slot bu_nb_pick');
+        var img = $('<img alt="">').addClass('pv-nb-thumb').attr('hidden', true);
+        var empty = $('<span>').addClass('pv-nb-slot-empty').append(icon('photo'));
+        b.append(img).append(empty);
+        var show = function () {
+            var slug = clean_slug(input.val());
+            img.attr('hidden', true);
+            empty.attr('hidden', false);
+            b.attr('aria-label', slug ? `Anderes Bild wählen (jetzt ${slug})` : 'Bild wählen').attr('title', slug ? 'Anderes Bild wählen' : 'Bild wählen');
+            if (slug) img.attr('src', `/gen/i/${slug}-256.jpg`);
+        };
+        img.on('load', function () { img.attr('hidden', false); empty.attr('hidden', true); });
+        img.on('error', function () { img.attr('hidden', true); empty.attr('hidden', false); });
+        input.on('change', show);
+        show();
         b.on('click', function (e) {
             open_picker(clean_slug(input.val()), function (slug) {
                 input.val(slug).trigger('input').trigger('change');
@@ -603,7 +605,7 @@
             body.append(line_input(b, 'text', 'Zwischenüberschrift').addClass('ti_nb_heading').attr('aria-label', 'Zwischenüberschrift'));
         } else if (b.type === 'image') {
             var slug = line_input(b, 'slug', 'zum Beispiel sportfest-start', 'pv_nb_images').addClass('ti_nb_slug');
-            body.append($('<div>').addClass('pv-nb-row').append(field('Bildname', slug, 'pv-nb-grow')).append(pick_button(slug)).append(thumb(slug)));
+            body.append($('<div>').addClass('pv-nb-row pv-nb-slot-row').append(pick_button(slug)).append(field('Bildname', slug, 'pv-nb-grow')));
             var layouts = $('<div>').addClass('pv-nb-layouts').attr('role', 'radiogroup').attr('aria-label', 'Wo das Bild steht');
             [['full', 'Groß'], ['left', 'Links neben Text'], ['right', 'Rechts neben Text']].forEach(function (l) {
                 var opt = $('<button type="button">').addClass('btn pv-nb-layout').attr('role', 'radio')
@@ -621,7 +623,7 @@
                 var input = $('<input type="text" class="form-control ti_nb_gallery_slug">').attr('list', 'pv_nb_images')
                     .attr('placeholder', `Bildname ${i + 1}`).attr('aria-label', `Bildname ${i + 1}`).val(s);
                 input.on('input', function (e) { b.slugs[i] = e.currentTarget.value; changed(); });
-                var row = $('<div>').addClass('pv-nb-row').append(input).append(pick_button(input)).append(thumb(input));
+                var row = $('<div>').addClass('pv-nb-row pv-nb-slot-row').append(pick_button(input)).append(input);
                 if (b.slugs.length > 2)
                     row.append(icon_button('Foto entfernen', 'x', 'bu_nb_gallery_remove').on('click', function () {
                         b.slugs.splice(i, 1);
@@ -660,7 +662,7 @@
                 slug.on('input', function (e) { item.slug = e.currentTarget.value; changed(); });
                 slug.on('change', function () { picker.trigger('pv-nb-slug'); });
                 cap.on('input', function (e) { item.caption = e.currentTarget.value; changed(); });
-                var head = $('<div>').addClass('pv-nb-row').append(slug).append(pick_button(slug));
+                var head = $('<div>').addClass('pv-nb-row pv-nb-slot-row').append(pick_button(slug)).append(slug);
                 if (b.items.length > 2)
                     head.append(icon_button('Bild entfernen', 'x', 'bu_nb_row_remove').on('click', function () {
                         b.items.splice(i, 1);
@@ -700,7 +702,7 @@
 
     function render_block(b, index) {
         var t = TYPES[b.type];
-        var el = $('<section>').addClass(`pv-nb-block pv-nb-${b.type}`).attr('data-id', `${b.id}`).attr('data-type', b.type);
+        var el = $('<section>').addClass(`pv-nb-block pv-nb-block-${b.type}`).attr('data-id', `${b.id}`).attr('data-type', b.type);
         var head = $('<div>').addClass('pv-nb-head');
         head.append(icon(t.icon).addClass('pv-nb-type-icon'));
         var label = t.label;
@@ -758,10 +760,21 @@
         update_warnings();
     }
 
+    // nothing in it yet (a block just added, a new article's Einstieg)
+    function untouched(b) {
+        if (b.touched) return false;
+        var filled = function (x) { return String(x || '').trim().length > 0; };
+        return !(filled(b.text) || filled(b.slug) || filled(b.caption) || filled(b.link) || filled(b.name) || filled(b.label) ||
+            (b.slugs || []).some(filled) || (b.items || []).some(function (it) { return filled(it.slug) || filled(it.caption); }));
+    }
+
+    // a block's hints once one has started on it (the overview below the
+    // preview lists them all); the note how the block works is always there
     function update_warnings() {
         blocks.forEach(function (b, i) {
             var box = $(`.pv-nb-block[data-id="${b.id}"] .pv-nb-warn`);
             box.empty();
+            if (untouched(b)) return;
             block_warnings(i).forEach(function (w) {
                 var line = $('<p>').append(icon('bulb')).append($('<span>').text(w[0]));
                 if (w[1]) line.append(quiet_button(w[1].label, null, 'bu_nb_fix').on('click', w[1].run));
@@ -1031,6 +1044,14 @@
         set_width(window.matchMedia('(max-width: 767px)').matches ? 'phone' : 'desktop');
         set_pane('edit');
         $('.ti_title').on('input', function () { if (mode === 'blocks') schedule_preview(); });
+        // typing in a block: from now on it shows its hints (capture: before
+        // the field's own handler redraws them)
+        document.addEventListener('input', function (e) {
+            var el = e.target.closest && e.target.closest('.pv-nb-list .pv-nb-block');
+            if (!el) return;
+            var id = el.getAttribute('data-id');
+            blocks.forEach(function (b) { if (`${b.id}` === id) b.touched = true; });
+        }, true);
         $(document).on('keydown', '.pv-nb-list textarea, .pv-nb-list input', function (e) {
             if (e.keyCode === 13 && e.ctrlKey) news_render_preview();
         });

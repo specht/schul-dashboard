@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { test, expect, login, ACCOUNTS, dashboardDialog } from './fixtures';
+import { openVorgaben } from './sitzplan-helpers';
 
 // Example data: Clarke is class teacher of 5a (Max, Elli, Mallory).
 const KLASSE = '5a';
@@ -7,18 +8,6 @@ const KLASSE = '5a';
 // The class page links the seating plan of the homeroom; the room comes from
 // that link. Two rows with two desks of two seats each (the seat editor has
 // its own UI).
-// Opens the »Vorgaben« box. A new plan closes it again (sitzplanhelfer.html)
-// – sometimes just after a click opened it, so check that it stays open.
-async function openVorgaben(page: Page) {
-  const box = page.locator('#sph_vorgaben');
-  const isOpen = () => box.evaluate((d) => (d as HTMLDetailsElement).open);
-  await expect(async () => {
-    if (!(await isOpen())) await box.locator('> summary').click();
-    await page.waitForTimeout(300);
-    expect(await isOpen()).toBe(true);
-  }).toPass({ timeout: 10_000 });
-}
-
 async function setUpRoom(page: Page) {
   await page.goto(`/directory/${KLASSE}`);
   const link = page.locator(`a[href^="/sitzplanhelfer/${KLASSE}/"]`).first();

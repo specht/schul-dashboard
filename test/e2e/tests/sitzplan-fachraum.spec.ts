@@ -1,5 +1,6 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 import { test, expect, login, ACCOUNTS, dashboardDialog } from './fixtures';
+import { openVorgaben } from './sitzplan-helpers';
 
 // Example data (test/prepare_example_data.rb): class 5a has its homeroom 108,
 // where Clarke (admin, class teacher) teaches it. Both Clarke and Frieda
@@ -88,7 +89,7 @@ test('Sitzplan im Fachraum: eigene Tische übernehmen, eigener Plan, getrennt vo
 
   // own Vorgaben, without being class teacher: who must not sit together and
   // who sits in front (no lists for spreading out in a subject room)
-  await page.locator('#sph_vorgaben > summary').click();
+  await openVorgaben(page);
   await expect(page.locator('#sph_area_pairs, #sph_area_fixed')).toHaveCount(2);
   await expect(page.locator('#sph_vorgaben_legend')).toContainText('Die Vorgaben der Klassenleitung sehen Sie hier nicht');
   // only the class teacher may copy her own homeroom Vorgaben
@@ -188,7 +189,7 @@ test('Sitzplan im Fachraum: Klassenleitung übernimmt eigene Vorgaben aus dem Kl
 
     await page.goto(`/sitzplanhelfer/${KLASSE}/${FACHRAUM}`);
     await expect(page.locator('#sph_view_start:visible, #sph_view_work:visible')).toHaveCount(1);
-    await page.locator('#sph_vorgaben > summary').click();
+    await openVorgaben(page);
     await expect(page.locator('#sph_forbidden_list')).not.toContainText('Max Mustermann');
     await page.locator('#sph_bu_copy_class_rules').click();
     await dashboardDialog(page).getByRole('button', { name: 'Übernehmen' }).click();

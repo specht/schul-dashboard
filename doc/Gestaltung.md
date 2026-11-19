@@ -206,6 +206,16 @@ Aktionen und das Verhalten am Handy.
 - Kurze Formulare in einem Dialog, am Handy als Sheet.
 - Lange Editoren als Dialog in voller Höhe, am Handy als Sheet über den
   ganzen Bildschirm; »Speichern« bleibt immer sichtbar.
+- **Editoren aus Bausteinen** (Beispiel: Website-News): Man setzt den Inhalt
+  aus Bausteinen zusammen (Absatz, Bild, Galerie …), jeder mit Symbol,
+  Namen und leisen Knöpfen zum Verschieben, Einfügen und Entfernen.
+  Zu jedem Baustein steht ein kurzer Hinweis, wie er wirkt; Prüfungen
+  erscheinen leise darunter, nie blockierend, wo möglich mit einem Knopf,
+  der das Problem behebt. Angeboten wird nur, was auf jeder Breite gut
+  aussieht. Gespeichert wird das bisherige Textformat; »Text bearbeiten«
+  bleibt als Ausweg. Die Vorschau zeigt Handy, Tablet und Desktop; am
+  Handy sind »Bearbeiten« und »Vorschau« zwei Reiter, und nur das Sheet
+  selbst scrollt.
 
 **Tabelle**
 

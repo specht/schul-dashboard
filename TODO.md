@@ -252,8 +252,7 @@ fotografiert und gegen `doc/Gestaltung.md` geprüft.
       reagiert nicht
 - [ ] `lab8`: zwei Trennlinien zwischen Feldern und Bearbeitungshistorie
 - [ ] Viel genutzt, noch altes Design: `bookings` (am Handy kaputt: Titel
-      bricht im Wort, Buchungen abgeschnitten), `techpost`, `jitsi`
-      (alle, „Sie“, Hinweiskästen), `groups`,
+      bricht im Wort, Buchungen abgeschnitten), `techpost`, `groups`,
       `upload_images`, `upload_files`, `email_overview`,
       `show_login_codes`, `kurslisten`, `gev`
 - [ ] Verwaltung, noch altes Design: `admin`, `stats`, `email_accounts`,

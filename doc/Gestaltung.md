@@ -410,7 +410,9 @@ Umfragen, Termine, News verwalten)
 
 - Die Oberfläche ist deutsch. Das Dashboard spricht alle mit »du« an,
   Schülerinnen und Schüler, Eltern und Lehrkräfte. Alte Texte mit »Sie«
-  werden angepasst, wenn eine Seite ins neue Design kommt.
+  werden angepasst, wenn eine Seite ins neue Design kommt. Ausnahme: der
+  Jitsi-Raum (`/jitsi/…`) bleibt bei »Sie«, weil dort auch Eltern und
+  Externe eingeladen werden.
 - **Feste Begriffe:** Gruppen von Schülerinnen und Schülern (Klassen und
   Kurse) heißen als Bereich »Lerngruppen«, die einzelne Gruppe bleibt
   »Klasse 6a« oder »Informatik LK (11, 12)«. Der eigene Unterricht (die

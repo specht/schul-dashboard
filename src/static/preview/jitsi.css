@@ -1,0 +1,100 @@
+/* Neues Design: Jitsi-Raum (/jitsi/…, jitsi.html, the middle part from
+   gen_jitsi_data in include/jitsi.rb). One surface: notes aligned with the
+   text as a quiet area, the consent as plain text, the tips as a list, no
+   dividers. The texts keep »Sie« on purpose (parents and external guests are
+   invited too, doc/Gestaltung.md, »Sprache«). */
+
+.ui-preview .pv-jitsi hr {
+    display: none;
+}
+
+.ui-preview .pv-jitsi h3 {
+    font-family: var(--pv-display);
+    font-weight: 800;
+}
+
+/* every note in line with the text, quiet, no border */
+.ui-preview .pv-jitsi .alert {
+    margin: 16px 0;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-jitsi .alert a {
+    color: var(--acc-text);
+}
+
+/* the Lehrerzimmer note and other warnings: a line in the accent at the start */
+.ui-preview .pv-jitsi .alert-warning,
+.ui-preview .pv-jitsi .alert-info {
+    box-shadow: inset 3px 0 0 var(--acc);
+}
+
+.ui-preview .pv-jitsi .alert-danger {
+    box-shadow: inset 3px 0 0 #b42318;
+}
+
+.ui-preview.dark .pv-jitsi .alert-danger {
+    box-shadow: inset 3px 0 0 #ff8f8f;
+}
+
+/* the consent and the buttons: part of the page, no card */
+.ui-preview .pv-jitsi .alert-secondary {
+    margin: 20px 0 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.ui-preview .pv-jitsi .go_div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.ui-preview .pv-jitsi .go_div .btn {
+    margin: 0;
+    max-width: 100%;
+    white-space: normal;
+}
+
+.ui-preview .pv-jitsi .go_div p {
+    margin: 0 0 8px;
+    color: var(--pv-muted);
+    text-align: center;
+}
+
+/* the tips: a paragraph and a list, not a coloured box */
+.ui-preview .pv-jitsi .alert-success {
+    margin-top: 28px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.ui-preview .pv-jitsi .alert-success ul {
+    margin: 8px 0 0;
+    padding-left: 1.25em;
+    list-style: disc;
+}
+
+.ui-preview .pv-jitsi .alert-success li {
+    display: list-item;
+    margin: 4px 0;
+}
+
+.ui-preview .pv-jitsi .alert-success li::marker {
+    color: var(--pv-muted);
+}
+
+/* a page to read: at most about 980 px wide, like the lists */
+@media (min-width: 768px) {
+    .ui-preview #main_container > .container.pv-jitsi {
+        max-width: min(980px, calc(100% - 48px));
+    }
+}

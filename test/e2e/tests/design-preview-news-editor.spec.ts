@@ -41,8 +41,13 @@ test('Neues Design: ein Artikel aus Bausteinen', async ({ page }) => {
     await expect(page.locator('.pv-nb-list > .pv-nb-block')).toHaveCount(2);
     await expect(block(page, 0)).toHaveAttribute('data-type', 'lead');
     await expect(block(page, 0).locator('.pv-nb-note')).toContainText('wer, was, wann');
-    await expect(block(page, 0).locator('.pv-nb-warn')).toContainText('wer, was, wann');
+    // no warnings before one has started on a block; once typed in (and
+    // emptied again) it says what is missing
+    await expect(block(page, 0).locator('.pv-nb-warn')).toBeEmpty();
     await expect(block(page, 0).locator('.bu_nb_remove')).toHaveCount(0);
+    await block(page, 0).locator('textarea').fill('A');
+    await block(page, 0).locator('textarea').fill('');
+    await expect(block(page, 0).locator('.pv-nb-warn')).toContainText('wer, was, wann');
 
     await page.locator('.ti_title').fill('Sportfest der 7. Klassen');
     await block(page, 0).locator('textarea').fill('Am Freitag haben alle siebten Klassen beim Sportfest um Punkte gekämpft.');
@@ -55,6 +60,10 @@ test('Neues Design: ein Artikel aus Bausteinen', async ({ page }) => {
     const image = block(page, 2);
     await expect(image).toHaveAttribute('data-type', 'image');
     await expect(image.locator('.pv-nb-layout[aria-checked="true"]')).toHaveText('Groß');
+    await expect(image.locator('.pv-nb-warn')).toBeEmpty();
+    // the image as an empty tile that opens the picker, the name beside it
+    await expect(image.locator('.pv-nb-slot')).toHaveAttribute('aria-label', 'Bild wählen');
+    await image.locator('.ti_nb_caption').fill('Der Start');
     await expect(image.locator('.pv-nb-warn')).toContainText('Trag den Namen des Bildes ein');
     await image.locator('.ti_nb_slug').fill('sportfest-start');
     await image.locator('.ti_nb_caption').fill('Der Start');
@@ -237,7 +246,7 @@ test('Neues Design: ein Video von YouTube als Baustein', async ({ page }) => {
     await addBlock(page, 'Video');
     const video = block(page, 2);
     await expect(video).toHaveAttribute('data-type', 'video');
-    await expect(video.locator('.pv-nb-warn')).toContainText('Link des Videos');
+    await expect(video.locator('.pv-nb-warn')).toBeEmpty();
     await video.locator('.ti_nb_video_link').fill('https://example.org/watch?v=abc');
     await expect(video.locator('.pv-nb-warn')).toContainText('kein Link zu einem YouTube-Video');
     // the common forms of a link, with and without a start time
@@ -289,9 +298,10 @@ test('Neues Design: eine Bilderreihe mit Format und Bildausschnitt', async ({ pa
     await expect(row).toHaveAttribute('data-type', 'row');
     await expect(row.locator('.pv-nb-ratio[aria-checked="true"]')).toHaveText('3:2');
     await expect(row.locator('.pv-nb-row-item')).toHaveCount(2);
-    await expect(row.locator('.pv-nb-warn')).toContainText('zwei oder drei Bildern');
+    await expect(row.locator('.pv-nb-warn')).toBeEmpty();
     await row.locator('.ti_nb_row_slug').nth(0).fill('lauf-1');
     await row.locator('.ti_nb_row_slug').nth(0).dispatchEvent('change');
+    await expect(row.locator('.pv-nb-warn')).toContainText('zwei oder drei Bildern');
     await row.locator('.ti_nb_row_slug').nth(1).fill('lauf-2');
     await row.locator('.ti_nb_row_slug').nth(1).dispatchEvent('change');
     await row.locator('.ti_nb_row_caption').nth(0).fill('Der Start');
@@ -437,6 +447,54 @@ test('Neues Design: Bilder im Editor als Bilder auswählen', async ({ page }, te
       expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
       await picker.locator('.bu_nb_picker_close').click();
       await expect(picker).toHaveCount(0);
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Layout of the blocks and the footer: every block reads top to bottom (its
+// head above its content: the Bilderreihe once lay as one row); the footer
+// has one main action – »Speichern« in the accent at the end, »Verwerfen«
+// calm only with something to discard, »Schließen« only without.
+test('Neues Design: Bausteine von oben nach unten, eine Hauptaktion unten', async ({ page }, testInfo) => {
+  try {
+    await openNew(page);
+    const discard = page.locator('#bu_discard');
+    const save = page.locator('#bu_save');
+    const close = page.locator('#bu_close_edit_modal');
+    await expect(discard).toBeHidden();
+    await expect(close).toBeVisible();
+    await expect(save).toBeDisabled();
+    await pane(page, 'edit');
+    for (const label of ['Bilderreihe', 'Galerie', 'Bild', 'Video']) {
+      await addBlock(page, label);
+      const b = block(page, 2);
+      const head = (await b.locator('.pv-nb-head').boundingBox())!;
+      const body = (await b.locator('.pv-nb-body').boundingBox())!;
+      const whole = (await b.boundingBox())!;
+      expect(head.y, label).toBeLessThan(body.y);
+      expect(body.width, label).toBeGreaterThan(whole.width * 0.9);
+    }
+    // something to save: »Verwerfen« at the start, »Speichern« the accent at the end
+    await page.locator('.ti_title').fill('Ein Titel');
+    await expect(discard).toBeVisible();
+    await expect(close).toBeHidden();
+    await expect(save).toBeEnabled();
+    const saveBox = (await save.boundingBox())!, discardBox = (await discard.boundingBox())!;
+    expect(saveBox.x).toBeGreaterThan(discardBox.x);
+    const colours = await save.evaluate((el) => {
+      const probe = document.createElement('div');
+      probe.style.color = 'var(--acc)';
+      document.body.appendChild(probe);
+      const acc = getComputedStyle(probe).color;
+      probe.remove();
+      return { bg: getComputedStyle(el).backgroundColor, acc };
+    });
+    expect(colours.bg).toBe(colours.acc);
+    if (testInfo.project.name === 'mobile') {
+      const footer = (await page.locator('#editModal .modal-footer').boundingBox())!;
+      expect(saveBox.width).toBeGreaterThan(footer.width * 0.5);
     }
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

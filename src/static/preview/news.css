@@ -695,9 +695,139 @@ body.ui-preview.dark .pv-nb-icon.bu_nb_remove:hover {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
     }
+}
 
-    /* the name, »Bild wählen« and the thumbnail: the button below the name */
-    .ui-preview .pv-nb-row:has(> .bu_nb_pick) {
-        flex-wrap: wrap;
+/* the image as a tile (news.js, pick_button): the picture once chosen, an
+   empty tile with the image symbol before; a click opens the picker */
+.ui-preview .pv-nb-slot-row {
+    align-items: flex-end;
+}
+
+.ui-preview .pv-nb-slot-row > input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ui-preview .pv-nb-slot {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 66px;
+    height: 44px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px dashed color-mix(in srgb, var(--pv-ink) 28%, transparent);
+    border-radius: 8px;
+    background: var(--pv-hover);
+    color: var(--pv-muted);
+    cursor: pointer;
+}
+
+.ui-preview .pv-nb-slot:has(> .pv-nb-thumb:not([hidden])) {
+    border-style: solid;
+    border-color: var(--pv-line);
+}
+
+.ui-preview .pv-nb-slot:hover {
+    color: var(--pv-ink);
+    border-color: color-mix(in srgb, var(--pv-ink) 45%, transparent);
+}
+
+.ui-preview .pv-nb-slot:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-nb-slot > .pv-nb-thumb {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+.ui-preview .pv-nb-slot-empty .ti {
+    font-size: 1.3rem;
+}
+
+/* ---------- the footer: one main action ----------
+   »Verwerfen« calm red at the start (only with something to discard),
+   »Schließen« neutral (only with nothing unsaved), »Speichern« the accent at
+   the end; the page switches them through disabled. */
+.ui-preview .pv-nb-editor .modal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    background: var(--pv-surface);
+}
+
+.ui-preview .pv-nb-editor #save_news_btn_container {
+    display: contents;
+}
+
+.ui-preview .pv-nb-editor #bu_discard {
+    order: -1;
+    margin-right: auto;
+    border: 0 !important;
+    background: transparent !important;
+    color: #b42318 !important;
+    font-weight: 600;
+}
+
+.ui-preview.dark .pv-nb-editor #bu_discard {
+    color: #ff8f8f !important;
+}
+
+.ui-preview .pv-nb-editor #bu_discard:hover {
+    background: var(--pv-hover) !important;
+}
+
+.ui-preview .pv-nb-editor .modal-footer > .pull-left {
+    order: 0;
+}
+
+.ui-preview .pv-nb-editor #bu_render_preview {
+    order: 1;
+}
+
+.ui-preview .pv-nb-editor #bu_close_edit_modal {
+    order: 2;
+    border: 1px solid var(--pv-line) !important;
+    background: var(--pv-hover) !important;
+    color: var(--pv-ink) !important;
+}
+
+.ui-preview .pv-nb-editor #bu_save {
+    order: 3;
+}
+
+.ui-preview .pv-nb-editor #bu_save:not(:disabled) {
+    border-color: var(--acc) !important;
+    background: var(--acc) !important;
+    color: var(--acc-ink) !important;
+}
+
+.ui-preview .pv-nb-editor #bu_save:disabled {
+    border-color: var(--pv-line) !important;
+    background: var(--pv-hover) !important;
+    color: var(--pv-muted) !important;
+    opacity: 1;
+}
+
+.ui-preview .pv-nb-editor #bu_discard:disabled,
+.ui-preview .pv-nb-editor #bu_close_edit_modal:disabled {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    /* a bar of its own at the sheet's foot, »Speichern« across the width */
+    .ui-preview .pv-nb-editor .modal-footer {
+        flex-wrap: nowrap;
+        padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--pv-line);
+    }
+
+    .ui-preview .pv-nb-editor #bu_save {
+        flex: 1 1 auto;
+        justify-content: center;
     }
 }

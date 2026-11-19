@@ -1343,6 +1343,10 @@ html {
 .ui-preview .fc .fc-timegrid-now-indicator-line {
     border-color: var(--acc-text);
     border-width: 2px 0 0;
+    /* as wide as the lessons (FullCalendar's margin of the events, 2px of
+       ours), not across the whole column into the next day */
+    left: 4px;
+    right: calc(2.5% + 2px);
 }
 
 .ui-preview .fc .fc-timegrid-now-indicator-arrow {

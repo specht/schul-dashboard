@@ -400,6 +400,49 @@ Umfragen, Termine, News verwalten)
 - Auf dem Desktop öffnen sich Menüs der Seitenleiste als Feld daneben (siehe
   3); Menüs im Fuß öffnen sich nach oben.
 
+### Aufbau eines Dialogs
+
+Jeder Dialog hat denselben Aufbau, egal auf welcher Seite. Was für alle gilt,
+steht in `preview.css` (»One layout for every dialog«) und `preview.js`; eine
+Seite ergänzt nur, was ihr Inhalt braucht.
+
+- **Drei Arten, drei Breiten** (Desktop):
+  - *Frage oder Hinweis* (`dashboardConfirm`, `dashboardAlert`): schmal
+    (480 px), ein bis zwei Sätze, am Handy in der Mitte des Bildschirms.
+  - *Details und kurze Formulare* (ein Eintrag ansehen, ein paar Felder):
+    460 bis 640 px.
+  - *Editoren* (Nachricht, Termin, Umfrage, News): bis 960 px, am Handy als
+    Sheet über den ganzen Bildschirm.
+  Kein Dialog ist breiter, als sein Inhalt braucht.
+- **Am Handy** ist jeder Dialog ein Sheet mit Griff, außer Frage und Hinweis
+  (`preview.js` setzt `.pv-sheet` beim Öffnen).
+- **Kopf:** der Titel (Anzeigeschrift), darunter in einer leisen Zeile, was
+  man zum Einordnen braucht (Klasse, Datum in Worten: »5a, Montag,
+  23. November«). Gehört der Dialog zu einem Fach, trägt der Kopf oben ein
+  Band in der Fachfarbe (Stunde, Klassenarbeit). Ein »×« im Kopf gibt es
+  nicht: am Desktop »Schließen« in der Fußzeile, am Handy Griff, Schleier und
+  Zurück. Ausnahme: das Kursbuch am Tablet (Feld von rechts) behält sein »×«.
+- **Inhalt:** eine Fläche (siehe 6). Felder mit Beschriftung darüber,
+  Abschnitte mit Überschrift oder Haarlinie. Fakten in ruhigen Zeilen mit
+  Tabler-Symbol vorn (gleich breit, damit der Text bündig steht): erst was
+  die Person geschrieben hat (in der Textfarbe), dann wer und für wen
+  (gedämpft). Hinweise sind leise graue Absätze, keine farbigen Kästen.
+- **Fußzeile**, immer in dieser Reihenfolge:
+  1. am Anfang, was entfernt: »Löschen«, »Verwerfen« (ruhig rot, als Text);
+     »Verwerfen« nur, wenn es Ungespeichertes gibt;
+  2. am Ende der Ausweg: »Schließen« (nur ohne Ungespeichertes) oder
+     »Abbrechen«, ruhig grau;
+  3. ganz am Ende die eine Hauptaktion im Akzent: »Speichern«, »Senden«,
+     »Buchen«, »Bearbeiten«. In einer Bestätigung ist das die Aktion selbst
+     (»Löschen« in vollem Rot).
+  Seiten dürfen ihre Knöpfe in beliebiger Reihenfolge schreiben; die
+  Reihenfolge ergibt sich aus den Namen (`bu_delete_…`, `bu_discard_…`,
+  `bu_save_…`, `bu_send_…`, `bu_perform_…`) und Klassen (`btn-success`,
+  `btn-primary` für die Hauptaktion). Neue Dialoge halten sich an diese
+  Namen.
+- **Ein- und Ausschalter** in Formularen sind Schalter oder Kästchen mit
+  dem Text daneben, nicht die alten Knöpfe mit »×« und »✓«.
+
 ## 9. Ausrichtung und Listen
 
 - **Oben ausrichten:** Symbole, Fach-Chips, Profilbilder und Pfeile neben

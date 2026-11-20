@@ -1697,3 +1697,66 @@ test('Neues Design: Schleier folgt dem Sheet beim Ziehen', async ({ page }, test
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// The week (desktop): entries that follow each other directly keep a little
+// air between them; a break duty shows what it is on its first line, time
+// and place below – at 35 minutes both lines fit, at 20 the title still does.
+test('Neues Design: Woche, Luft zwischen Einträgen, Aufsicht lesbar', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'die Woche als Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    await page.evaluate(() => {
+      const w = window as any;
+      const lesson = w.calendar.getEvents().find((e: any) => !e.allDay && e.extendedProps.lesson && !e.extendedProps.pausenaufsicht);
+      const day = new Date(w.calendar.view.currentStart);
+      day.setDate(day.getDate() + 1);
+      const at = (h: number, m: number) => { const d = new Date(day); d.setHours(h, m, 0, 0); return d; };
+      const copy = (start: Date, end: Date, cls: string) => w.calendar.addEvent({
+        start, end, backgroundColor: lesson.backgroundColor, textColor: lesson.textColor,
+        classNames: [...lesson.classNames, cls], extendedProps: { ...lesson.extendedProps },
+      });
+      const duty = (start: Date, end: Date, cls: string) => {
+        const flat: any = { lesson: true, pausenaufsicht: true, raum: 'Hof Brunnen', label: 'Pausenaufsicht', label_short: 'Pausenaufsicht' };
+        w.preview_text_color(flat);
+        w.calendar.addEvent({ start, end, textColor: flat.textColor, classNames: [...flat.classNames, cls], extendedProps: flat });
+      };
+      copy(at(12, 20), at(13, 5), 'zz-a');
+      duty(at(13, 5), at(13, 40), 'zz-duty');
+      copy(at(13, 40), at(14, 25), 'zz-b');
+      duty(at(14, 35), at(14, 55), 'zz-short');
+    });
+    await expect(page.locator('.zz-short')).toBeVisible();
+    const m = await page.evaluate(() => {
+      const r = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+      const a = r('.zz-a'), d = r('.zz-duty'), b = r('.zz-b'), s = r('.zz-short');
+      return {
+        duty_class: document.querySelector('.zz-duty')!.classList.contains('pv-duty'),
+        gap1: d.top - a.bottom, gap2: b.top - d.bottom,
+        title: document.querySelector('.zz-duty .pv-ev-title')!.textContent!.trim(),
+        title_in: r('.zz-duty .pv-ev-title').bottom <= d.bottom + 0.5,
+        meta_in: r('.zz-duty .pv-ev-meta').bottom <= d.bottom + 0.5,
+        title_first: r('.zz-duty .pv-ev-title').top < r('.zz-duty .pv-ev-meta').top,
+        short_title_in: r('.zz-short .pv-ev-title').bottom <= s.bottom + 0.5,
+        // nothing lies over the title (the second row is cut, not pushed up)
+        short_apart: r('.zz-short .pv-ev-meta').top >= r('.zz-short .pv-ev-title').bottom - 0.5,
+        short_title_height: r('.zz-short .pv-ev-title').height,
+        title_height: r('.zz-duty .pv-ev-title').height,
+      };
+    });
+    expect(m.duty_class).toBe(true);
+    expect(m.gap1).toBeGreaterThanOrEqual(2);
+    expect(m.gap2).toBeGreaterThanOrEqual(2);
+    expect(m.title).toBe('Pausenaufsicht');
+    expect(m.title_first).toBe(true);
+    expect(m.title_in).toBe(true);
+    expect(m.meta_in).toBe(true);
+    expect(m.short_title_in).toBe(true);
+    expect(m.short_apart).toBe(true);
+    expect(m.short_title_height).toBeCloseTo(m.title_height, 0);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

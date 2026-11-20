@@ -190,6 +190,14 @@
     function slide_sheets_down() {
         if (!window.jQuery) return;
         var $ = window.jQuery;
+        // Phones: every dialog is a sheet (doc/Gestaltung.md, 8) – only the
+        // short questions and notes (dashboardAlert, dashboardConfirm) stay
+        // in the middle of the screen
+        $(document).on('show.bs.modal', '.ui-preview .modal', function(e) {
+            if (SIDEBAR.matches || e.target !== e.currentTarget) return;
+            if (/^__template_modal/.test(e.currentTarget.id || '')) return;
+            e.currentTarget.classList.add('pv-sheet');
+        });
         $(document).on('hide.bs.modal', '.ui-preview .pv-sheet', function(e) {
             if (SIDEBAR.matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
             var modal = e.currentTarget;

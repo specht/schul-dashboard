@@ -690,7 +690,7 @@ function preview_text_color(event) {
     if (!document.body || !document.body.classList.contains('ui-preview')) return;
     if (!preview_subject_color(event)) {
         event.textColor = event.entfall ? 'var(--pv-muted)' : 'var(--pv-ink)';
-        event.classNames = (event.classNames || []).concat(['pv-quiet'], event.entfall ? ['pv-off'] : []);
+        event.classNames = (event.classNames || []).concat(['pv-quiet'], event.entfall ? ['pv-off'] : [], event.pausenaufsicht ? ['pv-duty'] : []);
         return;
     }
     event.textColor = preview_subject_ink(event);

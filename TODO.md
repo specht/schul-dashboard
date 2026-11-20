@@ -274,6 +274,19 @@ fotografiert und gegen `doc/Gestaltung.md` geprüft.
       Tabelle »Schulinterne Links«), `timetable` (überlappende Stunden
       am Tablet abgeschnitten), `events` (Dialog »Neuer Termin«: Platzhalter
       mit „Sie“, gelbe Teilnehmer-Chips, »Schließen« neben »Verwerfen«)
+- [ ] Dialoge nach »Aufbau eines Dialogs« (Gestaltung.md, 8; Durchsicht
+      20.11.2026). Erledigt für alle: Reihenfolge der Fußzeile, »Verwerfen«
+      und »Schließen« je nach Zustand, Breiten, Hinweise ohne Farbkasten,
+      am Handy alle als Sheet. Offen, Seite für Seite:
+      - alte Ein-/Ausschalter mit »×« und »✓« durch Schalter ersetzen:
+        Termin (»Jitsi Meet«), Kursbuch (»fester Termin«, »Jitsi Meet«,
+        »Gruppenräume«, »Geräte«, »Nextcloud«), Gruppenräume (»Freie
+        Raumwahl«), Klassenarbeit (»Im Stundenplan der Klasse anzeigen«,
+        am Desktop)
+      - Texte mit „Sie“ in Dialogen: Termin, Umfrage, Gruppe (Platzhalter),
+        Mail an Eltern, Amt im Kursbuch, »Externe Teilnehmer«
+      - leere Dialoge sagen, was fehlt (Kursbuch: »Geräte buchen« ohne
+        Geräte, »SuS für Amt auswählen« ohne Liste)
 - [ ] Nicht geprüft (im Teststack nicht erreichbar): Bibliothek-Verwaltung,
       Zeugnisse, Datentresor, Sitzplan-Seiten, Mittagessen,
       Zufallsgruppen, AGR-App

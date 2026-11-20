@@ -1134,6 +1134,108 @@ html {
     font-weight: 600;
 }
 
+/* ---------- One layout for every dialog (doc/Gestaltung.md, 8: »Aufbau
+   eines Dialogs«) ----------
+   The footer, whatever order a page writes its buttons in: what removes or
+   discards at the start, then the way out, the main action last. The
+   editors switch their buttons themselves (pending changes): »Verwerfen«
+   only shows when there is something to discard, »Schließen« only when
+   there is not – the News editor's model. */
+.ui-preview .modal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* the room between the start and the end */
+.ui-preview .modal-footer::before {
+    content: "";
+    order: 0;
+    flex: 1 1 0;
+}
+
+/* the editors' "Verwerfen / Speichern" pair: each button takes its own place */
+.ui-preview .modal-footer [id$='_btn_container'] {
+    display: contents;
+}
+
+.ui-preview .modal-footer > *,
+.ui-preview .modal-footer [id$='_btn_container'] > * {
+    order: 1;
+}
+
+.ui-preview .modal-footer .btn-primary,
+.ui-preview .modal-footer .btn-success,
+.ui-preview .modal-footer [id^='bu_save_'],
+.ui-preview .modal-footer [id^='bu_send_'],
+.ui-preview .modal-footer [id^='bu_perform_'] {
+    order: 2;
+}
+
+.ui-preview .modal-footer [id^='bu_delete_'] {
+    order: -2;
+}
+
+.ui-preview .modal-footer [id^='bu_discard_'] {
+    order: -1;
+}
+
+/* a confirmation: its action (»Löschen«) is the last button */
+.ui-preview #__template_modal .modal-footer .btn-danger {
+    order: 2;
+}
+
+.ui-preview .modal-footer [id^='bu_discard_']:disabled,
+.ui-preview .modal-footer [id^='bu_close_']:disabled,
+.ui-preview .modal-footer [data-dismiss='modal']:disabled {
+    display: none;
+}
+
+/* the way out (»Schließen«, »Abbrechen«): quiet grey, never dark */
+.ui-preview .modal-footer .btn-secondary,
+.ui-preview #main_container .modal-footer .btn-secondary {
+    background: var(--pv-hover);
+    border: 1px solid var(--pv-line);
+    color: var(--pv-ink);
+}
+
+/* discarding: quiet red text at the start (red in full only in a confirmation) */
+.ui-preview .modal-footer [id^='bu_discard_'],
+.ui-preview #main_container .modal-footer [id^='bu_discard_'] {
+    background: transparent;
+    border-color: transparent;
+    color: #b42318;
+}
+
+.ui-preview.dark .modal-footer [id^='bu_discard_'],
+.ui-preview.dark #main_container .modal-footer [id^='bu_discard_'] {
+    color: #ff8f8f;
+}
+
+/* a note inside a dialog: quiet, in the ink – no coloured box */
+.ui-preview .modal-body .alert-info,
+.ui-preview .modal-body .alert-secondary,
+.ui-preview .modal-body .alert-light {
+    border: 0;
+    border-radius: 10px;
+    background: var(--pv-hover);
+    color: var(--pv-ink);
+}
+
+/* widths on desktops: a question or a few facts narrow, a form in the
+   middle, an editor wide – never a dialog wider than its content needs */
+@media (min-width: 1200px) {
+    .ui-preview #__template_modal .modal-dialog,
+    .ui-preview #__template_modal_with_input .modal-dialog {
+        max-width: 480px;
+    }
+
+    .ui-preview .modal-dialog.modal-xl {
+        max-width: min(960px, calc(100vw - var(--pv-sidebar, 0px) - 48px));
+    }
+}
+
 /* the lesson dialog: a band in the subject colour, the room as a chip,
    quiet buttons and one accent action */
 .ui-preview #lessonModal .modal-header {
@@ -1377,6 +1479,35 @@ html {
     border: 0;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* entries that follow each other directly keep a little air between them
+   (FullCalendar: 1 px) */
+.ui-preview .fc-timegrid-event-harness > .fc-timegrid-event {
+    bottom: 3px;
+}
+
+/* a break duty (often only 15 to 35 minutes): what it is on the first line,
+   time and place below, with little padding – when the block is too short
+   for both, the second line is cut, not the title (preview_text_color) */
+.ui-preview .fc-timegrid-event.pv-duty .fc-event-main {
+    display: flex;
+    flex-direction: column;
+    padding: 2px 6px;
+}
+
+.ui-preview .fc-timegrid-event.pv-duty .fc-event-main > * {
+    flex: none;
+}
+
+.ui-preview .fc-timegrid-event.pv-duty .pv-ev-title {
+    order: -1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ui-preview .fc-timegrid-event.pv-duty .pv-ev-meta {
+    margin: 1px 0 0;
 }
 
 .ui-preview .fc-timegrid-event-harness-inset .fc-timegrid-event {
@@ -2962,12 +3093,6 @@ body.ui-preview.dark::before {
     .ui-preview #composeModal .modal-footer {
         flex-wrap: nowrap;
         gap: 6px;
-    }
-
-    .ui-preview #composeModal .modal-footer #publish_message_btn_container {
-        display: flex;
-        gap: 6px;
-        margin-right: auto;
     }
 
     .ui-preview #composeModal .modal-footer .btn {

@@ -1188,7 +1188,10 @@ test('Neues Design: hell und dunkel im Profil ohne Neuladen', async ({ page }, t
     let loads = 0;
     page.on('load', () => loads++);
     const tileBg = () => page.locator('.swatches .swatch').first().evaluate((el) => getComputedStyle(el).getPropertyValue('--pv-bg'));
-    await page.locator('.toggle:has(#dark_css_switch)').click();
+    // Hell / Auto / Dunkel instead of the old switch
+    await expect(page.locator('.toggle:has(#dark_css_switch)')).toBeHidden();
+    await page.locator('.pv-mode-field button[data-mode="dark"]').click();
+    await expect(page.locator('.pv-mode-field button[data-mode="dark"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('body')).toHaveClass(/dark/);
     await expect.poll(tileBg).toContain('/bg-d');
     expect(loads).toBe(0);
@@ -1222,21 +1225,25 @@ test('Neues Design: hell und dunkel aus dem Menü ohne Neuladen', async ({ page 
     const tokens = () => page.locator('#design_tokens').evaluate((el) => el.textContent);
     const before = await tokens();
     await open();
-    await page.locator('.nav-dark').click();
+    // Hell / Auto / Dunkel, the current one pressed; the old toggle is gone
+    const choice = (mode: string) => page.locator(`.pv-mode-row button[data-mode="${mode}"]`);
+    await expect(page.locator('.nav-dark, .nav-light')).toHaveCount(0);
+    await expect(choice('light')).toHaveAttribute('aria-pressed', 'true');
+    await choice('dark').click();
     await expect(page.locator('body')).toHaveClass(/\bdark\b/);
     await expect.poll(tokens).not.toBe(before);
     await expect(page.locator('link[href="/dark.css"]')).toHaveCount(1);
     await open();
-    await expect(page.locator('.nav-light .label')).toHaveText('Hell');
-    await expect(page.locator('.nav-dark')).toHaveCount(0);
-    await page.locator('.nav-light').click();
+    await expect(choice('dark')).toHaveAttribute('aria-pressed', 'true');
+    await expect(choice('light')).toHaveAttribute('aria-pressed', 'false');
+    await choice('light').click();
     await expect(page.locator('body')).not.toHaveClass(/\bdark\b/);
     await expect.poll(tokens).toBe(before);
     await expect(page.locator('link[href="/dark.css"]')).toHaveCount(0);
     expect(loads).toBe(0);
     // stored: a reload keeps it
     await open();
-    await page.locator('.nav-dark').click();
+    await choice('dark').click();
     await expect(page.locator('body')).toHaveClass(/\bdark\b/);
     await page.reload();
     await expect(page.locator('body')).toHaveClass(/\bdark\b/);
@@ -1336,13 +1343,13 @@ test('Neues Design: Schalter im Profil folgt hell und dunkel aus dem Menü', asy
   await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
   try {
     await page.goto('/profil');
-    const sw = page.locator('#dark_css_switch');
-    await expect(sw).not.toBeChecked();
+    const sw = page.locator('.pv-mode-field button[data-mode="dark"]');
+    await expect(sw).toHaveAttribute('aria-pressed', 'false');
     if (phone) await page.locator('#bu_pv_more').click();
     else await page.locator('#navbarDropdownProfile').click();
-    await page.locator('.nav-dark').click();
+    await page.locator('.pv-mode-row button[data-mode="dark"]').click();
     await expect(page.locator('body')).toHaveClass(/\bdark\b/);
-    await expect(sw).toBeChecked();
+    await expect(sw).toHaveAttribute('aria-pressed', 'true');
   } finally {
     await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
@@ -1760,6 +1767,73 @@ test('Neues Design: Woche, Luft zwischen Einträgen, Aufsicht lesbar', async ({ 
     expect(m.short_apart).toBe(true);
     expect(m.short_title_height).toBeCloseTo(m.title_height, 0);
   } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Hell / Auto / Dunkel: »Auto« follows the device – in place when it
+// switches while the page is open, on the next page through a cookie the
+// browser keeps (Main.effective_dark), also when the device switched while
+// no page was open (the head loads the page once more). The old design
+// keeps its entry and follows »Auto« too.
+test('Neues Design: Darstellung hell, automatisch oder dunkel', async ({ page }, testInfo) => {
+  const phone = testInfo.project.name === 'mobile';
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
+  const open = async () => {
+    if (phone) {
+      if (!(await page.locator('#navbarTogglerDemo02.show').count())) await page.locator('#bu_pv_more').click();
+    } else if (!(await page.locator('[aria-labelledby="navbarDropdownProfile"].show').count())) {
+      await page.locator('#navbarDropdownProfile').click();
+    }
+  };
+  const choice = (mode: string) => page.locator(`.pv-mode-row button[data-mode="${mode}"]`);
+  const dark = () => page.locator('body').evaluate((b) => b.classList.contains('dark'));
+  try {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/');
+    await page.waitForLoadState('load');
+    let loads = 0;
+    page.on('load', () => loads++);
+    expect(await dark()).toBe(false);
+    // Auto on a dark device: dark at once
+    await open();
+    await expect(choice('auto')).toBeVisible();
+    await choice('auto').click();
+    await expect(choice('auto')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(dark).toBe(true);
+    // the device switches while the page is open: it follows, no reload
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect.poll(dark).toBe(false);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect.poll(dark).toBe(true);
+    expect(loads).toBe(0);
+    // the next page comes dark from the server (the cookie)
+    await page.reload();
+    expect(await dark()).toBe(true);
+    // the device switched while no page was open: the page comes right anyway
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto('/profil');
+    await expect.poll(dark).toBe(false);
+    await expect(page.locator('.pv-mode-field button[data-mode="auto"]')).toHaveAttribute('aria-pressed', 'true');
+    // Hell stays light on a dark device
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.locator('.pv-mode-field button[data-mode="light"]').click();
+    await expect(page.locator('.pv-mode-field button[data-mode="light"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(dark).toBe(false);
+    await page.reload();
+    expect(await dark()).toBe(false);
+    // the old design: its own entry as before, and »Auto« set elsewhere works there too
+    await page.request.post('/api/set_dark_css', { data: { mode: 'auto' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    await page.goto('/');
+    await expect.poll(dark).toBe(true);
+    await expect(page.locator('.pv-mode-row')).toHaveCount(0);
+    await expect(page.locator('.nav-light')).toHaveCount(1);
+  } finally {
+    await page.emulateMedia({ colorScheme: null });
+    await page.request.post('/api/set_dark_css', { data: { mode: 'light' } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

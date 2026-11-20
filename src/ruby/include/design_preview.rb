@@ -57,6 +57,58 @@ class Main < Sinatra::Base
         UI_PREVIEW_PUBLIC_PAGES.include?(page.empty? ? 'index' : page)
     end
 
+    # Hell / Auto / Dunkel (new design: the menu and the profile; preview.js
+    # switches in place). »Auto« follows the device.
+    DARK_MODE_CHOICES = [['light', 'sun', 'Hell'], ['auto', 'sun-moon', 'Auto'], ['dark', 'moon', 'Dunkel']]
+
+    def print_dark_mode_switch(cls, label = 'Darstellung')
+        mode = (@session_user || {})[:dark_mode] || 'light'
+        StringIO.open do |io|
+            io.print "<div class='#{cls}' role='group' aria-label='#{label}'>"
+            io.print "<span class='pv-mode-label'>#{label}</span>"
+            io.print "<span class='pv-mode' data-mode='#{mode}'>"
+            DARK_MODE_CHOICES.each do |key, icon, label|
+                title = key == 'auto' ? 'Automatisch: wie das Gerät' : label
+                io.print "<button type='button' class='pv-mode-#{key}' data-mode='#{key}' aria-pressed='#{key == mode}' title='#{title}'><i class='ti ti-#{icon}' aria-hidden='true'></i><span>#{label}</span></button>"
+            end
+            io.print "</span></div>"
+            io.string
+        end
+    end
+
+    # »Auto«, in the head of every page (both designs): the device's setting
+    # into the cookie the server reads (Main.effective_dark). Did the server
+    # guess wrong (first visit, the device switched meanwhile), the page loads
+    # once more before it is drawn; a guard stops a loop. Later switches: the
+    # new design follows in place (preview.js), the old one loads again.
+    def dark_mode_auto_head
+        return '' unless (@session_user || {})[:dark_mode] == 'auto'
+        <<~END_OF_HTML
+            <script>
+            (function () {
+                var q = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+                if (!q) return;
+                var shown = #{ui_dark? ? 'true' : 'false'};
+                var remember = function () {
+                    document.cookie = '#{Main::PREFERS_DARK_COOKIE}=' + (q.matches ? '1' : '0') + '; path=/; max-age=31536000; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+                };
+                remember();
+                if (q.matches !== shown) {
+                    var last = 0;
+                    try { last = parseInt(sessionStorage.getItem('pv_auto_dark_reload') || '0', 10); } catch (e) {}
+                    if (Date.now() - last > 10000) {
+                        try { sessionStorage.setItem('pv_auto_dark_reload', String(Date.now())); } catch (e) {}
+                        location.reload();
+                        return;
+                    }
+                }
+                if (#{ui_preview? ? 'true' : 'false'}) return;
+                q.addEventListener('change', function () { remember(); location.reload(); });
+            })();
+            </script>
+        END_OF_HTML
+    end
+
     # dark mode: the account's setting, logged out the remembered look
     def ui_dark?
         return !!@session_user[:dark] if user_logged_in?

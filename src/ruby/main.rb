@@ -2292,7 +2292,10 @@ class Main < Sinatra::Base
                                         @session_user[:ui_preview_quick] = results.first['u'][:ui_preview_quick]
                                         @session_user[:ui_vividness] = results.first['u'][:ui_vividness]
                                         @session_user[:ui_font] = results.first['u'][:ui_font]
-                                        @session_user[:dark] = results.first['u'][:dark]
+                                        # light, dark or auto (the device's setting, which the
+                                        # browser keeps in a cookie: preview.js / _template.html)
+                                        @session_user[:dark_mode] = Main.dark_mode_of(results.first['u'])
+                                        @session_user[:dark] = Main.effective_dark(@session_user[:dark_mode], request.cookies[PREFERS_DARK_COOKIE])
                                         @session_user[:hue] = results.first['u'][:hue]
                                         @session_user[:saturation] = results.first['u'][:saturation]
                                         @session_user[:brightness] = results.first['u'][:brightness]
@@ -2743,7 +2746,10 @@ class Main < Sinatra::Base
                     if may_use_password_page?
                         io.puts "<a class='dropdown-item nav-icon' href='/passwoerter'><div class='icon'><i class='fa fa-key'></i></div><span class='label'>Passwörter und Nextcloud…</span></a>"
                     end
-                    if @session_user[:dark]
+                    if ui_preview?
+                        # new design: hell, automatisch (like the device) or dunkel
+                        io.puts print_dark_mode_switch('pv-mode-row dropdown-item')
+                    elsif @session_user[:dark]
                         io.puts "<button class='dropdown-item nav-icon nav-light'><div class='icon'><i class='fa fa-sun-o'></i></div><span class='label'>Hell</span></button>"
                     else
                         io.puts "<button class='dropdown-item nav-icon nav-dark'><div class='icon'><i class='fa fa-moon'></i></div><span class='label'>Dunkel</span></button>"
@@ -3260,17 +3266,36 @@ class Main < Sinatra::Base
         return color_scheme
     end
 
+    # light / dark / auto: the stored choice, from the account (accounts from
+    # before »auto« only have the old flag)
+    DARK_MODES = ['light', 'dark', 'auto']
+    PREFERS_DARK_COOKIE = 'prefers_dark'
+
+    def self.dark_mode_of(user_node)
+        mode = user_node[:dark_mode]
+        return mode if DARK_MODES.include?(mode)
+        user_node[:dark] ? 'dark' : 'light'
+    end
+
+    # what a page shows: »auto« follows the device (the cookie the browser
+    # sets from prefers-color-scheme; light until it has said)
+    def self.effective_dark(mode, prefers_dark_cookie)
+        return prefers_dark_cookie == '1' if mode == 'auto'
+        mode == 'dark'
+    end
+
     post '/api/set_dark_css' do
         require_user!
         data = parse_request_data(:required_keys => [:mode])
-        dark = data[:mode] == "dark" ? true : false
+        mode = DARK_MODES.include?(data[:mode]) ? data[:mode] : 'light'
+        dark = Main.effective_dark(mode, request.cookies[PREFERS_DARK_COOKIE])
 
-        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :dark => dark)
+        results = neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :dark => dark, :mode => mode)
             MATCH (u:User {email: $email})
-            SET u.dark = $dark;
+            SET u.dark = $dark, u.dark_mode = $mode;
         END_OF_QUERY
 
-        respond(:ok => true)
+        respond(:ok => true, :mode => mode, :dark => dark)
     end
 
     post '/api/set_design_css' do

@@ -955,7 +955,8 @@
             if (el.classList.contains('nav-item') && !el.classList.contains('dropdown') && !el.classList.contains('pv-nav-section') && !el.classList.contains('nav-quick-search-item') && !el.classList.contains('pv-more-search')) first_tiles.push(el);
         });
         if (profile_menu) Array.prototype.slice.call(profile_menu.children).filter(shown).forEach(function(el) {
-            if (el.classList.contains('dropdown-item') && !el.classList.contains('switch-session')) first_tiles.push(el);
+            // (Hell / Auto / Dunkel is a row across the width, not a tile)
+            if (el.classList.contains('dropdown-item') && !el.classList.contains('switch-session') && !el.classList.contains('pv-mode-row')) first_tiles.push(el);
         });
         first_tiles.sort(by_order);
         if (first_tiles.length) apply(first_tiles, 3);
@@ -1052,6 +1053,54 @@
             });
     }
     window.pv_apply_dark = apply_dark;
+
+    // Hell / Auto / Dunkel (the menu and the profile, design_preview.rb
+    // print_dark_mode_switch): stored, then switched in place. »Auto« follows
+    // the device, also when it switches while the page is open; the server
+    // learns the device's setting from a cookie (Main.effective_dark).
+    var PREFERS_DARK = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    function remember_prefers_dark() {
+        if (!PREFERS_DARK) return;
+        document.cookie = 'prefers_dark=' + (PREFERS_DARK.matches ? '1' : '0') + '; path=/; max-age=31536000; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+    }
+    function dark_mode() {
+        var seg = document.querySelector('.pv-mode');
+        return seg ? seg.dataset.mode : null;
+    }
+    function show_dark_mode(mode) {
+        document.querySelectorAll('.pv-mode').forEach(function(seg) {
+            seg.dataset.mode = mode;
+            seg.querySelectorAll('button[data-mode]').forEach(function(b) {
+                b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false');
+            });
+        });
+    }
+    function follow(mode) {
+        var dark = mode === 'auto' ? !!(PREFERS_DARK && PREFERS_DARK.matches) : mode === 'dark';
+        if (dark !== document.body.classList.contains('dark')) apply_dark(dark);
+    }
+    document.addEventListener('click', function(e) {
+        if (!document.body.classList.contains('ui-preview') || !e.target.closest) return;
+        var b = e.target.closest('.pv-mode button[data-mode]');
+        if (!b || !window.api_call) return;
+        // the menu stays open: one sees the choice take effect
+        e.preventDefault();
+        e.stopPropagation();
+        var mode = b.dataset.mode;
+        remember_prefers_dark();
+        api_call('/api/set_dark_css', { mode: mode }, function(data) {
+            if (!data.success) return;
+            show_dark_mode(mode);
+            follow(mode);
+        });
+    }, true);
+    if (PREFERS_DARK) {
+        PREFERS_DARK.addEventListener('change', function() {
+            if (!document.body.classList.contains('ui-preview') || dark_mode() !== 'auto') return;
+            remember_prefers_dark();
+            follow('auto');
+        });
+    }
     // the font pair (profile, "Schrift"): a class on the body, preview.css
     // sets the fonts for it
     window.pv_apply_font = function(font) {

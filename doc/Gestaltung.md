@@ -121,7 +121,12 @@ und dunkel auf Kontrast geprüft.
   Neuladen; neue Elemente müssen das mitmachen (Tokens statt berechneter
   Werte).
 - **Hell und dunkel** gibt es für jede Seite, unabhängig vom Farbschema
-  (`body.dark`).
+  (`body.dark`). Man wählt »Hell«, »Auto« oder »Dunkel« (im Menü als Zeile
+  »Darstellung«, im Profil); »Auto« folgt dem Gerät, auch wenn es
+  umschaltet, während die Seite offen ist. Der Server erfährt die
+  Einstellung des Geräts über ein Cookie und liefert die Seite gleich
+  passend aus; der übrige Code fragt weiter nur »hell oder dunkel?«
+  (`@session_user[:dark]`, `ui_dark?`).
 
 ## 5. Schrift und Zahlen
 

@@ -5953,7 +5953,7 @@ body.ui-preview:has(.container-fluid.solid)::before {
 
     /* the profile's other entries (Meine Klasse, Mittagessen …) join the
        first tiles, next to Datentresor */
-    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > :not(.switch-session):not(a[href='/passwoerter']):not(.nav-dark):not(.nav-light):not(a[href='/login']):not(a[onclick*='perform_logout']) {
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > :not(.switch-session):not(a[href='/passwoerter']):not(.nav-dark):not(.nav-light):not(.pv-mode-row):not(a[href='/login']):not(a[onclick*='perform_logout']) {
         order: 3;
     }
 
@@ -6677,5 +6677,127 @@ body.ui-preview:has(.container-fluid.solid)::before {
 
     .ui-preview table.pv-gt-list td.pv-gt-field[data-label]::before {
         display: block;
+    }
+}
+
+/* ---------- Hell / Auto / Dunkel (design_preview.rb print_dark_mode_switch,
+   preview.js): a segmented choice like Posteingang / Postausgang, in the
+   menu and in the profile. »Auto« follows the device. ---------- */
+.ui-preview .pv-mode {
+    display: inline-flex;
+    flex: none;
+    padding: 3px;
+    gap: 2px;
+    border-radius: 12px;
+    background: var(--pv-hover);
+}
+
+.ui-preview .pv-mode button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--pv-muted);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ui-preview .pv-mode button[aria-pressed='true'] {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ui-preview .pv-mode button:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 1px;
+}
+
+.ui-preview .pv-mode .ti {
+    font-size: 1.1em;
+}
+
+.ui-preview .pv-mode-label {
+    color: var(--pv-muted);
+}
+
+/* the menu (desktop): the label above, the choice below; no hover surface */
+.ui-preview .navbar .pv-mode-row {
+    display: flex !important;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 12px;
+    white-space: normal;
+    cursor: default;
+}
+
+.ui-preview .navbar .pv-mode-row:hover,
+.ui-preview .navbar .pv-mode-row:focus-within {
+    background: transparent;
+}
+
+.ui-preview .navbar .pv-mode-row .pv-mode-label {
+    font-size: 0.8rem;
+}
+
+/* the three share the menu's width */
+.ui-preview .navbar .pv-mode-row .pv-mode {
+    display: flex;
+    width: 100%;
+}
+
+.ui-preview .navbar .pv-mode-row .pv-mode button {
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 4px;
+}
+
+/* the profile: the label beside the choice, like the other settings there */
+.ui-preview .pv-mode-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* »Mehr« on phones: a row across the width after the personal tiles */
+@media (max-width: 767px) {
+    /* after the settings tiles, before signing in and out (balance_tiles in
+       preview.js fills the rows around it) */
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[href='/login'] {
+        order: 8;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > a[onclick*='perform_logout'] {
+        order: 9;
+    }
+
+    .ui-preview .navbar .navbar-collapse [aria-labelledby='navbarDropdownProfile'] > .pv-mode-row {
+        order: 7;
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 0 !important;
+        padding: 10px 12px;
+    }
+
+    .ui-preview .navbar .pv-mode-row .pv-mode-label {
+        font-size: 0.95rem;
+        color: var(--pv-ink);
+    }
+
+    .ui-preview .navbar .pv-mode-row .pv-mode button {
+        padding: 7px 11px;
     }
 }

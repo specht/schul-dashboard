@@ -330,7 +330,7 @@
     #{(@session_user || {})[:new_design] ? '' : '<!--'}
     <link href="/new_design.css" rel="stylesheet" />
     #{(@session_user || {})[:new_design] ? '' : '-->'}
-    #{design_preview_head(color_scheme)}
+    #{design_preview_head(color_scheme)}#{dark_mode_auto_head}
     <script defer src="/gen/js/compiled-#{compiled_js_sha1}.js"></script>
 
     #{PAGE_CSS_HERE}

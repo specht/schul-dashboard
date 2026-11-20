@@ -128,8 +128,8 @@
                             <input #{color_scheme[0] == 'd' ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_switch'>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                    <div class="col-md-4">#{ui_preview? ? print_dark_mode_switch('pv-mode-field', 'Hell oder dunkel') : ''}
+                        <div#{ui_preview? ? ' hidden' : ''} style="display: flex; flex-direction: row; justify-content: space-between;">
                             <label style="margin-top: 0.4em;" for="dark_css_switch">#{ui_preview? ? 'Dunkles Design' : 'Helligkeit'}</label>
                             <input #{@session_user[:dark] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="dunkel" data-off="hell" data-onstyle="secondary" data-offstyle="secondary" id='dark_css_switch'>
                         </div>

@@ -1067,8 +1067,25 @@ body:not(.pv-kb-none) .pv-kb-hint {
         animation: pv-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
+    /* pulled down to close (lessons.js): the grab handle instead of the X,
+       like every sheet that can be pulled down (doc/Gestaltung.md, 8) */
+    .ui-preview .pv-kb-sheet::before {
+        content: "";
+        display: block;
+        flex: none;
+        width: 40px;
+        height: 4px;
+        margin: 8px auto 0;
+        border-radius: 2px;
+        background: var(--pv-line);
+    }
+
+    .ui-preview #main_container .pv-kb-sheet .pv-kb-close {
+        display: none;
+    }
+
     .ui-preview .pv-kb-pane-head {
-        padding: 16px 16px 10px;
+        padding: 12px 16px 10px;
     }
 
     .ui-preview .pv-kb-pane-body {

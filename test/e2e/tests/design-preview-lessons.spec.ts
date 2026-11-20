@@ -147,8 +147,10 @@ test('Neues Design: Kursbuch-Sheet, Zurück schließt, ungespeicherte Änderunge
     await expect(dialog).toBeHidden();
     await expect(sheet).toBeVisible();
     await expect(page.locator('#ti_notizen')).toHaveValue('nicht speichern');
-    // the close button asks as well; "Verwerfen" closes without saving
-    await page.locator('#bu_kb_close').click();
+    // closing asks as well (tablets: the X; phones: the veil above the
+    // sheet – a handle instead of the X); "Verwerfen" closes without saving
+    if (await page.locator('#bu_kb_close').isVisible()) await page.locator('#bu_kb_close').click();
+    else await page.locator('.pv-kb-veil').click({ position: { x: 20, y: 3 } });
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Verwerfen' }).click();
     await expect(sheet).toBeHidden();
@@ -400,6 +402,32 @@ test('Neues Design: Kursbuch-Sheet nach unten wischen, Auswahl mit Abstand', asy
     const textX = async (r: typeof row) => (await r.locator('.pv-kb-day').boundingBox())!.x;
     expect(Math.abs((await textX(row)) - (await textX(other)))).toBeLessThan(1);
     expect((await textX(row)) - (await row.boundingBox())!.x).toBeGreaterThanOrEqual(8);
+    // a grab handle at the top instead of the X
+    await expect(page.locator('#bu_kb_close')).toBeHidden();
+    expect(await sheet.evaluate((el) => {
+      const h = getComputedStyle(el, '::before');
+      return h.content !== 'none' && h.height === '4px' && h.width === '40px';
+    })).toBe(true);
+    // held halfway: the veil as strong as the part of the sheet still showing
+    {
+      const head = (await page.locator('.pv-kb-pane-head').boundingBox())!;
+      const cdp = await page.context().newCDPSession(page);
+      const x = head.x + head.width / 2, y = head.y + 20;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      for (let i = 1; i <= 4; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 15 }] });
+        await page.waitForTimeout(30);
+      }
+      await page.waitForTimeout(300);
+      const h = (await sheet.boundingBox())!.height;
+      const veil = () => page.locator('.pv-kb-veil').evaluate((el) => parseFloat(getComputedStyle(el).opacity));
+      expect(await veil()).toBeCloseTo(1 - 60 / h, 1);
+      expect(await veil()).toBeLessThan(0.97);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      // let go: springs back, the veil with it
+      await expect.poll(veil).toBeCloseTo(1, 2);
+      await expect(sheet).toBeVisible();
+    }
     // pulled down: closed
     await pull();
     await expect(sheet).toBeHidden();

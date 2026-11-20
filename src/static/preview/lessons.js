@@ -729,7 +729,13 @@
         e.preventDefault();
         drag.dy = Math.max(0, dy);
         sheet_shift(drag.dy, 0);
+        // the veil as strong as the part of the sheet still showing
+        veil_fade(Math.max(0, 1 - drag.dy / (sheet.offsetHeight || 1)), 0);
     }, { passive: false });
+    function veil_fade(opacity, ms) {
+        veil.style.transition = ms ? 'opacity ' + ms + 'ms ease-out' : 'none';
+        veil.style.opacity = opacity === null ? '' : String(opacity);
+    }
     function drag_end() {
         if (!drag) return;
         var d = drag;
@@ -738,12 +744,15 @@
         var quick = Date.now() - d.t < 250 && d.dy > 30;
         if ((d.dy > 90 || quick) && !window.pending_changes) {
             sheet_shift(sheet.offsetHeight + 20, 180);
+            veil_fade(0, 180);
             setTimeout(function () {
                 close_sheet(false);
                 sheet_shift(0, 0);
+                veil_fade(null, 0);
             }, 180);
         } else {
             sheet_shift(0, 160);
+            veil_fade(null, 160);
             if (d.dy > 90 || quick) request_close(false);
         }
     }

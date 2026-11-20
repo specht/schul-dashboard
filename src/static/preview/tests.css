@@ -613,8 +613,9 @@
     .pv-tests-menu-list {
         grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
     }
+}
 
-    /* ---------- dialogs ---------- */
+/* ---------- dialogs ---------- */
 .pv-tests-facts {
     display: flex;
     flex-direction: column;
@@ -630,8 +631,43 @@
 
 .pv-tests-fact i {
     flex: none;
-    margin-top: 3px;
+    width: 1.25em;
+    margin-top: 2px;
+    font-size: 1.1em;
+    text-align: center;
     color: var(--pv-muted);
+}
+
+/* the details of an entry one cannot edit (show_details): a band in the
+   subject's colour like the lesson dialog, class and date below the title,
+   the facts in quiet rows, the note (the teacher's words) in the ink */
+.ui-preview #showTestModal .modal-header {
+    border-top: 6px solid var(--c, var(--acc));
+}
+
+.ui-preview #showTestModal .modal-title {
+    font-family: var(--pv-display);
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.pv-tests-show-sub {
+    margin-top: 4px;
+    color: var(--pv-muted);
+}
+
+.ui-preview #showTestModal .pv-tests-fact {
+    color: var(--pv-muted);
+}
+
+.ui-preview #showTestModal .pv-tests-fact.pv-tests-fact-note {
+    color: var(--pv-ink);
+}
+
+@media (min-width: 768px) {
+    .ui-preview #showTestModal .modal-dialog {
+        max-width: 460px;
+    }
 }
 
 /* »Löschen« calm, at the start; »Speichern« at the end */

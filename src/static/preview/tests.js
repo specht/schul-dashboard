@@ -594,27 +594,42 @@
         }, 0);
     }
 
+    // the date in words, for the dialog ("Samstag, 21. November")
+    function long_date(d) {
+        return d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
     // details of an entry one cannot edit (someone else's test, holidays,
-    // the school's dates), as text
+    // the school's dates): a band in the subject's colour like the lesson
+    // dialog, the class and the date below the title, then the facts – who
+    // entered it, the note, who sees it
     function show_details(e) {
         var p = e.extendedProps;
         var modal = $('#showTestModal');
-        var title = title_of(e);
-        if (p.type === 'test') title += ' (' + ((p.test || {}).klasse || active_label) + ')';
-        modal.find('.modal-header').empty().append($('<h5 class="modal-title">').text(title));
+        var content = modal.find('.modal-content')[0];
+        content.style.removeProperty('--c');
+        content.style.removeProperty('--ci');
+        paint(content, e);
+        var a = e.start, b = last_day(e);
+        var when = same_day(a, b) ? long_date(a) : long_date(a) + ' bis ' + long_date(b);
+        var sub = when;
+        if (p.type === 'test') sub = ((p.test || {}).klasse || active_label) + ', ' + when;
+        modal.find('.modal-header').empty().append($('<div class="pv-tests-show-head">').append(
+            $('<h5 class="modal-title">').text(title_of(e)),
+            $('<div class="pv-tests-show-sub">').text(sub)));
         var body = modal.find('.modal-body').empty();
         var facts = $('<div class="pv-tests-facts">');
-        var line = function(name, text) {
+        var line = function(name, text, cls) {
             if (!text) return;
-            facts.append($('<div class="pv-tests-fact">').append(
+            facts.append($('<div class="pv-tests-fact">').addClass(cls || '').append(
                 $('<i class="ti" aria-hidden="true">').addClass('ti-' + name), $('<span>').text(text)));
         };
-        line('calendar', date_text(e));
         if (p.type === 'test') {
             var t = p.test || {};
-            line('user', 'Eingetragen von ' + (p.display_name || p.shorthand || 'NN') + (p.shorthand && p.display_name && p.display_name !== p.shorthand ? ' (' + p.shorthand + ')' : ''));
-            line('note', (t.kommentar || '').trim());
-            line('eye', t.public_for_klasse === 'yes' ? 'Im Stundenplan der Klasse sichtbar' : 'Nur für Lehrkräfte sichtbar');
+            line('note', (t.kommentar || '').trim(), 'pv-tests-fact-note');
+            if (p.is_session_user) line('user', 'Dein Eintrag');
+            else line('user', 'Eingetragen von ' + (p.display_name || p.shorthand || 'NN') + (p.shorthand && p.display_name && p.display_name !== p.shorthand ? ' (' + p.shorthand + ')' : ''));
+            line(t.public_for_klasse === 'yes' ? 'eye' : 'eye-off', t.public_for_klasse === 'yes' ? 'Im Stundenplan der Klasse sichtbar' : 'Nur für Lehrkräfte sichtbar');
         } else if (p.pv_kind === 'holiday') {
             line('sun', 'Ferien und Feiertage');
         } else if (p.pv_kind === 'week') {

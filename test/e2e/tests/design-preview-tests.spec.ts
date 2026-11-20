@@ -207,8 +207,19 @@ test('Neues Design: Klassenarbeiten für eine Lehrkraft ohne Unterricht in der K
     await entry.click();
     const details = teacher.locator('#showTestModal');
     await expect(details).toBeVisible();
-    await expect(details.locator('.modal-title')).toHaveText('LEK Naturwissenschaften (5a)');
-    await expect(details.locator('.pv-tests-fact')).toContainText([/Eingetragen von/, `Zellen ${tag}`, 'Nur für Lehrkräfte sichtbar']);
+    // the title, below it the class and the date in words; a band in the
+    // entry's colour; the note first, then who entered it and who sees it
+    await expect(details.locator('.modal-title')).toHaveText('LEK Naturwissenschaften');
+    const when = day.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    await expect(details.locator('.pv-tests-show-sub')).toHaveText(`5a, ${when}`);
+    await expect(details.locator('.pv-tests-fact')).toHaveText([`Zellen ${tag}`, /^Eingetragen von .+/, 'Nur für Lehrkräfte sichtbar']);
+    await expect(details.locator('.pv-tests-fact i').last()).toHaveClass(/ti-eye-off/);
+    const look = await details.evaluate((m) => ({
+      band: getComputedStyle(m.querySelector('.modal-header')!).borderTopColor,
+      width: m.querySelector('.modal-dialog')!.getBoundingClientRect().width,
+    }));
+    expect(look.band).toBe(await entry.evaluate((el) => getComputedStyle(el).backgroundColor));
+    expect(look.width).toBeLessThanOrEqual(460);
     await details.getByRole('button', { name: 'Schließen' }).click();
     await expect(details).toBeHidden();
     // a day: the dashboard's dialog explains why nothing can be added

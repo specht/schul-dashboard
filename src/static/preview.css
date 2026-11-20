@@ -1349,10 +1349,18 @@ html {
         padding: 6px 10px;
     }
 
+    /* a sheet's footer is one row from the start: no room in the middle
+       (a wide main action takes what is left) */
+    .ui-preview .pv-sheet .modal-footer::before {
+        content: none;
+    }
+
     /* no "Schließen" on phones: the sheet closes by pulling it down or
        tapping above it. Still there for keyboards and screen readers, and
-       shown when it gets keyboard focus. */
-    .ui-preview .pv-sheet .modal-footer [data-dismiss='modal']:not(:focus-visible) {
+       shown when it gets keyboard focus. A button that also closes but is
+       an action of its own (»Anmeldung ablehnen«, red or in the accent)
+       stays. */
+    .ui-preview .pv-sheet .modal-footer [data-dismiss='modal']:not(.btn-danger):not(.btn-success):not(.btn-primary):not(:focus-visible) {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -1365,7 +1373,7 @@ html {
     }
 
     /* nothing left in the row: no row */
-    .ui-preview .pv-sheet .modal-footer:not(:has(.btn:not([data-dismiss='modal']):not([style*='display: none']), .ha-amt-container:not([style*='display: none']))) {
+    .ui-preview .pv-sheet .modal-footer:not(:has(.btn:not([data-dismiss='modal']:not(.btn-danger):not(.btn-success):not(.btn-primary)):not([style*='display: none']), .ha-amt-container:not([style*='display: none']))) {
         padding: 0;
         border-top: 0;
         min-height: 0;

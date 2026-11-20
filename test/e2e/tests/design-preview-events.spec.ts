@@ -116,7 +116,7 @@ test('Neues Design: /events#eid öffnet auch einen älteren Termin', async ({ pa
 // styles.css, and its overflowing text lay over »Externe Teilnehmer…«, which
 // then took no taps. »Speichern« stays disabled without a title or
 // participants: a quiet hint says why.
-test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern', async ({ page }) => {
+test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern', async ({ page }, testInfo) => {
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
@@ -138,7 +138,9 @@ test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern'
     // the button takes the tap (not the label's text above it)
     await page.locator('.bu_open_ext_users_modal').click({ timeout: 5000 });
     await expect(page.locator('#externalUsersModal')).toBeVisible();
-    await page.locator('#bu_close_ext_user_modal').click();
+    // (phones: a sheet without »Schließen« – it closes like every sheet)
+    if (testInfo.project.name === 'mobile') await page.keyboard.press('Escape');
+    else await page.locator('#bu_close_ext_user_modal').click();
     await expect(page.locator('#externalUsersModal')).toBeHidden();
     await page.locator('#bu_discard_event').click();
     await expect(hint).toBeHidden();

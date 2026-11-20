@@ -36,7 +36,10 @@ test('Neues Design: Admin schaltet die Vorschau ein, gibt Feedback, schaltet sie
   await dialog.locator('#ti_design_feedback_contact').check();
   await dialog.locator('#bu_send_design_feedback').click();
   await expect(dialog.locator('.design-feedback-thanks')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Schließen' }).click();
+  // (phones: a sheet without »Schließen« – back closes it like every sheet;
+  // the page puts its entry back at once, so no goBack, which would wait)
+  if (testInfo.project.name === 'mobile') await page.evaluate(() => history.back());
+  else await dialog.getByRole('button', { name: 'Schließen' }).click();
   await expect(dialog).toBeHidden();
   expect((await page.request.post('/api/design_feedback', { data: { text: 'x', page: '/', device: 'tablet' } })).status()).not.toBe(200);
 

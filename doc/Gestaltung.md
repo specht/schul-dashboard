@@ -375,6 +375,11 @@ Umfragen, Termine, News verwalten)
 - **Am Handy** sind Dialoge und Menüs Sheets von unten (`.pv-sheet` auf dem
   Modal): sie gleiten hoch, lassen sich nach unten ziehen oder über den
   Schleier schließen und liegen über der Tab-Leiste.
+- **Jedes Sheet, das man herunterziehen kann, hat oben den Griff** (ein
+  kurzer grauer Balken). Der Schleier folgt dem Sheet: beim Ziehen ist er
+  so kräftig, wie noch vom Sheet zu sehen ist, schnellt das Sheet zurück,
+  kommt er mit, und beim Schließen blendet er mit dem Gleiten aus, statt
+  bis zum Ende stehen zu bleiben (`preview.js`, `pv_veil_away`).
 - **Hinter einem offenen Sheet steht die Seite still:** sie scrollt nicht
   mit, auch nicht beim Wischen auf dem Schleier, und steht nach dem
   Schließen wieder genau dort, wo sie war (`preview.js`; eigene Sheets

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
+import { request as playwrightRequest } from '@playwright/test';
 import {
-  test, expect, login, ACCOUNTS, dashboardDialog, displayedSchoolWeek, germanDate,
+  test, expect, login, apiLogin, ACCOUNTS, dashboardDialog, displayedSchoolWeek, germanDate,
 } from './fixtures';
 
 // Neues Design (Vorschau): the Kursbuch (/lessons/<course>) as a list of
@@ -414,6 +415,64 @@ test('Neues Design: Kursbuch-Sheet nach unten wischen, Auswahl mit Abstand', asy
     await dialog.getByRole('button', { name: 'Verwerfen' }).click();
     await expect(sheet).toBeHidden();
   } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Whether a student ticked a homework off as done is theirs alone: the
+// teacher's page gets no trace of it (include/lesson.rb, homework.rb), only
+// feedback (a mood or the time it took) – and counts only that.
+test('Kursbuch: »erledigt« bleibt privat, nur echte Rückmeldungen zählen', async ({ page, baseURL }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  const student = await playwrightRequest.newContext({ baseURL });
+  let key = '', o = 0;
+  try {
+    await apiLogin(student, ACCOUNTS.schueler); // 5a
+    await page.goto('/lessons/Ma_5a');
+    await expect(weekRow(page)).toBeVisible();
+    // the course's last lesson of the year: no other test writes there
+    ({ key, o } = await page.evaluate(() => {
+      const w = window as any;
+      const offsets = Object.keys(w.row_for_lesson_offset).map((x) => parseInt(x, 10));
+      return { key: w.lesson_key, o: Math.max(...offsets) };
+    }));
+    const saved = await page.request.post('/api/save_lesson_data', {
+      data: { lesson_key: key, lesson_offsets: [o], data: { hausaufgaben_text: 'Rückmeldungstest' } },
+    });
+    expect(saved.ok()).toBe(true);
+    const feedback = async () => {
+      await page.reload();
+      await expect(weekRow(page)).toBeVisible();
+      return page.evaluate((o) => {
+        const w = window as any;
+        return {
+          data: (w.lesson_data[o] || {}).feedback || null,
+          facts: w.row_for_lesson_offset[o][0].querySelector('.pv-kb-facts')?.textContent || '',
+        };
+      }, o);
+    };
+    // ticked off as done: nothing reaches the teacher
+    expect((await student.post('/api/mark_homework_done', { data: { lesson_key: key, offset: o } })).ok()).toBe(true);
+    let f = await feedback();
+    expect(f.data).toBeNull();
+    expect(f.facts).not.toContain('Rückmeldung');
+    // a mood: one feedback, without »done«
+    expect((await student.post('/api/update_homework_feedback', { data: { lesson_key: key, offset: o, state: 'good', time_spent: 0 } })).ok()).toBe(true);
+    f = await feedback();
+    expect(Object.keys(f.data.sus)).toHaveLength(1);
+    expect(JSON.stringify(f.data)).not.toContain('done');
+    expect(f.facts).toContain('1 Rückmeldung');
+    // the form emptied again: gone, although the record is still there
+    expect((await student.post('/api/update_homework_feedback', { data: { lesson_key: key, offset: o, state: '', time_spent: 0 } })).ok()).toBe(true);
+    f = await feedback();
+    expect(f.data).toBeNull();
+  } finally {
+    if (key) {
+      await student.post('/api/mark_homework_undone', { data: { lesson_key: key, offset: o } });
+      await page.request.post('/api/save_lesson_data', { data: { lesson_key: key, lesson_offsets: [o], data: { hausaufgaben_text: '' } } });
+    }
+    await student.dispose();
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

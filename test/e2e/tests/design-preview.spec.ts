@@ -1639,3 +1639,61 @@ test('Neues Design: eigene Stunde mit »Planung« und »Mail«', async ({ page }
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+test('Neues Design: Schleier folgt dem Sheet beim Ziehen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Sheets nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const cdp = await page.context().newCDPSession(page);
+    const opacity = (sel: string) => page.locator(sel).evaluate((el) => parseFloat(getComputedStyle(el).opacity));
+    // pulls the sheet down by dy (from 10 px below its top) and holds it there
+    const pull = async (sel: string, dy: number) => {
+      const box = (await page.locator(sel).boundingBox())!;
+      const x = box.x + box.width / 2, y = box.y + 10;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      for (let i = 1; i <= 5; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + (dy * i) / 5 }] });
+        await page.waitForTimeout(30);
+      }
+      // held a moment: a slow pull, not a flick
+      await page.waitForTimeout(300);
+      return box.height;
+    };
+    const release = () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    for (const s of [
+      { name: 'Mehr', open: () => page.locator('#bu_pv_more').click(), sheet: '#navbarTogglerDemo02', veil: '.pv-menu-veil:not(.pv-plan-veil)' },
+      { name: 'Plan', open: () => page.locator('#pv_day_band .pv-band-plan').click(), sheet: '.pv-plan-menu', veil: '.pv-plan-veil' },
+    ]) {
+      await s.open();
+      await expect(page.locator(s.sheet)).toBeVisible();
+      await page.waitForTimeout(400);
+      expect(await opacity(s.veil), s.name).toBeCloseTo(1, 2);
+      // a grab handle at the top, like every sheet that can be pulled down
+      expect(await page.locator(s.sheet).evaluate((el) => {
+        const h = getComputedStyle(el, '::before');
+        return h.content !== 'none' && h.height === '4px' && h.width === '40px';
+      }), s.name).toBe(true);
+      // a short pull: the veil as strong as the part of the sheet still showing
+      const h = await pull(s.sheet, 60);
+      expect(await opacity(s.veil), s.name).toBeCloseTo(1 - 60 / h, 1);
+      expect(await opacity(s.veil), s.name).toBeLessThan(0.97);
+      // let go: the sheet springs back, the veil comes back with it
+      await release();
+      await expect.poll(() => opacity(s.veil), { message: s.name }).toBeCloseTo(1, 2);
+      // pulled far: the sheet closes, the veil fades out with it
+      await pull(s.sheet, 200);
+      expect(await opacity(s.veil), s.name).toBeLessThan(0.9);
+      await release();
+      await expect(page.locator(s.sheet), s.name).toBeHidden();
+      await expect(page.locator(`${s.veil}:visible`), s.name).toHaveCount(0);
+    }
+    // the next time "Mehr" opens, its veil is at full strength again
+    await page.locator('#bu_pv_more').click();
+    await page.waitForTimeout(400);
+    expect(await opacity('.pv-menu-veil:not(.pv-plan-veil)')).toBeCloseTo(1, 2);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

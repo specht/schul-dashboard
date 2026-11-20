@@ -5660,6 +5660,23 @@ body.ui-preview:has(.container-fluid.solid)::before {
     }
 }
 
+/* phones: every sheet that can be pulled down shows the grab handle, like
+   the dialogs (.pv-sheet) and the "•••" sheet above – "Mehr" and the plan
+   menu (also the link sheets and the class menu of Klassenarbeiten) */
+@media (max-width: 767px) {
+    .ui-preview .navbar .navbar-collapse::before,
+    .ui-preview .pv-plan-menu::before {
+        content: "";
+        display: block;
+        flex: none;
+        width: 40px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: 2px;
+        background: var(--pv-line);
+    }
+}
+
 /* larger screens: "•••" only where something is left for it */
 @media (min-width: 768px) {
     .pv-lmore.pv-lmore-phone {

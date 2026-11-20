@@ -1000,9 +1000,13 @@ function preview_close_plan_menu(animate) {
     let menu = $('.pv-plan-menu');
     if (menu.length === 0) return;
     if (window.pv_back) window.pv_back.closed('plan-menu');
-    $('.pv-plan-veil').remove();
+    let slide = animate && !window.matchMedia('(min-width: 768px)').matches;
+    // the veil fades with the sheet's slide (preview.js)
+    $('.pv-plan-veil').each(function() {
+        if (slide && window.pv_veil_away) window.pv_veil_away(this, 180); else $(this).remove();
+    });
     document.body.classList.remove('pv-sheet-open');
-    if (animate && !window.matchMedia('(min-width: 768px)').matches) {
+    if (slide) {
         menu[0].style.transition = 'transform 0.18s ease-in';
         menu[0].style.transform = 'translateY(100%)';
         setTimeout(function() { menu.remove(); }, 180);

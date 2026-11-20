@@ -83,11 +83,33 @@
     // Phones: dialogs with .pv-sheet are sheets (preview.css) – pull one down to
     // close it, from its header or from its content when that is scrolled
     // to the top. Not far enough: it springs back.
-    var sheet = null;   // { content, y, t, dragging, dy }
+    var sheet = null;   // { content, y, t, dragging, dy, veil, full, h }
     function sheet_move(content, y, ms) {
         content.style.transition = ms ? 'transform ' + ms + 'ms ease-out' : 'none';
         content.style.transform = y ? 'translateY(' + y + 'px)' : '';
     }
+    // The veil follows the sheet: while it is pulled, the veil is as strong as
+    // the part of the sheet still showing; it fades out with the sheet's slide
+    // instead of standing until the sheet is gone.
+    function sheet_veil(s) {
+        if (s.menu) return document.querySelector('.pv-menu-veil:not(.pv-plan-veil)');
+        if (s.plan) return document.querySelector('.pv-plan-veil');
+        var backdrops = document.querySelectorAll('.modal-backdrop.show');
+        return backdrops.length ? backdrops[backdrops.length - 1] : null;
+    }
+    function veil_to(veil, opacity, ms) {
+        if (!veil) return;
+        veil.style.transition = ms ? 'opacity ' + ms + 'ms ease-out' : 'none';
+        veil.style.opacity = opacity === null ? '' : String(opacity);
+        if (opacity === null) setTimeout(function() { veil.style.transition = ''; }, (ms || 0) + 20);
+    }
+    // a veil that goes with its sheet: fades with the slide, then is removed
+    window.pv_veil_away = function(veil, ms) {
+        if (!veil) return;
+        veil.style.pointerEvents = 'none';
+        veil_to(veil, 0, ms);
+        setTimeout(function() { veil.remove(); }, ms);
+    };
     document.addEventListener('touchstart', function(e) {
         sheet = null;
         if (SIDEBAR.matches || e.touches.length !== 1 || !e.target.closest) return;
@@ -122,10 +144,14 @@
             if (dy < -8) { sheet = null; return; }
             if (dy < 8) return;
             sheet.dragging = true;
+            sheet.veil = sheet_veil(sheet);
+            sheet.full = sheet.veil ? (parseFloat(getComputedStyle(sheet.veil).opacity) || 1) : 1;
+            sheet.h = sheet.content.offsetHeight || 1;
         }
         e.preventDefault();
         sheet.dy = Math.max(0, dy);
         sheet_move(sheet.content, sheet.dy, 0);
+        veil_to(sheet.veil, sheet.full * Math.max(0, 1 - sheet.dy / sheet.h), 0);
     }, { passive: false });
     function sheet_end() {
         if (!sheet) return;
@@ -135,10 +161,13 @@
         var quick = Date.now() - s.t < 250 && s.dy > 30;
         if (s.dy > 90 || quick) {
             sheet_move(s.content, s.content.offsetHeight + 20, 180);
+            veil_to(s.veil, 0, 180);
             if (s.modal) s.modal.dataset.pvSliding = '1';
             setTimeout(function() {
                 if (s.menu) {
                     if (window.pv_menu_hide_now) window.pv_menu_hide_now();
+                    // the "Mehr" veil stays in the page (hidden): full again for the next time
+                    if (s.veil) { s.veil.style.opacity = ''; s.veil.style.transition = ''; }
                     return;
                 }
                 if (s.plan) {
@@ -150,6 +179,7 @@
             }, 180);
         } else {
             sheet_move(s.content, 0, 160);
+            veil_to(s.veil, null, 160);
         }
     }
     document.addEventListener('touchend', sheet_end);
@@ -169,6 +199,7 @@
             e.preventDefault();
             modal.dataset.pvSliding = '1';
             sheet_move(content, content.offsetHeight + 20, 180);
+            veil_to(sheet_veil({ modal: modal }), 0, 180);
             setTimeout(function() {
                 $(modal).modal('hide');
                 setTimeout(function() { sheet_move(content, 0, 0); }, 50);
@@ -182,7 +213,9 @@
     window.pv_close_plan_menu = window.pv_close_plan_menu || function(animate) {
         var menu = document.querySelector('.pv-plan-menu');
         if (!menu) return;
-        document.querySelectorAll('.pv-plan-veil').forEach(function(v) { v.remove(); });
+        document.querySelectorAll('.pv-plan-veil').forEach(function(v) {
+            if (animate) window.pv_veil_away(v, 180); else v.remove();
+        });
         document.body.classList.remove('pv-sheet-open');
         if (animate) {
             menu.style.transition = 'transform 0.18s ease-in';
@@ -1163,13 +1196,14 @@
         if (!m) return;
         open_menu = null;
         m.trigger.setAttribute('aria-expanded', 'false');
-        if (m.veil) m.veil.remove();
+        var slide = animate && m.sheet && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (m.veil) { if (slide) window.pv_veil_away(m.veil, 180); else m.veil.remove(); }
         document.body.classList.remove('pv-sheet-open');
         document.removeEventListener('keydown', on_key, true);
         document.removeEventListener('mousedown', on_outside, true);
         window.removeEventListener('resize', on_resize);
         window.removeEventListener('scroll', on_scroll, true);
-        if (animate && m.sheet && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (slide) {
             m.menu.style.transition = 'transform 0.18s ease-in';
             m.menu.style.transform = 'translateY(100%)';
             setTimeout(function() { m.menu.remove(); }, 180);
@@ -1327,6 +1361,11 @@
         drag.dy = Math.max(0, dy);
         open_menu.menu.style.transition = 'none';
         open_menu.menu.style.transform = 'translateY(' + drag.dy + 'px)';
+        // the veil as strong as the part of the sheet still showing
+        if (open_menu.veil) {
+            open_menu.veil.style.transition = 'none';
+            open_menu.veil.style.opacity = String(Math.max(0, 1 - drag.dy / (open_menu.menu.offsetHeight || 1)));
+        }
     }, { passive: false });
     function drag_end() {
         var d = drag;
@@ -1337,6 +1376,10 @@
         } else {
             open_menu.menu.style.transition = 'transform 160ms ease-out';
             open_menu.menu.style.transform = '';
+            if (open_menu.veil) {
+                open_menu.veil.style.transition = 'opacity 160ms ease-out';
+                open_menu.veil.style.opacity = '';
+            }
         }
     }
     document.addEventListener('touchend', drag_end);

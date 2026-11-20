@@ -155,7 +155,10 @@
         var menu = document.querySelector('.pv-tests-menu');
         if (!menu) return;
         if (window.pv_back) window.pv_back.closed(MENU_LAYER);
-        document.querySelectorAll('.pv-plan-veil').forEach(function(v) { v.remove(); });
+        var slide = animate && PHONE.matches;
+        document.querySelectorAll('.pv-plan-veil').forEach(function(v) {
+            if (slide && window.pv_veil_away) window.pv_veil_away(v, 180); else v.remove();
+        });
         document.body.classList.remove('pv-sheet-open');
         document.removeEventListener('mousedown', on_outside, true);
         document.removeEventListener('keydown', on_key, true);

@@ -206,6 +206,10 @@ class Main < Sinatra::Base
             RETURN hf, li.offset, u.email;
         END_OF_QUERY
         rows.each do |row|
+            # only feedback (a mood or the time it took) – whether a student
+            # ticked the homework off as done is theirs alone, not even who
+            # has such a record goes to the teacher
+            next if row[:feedback][:state].nil? && row[:feedback][:time_spent].nil?
             results[row[:offset]] ||= {}
             results[row[:offset]][:feedback] ||= {}
             results[row[:offset]][:feedback][:sus] ||= {}

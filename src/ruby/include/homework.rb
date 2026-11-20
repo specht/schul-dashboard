@@ -30,6 +30,8 @@ class Main < Sinatra::Base
         hf.each do |_entry|
             entry = _entry[:hf]
             offset = _entry[:offset]
+            # only feedback; "done" is the student's own (see lesson.rb)
+            next if entry[:state].nil? && entry[:time_spent].nil?
             results[offset] ||= {
                 :state_histogram => {},
                 :time_spent_min => nil,

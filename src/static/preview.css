@@ -1403,6 +1403,52 @@ html {
 }
 
 /* ---------- Timetable grid (the week on desktop) ---------- */
+/* every half hour equally high, whatever the week holds (timetable.html:
+   expandRows off) – a late Elternabend makes the page longer, not the
+   lessons smaller */
+.ui-preview .fc .fc-timegrid-slot {
+    height: 44px;
+}
+
+/* an entry below the visible part of the grid (timetable.html,
+   preview_below_hints): a chip at the bottom of its day's column */
+.pv-below {
+    position: fixed;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border: 1px solid var(--pv-line);
+    border-radius: 10px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    font: 600 0.8rem/1.3 var(--pv-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.pv-below-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.pv-below-more {
+    flex: none;
+    color: var(--pv-muted);
+}
+
+/* the scrollbar's room is always kept: the page doesn't get narrower when
+   a week is longer */
+html:has(body.ui-preview) {
+    scrollbar-gutter: stable;
+}
+
 .ui-preview .fc .fc-view-harness {
     background: var(--pv-surface);
     color: var(--pv-ink);
@@ -1470,8 +1516,9 @@ html {
    divider row (FullCalendar doesn't measure it; padding inside the time
    grid itself makes it re-measure endlessly) */
 .ui-preview .fc .fc-timegrid-divider {
-    padding-bottom: 12px;
-    /* air, not a shaded band: the surface, a hairline below the day's events */
+    /* only a hairline below the day's events: a band of air broke today's
+       tinted column into two */
+    padding: 0;
     background: var(--pv-surface);
     border-top: 1px solid var(--pv-line);
     border-bottom: 0;
@@ -2589,7 +2636,8 @@ html {
         display: none !important;
     }
 
-    .ui-preview.pv-week-head-on .row > div:has(> #calendar) {
+    /* the timetable's column (#calendar may sit in the day swipe's wrapper) */
+    .ui-preview.pv-week-head-on .row > div:has(#calendar) {
         flex: 1 1 0;
         max-width: none;
     }
@@ -2840,10 +2888,11 @@ body.ui-preview.dark::before {
         color: var(--pv-muted);
     }
 
+    /* two lines of text: the chip level with the first (Gestaltung.md, 9.) */
     .pv-side-lesson,
     .pv-side-change {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 10px;
         width: 100%;
         padding: 6px;
@@ -2885,6 +2934,7 @@ body.ui-preview.dark::before {
 
     .pv-side-tag {
         flex: none;
+        margin-top: 1px;
         min-width: 52px;
         padding: 3px 6px;
         border-radius: 8px;
@@ -3186,6 +3236,38 @@ body.ui-preview.dark::before {
     border-top: 0 !important;
     font-size: 0.9em;
     line-height: 1.3;
+}
+
+/* rows that no longer fit (timetable.html, preview_fit_event): cut after the
+   last whole line, the rest hidden */
+.ui-preview .fc-timegrid-event .pv-fit-hidden {
+    visibility: hidden;
+}
+
+.ui-preview .fc-timegrid-event .pv-fit-clamp {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+}
+
+/* titles: one line ends with …, wrapping ones break long words */
+.ui-preview .fc-timegrid-event .pv-ev-title > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ui-preview .fc-timegrid-event .pv-ev-title {
+    hyphens: auto;
+    overflow-wrap: break-word;
+}
+
+/* a break duty keeps "what it is" on one line (see .pv-duty above) */
+.ui-preview .fc-timegrid-event.pv-duty .pv-ev-title,
+.ui-preview .fc-timegrid-event.pv-duty .pv-ev-title > div {
+    white-space: nowrap;
+    hyphens: manual;
+    overflow-wrap: normal;
 }
 
 /* the break inside a double lesson: a soft band */
@@ -3581,7 +3663,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
     display: grid;
     /* fixed columns: every title starts at the same place */
     grid-template-columns: 42px 40px minmax(0, 1fr) auto;
-    align-items: center;
+    /* start and end time below each other: everything level with the first line */
+    align-items: start;
     gap: 10px;
     width: 100%;
     padding: 5px 4px;

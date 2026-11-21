@@ -735,7 +735,11 @@ function quick_search_menu_items(known_hrefs, keywords) {
         let href = a.getAttribute('href');
         if (!href || href.charAt(0) !== '/' || known_hrefs[href]) return;
         known_hrefs[href] = true;
-        let label = (a.querySelector('.label') || a).textContent.trim();
+        // the entry's name only: not its badges (e.g. "0 offen" on
+        // Stundenplan), hidden parts or text for screen readers
+        let copy = (a.querySelector('.label') || a).cloneNode(true);
+        copy.querySelectorAll('.badge, .pv-nav-badge, .sr-only, [hidden]').forEach(function (x) { x.remove(); });
+        let label = copy.textContent.replace(/\s+/g, ' ').trim();
         if (label.length === 0) return;
         let toggle = $(a).closest('.dropdown').find('.dropdown-toggle').first();
         let section = 'Menü';

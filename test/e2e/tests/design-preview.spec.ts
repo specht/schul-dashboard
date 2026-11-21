@@ -1837,3 +1837,81 @@ test('Neues Design: Darstellung hell, automatisch oder dunkel', async ({ page },
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Desktop week: a block whose text doesn't fit is cut after the last whole
+// line (with …), never in the middle of a line; one-line titles end with …
+// (timetable.html, preview_fit_event). Long homework, topics and titles are
+// put into the lessons on screen through the calendar.
+test('Neues Design: Stundenplan schneidet Text nur nach ganzen Zeilen ab', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    const changed = await page.evaluate(() => {
+      type Ev = { allDay: boolean; extendedProps: Record<string, unknown>; setExtendedProp: (k: string, v: unknown) => void };
+      const w = window as unknown as { calendar: { getEvents: () => Ev[] } };
+      const lessons = w.calendar.getEvents().filter((e) => !e.allDay && e.extendedProps.lesson);
+      const long = 'Arbeitsblatt 2, Nummer 5, 6 und 7; dazu im Buch Seite 42 bis 45 lesen und die Fragen 1 bis 9 schriftlich beantworten';
+      for (const e of lessons) {
+        e.setExtendedProp('data', { ...(e.extendedProps.data as object || {}), hausaufgaben_text: long, stundenthema_text: long });
+        e.setExtendedProp('label', 'Informationstechnischer Grundkurs Mathematik (6a) Hübbenet, von Specht');
+      }
+      return lessons.length;
+    });
+    expect(changed).toBeGreaterThan(0);
+    await page.waitForTimeout(800);
+    const result = await page.evaluate(() => {
+      const cut: string[] = [];
+      let fitted = 0;
+      for (const main of Array.from(document.querySelectorAll<HTMLElement>('.fc-timegrid-event .fc-event-main'))) {
+        const box = main.getBoundingClientRect();
+        if (box.height === 0) continue;
+        const limit = box.bottom - (parseFloat(getComputedStyle(main).paddingBottom) || 0) + 1;
+        for (const l of Array.from(main.querySelectorAll<HTMLElement>('.pv-ev-title, .line2, .pv-ev-label, .pv-ev-desc, .pv-ev-fit, .hide-br'))) {
+          if (l.classList.contains('pv-fit-hidden') || l.querySelector('.pv-fit-clamp') || l.classList.contains('pv-fit-clamp')) { fitted += 1; }
+          if (l.classList.contains('pv-fit-hidden') || getComputedStyle(l).display === 'none') continue;
+          const r = l.getBoundingClientRect();
+          if (r.height > 0 && r.bottom > limit) cut.push(`${l.className}: ${Math.round(r.bottom - limit)}px`);
+        }
+        for (const t of Array.from(main.querySelectorAll<HTMLElement>('.pv-ev-title > div'))) {
+          if (t.scrollWidth > t.clientWidth + 1 && getComputedStyle(t).textOverflow !== 'ellipsis') cut.push('title without …');
+        }
+      }
+      return { cut, fitted };
+    });
+    expect(result.cut).toEqual([]);
+    expect(result.fitted).toBeGreaterThan(0);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Desktop week: every half hour has the same height in every week – a late
+// Termin makes the grid longer, it doesn't squeeze the lessons – and the
+// page keeps its width when a longer week brings a scrollbar.
+test('Neues Design: Stundenplan, gleiche Stundenhöhe und Breite in jeder Woche', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    const measure = () => page.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('.fc-timegrid-slots tr'));
+      return { rows: rows.length, row: rows[0].getBoundingClientRect().height,
+               width: document.querySelector('.fc-view-harness')!.getBoundingClientRect().width };
+    });
+    const before = await measure();
+    // an Elternabend until 20:30, as in a week with one
+    await page.evaluate(() => (window as any).preview_time_range([{ is_event: true, start: '2026-11-23T19:00:00', end: '2026-11-23T20:30:00' }]));
+    await expect.poll(async () => (await measure()).rows).toBeGreaterThan(before.rows);
+    const after = await measure();
+    expect(after.row).toBeCloseTo(before.row, 0);
+    expect(after.width).toBeCloseTo(before.width, 0);
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollbarGutter)).toBe('stable');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

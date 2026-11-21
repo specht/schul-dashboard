@@ -83,6 +83,7 @@
 .ti-calculator:before { content: "\eb80"; }
 .ti-calendar:before { content: "\ea53"; }
 .ti-calendar-check:before { content: "\f824"; }
+.ti-calendar-event:before { content: "\ea52"; }
 .ti-calendar-minus:before { content: "\ebb9"; }
 .ti-calendar-plus:before { content: "\ebba"; }
 .ti-calendar-x:before { content: "\f832"; }

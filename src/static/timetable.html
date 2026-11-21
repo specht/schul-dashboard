@@ -812,9 +812,9 @@ function preview_agenda_fill_day(box, day, all, now, open) {
         title.append(preview_title($('<b>'), x, e));
         // the length in words too: "Doppelstunde" (the card is also taller)
         let length_label = (x.count || 1) === 2 ? 'Doppelstunde' : ((x.count || 1) > 2 ? x.count + ' Stunden' : '');
-        if (x.raum || x.room_name || length_label) {
+        if (preview_has_room(x) || length_label) {
             let meta = $('<span>').addClass('pv-ag-room');
-            if (x.raum || x.room_name) meta.append(preview_room($('<span>'), x));
+            if (preview_has_room(x)) meta.append(preview_room($('<span>'), x));
             if (length_label) meta.append($('<span>').addClass('pv-ag-length').text(length_label));
             title.append(meta);
         }
@@ -996,6 +996,118 @@ function preview_plan_items() {
 }
 
 // closes the plan menu; on phones it slides down first (a sheet like the others)
+// New design: what doesn't fit into a block in the grid is cut after the
+// last whole line (with …), the rows below are hidden – never half a line.
+// Runs again when the block changes size or content.
+function preview_fit_event(el) {
+    const fit = function () {
+        const main = el.querySelector('.fc-event-main');
+        if (!main) return;
+        const lines = main.querySelectorAll('.pv-ev-title, .line2, .pv-ev-label, .pv-ev-desc, .pv-ev-fit, .hide-br');
+        for (const l of main.querySelectorAll('.pv-fit-hidden, .pv-fit-clamp')) {
+            l.classList.remove('pv-fit-hidden', 'pv-fit-clamp');
+            l.style.removeProperty('-webkit-line-clamp');
+        }
+        const box = main.getBoundingClientRect();
+        if (box.height === 0) return;
+        const limit = box.bottom - (parseFloat(getComputedStyle(main).paddingBottom) || 0) + 0.5;
+        let full = false;
+        for (const l of lines) {
+            if (full) { l.classList.add('pv-fit-hidden'); continue; }
+            const r = l.getBoundingClientRect();
+            if (r.height === 0 || r.bottom <= limit) continue;
+            full = true;
+            const lh = parseFloat(getComputedStyle(l).lineHeight) || r.height;
+            const n = Math.floor((limit - r.top) / lh);
+            // the title stays, even in a very short block
+            if (l.matches('.pv-ev-title') && n < 1) continue;
+            if (n >= 1 && r.height > lh * 1.5) {
+                // the title's text sits in a block of its own
+                const target = l.matches('.pv-ev-title') && l.firstElementChild ? l.firstElementChild : l;
+                target.classList.add('pv-fit-clamp');
+                target.style.setProperty('-webkit-line-clamp', n);
+            } else {
+                l.classList.add('pv-fit-hidden');
+            }
+        }
+        // no "Hausaufgaben" label without its text below it
+        for (const label of main.querySelectorAll('.pv-ev-label:not(.pv-fit-hidden)')) {
+            const next = label.nextElementSibling;
+            if (next && next.classList.contains('pv-fit-hidden')) label.classList.add('pv-fit-hidden');
+        }
+    };
+    let pending = false;
+    const later = function () {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(function () { pending = false; fit(); });
+    };
+    later();
+    if (el.pv_fit_observers) return;
+    el.pv_fit_observers = true;
+    new ResizeObserver(later).observe(el);
+    new MutationObserver(later).observe(el, { childList: true, subtree: true, characterData: true });
+    if (document.fonts) document.fonts.ready.then(later);
+}
+
+// New design, desktop week: entries below the visible part of the grid
+// (an Elternabend in the evening) are announced by a chip at the bottom of
+// their day's column; a click scrolls to the entry.
+function preview_below_hints() {
+    document.querySelectorAll('.pv-below').forEach(function(x) { x.remove(); });
+    if (!document.body.classList.contains('ui-preview') || document.body.classList.contains('pv-agenda-on')) return;
+    let bottom = window.innerHeight;
+    let per_column = new Map();
+    document.querySelectorAll('#calendar .fc-timegrid-event-harness').forEach(function(harness) {
+        let r = harness.getBoundingClientRect();
+        if (r.height === 0 || r.top < bottom - 24) return;
+        let col = harness.closest('.fc-timegrid-col');
+        if (!col) return;
+        if (!per_column.has(col)) per_column.set(col, []);
+        per_column.get(col).push({ harness: harness, top: r.top });
+    });
+    per_column.forEach(function(list, col) {
+        list.sort(function(a, b) { return a.top - b.top; });
+        let first = list[0].harness;
+        let time = ((first.querySelector('.pv-ev-time, .condensed span') || {}).textContent || '').split(' - ')[0].trim();
+        let title = ((first.querySelector('.pv-ev-title') || first.querySelector('.hide-br') || {}).textContent || '').trim();
+        let c = col.getBoundingClientRect();
+        let chip = $('<button type="button" class="pv-below">')
+            .append($('<i class="ti ti-chevron-down">'))
+            .append($('<span class="pv-below-text">').text([time, title].filter(Boolean).join(' ')))
+            .append(list.length > 1 ? $('<span class="pv-below-more">').text('+' + (list.length - 1)) : null)
+            .css({ left: (c.left + 4) + 'px', width: Math.max(0, c.width - 8) + 'px' })
+            .on('click', function() { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+        $('body').append(chip);
+    });
+}
+(function() {
+    let pending = false;
+    let later = function() {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(function() { pending = false; preview_below_hints(); });
+    };
+    window.addEventListener('scroll', later, { passive: true });
+    window.addEventListener('resize', later);
+    window.preview_below_hints_later = later;
+})();
+
+// Keyboard shortcuts as in Google Calendar: N or J the next week (day),
+// P or K the previous one, T today – not while typing or in a dialog.
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || e.repeat) return;
+    let target = e.target;
+    if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+    if (!window.calendar || document.querySelector('.modal.show, .pv-plan-menu')) return;
+    let key = (e.key || '').toLowerCase();
+    if (key === 'n' || key === 'j') window.calendar.next();
+    else if (key === 'p' || key === 'k') window.calendar.prev();
+    else if (key === 't') window.calendar.today();
+    else return;
+    e.preventDefault();
+});
+
 function preview_close_plan_menu(animate) {
     let menu = $('.pv-plan-menu');
     if (menu.length === 0) return;
@@ -1116,21 +1228,28 @@ function render_preview_week_head() {
         tools.append(print);
     }
     let now = new Date();
-    let today = $('<button type="button" class="pv-wh-btn">').text('Heute').prop('disabled', now >= view.currentStart && now < view.currentEnd);
+    let today = $('<button type="button" class="pv-wh-btn" title="Heute (T)">').text('Heute').prop('disabled', now >= view.currentStart && now < view.currentEnd);
     today.on('click', function() { window.calendar.today(); });
     let nav = $('<div class="pv-wh-seg">');
-    nav.append($('<button type="button" aria-label="Zurück">').append($('<i class="fa fa-chevron-left">')).on('click', function() { window.calendar.prev(); }));
-    nav.append($('<button type="button" aria-label="Weiter">').append($('<i class="fa fa-chevron-right">')).on('click', function() { window.calendar.next(); }));
+    nav.append($('<button type="button" aria-label="Zurück" title="Zurück (P)">').append($('<i class="fa fa-chevron-left">')).on('click', function() { window.calendar.prev(); }));
+    nav.append($('<button type="button" aria-label="Weiter" title="Weiter (N)">').append($('<i class="fa fa-chevron-right">')).on('click', function() { window.calendar.next(); }));
     tools.append(today, nav);
     head.append(tools);
     render_preview_side();
     if (window.pv_todo) window.pv_todo.place();
     // the column beside the week starts level with the timetable (below this header)
     document.documentElement.style.setProperty('--pv-head-h', Math.round(head.outerHeight(true)) + 'px');
-    // side columns with nothing visible give their room to the timetable
-    $('#calendar').closest('.row').children().not($('#calendar').parent()).each(function(_, col) {
+    // side columns with nothing visible give their room to the timetable –
+    // "visible" meaning text or a picture one can see, not just an empty box
+    // with some height
+    let shows_something = function(c) {
+        return c.offsetHeight > 0 && ((c.innerText || '').trim().length > 0 ||
+            $(c).find('img, iframe, svg, canvas, video').filter(function(_, x) { return x.offsetHeight > 0; }).length > 0);
+    };
+    let calendar_column = $('#calendar').closest('.row').children().filter(function(_, c) { return c.contains(document.getElementById('calendar')); });
+    $('#calendar').closest('.row').children().not(calendar_column).each(function(_, col) {
         let visible = $(col).children().filter(function(_, c) {
-            return !$(c).hasClass('timetable_chooser') && c.offsetHeight > 0 && !$(c).is('.ttc-wrap');
+            return !$(c).hasClass('timetable_chooser') && shows_something(c) && !$(c).is('.ttc-wrap');
         }).filter(function(_, c) { return !(c.querySelector('.ttc') && !c.classList.contains('hint')); });
         col.classList.toggle('pv-col-empty', visible.length === 0);
     });
@@ -1168,11 +1287,17 @@ function preview_title(el, x, e) {
     return el.text(e.title || x.event_title || '');
 }
 
-// the room of a card: a lesson's room (HTML from the server: <s>108</s> 211)
-// or a Termin's room (as text)
+// the room of a card: a lesson's room (HTML from the server: <s>108</s> 211);
+// for a Termin who it is from, as in the week – its room_name is the
+// internal name of its video room (title and id), nothing for people
 function preview_room(el, x) {
     if (x.raum) return el.html(x.raum);
-    return el.text(x.room_name || '');
+    if (x.is_event) return el.text($('<div>').html(x.organized_by || '').text());
+    return el.text('');
+}
+
+function preview_has_room(x) {
+    return !!(x.raum || (x.is_event && x.organized_by));
 }
 
 // Desktop, wide screens (new design): a column beside the week – the lesson
@@ -1212,7 +1337,7 @@ function render_preview_side() {
         let text = $('<span>').addClass('pv-side-text');
         text.append(preview_title($('<b>'), x, e));
         let small = $('<small>');
-        if (x.raum || x.room_name) small.append('Raum ', preview_room($('<span>'), x), ', ');
+        if (x.raum) small.append('Raum ', preview_room($('<span>'), x), ', ');
         small.append(document.createTextNode(preview_hhmm(e.start) + '–' + preview_hhmm(e.end)));
         text.append(small);
         card.append(text);
@@ -1787,7 +1912,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Only clearly horizontal moves count, so scrolling, tapping lessons and
     // pinch-zooming stay as they were.
     function install_calendar_day_swipe(calendar, el, options) {
-        if (calendar.view.type !== 'timeGridDay') return;
         el.style.touchAction = 'pan-y pinch-zoom';
         // the days slide to the edge of the screen; the page itself never
         // gets wider than the screen
@@ -1873,8 +1997,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         wrap.addEventListener('touchstart', function(e) {
-            // the agenda (new design, phones) swipes on its own
-            if (document.body.classList.contains('pv-agenda-on')) { start = null; return; }
+            // the agenda (new design, phones) swipes on its own; the week doesn't
+            if (document.body.classList.contains('pv-agenda-on') || calendar.view.type !== 'timeGridDay') { start = null; return; }
             // a quick next swipe: the previous slide ends at once
             if (settling) settling.finish();
             start = (e.touches.length === 1) ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
@@ -1977,7 +2101,10 @@ document.addEventListener('DOMContentLoaded', function() {
         slotMinTime: '07:00',
         slotMaxTime: '22:00',
         nowIndicator: true,
-        expandRows: true,
+        // new design: every half hour equally high (preview.css), the grid
+        // grows on long days instead of squeezing the hours into the width's
+        // aspect ratio
+        expandRows: !document.body.classList.contains('ui-preview'),
         locale: 'de',
         // the new design (preview): only as high as the school day needs
         height: document.body.classList.contains('ui-preview') ? 'auto' : ((!!window.chrome) ? 1330 : 1350),
@@ -2012,6 +2139,10 @@ document.addEventListener('DOMContentLoaded', function() {
         eventDidMount: function(event) {
             let parent = $(event.el).closest('.fc-timegrid-event-harness');
             install_physics_handler(parent);
+            if (document.body.classList.contains('ui-preview')) {
+                preview_fit_event(event.el);
+                window.preview_below_hints_later();
+            }
         },
         eventContent: function(arg) {
             if (arg.event.extendedProps.lesson)
@@ -2025,6 +2156,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     bgdiv.addClass('bgdiv');
                     bgdiv.css({position: 'absolute', left: 0, top: (pause[0] * 75.0 / 60.0) + 'px', right: 0});
                     bgdiv.css('height', (((pause[1] - pause[0]) * 75.0 / 60.0)) + 'px');
+                    // new design: as a share of the lesson, whatever an hour's height
+                    let duration = (arg.event.end - arg.event.start) / 60000;
+                    if (document.body.classList.contains('ui-preview') && duration > 0) {
+                        bgdiv.css('top', (pause[0] / duration * 100) + '%');
+                        bgdiv.css('height', ((pause[1] - pause[0]) / duration * 100) + '%');
+                    }
                     bgdiv.css('z-index', '-1');
                     bgdiv.css('border-top', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
                     bgdiv.css('border-bottom', '1px dashed rgba(#{hex_to_rgb(color_palette[:main_text]).map { |x| x.to_s }.join(', ')}, 0.2)');
@@ -2254,7 +2391,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let t = $('<span>').text(arg.timeText);
                 div0.append(t);
 
-                let div1 = $('<div>');
+                let div1 = $('<div>').addClass('pv-ev-title');
                 div1.css('white-space', 'nowrap');
                 let fach = $('<div>').html('<b>' + event_data.event_title + '</b>');
 //                 fach.html(arg.event.extendedProps.lesson_key + '#' + arg.event.extendedProps.lesson_offset + ' ' + fach.html());
@@ -2291,7 +2428,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 div3.css('padding-left', '1px');
                 div3.css('padding-top', '4px');
 
-                let description = fix_bad_html($('<div>').html(event_data.description));
+                let description = fix_bad_html($('<div>').html(event_data.description)).addClass('pv-ev-fit');
                 description.css('opacity', 0.7);
                 description.css('white-space', 'normal');
                 // description.css('border-top', '1px solid rgba(255, 255, 255, 0.5)');
@@ -2860,6 +2997,28 @@ document.addEventListener('DOMContentLoaded', function() {
     if (location.hash === '#aufgaben') window.addEventListener('load', pv_hash);
     setInterval(function() { if (document.body.classList.contains('pv-agenda-on')) render_preview_agenda(); }, 60 * 1000);
     window.addEventListener('resize', function() { if (window.calendar) render_preview_agenda(); });
+    // resizing the window or turning the phone: the layout the width calls
+    // for, as at the start – the day (on phones the agenda) up to 640 px,
+    // the week above; the shown date stays
+    const narrow_query = window.matchMedia('(max-width: 640px)');
+    narrow_query.addEventListener('change', function() {
+        if (!window.calendar || tablet_logged_in || praktikum_logged_in) return;
+        let want = narrow_query.matches ? 'timeGridDay' : 'timeGridWeek';
+        if (window.calendar.view.type !== want) {
+            let view = window.calendar.view;
+            let date = window.calendar.getDate();
+            if (want === 'timeGridDay') {
+                let now = new Date();
+                date = (now >= view.currentStart && now < view.currentEnd) ? now : view.currentStart;
+            }
+            window.calendar.changeView(want, date);
+        }
+        // the phone's tabs (#woche, #aufgaben) don't exist on wider screens
+        if (!narrow_query.matches && ['#woche', '#aufgaben'].indexOf(location.hash) >= 0)
+            history.replaceState(null, '', location.pathname + location.search);
+        render_preview_agenda();
+        render_preview_week_head();
+    });
     window.timetable_options = options;
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);
     window.calendar.render();

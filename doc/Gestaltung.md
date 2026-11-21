@@ -453,7 +453,11 @@ Seite ergänzt nur, was ihr Inhalt braucht.
 - **Oben ausrichten:** Symbole, Fach-Chips, Profilbilder und Pfeile neben
   Text, der umbrechen kann, stehen auf Höhe der ersten Zeile, nicht mittig.
   Ausnahme: einzeilige Tabellenzellen werden in ihrer Zeile mittig
-  ausgerichtet.
+  ausgerichtet. Das gilt überall, auch für Marken und Chips in Listenzeilen
+  (»Entfall« bei den Änderungen der Woche, Fach-Chips in der Wochenliste):
+  In einer Flex- oder Grid-Zeile mit Text, der zwei Zeilen hat oder umbrechen
+  kann, `align-items: flex-start` (bzw. `start`) statt `center`, und das
+  Kleinteil mit `margin-top` auf die Mitte der ersten Zeile setzen.
 - Tabellenzellen vertikal mittig (außer im Kursbuch), Zahlen rechtsbündig
   oder in fester Breite.
 - Daten kurz und lesbar: »Mo, 9.11., 8:00 Uhr«, Zeitspannen mit »bis«.

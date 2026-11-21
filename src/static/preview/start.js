@@ -278,8 +278,11 @@
             var agenda = document.getElementById('pv_agenda');
             if (agenda.firstChild !== el) agenda.insertBefore(el, agenda.firstChild);
         } else {
+            // above the week, outside the wrapper the days slide in
+            // (timetable.html, install_calendar_day_swipe)
             var calendar = document.getElementById('calendar');
-            if (calendar.previousSibling !== el) calendar.parentNode.insertBefore(el, calendar);
+            var anchor = calendar.parentNode.classList.contains('pv-cal-swipe') ? calendar.parentNode : calendar;
+            if (anchor.previousSibling !== el) anchor.parentNode.insertBefore(el, anchor);
         }
     }
 

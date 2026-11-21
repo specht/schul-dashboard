@@ -79,7 +79,8 @@ class DatenpflegeDiffTest < Minitest::Test
     end
 
     # whoever is already in the dashboard keeps the address, also when LUSD
-    # spells the name differently; twins are told apart by the full name
+    # spells the name differently; twins are told apart by the full name; the
+    # same name is the same person, even with another birthday
     def test_match_old
         old = [student('max.mustermann@x', 'Max', 'Mustermann', '5a', '2014-01-01'),
                student('tom.zwilling@x', 'Tom', 'Zwilling', '5a', '2014-03-03'),
@@ -90,7 +91,7 @@ class DatenpflegeDiffTest < Minitest::Test
                lusd(4, 'Zwilling', 'Tom', '03.03.2014'),
                lusd(5, 'Anders', 'Ida', '05.05.2014')]
         m = @main.datenpflege_match_old(new, old)
-        assert_equal({ 2 => 'max.mustermann@x', 3 => 'tim.zwilling@x', 4 => 'tom.zwilling@x' }, m.transform_values { |r, _| r[:email] })
+        assert_equal({ 2 => 'max.mustermann@x', 3 => 'tim.zwilling@x', 4 => 'tom.zwilling@x', 5 => 'ida.anders@x' }, m.transform_values { |r, _| r[:email] })
     end
 
     # the old list often has no birthday: then the name decides, and the

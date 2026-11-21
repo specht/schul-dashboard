@@ -1443,9 +1443,9 @@ html {
     color: var(--pv-muted);
 }
 
-/* the scrollbar's room is always kept: the page doesn't get narrower when
-   a week is longer */
-html:has(body.ui-preview) {
+/* the timetable keeps the scrollbar's room: the page doesn't get narrower
+   when a week is longer (only there – elsewhere it would leave a gap) */
+html:has(body.ui-preview #calendar) {
     scrollbar-gutter: stable;
 }
 

@@ -1103,7 +1103,7 @@ document.addEventListener('keydown', function(e) {
     let key = (e.key || '').toLowerCase();
     if (key === 'n' || key === 'j') window.calendar.next();
     else if (key === 'p' || key === 'k') window.calendar.prev();
-    else if (key === 't') window.calendar.today();
+    else if (key === 't') preview_go_today();
     else return;
     e.preventDefault();
 });
@@ -1227,9 +1227,9 @@ function render_preview_week_head() {
         print.on('click', function() { $('.fc-print-button').trigger('click'); });
         tools.append(print);
     }
-    let now = new Date();
+    let now = moment(preview_today_date()).toDate();
     let today = $('<button type="button" class="pv-wh-btn" title="Heute (T)">').text('Heute').prop('disabled', now >= view.currentStart && now < view.currentEnd);
-    today.on('click', function() { window.calendar.today(); });
+    today.on('click', preview_go_today);
     let nav = $('<div class="pv-wh-seg">');
     nav.append($('<button type="button" aria-label="Zurück" title="Zurück (P)">').append($('<i class="fa fa-chevron-left">')).on('click', function() { window.calendar.prev(); }));
     nav.append($('<button type="button" aria-label="Weiter" title="Weiter (N)">').append($('<i class="fa fa-chevron-right">')).on('click', function() { window.calendar.next(); }));
@@ -1298,6 +1298,21 @@ function preview_room(el, x) {
 
 function preview_has_room(x) {
     return !!(x.raum || (x.is_event && x.organized_by));
+}
+
+// "today" for the timetable (new design): on a weekend the coming Monday, as
+// when the page opens (initial_date, main.rb), never before the first school
+// day
+function preview_today_date() {
+    let d = moment();
+    while (d.day() === 0 || d.day() === 6) d.add(1, 'days');
+    let s = d.format('YYYY-MM-DD');
+    let first = window.timetable_initial_date || s;
+    return s < first ? first : s;
+}
+
+function preview_go_today() {
+    window.calendar.gotoDate(preview_today_date());
 }
 
 // Desktop, wide screens (new design): a column beside the week – the lesson
@@ -1915,7 +1930,7 @@ document.addEventListener('DOMContentLoaded', function() {
         el.style.touchAction = 'pan-y pinch-zoom';
         // the days slide to the edge of the screen; the page itself never
         // gets wider than the screen
-        const wrap = $('<div>').css({ position: 'relative' }).insertBefore(el).append(el)[0];
+        const wrap = $('<div class="pv-cal-swipe">').css({ position: 'relative' }).insertBefore(el).append(el)[0];
         document.documentElement.style.overflowX = 'clip';
         document.body.style.overflowX = 'clip';
         const GAP = 16;           // space between the two days
@@ -2086,6 +2101,7 @@ document.addEventListener('DOMContentLoaded', function() {
     moment.locale('de');
     let narrow_window = ($(window).width() <= 640);
     let initial_date = '#{initial_date}';
+    window.timetable_initial_date = initial_date;
     // the new design's tabs live in the address (#woche, #aufgaben): a reload
     // stays on the tab; everything else is cleared as before
     let pv_tab_hash = document.body.classList.contains('ui-preview') && ['#woche', '#aufgaben'].indexOf(window.location.hash) >= 0;

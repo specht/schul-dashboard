@@ -38,6 +38,11 @@ git pull
   Ein `up -d` ohne `build` verwendet weiter die alte Konfiguration.
 - Nur Ruby-Code geändert: `./config.rb restart ruby` genügt (Bots ggf.
   ebenfalls neu starten, sie laden denselben Code).
+- Nur die Eingabedaten geändert (Schüler:innen, Stundenpläne usw. im
+  Datenverzeichnis): auf der Admin-Seite bei „Daten“ auf **Neu laden**
+  klicken. Alle Dienste (Web, Stundenplan, Bots) lesen die Daten dann neu ein
+  und starten dafür im selben Container neu. Ohne Admin-Seite geht dasselbe
+  mit `./config.rb exec ruby ruby -e 'require "./data_version.rb"; DataVersion.bump!'`.
 - Während `ruby` neu startet, zeigt nginx die Seite `errors/neustart.html`,
   die sich automatisch neu lädt. Bei `./config.rb down` ist auch nginx weg –
   dann antwortet der vorgelagerte Proxy mit seiner eigenen Fehlerseite.

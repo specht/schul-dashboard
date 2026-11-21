@@ -1,6 +1,20 @@
 class Main < Sinatra::Base
     # the admin page's own pages (also found by the search, quick_search.rb)
-    ADMIN_PAGE_LINKS = [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Neues Design: Testpersonen und Feedback', 'fa-comment-o'], ['/design_palettes', 'Farbschemata neues Design', 'fa-paint-brush']]
+    ADMIN_PAGE_LINKS = [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Neues Design: Testpersonen und Feedback', 'fa-comment-o'], ['/design_palettes', 'Farbschemata neues Design', 'fa-paint-brush'], ['/datenpflege', 'Datenpflege', 'fa-upload']]
+
+    # Reloads the input data (/data) in every service, see data_version.rb.
+    post '/api/reload_data' do
+        require_admin!
+        DataVersion.bump!(DataVersion::PATH, "by #{@session_user[:email]}")
+        respond(:ok => true)
+    end
+
+    # When this service read the data (the admin page polls it while the
+    # services start again).
+    post '/api/data_status' do
+        require_data_manager!
+        respond(:loaded_at => @@data_loaded_at.strftime('%d.%m.%Y, %H:%M:%S'))
+    end
 
     post '/api/impersonate' do
         require_admin!
@@ -137,6 +151,10 @@ class Main < Sinatra::Base
                 end
                 io.puts "</div>"
             end
+            io.puts "<div class='admin-link-row'><span class='admin-link-label'>Daten</span>"
+            io.puts "<button class='btn btn-sm btn-outline-secondary' id='bu_reload_data'><i class='fa fa-refresh'></i>&nbsp;&nbsp;Neu laden</button>"
+            io.puts "<span class='text-muted' id='data_loaded_at'>Gelesen am #{@@data_loaded_at.strftime('%d.%m.%Y, %H:%M:%S')}</span>"
+            io.puts "</div>"
             io.puts "</div>"
             io.puts "<hr />"
             io.puts "<h3 id='teachers'>Lehrerinnen und Lehrer</h3>"

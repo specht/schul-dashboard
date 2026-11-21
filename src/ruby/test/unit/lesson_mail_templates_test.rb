@@ -55,6 +55,15 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_includes LessonMailTemplates.render(template, vars(geschlecht: nil))[:html], 'Sie war da.'
     end
 
+    # divers: a third form if the text has one, else both
+    def test_divers
+        both = {:subject => 'x', :body => '{Er|Sie} war da.'}
+        assert_includes LessonMailTemplates.render(both, vars(geschlecht: 'd'))[:html], 'Er/Sie war da.'
+        three = {:subject => 'x', :body => '{Er|Sie|Max} war da.'}
+        assert_includes LessonMailTemplates.render(three, vars(geschlecht: 'd'))[:html], 'Max war da.'
+        assert_includes LessonMailTemplates.render(three, vars(geschlecht: 'w'))[:html], 'Sie war da.'
+    end
+
     def test_texts_and_values_are_escaped
         template = {:subject => 'A & B {Vorname}', :body => '<b>{Vorname}</b>{Notiz}'}
         rendered = LessonMailTemplates.render(template, vars(note: '<script>x</script>').merge(:first_name => 'M&M'))

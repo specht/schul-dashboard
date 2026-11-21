@@ -1,4 +1,5 @@
 require 'csv'
+require 'date'
 require 'set'
 require 'yaml'
 require 'json'
@@ -9,6 +10,12 @@ require 'zlib'
 # DASHBOARD_CREDENTIALS is only set by the test stack (see doc/Tests.md)
 require ENV['DASHBOARD_CREDENTIALS'] || './credentials.rb'
 require '/data/config.rb'
+require 'i18n'
+
+# Also used by main.rb (e-mail addresses, logins).
+def remove_accents(s)
+    I18n.transliterate(s.unicode_normalize(:nfc).gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's').gsub('é', 'e'))
+end
 
 class String
     # The extended characters map used by removeaccents. The accented characters
@@ -264,7 +271,18 @@ class Parser
         end
     end
 
-    def name_to_email(vorname, nachname)
+    # The address the old rules (ASCII.TXT and the substitution files
+    # email-sub*.txt, first-name-sub*.txt, last-name-sub.txt) give a name –
+    # to recognise students in the first import from LUSD. nil if none.
+    def email_by_old_rules(nachname, vorname, rufname)
+        load_name_substitutions if @force_email.nil?
+        handle_schueler_line([nachname, vorname, 'x', 'm', '', rufname.to_s].join("\t"), true)[:email]
+    rescue SchuelerLineError
+        nil
+    end
+
+    # substitute: email-sub.txt (only for ASCII.TXT)
+    def name_to_email(vorname, nachname, substitute = true)
         if nachname.include?(',')
             _ = nachname.split(',').map { |x| x.strip }
             nachname = "#{_[1]} #{_[0]}"
@@ -276,7 +294,7 @@ class Parser
         email = email.removeaccents
         email.downcase!
         email.gsub!('?', '')
-        @email_sub[email] || email
+        substitute ? (@email_sub[email] || email) : email
     end
 
     def name_to_display_name(vorname, nachname)
@@ -324,7 +342,10 @@ class Parser
         gen_password(email, NEXTCLOUD_PASSWORD_SALT)
     end
 
-    def handle_schueler_line(line)
+    # translate_klasse: the class as WinSchule wrote it (ASCII.TXT), renamed
+    # with fix_parsed_klasse and PARSE_KLASSE_TR; the dated lists from
+    # /datenpflege already hold the dashboard's class names.
+    def handle_schueler_line(line, translate_klasse = true)
         line = line.encode('utf-8').strip
         parts = line.split("\t")
         nachname = parts[0].strip.gsub(/\s+/, ' ')#.unicode_normalize(:nfd)
@@ -336,13 +357,18 @@ class Parser
                 break if "#{vorname}.#{nachname}".size <= 20
             end
         end
-        if @force_first_name["#{vorname} #{nachname}"]
+        # the dated lists from /datenpflege are as LUSD has them, with the
+        # address in the 8th column: no substitution files
+        dated = !translate_klasse
+        if !dated && @force_first_name["#{vorname} #{nachname}"]
             vorname = @force_first_name["#{vorname} #{nachname}"]
         end
         klasse = parts[2].strip.gsub(/\s+/, ' ')
-        # fix Klasse in WinSchule export
-        klasse = Main::fix_parsed_klasse(klasse)
-        klasse = PARSE_KLASSE_TR[klasse] || klasse
+        if translate_klasse
+            # fix Klasse in WinSchule export
+            klasse = Main::fix_parsed_klasse(klasse)
+            klasse = PARSE_KLASSE_TR[klasse] || klasse
+        end
         geschlecht = parts[3].strip
         rufname = vorname.split(' ').first#.unicode_normalize(:nfd)
         if rufname == 'Ka'
@@ -356,26 +382,33 @@ class Parser
         unless (parts[5] || '').strip.empty?
             rufname = parts[5].strip
         end
-        unless ['m', 'w'].include?(geschlecht)
-            debug "#{vorname} #{nachname}: #{geschlecht}"
-            debug "Fehler: Geschlecht nicht korrekt angegeben."
-            exit(1)
+        unless ['m', 'w', 'd'].include?(geschlecht)
+            raise SchuelerLineError, "#{vorname} #{nachname}: Geschlecht »#{geschlecht}« (erlaubt: m, w, d)"
         end
-        email = name_to_email(rufname, nachname)
-        if @first_name_sub[email]
-            vorname = @first_name_sub[email]
-        end
-        if @last_name_sub[email]
-            nachname = @last_name_sub[email]
-        end
-        name = "#{vorname} #{nachname}"
-        if @force_email[name]
-            email = @force_email[name]
+        # 7th column (lists from /datenpflege): the Bildungsgang from LUSD
+        bildungsgang = (parts[6] || '').strip
+        bildungsgang = BILDUNGSGAENGE.include?(bildungsgang) ? bildungsgang.to_sym : nil
+        given = (parts[7] || '').strip
+        if dated && !given.empty?
+            email = given
+        elsif dated
+            email = name_to_email(rufname, nachname, false)
+        else
+            email = name_to_email(rufname, nachname)
+            if @first_name_sub[email]
+                vorname = @first_name_sub[email]
+            end
+            if @last_name_sub[email]
+                nachname = @last_name_sub[email]
+            end
+            name = "#{vorname} #{nachname}"
+            if @force_email[name]
+                email = @force_email[name]
+            end
         end
         if email.sub('@' + SCHUL_MAIL_DOMAIN, '').size > 23
             unless @use_mock_names
-                debug "Fehler: E-Mail-Adresse ist zu lang: #{email}"
-                exit(1)
+                raise SchuelerLineError, "#{vorname} #{nachname}: E-Mail-Adresse zu lang (#{email}, höchstens 23 Zeichen vor dem @)"
             end
         end
 
@@ -393,16 +426,43 @@ class Parser
             :display_last_name => name_to_display_name('', nachname),
             :display_name_official => name_to_display_name(rufname, nachname),
             :geschlecht => geschlecht,
+            :bildungsgang => bildungsgang,
+            # 9th column (lists from /datenpflege): LUSD's number of the student
+            :lusd_id => (dated && !(parts[8] || '').strip.empty?) ? parts[8].strip : nil,
             :can_log_in => true,
             :nc_login => @nc_sub[email] || email.split('@').first.sub(/\.\d+$/, ''),
         }
         record
     end
 
-    def parse_schueler(&block)
-#         debug "Parsing schueler..."
-        # create reproducible passwords while parsing SuS
+    # A line of the student list the dashboard can't take (the whole list is
+    # refused: at startup the service stops, an upload shows the message).
+    class SchuelerLineError < StandardError; end
 
+    SCHUELER_DIR = '/data/schueler'
+    BILDUNGSGAENGE = ['altsprachlich', 'sesb', 'regulaer_la', 'regulaer_frz', 'regulaer']
+
+    # The student list valid on a day: the newest schueler/JJJJ-MM-TT.TXT
+    # whose date has come (uploads on /datenpflege), else ASCII.TXT.
+    def self.schueler_path(today = Date.today, dir = SCHUELER_DIR)
+        day = today.strftime('%Y-%m-%d')
+        current = schueler_files(dir).keys.select { |d| d <= day }.max
+        current ? File.join(dir, "#{current}.TXT") : File.join(dir, 'ASCII.TXT')
+    end
+
+    def self.dated_schueler_list?(path)
+        File.basename(path) =~ /\A\d{4}-\d{2}-\d{2}\.TXT\z/ ? true : false
+    end
+
+    # date => path of all dated student lists
+    def self.schueler_files(dir = SCHUELER_DIR)
+        Dir[File.join(dir, '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].TXT')].sort.to_h do |path|
+            [File.basename(path, '.TXT'), path]
+        end
+    end
+
+    # email-sub-by-name.txt and first-name-sub-by-name.txt (only for ASCII.TXT)
+    def load_name_substitutions
         @force_email = {}
         path = '/data/schueler/email-sub-by-name.txt'
         if File.exist?(path)
@@ -430,8 +490,19 @@ class Parser
                 end
             end
         end
+    end
 
-        path = '/data/schueler/ASCII.TXT'
+    # list_path: another student list (preview of an upload); all_classes:
+    # also students whose class isn't in KLASSEN_ORDER (the dashboard leaves
+    # them out)
+    # translate_klasse: see handle_schueler_line (default: not for dated lists)
+    def parse_schueler(list_path = nil, all_classes: false, translate_klasse: nil, &block)
+#         debug "Parsing schueler..."
+        # create reproducible passwords while parsing SuS
+
+        load_name_substitutions
+
+        path = list_path || Parser.schueler_path
         unless File.exist?(path)
             debug "...skipping because #{path} does not exist"
             return
@@ -441,8 +512,8 @@ class Parser
             f.each_line do |line|
                 next if line.strip[0] == '#' || line.strip.empty?
 
-                record = handle_schueler_line(line)
-                if KLASSEN_ORDER.include?(record[:klasse])
+                record = handle_schueler_line(line, translate_klasse.nil? ? !Parser.dated_schueler_list?(path) : translate_klasse)
+                if all_classes || KLASSEN_ORDER.include?(record[:klasse])
                     yield record
                 end
             end

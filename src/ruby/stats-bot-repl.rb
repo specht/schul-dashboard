@@ -114,6 +114,7 @@ class StatsBotRepl < Sinatra::Base
             project_stats[nr] = {
                 :geschlecht_m => 0,
                 :geschlecht_w => 0,
+                :geschlecht_d => 0,
                 :klasse => {
                     5 => 0,
                     6 => 0,
@@ -157,10 +158,10 @@ class StatsBotRepl < Sinatra::Base
 
                 result[:emails_for_project].each_pair do |nr, emails|
                     emails.each do |email|
-                        if @@user_info[email][:geschlecht] == 'm'
-                            project_stats[nr][:geschlecht_m] += 1
-                        else
-                            project_stats[nr][:geschlecht_w] += 1
+                        case @@user_info[email][:geschlecht]
+                        when 'm' then project_stats[nr][:geschlecht_m] += 1
+                        when 'w' then project_stats[nr][:geschlecht_w] += 1
+                        else project_stats[nr][:geschlecht_d] += 1
                         end
                         project_stats[nr][:klasse][@@user_info[email][:klassenstufe] || 7] += 1
                         if (users[email][:vote_hash][nr] || 0) <= 3
@@ -237,6 +238,7 @@ class StatsBotRepl < Sinatra::Base
                 stats = {
                     :geschlecht_m => (project_stats[nr][:geschlecht_m].to_f / count).round,
                     :geschlecht_w => (project_stats[nr][:geschlecht_w].to_f / count).round,
+                    :geschlecht_d => (project_stats[nr][:geschlecht_d].to_f / count).round,
                     :klasse => {
                         5 => (project_stats[nr][:klasse][5].to_f / count).round,
                         6 => (project_stats[nr][:klasse][6].to_f / count).round,

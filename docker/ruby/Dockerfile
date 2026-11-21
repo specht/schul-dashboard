@@ -9,5 +9,7 @@ RUN gem install bundler -v 2.6.9
 ENV BUNDLE_FROZEN=true
 COPY Gemfile Gemfile.lock /
 RUN bundle install
+# the web service commits uploaded data to the data repo (data_repo.rb)
+RUN apk add --no-cache git openssh-client
 RUN adduser -D -u 1000 dashboard
 USER dashboard

@@ -178,11 +178,12 @@ class Main < Sinatra::Base
         end
 
         current_group = teacher_logged_in? ? "Lehrkraft" : "#{@session_user[:klassenstufe] <= 6 ? '5/6' : @session_user[:klassenstufe] <= 8 ? '7/8' : @session_user[:klassenstufe] <= 10 ? '9/10' : '11/12'}"
-        current_gender = @session_user[:geschlecht] == 'm' ? :maennlich : :weiblich
+        # the statistics only have the two groups; divers users are in neither
+        current_gender = { 'm' => :maennlich, 'w' => :weiblich }[@session_user[:geschlecht]]
 
         return StringIO.open do |io|
             io.puts "<p>
-            Du warst für die Statistik in folgender der zehn Gruppen: <b>#{current_group}, #{current_gender == :maennlich ? 'männlich' : current_gender}</b>
+            #{current_gender ? "Du warst für die Statistik in folgender der zehn Gruppen: <b>#{current_group}, #{current_gender == :maennlich ? 'männlich' : 'weiblich'}</b>" : "Die Statistik kennt nur männlich und weiblich, du bist in keiner der Gruppen."}
             <div class='row'>
                 <div class='col-md-12'>
                     <div style='max-width: 100%; overflow-x: auto;'>

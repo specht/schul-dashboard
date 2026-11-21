@@ -187,8 +187,14 @@ module LessonMailTemplates
         text.to_s.gsub(/\r\n?/, "\n").gsub(TOKEN) do
             inner = $1
             if inner.include?('|')
-                male, female = inner.split('|', 2)
-                vars[:geschlecht] == 'm' ? male : female
+                # {männlich|weiblich} or {männlich|weiblich|divers}; without
+                # a third form divers students get both: "er/sie"
+                male, female, divers = inner.split('|', 3)
+                case vars[:geschlecht]
+                when 'm' then male
+                when 'd' then divers || "#{male}/#{female}"
+                else female
+                end
             else
                 name = placeholder_name(inner)
                 name ? values[name] : "{#{inner}}"

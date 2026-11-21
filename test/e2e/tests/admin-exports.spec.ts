@@ -64,3 +64,34 @@ test('Admin-Seite: Link-Zeilen nutzen die ganze Breite', async ({ page }) => {
   const second = await buttons.nth(1).boundingBox();
   expect(Math.abs(first!.y - second!.y)).toBeLessThan(4);
 });
+
+// "Daten neu laden" on the admin page (data_version.rb): asks first and shows
+// when the data was read. Confirming would restart every service of the
+// shared test stack, so the test only cancels; the restart itself is covered
+// by the unit tests of the watcher.
+test('Daten neu laden: fragt erst nach, Abbrechen lädt nichts', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/admin');
+  const status = page.locator('#data_loaded_at');
+  await expect(status).toHaveText(/^Gelesen am \d\d\.\d\d\.\d{4}, \d\d:\d\d:\d\d$/);
+  const before = await status.textContent();
+  let reloads = 0;
+  page.on('request', (r) => { if (r.url().endsWith('/api/reload_data')) reloads += 1; });
+  await page.locator('#bu_reload_data').click();
+  const dialog = page.locator('.modal.show');
+  await expect(dialog).toContainText('Daten neu laden');
+  await expect(dialog).toContainText('etwa eine Minute');
+  await dialog.getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(dialog).toBeHidden();
+  expect(reloads).toBe(0);
+  await expect(status).toHaveText(before!);
+});
+
+test('Daten neu laden nur für die Administration', async ({ baseURL }) => {
+  const api = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(api, ACCOUNTS.teacher);
+  for (const path of ['/api/reload_data', '/api/data_status']) {
+    const response = await api.post(path, { data: {} });
+    expect(response.ok(), path).toBe(false);
+  }
+});

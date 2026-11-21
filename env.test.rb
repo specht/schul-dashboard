@@ -26,6 +26,12 @@ LOGS_PATH = './.test-stack/logs'
 DATA_PATH = './.test-stack/data'
 INTERNAL_PATH = './.test-stack/internal'
 
+# Datenpflege (/datenpflege): die Kopie der Beispieldaten ist ein Git-Repo
+# (./test.sh), in das der Webdienst schreiben darf. Die Dienste starten nach
+# einer Änderung nicht neu – alle E2E-Tests teilen sich diesen Stack.
+DATA_REPO_WRITABLE = true
+DATA_RELOAD_RESTARTS = false
+
 NEXTCLOUD_INSTALL_PATH = nil
 NEXTCLOUD_PHP_COMMAND = ['true']
 

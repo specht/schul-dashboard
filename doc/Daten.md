@@ -150,3 +150,125 @@ Anführungsstrichen. Die Spalten haben folgende Bedeutungen:
 Wir sehen hier auch, dass Kurse problemlos zusammengelegt werden 
 können, z.B. findet der Latein-Leistungskurs gemeinsam für die 11. und 12. Klassen statt.
 
+
+
+## Schüler:innen
+
+Die Schüler:innen stehen in `schueler/` im Datenverzeichnis, eine Zeile pro
+Schüler:in, die Spalten mit Tabs getrennt, ohne Überschriftenzeile. Es gibt
+zwei Formen:
+
+- **Datierte Listen** `schueler/JJJJ-MM-TT.TXT`, angelegt über die Seite
+  **Datenpflege** (siehe unten). Das Dashboard nimmt die neueste Liste, deren
+  Datum nicht in der Zukunft liegt. Eine Liste für ein späteres Datum wird so
+  am Stichtag gültig.
+- **`schueler/ASCII.TXT`** (Beispiel: `src/example-data/schueler/ASCII.TXT`),
+  die alte Form, solange es noch keine gültige datierte Liste gibt.
+
+```{.txt}
+Mustermann	Max	5a	m	01.01.2010
+Mustermann	Elisabeth	5a	w	02.01.2010	Elli
+```
+
+| Spalte | Bedeutung                                                              |
+| ------ | ---------------------------------------------------------------------- |
+|      1 | Nachname                                                               |
+|      2 | Vorname(n)                                                             |
+|      3 | Klasse                                                                 |
+|      4 | Geschlecht: `m`, `w` oder `d`                                          |
+|      5 | Geburtsdatum (`TT.MM.JJJJ`)                                            |
+|      6 | Rufname (optional, sonst gilt der erste Vorname)                       |
+|      7 | Bildungsgang (nur datierte Listen, optional)                           |
+|      8 | E-Mail-Adresse (nur datierte Listen, optional)                         |
+|      9 | Schlüssel aus der LUSD (nur datierte Listen, optional)                 |
+
+Dabei ist zu beachten:
+
+- Die **E-Mail-Adresse** ist die feste Kennung einer Person im Dashboard.
+  In datierten Listen steht sie in Spalte 8 und bleibt so erhalten, auch wenn
+  sich der Name ändert. Fehlt sie (und in `ASCII.TXT` immer), entsteht sie aus
+  Rufname und Nachname.
+- Die Klassen einer datierten Liste sind schon die Namen des Dashboards. In
+  `ASCII.TXT` werden sie beim Einlesen noch mit `fix_parsed_klasse` und
+  `PARSE_KLASSE_TR` umbenannt, und die Ersetzungsdateien für Namen und
+  Adressen (`email-sub*.txt`, `first-name-sub*.txt`, `last-name-sub.txt`)
+  gelten nur dort.
+- Schüler:innen, deren Klasse nicht in `KLASSEN_ORDER` steht, lässt das
+  Dashboard weg.
+- Ein anderes Geschlecht als `m`, `w` oder `d` bricht das Einlesen ab.
+
+### Datenpflege im Dashboard
+
+Wer Daten einspielen darf (Rolle `can_manage_data`, Admins haben sie immer),
+findet unter
+Admin → **Datenpflege** den Abgleich mit der LUSD:
+
+1. Den Export aus der LUSD (Excel oder CSV) in das Feld ziehen und den Tag
+   wählen, ab dem die Liste gelten soll.
+2. Das Dashboard vergleicht mit der Liste, die an diesem Tag gilt, und zeigt
+   alle Unterschiede: wer neu ist, wer nicht mehr dabei ist und was sich bei
+   den übrigen ändert (Klasse, Name, Rufname, Bildungsgang, Geschlecht,
+   Geburtstag), markiert wie in einem Diff.
+3. Bisherige Schüler:innen werden über den Schlüssel aus der LUSD, sonst über
+   den Namen und den Geburtstag wiedergefunden und **behalten ihre Adresse**.
+   Neue bekommen eine Adresse aus Rufname und Nachname, zu lange Adressen
+   werden gekürzt. Die Adresse lässt sich vor dem Übernehmen ändern, und ein
+   neuer Eintrag kann von Hand einem bisherigen Konto zugeordnet werden.
+4. Die Klassennamen der LUSD werden den Klassen des Dashboards zugeordnet
+   (Vorschlag aus der bisherigen Liste, änderbar). Die Zuordnung steht in
+   `schueler/lusd-klassen.yaml`.
+5. **Übernehmen** schreibt `schueler/JJJJ-MM-TT.TXT`. Eine vorhandene Liste
+   für denselben Tag wird nur nach Bestätigung ersetzt. Danach lädt das
+   Dashboard die Daten neu.
+6. **Committen** übernimmt die Datei in das Daten-Repository (und schiebt sie,
+   wenn eingestellt, zum Server des Repositorys); **Zurücknehmen** verwirft
+   nicht committete Änderungen.
+
+Fehler werden zuerst in der LUSD korrigiert. Das Dashboard speichert nur, was
+die LUSD nicht kennt, vor allem die E-Mail-Adresse.
+
+Damit das Dashboard in das Daten-Repository schreiben darf, braucht es in
+`env.rb` `DATA_REPO_WRITABLE = true` (und `DATA_REPO_PUSH = true` zum
+Schieben); ohne diese Einstellungen ist das Datenverzeichnis wie bisher nur
+lesbar.
+
+**Bildungsgang:** Er ergibt sich aus der Schulform (`Schulform_kurz`) und den
+Fremdsprachen: SESB, altsprachlich oder regulär.
+
+**Meldungen von Schüler:innen:** Im Profil können Schüler:innen einen falschen
+Namen melden; die Meldungen stehen auf der Seite Datenpflege. Passt die
+Adresse nicht mehr zum Namen (etwa nach einer Namensänderung), können sie
+unter Passwörter eine neue beantragen; die Anträge stehen auf der Seite
+Postfächer. Wer nichts beantragt, behält die bisherige Adresse.
+
+### Export aus der LUSD
+
+In der LUSD (Berlin) unter Berichte im **Abfrageassistenten** eine Abfrage
+über die Datenquelle **Schüler** anlegen, mit diesen Feldern:
+
+- Nachname, Vorname, Rufname, Namenszusatz, Geschlecht, Geburtsdatum;
+- Klassen: Klassenbezeichnung, Stufe/Semester (für die Oberstufe, wo die
+  Klasse leer ist);
+- Schulform (kurz) und Fremdsprache(n) für den Bildungsgang;
+- wenn vorhanden, der Schlüssel der Schüler:in.
+
+Die Abfrage als Excel-Datei exportieren. Das Dashboard findet die Spalten
+über ihre Überschriften; Zeilen, die nur wegen mehrerer Fremdsprachen doppelt
+vorkommen, werden zusammengefasst.
+
+Ohne Dashboard prüft das Skript `src/scripts/lusd-to-ascii.rb` einen Export
+(braucht nur Ruby, keinen Container):
+
+```bash
+# nur prüfen und mit der bisherigen Datei vergleichen
+./src/scripts/lusd-to-ascii.rb export.xlsx --vergleich ASCII.TXT
+
+# Klassennamen umschreiben und eine Datei schreiben
+./src/scripts/lusd-to-ascii.rb export.xlsx --vergleich ASCII.TXT \
+    --klasse Q1=12 --aus ASCII.neu.TXT
+```
+
+Die Ausgabe enthält nur Anzahlen, Zeilennummern und Klassennamen; mit
+`--namen` werden die Schüler:innen mit neuer Adresse aufgelistet. Hat eine
+Zeile einen Fehler (z. B. ein unbekanntes Geschlecht, ein unlesbares
+Geburtsdatum), schreibt das Skript keine Datei.

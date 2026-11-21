@@ -590,7 +590,8 @@ class Main < Sinatra::Base
                 s[:af] = x['group_af'] || '' if show_af
                 s[:ft] = x['group_ft'] || '' if show_ft
                 s[:tutor] = (record[:tutor] && @@user_info[record[:tutor]]) ? @@user_info[record[:tutor]][:display_name] : nil if has_oberstufe
-                s[:pronoun] = record[:geschlecht] == 'm' ? 'er' : 'sie' if kl
+                # divers: the first name instead of a pronoun
+                s[:pronoun] = ({ 'm' => 'er', 'w' => 'sie' }[record[:geschlecht]] || record[:first_name]) if kl
             end
             s
         end

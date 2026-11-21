@@ -53,7 +53,8 @@ class Main < Sinatra::Base
         elsif bildungsgang == :sesb
             "#{klassenstufe}_sesb"
         else
-            raise 'nope'
+            # e.g. "regulär" without a known order of languages (LUSD)
+            raise "Kein Zeugnisformular für Bildungsgang #{bildungsgang.inspect} (#{email})"
         end
     end
 

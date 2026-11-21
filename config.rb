@@ -339,6 +339,23 @@ docker_compose[:services].each_pair do |k, v|
     v[:environment] ||= []
     v[:environment] << "DASHBOARD_SERVICE=#{k}"
 end
+# Optional (env.rb), for uploading data in the dashboard (/datenpflege,
+# src/ruby/data_repo.rb):
+# - DATA_REPO_WRITABLE = true: the web service (only it) gets the data repo
+#   a second time, writable, at /data-repo; /data stays read-only everywhere
+# - DATA_REPO_PUSH = true: it pushes its commits (needs a deploy key)
+# - DATA_RELOAD_RESTARTS = false: services don't restart when the data
+#   changes (test stack, whose services the E2E tests share)
+# Without them the generated files stay as they were.
+if defined?(DATA_REPO_WRITABLE) && DATA_REPO_WRITABLE
+    docker_compose[:services][:ruby][:volumes] += ["#{INPUT_DATA_PATH}:/data-repo"]
+    docker_compose[:services][:ruby][:environment] << 'DASHBOARD_DATA_REPO_PUSH=1' if defined?(DATA_REPO_PUSH) && DATA_REPO_PUSH
+end
+if defined?(DATA_RELOAD_RESTARTS) && !DATA_RELOAD_RESTARTS
+    docker_compose[:services].each_value do |v|
+        v[:environment] << 'DASHBOARD_DATA_RELOAD=off'
+    end
+end
 unless DOCKER_NETWORK_RUBY_IP.nil?
     docker_compose[:services][:ruby][:networks][DOCKER_NETWORK_NAME][:ipv4_address] = DOCKER_NETWORK_RUBY_IP
 end

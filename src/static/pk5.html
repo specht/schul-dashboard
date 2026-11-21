@@ -183,7 +183,7 @@
                     </div>
                     <div class='col-md-4'>
                         <div class='form-group'>
-                            <label>Prüfungskandidat#{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'en' : (@@user_info[user_email][:geschlecht] == 'w' ? 'in': '')}</label>
+                            <label>Prüfungskandidat#{(get_my_pk5(user_email)[:sus] || []).size > 1 ? 'en' : ({ 'w' => 'in', 'd' => ':in' }[@@user_info[user_email][:geschlecht]] || '')}</label>
                             <div class="input-group mb-3">
                                 <input type='text' value='#{CGI.escapeHTML(join_with_sep(get_my_pk5(user_email)[:sus] || [], ', ', ' und '))}' class='form-control' readonly disabled>
                                 <div class="input-group-append" style="#{(user_with_role_logged_in?(:oko) || (@session_user[:klasse] == PK5_CURRENT_KLASSE && !($pk5.phases[$pk5.get_current_phase][:flags].include?(:no_sus_edit)))) ? '' : 'display: none;'}">

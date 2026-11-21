@@ -116,6 +116,7 @@ TRESOR_JWT_TTL_EXTRA = 20
 require './background-renderer.rb'
 # development only: hot reload of include/*.rb (must come before the includes)
 require './dev_reloader.rb'
+require './data_version.rb'
 require './include/admin.rb'
 require './include/angebote.rb'
 require './include/at.rb'
@@ -126,6 +127,7 @@ require './include/color.rb'
 require './include/color-schemes.rb'
 require './include/comment.rb'
 require './include/cypher.rb'
+require './include/datenpflege.rb'
 require './include/development.rb'
 require './include/directory.rb'
 require './include/email.rb'
@@ -190,9 +192,7 @@ require './parser.rb'
 
 Faye::WebSocket.load_adapter('puma')
 
-def remove_accents(s)
-    I18n.transliterate(s.unicode_normalize(:nfc).gsub('ä', 'ae').gsub('ö', 'oe').gsub('ü', 'ue').gsub('Ä', 'Ae').gsub('Ö', 'Oe').gsub('Ü', 'Ue').gsub('ß', 'ss').gsub('ė', 'e').gsub('š', 's').gsub('é', 'e'))
-end
+# remove_accents: parser.rb
 
 def debug(message, index = 0)
     index = 0
@@ -725,6 +725,7 @@ class Main < Sinatra::Base
          :sesb => 'SESB',
          :regulaer_la => 'regulär (la)',
          :regulaer_frz => 'regulär (frz)',
+         :regulaer => 'regulär',
         }[x] || x
     end
 
@@ -900,7 +901,8 @@ class Main < Sinatra::Base
                 :id => record[:id],
                 :klasse => record[:klasse],
                 :klassenstufe => force_klassenstufe[record[:email]] || (record[:klasse] =~ /^\d/ ? record[:klasse].to_i : 9),
-                :bildungsgang => :altsprachlich,
+                # from LUSD (dated lists), else bildungsgaenge.yaml below
+                :bildungsgang => record[:bildungsgang] || :altsprachlich,
                 :geschlecht => record[:geschlecht],
                 :nc_login => record[:nc_login],
                 :initial_nc_password => record[:initial_nc_password],
@@ -1277,9 +1279,12 @@ class Main < Sinatra::Base
             last_start_date = start_date
         end
 
-        bildungsgaenge_sus = parser.parse_bildungsgaenge(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
-        bildungsgaenge_sus.each_pair do |email, bildungsgang|
-            @@user_info[email][:bildungsgang] = bildungsgang
+        # only for ASCII.TXT: the lists uploaded from LUSD carry the Bildungsgang
+        unless Parser.dated_schueler_list?(Parser.schueler_path)
+            bildungsgaenge_sus = parser.parse_bildungsgaenge(@@user_info.reject { |x, y| y[:teacher] }, @@schueler_for_klasse)
+            bildungsgaenge_sus.each_pair do |email, bildungsgang|
+                @@user_info[email][:bildungsgang] = bildungsgang
+            end
         end
 
         kurse_for_schueler, schueler_for_kurs, tutor_for_schueler = parser.parse_kurswahl(@@user_info.reject { |x, y| y[:teacher] }, @@lessons, lesson_key_tr, @@original_lesson_key_for_lesson_key, @@shorthands)
@@ -1337,8 +1342,9 @@ class Main < Sinatra::Base
             if user_has_role(email, :schueler)
                 lessons.reject! do |lesson_key|
                     lesson = @@lessons[:lesson_keys][lesson_key]
-                    (lesson[:fach] == 'SpoM' && user[:geschlecht] != 'w') ||
-                    (lesson[:fach] == 'SpoJ' && user[:geschlecht] != 'm')
+                    # girls' and boys' sport: divers students keep both
+                    (lesson[:fach] == 'SpoM' && user[:geschlecht] == 'm') ||
+                    (lesson[:fach] == 'SpoJ' && user[:geschlecht] == 'w')
                 end
             end
             lessons += wahlpflicht_sus_for_lesson_key.keys
@@ -1961,7 +1967,17 @@ class Main < Sinatra::Base
             STDERR.puts "WARNING: Could not read SSO private key!"
         end
         @@renderer = BackgroundRenderer.new
+        # remembered before reading, so a change while starting isn't lost
+        @@data_version = DataVersion.read
+        @@data_schueler_path = Parser.schueler_path
+        @@data_loaded_at = Time.now
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
+        # long-running services start again when the data changes or another
+        # dated student list becomes current (not scripts run with
+        # ./config.rb exec)
+        if ENV['DASHBOARD_SERVICE'] && ['puma', 'rackup'].include?(File.basename($0)) && DataVersion.restarts?
+            DataVersion.watch(@@data_version, state: -> { Parser.schueler_path }, known_state: @@data_schueler_path) { DataVersion.restart! }
+        end
         @@ws_clients = {}
         @@color_scheme_info = {}
         @@compiled_files = {}

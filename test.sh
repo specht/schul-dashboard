@@ -32,6 +32,10 @@ compose() { ./config.rb "$@"; }
 prepare_input() {
     # example data with a school year around today (mounted as /data)
     ruby test/prepare_example_data.rb src/example-data .test-stack/input
+    # a git repo, like the real data repo (uploads on /datenpflege commit to it)
+    git -C .test-stack/input init -q
+    git -C .test-stack/input add -A
+    git -C .test-stack/input -c user.name=Test -c user.email=test@test.invalid commit -q -m 'Beispieldaten'
 }
 
 prepare() {

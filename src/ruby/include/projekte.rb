@@ -787,7 +787,7 @@ class Main < Sinatra::Base
                 end
                 io.puts "<td class='cbl' style='text-align: center;'>#{project_data['geschlecht_m'] || ndash}</td>"
                 io.puts "<td style='text-align: center;'>#{project_data['geschlecht_w'] || ndash}</td>"
-                io.puts "<td class='cbl' style='text-align: center;'>#{(project_data['geschlecht_m'] || 0) + (project_data['geschlecht_w'] || 0)}</td>"
+                io.puts "<td class='cbl' style='text-align: center;'>#{(project_data['geschlecht_m'] || 0) + (project_data['geschlecht_w'] || 0) + (project_data['geschlecht_d'] || 0)}</td>"
                 io.puts "</tr>"
             end
             io.puts "</table>"
@@ -1482,7 +1482,7 @@ class Main < Sinatra::Base
             io.puts "<h4>Vorschau deiner Projektgruppe</h4>"
             io.puts "<p>Aktuell würde deine Projektgruppe ungefähr wie folgt aussehen:</p>"
             io.puts "<ul style='list-style: disc; margin-left: 1.5em;'>"
-            io.puts "<li>#{data['geschlecht_m'] + data['geschlecht_w']} Teilnehmer:innen, davon #{data['geschlecht_m']} Jungen und #{data['geschlecht_w']} Mädchen</li>"
+            io.puts "<li>#{data['geschlecht_m'] + data['geschlecht_w'] + (data['geschlecht_d'] || 0)} Teilnehmer:innen, davon #{data['geschlecht_m']} Jungen und #{data['geschlecht_w']} Mädchen</li>"
             io.puts "<li>Klassenstufen:<ul style='list-style: disc; margin-left: 1.5em;'>"
             x = (5..9).select do |klasse|
                 (data['klasse'][klasse.to_s] || 0) > 0
@@ -1500,7 +1500,7 @@ class Main < Sinatra::Base
             io.puts x.join('')
             io.puts "</ul></li>"
             io.puts "</ul>"
-            if data['vote']['0'] * 100 / (data['geschlecht_m'] + data['geschlecht_w']) > 10
+            if data['vote']['0'] * 100 / [data['geschlecht_m'] + data['geschlecht_w'] + (data['geschlecht_d'] || 0), 1].max > 10
                 io.puts "<p><strong>Hinweis:</strong> Nach dem aktuellen Stand werdet ihr ca. <strong>#{data['vote']['0']} Kind#{data['vote']['0'] > 1 ? 'er' : ''}</strong> betreuen müssen, #{data['vote']['0'] > 1 ? 'die' : 'das'} (bis jetzt) keine Lust auf euer Projekt #{data['vote']['0'] > 1 ? 'haben' : 'hat'}. Falls ihr mit der Motivation eurer Gruppe nicht zufrieden seid, könnt ihr die Situation möglicherweise verbessern, indem ihr ggfs. euren Titel, euren Werbetext und / oder euer Projektbild aktualisiert oder Werbung in der Schule für euer Projekt macht. Da alle Kinder ihre Wahl noch bis <strong>#{WEEKDAYS_LONG[(Date.parse(PROJEKTWAHL_VOTE_END).strftime('%u').to_i) % 7]}, den #{Date.parse(PROJEKTWAHL_VOTE_END).strftime('%d.%m.%Y')} um #{DateTime.parse(PROJEKTWAHL_VOTE_END).strftime('%H:%M')} </strong> anpassen können, habt ihr bis dahin noch die Gelegenheit, die Zusammensetzung eurer Gruppe zu optimieren.</p>"
             end
             io.puts "<p>Bitte beachte, dass sich die Zusammensetzung deiner Gruppe noch ändern wird, abhängig vom weiteren Wahlverhalten, Umwahlen oder Anpassungen in eurem Projekt.</p>"

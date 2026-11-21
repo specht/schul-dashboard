@@ -404,7 +404,8 @@ function updatePrefix() {
         for (let email of all_sus_emails) {
             if (email in email_for_foto_paths_rev) {
                 if (email !== quiz_solution) {
-                    if (user_info[email].geschlecht === geschlecht) {
+                    // same gender as the answer, unless it is divers (too few to choose from)
+                    if (user_info[email].geschlecht === geschlecht || !['m', 'w'].includes(geschlecht)) {
                         // if (klassenstufe_for_klasse[user_info[email].klasse] === stufe)
                         if (prefixMatch(user_info[email].display_name, quiz_prefix)) {
                             candidates.push(email);

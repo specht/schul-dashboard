@@ -1,0 +1,296 @@
+#{this_is_a_page_for_user_with_role(:can_manage_data)}
+<style>
+    body {
+        background-image: none;
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
+    }
+    .dp-page { max-width: 60em; padding-block: 1em 3em; }
+    .dp-page h5 { margin-top: 1.4em; }
+    .dp-form { display: flex; flex-wrap: wrap; gap: 0.6em 1em; align-items: flex-end; }
+    .dp-form label { display: block; margin-bottom: 0.2em; }
+    .dp-scroll { max-width: 100%; overflow-x: auto; }
+    .dp-klassen { width: auto; }
+    .dp-klassen input { width: 6em; }
+    .dp-section summary { cursor: pointer; }
+    .dp-section { margin-bottom: 0.5em; }
+    .dp-section .dp-hint { margin: 0.3em 0; }
+    .dp-list { width: auto; margin: 0.3em 0 0.8em; }
+    .dp-list th, .dp-list td { padding: 0.2em 1.2em 0.2em 0; white-space: nowrap; vertical-align: top; }
+    .dp-klassen-box { margin-top: 1em; }
+    .dp-list .ti_email { width: 15em; }
+    .dp-list .ti_link { width: 16em; }
+    .dp-klassen-box summary { cursor: pointer; }
+    /* changes as in a word diff: old struck through on red, new on green */
+    .dp-what { color: var(--pv-muted, #666); margin-right: 0.3em; }
+    .dp-old, .dp-new { padding: 0 0.25em; border-radius: 4px; }
+    .dp-old { background: rgba(220, 38, 38, 0.10); text-decoration: line-through; text-decoration-color: rgba(220, 38, 38, 0.6); }
+    .dp-new { background: rgba(22, 163, 74, 0.12); }
+    .dp-old mark, .dp-new mark { padding: 0; border-radius: 3px; color: inherit; font-weight: 600; }
+    .dp-old mark { background: rgba(220, 38, 38, 0.25); }
+    .dp-new mark { background: rgba(22, 163, 74, 0.30); }
+    .dp-none { font-style: italic; text-decoration: none; }
+    .dp-actions { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: center; margin-top: 1em; }
+    .dp-actions .dp-spacer { flex: 1; }
+    .dp-files { width: auto; }
+    .dp-file-aktuell td { font-weight: bold; }
+    /* the drop area for the export (like the bank statements' upload) */
+    .dp-form { align-items: flex-start; }
+    .dp-drop {
+        flex: 1 1 22em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35em;
+        min-height: 8.5em;
+        margin: 0;
+        padding: 1.2em;
+        border: 2px dashed var(--pv-line, #bbb);
+        border-radius: 14px;
+        color: var(--pv-muted, #666);
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 0.15s, border-color 0.15s;
+    }
+    .dp-drop .ti { font-size: 2rem; line-height: 1; }
+    .dp-drop:hover, .dp-drop.dp-over, .dp-drop:focus-within {
+        border-color: var(--acc-text, #888);
+        background-color: var(--acc-soft, rgba(0, 0, 0, 0.04));
+        color: var(--pv-ink, inherit);
+    }
+    .dp-drop-file { font-weight: 600; color: var(--pv-ink, inherit); overflow-wrap: anywhere; }
+    .dp-date { flex: none; }
+    .dp-date label { display: block; margin-bottom: 0.2em; }
+</style>
+<div class='container-fluid white'>
+    <div class='dp-page'>
+        <h2>Datenpflege</h2>
+        <div class='api_messages' style='display: none;'></div>
+        <h4>Schüler:innen</h4>
+        #{print_datenpflege()}
+        #{print_name_reports()}
+        <h5>Neue Liste aus der LUSD</h5>
+        <p class='text-muted'>Excel- oder CSV-Export mit Nachname, Vorname, Rufname, Klasse, Geschlecht und Geburtsdatum. Hochladen ändert noch nichts: Erst kommt der Vergleich mit der Liste, die am gewählten Tag gilt.</p>
+        <div class='dp-form'>
+            <label class='dp-drop' id='dp_drop' for='ti_file'>
+                <input type='file' id='ti_file' accept='.xlsx,.csv,.txt' hidden>
+                <i class='ti ti-file-spreadsheet' aria-hidden='true'></i>
+                <span class='dp-drop-text'><strong>LUSD-Export hierher ziehen</strong> oder klicken, um ihn auszuwählen</span>
+                <span class='dp-drop-file' hidden></span>
+            </label>
+            <div class='dp-date'>
+                <label for='ti_date'>Gültig ab</label>
+                <input type='date' class='form-control' id='ti_date' value='#{Date.today.strftime('%Y-%m-%d')}'>
+            </div>
+        </div>
+        <div id='dp_message' class='alert alert-warning' style='margin-top: 1em;' hidden></div>
+        <div id='dp_preview' style='margin-top: 1em;'></div>
+        <div id='dp_apply' hidden>
+            <div id='dp_replace' class='alert alert-warning' hidden>
+                <label style='margin: 0;'><input type='checkbox' id='ti_replace'> Für diesen Tag gibt es schon eine Liste. Sie wird ersetzt.</label>
+            </div>
+            <p id='dp_future' class='text-muted' hidden>Die Liste gilt erst ab dem gewählten Tag; bis dahin bleibt die bisherige.</p>
+            <div class='dp-actions'>
+                <button class='btn btn-secondary' id='bu_discard_upload'>Verwerfen</button>
+                <span class='dp-spacer'></span>
+                <button class='btn btn-success' id='bu_apply'>Übernehmen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let token = null;
+        let existing = [];
+
+        function today() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function message(text) {
+            $('#dp_message').text(text || '').prop('hidden', !text);
+        }
+
+        // choices for new students: an existing account, or another address
+        // (export row => address); they go into the list when applied
+        let links = {};
+        let emails = {};
+
+        function klassen() {
+            const result = {};
+            $('#dp_preview .ti_klasse').each(function (_, input) {
+                result[$(input).data('lusd')] = $(input).val().trim();
+            });
+            return result;
+        }
+
+        function update_apply_state() {
+            const date = $('#ti_date').val();
+            const replacing = existing.includes(date);
+            $('#dp_replace').prop('hidden', !replacing);
+            if (!replacing) $('#ti_replace').prop('checked', false);
+            $('#dp_future').prop('hidden', !(date > today()));
+            $('#bu_apply').prop('disabled', replacing && !$('#ti_replace').is(':checked'));
+        }
+
+        function show_preview(data) {
+            if (!data.ok) {
+                // nothing of an earlier comparison stays around
+                token = null;
+                $('#dp_preview').empty();
+                $('#dp_apply').prop('hidden', true);
+                message(data.message || 'Die Datei konnte nicht verglichen werden.');
+                return;
+            }
+            message(null);
+            token = data.token;
+            existing = data.existing || [];
+            $('#dp_preview').html(data.html);
+            $('#dp_apply').prop('hidden', !data.can_apply);
+            update_apply_state();
+        }
+
+        // after a change: the services read the data again; reload the page
+        // once the web service answers with a new time
+        function wait_for_reload(before) {
+            message('Die Daten werden neu geladen, das Dashboard ist dafür kurz nicht erreichbar …');
+            const started = Date.now();
+            const poll = function () {
+                fetch('/api/data_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                    .then((r) => r.ok ? r.json() : null)
+                    .catch(() => null)
+                    .then(function (info) {
+                        if (info && info.loaded_at && info.loaded_at !== before) {
+                            window.location.reload();
+                        } else if (Date.now() - started > 5 * 60 * 1000) {
+                            message('Neu laden dauert ungewöhnlich lange – bitte die Dienste prüfen.');
+                        } else {
+                            setTimeout(poll, 3000);
+                        }
+                    });
+            };
+            setTimeout(poll, 3000);
+        }
+
+        function after_change(data) {
+            if (!data.ok) {
+                message(data.message || 'Das hat nicht geklappt.');
+                return;
+            }
+            if (data.reload) wait_for_reload($('#data_loaded_at').text());
+            else window.location.reload();
+        }
+
+        // a file chosen or dropped: compared at once
+        function start_upload(file) {
+            if (!file) return;
+            $('.dp-drop-file').text(file.name).prop('hidden', false);
+            if (file.size > 5 * 1024 * 1024) {
+                message('Die Datei ist zu groß (höchstens 5 MB).');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function () {
+                const content = String(reader.result).replace(/^data:[^,]*,/, '');
+                links = {};
+                emails = {};
+                api_call('/api/datenpflege/schueler/upload', { filename: file.name, content: content, date: $('#ti_date').val() }, show_preview);
+            };
+            reader.readAsDataURL(file);
+            // the same file once more (after a fix in LUSD) counts as a new choice
+            $('#ti_file').val('');
+        }
+        $('#ti_file').on('change', function (e) { start_upload(e.currentTarget.files[0]); });
+        const drop = document.getElementById('dp_drop');
+        ['dragenter', 'dragover'].forEach(function (type) {
+            drop.addEventListener(type, function (e) { e.preventDefault(); drop.classList.add('dp-over'); });
+        });
+        ['dragleave', 'drop'].forEach(function (type) {
+            drop.addEventListener(type, function (e) { e.preventDefault(); drop.classList.remove('dp-over'); });
+        });
+        drop.addEventListener('drop', function (e) {
+            const file = e.dataTransfer && e.dataTransfer.files[0];
+            if (file) start_upload(file);
+        });
+
+        function recheck() {
+            if (!token) return;
+            api_call('/api/datenpflege/schueler/preview', { token: token, date: $('#ti_date').val(), klassen: klassen(), links: links, emails: emails }, show_preview);
+        }
+        $('#dp_preview').on('click', '#bu_recheck', recheck);
+        $('#dp_preview').on('change', '.ti_link', function (e) {
+            const row = $(e.currentTarget).data('row');
+            if (e.currentTarget.value) links[row] = e.currentTarget.value; else delete links[row];
+            recheck();
+        });
+        $('#dp_preview').on('change', '.ti_email', function (e) {
+            const row = $(e.currentTarget).data('row');
+            // "name@…" typed in full: only the part before the @
+            emails[row] = e.currentTarget.value.trim().toLowerCase().split('@')[0];
+            recheck();
+        });
+        $('#dp_preview').on('click', '.bu_unlink', function (e) {
+            delete links[$(e.currentTarget).data('row')];
+            recheck();
+        });
+        $('#ti_date').on('change', recheck);
+        $('#ti_replace').on('change', update_apply_state);
+
+        $('#bu_discard_upload').click(function () {
+            if (!token) return;
+            api_call('/api/datenpflege/schueler/discard', { token: token }, function () {
+                token = null;
+                $('#dp_preview').empty();
+                $('#dp_apply').prop('hidden', true);
+                $('#ti_file').val('');
+                $('.dp-drop-file').text('').prop('hidden', true);
+            });
+        });
+
+        $('#bu_apply').click(function (e) {
+            const button = $(e.currentTarget);
+            button.prop('disabled', true);
+            api_call('/api/datenpflege/schueler/apply', {
+                token: token, date: $('#ti_date').val(), klassen: klassen(), replace: $('#ti_replace').is(':checked'),
+                links: links, emails: emails,
+            }, function (data) {
+                if (!data.ok) button.prop('disabled', false);
+                after_change(data);
+            });
+        });
+
+        $('#bu_commit').click(function (e) {
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/datenpflege/commit', {}, function (data) {
+                if (data.ok && data.push && !data.pushed) {
+                    message(`Committet (${data.commit}), aber nicht gepusht: ${data.push_error}`);
+                    $('.dp-uncommitted').remove();
+                    return;
+                }
+                if (!data.ok) {
+                    message(data.message || 'Das hat nicht geklappt.');
+                    $(e.currentTarget).prop('disabled', false);
+                    return;
+                }
+                window.location.reload();
+            });
+        });
+
+        // a report from a student is done (corrected in LUSD)
+        $(document).on('click', '.bu_report_done', function (e) {
+            const button = $(e.currentTarget);
+            button.prop('disabled', true);
+            api_call('/api/name_report/done', { id: button.data('id') }, function (data) {
+                if (data.success) button.closest('tr').remove(); else button.prop('disabled', false);
+            });
+        });
+
+        $('#bu_rollback').click(function () {
+            dashboardConfirm('Die noch nicht committeten Änderungen werden verworfen und die Daten neu geladen.', function () {
+                api_call('/api/datenpflege/rollback', {}, after_change);
+            }, { title: 'Zurücknehmen', confirm: 'Zurücknehmen', cancel: 'Abbrechen', danger: true });
+        });
+    });
+</script>

@@ -13,6 +13,7 @@
 <div class='container-fluid white'>
     <div class='row'>
         <div class='col-md-12'>
+            <div class='api_messages' style='display: none;'></div>
             #{print_admin_dashboard()}
         </div>
     </div>
@@ -21,6 +22,42 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         install_clipboard_handler('.btn-clipboard');
+        // all services read the data again and start anew; the status
+        // shows the new time as soon as the web service answers again
+        $('#bu_reload_data').click(function (e) {
+            const button = $(e.currentTarget);
+            dashboardConfirm('Alle Dienste lesen die Daten neu ein und starten dafür neu. Das Dashboard ist dabei etwa eine Minute lang nicht erreichbar.', function () {
+                const status = $('#data_loaded_at');
+                const before = status.text();
+                button.prop('disabled', true);
+                api_call('/api/reload_data', {}, function (data) {
+                    if (!data.ok) {
+                        button.prop('disabled', false);
+                        return;
+                    }
+                    status.text('Wird neu geladen …');
+                    const started = Date.now();
+                    const poll = function () {
+                        fetch('/api/data_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                            .then((r) => r.ok ? r.json() : null)
+                            .catch(() => null)
+                            .then(function (info) {
+                                const text = info && info.loaded_at ? `Gelesen am ${info.loaded_at}` : null;
+                                if (text && text !== before) {
+                                    status.text(text);
+                                    button.prop('disabled', false);
+                                } else if (Date.now() - started > 5 * 60 * 1000) {
+                                    status.text('Neu laden dauert ungewöhnlich lange – bitte die Dienste prüfen.');
+                                    button.prop('disabled', false);
+                                } else {
+                                    setTimeout(poll, 3000);
+                                }
+                            });
+                    };
+                    setTimeout(poll, 3000);
+                });
+            }, { title: 'Daten neu laden', confirm: 'Neu laden', cancel: 'Abbrechen' });
+        });
         $('.btn-impersonate').click(function (e) {
             // clear any short-lived JWT from local storage
             localStorage.clear();

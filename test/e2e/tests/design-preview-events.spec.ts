@@ -132,11 +132,16 @@ test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern'
     await expect(hint).toBeHidden();
     await page.locator('#ti_start_time').fill('17:00');
     await expect(hint).toHaveText('Zum Speichern fehlen noch Titel und Teilnehmer.');
-    // the hint on its own line above the buttons, »Verwerfen« and
-    // »Speichern« side by side below it (each was on a line of its own)
+    // »Verwerfen« and »Speichern« in one row (each was on a line of its
+    // own); the hint right before »Speichern«, on phones on its own line above
     const [h, d, sv] = await Promise.all([hint, page.locator('#bu_discard_event'), page.locator('#bu_save_event')].map((l) => l.boundingBox()));
     expect(Math.abs(d!.y - sv!.y)).toBeLessThan(2);
-    expect(h!.y + h!.height).toBeLessThanOrEqual(d!.y + 1);
+    if (testInfo.project.name === 'mobile') {
+      expect(h!.y + h!.height).toBeLessThanOrEqual(d!.y + 1);
+    } else {
+      expect(Math.abs((h!.y + h!.height / 2) - (sv!.y + sv!.height / 2))).toBeLessThan(2);
+      expect(h!.x + h!.width).toBeLessThanOrEqual(sv!.x);
+    }
     await expect(page.locator('#ti_title')).toHaveAttribute('placeholder', 'Titel des Termins');
     await page.locator('#ti_title').fill('Elternabend');
     await expect(page.locator('#bu_save_event')).toBeDisabled();

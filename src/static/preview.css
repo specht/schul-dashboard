@@ -102,7 +102,7 @@ html {
 }
 
 /* Fonts of the new design (include/fonts-v2): very readable text, a font
-   with character for headings. Five pairs to choose from in the profile
+   with character for headings. Six pairs to choose from in the profile
    (u.ui_font, body class pv-font-…; the old design keeps its own choice),
    every one with accents and Greek (also polytonic). "Klar" is the default:
    Atkinson and Bricolage have no Greek, Fira Sans fills in behind them. The
@@ -135,6 +135,14 @@ html {
 .ui-preview .pv-font-tile[data-font='feder'] {
     --pv-text: 'Alegreya Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --pv-display: 'Alegreya', 'Alegreya Sans', Georgia, serif;
+}
+
+/* Verspielt: round headings, a lively hand for the text; Fira Sans for
+   polytonic Greek, which neither has */
+.ui-preview.pv-font-verspielt,
+.ui-preview .pv-font-tile[data-font='verspielt'] {
+    --pv-text: 'Playpen Sans', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --pv-display: 'Comfortaa', 'Playpen Sans', 'Fira Sans Fallback Display', system-ui, sans-serif;
 }
 
 .ui-preview {

@@ -528,7 +528,7 @@ test('Neues Design: eigene Schriften', async ({ page }) => {
   }
 });
 
-// Five font pairs in the profile ("Schrift"), all with accents and modern
+// Six font pairs in the profile ("Schrift"), all with accents and modern
 // Greek (with tonos) in the pair's own fonts; Atkinson and Bricolage have no
 // Greek, Fira Sans fills in behind them. Polytonic Greek is a plus: where a
 // pair lacks it, Fira Sans fills in, never a system font. The
@@ -541,6 +541,7 @@ const FONT_PAIRS = [
   { key: 'buch', text: 'Literata', display: 'Literata', greekText: /^Literata( \(|$)/, greekDisplay: /^Literata( \(|$)/ },
   { key: 'freundlich', text: 'Manrope', display: 'M PLUS Rounded 1c', greekText: /^Manrope( |$)/, greekDisplay: /Mplus/i },
   { key: 'feder', text: 'Alegreya Sans', display: 'Alegreya', greekText: /^Alegreya Sans( \(|$)/, greekDisplay: /^Alegreya( \(|$)/ },
+  { key: 'verspielt', text: 'Playpen Sans', display: 'Comfortaa', greekText: /^Playpen Sans( |$)/, greekDisplay: /^Comfortaa( |$)/ },
 ];
 
 test('Neues Design: Schrift wählen, mit Akzenten und Griechisch', async ({ page, serverErrors }) => {

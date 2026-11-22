@@ -581,7 +581,7 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
-    # "Schrift" (profile, new design): five pairs of fonts for headings and
+    # "Schrift" (profile, new design): six pairs of fonts for headings and
     # text, all with accents and Greek (preview.css, include/fonts-v2). The
     # first is the default; the old design keeps its own choice (u.font).
     UI_FONTS = [
@@ -590,6 +590,7 @@ class Main < Sinatra::Base
         ['buch', 'Buch', 'Literata'],
         ['freundlich', 'Freundlich', 'M PLUS Rounded und Manrope'],
         ['feder', 'Feder', 'Alegreya und Alegreya Sans'],
+        ['verspielt', 'Verspielt', 'Comfortaa und Playpen Sans'],
     ]
     UI_FONT_KEYS = UI_FONTS.map(&:first)
 

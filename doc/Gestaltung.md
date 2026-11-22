@@ -133,7 +133,7 @@ und dunkel auf Kontrast geprüft.
 - Text in `--pv-text`, Überschriften in `--pv-display`, Code und Kürzel bei
   Bedarf in `--pv-mono`. Nie eine Schrift fest eintragen: die Variablen
   wechseln mit der gewählten Schrift.
-- Im Profil (»Darstellung«, »Schrift«) gibt es fünf Schriftpaare
+- Im Profil (»Darstellung«, »Schrift«) gibt es sechs Schriftpaare
   (Überschrift und Text), gespeichert in `u.ui_font`, auf der Seite als
   Klasse `pv-font-…` am `body` (`preview.css`, `include/fonts-v2/fonts.css`):
   - **Klar** (Standard): Bricolage Grotesque und Atkinson Hyperlegible Next.
@@ -144,8 +144,11 @@ und dunkel auf Kontrast geprüft.
   - **Buch**: Literata (Serifenschrift für das Lesen am Bildschirm).
   - **Freundlich**: M PLUS Rounded 1c (gerundet) und Manrope.
   - **Feder**: Alegreya (kalligrafische Überschriften) und Alegreya Sans.
-  Manrope hat kein polytonisches Griechisch und einzelne seltene Akzente
-  nicht; dafür springt Fira Sans ein.
+  - **Verspielt**: Comfortaa (gerundete Überschriften) und Playpen Sans
+    (lebhafte Handschrift für den Text, ohne ihre wechselnden Buchstabenformen,
+    damit sie ruhig lesbar und klein bleibt).
+  Manrope, Comfortaa und Playpen Sans haben kein polytonisches Griechisch,
+  Manrope auch einzelne seltene Akzente nicht; dafür springt Fira Sans ein.
 - Pflicht für jede Schrift: Latin-1 und Latin Extended-A (Akzente
   europäischer Sprachen, Makron ā ē ī ō ū für Latein) und Griechisch mit
   Tonos (U+0386–U+03CE, z. B. Ελληνικά, ά έ ή ί ό ύ ώ). Polytonisches

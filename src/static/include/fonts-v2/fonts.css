@@ -1,8 +1,9 @@
 /* Fonts of the new design (preview), self-hosted - no requests to Google Fonts.
-   Five pairs to choose from in the profile (preview.css, doc/Gestaltung.md):
+   Six pairs to choose from in the profile (preview.css, doc/Gestaltung.md):
    Klar (Bricolage Grotesque, Atkinson Hyperlegible Next, Greek from Fira Sans),
    Sachlich (Inter Tight, Inter), Buch (Literata), Freundlich (M PLUS Rounded 1c,
-   Manrope), Feder (Alegreya, Alegreya Sans).
+   Manrope), Feder (Alegreya, Alegreya Sans), Verspielt (Comfortaa,
+   Playpen Sans).
    Licences: see the LICENSE files (all SIL Open Font License 1.1), packaged by
    Fontsource 5.3.0.
    unicode-range: browsers only download the files a page needs. */
@@ -834,4 +835,63 @@
     src: url('alegreya-sans-greek-ext-700-italic.woff2') format('woff2');
     unicode-range: U+1F00-1FFF;
     size-adjust: 108%;
+}
+
+/* Verspielt: Comfortaa (headings) and Playpen Sans (text), variable fonts;
+   no polytonic Greek, Fira Sans fills in behind them (preview.css). Playpen
+   Sans without its handwriting alternates (calt): a third of the size, and
+   calmer to read (fontTools subset, all other features kept). */
+
+@font-face {
+    font-family: 'Comfortaa';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 700;
+    src: url('comfortaa-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: 'Comfortaa';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 700;
+    src: url('comfortaa-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Comfortaa';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 700;
+    src: url('comfortaa-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
+}
+
+@font-face {
+    font-family: 'Playpen Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('playpen-sans-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: 'Playpen Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('playpen-sans-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Playpen Sans';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('playpen-sans-greek-wght-normal.woff2') format('woff2');
+    unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF;
 }

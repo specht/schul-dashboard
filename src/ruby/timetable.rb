@@ -631,6 +631,10 @@ class Timetable
                                 :klassen => [ventry[:klassen_alt].to_a.sort, ventry[:klassen_neu].to_a.sort],
                                 :lehrer => [ventry[:lehrer_alt] || [], ventry[:lehrer_neu] || []],
                                 :lesson_key => (@@original_lesson_key_for_lesson_key[ventry[:fach_neu]] || Set.new()).first || 0,
+                                # the course it is about: who sees it (not its count)
+                                :orig_lesson_key => VertretungLessonKey.course_of_entry([ventry[:fach_alt], ventry[:fach_neu]],
+                                    (ventry[:klassen_alt].to_a + ventry[:klassen_neu].to_a).uniq,
+                                    @@original_lesson_key_for_lesson_key, @@lessons[:lesson_keys]),
                                 :lesson_offset => nil,
                                 :count => 1,
                                 :cache_index => @lesson_cache.size,
@@ -1781,20 +1785,12 @@ class Timetable
                                 # end
                                 flag
                             end
-                            # also delete Kurs events for SuS who are not participating in that kurs
-                            # (unless it's a phantom event)
+                            # also delete course events for SuS who don't take that course
+                            # (unless it's a phantom event), see student_lessons.rb
+                            own_lessons = @@lessons_for_user[user[:email]]
                             fixed_events.reject! do |event|
-                                if event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht])
-                                    if event[:klassen].first.include?('11') || event[:klassen].first.include?('12') || event[:klassen].last.include?('11') || event[:klassen].last.include?('12')
-                                        # also handle entfall lessons: check orig_lesson_key first, lesson_key otherwise
-                                        check_lesson_key = event[:orig_lesson_key] || event[:lesson_key]
-                                        (check_lesson_key != 0) && (@@lessons_for_user[user[:email]]) && (!@@lessons_for_user[user[:email]].include?(check_lesson_key))
-                                    else
-                                        false
-                                    end
-                                else
-                                    false
-                                end
+                                event[:lesson] && (!event[:phantom_event]) && (!event[:pausenaufsicht]) &&
+                                    StudentLessons.foreign?(event, own_lessons)
                             end
                             # delete Notizen and booked tablet info for SuS
                             fixed_events.map! do |event|

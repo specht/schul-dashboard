@@ -36,4 +36,25 @@ module VertretungLessonKey
         return taught.first if taught.size == 1
         0
     end
+
+    # The course an entry of the Vertretungsplan is about that matches no
+    # lesson in the timetable (a moved or cancelled course, an exam): the
+    # Vertretungsplan names courses of 11/12 by their code ('DE_21'), the
+    # timetable knows them as 'DE_21_12'. Only for who sees the entry
+    # (students see their own courses only), not for its lesson count.
+    # codes: [fach_alt, fach_neu], klassen: the entry's classes,
+    # course_keys_for_code: code → [key] (@@original_lesson_key_for_lesson_key).
+    # The old course first (a cancelled or replaced course concerns its
+    # students), else the new one. Returns the key, or nil when none or
+    # several fit.
+    def self.course_of_entry(codes, klassen, course_keys_for_code, lesson_keys)
+        klassen = klassen || []
+        (codes || []).compact.each do |code|
+            keys = (course_keys_for_code[code] || []).to_a.uniq.select do |key|
+                !(((lesson_keys[key] || {})[:klassen] || []) & klassen).empty?
+            end
+            return keys.first if keys.size == 1
+        end
+        nil
+    end
 end

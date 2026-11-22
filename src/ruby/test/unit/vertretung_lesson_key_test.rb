@@ -59,4 +59,32 @@ class VertretungLessonKeyTest < Minitest::Test
         assert_nil key('AGr', nil, ['Ku'], ds: '2026-11-20', klassen_alt: ['9c'])
         assert_equal 'Ma_9c', key('Ma', ['9c'], ['Sp'], ds: '2026-09-25')
     end
+
+    # entries of the Vertretungsplan that match no lesson: their course, so
+    # that only its students see them (11/12 name courses by code)
+    CODES = { 'DE_21' => ['DE_21_12'], 'BI_21' => ['BI_21_12'], 'MA' => ['MA_11~12'], 'AGr' => ['AGr_9c', 'AGr_9c~9o'] }
+    COURSES = {
+        'DE_21_12' => { :klassen => ['12'] }, 'BI_21_12' => { :klassen => ['12'] },
+        'MA_11~12' => { :klassen => ['11', '12'] },
+        'AGr_9c' => { :klassen => ['9c'] }, 'AGr_9c~9o' => { :klassen => ['9c', '9o'] },
+    }
+
+    def course(codes, klassen)
+        VertretungLessonKey.course_of_entry(codes, klassen, CODES, COURSES)
+    end
+
+    def test_course_of_entry
+        assert_equal 'DE_21_12', course(['DE_21', nil], ['12'])
+        assert_equal 'BI_21_12', course([nil, 'BI_21'], ['12'])
+        assert_equal 'MA_11~12', course(['MA', nil], ['11', '12'])
+        # the old course first
+        assert_equal 'DE_21_12', course(['DE_21', 'BI_21'], ['12'])
+    end
+
+    def test_course_of_entry_unknown_or_unclear
+        assert_nil course(['XY_1', nil], ['12'])
+        assert_nil course(['DE_21', nil], ['11'])
+        assert_nil course(['AGr', nil], ['9c'])
+        assert_nil course([nil, nil], ['12'])
+    end
 end

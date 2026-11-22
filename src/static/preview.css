@@ -789,8 +789,10 @@ html {
 }
 
 /* cancelled: the title crossed out – unless the server marked what changed
-   itself (<s>, pv-diff in timetable.html): then only that */
-.pv-ag-card.pv-ag-off .pv-ag-title b:not(.pv-diff) {
+   itself (<s>, pv-diff in timetable.html): then only that. The title itself
+   only (>): the server's label has a <b> of its own around the new subject
+   (<s>Mathematik</s> <b>Altgriechisch</b>), which stays readable */
+.pv-ag-card.pv-ag-off .pv-ag-title > b:not(.pv-diff) {
     text-decoration: line-through;
 }
 

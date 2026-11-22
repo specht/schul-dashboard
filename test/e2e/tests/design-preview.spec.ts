@@ -1564,6 +1564,8 @@ test('Neues Design: Tausch durchgestrichen nur im Alten', async ({ page }, testI
     await expect(swapDay).toBeVisible();
     expect(await swapDay.evaluate(deco)).not.toContain('line-through');
     expect(await swapDay.locator('s').first().evaluate(deco)).toContain('line-through');
+    // the new subject (the label's own <b>) stays readable
+    expect(await swapDay.locator('b', { hasText: 'Latein' }).evaluate(deco)).not.toContain('line-through');
     expect(await offDay.evaluate(deco)).toContain('line-through');
     // the week
     await page.goto('/#woche');

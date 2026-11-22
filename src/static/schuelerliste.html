@@ -1,0 +1,160 @@
+#{this_is_a_page_for_schuelerliste}
+<style>
+    .sl-page { max-width: 1100px; }
+    .sl-page h2 { margin-bottom: 0.4em; }
+    .sl-klassen { display: flex; align-items: center; gap: 0.6em; margin: 0.6em 0 1em; }
+    .sl-klassen select { width: auto; }
+    .sl-intro { max-width: 52em; }
+    .sl-progress { color: var(--pv-muted, #5f6368); }
+    .sl-scroll { overflow-x: auto; }
+    .sl-table { width: 100%; }
+    .sl-table td { vertical-align: top; }
+    .sl-name { font-weight: 600; }
+    .sl-official, .sl-notes { font-size: 0.88em; color: var(--pv-muted, #5f6368); }
+    .sl-notes { color: var(--acc-text, #8a5a00); }
+    .sl-actions { text-align: right; white-space: nowrap; }
+    .sl-done { color: #1f7a3d; font-weight: 600; }
+    .sl-corrected { display: inline-block; max-width: 26em; white-space: normal; text-align: left; font-size: 0.92em; vertical-align: top; }
+    .sl-page h4 { margin-top: 1.4em; font-size: 1.05rem; font-weight: 600; }
+    .sl-missing { padding-left: 1.2em; }
+    .sl-missing-form { display: flex; flex-wrap: wrap; gap: 0.5em; max-width: 48em; }
+    .sl-missing-form input { flex: 1 1 14em; min-width: 0; }
+    .sl-confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.6em 1em; margin-top: 1.6em; padding-top: 1em; border-top: 1px solid var(--pv-line, #e1e4e8); }
+    .sl-confirm p { margin: 0; }
+    .sl-confirmed { color: #1f7a3d; font-weight: 600; }
+    .sl-form .form-row { display: flex; flex-wrap: wrap; gap: 0.6em 1em; margin-bottom: 0.6em; }
+    .sl-form .form-row > div { flex: 1 1 12em; min-width: 0; }
+    .sl-form label { display: block; margin-bottom: 0.2em; }
+    .sl-form .sl-check { display: flex; align-items: center; gap: 0.5em; margin: 0.4em 0; }
+    .sl-form .sl-check label { margin: 0; }
+    body.dark .sl-done, body.dark .sl-confirmed { color: #7bd88f; }
+    @media (max-width: 640px) {
+        .sl-table thead { display: none; }
+        .sl-table tr { display: block; padding: 0.5em 0; border-top: 1px solid var(--pv-line, #e1e4e8); }
+        .sl-table td { display: inline-block; border: 0; padding: 0.15em 0.5em 0.15em 0; }
+        .sl-table td:first-child { display: block; }
+        .sl-actions { display: block !important; text-align: left; }
+    }
+</style>
+<div class='container-fluid white'>
+    <div class='sl-page'>
+        <h2>Neue Schülerliste prüfen</h2>
+        <div class='api_messages' style='display: none;'></div>
+        #{print_schuelerliste(params['klasse'])}
+    </div>
+</div>
+
+<div class="modal" id="slCorrectModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Korrigieren<span id='sl_correct_name' class='text-muted'></span></h5>
+            </div>
+            <div class="modal-body sl-form">
+                <p class='text-muted sl-form-intro'>Trag nur ein, was anders sein muss. Wir korrigieren es in der Schulverwaltung.</p>
+                <div class='sl-fields'>
+                    <div class='form-row'>
+                        <div><label for='ti_sl_rufname'>Rufname</label><input class='form-control' id='ti_sl_rufname' maxlength='100'></div>
+                        <div><label for='ti_sl_nachname'>Nachname</label><input class='form-control' id='ti_sl_nachname' maxlength='100'></div>
+                    </div>
+                    <div class='form-row'>
+                        <div><label for='ti_sl_vornamen'>Vornamen (alle, laut Ausweis)</label><input class='form-control' id='ti_sl_vornamen' maxlength='100'></div>
+                        <div><label for='ti_sl_geburtstag'>Geburtstag</label><input type='date' class='form-control' id='ti_sl_geburtstag'></div>
+                    </div>
+                    <div class='form-row'>
+                        <div><label for='ti_sl_geschlecht'>Geschlecht</label><select class='form-control' id='ti_sl_geschlecht'><option value='m'>männlich</option><option value='w'>weiblich</option><option value='d'>divers</option></select></div>
+                        <div><label for='ti_sl_klasse'>Klasse</label><select class='form-control' id='ti_sl_klasse'>#{KLASSEN_ORDER.map { |k| "<option value='#{k}'>#{tr_klasse(k)}</option>" }.join}</select></div>
+                        <div><label for='ti_sl_bildungsgang'>Bildungsgang</label><select class='form-control' id='ti_sl_bildungsgang'><option value=''>–</option>#{Parser::BILDUNGSGAENGE.map { |b| "<option value='#{b}'>#{Main.tr_bildungsgang(b)}</option>" }.join}</select></div>
+                    </div>
+                    <div class='sl-check'><input type='checkbox' id='ti_sl_dashboard_only'><label for='ti_sl_dashboard_only'>Rufname und Geschlecht nur im Dashboard ändern, nicht in der Schulverwaltung</label></div>
+                </div>
+                <div class='sl-check'><input type='checkbox' id='ti_sl_gone'><label for='ti_sl_gone'>Nicht mehr an der Schule</label></div>
+                <div class='form-row sl-gone-since' hidden><div><label for='ti_sl_gone_since'>seit (wenn bekannt)</label><input type='date' class='form-control' id='ti_sl_gone_since'></div></div>
+                <label for='ti_sl_text'>Anmerkung</label>
+                <textarea class='form-control' id='ti_sl_text' rows='2' maxlength='1000'></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id='bu_close_sl_modal' class="btn btn-secondary" data-dismiss="modal">Abbrechen</button>
+                <button type="button" id='bu_save_sl_correction' class="btn btn-success">Korrektur speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const box = $('.sl-class');
+        const klasse = box.data('klasse');
+        const FIELDS = ['rufname', 'nachname', 'vornamen', 'geschlecht', 'geburtstag', 'klasse', 'bildungsgang'];
+        let current = null;
+
+        $('#sl_klasse').on('change', function (e) {
+            window.location.href = '/schuelerliste?klasse=' + encodeURIComponent(e.currentTarget.value);
+        });
+
+        function send(url, payload) {
+            api_call(url, Object.assign({ klasse: klasse }, payload), function (data) {
+                if (data.success && data.ok !== false) window.location.reload();
+                else if (data.message) dashboardAlert(data.message, 'Noch nicht fertig');
+            });
+        }
+
+        $(document).on('click', '.bu_sl_ok', function (e) {
+            send('/api/schuelerliste/check', { student: $(e.currentTarget).closest('.sl-row').data('student'), status: 'ok' });
+        });
+        $(document).on('click', '.bu_sl_reopen', function (e) {
+            send('/api/schuelerliste/check', { student: $(e.currentTarget).closest('.sl-row').data('student'), status: 'open' });
+        });
+
+        // the correction: the fields filled with what the list says (or
+        // with the correction entered before); only what differs is sent
+        $(document).on('click', '.bu_sl_correct', function (e) {
+            const row = $(e.currentTarget).closest('.sl-row');
+            const values = row.data('values') || {};
+            const check = $(e.currentTarget).data('check') || {};
+            current = { student: row.data('student'), values: values, leaving: !!row.data('leaving') };
+            $('#sl_correct_name').text(' – ' + row.find('.sl-name').text());
+            $('.sl-fields').prop('hidden', current.leaving);
+            for (const f of FIELDS) $('#ti_sl_' + f).val((check.fields || {})[f] || values[f] || '');
+            $('#ti_sl_dashboard_only').prop('checked', (check.dashboard_only || []).length > 0);
+            $('#ti_sl_gone').prop('checked', !!check.gone);
+            $('#ti_sl_gone_since').val(check.gone_since || '');
+            $('.sl-gone-since').prop('hidden', !check.gone);
+            $('#ti_sl_text').val(check.text || '');
+            $('#slCorrectModal').modal('show');
+        });
+        $('#ti_sl_gone').on('change', function (e) { $('.sl-gone-since').prop('hidden', !e.currentTarget.checked); });
+        $('#bu_save_sl_correction').click(function () {
+            if (!current) return;
+            const fields = {};
+            if (!current.leaving) {
+                for (const f of FIELDS) {
+                    const v = ($('#ti_sl_' + f).val() || '').trim();
+                    if (v !== (current.values[f] || '')) fields[f] = v;
+                }
+            }
+            const gone = $('#ti_sl_gone').is(':checked');
+            const text = $('#ti_sl_text').val().trim();
+            if (Object.keys(fields).length === 0 && !gone && text.length === 0) {
+                dashboardAlert('Trag ein, was anders sein muss – oder schließe das Fenster und tippe »Stimmt«.', 'Keine Korrektur');
+                return;
+            }
+            const dashboard_only = $('#ti_sl_dashboard_only').is(':checked') ? ['rufname', 'geschlecht'].filter((f) => f in fields) : [];
+            send('/api/schuelerliste/check', {
+                student: current.student, status: 'correction', fields: fields, text: text,
+                gone: gone, gone_since: gone ? $('#ti_sl_gone_since').val() : '', dashboard_only: dashboard_only,
+            });
+        });
+
+        $('#bu_sl_missing').click(function () {
+            const name = $('#ti_sl_missing_name').val().trim();
+            if (!name) { $('#ti_sl_missing_name').focus(); return; }
+            send('/api/schuelerliste/missing', { name: name, note: $('#ti_sl_missing_note').val().trim() });
+        });
+        $(document).on('click', '.bu_sl_missing_delete', function (e) {
+            send('/api/schuelerliste/missing/delete', { id: $(e.currentTarget).data('id') });
+        });
+        $('#bu_sl_confirm').click(function () { send('/api/schuelerliste/confirm', { confirmed: true }); });
+        $('#bu_sl_unconfirm').click(function () { send('/api/schuelerliste/confirm', { confirmed: false }); });
+    });
+</script>

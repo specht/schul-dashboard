@@ -302,3 +302,83 @@ test('Rufname und Geschlecht im Dashboard nur mit der Rolle', async ({ baseURL }
   expect(r.ok()).toBe(false);
   await api.dispose();
 });
+
+// The teachers' check of the draft (/schuelerliste, include/schuelerliste.rb):
+// the class as in the draft, changes marked, every row »Stimmt« or a
+// correction, missing students, then confirmed. Clarke leads 5a (and may see
+// every class with the Datenpflege role); a teacher without a class sees
+// nothing and can't check.
+test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', async ({ page, baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(90_000);
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/schuelerliste/reset', { data: {} });
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, [HEADER,
+      'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
+      'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
+      'Neu;Nele;;05a;weiblich;01.03.2014'].join('\r\n'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+
+    await page.goto('/schuelerliste?klasse=5a');
+    const cls = page.locator('.sl-class');
+    await expect(cls.locator('h3')).toHaveText('Klasse 5a');
+    const max = cls.locator('.sl-row', { hasText: 'Maximilian Mustermann' });
+    await expect(max.locator('.sl-notes')).toContainText('Rufname: bisher Max');
+    await expect(cls.locator('.sl-row', { hasText: 'Nele Neu' }).locator('.sl-notes')).toHaveText('neu');
+    const mallory = cls.locator('.sl-leaving .sl-row', { hasText: 'Mallory' });
+    await expect(mallory).toContainText('steht nicht mehr in der Liste');
+    await expect(cls.locator('.sl-progress')).toContainText('0 von 4');
+    await expect(page.locator('#bu_sl_confirm')).toBeDisabled();
+
+    await cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_ok').click();
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.sl-done')).toContainText('stimmt');
+    await cls.locator('.sl-row', { hasText: 'Nele Neu' }).locator('.bu_sl_ok').click();
+    await expect(cls.locator('.sl-row', { hasText: 'Nele Neu' }).locator('.sl-done')).toBeVisible();
+
+    // a correction: only what differs; Rufname in the dashboard only
+    await max.locator('.bu_sl_correct').click();
+    const modal = page.locator('#slCorrectModal');
+    await expect(modal).toBeVisible();
+    await expect(page.locator('#ti_sl_rufname')).toHaveValue('Maximilian');
+    await page.locator('#ti_sl_rufname').fill('Max');
+    await page.locator('#ti_sl_dashboard_only').check();
+    await page.locator('#bu_save_sl_correction').click();
+    await expect(cls.locator('.sl-row', { hasText: 'Mustermann' }).first()).toBeVisible();
+    await expect(cls.locator('.sl-corrected', { hasText: 'Rufname: Max (nur im Dashboard)' })).toHaveCount(1);
+
+    // someone leaving who is still there
+    await mallory.locator('.bu_sl_correct').click();
+    await expect(page.locator('.sl-fields')).toBeHidden();
+    await page.locator('#ti_sl_text').fill('ist noch in der Klasse');
+    await page.locator('#bu_save_sl_correction').click();
+    await expect(cls.locator('.sl-leaving .sl-corrected')).toContainText('ist noch in der Klasse');
+
+    // missing: entered
+    await page.locator('#ti_sl_missing_name').fill('Paul Probe');
+    await page.locator('#bu_sl_missing').click();
+    await expect(cls.locator('.sl-missing li', { hasText: 'Paul Probe' })).toHaveCount(1);
+
+    // all rows checked: confirm, and change again
+    await expect(cls.locator('.sl-progress')).toContainText('4 von 4');
+    await page.locator('#bu_sl_confirm').click();
+    await expect(cls.locator('.sl-confirmed')).toContainText('Bestätigt am');
+    await page.locator('#bu_sl_unconfirm').click();
+    await expect(page.locator('#bu_sl_confirm')).toBeEnabled();
+
+    // a teacher without a class: nothing to check
+    const api = await playwrightRequest.newContext({ baseURL });
+    await apiLogin(api, ACCOUNTS.teacher);
+    expect((await api.post('/api/schuelerliste/check', { data: { klasse: '5a', student: ACCOUNTS.schueler, status: 'ok' } })).ok()).toBe(false);
+    expect((await api.post('/api/schuelerliste/reset', { data: {} })).ok()).toBe(false);
+    const html = await (await api.get('/schuelerliste')).text();
+    expect(html).toContain('Du hast keine Klasse, die du prüfen kannst');
+    await api.dispose();
+  } finally {
+    await page.request.post('/api/schuelerliste/reset', { data: {} });
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
+  }
+});

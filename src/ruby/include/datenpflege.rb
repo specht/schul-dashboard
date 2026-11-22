@@ -823,7 +823,7 @@ class Main < Sinatra::Base
                     io.puts "<div class='dp-draft' data-token='#{dp_h(draft['token'])}'>"
                     io.puts "<h5>Entwurf</h5>"
                     io.puts "<p>#{dp_h(pending['filename'])}, hochgeladen am #{Time.at(pending['created'].to_i).strftime('%d.%m.%Y, %H:%M')}, als Entwurf behalten von #{dp_h(by)}. Er gilt noch nirgends; ein neuer Export wird mit ihm verglichen.</p>"
-                    io.puts "<p><button class='btn btn-secondary' id='bu_open_draft'>Entwurf öffnen</button></p>"
+                    io.puts "<p><button class='btn btn-secondary' id='bu_open_draft'>Entwurf öffnen</button> <a class='btn btn-secondary' href='/schuelerliste'>Wie die Klassenleitungen ihn sehen</a></p>"
                     io.puts "</div>"
                 end
             end

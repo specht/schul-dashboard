@@ -146,6 +146,18 @@
             $('#bu_apply').prop('disabled', replacing && !$('#ti_replace').is(':checked'));
         }
 
+        // only the answer to the latest request counts: an earlier, slower
+        // comparison must not replace a newer one (or its error message)
+        let latest = 0;
+        function compare_call(url, payload, after) {
+            const mine = ++latest;
+            api_call(url, payload, function (data) {
+                if (mine !== latest) return;
+                show_preview(data);
+                if (after) after(data);
+            });
+        }
+
         function show_preview(data) {
             if (!data.ok) {
                 // nothing of an earlier comparison stays around
@@ -214,7 +226,7 @@
                 const content = String(reader.result).replace(/^data:[^,]*,/, '');
                 links = {};
                 emails = {};
-                api_call('/api/datenpflege/schueler/upload', { filename: file.name, content: content, date: $('#ti_date').val() }, show_preview);
+                compare_call('/api/datenpflege/schueler/upload', { filename: file.name, content: content, date: $('#ti_date').val() });
             };
             reader.readAsDataURL(file);
             // the same file once more (after a fix in LUSD) counts as a new choice
@@ -235,7 +247,7 @@
 
         function recheck() {
             if (!token) return;
-            api_call('/api/datenpflege/schueler/preview', { token: token, date: $('#ti_date').val(), klassen: klassen(), links: links, emails: emails }, show_preview);
+            compare_call('/api/datenpflege/schueler/preview', { token: token, date: $('#ti_date').val(), klassen: klassen(), links: links, emails: emails });
         }
         $('#dp_preview').on('click', '#bu_recheck', recheck);
         $('#dp_preview').on('change', '.ti_link', function (e) {
@@ -280,16 +292,14 @@
 
         $('#bu_keep_draft').click(function () {
             if (!token) return;
-            api_call('/api/datenpflege/schueler/keep', { token: token, date: $('#ti_date').val(), klassen: klassen(), links: links, emails: emails }, function (data) {
-                show_preview(data);
+            compare_call('/api/datenpflege/schueler/keep', { token: token, date: $('#ti_date').val(), klassen: klassen(), links: links, emails: emails }, function () {
                 // the box for the earlier draft is out of date now
                 $('.dp-draft').remove();
             });
         });
 
         $(document).on('click', '#bu_open_draft', function () {
-            api_call('/api/datenpflege/schueler/draft', {}, function (data) {
-                show_preview(data);
+            compare_call('/api/datenpflege/schueler/draft', {}, function () {
                 document.getElementById('dp_preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });

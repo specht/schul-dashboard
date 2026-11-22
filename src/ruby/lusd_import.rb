@@ -34,6 +34,10 @@ module LusdImport
         # for the Bildungsgang (see .bildungsgang)
         'schulformkurz' => :schulform, 'schulform' => :schulform,
         'fremdsprache' => :fremdsprache, 'fremdsprachen' => :fremdsprache,
+        # the order of the languages (who has Latin and French: which came
+        # first) – a number per language row, or the languages in order
+        'sprachenfolge' => :sprachenfolge, 'schuelersprachenfolge' => :sprachenfolge,
+        'sprachfolge' => :sprachenfolge, 'fremdsprachenfolge' => :sprachenfolge,
         # LUSD's own number of a student: the safest way to recognise them in
         # the next import
         'schuelerschluessel' => :lusd_id, 'schuelerid' => :lusd_id, 'schuelernummer' => :lusd_id,
@@ -44,7 +48,17 @@ module LusdImport
         'schuelertutor' => :tutor, 'tutorlehrer' => :tutor,
     }
     # one row per foreign language: these columns don't make a row different
-    PER_ROW = [:fremdsprache]
+    PER_ROW = [:fremdsprache, :sprachenfolge]
+    # languages as they may stand abbreviated in a Sprachenfolge
+    LANGUAGE_NAMES = {
+        'e' => 'Englisch', 'en' => 'Englisch', 'eng' => 'Englisch', 'englisch' => 'Englisch',
+        'l' => 'Latein', 'la' => 'Latein', 'lat' => 'Latein', 'latein' => 'Latein',
+        'f' => 'Französisch', 'fr' => 'Französisch', 'frz' => 'Französisch', 'französisch' => 'Französisch',
+        'g' => 'Altgriechisch', 'gr' => 'Altgriechisch', 'agr' => 'Altgriechisch', 'griechisch' => 'Altgriechisch', 'altgriechisch' => 'Altgriechisch',
+        'ngr' => 'Neugriechisch', 'neugriechisch' => 'Neugriechisch',
+        'r' => 'Russisch', 'ru' => 'Russisch', 'russisch' => 'Russisch',
+        's' => 'Spanisch', 'sp' => 'Spanisch', 'spa' => 'Spanisch', 'spanisch' => 'Spanisch',
+    }
     REQUIRED = [:nachname, :vorname, :klasse, :geschlecht, :geburtsdatum]
     FIELD_LABELS = {
         :nachname => 'Nachname', :vorname => 'Vorname', :klasse => 'Klasse',
@@ -79,7 +93,8 @@ module LusdImport
 
     Student = Struct.new(:row, :nachname, :vorname, :klasse, :lusd_klasse,
                          :geschlecht, :geburtsdatum, :rufname, :schulform, :sprachen,
-                         :bildungsgang, :email, :email_note, :old_klasse, :matched_by, :email_taken, :lusd_id, :email_custom, keyword_init: true) do
+                         :bildungsgang, :email, :email_note, :old_klasse, :matched_by, :email_taken, :lusd_id, :email_custom,
+                         :folge, keyword_init: true) do
         # Same rule as Parser#handle_schueler_line: the e-mail address is
         # built from this and the Nachname.
         def effective_rufname
@@ -312,6 +327,7 @@ module LusdImport
         [:lusd_id, 'Schüler-Schlüssel', false, 'erkennt Schüler:innen im nächsten Export sicher wieder, auch nach einer Namensänderung'],
         [:schulform, 'Schulform (kurz)', false, 'für den Bildungsgang (SESB, altsprachlich, regulär)'],
         [:fremdsprache, 'Fremdsprachen', false, 'für den Bildungsgang (Latein oder Französisch)'],
+        [:sprachenfolge, 'Sprachenfolge', false, 'für den Bildungsgang, wenn jemand Latein und Französisch hat: welche zuerst kam'],
         [:stufe, 'Stufe / Semester', false, 'für 11 und 12, wenn die Klasse fehlt'],
         [:tutor, 'Tutor:in', false, 'wer in 11 und 12 die Daten vor der Übernahme prüft'],
     ]
@@ -370,7 +386,10 @@ module LusdImport
             used = columns.values_at(*(HEADERS.values.uniq - PER_ROW)).compact.map { |c| clean(row[c]) }
             if seen[used]
                 duplicates += 1
-                seen[used].sprachen << get.(:fremdsprache) if seen[used].is_a?(Student)
+                if seen[used].is_a?(Student)
+                    seen[used].sprachen << get.(:fremdsprache)
+                    seen[used].folge << [get.(:sprachenfolge), get.(:fremdsprache)]
+                end
                 next
             end
             seen[used] = :error
@@ -410,7 +429,8 @@ module LusdImport
                                     geburtsdatum: geburtsdatum, rufname: rufname,
                                     schulform: columns[:schulform] ? get.(:schulform) : nil,
                                     lusd_id: columns[:lusd_id] && !get.(:lusd_id).empty? ? get.(:lusd_id) : nil,
-                                    sprachen: [get.(:fremdsprache)])
+                                    sprachen: [get.(:fremdsprache)],
+                                    folge: [[get.(:sprachenfolge), get.(:fremdsprache)]])
             seen[used] = students.last
         end
         students.each do |s|
@@ -418,6 +438,21 @@ module LusdImport
             ordered = s.sprachen.any? { |x| x =~ /[,;\/]/ }
             s.sprachen = s.sprachen.flat_map { |x| x.split(/\s*[,;\/]\s*/) }.map { |x| clean(x) }.reject(&:empty?).uniq
             s.sprachen = s.sprachen.sort unless ordered
+            # a Sprachenfolge decides the order: a number per language row
+            # ("2", "2. Fremdsprache"), or the languages in order in one cell
+            numbered = s.folge.filter_map { |pos, lang| [$1.to_i, clean(lang)] if pos.to_s =~ /\A\s*(\d+)/ && !clean(lang).empty? }
+            listed = s.folge.map(&:first).find { |pos| pos.to_s =~ /[[:alpha:]]{1,}/ && pos.to_s !~ /\A\s*\d/ }
+            if numbered.size > 1
+                order = numbered.sort_by(&:first).map(&:last).uniq
+                s.sprachen = order + (s.sprachen - order)
+                ordered = true
+            elsif listed
+                order = listed.split(/[\s,;\/\-–>]+/).filter_map { |x| LANGUAGE_NAMES[x.downcase] || (x.length > 3 ? x.capitalize : nil) }.uniq
+                unless order.empty?
+                    s.sprachen = order + (s.sprachen - order)
+                    ordered = true
+                end
+            end
             s.bildungsgang = bildungsgang(s.schulform, s.sprachen, ordered) if s.schulform
         end
         { students: students, errors: errors, skipped: skipped, duplicates: duplicates }

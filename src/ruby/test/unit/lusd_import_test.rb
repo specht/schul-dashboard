@@ -236,4 +236,29 @@ class LusdImportTest < Minitest::Test
         refute report[:rufname][:required]
         assert_nil LusdImport.column_report([['Name', 'Ort']])
     end
+
+    # Latin and French: the Sprachenfolge decides the Bildungsgang – a number
+    # per language row, or the languages in order in one cell
+    def test_sprachenfolge
+        header = ['Nachname', 'Vorname', 'Klasse', 'Geschlecht', 'Geburtsdatum', 'Schulform_kurz', 'Fremdsprache', 'Sprachenfolge']
+        rows = [header,
+            ['Muster', 'Ina', '7a', 'w', '01.01.2013', 'GYM', 'Englisch', '1'],
+            ['Muster', 'Ina', '7a', 'w', '01.01.2013', 'GYM', 'Französisch', '2'],
+            ['Muster', 'Ina', '7a', 'w', '01.01.2013', 'GYM', 'Latein', '3'],
+            ['Probe', 'Jan', '7a', 'm', '02.02.2013', 'GYM', 'Latein', '2. Fremdsprache'],
+            ['Probe', 'Jan', '7a', 'm', '02.02.2013', 'GYM', 'Französisch', '3. Fremdsprache'],
+            ['Probe', 'Jan', '7a', 'm', '02.02.2013', 'GYM', 'Englisch', '1. Fremdsprache'],
+            ['Liste', 'Kim', '7a', 'd', '03.03.2013', 'GYM', 'Latein', 'E, F, L'],
+            ['Liste', 'Kim', '7a', 'd', '03.03.2013', 'GYM', 'Französisch', 'E, F, L'],
+            ['Ohne', 'Ole', '7a', 'm', '04.04.2013', 'GYM', 'Latein', ''],
+            ['Ohne', 'Ole', '7a', 'm', '04.04.2013', 'GYM', 'Französisch', '']]
+        by = LusdImport.convert(rows)[:students].to_h { |st| [st.vorname, st] }
+        assert_equal 'regulaer_frz', by['Ina'].bildungsgang
+        assert_equal ['Englisch', 'Französisch', 'Latein'], by['Ina'].sprachen
+        assert_equal 'regulaer_la', by['Jan'].bildungsgang
+        assert_equal 'regulaer_frz', by['Kim'].bildungsgang
+        # without an order: just regular, as before
+        assert_equal 'regulaer', by['Ole'].bildungsgang
+        assert LusdImport.column_report(rows).find { |x| x[:field] == :sprachenfolge }[:found]
+    end
 end

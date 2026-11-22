@@ -13,7 +13,7 @@
 # With the opt-in, monitor.html switches its own styles and script off
 # (media / type attributes below) and loads preview/monitor/monitor.css and
 # monitor.js, which draw the same data (the same /ws_monitor messages) in the
-# new design: pages instead of scrolling, larger type, clock and the current
+# new design: compact rows in columns that scroll like before, clock and the current
 # lesson, tokens from the day's colour scheme, the scheme's backdrop between
 # opaque boxes.
 class Main < Sinatra::Base
@@ -70,6 +70,20 @@ class Main < Sinatra::Base
         hours.each_with_index.map { |(start_time, end_time), stunde| [stunde, start_time, end_time] }.reject { |x| x[0] == 0 }
     end
 
+    # the colour scheme of the day for the new design: only the curated
+    # schemes (DesignTokens::CURATED), the same all day on every screen (like
+    # pick_random_color_scheme, with a generator of its own); on the days of
+    # the Zeugniskonferenzen the fixed scheme of those days
+    def monitor_neu_color_scheme
+        return pick_random_color_scheme() if ZEUGNISKONFERENZEN.include?(Date.today.strftime('%Y-%m-%d'))
+        rng = DEVELOPMENT ? Random.new : Random.new((Date.today + 1).jd)
+        key = DesignTokens::CURATED[rng.rand(DesignTokens::CURATED.size)][0]
+        # its own prefix (some curated schemes are dark variants): name and
+        # author come from @@color_scheme_info under the full code
+        own = @@color_scheme_colors.find { |c| c[0, 3].join('').delete('#') == key }
+        "#{own ? own[4] : 'l'}#{key}0"
+    end
+
     # styles, tokens, data and script of the new design (only with the opt-in)
     def monitor_neu_html(color_scheme)
         return '' unless monitor_neu?
@@ -94,7 +108,12 @@ class Main < Sinatra::Base
         # inside <script>: no "</" that could end it
         json = daten.to_json.gsub('</', '<\/')
         tokens = DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, backdrop, 1.0)
-        "\n<style id='monitor_neu_tokens'>#{tokens} :root { --mn-backdrop: url('#{backdrop_url.gsub(/['\\]/, '')}'); }</style>\n" +
+        # the head's text straight on the picture, without a shaded band, each
+        # side in its own colour (title and date left, clock and lesson right)
+        ink_l, shadow_l = DesignTokens.plain_band(backdrop, dark, 0.0, 0.4)
+        ink_r, shadow_r = DesignTokens.plain_band(backdrop, dark, 0.65, 1.0)
+        "\n<style id='monitor_neu_tokens'>#{tokens} :root { --mn-backdrop: url('#{backdrop_url.gsub(/['\\]/, '')}'); } " +
+            ".mn { --mn-kopf-l: #{ink_l}; --mn-kopf-l-hof: #{shadow_l}; --mn-kopf-r: #{ink_r}; --mn-kopf-r-hof: #{shadow_r}; }</style>\n" +
             "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
             "<link href='#{preview_asset('/include/tabler/tabler-icons.css')}' rel='stylesheet' />\n" +
             "<link href='#{preview_asset('/preview/monitor/monitor.css')}' rel='stylesheet' />\n" +

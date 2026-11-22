@@ -107,6 +107,25 @@ class DesignTokensTest < Minitest::Test
         end
     end
 
+    # the monitor's head without a shade and without a shadow: each side its
+    # own colour, readable on every curated scheme (3:1, large text)
+    def test_plain_band
+        # dark on the left, yellow on the right
+        code = 'l1a1a1a5a4a2affc72c0'
+        assert_equal '#ffffff', T.plain_band(code, false, 0.0, 0.4)[0]
+        assert_equal '#0a1222', T.plain_band(code, false, 0.65, 1.0)[0]
+        assert_equal '#ffffff', T.plain_band('d' + code[1..], false, 0.65, 1.0)[0]
+        T::CURATED.each do |key, name, _|
+            [false, true].each do |dark|
+                [[0.0, 0.4], [0.65, 1.0]].each do |from, to|
+                    ink, shadow, worst = T.plain_band("#{dark ? 'd' : 'l'}#{key}0", dark, from, to)
+                    assert_operator worst, :>=, 3.0, "#{name} #{dark ? 'dunkel' : 'hell'} #{from}..#{to}: #{ink}"
+                    assert_equal 'none', shadow, name
+                end
+            end
+        end
+    end
+
     # yellow stays yellow (with dark text), blue gets white text
     def test_bright_accents_keep_their_colour
         soft = T.tokens('l55beedf9b935e5185d0', false)

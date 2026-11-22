@@ -4287,7 +4287,8 @@ class Main < Sinatra::Base
             color_scheme += '0'
         end
         if path == 'monitor' || path == 'monitor_buchungen'
-            color_scheme = pick_random_color_scheme()
+            # the hallway monitor in the new design: only curated schemes
+            color_scheme = monitor_neu? ? monitor_neu_color_scheme : pick_random_color_scheme()
         end
         rendered_something = @@renderer.render(["##{color_scheme[1, 6]}", "##{color_scheme[7, 6]}", "##{color_scheme[13, 6]}"], (@session_user || {})[:email])
         trigger_update_images() if rendered_something

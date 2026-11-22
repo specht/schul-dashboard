@@ -5,10 +5,12 @@
 
    - Alles in vw: dieselbe Seite läuft auf Full-HD-Monitoren und in den
      kleinen Vorschauen auf „Monitore verwalten“.
-   - Der Hintergrund des Farbschemas liegt zwischen deckenden Kästen; Schrift
-     auf dem Hintergrund (Kopf) in --band-ink mit --band-shadow.
+   - Der Hintergrund des Farbschemas in voller Farbe zwischen den Kästen; die
+     Schrift im Kopf links und rechts in je eigener Farbe mit Hof
+     (--mn-kopf-l, --mn-kopf-r aus DesignTokens.plain_band).
    - Feste Kacheln: jede Klasse immer an derselben Stelle, auch ohne Änderungen.
-   - Blättern statt Scrollen: Seiten mit sichtbarer Standzeit (Balken unten).
+   - Kompakt wie bisher: ein Eintrag eine Zeile in Spalten, das Alte
+     durchgestrichen; was nicht in eine Kachel passt, rollt darin (monitor.js).
    - Farben nur aus Tokens (design_tokens.rb und die neutralen unten). */
 
 body.mn-aktiv {
@@ -35,9 +37,6 @@ body.mn-aktiv .embed-responsive {
     --mn-warn: #8f5605;
     --mn-warn-soft: #fbefd8;
     --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.12);
-    /* below the head the scheme's picture fades behind a calm veil, so that
-       it does not compete with the tiles */
-    --mn-veil: rgba(243, 245, 248, 0.88);
     --mn-text: 'Atkinson Hyperlegible Next', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --mn-display: 'Bricolage Grotesque', 'Fira Sans Fallback Display', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
     --mn-mono: 'Atkinson Hyperlegible Mono', 'Fira Sans Fallback', ui-monospace, Menlo, Consolas, monospace;
@@ -54,10 +53,10 @@ body.mn-aktiv .embed-responsive {
     line-height: 1.3;
     letter-spacing: normal;
     color: var(--mn-ink);
-    /* ein leichter Schleier links hinter dem Kopf, das Bild des Schemas, darunter Papier */
+    /* das Bild des Schemas in voller Farbe (wie bisher), ohne Schleier: die
+       Schrift im Kopf hat ihre Farbe und einen Hof für dieses Bild
+       (DesignTokens.plain_band), darunter Papier */
     background:
-        linear-gradient(180deg, transparent 7.6vw, var(--mn-veil) 10.5vw) 0 0 / 100% 100% no-repeat,
-        linear-gradient(90deg, rgba(var(--band-scrim), var(--band-scrim-a)), rgba(var(--band-scrim), 0) 55%) 0 0 / 100% 8.75vw no-repeat,
         var(--mn-backdrop) 50% 0 / 100% auto no-repeat,
         var(--mn-paper);
     user-select: none;
@@ -77,7 +76,6 @@ body.mn-aktiv .embed-responsive {
     --mn-warn: #e6ad55;
     --mn-warn-soft: #2d2213;
     --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.45);
-    --mn-veil: rgba(14, 19, 26, 0.88);
     color-scheme: dark;
 }
 
@@ -98,6 +96,17 @@ body.mn-aktiv.mn-dunkel-seite {
     gap: 2vw;
     color: var(--band-ink);
     text-shadow: var(--band-shadow);
+}
+
+.mn-kopf > div:first-child {
+    color: var(--mn-kopf-l, var(--band-ink));
+    text-shadow: var(--mn-kopf-l-hof, var(--band-shadow));
+}
+
+.mn-uhr,
+.mn-stunde {
+    color: var(--mn-kopf-r, var(--band-ink));
+    text-shadow: var(--mn-kopf-r-hof, var(--band-shadow));
 }
 
 .mn-kopf h1 {
@@ -192,14 +201,20 @@ body.mn-aktiv.mn-dunkel-seite {
 .mn-kasten h2 {
     margin: 0;
     font: 800 1.85vw/1.05 var(--mn-display);
+}
+
+/* the class names: all the same size, smaller than a heading */
+.mn-kachel h2 {
+    font-size: 1.45vw;
+    line-height: 1.15;
     color: var(--mn-ink);
 }
 
-/* Name links (darunter die Seite, wenn die Kachel blättert), Einträge rechts daneben */
+/* Name links, Einträge rechts daneben */
 .mn-kachel {
     display: grid;
-    grid-template-columns: 3.9vw minmax(0, 1fr);
-    /* die Zeile ist so hoch wie die Kachel: was nicht passt, kommt auf die nächste Seite */
+    grid-template-columns: 3.1vw minmax(0, 1fr);
+    /* the entries are as high as the tile: what does not fit scrolls */
     grid-template-rows: minmax(0, 1fr);
     column-gap: 0.6vw;
     padding: 0.35vw 0.75vw;
@@ -207,59 +222,75 @@ body.mn-aktiv.mn-dunkel-seite {
 }
 
 .mn-name {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4vw;
     min-width: 0;
 }
 
+/* the window the entries scroll in */
 .mn-kachel .mn-zeilen {
     min-height: 0;
     overflow: hidden;
-    font-size: 1.22vw;
-    /* drei kurze Einträge passen in eine normale Kachel */
-    line-height: 1.14;
-    row-gap: 0.1vw;
-    transition: opacity 0.3s;
 }
 
-.mn-kachel .mn-zeilen.mn-weg {
-    opacity: 0;
+/* while it scrolls, the lines fade out at the edge where more follows */
+.mn-kachel[data-rollt] .mn-zeilen {
+    -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 1.1vw), transparent);
+    mask-image: linear-gradient(180deg, #000 calc(100% - 1.1vw), transparent);
 }
 
-/* ohne Änderungen: die Kachel bleibt an ihrem Platz, nur der Name, leise –
-   kein weißer Kasten, damit die Kacheln mit Änderungen herausstechen */
+.mn-kachel[data-rollt='unten'] .mn-zeilen {
+    -webkit-mask-image: linear-gradient(0deg, #000 calc(100% - 1.1vw), transparent);
+    mask-image: linear-gradient(0deg, #000 calc(100% - 1.1vw), transparent);
+}
+
+/* ohne Änderungen: die Kachel bleibt an ihrem Platz, nur der Name – Milchglas
+   wie auf dem bisherigen Monitor statt eines weißen Kastens, damit die
+   Kacheln mit Änderungen herausstechen und der Name auch auf kräftigen
+   Farben lesbar bleibt; der Name so groß wie in jeder Kachel */
 .mn-kachel.mn-still {
-    background-color: color-mix(in srgb, var(--mn-surface) 45%, transparent);
+    background-color: color-mix(in srgb, var(--mn-surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(0.6vw);
+    backdrop-filter: blur(0.6vw);
     border-color: transparent;
     box-shadow: none;
 }
 
 .mn.mn-dunkel .mn-kachel.mn-still {
-    background-color: color-mix(in srgb, var(--mn-surface) 25%, transparent);
+    background-color: color-mix(in srgb, var(--mn-surface) 65%, transparent);
 }
 
 .mn-kachel.mn-still h2 {
     color: var(--mn-muted);
-    font-weight: 700;
-    font-size: 1.55vw;
 }
 
-.mn-zeilen {
+/* Einträge in Spalten wie auf dem bisherigen Monitor: Stunde, Fach,
+   Lehrkraft, Raum (rechts); der Text des Plans in einer Zeile darunter.
+   Stunde und Fach in fester Breite, damit die Einträge aller Kacheln in
+   denselben Spalten stehen (ein langes Fach bricht innerhalb seiner Spalte
+   um). Eine feine Linie zwischen den Einträgen (an jeder Zelle der ersten
+   Zeile, darum Abstände als Innenabstand, nicht als column-gap). */
+.mn-liste {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 2.5em 4.9em minmax(0, 1fr) auto;
     grid-auto-rows: min-content;
-    column-gap: 0.6vw;
-    row-gap: 0.3vw;
     align-items: start;
     align-content: start;
+    /* the old monitor's size (1.05vw, 20 px on full HD), read in the hallway for years */
+    font-size: 1.05vw;
+    line-height: 1.25;
+    will-change: transform;
 }
 
 .mn-zeile {
     display: contents;
 }
 
+.mn-z1 {
+    padding: 0.12vw 0 0.12vw 0.55vw;
+}
+
 .mn-st {
+    grid-column: 1;
+    padding-left: 0;
     font-family: var(--mn-display);
     font-weight: 800;
     color: var(--mn-ink);
@@ -267,56 +298,67 @@ body.mn-aktiv.mn-dunkel-seite {
     white-space: nowrap;
 }
 
-.mn-was {
-    min-width: 0;
-    overflow-wrap: anywhere;
+.mn-zeile + .mn-zeile > .mn-z1 {
+    border-top: 1px solid var(--mn-line);
 }
 
-.mn-was b {
+.mn-fach,
+.mn-wer,
+.mn-raum {
+    min-width: 0;
+}
+
+.mn-fach {
     font-weight: 700;
 }
 
-.mn-text,
+.mn-raum {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.mn-breit {
+    grid-column: span 2;
+}
+
+.mn-liste b {
+    font-weight: 700;
+}
+
 .mn-alt {
     color: var(--mn-muted);
+    font-weight: 400;
+    text-decoration-thickness: 0.08vw;
+}
+
+.mn-text {
+    grid-column: 2 / -1;
+    padding: 0 0 0.15vw 0.55vw;
+    font-size: 0.95vw;
+    line-height: 1.2;
+    color: var(--mn-muted);
+    overflow-wrap: anywhere;
+}
+
+.mn-text.mn-z1 {
+    padding-top: 0.12vw;
 }
 
 .mn-marke {
     display: inline-block;
-    margin-right: 0.45vw;
-    /* no taller than a line of text: three entries still fit in a tile */
-    padding: 0.12vw 0.45vw;
+    padding: 0.1vw 0.45vw;
     border-radius: 0.45vw;
-    font: 700 0.95vw/1 var(--mn-text);
-    vertical-align: 0.1vw;
+    font: 700 0.85vw/1.1 var(--mn-text);
     white-space: nowrap;
 }
 
-.mn-m-v {
-    background: var(--acc-soft);
-    color: var(--acc-text);
-}
-
 /* Entfall: the one students look for, solid and dark */
-.mn-m-e {
+.mn-marke {
     background: var(--mn-ink);
     color: var(--mn-surface);
 }
 
-.mn-m-r {
-    background: var(--mn-warn-soft);
-    color: var(--mn-warn);
-}
-
-/* die Seite einer Kachel, die blättert: »1/2« unter dem Namen */
-.mn-kseite {
-    font: 700 1vw/1.2 var(--mn-text);
-    color: var(--acc-text);
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-}
-
-/* ---------- Fuß: Seite, Standzeit, Nachrichten, Farbschema ---------- */
+/* ---------- Fuß: Laufband, Farbschema ---------- */
 
 .mn-fuss {
     position: absolute;
@@ -338,26 +380,6 @@ body.mn-aktiv.mn-dunkel-seite {
     white-space: nowrap;
 }
 
-.mn-seite {
-    font-variant-numeric: tabular-nums;
-}
-
-.mn-balken {
-    flex: none;
-    width: 9vw;
-    height: 0.4vw;
-    border-radius: 0.2vw;
-    background: var(--mn-sunken);
-    overflow: hidden;
-}
-
-.mn-balken b {
-    display: block;
-    height: 100%;
-    width: 0;
-    background: var(--acc);
-}
-
 .mn-nachricht {
     flex: 1 1 auto;
     min-width: 0;
@@ -365,21 +387,30 @@ body.mn-aktiv.mn-dunkel-seite {
     font-size: 1.4vw;
     font-weight: 700;
     color: var(--mn-ink);
+    /* das Band taucht an den Rändern weich auf und ab */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 2vw, #000 calc(100% - 2vw), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 2vw, #000 calc(100% - 2vw), transparent);
 }
 
-/* lange Nachrichten laufen einmal durch und blenden am Rand aus */
-.mn-nachricht.mn-lang {
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 2.5vw), transparent);
-    mask-image: linear-gradient(90deg, #000 calc(100% - 2.5vw), transparent);
-}
-
-.mn-nachricht span {
-    display: inline-block;
+.mn-band {
+    display: flex;
+    width: max-content;
+    white-space: nowrap;
     will-change: transform;
 }
 
-.mn-nachricht .ti {
-    margin-right: 0.5vw;
+.mn-abschnitt {
+    flex: none;
+    display: flex;
+}
+
+.mn-meldung {
+    flex: none;
+    padding-right: 4vw;
+}
+
+.mn-meldung .ti {
+    margin-right: 0.6vw;
     color: var(--acc-text);
     font-weight: normal;
 }
@@ -449,7 +480,7 @@ body.mn-aktiv.mn-dunkel-seite {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .mn-kachel .mn-zeilen, .mn-bild {
+    .mn-bild {
         transition: none;
     }
 }

@@ -222,6 +222,39 @@ module DesignTokens
         light || dark_shade || [[1, 1, 1], [0, 0, 0], 0.7]
     end
 
+    # Large text straight on the backdrop, without a shade and without a
+    # shadow (the head of the hallway monitors, where a shaded band shows as
+    # a stripe), for the part of the width from..to (0.0 left, 1.0 right):
+    # the picture there at full strength (its fade to the paper is still
+    # weak at the top, PLAIN_BAND_FADE), white or dark text, whichever reads
+    # better (white when it is about as good). Large text needs 3:1; only
+    # below that a soft halo of the other colour helps (no curated scheme).
+    # Returns [ink, text-shadow, worst contrast].
+    PLAIN_BAND_FADE = 0.1
+    PLAIN_BAND_MIN = 3.0
+    PLAIN_BAND_DARK = '#0a1222'
+
+    def self.plain_band(backdrop, dark, from = 0.0, to = 1.0)
+        colors = [1, 7, 13].map { |i| hex_to_rgb(backdrop.to_s[i, 6] || '000000') }
+        dark = !!dark || backdrop.to_s[0] == 'd'
+        g = [colors[0], mix(colors[1], [1, 1, 1], 0.1), colors[2]]
+        paper = hex_to_rgb(PAPER[dark])
+        samples = (0..10).map do |i|
+            c = gradient(g, from + (to - from) * i / 10.0)
+            c = mix(c, [8 / 255.0] * 3, 0.38) if dark
+            mix(c, paper, PLAIN_BAND_FADE)
+        end
+        worst = lambda { |ink| samples.map { |c| contrast(ink, c) }.min }
+        white = worst.call([1, 1, 1])
+        # the deepest ink of the design (as --acc-ink), a little more contrast
+        ink_dark = worst.call(hex_to_rgb(PLAIN_BAND_DARK))
+        if (white >= PLAIN_BAND_MIN && white + 0.3 >= ink_dark) || white > ink_dark
+            ['#ffffff', white >= PLAIN_BAND_MIN ? 'none' : '0 0 0.5vw rgba(0,0,0,.45)', white]
+        else
+            [PLAIN_BAND_DARK, ink_dark >= PLAIN_BAND_MIN ? 'none' : '0 0 0.5vw rgba(255,255,255,.6)', ink_dark]
+        end
+    end
+
     # ---------- colour helpers (components 0..1) ----------
     def self.hex_to_rgb(h)
         h = h.to_s.delete('#')

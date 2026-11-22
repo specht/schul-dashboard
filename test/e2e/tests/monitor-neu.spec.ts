@@ -12,6 +12,11 @@ import type { Page } from '@playwright/test';
 // themselves with a full school day (the same messages the server sends)
 // and fix the clock at 11:05.
 
+// the names of DesignTokens::CURATED (design_tokens.rb)
+const CURATED_NAMES = ['Sky', 'Zoomer', 'Ravenclaw', 'Unter dem Meer', '20.000 Meilen unter dem Meer', 'Thylakoid',
+  'Orangensaft', 'Gryffindor', 'Blutroter Sommer', 'BOOMBAYAH', 'Ice cream', 'Amethyst', 'Purple Valley', 'Dreamy',
+  'ソフトクリーム', 'Sunset'];
+
 const FAECHER = ['D', 'Ma', 'En', 'Bio', 'Ch', 'Phy', 'Ge', 'Geo', 'Ku', 'Mu', 'Frz', 'La', 'Eth', 'Sp'];
 const KUERZEL = ['Se', 'Pe', 'Kw', 'Hb', 'Ei', 'Zw', 'Cl', 'Mk', 'Rh', 'Gr', 'Ta', 'Ts'];
 const RAEUME = ['108', '129', '204', '211', '317', '323', 'A102', 'B014', 'Aula', 'Halle'];
@@ -111,22 +116,35 @@ async function anhalten(page: Page) {
   await page.clock.pauseAt(t + 500);
 }
 
-// waits (in steps of a second) for the next page; returns the seconds
-async function blaettern(page: Page) {
-  const mn = page.getByTestId('monitor-neu');
-  const vorher = await mn.getAttribute('data-seite');
-  for (let s = 1; s <= 20; s++) {
+// waits (in steps of a second) until the tile scrolls in that phase; returns the seconds
+async function bisPhase(page: Page, klasse: string, phase: string, hoechstens = 120) {
+  const k = page.locator(`.mn-kachel[data-klasse="${klasse}"]`);
+  for (let s = 0; s <= hoechstens; s++) {
+    if ((await k.getAttribute('data-rollt')) === phase) return s;
     await page.clock.runFor(1000);
-    if ((await mn.getAttribute('data-seite')) !== vorher) return s;
   }
-  throw new Error('Der Monitor blättert nicht weiter.');
+  throw new Error(`Die Kachel ${klasse} kommt nicht nach »${phase}«.`);
 }
 
-// nothing is cut off: every tile shows all lines of its current page
+// how far a tile has scrolled (px)
+async function versatz(page: Page, klasse: string) {
+  return page.locator(`.mn-kachel[data-klasse="${klasse}"] .mn-liste`).evaluate((e) => {
+    const t = getComputedStyle(e).transform;
+    return Math.abs(t === 'none' ? 0 : new DOMMatrixReadOnly(t).m42);
+  });
+}
+
+// nothing is cut off: no tile wider than its place, and a tile with more
+// lines than fit scrolls
 async function nichtsAbgeschnitten(page: Page) {
-  const cut = await page.evaluate(() => Array.from(document.querySelectorAll('.mn-kachel, .mn-kachel .mn-zeilen'))
-    .filter((e) => e.scrollHeight > e.clientHeight + 1).length);
-  expect(cut, 'abgeschnittene Kacheln').toBe(0);
+  const cut = await page.evaluate(() => Array.from(document.querySelectorAll('.mn-kachel')).filter((k) => {
+    const box = k.querySelector('.mn-zeilen')!;
+    const liste = k.querySelector('.mn-liste')!;
+    if (k.scrollHeight > k.clientHeight + 1 || k.scrollWidth > k.clientWidth + 1) return true;
+    if (liste.scrollWidth > box.clientWidth + 1) return true;
+    return liste.scrollHeight > box.clientHeight + 1 && !(k as HTMLElement).dataset.rollt;
+  }).map((k) => (k as HTMLElement).dataset.klasse));
+  expect(cut, 'abgeschnittene Kacheln').toEqual([]);
 }
 
 test('Flurmonitor, neues Design: Uhr, laufende Stunde, Kästen und Marken', async ({ page }) => {
@@ -140,22 +158,53 @@ test('Flurmonitor, neues Design: Uhr, laufende Stunde, Kästen und Marken', asyn
   await expect(page.getByTestId('monitor-stunde')).toContainText('Pause ab');
   await expect(page.locator('.mn-datum')).toContainText('Stand 7:12 Uhr');
   const k5a = page.locator('.mn-kachel[data-klasse="5a"]');
-  // a substitution without a mark (»Hb statt Se« says it), one line
-  await expect(k5a.locator('.mn-marke', { hasText: 'Vertretung' })).toHaveCount(0);
-  await expect(k5a.locator('.mn-marke', { hasText: 'Entfall' })).toHaveCount(1);
-  await expect(k5a.locator('.mn-marke', { hasText: 'Raum' })).toHaveCount(1);
-  // what replaces what: the new state in full, »statt …« quietly behind it
-  const vertretung = k5a.locator('.mn-was').first();
-  await expect(vertretung.locator('.mn-alt').first()).toHaveText(/^ statt \S+$/);
-  expect(await vertretung.evaluate((e) => e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight))).toBeLessThan(1.5);
-  const ink = await vertretung.evaluate((e) => getComputedStyle(e).color);
-  expect(await vertretung.locator('.mn-alt').first().evaluate((e) => getComputedStyle(e).color)).not.toBe(ink);
-  // another subject, another teacher: separated by a comma
-  await expect(page.locator('.mn-kachel[data-klasse="5b"] .mn-was').first()).toHaveText(/^Ku statt \S+, \S+ statt \S+, \S+$/);
-  // the mark says »Entfall«: the text does not repeat it
-  const entfall = page.locator('.mn-kachel[data-klasse="12"] .mn-was', { has: page.locator('.mn-marke', { hasText: 'Entfall' }) }).first();
-  await expect(entfall).toContainText('verlegt auf 6. Std.');
+  // a mark only for Entfall: the other changes show as »neu ~~alt~~«
+  await expect(k5a.locator('.mn-marke')).toHaveCount(1);
+  await expect(k5a.locator('.mn-marke')).toHaveText('Entfall');
+  // compact as on the old monitor: one entry, one line in columns
+  const vertretung = k5a.locator('.mn-zeile').first();
+  await expect(vertretung.locator('.mn-st')).toHaveText('1.');
+  await expect(vertretung.locator('.mn-fach')).toHaveText('D');
+  await expect(vertretung.locator('.mn-wer b')).toHaveText(/^\S+$/);
+  await expect(vertretung.locator('.mn-wer s.mn-alt')).toHaveText('Se');
+  await expect(vertretung.locator('.mn-raum')).toHaveText('108');
+  const zeile = await vertretung.evaluate((z) => Array.from(z.children).map((c) => {
+    const r = c.getBoundingClientRect();
+    return { top: Math.round(r.top), lines: r.height / parseFloat(getComputedStyle(c).lineHeight) };
+  }));
+  expect(new Set(zeile.map((c) => c.top)).size, 'eine Zeile').toBe(1);
+  for (const c of zeile) expect(c.lines).toBeLessThan(1.5);
+  // the old value quieter than the new one, struck through
+  const ink = await vertretung.locator('.mn-wer b').evaluate((e) => getComputedStyle(e).color);
+  const alt = vertretung.locator('.mn-wer .mn-alt');
+  expect(await alt.evaluate((e) => getComputedStyle(e).color)).not.toBe(ink);
+  expect(await alt.evaluate((e) => getComputedStyle(e).textDecorationLine)).toContain('line-through');
+  // a new room: the new one, the old one struck through
+  const raum = k5a.locator('.mn-zeile').nth(2).locator('.mn-raum');
+  await expect(raum.locator('b')).toHaveText('317');
+  await expect(raum.locator('s')).toHaveText('204');
+  // the columns line up across tiles: hour, subject, teacher at the same x
+  const spalten = await page.locator('.mn-kachel:not(.mn-still)').evaluateAll((ks) => ks.map((k) => {
+    const z = k.querySelector('.mn-zeile')!;
+    const x0 = k.getBoundingClientRect().left;
+    return ['.mn-st', '.mn-fach', '.mn-wer'].map((s) => Math.round(z.querySelector(s)!.getBoundingClientRect().left - x0)).join(',');
+  }));
+  expect(new Set(spalten).size, spalten.join(' | ')).toBe(1);
+  // another subject, another teacher
+  const k5b = page.locator('.mn-kachel[data-klasse="5b"] .mn-zeile').first();
+  await expect(k5b.locator('.mn-fach b')).toHaveText('Ku');
+  await expect(k5b.locator('.mn-fach s')).toHaveText('D');
+  // the mark says »Entfall«: the text below does not repeat it
+  const entfall = page.locator('.mn-kachel[data-klasse="12"] .mn-zeile', { has: page.locator('.mn-marke', { hasText: 'Entfall' }) }).first();
+  await expect(entfall.locator('.mn-text')).toHaveText('verlegt auf 6. Std.');
   await expect(entfall).not.toContainText('entfällt');
+  // notes in a line below, in the columns after the hour, still readable (18 px)
+  const k11 = page.locator('.mn-kachel[data-klasse="11"]');
+  expect(await k11.locator('.mn-text').first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThanOrEqual(18);
+  const hinweis = k11.locator('.mn-zeile').filter({ has: page.locator('.mn-text') }).first();
+  const [st, text] = await Promise.all([hinweis.locator('.mn-st').boundingBox(), hinweis.locator('.mn-text').boundingBox()]);
+  expect(text!.y).toBeGreaterThan(st!.y + st!.height - 2);
+  expect(text!.x).toBeGreaterThan(st!.x + st!.width - 1);
   // every class has its tile, also without changes (then only the name)
   const k5c = page.locator('.mn-kachel[data-klasse="5c"]');
   await expect(k5c).toHaveClass(/mn-still/);
@@ -165,11 +214,19 @@ test('Flurmonitor, neues Design: Uhr, laufende Stunde, Kästen und Marken', asyn
   await expect(page.locator('.mn-kachel[data-klasse="11"] .mn-zeile').first()).toContainText('1.');
   // the message of "Monitore verwalten" in the foot, the scheme of the day
   await expect(page.locator('.mn-nachricht')).toContainText('Elternsprechtag');
+  // a running ticker as on the old monitor: one line, endless, right to left
+  const lauf = await page.locator('.mn-band').evaluate((b) => b.getAnimations().map((a) => [a.playState, a.effect!.getTiming().iterations]));
+  expect(lauf).toEqual([['running', Infinity]]);
+  await expect(page.locator('.mn-band .mn-abschnitt')).toHaveCount(2);
+  await expect(page.locator('.mn-meldung .ti-speakerphone').first()).toBeAttached();
   await expect(page.locator('.mn-schema')).toContainText('Farbschema');
-  // larger type than today (1.05vw, 20 px): at least 22 px on a full HD monitor
-  for (const sel of ['.mn-kachel[data-klasse="5a"] .mn-was', '.mn-kachel[data-klasse="11"] .mn-was']) {
+  // only the curated schemes of the new design (DesignTokens::CURATED)
+  const schema = /»(.+)«/.exec(await page.locator('.mn-schema').innerText())![1];
+  expect(CURATED_NAMES).toContain(schema);
+  // the old monitor's type (1.05vw, 20 px), readable in the hallway: at least 20 px on a full HD monitor
+  for (const sel of ['.mn-kachel[data-klasse="5a"] .mn-fach', '.mn-kachel[data-klasse="11"] .mn-wer']) {
     const size = await page.locator(sel).first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
-    expect(size, sel).toBeGreaterThanOrEqual(22);
+    expect(size, sel).toBeGreaterThanOrEqual(20);
   }
   // opaque boxes
   const bg = await k5a.evaluate((e) => getComputedStyle(e).backgroundColor);
@@ -179,44 +236,55 @@ test('Flurmonitor, neues Design: Uhr, laufende Stunde, Kästen und Marken', asyn
   expect(await page.locator('#mn').innerText()).not.toContain('·');
 });
 
-test('Flurmonitor, neues Design: blättert statt zu scrollen', async ({ page }) => {
+// Like the old monitor (monitor.html, »elevator«): a tile with more than
+// fits stands 5 s at the top, scrolls down slowly (1 vw a second), stands
+// 2 s at the bottom and goes back up quickly; the tiles stay where they are.
+test('Flurmonitor, neues Design: rollt wie bisher', async ({ page }) => {
+  test.setTimeout(120000);
   await login(page, ACCOUNTS.admin);
-  await monitorMitTag(page, '/monitor?design=neu', { '5a': 40, '5b': 12, '5c': 2, '11': 25, '12': 26 });
-  const mn = page.getByTestId('monitor-neu');
-  await expect(mn).toHaveAttribute('data-seite', '1');
-  const seiten = parseInt((await mn.getAttribute('data-seiten'))!, 10);
-  expect(seiten).toBeGreaterThan(1);
-  await expect(page.locator('.mn-seite')).toHaveText(`Seite 1 von ${seiten}`);
-  // a tile with more than fits pages inside itself, the tiles stay where they are
-  const k11 = page.locator('.mn-kachel[data-klasse="11"]');
+  const senden = await monitorMitTag(page, '/monitor?design=neu', { '5a': 40, '5b': 12, '5c': 2, '11': 25, '12': 26 });
   const k5a = page.locator('.mn-kachel[data-klasse="5a"]');
-  // the tile's page under its name: »1/3«
-  const an = (k: typeof k11) => k.locator('.mn-kseite').evaluate((p) => parseInt((/^(\d+)\/\d+$/.exec(p.textContent || '') || ['', '0'])[1], 10) - 1);
-  expect(await an(k11)).toBe(0);
-  await expect(k5a.locator('.mn-kseite')).toHaveText(/^1\/\d+$/);
-  await expect(page.locator('.mn-kachel[data-klasse="5b"] .mn-kseite')).toHaveText(/^1\/\d+$/);
+  await expect(k5a).toHaveAttribute('data-rollt', 'oben');
+  await expect(page.locator('.mn-kachel[data-klasse="11"]')).toHaveAttribute('data-rollt', 'oben');
+  // two entries fit: no scrolling
+  await expect(page.locator('.mn-kachel[data-klasse="5c"]')).not.toHaveAttribute('data-rollt', /./);
+  // no pages any more
+  await expect(page.locator('.mn-seite, .mn-balken, .mn-kseite')).toHaveCount(0);
   await nichtsAbgeschnitten(page);
   const orte = await kachelOrte(page);
-  const vorher11 = await k11.locator('.mn-zeilen').innerText();
-  const vorher5a = await k5a.locator('.mn-zeilen').innerText();
+  // from a new plan on (time stands still): 5 seconds at the top
   await anhalten(page);
-  await blaettern(page);
-  await expect(mn).toHaveAttribute('data-seite', '2');
-  await expect(page.locator('.mn-seite')).toHaveText(`Seite 2 von ${seiten}`);
-  expect(await an(k11)).toBe(1);
-  await expect(k5a.locator('.mn-kseite')).toHaveText(/^2\/\d+$/);
-  expect(await k11.locator('.mn-zeilen').innerText()).not.toBe(vorher11);
-  expect(await k5a.locator('.mn-zeilen').innerText()).not.toBe(vorher5a);
-  await nichtsAbgeschnitten(page);
+  senden({ '5a': 40, '5b': 12, '5c': 2, '11': 25, '12': 26 }, '07:20');
+  await expect(page.locator('.mn-datum')).toContainText('Stand 7:20 Uhr');
+  await page.clock.runFor(4000);
+  expect(await versatz(page, '5a')).toBe(0);
+  await expect(k5a).toHaveAttribute('data-rollt', 'oben');
+  await bisPhase(page, '5a', 'runter', 3);
+  // slowly down: 1 vw a second (19.2 px on full HD)
+  const a = await versatz(page, '5a');
+  await page.clock.runFor(4000);
+  const b = await versatz(page, '5a');
+  expect((b - a) / 4).toBeGreaterThan(17);
+  expect((b - a) / 4).toBeLessThan(21.5);
   expect(await kachelOrte(page)).toEqual(orte);
-  // every page stands 15 seconds (the bar in the foot shows it)
-  const sekunden = await blaettern(page);
-  expect(sekunden).toBeGreaterThanOrEqual(14);
-  expect(sekunden).toBeLessThanOrEqual(16);
-  // and every page comes round again
-  for (let i = 0; i < seiten && (await mn.getAttribute('data-seite')) !== '1'; i++) await blaettern(page);
-  await expect(mn).toHaveAttribute('data-seite', '1');
+  // at the bottom the last entry is in view
+  await bisPhase(page, '5a', 'unten');
+  const [box, letzte] = await Promise.all([k5a.locator('.mn-zeilen').boundingBox(), k5a.locator('.mn-zeile').last().locator('> *').last().boundingBox()]);
+  expect(letzte!.y + letzte!.height).toBeLessThanOrEqual(box!.y + box!.height + 1);
+  // a short stop, then quickly back up
+  expect(await bisPhase(page, '5a', 'hoch', 4)).toBeGreaterThanOrEqual(1);
+  expect(await bisPhase(page, '5a', 'oben', 12)).toBeLessThanOrEqual(10);
+  expect(await versatz(page, '5a')).toBe(0);
   expect(await kachelOrte(page)).toEqual(orte);
+  // a new plan starts again at the top
+  await bisPhase(page, '5a', 'runter', 7);
+  await page.clock.runFor(3000);
+  expect(await versatz(page, '5a')).toBeGreaterThan(0);
+  senden({ '5a': 40, '11': 3 }, '07:40');
+  await expect(page.locator('.mn-datum')).toContainText('Stand 7:40 Uhr');
+  expect(await versatz(page, '5a')).toBe(0);
+  await expect(k5a).toHaveAttribute('data-rollt', 'oben');
+  await expect(page.locator('.mn-kachel[data-klasse="11"]')).not.toHaveAttribute('data-rollt', /./);
 });
 
 // The maintainer's rule: every class always in the same place, whichever
@@ -237,6 +305,9 @@ test('Flurmonitor, neues Design: jede Klasse immer am selben Platz', async ({ pa
   for (const k of KLASSEN_SCHULE) {
     await expect(page.locator(`.mn-kachel[data-klasse="${k}"] h2`)).toHaveText(k === '8o' ? /^8[oω]$/ : k);
   }
+  // every class name the same size and weight, with or without changes
+  const namen = await page.locator('.mn-kachel h2').evaluateAll((e) => e.map((x) => `${getComputedStyle(x).fontSize} ${getComputedStyle(x).fontWeight}`));
+  expect(new Set(namen).size, namen.join(', ')).toBe(1);
   await nichtsAbgeschnitten(page);
   // another day: other classes with changes, 5a and 11 without
   senden({ '5c': 4, '8o': 2, '12': 20 }, '07:30');

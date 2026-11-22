@@ -6,21 +6,31 @@
 // /ws_monitor (Vertretungsplan, Laufschrift, Bilder, Neu laden, Effekte), die
 // Zeugniskonferenzen und die Wetter- und Festeffekte (monitor_effekte.js).
 //
-// - Blättern statt Scrollen: Was nicht auf eine Seite passt, kommt auf die
-//   nächste; jede Seite steht STANDZEIT_S Sekunden, ein Balken im Fuß zeigt,
-//   wie lange noch.
+// - Kompakt wie auf dem bisherigen Monitor: ein Eintrag eine Zeile in Spalten
+//   (Stunde, Fach, Lehrkraft, Raum), was sich ändert neu und fett, das Alte
+//   durchgestrichen dahinter; Hinweise in einer zweiten Zeile darunter.
 // - Feste Kacheln wie auf dem bisherigen Monitor: KLASSEN_ORDER der Reihe
 //   nach in Spalten zu je sieben Klassen (vier Spalten), 11 und 12 höher.
 //   Jede Klasse immer an derselben Stelle, auch ohne Änderungen. Was nicht in
-//   eine Kachel passt, blättert in der Kachel; alle Kacheln im selben Takt.
+//   eine Kachel passt, rollt in der Kachel wie bisher (»Fahrstuhl«): oben
+//   OBEN_S Sekunden stehen, langsam hinunter, unten kurz stehen, schnell
+//   wieder hinauf.
 // - Uhr und laufende Stunde im Kopf (Zeit des Servers, Stundenraster aus
 //   HOURS_FOR_KLASSE).
 // - Alles als Text eingesetzt (textContent), nie als HTML.
 (function () {
     'use strict';
 
-    const STANDZEIT_S = 15;
-    const NACHRICHT_S = 10;
+    // the old monitor's elevator (monitor.html: top_delay, bottom_delay,
+    // scroll_down_speed, scroll_up_speed)
+    const OBEN_S = 5;
+    const UNTEN_S = 2;
+    const RUNTER_VW_S = 1.0;
+    const HOCH_VW_S = 10.0;
+    // without motion (prefers-reduced-motion): a screenful at a time
+    const SPRUNG_S = 8;
+    // Laufband wie bisher (monitor.html: ticker_speed), vw pro Sekunde
+    const LAUF_VW_S = 6.0;
     const BILD_S = 30;
     // ab so vielen Minuten zwischen zwei Stunden ist es eine Pause (sonst Wechsel)
     const PAUSE_AB_MIN = 10;
@@ -33,16 +43,15 @@
     let plan = null;              // {heute, stand, klassen: {klasse: [Einträge]}}
     let letzterStand = null;
     let nachrichten = [];
-    let nachrichtIndex = 0;
-    let nachrichtUhr = null;
+    let band = null;              // die laufende Animation des Laufbands
+    let bandStand = null;         // [Nachrichten, Breite], für die es gebaut ist
     let bilder = [];
     let bildIndex = 0;
     let bildUhr = null;
     let zk = false;               // Zeugniskonferenzen statt Vertretungsplan
 
-    let kacheln = [];             // [{klasse, el, box, zeilen, seiten: [[von, bis], …], zeigt}]
-    let schritt = 0;
-    let schrittStart = 0;
+    let kacheln = [];             // [{klasse, el, box, liste, rollen: {weite, pos, phase, bis}}]
+    let rollenZeit = 0;
 
     const el = {};
 
@@ -70,87 +79,69 @@
     function liste(a) { return (a || []).filter((x) => x !== null && x !== undefined && String(x).trim() !== ''); }
 
     // ------------------------------------------------------------------
-    // Ein Eintrag des Vertretungsplans als Zeile: Stunde, Marke, Fach, Rest
+    // Ein Eintrag des Vertretungsplans als Zeile in Spalten: Stunde, Fach,
+    // Lehrkraft, Raum (rechts); darunter, was der Plan dazu schreibt
 
+    // a mark only where the line alone would mislead: the lesson is not
+    // taking place (the other changes show as »neu ~~alt~~«)
     function marke(e) {
         const text = e.vertretungs_text || '';
-        const la = liste(e.lehrer_alt), ln = liste(e.lehrer_neu);
-        if (/entf[äa]ll|f[äa]llt aus/i.test(text)) return ['Entfall', 'e'];
-        if ((e.fach_neu || '').substring(0, 5) === 'Test-') return ['Testung', 'e'];
-        if (/klausur/i.test(text)) return ['Klausur', 'v'];
-        if (/verleg/i.test(text)) return ['Verlegt', 'r'];
-        if (/aufgabe/i.test(text)) return ['Aufgaben', 'v'];
-        // a substitution needs no mark: »Hb statt Se« says it, and the mark
-        // took a third of the line (entries wrapped, tiles paged)
-        if (e.raum_alt && e.raum_neu && e.raum_alt !== e.raum_neu) return ['Raum', 'r'];
+        if (/entf[äa]ll|f[äa]llt aus/i.test(text)) return 'Entfall';
+        if ((e.fach_neu || '').substring(0, 5) === 'Test-') return 'Testung';
         return null;
+    }
+
+    // the new value in full, the old one struck through behind it
+    function wert(klasse, neu, alt) {
+        const z = h('span', klasse);
+        neu = neu || '';
+        alt = alt || '';
+        if (neu && alt && neu !== alt) {
+            z.appendChild(h('b', null, neu));
+            z.appendChild(document.createTextNode(' '));
+            z.appendChild(h('s', 'mn-alt', alt));
+        } else {
+            z.appendChild(document.createTextNode(neu || alt));
+        }
+        return z;
     }
 
     function zeileBauen(e, klasse) {
         const z = h('div', 'mn-zeile');
         if (e.type === 'extra') {
-            z.appendChild(h('span', 'mn-st', ''));
-            z.appendChild(h('span', 'mn-was', nurText(e.salzh_sus_label)));
+            z.appendChild(h('span', 'mn-st mn-z1', ''));
+            z.appendChild(h('span', 'mn-text mn-z1', nurText(e.salzh_sus_label)));
             return z;
         }
-        z.appendChild(h('span', 'mn-st', String(e.stunde_label || '').replace(/\s+/g, '')));
-        const was = h('span', 'mn-was');
+        z.appendChild(h('span', 'mn-st mn-z1', String(e.stunde_label || '').replace(/\s+/g, '')));
         const m = marke(e);
-        const entfall = m && m[1] === 'e';
-        if (m) was.appendChild(h('span', `mn-marke mn-m-${m[1]}`, m[0]));
-        const testung = (e.fach_neu || '').substring(0, 5) === 'Test-';
-        const fa = e.fach_alt || '', fn = testung ? '' : (e.fach_neu || '');
-        // what is now in full, what it replaces quietly behind it (»statt …«),
-        // so that the eye finds the new state first
+        const testung = m === 'Testung';
+        const fach = wert('mn-fach mn-z1', testung ? '' : e.fach_neu, e.fach_alt);
+        z.appendChild(fach);
+        if (m) {
+            const zelle = z.appendChild(h('span', 'mn-wer mn-z1 mn-breit'));
+            zelle.appendChild(h('span', 'mn-marke', m));
+        } else {
+            const la = liste(e.lehrer_alt), ln = liste(e.lehrer_neu);
+            z.appendChild(wert('mn-wer mn-z1', ln.join(', '), la.join(', ')));
+            z.appendChild(wert('mn-raum mn-z1', e.raum_neu, e.raum_alt));
+        }
+        // weitere Klassen derselben Stunde, dann der Text des Plans
         const teile = [];
-        const statt = (neu, alt) => {
-            const f = document.createDocumentFragment();
-            f.appendChild(document.createTextNode(neu));
-            if (alt) f.appendChild(h('span', 'mn-alt', ` statt ${alt}`));
-            return f;
-        };
-        const fachStatt = !!(fa && fn && fa !== fn);
-        if (fachStatt) {
-            was.appendChild(h('b', null, fn));
-            was.appendChild(h('span', 'mn-alt', ` statt ${fa}`));
-        } else if (fn || fa) {
-            was.appendChild(h('b', null, fn || fa));
-        }
-        const la = liste(e.lehrer_alt), ln = liste(e.lehrer_neu);
-        if (!entfall && !testung) {
-            if (la.length && ln.length && la.join(',') !== ln.join(',')) teile.push(statt(ln.join(', '), la.join(', ')));
-            else if (ln.length) teile.push(statt(ln.join(', ')));
-            else if (la.length) teile.push(statt(la.join(', ')));
-            const ra = e.raum_alt || '', rn = e.raum_neu || '';
-            if (ra && rn && ra !== rn) teile.push(statt(rn, ra));
-            else if (rn || ra) teile.push(statt(rn || ra));
-        }
-        // weitere Klassen derselben Stunde
         const andere = liste([].concat(e.klassen_neu || [], e.klassen_alt || []))
             .filter((k, i, a) => a.indexOf(k) === i && k !== klasse).map(tr);
-        if (andere.length) teile.push(statt(`mit ${andere.join(', ')}`));
-        teile.forEach((t, i) => {
-            // »Gewi statt Sp, Va statt Wg«: after a changed subject a comma
-            const vorne = i === 0 ? (fachStatt ? ', ' : (was.childNodes.length ? ' ' : '')) : ', ';
-            if (vorne) was.appendChild(document.createTextNode(vorne));
-            was.appendChild(t);
-        });
+        if (andere.length) teile.push(`mit ${andere.join(', ')}`);
         let text = String(e.vertretungs_text || '').trim();
         // the mark says it already: »entfällt; verlegt auf …« → »verlegt auf …«
-        if (entfall) text = text.replace(/^(entf[äa]llt|f[äa]llt aus|entfall)\s*[.;,:–-]?\s*/i, '');
-        if (text) {
-            if (was.childNodes.length) was.appendChild(document.createTextNode(' '));
-            was.appendChild(h('span', 'mn-text', text));
-        }
-        z.appendChild(was);
+        if (m === 'Entfall') text = text.replace(/^(entf[äa]llt|f[äa]llt aus|entfall)\s*[.;,:–-]?\s*/i, '');
+        if (text) teile.push(text);
+        if (teile.length) z.appendChild(h('span', 'mn-text', teile.join(', ')));
         return z;
     }
 
     function eintraege(klasse) {
         return (plan && plan.klassen && plan.klassen[klasse]) || [];
     }
-
-    function passt(e) { return e.scrollHeight <= e.clientHeight + 1; }
 
     // ------------------------------------------------------------------
     // Feste Kacheln, verteilt wie auf dem bisherigen Monitor (monitor.html):
@@ -159,7 +150,7 @@
     // (9,8 statt 6,2 vw, Abstand 1 vw), mit denselben Verhältnissen wie dort.
     // Jede Klasse hat immer ihre Kachel an derselben Stelle, auch ohne
     // Änderungen (dann nur der Name, leise); leere Plätze gibt es nicht. Wer
-    // mehr hat, als in die Kachel passt, blättert in der Kachel.
+    // mehr hat, als in die Kachel passt, rollt in der Kachel.
 
     const PRO_SPALTE = 7;
     const MIN_SPALTEN = 4;
@@ -171,16 +162,16 @@
     function istHoch(k) { return k === '11' || k === '12'; }
 
     function kachelBauen(klasse) {
-        const k = h('div', 'mn-kasten mn-kachel' + (istHoch(klasse) ? ' mn-hoch' : ''));
+        const k = h('div', 'mn-kasten mn-kachel mn-still' + (istHoch(klasse) ? ' mn-hoch' : ''));
         k.dataset.klasse = klasse;
         const name = h('div', 'mn-name');
         name.appendChild(h('h2', null, tr(klasse)));
-        const punkte = name.appendChild(h('div', 'mn-kseite'));
         const box = h('div', 'mn-zeilen');
+        const liste = box.appendChild(h('div', 'mn-liste'));
         k.appendChild(name);
         k.appendChild(box);
-        return {klasse: klasse, el: k, box: box, punkte: punkte,
-                zeilen: [], seiten: [[0, 0]], zeigt: null};
+        return {klasse: klasse, el: k, box: box, liste: liste,
+                rollen: {weite: 0, pos: 0, phase: 'oben', bis: 0}};
     }
 
     function rasterAufbauen() {
@@ -208,101 +199,80 @@
                 kacheln.push(kachel);
             }
         }
-        for (const kachel of kacheln) kachelKopf(kachel, 0);
     }
 
-    function kachelKopf(kachel, seite) {
-        const n = kachel.zeilen.length;
-        const seiten = kachel.seiten.length;
-        kachel.el.classList.toggle('mn-still', n === 0);
-        // a tile that pages: »1/2« under the name (dots read like a status)
-        kachel.punkte.textContent = seiten > 1 ? `${seite + 1}/${seiten}` : '';
+    // die Einträge einer Klasse in ihre Kachel; was nicht passt, rollt
+    function kachelFuellen(kachel) {
+        const zeilen = eintraege(kachel.klasse).map((e) => zeileBauen(e, kachel.klasse));
+        kachel.liste.textContent = '';
+        for (const z of zeilen) kachel.liste.appendChild(z);
+        kachel.el.classList.toggle('mn-still', zeilen.length === 0);
+        rollenMessen(kachel);
     }
 
-    // Seiten einer Kachel: so viele Zeilen, wie hineinpassen
-    function kachelBerechnen(kachel) {
-        kachel.zeilen = eintraege(kachel.klasse).map((e) => zeileBauen(e, kachel.klasse));
-        // zum Messen: Kopf mit Seitenzahl wie bei mehreren Seiten
-        kachel.seiten = [[0, 0], [0, 0]];
-        kachelKopf(kachel, 0);
-        const box = kachel.box;
-        box.textContent = '';
-        const seiten = [];
-        let start = 0;
-        for (let j = 0; j < kachel.zeilen.length; j++) {
-            box.appendChild(kachel.zeilen[j].cloneNode(true));
-            if (!passt(box) && j > start) {
-                seiten.push([start, j]);
-                box.textContent = '';
-                start = j;
-                box.appendChild(kachel.zeilen[j].cloneNode(true));
-            }
-        }
-        seiten.push([start, kachel.zeilen.length]);
-        kachel.seiten = seiten;
-        kachel.zeigt = null;
-        box.textContent = '';
-    }
-
-    function kachelZeigen(kachel, seite) {
-        const [von, bis] = kachel.seiten[seite];
-        kachel.box.textContent = '';
-        for (let i = von; i < bis; i++) kachel.box.appendChild(kachel.zeilen[i].cloneNode(true));
-        kachelKopf(kachel, seite);
-    }
-
-    // ------------------------------------------------------------------
-    // Seiten: alle Kacheln blättern im selben Takt
-
-    function seitenZahl() {
-        return Math.max(1, ...kacheln.map((k) => k.seiten.length));
+    function rollenMessen(kachel) {
+        const r = kachel.rollen;
+        const weite = kachel.liste.scrollHeight - kachel.box.clientHeight;
+        r.weite = weite > 1 ? weite : 0;
+        r.pos = 0;
+        r.phase = 'oben';
+        r.bis = Date.now() / 1000 + OBEN_S;
+        kachel.liste.style.transform = '';
+        if (r.weite) kachel.el.dataset.rollt = 'oben';
+        else delete kachel.el.dataset.rollt;
     }
 
     function neuBerechnen() {
         if (zk || !plan) return;
-        for (const k of kacheln) kachelBerechnen(k);
-        schritt = schritt % seitenZahl();
-        schrittZeigen(false);
-    }
-
-    function schrittZeigen(blenden) {
-        schrittStart = Date.now();
-        for (const kachel of kacheln) {
-            const seite = schritt % kachel.seiten.length;
-            if (kachel.zeigt === seite) continue;
-            kachel.zeigt = seite;
-            if (blenden && !bewegungAus()) {
-                kachel.box.classList.add('mn-weg');
-                setTimeout(() => { kachelZeigen(kachel, seite); kachel.box.classList.remove('mn-weg'); }, 300);
-            } else {
-                kachelZeigen(kachel, seite);
-            }
-        }
-        const n = seitenZahl();
-        el.mn.dataset.seite = String(schritt + 1);
-        el.mn.dataset.seiten = String(n);
-        el.seite.hidden = n < 2;
-        el.balken.hidden = n < 2;
-        el.seite.textContent = `Seite ${schritt + 1} von ${n}`;
-        const b = el.balken.firstChild;
-        if (b.getAnimations) for (const a of b.getAnimations()) a.cancel();
-        if (n > 1 && b.animate) {
-            b.animate([{width: '0%'}, {width: '100%'}], {duration: STANDZEIT_S * 1000, easing: 'linear', fill: 'forwards'});
-        }
+        for (const k of kacheln) kachelFuellen(k);
     }
 
     function bewegungAus() {
         return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     }
 
+    // ------------------------------------------------------------------
+    // Rollen wie bisher: alle Kacheln, die mehr haben, als hineinpasst,
+    // jede für sich (alle beginnen zugleich, wenn ein neuer Plan kommt)
+
+    function rollenSchritt() {
+        const t = Date.now() / 1000;
+        const dt = Math.min(0.25, Math.max(0, t - rollenZeit));
+        rollenZeit = t;
+        const vw = window.innerWidth / 100;
+        const sprung = bewegungAus();
+        for (const k of kacheln) {
+            const r = k.rollen;
+            if (!r.weite) continue;
+            if (r.phase === 'oben' || r.phase === 'unten' || r.phase === 'halt') {
+                if (t < r.bis) continue;
+                r.phase = r.phase === 'unten' ? 'hoch' : 'runter';
+            }
+            if (r.phase === 'runter') {
+                r.pos = Math.min(r.weite, sprung ? r.pos + k.box.clientHeight * 0.85 : r.pos + dt * RUNTER_VW_S * vw);
+                if (r.pos >= r.weite) {
+                    r.phase = 'unten';
+                    r.bis = t + (sprung ? SPRUNG_S : UNTEN_S);
+                } else if (sprung) {
+                    r.phase = 'halt';
+                    r.bis = t + SPRUNG_S;
+                }
+            } else if (r.phase === 'hoch') {
+                r.pos = sprung ? 0 : Math.max(0, r.pos - dt * HOCH_VW_S * vw);
+                if (r.pos <= 0) {
+                    r.phase = 'oben';
+                    r.bis = t + (sprung ? SPRUNG_S : OBEN_S);
+                }
+            }
+            k.liste.style.transform = `translateY(${(-r.pos).toFixed(1)}px)`;
+            if (k.el.dataset.rollt !== r.phase) k.el.dataset.rollt = r.phase;
+        }
+        window.requestAnimationFrame(rollenSchritt);
+    }
+
     function takt() {
         uhrZeigen();
-        if (zk) { zkZeitenZeigen(); return; }
-        if (!plan) return;
-        if ((Date.now() - schrittStart) / 1000 >= STANDZEIT_S) {
-            schritt = (schritt + 1) % seitenZahl();
-            schrittZeigen(true);
-        }
+        if (zk) zkZeitenZeigen();
     }
 
     // ------------------------------------------------------------------
@@ -367,42 +337,51 @@
     }
 
     // ------------------------------------------------------------------
-    // Fuß: Nachrichten nacheinander, lange laufen einmal durch
+    // Fuß: Laufband wie auf dem bisherigen Monitor – alle Nachrichten in einer
+    // Zeile, jede mit dem Lautsprecher davor, ohne Ende von rechts nach links.
+    // Eine Animation, die der Browser auf der Grafikkarte abspielt (stockt
+    // nicht, wenn daneben die Effekte rechnen): zwei gleiche Abschnitte, einer
+    // mindestens so breit wie das Band; die Animation schiebt genau einen
+    // Abschnitt weiter und beginnt nahtlos von vorn.
 
     function nachrichtenStarten() {
-        clearTimeout(nachrichtUhr);
-        nachrichtIndex = 0;
-        nachrichtZeigen();
+        bandStand = null;
+        bandAufbauen();
     }
 
-    function nachrichtZeigen() {
+    function bandAufbauen() {
         const box = el.nachricht;
+        if (bandStand && bandStand[0] === nachrichten && bandStand[1] === window.innerWidth) return;
+        bandStand = [nachrichten, window.innerWidth];
+        // die Stelle im Band merken, damit es nach einer Änderung nicht von vorn beginnt
+        let anteil = 0;
+        if (band) {
+            try {
+                const d = band.effect.getTiming().duration;
+                anteil = ((band.currentTime || 0) % d) / d;
+            } catch (e) { /* neu von vorn */ }
+            band.cancel();
+            band = null;
+        }
         box.textContent = '';
         if (!nachrichten.length) return;
-        nachrichtIndex %= nachrichten.length;
-        const span = h('span');
-        span.appendChild(h('i', 'ti ti-speakerphone'));
-        span.appendChild(document.createTextNode(nachrichten[nachrichtIndex]));
-        box.appendChild(span);
-        let dauer = NACHRICHT_S * 1000;
-        const ueber = span.scrollWidth - box.clientWidth;
-        box.classList.toggle('mn-lang', ueber > 2);
-        if (ueber > 2 && span.animate && !bewegungAus()) {
-            const vw = window.innerWidth / 100;
-            const lauf = (ueber / (6 * vw)) * 1000;
-            const halt = 2000;
-            dauer = Math.max(dauer, lauf + 2 * halt);
-            span.animate([
-                {transform: 'translateX(0)', offset: 0},
-                {transform: 'translateX(0)', offset: halt / dauer},
-                {transform: `translateX(${-ueber}px)`, offset: (halt + lauf) / dauer},
-                {transform: `translateX(${-ueber}px)`, offset: 1},
-            ], {duration: dauer, fill: 'forwards'});
+        const zeile = box.appendChild(h('div', 'mn-band'));
+        const abschnitt = zeile.appendChild(h('div', 'mn-abschnitt'));
+        // so oft wiederholen, bis ein Abschnitt breiter als das Band ist
+        for (let runde = 0; runde < 50 && (runde === 0 || abschnitt.getBoundingClientRect().width < box.clientWidth); runde++) {
+            for (const text of nachrichten) {
+                const m = abschnitt.appendChild(h('span', 'mn-meldung'));
+                m.appendChild(h('i', 'ti ti-speakerphone'));
+                m.appendChild(document.createTextNode(text));
+            }
         }
-        nachrichtUhr = setTimeout(() => {
-            nachrichtIndex = (nachrichtIndex + 1) % Math.max(1, nachrichten.length);
-            nachrichtZeigen();
-        }, dauer);
+        zeile.appendChild(abschnitt.cloneNode(true));
+        const w = abschnitt.getBoundingClientRect().width;
+        if (!(w > 0) || !zeile.animate || bewegungAus()) return;
+        const dauer = (w * 100 / window.innerWidth) / LAUF_VW_S * 1000;
+        band = zeile.animate([{transform: 'translateX(0px)'}, {transform: `translateX(${-w}px)`}],
+            {duration: dauer, iterations: Infinity, easing: 'linear'});
+        band.currentTime = anteil * dauer;
     }
 
     // ------------------------------------------------------------------
@@ -554,11 +533,6 @@
         el.raster = mn.appendChild(h('main', 'mn-raster'));
         // „ticker“: die Effekte halten den Fuß frei (monitor_effekte.js)
         el.fuss = mn.appendChild(h('footer', 'mn-fuss ticker'));
-        el.seite = el.fuss.appendChild(h('span', 'mn-seite'));
-        el.balken = el.fuss.appendChild(h('div', 'mn-balken'));
-        el.balken.appendChild(h('b'));
-        el.seite.hidden = true;
-        el.balken.hidden = true;
         el.nachricht = el.fuss.appendChild(h('div', 'mn-nachricht'));
         const schema = DATEN.schema || [];
         let schemaText = schema[0] ? `Farbschema »${schema[0]}«` : '';
@@ -587,9 +561,14 @@
         }
         verbinden();
         setInterval(takt, 1000);
+        rollenZeit = Date.now() / 1000;
+        window.requestAnimationFrame(rollenSchritt);
         let warten = null;
-        window.addEventListener('resize', () => { clearTimeout(warten); warten = setTimeout(neuBerechnen, 300); });
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => neuBerechnen());
+        window.addEventListener('resize', () => {
+            clearTimeout(warten);
+            warten = setTimeout(() => { neuBerechnen(); bandStand = null; bandAufbauen(); }, 300);
+        });
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { neuBerechnen(); bandStand = null; bandAufbauen(); });
         if (window.MonitorEffekte) {
             window.MonitorEffekte.start({buehne: el.mn, kaesten: '.mn-kasten', kiesel: null, dunkel: !!DATEN.dunkel});
         }

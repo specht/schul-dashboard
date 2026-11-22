@@ -2601,7 +2601,7 @@ class Main < Sinatra::Base
                 # if schueler_logged_in? && @session_user[:klassenstufe] <= 6
                 #     nav_items << ['/mittagessen', 'Mittagessen', 'fa fa-cutlery']
                 # end
-                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer)
+                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer) || user_with_role_logged_in?(:can_manage_data)
                     nav_items << :admin
                 end
                 if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
@@ -2682,6 +2682,9 @@ class Main < Sinatra::Base
                     if admin_logged_in?
                         io.puts "<div class='dropdown-divider'></div>" if printed_something
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
+                    end
+                    if user_with_role_logged_in?(:can_manage_data)
+                        io.puts "<a class='dropdown-item nav-icon' href='/datenpflege'><div class='icon'><i class='fa fa-database'></i></div><span class='label'>Datenpflege</span></a>"
                     end
                     if user_who_can_manage_tablets_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-bookmark'></i></div><span class='label'>Buchungen</span></a>"
@@ -2793,7 +2796,7 @@ class Main < Sinatra::Base
                     if schueler_logged_in? || teacher_logged_in? || user_with_role_logged_in?(:can_manage_bib)
                         io.puts "<div class='dropdown-divider'></div>" unless printed_divider
                         printed_divider = true
-                        io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'#{user_with_role_logged_in?(:can_manage_bib) ? " data-pv-team='1'" : ''}><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                     end
                     # if user_with_role_logged_in?(:mittagessen)
                     #     io.puts "<div class='dropdown-divider'></div>" unless printed_divider
@@ -2819,10 +2822,20 @@ class Main < Sinatra::Base
                         if user_with_role_logged_in?(:can_see_kurslisten)
                             io.puts "<a class='dropdown-item nav-icon' href='/kurslisten'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Kurslisten</span></a>"
                         end
+                        # the new design shows Lab 8 and 9 only to who teaches or
+                        # leads the grade, Projekttage only once they have started
+                        # (data-pv-off; today's menu shows all of them as before)
+                        involved = lambda do |stufe|
+                            sh = @session_user[:shorthand]
+                            (@@lessons_for_shorthand[sh] || []).any? { |k| ((@@lessons[:lesson_keys][k] || {})[:klassen] || []).any? { |kl| kl.to_s.start_with?(stufe) } } ||
+                                @@klassenleiter.any? { |kl, shs| kl.to_s.start_with?(stufe) && shs.include?(sh) }
+                        end
+                        off = ->(flag) { flag ? '' : " data-pv-off='1'" }
+                        phase = (projekttage_phase rescue 0).to_i
                         io.puts "<a class='dropdown-item nav-icon' href='/pk5_overview'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>5. PK</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/lab9_overview'><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 9</span></a>"
-                        io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/lab8_overview'#{off.(involved.('8'))}><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 8</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/lab9_overview'#{off.(involved.('9'))}><div class='icon'><i class='fa fa-clock-o'></i></div><span class='label'>Lab 9</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/projekttage_overview'#{off.(phase >= 1 || email_is_projekttage_organizer?(@@user_info, @session_user[:email]))}><div class='icon'><i class='fa fa-rocket'></i></div><span class='label'>Projekttage</span></a>"
                     end
                     if schueler_logged_in?
                         if @session_user[:klasse].to_i < 11
@@ -2840,6 +2853,10 @@ class Main < Sinatra::Base
                             #     io.puts "<a class='dropdown-item nav-icon' href='/salzh'><div class='icon'><i class='fa fa-home'></i></div><span class='label'>Testungen</span></a>"
                             # end
                             io.puts "<a class='dropdown-item nav-icon' href='/klassenmemory_assign'><div class='icon'><i class='fa fa-user'></i></div><span class='label'>Klassenmemory</span></a>"
+                            # while a new student list waits for the Klassenleitungen
+                            if datenpflege_draft && !schuelerliste_klassen_for_user.empty?
+                                io.puts "<a class='dropdown-item nav-icon' href='/schuelerliste'><div class='icon'><i class='fa fa-check-square-o'></i></div><span class='label'>Schülerliste prüfen</span></a>"
+                            end
                             io.puts "<a class='dropdown-item nav-icon' href='/tests'><div class='icon'><i class='fa fa-file-text-o'></i></div><span class='label'>Klassenarbeiten</span></a>"
                         end
                         if user_with_role_logged_in?(:can_create_events)

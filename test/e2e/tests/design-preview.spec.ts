@@ -2195,3 +2195,48 @@ test('Neues Design: Termine der Schule im Stundenplan anlegen, ändern, löschen
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Phones, »Mehr«: the tiles fill their rows – no tile alone in a row unless
+// it takes the whole width (also around the Hell / Auto / Dunkel row) – and
+// the menu's groups follow the plan; nothing out of season shows.
+test('Neues Design: Mehr am Handy, Kacheln gut verteilt, Menü nach Themen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Kacheln am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await page.locator('#bu_pv_more').click();
+    const menu = page.locator('#navbarTogglerDemo02');
+    await expect(menu).toHaveClass(/\bshow\b/);
+    await page.waitForTimeout(400);
+    const lonely = await menu.evaluate((m) => {
+      const tiles = Array.from(m.querySelectorAll<HTMLElement>('.nav-item, .dropdown-item, .pv-nav-entry')).filter((el) => {
+        const r = el.getBoundingClientRect();
+        return el.offsetParent && r.width > 40 && r.height > 60 && !el.closest('.pv-mode-row') && !el.classList.contains('pv-mode-row');
+      });
+      const rows = new Map<string, HTMLElement[]>();
+      for (const t of tiles) {
+        const key = `${t.parentElement === null ? '' : t.parentElement.className}|${Math.round(t.getBoundingClientRect().top)}`;
+        rows.set(key, [...(rows.get(key) || []), t]);
+      }
+      const out: string[] = [];
+      rows.forEach((list) => {
+        if (list.length !== 1) return;
+        const t = list[0];
+        const parent = t.parentElement!.getBoundingClientRect();
+        if (t.getBoundingClientRect().width < parent.width * 0.8) out.push((t.textContent || '').trim());
+      });
+      return out;
+    });
+    expect(lonely).toEqual([]);
+    // nothing out of season visible
+    await expect(menu.locator('[data-pv-off]:visible')).toHaveCount(0);
+    // Verwaltung: groups by topic, the new labels
+    const verwaltung = menu.locator('.pv-nav-section[data-section="verwaltung"]');
+    await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Schulkalender' })).toHaveCount(1);
+    await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Datenpflege' })).toHaveCount(1);
+    await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Termine verwalten' })).toHaveCount(0);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

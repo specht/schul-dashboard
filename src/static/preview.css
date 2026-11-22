@@ -4718,6 +4718,8 @@ body.ui-preview:has(.container-fluid.solid)::before {
     .ui-preview .pv-nav-entry[data-tone='verwaltung-0'] { --tone: var(--subj-en); }
     .ui-preview .pv-nav-entry[data-tone='verwaltung-1'] { --tone: var(--subj-phy); }
     .ui-preview .pv-nav-entry[data-tone='verwaltung-2'] { --tone: var(--subj-ma); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-3'] { --tone: var(--subj-la, var(--acc)); }
+    .ui-preview .pv-nav-entry[data-tone='verwaltung-4'] { --tone: var(--subj-sp, var(--acc)); }
 
     .ui-preview .navbar .pv-nav-body .pv-nav-entry[data-tone] {
         background: color-mix(in srgb, var(--tone) 11%, var(--pv-surface));

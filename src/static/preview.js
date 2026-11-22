@@ -502,8 +502,19 @@
     // Lerngruppen is moved; the original menus stay in the page, hidden (the
     // Unterricht sheet and the search read them). Phones show the sections in
     // "Mehr" as tiles.
-    var SCHULE = /^\/(tests|events|terminfinder|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|lehrbuchverein|gev|up|agr_app|klassenmemory_assign|salzh|angebote|groups)(\/|_|$)|^https:\/\/sv\./;
-    var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpost|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound)(\/|$)/;
+    // Schule: what comes with being a teacher or a student; Verwaltung: what
+    // only an extra role unlocks (menu plan, 2026-11-22). Unterricht and
+    // Lerngruppen stay as they are.
+    var SCHULE = /^\/(tests|events|terminfinder|polls|mailing_lists|zufallsgruppen|kurslisten|bibliothek|projekttage|pk5|lab8|lab9|mittagessen|klassenmemory_assign|salzh|angebote|groups|schuelerliste|techpost)(\/|_|$)|^https:\/\/sv\./;
+    var VERWALTUNG = /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor|admin|bookings|techpostadmin|development|tablets|school_wifi|show_all_login_codes|postfaecher|email_accounts|inactive_sus|stats|anmeldungen|aula_light|aula_progress|aula_sound|lehrbuchverein|gev|up|agr_app|datenpflege)(\/|_|$)/;
+    // the thing as a noun, short: the menu says the rest
+    var LABELS = {
+        '/manage_news': 'News', '/manage_calendar': 'Schulkalender', '/upload_images': 'Bilder',
+        '/upload_files': 'Dateien', '/manage_monitor': 'Monitore', '/bookings': 'Tablet-Buchungen',
+        '/techpostadmin': 'Technik', '/techpost': 'Technik melden', '/show_all_login_codes': 'Anmeldecodes',
+        '/inactive_sus': 'Inaktive Schüler:innen', '/aula_light': 'Aula: Licht', '/aula_progress': 'Aula: Ablauf',
+        '/aula_sound': 'Aula: Ton',
+    };
     var SECTION_ICONS = { unterricht: 'ti-school', schule: 'ti-building', verwaltung: 'ti-settings' };
 
     // a section's panel: at most one open, level with its entry, inside the
@@ -592,9 +603,11 @@
             copy.classList.remove('dropdown-item');
             copy.classList.add('nav-link', 'pv-nav-entry');
             copy.removeAttribute('id');
+            label = label || LABELS[a.getAttribute('href') || ''];
             if (label) {
                 var l = copy.querySelector('.label');
                 if (l) l.textContent = label;
+                else copy.lastChild.textContent = label;
             }
             return copy;
         };
@@ -659,12 +672,24 @@
             var gi = groups.querySelector('.icon');
             if (gi) gi.innerHTML = "<i class='ti ti-users-group'></i>";
         }
+        // the main bar's own items for a role (Technikamt, Aula) go into the
+        // sections too
+        var tech = collapse.querySelector('.navbar-nav > .nav-item > a.nav-link[href="/techpost"]');
+        if (tech) links.push(tech);
         links.forEach(function(a) {
             var href = a.getAttribute('href') || '';
             if (seen[href] || a.closest('[aria-labelledby="navbarDropdownKurse"], [aria-labelledby="navbarDropdownKlassen"]')) return;
-            if (SCHULE.test(href)) { schule.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
+            // out of season (main.rb, data-pv-off): not in the new design's menu
+            if (a.dataset.pvOff) { seen[href] = true; a.classList.add('pv-nav-moved'); return; }
+            var mine = (a.textContent || '').trim() === 'Meine Klasse';
+            if (SCHULE.test(href) || mine) { schule.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
             else if (VERWALTUNG.test(href)) { verwaltung.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
+            // the library team: the library in Verwaltung as well
+            if (a.dataset.pvTeam) verwaltung.appendChild(entry(a));
         });
+        if (tech) tech.closest('.nav-item').classList.add('pv-nav-hidden');
+        var aula = document.getElementById('navbarDropdownAula');
+        if (aula) aula.closest('.nav-item').classList.add('pv-nav-hidden');
         // the top level: Heute, Nachrichten, Datentresor stay; the old menus go
         var kurse_item = (document.getElementById('navbarDropdownKurse') || {}).closest ? document.getElementById('navbarDropdownKurse').closest('.nav-item') : null;
         if (kurse_item) kurse_item.classList.add('pv-nav-hidden');
@@ -672,30 +697,23 @@
         if (admin_item) admin_item.closest('.nav-item').classList.add('pv-nav-hidden');
         // sections before the search / profile at the bottom
         var anchor = main_nav.querySelector('.nav-quick-search-item') || main_nav.querySelector('.nav-item.dropdown:last-child');
-        // "Schule": the most used first, the seasonal ones last
-        var ORDER = ['/events', '/terminfinder', '/tests', '/polls', '/bibliothek', '/mailing_lists', '/groups', '/angebote', '/zufallsgruppen', '/kurslisten', '/klassenmemory_assign', '/salzh', '/lehrbuchverein', '/mittagessen', '/gev', '/agr_app', '/up', '/projekttage', '/pk5', '/lab8', '/lab9'];
-        var rank = function(a) {
-            var href = a.getAttribute('href') || '';
-            for (var i = 0; i < ORDER.length; i++) if (href.indexOf(ORDER[i]) === 0) return i;
-            return ORDER.length;
-        };
-        Array.prototype.slice.call(schule.querySelectorAll('.pv-nav-entry'))
-            .sort(function(a, b) { return rank(a) - rank(b); })
-            .forEach(function(a) { schule.appendChild(a); });
-        // sub-groups of the larger sections, in this order
+        // groups by topic (in this order), alphabetical inside a group
         var SUB = {
             schule: [
-                ['Planen & Abstimmen', /^\/(events|terminfinder|tests|polls|mailing_lists|groups|zufallsgruppen|kurslisten)/],
-                ['Angebote', /^\/(bibliothek|angebote|lehrbuchverein|mittagessen|klassenmemory_assign|salzh)/],
-                ['Projekte & Aktionen', /^\/(projekttage|pk5|lab8|lab9|up)(\/|_|$)/],
-                ['Gremien', /^\/(gev|agr_app)|^https:\/\/sv\./],
+                ['Termine & Umfragen', /^\/(tests|events|terminfinder|polls)(\/|_|$)/],
+                ['Gruppen & Verteiler', /^\/(mailing_lists|zufallsgruppen|klassenmemory_assign|kurslisten|groups|angebote|schuelerliste|directory)(\/|_|$)/],
+                ['Dienste', /^\/(bibliothek|techpost|mittagessen|salzh)(\/|_|$)|^https:\/\/sv\./],
+                ['Projekte', /^\/(projekttage|pk5|lab8|lab9)(\/|_|$)/],
             ],
             verwaltung: [
-                ['Inhalte', /^\/(manage_news|manage_calendar|upload_images|upload_files|manage_monitor)/],
-                ['Geräte & Räume', /^\/(bookings|tablets|techpost|techpostadmin|school_wifi|aula_)/],
-                ['Konten & Anmeldung', /^\/(admin|show_all_login_codes|postfaecher|email_accounts|inactive_sus|anmeldungen|stats|development)/],
+                ['Inhalte', /^\/(agr_app|upload_images|upload_files|manage_monitor|manage_news|manage_calendar)(\/|_|$)/],
+                ['Geräte & Räume', /^\/(aula_|school_wifi|bookings|tablets|techpostadmin)/],
+                ['Schulleben', /^\/(gev|lehrbuchverein|up|bibliothek)(\/|_|$)/],
+                ['Konten', /^\/(show_all_login_codes|email_accounts|inactive_sus|postfaecher|anmeldungen)(\/|_|$)/],
+                ['System', /^\/(admin|datenpflege|development|stats)(\/|_|$)/],
             ],
         };
+        var label_of = function(a) { return ((a.querySelector('.label') || a).textContent || '').trim(); };
         [['schule', schule], ['verwaltung', verwaltung]].forEach(function(pair) {
             var sec = pair[1], groups = SUB[pair[0]];
             var entries = Array.prototype.slice.call(sec.querySelectorAll('.pv-nav-entry'));
@@ -706,8 +724,13 @@
             };
             // the group as a colour (phones: tiles tinted per group, preview.css)
             entries.forEach(function(a) { a.dataset.tone = pair[0] + '-' + which(a); });
-            if (entries.length < 8) return;
-            entries.sort(function(a, b) { return which(a) - which(b); });
+            entries.sort(function(a, b) {
+                return (which(a) - which(b)) || label_of(a).localeCompare(label_of(b), 'de', { numeric: true });
+            });
+            if (entries.length < 8) {
+                entries.forEach(function(a) { sec.appendChild(a); });
+                return;
+            }
             var last = -1;
             entries.forEach(function(a) {
                 var g = which(a);
@@ -959,7 +982,19 @@
             if (el.classList.contains('dropdown-item') && !el.classList.contains('switch-session') && !el.classList.contains('pv-mode-row')) first_tiles.push(el);
         });
         first_tiles.sort(by_order);
-        if (first_tiles.length) apply(first_tiles, 3);
+        // the Hell / Auto / Dunkel row parts them into two groups: each one
+        // balanced on its own (four before it were three and a lonely one)
+        var mode = profile_menu && profile_menu.querySelector('.pv-mode-row');
+        var mode_order = mode && shown(mode) ? (parseInt(getComputedStyle(mode).order, 10) || 0) : null;
+        var order_of = function(el) { return parseInt(getComputedStyle(el).order, 10) || 0; };
+        if (mode_order === null) {
+            if (first_tiles.length) apply(first_tiles, 3);
+        } else {
+            var before = first_tiles.filter(function(el) { return order_of(el) < mode_order; });
+            var after = first_tiles.filter(function(el) { return order_of(el) >= mode_order; });
+            if (before.length) apply(before, 3);
+            if (after.length) apply(after, 3);
+        }
         collapse.querySelectorAll('.pv-nav-body').forEach(function(body) {
             groups(body, function(el) { return el.classList.contains('pv-nav-entry'); }, 3, false);
         });

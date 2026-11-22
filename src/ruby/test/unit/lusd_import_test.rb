@@ -223,4 +223,17 @@ class LusdImportTest < Minitest::Test
         report = LusdImport.report(result, old_students: old)
         assert_match(/neue E-Mail-Adresse\): 0$/, report)
     end
+
+    # /datenpflege names the columns found and the missing ones; a tutor
+    # column is recognised (for 11/12)
+    def test_column_report
+        rows = [['Schueler_Nachname', 'Schueler_Vorname', 'Klasse', 'Geschlecht', 'Tutor']]
+        report = LusdImport.column_report(rows).to_h { |x| [x[:field], x] }
+        assert_equal 'Schueler_Nachname', report[:nachname][:found]
+        assert_equal 'Tutor', report[:tutor][:found]
+        assert_nil report[:geburtsdatum][:found]
+        assert report[:geburtsdatum][:required]
+        refute report[:rufname][:required]
+        assert_nil LusdImport.column_report([['Name', 'Ort']])
+    end
 end

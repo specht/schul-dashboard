@@ -38,6 +38,10 @@ module LusdImport
         # the next import
         'schuelerschluessel' => :lusd_id, 'schuelerid' => :lusd_id, 'schuelernummer' => :lusd_id,
         'lusdid' => :lusd_id, 'identnummer' => :lusd_id, 'schuelerkennung' => :lusd_id,
+        # 11/12: who checks a student's data before a switch
+        # (review/2026-11/student-data-review.md) – recognised, not used yet
+        'tutor' => :tutor, 'tutorin' => :tutor, 'tutorkuerzel' => :tutor, 'tutorname' => :tutor,
+        'schuelertutor' => :tutor, 'tutorlehrer' => :tutor,
     }
     # one row per foreign language: these columns don't make a row different
     PER_ROW = [:fremdsprache]
@@ -294,6 +298,35 @@ module LusdImport
         d.strftime('%d.%m.%Y')
     rescue Date::Error
         :invalid
+    end
+
+    # The columns /datenpflege looks for, required or not, and what each is for
+    # (shown after an upload: which are there, which are missing)
+    COLUMNS = [
+        [:nachname, 'Nachname', true, 'der Name'],
+        [:vorname, 'Vorname', true, 'alle Vornamen, wie im Ausweis'],
+        [:klasse, 'Klasse', true, 'die Klasse; in 11/12 die Stufe'],
+        [:geschlecht, 'Geschlecht', true, 'm, w oder d'],
+        [:geburtsdatum, 'Geburtsdatum', true, 'für Zeugnisse und um Schüler:innen wiederzuerkennen'],
+        [:rufname, 'Rufname', false, 'der Name, der im Dashboard steht; ohne ihn der erste Vorname'],
+        [:lusd_id, 'Schüler-Schlüssel', false, 'erkennt Schüler:innen im nächsten Export sicher wieder, auch nach einer Namensänderung'],
+        [:schulform, 'Schulform (kurz)', false, 'für den Bildungsgang (SESB, altsprachlich, regulär)'],
+        [:fremdsprache, 'Fremdsprachen', false, 'für den Bildungsgang (Latein oder Französisch)'],
+        [:stufe, 'Stufe / Semester', false, 'für 11 und 12, wenn die Klasse fehlt'],
+        [:tutor, 'Tutor:in', false, 'wer in 11 und 12 die Daten vor der Übernahme prüft'],
+    ]
+
+    # [{:field, :label, :required, :purpose, :found => header as in the file or nil}]
+    # nil without a header row
+    def self.column_report(rows)
+        i, columns = find_header(rows)
+        return nil unless i
+        header = rows[i]
+        COLUMNS.map do |field, label, required, purpose|
+            col = (columns || {})[field]
+            { :field => field, :label => label, :required => required, :purpose => purpose,
+              :found => col ? clean(header[col]) : nil }
+        end
     end
 
     # Finds the header row and returns [index, {field => column}].

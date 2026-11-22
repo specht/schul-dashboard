@@ -82,7 +82,8 @@
         #{print_name_reports()}
         #{print_schueler_overrides()}
         <h5>Neue Liste aus der LUSD</h5>
-        <p class='text-muted'>Excel- oder CSV-Export mit Nachname, Vorname, Rufname, Klasse, Geschlecht und Geburtsdatum. Hochladen ändert noch nichts: Erst kommt der Vergleich mit der Liste, die am gewählten Tag gilt. Einen Export kannst du als Entwurf behalten, bis die Daten in der LUSD stimmen; jeder neue Export wird dann auch mit dem Entwurf verglichen.</p>
+        #{print_datenpflege_columns_hint()}
+        <p class='text-muted'>Excel- oder CSV-Export aus der LUSD. Hochladen ändert noch nichts: Erst kommt der Vergleich mit der Liste, die am gewählten Tag gilt. Einen Export kannst du als Entwurf behalten, bis die Daten in der LUSD stimmen; jeder neue Export wird dann auch mit dem Entwurf verglichen.</p>
         <div class='dp-form'>
             <label class='dp-drop' id='dp_drop' for='ti_file'>
                 <input type='file' id='ti_file' accept='.xlsx,.csv,.txt' hidden>
@@ -167,7 +168,8 @@
             if (!data.ok) {
                 // nothing of an earlier comparison stays around
                 token = null;
-                $('#dp_preview').empty();
+                // the columns found and missing, if the file had a header
+                $('#dp_preview').html(data.columns_html || '');
                 $('#dp_apply').prop('hidden', true);
                 message(data.message || 'Die Datei konnte nicht verglichen werden.');
                 return;

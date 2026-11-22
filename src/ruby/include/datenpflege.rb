@@ -291,6 +291,7 @@ class Main < Sinatra::Base
         result[:students].each { |st| mapping[st.lusd_klasse][:students] << st if mapping[st.lusd_klasse] }
         mapping.each_value { |m| m[:count] = m[:students].size }
         out = {
+            :columns => LusdImport.column_report(rows),
             :filename => pending['filename'], :total => result[:students].size,
             :duplicates => result[:duplicates], :skipped => result[:skipped],
             :errors => result[:errors].map { |nr, text| "Zeile #{nr}: #{text}" } + wish_errors,
@@ -490,6 +491,21 @@ class Main < Sinatra::Base
         io.puts "</div>"
     end
 
+    # which columns the export has and which are missing (and what for)
+    def datenpflege_columns_html(io, columns)
+        return unless columns
+        missing = columns.reject { |x| x[:found] }
+        io.puts "<details class='dp-columns'#{missing.any? { |x| x[:required] } ? ' open' : ''}>"
+        io.puts "<summary>Spalten im Export: #{columns.size - missing.size} von #{columns.size}#{missing.empty? ? '' : ", es fehlen: #{dp_h(missing.map { |x| x[:label] }.join(', '))}"}</summary>"
+        io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-column-list'><thead><tr><th>Spalte</th><th>Im Export als</th><th>Wofür</th></tr></thead><tbody>"
+        columns.each do |x|
+            state = x[:found] ? "<i class='fa fa-check text-success' aria-hidden='true'></i> #{dp_h(x[:found])}" :
+                (x[:required] ? "<span class='text-danger'>fehlt (nötig)</span>" : "<span class='text-muted'>fehlt</span>")
+            io.puts "<tr class='#{x[:found] ? 'dp-col-found' : 'dp-col-missing'}' data-field='#{x[:field]}'><td>#{dp_h(x[:label])}</td><td>#{state}</td><td class='text-muted' style='white-space: normal;'>#{dp_h(x[:purpose])}</td></tr>"
+        end
+        io.puts "</tbody></table></div></details>"
+    end
+
     def datenpflege_preview_html(c, since = nil)
         StringIO.open do |io|
             io.puts "<p class='dp-summary'>Im Export: <strong>#{c[:total]}</strong> Schüler:innen (#{dp_h(c[:filename])})."
@@ -498,6 +514,7 @@ class Main < Sinatra::Base
             notes << "#{c[:duplicates]} doppelte Zeilen zusammengefasst (z. B. eine Zeile je Fremdsprache)" if c[:duplicates].to_i > 0
             notes << "#{c[:skipped]} Zeilen ohne Klasse und Stufe übersprungen (nicht oder nicht mehr an der Schule)" if c[:skipped].to_i > 0
             io.puts "<p class='text-muted dp-notes'>#{notes.join('. ')}.</p>" unless notes.empty?
+            datenpflege_columns_html(io, c[:columns])
             unless c[:errors].empty?
                 io.puts "<div class='alert alert-danger dp-errors'><strong>#{c[:errors].size == 1 ? 'Ein Fehler' : "#{c[:errors].size} Fehler"} – so kann die Liste nicht übernommen werden:</strong><ul>"
                 c[:errors].first(50).each { |e| io.puts "<li>#{dp_h(e)}</li>" }
@@ -621,13 +638,16 @@ class Main < Sinatra::Base
         datenpflege_cleanup_pending
         token = SecureRandom.hex(16)
         tmp = datenpflege_pending_path(token, ext)
+        rows = nil
         begin
             File.binwrite(tmp, Base64.strict_decode64(data[:content]))
             rows = LusdImport.read_rows(tmp)
             # stops here if the columns can't be found
             LusdImport.convert(rows)
         rescue LusdImport::Error => e
-            respond(:ok => false, :message => e.message)
+            # which columns are there and which are missing
+            columns_html = rows ? StringIO.open { |io| datenpflege_columns_html(io, LusdImport.column_report(rows)); io.string } : nil
+            respond(:ok => false, :message => e.message, :columns_html => columns_html)
             return
         rescue ArgumentError, CSV::MalformedCSVError, REXML::ParseException, Zlib::Error
             respond(:ok => false, :message => 'Die Datei konnte nicht gelesen werden.')
@@ -1097,4 +1117,11 @@ class Main < Sinatra::Base
         end
     end
 
+
+    # before an upload: the columns the LUSD query should have
+    def print_datenpflege_columns_hint
+        need = LusdImport::COLUMNS.select { |x| x[2] }.map { |x| x[1] }
+        want = LusdImport::COLUMNS.reject { |x| x[2] }.map { |x| x[1] }
+        "<p class='text-muted dp-columns-hint'>Spalten im Export: #{dp_h(need.join(', '))} (nötig); #{dp_h(want.join(', '))} (empfohlen). Nach dem Hochladen steht da, welche gefunden wurden.</p>"
+    end
 end

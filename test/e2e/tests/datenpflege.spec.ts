@@ -54,6 +54,9 @@ test('Datenpflege: Vergleich mit der bisherigen Liste', async ({ page }) => {
   const preview = page.locator('#dp_preview');
   await expect(preview.locator('.dp-summary')).toContainText('8 Schüler:innen');
   await expect(preview.locator('.dp-summary')).toContainText('ASCII.TXT');
+  // the columns: all needed ones there (closed), the missing optional ones named
+  await expect(preview.locator('.dp-columns')).not.toHaveAttribute('open', '');
+  await expect(preview.locator('.dp-columns summary')).toContainText('es fehlen: Schüler-Schlüssel');
   // new: the proposed address can be changed; a long name is shortened
   const nina = preview.locator('.dp-added tr', { hasText: 'Nina Neu' });
   await expect(nina.locator('.ti_email')).toHaveValue('nina.neu');
@@ -99,10 +102,17 @@ test('Datenpflege: Fehler in der Liste verhindern das Übernehmen', async ({ pag
   // comparison is gone
   await upload(page, 'Nachname;Vorname;Klasse\nMustermann;Max;5a\n', '2000-01-01');
   await expect(page.locator('#dp_message')).toContainText('Spalten fehlen im Export: Geschlecht, Geburtsdatum');
-  await expect(page.locator('#dp_preview')).toBeEmpty();
+  // no comparison, but which columns are there and which are missing
+  await expect(page.locator('#dp_preview .dp-summary')).toHaveCount(0);
+  const columns = page.locator('#dp_preview .dp-columns');
+  await expect(columns).toHaveAttribute('open', '');
+  await expect(columns.locator('tr[data-field="geschlecht"]')).toContainText('fehlt (nötig)');
+  await expect(columns.locator('tr[data-field="nachname"]')).toContainText('Nachname');
+  await expect(columns.locator('tr[data-field="tutor"]')).toContainText('fehlt');
   // no header row at all
   await upload(page, 'Name;Ort\nMustermann;Berlin\n', '2000-01-01');
   await expect(page.locator('#dp_message')).toContainText('Keine Kopfzeile mit Nachname und Klasse gefunden');
+  await expect(page.locator('#dp_preview')).toBeEmpty();
 });
 
 test('Datenpflege: übernehmen und zurücknehmen', async ({ page }) => {

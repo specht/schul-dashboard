@@ -26,14 +26,24 @@ module DataRepo
         ENV['DASHBOARD_DATA_REPO_PUSH'] == '1'
     end
 
-    GIT_ENV = {
-        'HOME' => '/tmp',
-        'GIT_TERMINAL_PROMPT' => '0',
-        'GIT_SSH_COMMAND' => 'ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new',
-    }
+    # The key for pushing (DATA_REPO_PUSH): a deploy key with write access to
+    # the data repo only, kept outside every repository (INTERNAL_PATH is
+    # /internal in the container). It must belong to the service's user and
+    # be readable by it alone (chmod 600) – ssh refuses it otherwise.
+    DEPLOY_KEY = '/internal/data-repo-deploy-key'
+
+    def self.git_env(key = DEPLOY_KEY)
+        ssh = ['ssh', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=accept-new']
+        ssh += ['-i', key, '-o', 'IdentitiesOnly=yes'] if File.exist?(key)
+        {
+            'HOME' => '/tmp',
+            'GIT_TERMINAL_PROMPT' => '0',
+            'GIT_SSH_COMMAND' => ssh.join(' '),
+        }
+    end
 
     def self.git(root, *args)
-        out, status = Open3.capture2e(GIT_ENV, 'git', '-C', root,
+        out, status = Open3.capture2e(git_env, 'git', '-C', root,
                                       '-c', 'user.name=Dashboard',
                                       '-c', 'user.email=dashboard@localhost',
                                       *args)

@@ -232,6 +232,15 @@ Damit das Dashboard in das Daten-Repository schreiben darf, braucht es in
 Schieben); ohne diese Einstellungen ist das Datenverzeichnis wie bisher nur
 lesbar.
 
+Zum Schieben braucht der Server einen **Deploy Key** mit Schreibrecht nur für
+das Daten-Repository: ein SSH-Schlüssel ohne Passphrase als
+`data-repo-deploy-key` in `INTERNAL_PATH` (im Container `/internal`), dem
+Benutzer des Dienstes gehörend und nur für ihn lesbar (`chmod 600`). Der
+öffentliche Teil wird beim Daten-Repository als Deploy Key mit Schreibrecht
+eingetragen, und dessen Remote muss eine SSH-Adresse sein (`git@…`). Ohne
+Schlüssel bleiben die Commits im Checkout auf dem Server; die Seite sagt dann,
+dass das Schieben nicht geklappt hat.
+
 **Bildungsgang:** Er ergibt sich aus der Schulform (`Schulform_kurz`) und den
 Fremdsprachen: SESB, altsprachlich oder regulär.
 

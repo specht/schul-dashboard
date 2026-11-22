@@ -70,4 +70,14 @@ class DataRepoTest < Minitest::Test
             assert_raises(DataRepo::Error) { DataRepo.commit(root, ['schueler/ASCII.TXT'], 'nichts') }
         end
     end
+
+    # pushing uses the deploy key when there is one (and only that key)
+    def test_push_uses_the_deploy_key
+        Dir.mktmpdir do |dir|
+            key = File.join(dir, 'key')
+            refute_includes DataRepo.git_env(key)['GIT_SSH_COMMAND'], '-i'
+            File.write(key, 'x')
+            assert_includes DataRepo.git_env(key)['GIT_SSH_COMMAND'], "-i #{key} -o IdentitiesOnly=yes"
+        end
+    end
 end

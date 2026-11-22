@@ -673,9 +673,12 @@
                 if (same_day(first, new Date())) options.initialDate = ymd(today_target());
             }
             options.headerToolbar = false;
-            options.fixedWeekCount = false;
+            // always six weeks: the month doesn't change its height from one
+            // to the next (the days of the neighbouring months are pale)
+            options.fixedWeekCount = true;
             // rows as high as their entries (preview/tests.css gives each day
-            // a minimum height): nothing hides behind »+2 weitere«
+            // a minimum height from the window's): nothing hides behind
+            // »+2 weitere«
             options.height = 'auto';
             options.eventOrder = 'pv_order,start,-duration,title';
             options.dayHeaderContent = function(arg) { return WD[arg.date.getDay()]; };

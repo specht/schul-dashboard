@@ -343,3 +343,37 @@ test('Klassenarbeiten: Vokabeltest als Typ', async ({ page }, testInfo) => {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Desktop: the month in the middle of the window, the same height from one
+// month to the next (six weeks, rows from the window's height) – switching
+// months doesn't make the page jump.
+test('Neues Design: Klassenarbeiten mittig, jeder Monat gleich hoch', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Monat nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/tests/5a');
+    const panel = page.locator('.pv-tests');
+    await expect(panel).toBeVisible();
+    const measure = () => panel.evaluate((p) => {
+      const r = p.getBoundingClientRect();
+      return { top: Math.round(r.top + window.scrollY), height: Math.round(r.height), below: Math.round(window.innerHeight - r.bottom - window.scrollY), weeks: p.querySelectorAll('.fc-daygrid-body tr').length };
+    });
+    const first = await measure();
+    expect(first.weeks).toBe(6);
+    // in the middle: about as much room above as below
+    expect(Math.abs(first.top - first.below)).toBeLessThan(8);
+    for (let i = 0; i < 4; i++) {
+      const title = await page.locator('#pv_tests_title').textContent();
+      await page.locator('#bu_pv_tests_next').click();
+      await expect(page.locator('#pv_tests_title')).not.toHaveText(title!);
+      const m = await measure();
+      expect(m.weeks, `month ${i + 1}`).toBe(6);
+      expect(Math.abs(m.height - first.height), `month ${i + 1}`).toBeLessThanOrEqual(2);
+      expect(Math.abs(m.top - first.top), `month ${i + 1}`).toBeLessThanOrEqual(2);
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

@@ -480,6 +480,14 @@ function preview_time_range(events) {
         lo = Math.min(lo, Math.floor(minutes(e.start) / 30) * 30);
         hi = Math.max(hi, Math.ceil(minutes(e.end) / 30) * 30);
     }
+    // switching weeks the grid only grows, never shrinks back: it doesn't
+    // jump from week to week (a new plan starts afresh)
+    let seen = window.pv_time_range_seen;
+    if (seen && seen.id === timetable_id) {
+        lo = Math.min(lo, seen.lo);
+        hi = Math.max(hi, seen.hi);
+    }
+    window.pv_time_range_seen = { id: timetable_id, lo: lo, hi: hi };
     let fmt = function(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
     let from = fmt(lo), to = fmt(Math.min(hi, 24 * 60 - 30));
     if (window.timetable_options) {

@@ -22,7 +22,9 @@ class Main < Sinatra::Base
     DATENPFLEGE_MAX_UPLOAD = 5 * 1024 * 1024
     DATENPFLEGE_EXTENSIONS = ['xlsx', 'csv', 'txt']
     DATENPFLEGE_KLASSEN_TR = 'schueler/lusd-klassen.yaml'
-    DATENPFLEGE_MANAGED = %r{\Aschueler/(\d{4}-\d{2}-\d{2}\.TXT|lusd-klassen\.yaml)\z}
+    DATENPFLEGE_MANAGED = %r{\Aschueler/(\d{4}-\d{2}-\d{2}\.TXT|lusd-klassen\.yaml|overrides\.yaml)\z}
+    DATENPFLEGE_OVERRIDES = 'schueler/overrides.yaml'
+    DATENPFLEGE_RUFNAME = /\A[\p{L}\p{M}][\p{L}\p{M}' .\-]{0,39}\z/u
     DATENPFLEGE_DRAFT = 'entwurf.json'
 
     def require_data_manager!
@@ -557,6 +559,18 @@ class Main < Sinatra::Base
                     [dp_h(n[:display_name]), dp_h(n[:klasse]),
                      manual + changes.map { |what, from, to| "<span class='dp-what'>#{what}</span> #{datenpflege_word_diff(from, to)}" }.join('<br>')]
                 end, %w(Name Klasse Änderung))
+            # where the dashboard keeps its own Rufname or gender: not a
+            # change, but visible (closed)
+            overridden = (c[:new_records] || []).select { |r| r[:overrides] }.sort_by(&order)
+            unless overridden.empty?
+                labels = { 'rufname' => 'Rufname', 'geschlecht' => 'Geschlecht' }
+                datenpflege_section(io, 'dp-overridden', 'Im Dashboard anders als in der LUSD',
+                    overridden.map do |r|
+                        [dp_h(r[:display_name]), dp_h(r[:klasse]),
+                         r[:overrides].map { |k, (lusd, own)| "<span class='dp-what'>#{labels[k]}</span> LUSD #{dp_h(lusd)}, Dashboard #{dp_h(own)}" }.join('<br>')]
+                    end, %w(Name Klasse Unterschied), open: false,
+                    hint: 'Festgelegt unter »Rufname und Geschlecht im Dashboard«: kein Unterschied, der übernommen wird.')
+            end
             unless c[:dropped].empty?
                 datenpflege_section(io, 'dp-dropped', 'Weggelassen (Klasse gibt es im Dashboard nicht)',
                     c[:dropped].sort_by(&order).map { |r| [dp_h(r[:display_name]), dp_h(r[:klasse])] }, %w(Name Klasse))
@@ -846,6 +860,80 @@ class Main < Sinatra::Base
         end
     end
 
+    # ---------- Rufname and gender the dashboard uses instead of LUSD's
+    # (Parser.schueler_overrides) ----------
+
+    # set (rufname and/or geschlecht) or, with both empty, remove
+    post '/api/datenpflege/override' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:email, :rufname, :geschlecht],
+                                  :max_value_lengths => { :email => 128, :rufname => 40, :geschlecht => 1 })
+        email = data[:email].strip.downcase
+        info = @@user_info[email]
+        assert(info && !info[:teacher] && info[:klasse], 'not a student')
+        rufname = data[:rufname].strip
+        geschlecht = data[:geschlecht].strip
+        assert(rufname.empty? || rufname =~ DATENPFLEGE_RUFNAME, 'invalid rufname')
+        assert(geschlecht.empty? || Parser::OVERRIDE_GENDERS.include?(geschlecht), 'invalid geschlecht')
+        unless DataRepo.writable?
+            respond(:ok => false, :message => 'Das Datenverzeichnis ist hier nicht beschreibbar (DATA_REPO_WRITABLE in env.rb).')
+            return
+        end
+        overrides = Parser.schueler_overrides(File.join(DataRepo.root, DATENPFLEGE_OVERRIDES))
+        if rufname.empty? && geschlecht.empty?
+            overrides.delete(email)
+        else
+            entry = { 'by' => @session_user[:email], 'at' => Date.today.strftime('%Y-%m-%d') }
+            entry['rufname'] = rufname unless rufname.empty?
+            entry['geschlecht'] = geschlecht unless geschlecht.empty?
+            overrides[email] = entry
+        end
+        content = "# Rufname und Geschlecht im Dashboard statt der LUSD-Werte (nicht auf Zeugnissen),\n" +
+                  "# gesetzt auf /datenpflege. Die Adresse bleibt.\n" + overrides.sort.to_h.to_yaml
+        DataRepo.write(DataRepo.root, DATENPFLEGE_OVERRIDES, content)
+        DataVersion.bump!(DataVersion::PATH, "#{DATENPFLEGE_OVERRIDES} by #{@session_user[:email]}")
+        respond(:ok => true, :reload => DataVersion.restarts?)
+    end
+
+    def print_schueler_overrides
+        require_data_manager!
+        overrides = Parser.schueler_overrides
+        students = @@user_info.select { |_, u| !u[:teacher] && u[:klasse] }.map do |email, u|
+            o = overrides[email] || {}
+            { :email => email, :label => "#{u[:official_first_name]} #{u[:last_name]} (#{u[:klasse]})",
+              :rufname => o['rufname'].to_s, :geschlecht => o['geschlecht'].to_s }
+        end.sort_by { |x| x[:label] }
+        StringIO.open do |io|
+            io.puts "<div class='dp-overrides'>"
+            io.puts "<h5>Rufname und Geschlecht im Dashboard</h5>"
+            io.puts "<p class='text-muted'>Für Schüler:innen, die in der LUSD noch mit altem Namen oder Geschlecht stehen. Gilt überall im Dashboard, nicht auf Zeugnissen; jeder neue LUSD-Export behält es. Die E-Mail-Adresse bleibt.</p>"
+            unless overrides.empty?
+                io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-override-list'><thead><tr><th>Name laut LUSD</th><th>Klasse</th><th>Rufname</th><th>Geschlecht</th><th>Gesetzt</th><th></th></tr></thead><tbody>"
+                overrides.sort_by { |email, _| (@@user_info[email] || {})[:last_name].to_s }.each do |email, o|
+                    u = @@user_info[email] || {}
+                    by = (@@user_info[o['by']] || {})[:display_name] || o['by']
+                    io.puts "<tr data-email='#{dp_h(email)}'><td>#{dp_h("#{u[:official_first_name]} #{u[:last_name]}".strip.empty? ? email : "#{u[:official_first_name]} #{u[:last_name]}")}</td><td>#{dp_h(u[:klasse])}</td>"
+                    gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }[o['geschlecht']] || '–'
+                    at = (Date.parse(o['at'].to_s).strftime('%d.%m.%Y') rescue o['at'].to_s)
+                    io.puts "<td>#{dp_h(o['rufname'] || '–')}</td><td>#{dp_h(gender)}</td>"
+                    io.puts "<td>#{dp_h(at)}, #{dp_h(by)}</td>"
+                    io.puts "<td class='dp-row-actions'><button type='button' class='btn btn-secondary btn-sm bu_override_edit' data-email='#{dp_h(email)}'>Ändern</button> <button type='button' class='btn btn-secondary btn-sm bu_override_remove' data-email='#{dp_h(email)}'>Entfernen</button></td></tr>"
+                end
+                io.puts "</tbody></table></div>"
+            end
+            io.puts "<div class='dp-override-form'>"
+            io.puts "<div class='dp-of-student'><label for='ti_override_student'>Schüler:in</label><input class='form-control' id='ti_override_student' list='dp_override_students' placeholder='Name oder Klasse' autocomplete='off'></div>"
+            io.puts "<div class='dp-of-rufname'><label for='ti_override_rufname'>Rufname im Dashboard</label><input class='form-control' id='ti_override_rufname' maxlength='40' placeholder='wie in der LUSD'></div>"
+            io.puts "<div class='dp-of-geschlecht'><label for='ti_override_geschlecht'>Geschlecht im Dashboard</label><select class='form-control' id='ti_override_geschlecht'><option value=''>wie in der LUSD</option><option value='m'>männlich</option><option value='w'>weiblich</option><option value='d'>divers</option></select></div>"
+            io.puts "<div class='dp-of-save'><button type='button' class='btn btn-secondary' id='bu_override_save' disabled>Festlegen</button></div>"
+            io.puts "</div>"
+            io.puts "<datalist id='dp_override_students'>#{students.map { |x| "<option value='#{dp_h(x[:label])}'></option>" }.join}</datalist>"
+            io.puts "<script type='application/json' id='dp_override_data'>#{students.to_json.gsub('</', '<\/')}</script>"
+            io.puts "</div>"
+            io.string
+        end
+    end
+
     # ---------- reports from students: a wrong name, an address that no
     # longer fits the name ----------
     # Names come from LUSD and are corrected there; an address stays as it
@@ -1000,7 +1088,7 @@ class Main < Sinatra::Base
                 text = dp_h(r[:note])
                 io.puts "<tr><td>#{Time.at(r[:ts]).strftime('%d.%m.%Y')}</td><td>#{dp_h(info[:display_name] || r[:email])}</td><td>#{dp_h(info[:klasse])}</td>"
                 io.puts "<td>#{dp_h(r[:email].to_s.sub("@#{SCHUL_MAIL_DOMAIN}", ''))}</td><td style='white-space: normal;'>#{text}</td>"
-                io.puts "<td><button type='button' class='btn btn-secondary btn-sm bu_report_done' data-id='#{dp_h(r[:id])}'>Erledigt</button></td></tr>"
+                io.puts "<td class='dp-row-actions'><button type='button' class='btn btn-secondary btn-sm bu_override_edit' data-email='#{dp_h(r[:email])}'>Im Dashboard festlegen</button> <button type='button' class='btn btn-secondary btn-sm bu_report_done' data-id='#{dp_h(r[:id])}'>Erledigt</button></td></tr>"
             end
             io.puts "</tbody></table></div>"
             io.string

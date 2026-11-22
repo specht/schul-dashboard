@@ -440,6 +440,48 @@ class Parser
     class SchuelerLineError < StandardError; end
 
     SCHUELER_DIR = '/data/schueler'
+    # Rufname and gender the dashboard uses instead of LUSD's, per student
+    # (review/2026-11/student-data-review.md): for students who are
+    # officially still listed with an old name or gender. Every LUSD import
+    # keeps them; report cards don't use them (official_first_name,
+    # official_geschlecht). Set on /datenpflege.
+    #   email: { rufname: …, geschlecht: m|w|d, by: email, at: 2026-11-22 }
+    OVERRIDES_PATH = File.join(SCHUELER_DIR, 'overrides.yaml')
+    OVERRIDE_GENDERS = ['m', 'w', 'd']
+
+    def self.schueler_overrides(path = OVERRIDES_PATH)
+        return {} unless File.exist?(path)
+        data = YAML.safe_load(File.read(path, encoding: 'UTF-8'))
+        data.is_a?(Hash) ? data : {}
+    rescue Psych::Exception => e
+        debug "WARNING: #{path} could not be read (#{e.class}), no overrides" if defined?(debug)
+        {}
+    end
+
+    # The override for this student, if any: the Rufname replaces the first
+    # name shown (the address stays – it is the account's id), the gender
+    # the one the dashboard uses. official_geschlecht always keeps LUSD's;
+    # overrides: {field => [LUSD's value, the dashboard's]} where they differ.
+    def apply_schueler_override(record, override)
+        record[:official_geschlecht] = record[:geschlecht]
+        return record unless override.is_a?(Hash)
+        changed = {}
+        rufname = override['rufname'].to_s.strip
+        if !rufname.empty? && rufname != record[:first_name]
+            changed['rufname'] = [record[:first_name], rufname]
+            record[:first_name] = rufname
+            record[:display_name] = name_to_display_name(rufname, record[:last_name])
+            record[:display_first_name] = name_to_display_name(rufname, '')
+            record[:display_name_official] = name_to_display_name(rufname, record[:last_name])
+        end
+        geschlecht = override['geschlecht'].to_s.strip
+        if OVERRIDE_GENDERS.include?(geschlecht) && geschlecht != record[:geschlecht]
+            changed['geschlecht'] = [record[:geschlecht], geschlecht]
+            record[:geschlecht] = geschlecht
+        end
+        record[:overrides] = changed unless changed.empty?
+        record
+    end
     BILDUNGSGAENGE = ['altsprachlich', 'sesb', 'regulaer_la', 'regulaer_frz', 'regulaer']
 
     # The student list valid on a day: the newest schueler/JJJJ-MM-TT.TXT
@@ -496,7 +538,9 @@ class Parser
     # also students whose class isn't in KLASSEN_ORDER (the dashboard leaves
     # them out)
     # translate_klasse: see handle_schueler_line (default: not for dated lists)
-    def parse_schueler(list_path = nil, all_classes: false, translate_klasse: nil, &block)
+    # overrides: Rufname and gender per address (schueler_overrides) – the
+    # same for every list, the current one and drafts
+    def parse_schueler(list_path = nil, all_classes: false, translate_klasse: nil, overrides: Parser.schueler_overrides, &block)
 #         debug "Parsing schueler..."
         # create reproducible passwords while parsing SuS
 
@@ -513,6 +557,7 @@ class Parser
                 next if line.strip[0] == '#' || line.strip.empty?
 
                 record = handle_schueler_line(line, translate_klasse.nil? ? !Parser.dated_schueler_list?(path) : translate_klasse)
+                apply_schueler_override(record, overrides[record[:email]])
                 if all_classes || KLASSEN_ORDER.include?(record[:klasse])
                     yield record
                 end

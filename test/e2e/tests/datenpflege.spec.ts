@@ -253,3 +253,52 @@ test('Datenpflege: Entwurf behalten, neuen Export damit vergleichen, ersetzen, v
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
   }
 });
+
+// Rufname and gender in the dashboard (Parser.schueler_overrides): set on
+// /datenpflege, kept by every LUSD export – the comparison doesn't count it
+// as a change, but shows it (closed). One file for everybody: desktop only,
+// a student no other test looks at, rolled back at the end.
+test('Datenpflege: Rufname und Geschlecht im Dashboard festlegen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one file for everybody');
+  await login(page, ACCOUNTS.admin);
+  try {
+    await page.goto('/datenpflege');
+    await page.locator('#ti_override_student').fill('Mallory Mustermann (5a)');
+    await expect(page.locator('#bu_override_save')).toBeEnabled();
+    await page.locator('#ti_override_rufname').fill('Mel');
+    await page.locator('#ti_override_geschlecht').selectOption('d');
+    await page.locator('#bu_override_save').click();
+    // no restart in the test stack: the page reloads at once
+    const row = page.locator('.dp-override-list tr', { hasText: 'Mallory Mustermann' });
+    await expect(row).toContainText('Mel');
+    await expect(row).toContainText('divers');
+    await expect(page.locator('.dp-uncommitted')).toContainText('schueler/overrides.yaml');
+
+    // a LUSD export with the old values: no change, the difference shown
+    await upload(page, [HEADER, 'Mustermann;Mallory;;05a;männlich;03.01.2010'].join('\r\n'), '2000-01-01');
+    const preview = page.locator('#dp_preview');
+    await expect(preview.locator('.dp-changed tr', { hasText: 'Mustermann' })).toHaveCount(0);
+    const shown = preview.locator('.dp-overridden');
+    await expect(shown).not.toHaveAttribute('open', '');
+    await expect(shown.locator('.dp-count')).toHaveText('1');
+    await expect(shown.locator('tr', { hasText: 'Mel Mustermann' })).toContainText(/Rufname\s*LUSD Mallory, Dashboard Mel/);
+    await page.locator('#bu_discard_upload').click();
+
+    // removed again: asks first
+    await page.locator('.dp-override-list .bu_override_remove').first().click();
+    const dialog = page.locator('.modal.show');
+    await expect(dialog).toContainText('wie in der LUSD');
+    await dialog.getByRole('button', { name: 'Entfernen' }).click();
+    await expect(page.locator('.dp-override-list tr', { hasText: 'Mallory' })).toHaveCount(0);
+  } finally {
+    await page.request.post('/api/datenpflege/rollback', { data: {} });
+  }
+});
+
+test('Rufname und Geschlecht im Dashboard nur mit der Rolle', async ({ baseURL }) => {
+  const api = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(api, ACCOUNTS.teacher);
+  const r = await api.post('/api/datenpflege/override', { data: { email: ACCOUNTS.schueler, rufname: 'X', geschlecht: '' } });
+  expect(r.ok()).toBe(false);
+  await api.dispose();
+});

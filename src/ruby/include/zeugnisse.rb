@@ -270,7 +270,7 @@ class Main < Sinatra::Base
             end
 
             @@zeugnisliste_for_klasse[klasse][:schueler] = @@schueler_for_klasse[klasse].map do |email|
-                geschlecht = ZEUGNIS_USE_MOCK_NAMES ? ['m', 'w'].sample : @@user_info[email][:geschlecht]
+                geschlecht = ZEUGNIS_USE_MOCK_NAMES ? ['m', 'w'].sample : (@@user_info[email][:official_geschlecht] || @@user_info[email][:geschlecht])
                 {
                     :email => email,
                     :zeugnis_key => self.zeugnis_key_for_email(email),

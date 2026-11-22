@@ -60,6 +60,12 @@
     }
     .dp-drop-file { font-weight: 600; color: var(--pv-ink, inherit); overflow-wrap: anywhere; }
     .dp-date { flex: none; }
+    .dp-override-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6em 1em; margin: 0.5em 0 1.5em; }
+    .dp-override-form label { display: block; margin-bottom: 0.2em; }
+    .dp-of-student { flex: 1 1 18em; min-width: 0; }
+    .dp-of-rufname { flex: 1 1 12em; min-width: 0; }
+    .dp-of-geschlecht { flex: 0 1 12em; }
+    .dp-row-actions { white-space: nowrap; text-align: right; }
     .dp-date label { display: block; margin-bottom: 0.2em; }
 </style>
 <div class='container-fluid white'>
@@ -69,6 +75,7 @@
         <h4>Schüler:innen</h4>
         #{print_datenpflege()}
         #{print_name_reports()}
+        #{print_schueler_overrides()}
         <h5>Neue Liste aus der LUSD</h5>
         <p class='text-muted'>Excel- oder CSV-Export mit Nachname, Vorname, Rufname, Klasse, Geschlecht und Geburtsdatum. Hochladen ändert noch nichts: Erst kommt der Vergleich mit der Liste, die am gewählten Tag gilt. Einen Export kannst du als Entwurf behalten, bis die Daten in der LUSD stimmen; jeder neue Export wird dann auch mit dem Entwurf verglichen.</p>
         <div class='dp-form'>
@@ -323,6 +330,44 @@
             api_call('/api/name_report/done', { id: button.data('id') }, function (data) {
                 if (data.success) button.closest('tr').remove(); else button.prop('disabled', false);
             });
+        });
+
+        // ---- Rufname and gender in the dashboard ----
+        const OVERRIDE_STUDENTS = JSON.parse(document.getElementById('dp_override_data').textContent);
+        let override_email = null;
+        function override_pick() {
+            const label = $('#ti_override_student').val().trim();
+            const st = OVERRIDE_STUDENTS.find((x) => x.label === label);
+            override_email = st ? st.email : null;
+            if (st) {
+                $('#ti_override_rufname').val(st.rufname);
+                $('#ti_override_geschlecht').val(st.geschlecht);
+            }
+            $('#bu_override_save').prop('disabled', !override_email);
+        }
+        $('#ti_override_student').on('input change', override_pick);
+        function override_save(email, rufname, geschlecht) {
+            api_call('/api/datenpflege/override', { email: email, rufname: rufname, geschlecht: geschlecht }, after_change);
+        }
+        $('#bu_override_save').click(function (e) {
+            if (!override_email) return;
+            $(e.currentTarget).prop('disabled', true);
+            override_save(override_email, $('#ti_override_rufname').val().trim(), $('#ti_override_geschlecht').val());
+        });
+        $(document).on('click', '.bu_override_edit', function (e) {
+            const st = OVERRIDE_STUDENTS.find((x) => x.email === $(e.currentTarget).data('email'));
+            if (!st) return;
+            $('#ti_override_student').val(st.label);
+            override_pick();
+            document.querySelector('.dp-override-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            $('#ti_override_rufname').focus();
+        });
+        $(document).on('click', '.bu_override_remove', function (e) {
+            const st = OVERRIDE_STUDENTS.find((x) => x.email === $(e.currentTarget).data('email'));
+            if (!st) return;
+            dashboardConfirm(`Rufname und Geschlecht für ${st.label} wieder wie in der LUSD?`,
+                function () { override_save(st.email, '', ''); },
+                { title: 'Im Dashboard entfernen', confirm: 'Entfernen' });
         });
 
         $('#bu_rollback').click(function () {

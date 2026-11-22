@@ -162,18 +162,21 @@
     .mailbox-check-error { padding: 0.65em 0.9em; border-radius: 0.4em; border: 1px solid #e1e4e8; background: #fdf6e3; margin-bottom: 0.5em; }
     .mailbox-check-error .btn { margin-top: 0.5em; }
     body.dark .mailbox-check-error { background: rgba(255, 200, 0, 0.08); border-color: rgba(255, 255, 255, 0.14); }
+    #letter_results .letter-result td { vertical-align: top; }
     .letter-name { font-weight: 500; }
     .letter-email { font-size: 90%; overflow-wrap: anywhere; }
-    .letter-actions { display: flex; flex-wrap: wrap; gap: 0.3em 0.4em; align-items: center; justify-content: flex-end; }
-    .letter-actions .btn { margin: 0; }
-    .letter-reset { display: inline-flex; align-items: center; gap: 0.4em; white-space: nowrap; }
+    /* E-Mail-Brief on top, below one row per mailbox: label, Prüfen, Zurücksetzen */
+    .letter-actions { display: grid; grid-template-columns: max-content max-content max-content; gap: 0.35em 0.4em; align-items: center; justify-content: end; }
+    .letter-actions .btn { margin: 0; white-space: nowrap; }
+    .letter-actions .letter-brief { grid-column: 2 / 4; justify-self: end; }
+    .letter-mailbox { padding-right: 0.4em; white-space: nowrap; }
     #mailbox_check_log_box { margin: 0.5em 0 0 0; }
     #mailbox_check_log_box summary { color: #5f6368; cursor: pointer; padding: 0.2em 0; }
     .mailbox-check-log-hint { font-size: 90%; margin: 0.3em 0; }
     body.dark #mailbox_check_log_box summary { color: #b0b5ba; }
     @media (max-width: 575px) {
-        .letter-actions { justify-content: flex-start; }
-        .letter-reset { white-space: normal; flex-wrap: wrap; }
+        .letter-actions { justify-content: start; }
+        .letter-actions .letter-brief { justify-self: start; }
     }
     @media (max-width: 575px) {
         .mailbox-check-facts { grid-template-columns: 1fr; }
@@ -510,16 +513,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const actions = $('<div>').addClass('letter-actions');
             const letter = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_open_letter').html("<i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mail-Brief");
             letter.on('click', (e) => open_letter(st.email, $(e.currentTarget)));
-            const check = $('<button>').addClass('btn btn-sm btn-outline-secondary bu_check_mailbox').html("<i class='fa fa-stethoscope'></i>&nbsp;&nbsp;Postfach prüfen…");
-            check.on('click', () => open_mailbox_check(st));
-            const own = $('<button>').addClass('btn btn-outline-secondary bu_case_student').text('Schüler-Postfach');
-            own.on('click', () => add_to_case(st.email));
-            const parents = $('<button>').addClass('btn btn-outline-secondary bu_case_parents').text('Eltern-Postfach');
-            parents.on('click', () => add_to_case('eltern.' + st.email));
-            const reset = $('<span>').addClass('letter-reset').append(
-                $('<span>').addClass('text-muted').text('Zurücksetzen beantragen:'),
-                $('<div>').addClass('btn-group btn-group-sm').attr('role', 'group').append(own, parents));
-            tr.append($('<td>').append(actions.append(letter, check, reset)));
+            actions.append($('<span>'), letter.addClass('letter-brief'));
+            // one row per mailbox: check it (right away – so nobody's mailbox is
+            // looked into without a reason) or ask for a reset (a request in
+            // "Neue Anfrage", reset only once it's approved)
+            for (const [label, mailbox, check_class, case_class] of [
+                ['Schüler-Postfach', st.email, 'bu_check_mailbox', 'bu_case_student'],
+                ['Eltern-Postfach', 'eltern.' + st.email, 'bu_check_parents_mailbox', 'bu_case_parents']]) {
+                const check = $('<button>').addClass('btn btn-sm btn-outline-secondary').addClass(check_class).text('Prüfen…');
+                check.on('click', () => open_mailbox_check(st, mailbox));
+                const reset = $('<button>').addClass('btn btn-sm btn-outline-secondary').addClass(case_class).text('Zurücksetzen…')
+                    .attr('title', 'Übernimmt das Postfach in „Neue Anfrage“ – zurückgesetzt wird erst nach der Freigabe');
+                reset.on('click', () => add_to_case(mailbox));
+                actions.append($('<span>').addClass('text-muted letter-mailbox').text(label), check, reset);
+            }
+            tr.append($('<td>').append(actions));
             tbody.append(tr);
         }
         if (found.length === 0) tbody.append($('<tr>').append($('<td>').attr('colspan', 3).addClass('text-muted').text('Niemand gefunden.')));
@@ -554,11 +562,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function open_mailbox_check(st) {
+    function open_mailbox_check(st, mailbox) {
         check_student = st;
         $('#mailbox_check_title_name').text(` – ${st.name} (${st.klasse})`);
         $('#mailboxCheckModal').modal('show');
-        run_mailbox_check(st.email);
+        run_mailbox_check(mailbox);
     }
 
     function run_mailbox_check(mailbox) {

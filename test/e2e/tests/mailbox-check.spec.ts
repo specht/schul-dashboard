@@ -124,8 +124,16 @@ test('Nur eine Weiterleitung, fehlendes Eltern-Postfach', async ({ page }) => {
   await modal.locator('[data-dismiss="modal"]').click();
   await expect(modal).toBeHidden();
 
+  // the parents' mailbox directly from the search: only that one is checked
+  const checked: string[] = [];
+  page.on('request', (r) => { if (r.url().endsWith('/api/check_mailbox')) checked.push(r.postDataJSON().mailbox); });
   await page.locator('#ti_letter_search').fill('Max Muster');
-  await page.locator('.letter-result', { hasText: 'Max' }).locator('.bu_check_mailbox').click();
+  await page.locator('.letter-result', { hasText: 'Max' }).locator('.bu_check_parents_mailbox').click();
+  await expect(modal.locator('[data-key="missing"]')).toBeVisible();
+  expect(checked).toEqual([`eltern.${MAX}`]);
+  await expect(modal.locator('#bu_check_parents')).toHaveClass(/active/);
+  // and the student's from the dialog
+  await modal.locator('#bu_check_student').click();
   await expect(modal.locator('[data-key="mail_arrives"]')).toBeVisible();
   await modal.locator('#bu_check_parents').click();
   await expect(modal.locator('[data-key="missing"]')).toBeVisible();

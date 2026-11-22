@@ -318,3 +318,28 @@ test('Neues Design: Klassenarbeiten am Handy Woche für Woche, wischbar', async 
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Vokabeltest as a type of its own: in the form, and in the new design a
+// test like the LEK (in the subject's colour).
+test('Klassenarbeiten: Vokabeltest als Typ', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the type list needs no second layout');
+  const tag = Date.now().toString(36);
+  const day = aheadWeekday();
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/tests/5a');
+  await expect(page.locator('#ti_typ option[value="Vokabeltest"]')).toHaveText('Vokabeltest');
+  const id = await saveTest(page, {
+    klasse: '5a', datum: isoDate(day), end_datum: isoDate(day), fach: 'En',
+    kommentar: `Unit 3 ${tag}`, typ: 'Vokabeltest', public_for_klasse: 'yes',
+  });
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/tests/5a');
+    await expect(page.locator('.pv-tests')).toBeVisible();
+    await showMonthOf(page, day);
+    await expect(page.locator('#calendar .fc-event.pv-t-exam', { hasText: 'Vokabeltest' })).toHaveCount(1);
+  } finally {
+    await page.request.post('/api/delete_test', { data: { id } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

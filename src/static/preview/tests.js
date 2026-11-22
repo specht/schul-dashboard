@@ -18,7 +18,7 @@
     var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
     var MONTHS_SHORT = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
     var TYPES = { KA: 'Klassenarbeit' };
-    var EXAMS = ['KA', 'LEK', 'MSA', 'Vera'];
+    var EXAMS = ['KA', 'LEK', 'Vokabeltest', 'MSA', 'Vera'];
     // the order within a day: holidays, the school's dates, tests, other
     // entries, the A/B week last (it spans the week and would push the rest down)
     var ORDER = { holiday: 0, school: 1, exam: 2, other: 3, week: 4 };
@@ -325,7 +325,7 @@
 
         var foot = el('div', 'pv-tests-foot');
         var legend = el('div', 'pv-tests-legend');
-        [['exam', 'Klassenarbeit, LEK, in der Fachfarbe'], ['other', 'Exkursion, Fahrt, Elternabend'],
+        [['exam', 'Klassenarbeit, LEK, Vokabeltest, in der Fachfarbe'], ['other', 'Exkursion, Fahrt, Elternabend'],
          ['school', 'Termin der Schule'], ['holiday', 'Ferien, Feiertage']].forEach(function(x) {
             var item = el('span', 'pv-tests-legend-item pv-tl-' + x[0]);
             item.appendChild(el('span', 'pv-tests-swatch'));

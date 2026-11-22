@@ -50,6 +50,15 @@ class Main < Sinatra::Base
         end
         dated += polls.reject { |x| x[:hidden] || x[:answered] }
         todos = dated.sort_by { |x| x[:end] }
+        # Klassenleitungen: the new student list of their class, from its
+        # release until confirmed (include/schuelerliste.rb); never breaks
+        # the page
+        begin
+            sl = start_page_schuelerliste_todo
+            todos << sl if sl
+        rescue StandardError => e
+            debug "start_page_schuelerliste_todo: #{e}"
+        end
         books = ((@@bib_summoned_books || {})[email] || []).size
         todos << {:kind => 'books', :count => books} if books > 0
         otp = otp_nudge_kind

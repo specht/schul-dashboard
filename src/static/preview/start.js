@@ -160,6 +160,16 @@
             text.appendChild(node('b', 'pv-todo-title', item.count === 1 ? 'Ein Buch zurückbringen' : item.count + ' Bücher zurückbringen'));
             text.appendChild(facts([(item.count === 1 ? 'Die Bibliothek braucht es' : 'Die Bibliothek braucht sie') + ' dringend, bitte ins Rückgaberegal']));
             actions.appendChild(button('Meine Bücher', null, '/bibliothek'));
+        } else if (item.kind === 'schuelerliste') {
+            // the new student list of one's class (include/schuelerliste.rb)
+            lead.appendChild(icon('list-check'));
+            text.appendChild(node('b', 'pv-todo-title', 'Schülerliste prüfen'));
+            var parts = item.klassen.map(function (k) {
+                return 'Klasse ' + k.label + (k.open > 0 ? ': noch ' + k.open + ' von ' + k.total + ' Zeilen' : ': alles geprüft, noch bestätigen');
+            });
+            if (item.deadline) parts.push('bitte bis ' + item.deadline.split('-').reverse().join('.'));
+            text.appendChild(facts(parts));
+            actions.appendChild(button('Prüfen', null, '/schuelerliste' + (item.klassen.length === 1 ? '?klasse=' + encodeURIComponent(item.klassen[0].klasse) : '')));
         } else if (item.kind === 'otp') {
             lead.appendChild(icon(done[key] === 'switched' ? 'check' : 'qrcode'));
             if (done[key] === 'switched') {

@@ -352,6 +352,28 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    # the start page's »Zu erledigen« (include/start_todo.rb): for a
+    # Klassenleitung, the classes still to check or confirm – nil when there
+    # is nothing (not released, all confirmed, no class)
+    def start_page_schuelerliste_todo
+        return nil unless teacher_logged_in? && schuelerliste_released?
+        sh = @session_user[:shorthand]
+        klassen = schuelerliste_klassen_all.select { |k| (@@klassenleiter[k] || []).include?(sh) }
+        return nil if klassen.empty?
+        view = schuelerliste_view
+        return nil if view.nil? || view[:errors]
+        open = klassen.filter_map do |k|
+            entries = schuelerliste_entries(view, k)
+            next if entries.empty?
+            state = schuelerliste_state(k)
+            checked = entries.count { |key, e| schuelerliste_check_valid?(state[:checks][key], e) }
+            next if state[:confirmed] && checked == entries.size
+            { :klasse => k, :label => tr_klasse(k), :open => entries.size - checked, :total => entries.size }
+        end
+        return nil if open.empty?
+        { :kind => 'schuelerliste', :key => 'schuelerliste', :klassen => open, :deadline => datenpflege_draft['deadline'] }
+    end
+
     def schuelerliste_set_released(flag)
         draft = datenpflege_draft
         assert(draft, 'no draft')
@@ -374,8 +396,10 @@ class Main < Sinatra::Base
         deadline = datenpflege_valid_date(data[:deadline].to_s)
         view = schuelerliste_view
         assert(view && !view[:errors], 'no draft')
-        # the mail releases the draft for the Klassenleitungen
+        # the mail releases the draft for the Klassenleitungen; its deadline
+        # shows in their »Zu erledigen«
         schuelerliste_set_released(true)
+        datenpflege_save_draft(datenpflege_draft.merge('deadline' => deadline.strftime('%Y-%m-%d'))) if deadline
         overview = schuelerliste_overview(view)
         open = overview.reject { |_, o| o[:confirmed] }.keys
         by_teacher = Hash.new { |h, k| h[k] = [] }

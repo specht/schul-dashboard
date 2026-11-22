@@ -545,3 +545,50 @@ test('Schülerliste prüfen: erst nach der Freigabe für Klassenleitungen', asyn
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
   }
 });
+
+// The start page (new design): a Klassenleitung finds the list of the class in
+// »Zu erledigen« from its release until it is confirmed – with the rows still
+// open and the deadline of the mail. Clarke leads 5a.
+test('Schülerliste prüfen: in »Zu erledigen« für die Klassenleitung', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(90_000);
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/schuelerliste/reset', { data: {} });
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, [HEADER, 'Mustermann;Max;;05a;männlich;01.01.2010', 'Neu;Nele;;05a;weiblich;01.03.2014'].join('\r\n'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    const todo = page.locator('.pv-todo-row[data-kind="schuelerliste"]');
+    // not released: nothing on the start page
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event, #pv_agenda').first()).toBeVisible();
+    await expect(todo).toHaveCount(0);
+    // the mail releases it, with a deadline
+    expect((await page.request.post('/api/schuelerliste/notify', { data: { deadline: '2099-12-01' } })).ok()).toBe(true);
+    await page.goto('/');
+    await expect(todo).toContainText('Schülerliste prüfen');
+    await expect(todo).toContainText(/Klasse 5a: noch \d+ von \d+ Zeilen/);
+    await expect(todo).toContainText('bitte bis 01.12.2099');
+    await todo.getByRole('link', { name: 'Prüfen' }).or(todo.getByRole('button', { name: 'Prüfen' })).first().click();
+    await expect(page).toHaveURL(/\/schuelerliste\?klasse=5a/);
+    // every row checked and confirmed: gone
+    const cls = page.locator('.sl-class');
+    while (await cls.locator('.bu_sl_ok').count() > 0) {
+      const n = await cls.locator('.bu_sl_ok').count();
+      await cls.locator('.bu_sl_ok').first().click();
+      await expect(cls.locator('.bu_sl_ok')).toHaveCount(n - 1);
+    }
+    await page.locator('#bu_sl_confirm').click();
+    await expect(cls.locator('.sl-confirmed')).toBeVisible();
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event, #pv_agenda').first()).toBeVisible();
+    await expect(todo).toHaveCount(0);
+  } finally {
+    await page.request.post('/api/schuelerliste/reset', { data: {} });
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

@@ -165,9 +165,10 @@
         pv_list.page(container, { main: container.querySelector('.bu-new-event') });
     }
 
-    // a time from the Terminfinder (preview/terminfinder.js): a new event
-    // with its date, time and participants (through sessionStorage, so that
-    // no names end up in the address)
+    // a time from the Terminfinder (preview/terminfinder.js) or the
+    // timetable (timetable.html, preview_create_draft): a new event with its
+    // date, time and participants (through sessionStorage, so that no names
+    // end up in the address)
     function from_terminfinder() {
         var draft = null;
         try {

@@ -1098,7 +1098,8 @@ function preview_below_hints() {
 })();
 
 // Keyboard shortcuts as in Google Calendar: N or J the next week (day),
-// P or K the previous one, T today – not while typing or in a dialog.
+// P or K the previous one, T today, C a new Termin – not while typing or in
+// a dialog.
 document.addEventListener('keydown', function(e) {
     if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || e.repeat) return;
     let target = e.target;
@@ -1108,9 +1109,106 @@ document.addEventListener('keydown', function(e) {
     if (key === 'n' || key === 'j') window.calendar.next();
     else if (key === 'p' || key === 'k') window.calendar.prev();
     else if (key === 't') preview_go_today();
+    else if (key === 'c' && preview_create_wanted()) preview_create_now();
     else return;
     e.preventDefault();
 });
+
+// New design, week on larger screens: a Termin straight from the timetable,
+// for everyone who may create Termine. Clicking a free spot, dragging over
+// free time or right-clicking it marks the time (an hour from a click) and
+// opens a small popover; »Termin erstellen…« goes on to /events with date
+// and time filled in (preview/events.js, through sessionStorage like the
+// Terminfinder). The key C does the same for the next full hour. Nothing
+// shows until somebody asks for it.
+const PV_CAN_CREATE_EVENTS = #{(user_with_role_logged_in?(:can_create_events) && !tablet_logged_in?) ? 'true' : 'false'};
+function preview_create_wanted() {
+    return PV_CAN_CREATE_EVENTS && document.body.classList.contains('ui-preview') && !document.body.classList.contains('pv-agenda-on');
+}
+function preview_close_create(unselect) {
+    $('.pv-create-pop').remove();
+    if (unselect !== false && window.calendar) window.calendar.unselect();
+}
+function preview_create_draft(start, end) {
+    let draft = { date: moment(start).format('YYYY-MM-DD'), start: moment(start).format('HH:mm'), end: moment(end).format('HH:mm'), recipients: [] };
+    try { sessionStorage.setItem('pv_terminfinder', JSON.stringify(draft)); } catch (e) {}
+    window.location.href = '/events';
+}
+// an hour from `start`, within the day
+function preview_create_hour(start) {
+    let end = moment(start).add(60, 'minutes');
+    if (end.format('YYYY-MM-DD') !== moment(start).format('YYYY-MM-DD')) end = moment(start).endOf('day').startOf('minute');
+    return end.toDate();
+}
+function preview_show_create(start, end) {
+    preview_close_create(false);
+    let s = moment(start), e = moment(end);
+    let pop = $('<div class="pv-create-pop" role="dialog" aria-label="Neuer Termin">');
+    let head = $('<div class="pv-create-head">');
+    head.append($('<div class="pv-create-title">').text('Neuer Termin'));
+    head.append($('<button type="button" class="pv-create-close" aria-label="Schließen">').append($('<i class="ti ti-x">'))
+        .on('click', function() { preview_close_create(); }));
+    pop.append(head);
+    pop.append($('<div class="pv-create-when">').text(`${s.format('dd D.M.')}, ${s.format('H:mm')} bis ${e.format('H:mm')} Uhr`));
+    let go = $('<button type="button" class="btn btn-primary pv-create-go">').text('Termin erstellen…')
+        .on('click', function() { preview_create_draft(start, end); });
+    pop.append(go);
+    $('body').append(pop);
+    // beside the marked time, inside the window
+    let place = function() {
+        let mirror = document.querySelector('#calendar .fc-event-mirror');
+        let r = mirror ? mirror.getBoundingClientRect() : document.getElementById('calendar').getBoundingClientRect();
+        let w = pop.outerWidth(), h = pop.outerHeight(), gap = 8;
+        let left = r.right + gap;
+        if (left + w > window.innerWidth - 8) left = r.left - gap - w;
+        if (left < 8) left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left));
+        let top = Math.max(8, Math.min(window.innerHeight - h - 8, r.top));
+        pop.css({ left: (left + window.scrollX) + 'px', top: (top + window.scrollY) + 'px', visibility: '' });
+        // Enter creates it; without scrolling and without a focus ring after a click
+        go[0].focus({ preventScroll: true, focusVisible: false });
+    };
+    // placed once the marked time is drawn; until then out of sight, so that
+    // nothing scrolls to it
+    pop.css({ left: 0, top: (window.scrollY + 8) + 'px', visibility: 'hidden' });
+    requestAnimationFrame(place);
+}
+// the time under the pointer: a free spot of a day's column, or null
+function preview_time_at(x, y) {
+    let col = null, lane = null;
+    for (let el of document.elementsFromPoint(x, y)) {
+        if (el.closest('.fc-timegrid-event-harness, .fc-event, .pv-below')) return null;
+        col = col || el.closest('.fc-timegrid-col[data-date]');
+        lane = lane || el.closest('.fc-timegrid-slot-lane[data-time]');
+    }
+    if (!col || !lane) return null;
+    return moment(`${col.dataset.date}T${lane.dataset.time}`).toDate();
+}
+function preview_create_now() {
+    let m = moment().add(1, 'hours').startOf('hour');
+    if (m.hours() >= 21 || m.hours() < 7) m = m.hours() >= 21 ? m.add(1, 'days').hours(8) : m.hours(8);
+    while (m.day() === 0 || m.day() === 6) m.add(1, 'days').hours(8);
+    let start = m.toDate();
+    let view = window.calendar.view;
+    let select = function() { window.calendar.select(start, preview_create_hour(start)); };
+    if (start < view.activeStart || start >= view.activeEnd) {
+        window.calendar.gotoDate(start);
+        setTimeout(select, 300);
+    } else {
+        select();
+    }
+}
+document.addEventListener('contextmenu', function(e) {
+    if (!window.calendar || !preview_create_wanted()) return;
+    if (!e.target.closest || !e.target.closest('#calendar .fc-timegrid-body')) return;
+    let start = preview_time_at(e.clientX, e.clientY);
+    if (!start) return;
+    e.preventDefault();
+    window.calendar.select(start, preview_create_hour(start));
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && $('.pv-create-pop').length) { preview_close_create(); e.preventDefault(); }
+});
+window.addEventListener('resize', function() { preview_close_create(); });
 
 function preview_close_plan_menu(animate) {
     let menu = $('.pv-plan-menu');
@@ -2151,6 +2249,24 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         hiddenDays: [6, 0],
         slotEventOverlap: false,
+        // new design: a Termin by clicking, dragging or right-clicking free
+        // time (preview_show_create)
+        selectable: preview_create_wanted(),
+        selectMirror: true,
+        selectMinDistance: 5,
+        unselectCancel: '.pv-create-pop',
+        selectAllow: function(info) {
+            return !info.allDay && moment(info.start).format('YYYY-MM-DD') === moment(info.end.getTime() - 1).format('YYYY-MM-DD');
+        },
+        select: function(info) {
+            if (info.allDay || !preview_create_wanted()) { window.calendar.unselect(); return; }
+            preview_show_create(info.start, info.end);
+        },
+        unselect: function() { preview_close_create(false); },
+        dateClick: function(info) {
+            if (info.allDay || !preview_create_wanted()) return;
+            window.calendar.select(info.date, preview_create_hour(info.date));
+        },
         slotLabelFormat: {
             hour: 'numeric',
             minute: '2-digit',

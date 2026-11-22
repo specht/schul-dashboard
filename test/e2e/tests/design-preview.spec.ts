@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect, login, ACCOUNTS, displayedSchoolWeek } from './fixtures';
 
 // Neues Design (Vorschau): switched on in the profile – for now by admins only
@@ -1996,6 +1997,105 @@ test('Neues Design: Stundenplan, Hinweis unten nur für Einträge ab 16 Uhr', as
       expect(text.match(/^(\d+):/)?.[1] ?? '99', text).toMatch(/^(1[6-9]|2\d|99)$/);
     }
   } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Desktop week: a Termin straight from the timetable for everyone who may
+// create Termine – a click on a free spot marks an hour, dragging marks the
+// time dragged over, a right click marks an hour too; a small popover leads
+// on to /events with date and time filled in. Students get nothing.
+async function freeSpot(page: Page, below = 0) {
+  return page.evaluate((below) => {
+    const lanes = Array.from(document.querySelectorAll<HTMLElement>('#calendar .fc-timegrid-slot-lane[data-time]'));
+    for (const col of Array.from(document.querySelectorAll<HTMLElement>('#calendar .fc-timegrid-col[data-date]'))) {
+      const c = col.getBoundingClientRect();
+      for (let i = 0; i + below < lanes.length; i++) {
+        const spots = [0, below].map((k) => {
+          const r = lanes[i + k].getBoundingClientRect();
+          return { x: c.left + c.width / 2, y: r.top + r.height / 2 };
+        });
+        const free = spots.every((p) => p.y > 0 && p.y < window.innerHeight - 30 &&
+          !document.elementsFromPoint(p.x, p.y).some((el) => el.closest('.fc-timegrid-event-harness, .fc-event, .pv-below')));
+        if (free && lanes[i].dataset.time! >= '08:00:00') return { ...spots[0], to: spots[1], date: col.dataset.date!, time: lanes[i].dataset.time!.slice(0, 5) };
+      }
+    }
+    return null;
+  }, below);
+}
+
+const plusMinutes = (hhmm: string, m: number) => {
+  const t = Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3)) + m;
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+};
+const short = (hhmm: string) => hhmm.replace(/^0/, '');
+
+test('Neues Design: Termin aus dem Stundenplan anlegen (Klick, Ziehen, Rechtsklick)', async ({ page, newUserPage }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    // low enough that the page scrolls
+    await page.setViewportSize({ width: 1440, height: 700 });
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    const pop = page.locator('.pv-create-pop');
+    await expect(pop).toHaveCount(0);
+
+    // a click: an hour, the time marked in the grid
+    const spot = (await freeSpot(page))!;
+    expect(spot).not.toBeNull();
+    // the page stays where it is (it jumped to the popover before it was placed)
+    const scrolled = await page.evaluate(() => window.scrollY);
+    await page.mouse.click(spot.x, spot.y);
+    await expect(pop).toBeVisible();
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
+    await expect(pop.getByRole('button', { name: 'Termin erstellen…' })).toBeFocused();
+    await expect(pop.locator('.pv-create-when')).toContainText(`${short(spot.time)} bis ${short(plusMinutes(spot.time, 60))} Uhr`);
+    await expect(page.locator('#calendar .fc-event-mirror')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(pop).toHaveCount(0);
+    await expect(page.locator('#calendar .fc-event-mirror')).toHaveCount(0);
+
+    // a right click: the same
+    await page.mouse.click(spot.x, spot.y, { button: 'right' });
+    await expect(pop.locator('.pv-create-when')).toContainText(`${short(spot.time)} bis ${short(plusMinutes(spot.time, 60))} Uhr`);
+    await pop.locator('.pv-create-close').click();
+    await expect(pop).toHaveCount(0);
+
+    // dragging over free time: just that time
+    const drag = (await freeSpot(page, 2))!;
+    expect(drag).not.toBeNull();
+    await page.mouse.move(drag.x, drag.y);
+    await page.mouse.down();
+    await page.mouse.move(drag.to.x, drag.to.y, { steps: 8 });
+    await page.mouse.up();
+    await expect(pop.locator('.pv-create-when')).toContainText(`${short(drag.time)} bis ${short(plusMinutes(drag.time, 90))} Uhr`);
+
+    // on to /events: date and time filled in
+    await pop.getByRole('button', { name: 'Termin erstellen…' }).click();
+    await expect(page).toHaveURL(/\/events$/);
+    const modal = page.locator('#composeModal');
+    await expect(modal).toBeVisible();
+    await expect(page.locator('#ti_date')).toHaveValue(drag.date);
+    await expect(page.locator('#ti_start_time')).toHaveValue(drag.time);
+    await expect(page.locator('#ti_end_time')).toHaveValue(plusMinutes(drag.time, 90));
+
+    // students can't create Termine: a click does nothing
+    expect((await page.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.schueler, mode: 'on' } })).status()).toBe(200);
+    const student = await newUserPage();
+    await login(student, ACCOUNTS.schueler);
+    await student.setViewportSize({ width: 1440, height: 1000 });
+    await student.goto('/');
+    await expect(student.locator('.fc-timegrid-event').first()).toBeVisible();
+    const free = (await freeSpot(student))!;
+    await student.mouse.click(free.x, free.y);
+    await student.mouse.click(free.x, free.y, { button: 'right' });
+    await student.waitForTimeout(300);
+    await expect(student.locator('.pv-create-pop')).toHaveCount(0);
+  } finally {
+    await page.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.schueler, mode: 'off' } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

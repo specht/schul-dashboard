@@ -6904,3 +6904,72 @@ body.ui-preview:has(.container-fluid.solid)::before {
         padding: 7px 11px;
     }
 }
+
+/* ---------- A Termin from the timetable (timetable.html, preview_show_create) ----------
+   the marked time as a dashed block in the accent, beside it a small popover */
+.ui-preview .fc-timegrid-event.fc-event-mirror {
+    background: var(--acc-soft) !important;
+    border: 1px dashed var(--acc) !important;
+    color: var(--acc-text) !important;
+    box-shadow: none !important;
+}
+
+.ui-preview .fc-timegrid-event.fc-event-mirror .fc-event-main,
+.ui-preview .fc-timegrid-event.fc-event-mirror .fc-event-main * {
+    color: var(--acc-text) !important;
+    opacity: 1 !important;
+}
+
+/* the marked block is enough: no second fill in the column behind it */
+.ui-preview #calendar .fc-timegrid-col .fc-highlight {
+    background: transparent;
+}
+
+.pv-create-pop {
+    position: absolute;
+    z-index: 1040;
+    width: 16rem;
+    padding: 10px 12px 12px 14px;
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    border: 1px solid var(--pv-line);
+    border-radius: 14px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+}
+
+.pv-create-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.pv-create-title {
+    font: 600 1rem/1.3 var(--pv-display);
+    padding-top: 2px;
+}
+
+.pv-create-close {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    margin: -2px -4px 0 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--pv-muted);
+}
+
+.pv-create-close:hover {
+    background: var(--pv-hover);
+}
+
+.pv-create-when {
+    margin: 2px 0 10px;
+    color: var(--pv-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-create-pop .pv-create-go {
+    font-weight: 600;
+}

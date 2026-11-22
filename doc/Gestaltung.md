@@ -510,6 +510,13 @@ Seite ergänzt nur, was ihr Inhalt braucht.
   Kerben links und rechts und einer schwachen Naht in der Mitte.
 - Der Zeitraster der Woche zeigt den Schultag (frühester bis spätester
   Unterricht).
+- **Termin aus dem Stundenplan** (Woche auf größeren Bildschirmen, wer
+  Termine anlegen darf): ein Klick auf eine freie Stelle markiert eine
+  Stunde, Ziehen über freie Zeit genau diese Zeit, ein Rechtsklick wie ein
+  Klick; die Taste C nimmt die nächste volle Stunde. Neben der Markierung
+  ein kleines Popover mit der Zeit und »Termin erstellen…«, das weiter zu
+  `/events` führt, Datum und Zeit eingetragen. Ohne diese Gesten ist nichts
+  zu sehen; Esc oder ein Klick daneben schließt es.
 - **Blöcke im Stundenplan:** der Titel in der Grundgröße, alles darunter
   (Thema, Hausaufgaben samt Überschrift, Kalenderzeile und Beschreibung
   eines Termins) in einer Detailgröße, `--pv-ev-detail` (`preview.css`);

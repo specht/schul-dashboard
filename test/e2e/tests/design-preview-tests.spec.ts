@@ -377,3 +377,37 @@ test('Neues Design: Klassenarbeiten mittig, jeder Monat gleich hoch', async ({ p
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// N, P and T in every calendar, as in the timetable (preview.js,
+// data-pv-key): not while typing.
+test('Neues Design: Tasten N, P, T in Klassenarbeiten und Terminfinder', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Tastatur');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    for (const [path, title] of [['/tests/5a', '#pv_tests_title'], ['/terminfinder', '.pv-tf-week-label']]) {
+      await page.goto(path);
+      const label = page.locator(title);
+      await expect(label).not.toBeEmpty();
+      const now = (await label.textContent())!;
+      await page.keyboard.press('n');
+      await expect(label, path).not.toHaveText(now);
+      const next = (await label.textContent())!;
+      await page.keyboard.press('n');
+      await expect(label, path).not.toHaveText(next);
+      await page.keyboard.press('p');
+      await expect(label, path).toHaveText(next);
+      await page.keyboard.press('t');
+      await expect(label, path).toHaveText(now);
+    }
+    // typing in a field: no jump
+    await page.goto('/terminfinder');
+    const label = page.locator('.pv-tf-week-label');
+    const now = (await label.textContent())!;
+    await page.locator('#ti_tf_search').fill('n');
+    await page.locator('#ti_tf_search').press('n');
+    await expect(label).toHaveText(now);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

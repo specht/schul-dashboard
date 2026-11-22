@@ -510,6 +510,11 @@ Seite ergänzt nur, was ihr Inhalt braucht.
   Kerben links und rechts und einer schwachen Naht in der Mitte.
 - Der Zeitraster der Woche zeigt den Schultag (frühester bis spätester
   Unterricht).
+- **Tasten in jedem Kalender** (Stundenplan, Klassenarbeiten,
+  Terminfinder): N oder J vor, P oder K zurück, T heute – wie in Google
+  Kalender, nicht beim Tippen und nicht bei offenem Dialog. Ein neuer
+  Kalender markiert seine Knöpfe mit `data-pv-key="next|prev|today"`
+  (`preview.js`); der Stundenplan hat seinen eigenen Handler, dazu C.
 - **Termin aus dem Stundenplan** (Woche auf größeren Bildschirmen, wer
   Termine anlegen darf): ein Klick auf eine freie Stelle markiert eine
   Stunde, Ziehen über freie Zeit genau diese Zeit, ein Rechtsklick wie ein

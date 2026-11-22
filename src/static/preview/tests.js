@@ -276,6 +276,7 @@
         ui.today = el('button', 'pv-tests-btn', 'Heute');
         ui.today.type = 'button';
         ui.today.id = 'bu_pv_tests_today';
+        ui.today.dataset.pvKey = 'today';
         ui.today.addEventListener('click', function() { calendar.gotoDate(today_target()); });
         tools.appendChild(ui.today);
 
@@ -283,6 +284,7 @@
         var prev = el('button');
         prev.type = 'button';
         prev.id = 'bu_pv_tests_prev';
+        prev.dataset.pvKey = 'prev';
         prev.setAttribute('aria-label', 'Voriger Monat');
         prev.title = 'Voriger Monat';
         prev.appendChild(icon('chevron-left'));
@@ -291,6 +293,7 @@
         var next = el('button');
         next.type = 'button';
         next.id = 'bu_pv_tests_next';
+        next.dataset.pvKey = 'next';
         next.setAttribute('aria-label', 'Nächster Monat');
         next.title = 'Nächster Monat';
         next.appendChild(icon('chevron-right'));

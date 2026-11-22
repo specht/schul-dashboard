@@ -522,6 +522,10 @@
         });
         document.getElementById('bu_tf_prev').addEventListener('click', function () { go(-1); });
         document.getElementById('bu_tf_next').addEventListener('click', function () { go(1); });
+        // P, N, T (preview.js)
+        document.getElementById('bu_tf_prev').dataset.pvKey = 'prev';
+        document.getElementById('bu_tf_next').dataset.pvKey = 'next';
+        ui.today.dataset.pvKey = 'today';
         ui.today.addEventListener('click', function () { monday = this_week(); load(); });
         document.getElementById('ti_tf_slot_start').addEventListener('change', update_end);
         document.getElementById('bu_tf_create_event').addEventListener('click', create_event);

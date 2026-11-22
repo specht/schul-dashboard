@@ -42,8 +42,12 @@ module DataRepo
         }
     end
 
+    # The checkout belongs to the server's user, the services run as another
+    # one (UID in env.rb): git refuses such a repository ("dubious ownership")
+    # unless it is declared safe – only this one.
     def self.git(root, *args)
         out, status = Open3.capture2e(git_env, 'git', '-C', root,
+                                      '-c', "safe.directory=#{File.expand_path(root)}",
                                       '-c', 'user.name=Dashboard',
                                       '-c', 'user.email=dashboard@localhost',
                                       *args)
@@ -94,7 +98,7 @@ module DataRepo
         result = { :commit => hash, :pushed => false, :push_error => nil }
         if push?
             begin
-                git(root, 'pull', '-q', '--rebase')
+                git(root, 'pull', '-q', '--rebase', '--autostash')
                 git(root, 'push', '-q')
                 result[:pushed] = true
             rescue Error => e
@@ -106,8 +110,10 @@ module DataRepo
 
     # Pushes what was committed (after pulling the others' commits). Raises
     # Error if it fails.
+    # Changes of others in the checkout (not the dashboard's) are set aside
+    # while pulling and put back afterwards (--autostash).
     def self.push(root)
-        git(root, 'pull', '-q', '--rebase')
+        git(root, 'pull', '-q', '--rebase', '--autostash')
         git(root, 'push', '-q')
     end
 

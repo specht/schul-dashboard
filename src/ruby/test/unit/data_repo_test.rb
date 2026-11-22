@@ -105,4 +105,37 @@ class DataRepoTest < Minitest::Test
             end
         end
     end
+
+    # pushing pulls the others' commits first – also with somebody's own
+    # changes lying around in the checkout (kept, not committed)
+    def test_push_with_others_changes_and_new_commits
+        Dir.mktmpdir do |dir|
+            remote = File.join(dir, 'remote.git')
+            other = File.join(dir, 'other')
+            DataRepo.git(dir, 'init', '-q', '--bare', remote)
+            with_repo do |root|
+                branch = DataRepo.git(root, 'rev-parse', '--abbrev-ref', 'HEAD').strip
+                DataRepo.git(root, 'remote', 'add', 'origin', remote)
+                DataRepo.git(root, 'push', '-q', '-u', 'origin', branch)
+                # someone else pushed meanwhile
+                DataRepo.git(dir, 'clone', '-q', remote, other)
+                File.write(File.join(other, 'schueler', 'ASCII.TXT'), "von woanders\n")
+                DataRepo.git(other, 'commit', '-q', '-am', 'anderswo')
+                DataRepo.git(other, 'push', '-q')
+                # a change of the maintainer's own, not committed
+                File.write(File.join(root, 'schueler', 'notizen.txt'), "geändert, nicht von uns\n")
+                DataRepo.write(root, 'schueler/2099-01-01.TXT', "neu\n")
+                ENV['DASHBOARD_DATA_REPO_PUSH'] = '1'
+                result = begin
+                    DataRepo.commit(root, ['schueler/2099-01-01.TXT'], 'Liste')
+                ensure
+                    ENV.delete('DASHBOARD_DATA_REPO_PUSH')
+                end
+                assert result[:pushed], result[:push_error].to_s
+                assert_equal 0, DataRepo.unpushed(root)
+                assert_equal "von woanders\n", File.read(File.join(root, 'schueler', 'ASCII.TXT'))
+                assert_equal "geändert, nicht von uns\n", File.read(File.join(root, 'schueler', 'notizen.txt'))
+            end
+        end
+    end
 end

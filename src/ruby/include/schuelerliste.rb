@@ -29,10 +29,18 @@ class Main < Sinatra::Base
         KLASSEN_ORDER.reject { |k| ['11', '12'].include?(k.to_s) }
     end
 
+    # Klassenleitungen see the draft only once the Datenpflege released it
+    # (»Für Klassenleitungen freigeben«, or the first mail): before that the
+    # export can be tried and fixed without anybody starting to check it
+    def schuelerliste_released?
+        draft = datenpflege_draft
+        !!(draft && draft['released'])
+    end
+
     # the classes this person may check
     def schuelerliste_klassen_for_user
         return schuelerliste_klassen_all if user_with_role_logged_in?(:can_manage_data)
-        return [] unless teacher_logged_in?
+        return [] unless teacher_logged_in? && schuelerliste_released?
         shorthand = @session_user[:shorthand]
         schuelerliste_klassen_all.select { |k| (@@klassenleiter[k] || []).include?(shorthand) }
     end
@@ -344,6 +352,20 @@ class Main < Sinatra::Base
         respond(:ok => true)
     end
 
+    def schuelerliste_set_released(flag)
+        draft = datenpflege_draft
+        assert(draft, 'no draft')
+        datenpflege_save_draft(draft.merge('released' => flag))
+    end
+
+    post '/api/schuelerliste/release' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:released], :types => { :released => Object })
+        assert([true, false].include?(data[:released]))
+        schuelerliste_set_released(data[:released])
+        respond(:ok => true)
+    end
+
     # a mail to the Klassenleitungen of the classes not confirmed yet (one per
     # person, with all their classes)
     post '/api/schuelerliste/notify' do
@@ -352,6 +374,8 @@ class Main < Sinatra::Base
         deadline = datenpflege_valid_date(data[:deadline].to_s)
         view = schuelerliste_view
         assert(view && !view[:errors], 'no draft')
+        # the mail releases the draft for the Klassenleitungen
+        schuelerliste_set_released(true)
         overview = schuelerliste_overview(view)
         open = overview.reject { |_, o| o[:confirmed] }.keys
         by_teacher = Hash.new { |h, k| h[k] = [] }
@@ -402,7 +426,11 @@ class Main < Sinatra::Base
             io.puts "<div class='dp-review'>"
             io.puts "<h5>Prüfung durch die Klassenleitungen</h5>"
             confirmed = overview.count { |_, o| o[:confirmed] }
-            io.puts "<p class='text-muted'>#{confirmed} von #{overview.size} Klassen bestätigt. Die Klassenleitungen sehen ihre Klasse, wie sie im Entwurf steht, unter <a href='/schuelerliste'>/schuelerliste</a>.</p>"
+            if schuelerliste_released?
+                io.puts "<p class='dp-release'><strong>Für die Klassenleitungen freigegeben:</strong> sie sehen ihre Klasse, wie sie im Entwurf steht, unter <a href='/schuelerliste'>/schuelerliste</a> und im Menü. #{confirmed} von #{overview.size} Klassen bestätigt. <button type='button' class='btn btn-secondary btn-sm' id='bu_sl_release' data-released='false'>Freigabe zurücknehmen</button></p>"
+            else
+                io.puts "<p class='dp-release'><strong>Noch nicht freigegeben:</strong> nur die Datenpflege sieht den Entwurf (<a href='/schuelerliste'>so sehen ihn die Klassenleitungen</a>). Freigegeben wird er mit der ersten Mail oder hier. <button type='button' class='btn btn-secondary btn-sm' id='bu_sl_release' data-released='true'>Für Klassenleitungen freigeben</button></p>"
+            end
             io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-review-list'><thead><tr><th>Klasse</th><th>Klassenleitung</th><th>Geprüft</th><th>Korrekturen</th><th>Stand</th><th>Benachrichtigt</th></tr></thead><tbody>"
             overview.each_pair do |klasse, o|
                 names = schuelerliste_teachers(klasse).map { |e| (@@user_info[e] || {})[:display_last_name] || e }
@@ -490,6 +518,10 @@ class Main < Sinatra::Base
     def print_schuelerliste(klasse_param)
         klassen = schuelerliste_klassen_for_user
         StringIO.open do |io|
+            unless user_with_role_logged_in?(:can_manage_data) || schuelerliste_released?
+                io.puts "<p class='sl-none'>Gerade gibt es keine neue Schülerliste zu prüfen.</p>"
+                return io.string
+            end
             if klassen.empty?
                 io.puts "<p>Hier prüfen Klassenleitungen die neue Schülerliste ihrer Klasse. Du hast keine Klasse, die du prüfen kannst.</p>"
                 return io.string

@@ -391,8 +391,9 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await apiLogin(api, ACCOUNTS.teacher);
     expect((await api.post('/api/schuelerliste/check', { data: { klasse: '5a', student: ACCOUNTS.schueler, status: 'ok' } })).ok()).toBe(false);
     expect((await api.post('/api/schuelerliste/reset', { data: {} })).ok()).toBe(false);
+    // (not released: no list for Klassenleitungen at all)
     const html = await (await api.get('/schuelerliste')).text();
-    expect(html).toContain('Du hast keine Klasse, die du prüfen kannst');
+    expect(html).toContain('Gerade gibt es keine neue Schülerliste zu prüfen');
     await api.dispose();
   } finally {
     await page.request.post('/api/schuelerliste/reset', { data: {} });
@@ -481,5 +482,58 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
     // the override was committed: removed again
     await page.request.post('/api/datenpflege/override', { data: { email: 'max.mustermann@mail.beispielschule.de', rufname: '', geschlecht: '' } });
+  }
+});
+
+// A draft is for the Datenpflege only until it is released for the
+// Klassenleitungen (a button, or the first mail): the export can be tried and
+// fixed before anybody starts checking. A new draft keeps the release. The
+// teacher here leads no class: released, the page says so; not released, it
+// has no list at all.
+test('Schülerliste prüfen: erst nach der Freigabe für Klassenleitungen', async ({ page, baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(90_000);
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/schuelerliste/reset', { data: {} });
+  const teacher = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(teacher, ACCOUNTS.teacher);
+  const teacherSees = async () => (await (await teacher.get('/schuelerliste')).text());
+  const DRAFT = (n: string) => [HEADER, 'Mustermann;Max;;05a;männlich;01.01.2010', `Neu;${n};;05a;weiblich;01.03.2014`].join('\r\n');
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, DRAFT('Nele'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await page.goto('/datenpflege');
+    const release = page.locator('.dp-release');
+    await expect(release).toContainText('Noch nicht freigegeben');
+    expect(await teacherSees()).toContain('Gerade gibt es keine neue Schülerliste zu prüfen');
+
+    await page.locator('#bu_sl_release').click();
+    await expect(release).toContainText('Für die Klassenleitungen freigegeben');
+    expect(await teacherSees()).toContain('Du hast keine Klasse, die du prüfen kannst');
+
+    // a new export as the draft: still released
+    await upload(page, DRAFT('Nora'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await page.goto('/datenpflege');
+    await expect(release).toContainText('Für die Klassenleitungen freigegeben');
+
+    // taken back; the first mail releases it again
+    await page.locator('#bu_sl_release').click();
+    await expect(release).toContainText('Noch nicht freigegeben');
+    expect(await teacherSees()).toContain('Gerade gibt es keine neue Schülerliste zu prüfen');
+    expect((await page.request.post('/api/schuelerliste/notify', { data: {} })).ok()).toBe(true);
+    await page.goto('/datenpflege');
+    await expect(release).toContainText('Für die Klassenleitungen freigegeben');
+
+    // the release is the Datenpflege's
+    expect((await teacher.post('/api/schuelerliste/release', { data: { released: false } })).ok()).toBe(false);
+  } finally {
+    await teacher.dispose();
+    await page.request.post('/api/schuelerliste/reset', { data: {} });
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
   }
 });

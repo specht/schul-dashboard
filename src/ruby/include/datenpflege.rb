@@ -724,7 +724,9 @@ class Main < Sinatra::Base
             'date' => date.strftime('%Y-%m-%d'), 'klassen' => klassen,
             'links' => datenpflege_choices_by_student(pending, links),
             'emails' => datenpflege_choices_by_student(pending, emails),
-            'email' => @session_user[:email], 'saved' => Time.now.to_i)
+            'email' => @session_user[:email], 'saved' => Time.now.to_i,
+            # replaced by a new export: still released (or not) as before
+            'released' => old ? old['released'] == true : false)
         datenpflege_respond_preview(pending, klassen, date, links, emails)
     end
 

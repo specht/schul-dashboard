@@ -366,6 +366,10 @@
         });
 
         // ---- the teachers' check (include/schuelerliste.rb) ----
+        $('#bu_sl_release').click(function (e) {
+            const released = $(e.currentTarget).data('released') === true || $(e.currentTarget).data('released') === 'true';
+            api_call('/api/schuelerliste/release', { released: released }, function (data) { if (data.success) window.location.reload(); });
+        });
         $('#bu_sl_notify').click(function (e) {
             const n = $(e.currentTarget).data('count');
             dashboardConfirm(`Eine Mail mit dem Link an die Klassenleitungen der ${n} ${n == 1 ? 'Klasse' : 'Klassen'}, die noch nicht bestätigt haben?`, function () {

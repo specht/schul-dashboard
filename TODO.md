@@ -50,6 +50,10 @@ hierher übernehmen, wenn sie angegangen werden.
 - [ ] E2E, selten: `design-preview.spec.ts` »eigenes Farbschema bleibt«
       fand am Desktop einmal `.pv-scheme-note` im Profil nicht (19.11.2026,
       danach 29 + 6 Läufe ohne Fehler) – beobachten
+- [ ] E2E, selten: `zufallsgruppen-kollegium.spec.ts` »Admin mischt das
+      Kollegium und gibt eine Lehrkraft frei« schlug am Handy einmal fehl
+      (`toBeVisible`, 22.11.2026, im vollen Lauf), danach 3 Läufe ohne
+      Fehler – beobachten
 
 ## 2. UI/UX
 

@@ -2236,6 +2236,10 @@ test('Neues Design: Mehr am Handy, Kacheln gut verteilt, Menü nach Themen', asy
     await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Schulkalender' })).toHaveCount(1);
     await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Datenpflege' })).toHaveCount(1);
     await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Termine verwalten' })).toHaveCount(0);
+    // every page in one place only (one highlight): the library in Schule
+    const hrefs = await menu.locator('.pv-nav-section .pv-nav-entry').evaluateAll((list) => list.map((a) => a.getAttribute('href')));
+    expect(hrefs.filter((h, i) => hrefs.indexOf(h) !== i)).toEqual([]);
+    await expect(menu.locator('.pv-nav-section[data-section="schule"] .pv-nav-entry[href="/bibliothek"]')).toHaveCount(1);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

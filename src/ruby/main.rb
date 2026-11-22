@@ -2796,7 +2796,7 @@ class Main < Sinatra::Base
                     if schueler_logged_in? || teacher_logged_in? || user_with_role_logged_in?(:can_manage_bib)
                         io.puts "<div class='dropdown-divider'></div>" unless printed_divider
                         printed_divider = true
-                        io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'#{user_with_role_logged_in?(:can_manage_bib) ? " data-pv-team='1'" : ''}><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/bibliothek'><div class='icon'><i class='fa fa-book'></i></div><span class='label'>Bibliothek</span></a>"
                     end
                     # if user_with_role_logged_in?(:mittagessen)
                     #     io.puts "<div class='dropdown-divider'></div>" unless printed_divider

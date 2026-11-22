@@ -684,8 +684,6 @@
             var mine = (a.textContent || '').trim() === 'Meine Klasse';
             if (SCHULE.test(href) || mine) { schule.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
             else if (VERWALTUNG.test(href)) { verwaltung.appendChild(entry(a)); seen[href] = true; a.classList.add('pv-nav-moved'); }
-            // the library team: the library in Verwaltung as well
-            if (a.dataset.pvTeam) verwaltung.appendChild(entry(a));
         });
         if (tech) tech.closest('.nav-item').classList.add('pv-nav-hidden');
         var aula = document.getElementById('navbarDropdownAula');
@@ -708,7 +706,7 @@
             verwaltung: [
                 ['Inhalte', /^\/(agr_app|upload_images|upload_files|manage_monitor|manage_news|manage_calendar)(\/|_|$)/],
                 ['Geräte & Räume', /^\/(aula_|school_wifi|bookings|tablets|techpostadmin)/],
-                ['Schulleben', /^\/(gev|lehrbuchverein|up|bibliothek)(\/|_|$)/],
+                ['Schulleben', /^\/(gev|lehrbuchverein|up)(\/|_|$)/],
                 ['Konten', /^\/(show_all_login_codes|email_accounts|inactive_sus|postfaecher|anmeldungen)(\/|_|$)/],
                 ['System', /^\/(admin|datenpflege|development|stats)(\/|_|$)/],
             ],

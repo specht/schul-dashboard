@@ -132,6 +132,12 @@ test('Neues Design: Termin-Dialog, Externe Teilnehmer und Hinweis zum Speichern'
     await expect(hint).toBeHidden();
     await page.locator('#ti_start_time').fill('17:00');
     await expect(hint).toHaveText('Zum Speichern fehlen noch Titel und Teilnehmer.');
+    // the hint on its own line above the buttons, »Verwerfen« and
+    // »Speichern« side by side below it (each was on a line of its own)
+    const [h, d, sv] = await Promise.all([hint, page.locator('#bu_discard_event'), page.locator('#bu_save_event')].map((l) => l.boundingBox()));
+    expect(Math.abs(d!.y - sv!.y)).toBeLessThan(2);
+    expect(h!.y + h!.height).toBeLessThanOrEqual(d!.y + 1);
+    await expect(page.locator('#ti_title')).toHaveAttribute('placeholder', 'Titel des Termins');
     await page.locator('#ti_title').fill('Elternabend');
     await expect(page.locator('#bu_save_event')).toBeDisabled();
     await expect(hint).toHaveText('Zum Speichern fehlen noch Teilnehmer.');
@@ -171,5 +177,31 @@ test('Termine ohne Vorschau: die Tabelle mit allen Terminen wie bisher', async (
     await expect(page.locator('#composeModal')).toBeVisible();
   } finally {
     for (const eid of eids) await page.request.post('/api/delete_event', { data: { eid } });
+  }
+});
+
+// Desktop: the dialog for a new Termin fits a usual screen without its own
+// scrollbar – the editor starts small and grows with its text.
+test('Neues Design: Termin-Dialog ohne Scrollleiste', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Desktop-Dialog');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto('/events');
+    await page.locator('.bu-new-event').first().click();
+    const body = page.locator('#composeModal > .modal-dialog > .modal-content > .modal-body');
+    await expect(body).toBeVisible();
+    await page.locator('#ti_start_time').fill('17:00');
+    await expect(page.locator('#composeModal .pv-ev-save-hint')).toBeVisible();
+    await page.waitForTimeout(300);
+    expect(await body.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+    // a long text: the editor grows, then scrolls itself
+    await page.locator('#composeModal .note-editable').fill(Array(60).fill('Zeile').join('\n'));
+    const editor = await page.locator('#composeModal .note-editable').boundingBox();
+    expect(editor!.height).toBeLessThanOrEqual(1000 * 0.4 + 2);
+    await page.locator('#bu_discard_event').click();
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });

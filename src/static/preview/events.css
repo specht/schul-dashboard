@@ -8,6 +8,7 @@
 }
 
 .ui-preview #composeModal .pv-ev-save-hint {
+    order: -3;
     flex: 1 0 100%;
     margin: 0 0 4px;
     font-size: 0.88rem;
@@ -19,4 +20,22 @@
     .ui-preview #composeModal .pv-ev-save-hint {
         text-align: left;
     }
+}
+
+/* the editor starts at about ten lines and grows with its text (up to 40 %
+   of the window, then it scrolls itself): the dialog fits a usual screen
+   without a scrollbar of its own */
+.ui-preview #composeModal .note-editing-area .note-editable {
+    height: auto !important;
+    min-height: 10rem;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.ui-preview #composeModal .note-statusbar {
+    display: none;
+}
+
+.ui-preview #composeModal .modal-body > .form-group:last-child {
+    margin-bottom: 0;
 }

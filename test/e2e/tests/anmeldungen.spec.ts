@@ -1,4 +1,4 @@
-import { test, expect, login, ACCOUNTS } from './fixtures';
+import { test, expect, login, apiLogin, ACCOUNTS, ROLE_ACCOUNTS } from './fixtures';
 import { request as playwrightRequest } from '@playwright/test';
 
 // /anmeldungen (include/public_event.rb, public_events_overview): who signed
@@ -7,8 +7,8 @@ import { request as playwrightRequest } from '@playwright/test';
 // that is over.
 
 test('Anmeldungen im neuen Design: Termine brechen um, Anmeldungen als Tabelle', async ({ page, baseURL }, testInfo) => {
-  // a sign-up from outside
-  const name = `Gast ${testInfo.project.name} ${Date.now().toString(36)}`;
+  // a sign-up from outside, with markup in the name
+  const name = `<b>Gast</b> ${testInfo.project.name} ${Date.now().toString(36)}`;
   const email = `gast-${testInfo.project.name}-${Date.now().toString(36)}@example.org`;
   const guest = await playwrightRequest.newContext({ baseURL });
   const keys = await (await guest.get('/anmeldung')).text().then((html) =>
@@ -40,8 +40,10 @@ test('Anmeldungen im neuen Design: Termine brechen um, Anmeldungen als Tabelle',
     const past = event.locator('details.pe-past', { hasText: 'Vergangene Termine' });
     await expect(past).toContainText('(1)');
     await expect(past).not.toHaveAttribute('open', '');
+    // the name as text, not as markup
     const row = event.locator('.pe-table tr', { hasText: email });
     await expect(row.locator('td').nth(1)).toHaveText(name);
+    await expect(row.locator('b')).toHaveCount(0);
     // deleting asks first
     await row.locator('.bu-delete-signup').click();
     const dialog = page.locator('.modal.show');
@@ -50,5 +52,15 @@ test('Anmeldungen im neuen Design: Termine brechen um, Anmeldungen als Tabelle',
     await expect(event.locator('.pe-table tr', { hasText: email })).toHaveCount(0);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+test('Anmeldungen löschen nur als Admin', async ({ baseURL }) => {
+  for (const account of [ROLE_ACCOUNTS.sekretariat, ACCOUNTS.teacher]) {
+    const api = await playwrightRequest.newContext({ baseURL });
+    await apiLogin(api, account);
+    const response = await api.post('/api/delete_sign_up_for_event', { data: { tag: 'x' } });
+    expect(response.ok(), account).toBe(false);
+    await api.dispose();
   }
 });

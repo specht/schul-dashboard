@@ -1595,8 +1595,51 @@ function render_preview_side() {
         box.append($('<p>').addClass('pv-side-empty').text('Keine Änderungen.'));
     }
     let names = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    // a swap (Ma and AGr exchanged in 9c on one day): the lesson gone for
+    // oneself and the one that came instead are one change, »Tausch« – not
+    // a cancelled lesson
+    let parts = function(x) {
+        let label = $('<div>').html(x.label_short || x.label || '');
+        let struck = label.find('s, del, strike').map(function() { return $(this).text().trim(); }).get();
+        let kept = label.clone();
+        kept.find('s, del, strike').remove();
+        return { old: struck[0] || '', now: kept.text().trim().split(/[\s(]/)[0] || '' };
+    };
+    let classes = function(x) {
+        let all = [].concat.apply([], (x.klassen || []).map(function(k) { return Array.isArray(k) ? k : [k]; }));
+        return all.filter(function(k, i) { return k && all.indexOf(k) === i; }).sort().join(',');
+    };
+    let swapped_with = new Map();
+    let swap_partners = new Set();
+    changes.forEach(function(e) {
+        let x = e.extendedProps;
+        if (!x.entfall) return;
+        let pe = parts(x);
+        if (!pe.old || !pe.now) return;
+        let partner = lessons.find(function(p) {
+            let y = p.extendedProps;
+            if (y.entfall || p === e || p.start.toDateString() !== e.start.toDateString() || classes(y) !== classes(x)) return false;
+            let pp = parts(y);
+            return pp.old === pe.now && pp.now === pe.old;
+        });
+        if (partner) { swapped_with.set(e, partner); swap_partners.add(partner); }
+    });
+    changes = changes.filter(function(e) { return !swap_partners.has(e); });
     for (let e of changes.slice(0, 8)) {
         let x = e.extendedProps;
+        let partner = swapped_with.get(e);
+        if (partner) {
+            let item = $('<button type="button">').addClass('pv-side-change pv-side-swap');
+            item.append($('<span>').addClass('pv-side-tag').text('Tausch'));
+            let label = $('<div>').html(partner.extendedProps.label_short || partner.extendedProps.label || '');
+            label.find('s, del, strike').remove();
+            let name = label.text().trim().replace(/\s*\(\s*\)/g, '').replace(/\s+/g, ' ');
+            item.append($('<span>').addClass('pv-side-text').append($('<b>').text(name),
+                $('<small>').text(names[partner.start.getDay()] + ' ' + preview_hhmm(partner.start) + ' statt ' + preview_hhmm(e.start))));
+            item.on('click', open(partner));
+            box.append(item);
+            continue;
+        }
         let room = preview_room_change(x.raum);
         let kind = x.entfall ? 'Entfall' : (room ? 'Raum' : 'Vertr.');
         let what = x.entfall ? 'entfällt' : (room ? 'Raum ' + room[1] + ' statt ' + room[0] : $('<div>').html(x.vertretungs_text).text().trim());

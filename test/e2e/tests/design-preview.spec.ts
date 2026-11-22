@@ -2305,3 +2305,34 @@ test('Neues Design: Änderungen der Woche ohne leere Klammern', async ({ page },
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// The column beside the week: two lessons of one's own exchanged on one day
+// (Ma and AGr in 9c) are one change, »Tausch«, with the new time – not a
+// cancelled lesson.
+test('Neues Design: Änderungen der Woche, Tausch statt Entfall', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Spalte nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    await page.evaluate(() => {
+      const w = window as any;
+      const at = (h: number, m: number) => { const d = new Date(w.calendar.view.activeStart); d.setDate(d.getDate() + 2); d.setHours(h, m, 0, 0); return d; };
+      w.calendar.addEvent({ start: at(10, 40), end: at(11, 25), extendedProps: { lesson: true, entfall: true, klassen: [[], ['9c']],
+        label: '<s>Mathematik</s> <b>Altgriechisch</b> (9c) <s>Sp</s> Ksw', label_short: '<s>Ma</s> <b>AGr</b> (9c) <s>Sp</s> Ksw' } });
+      w.calendar.addEvent({ start: at(13, 40), end: at(14, 25), extendedProps: { lesson: true, klassen: [[], ['9c']],
+        label: '<s>Altgriechisch</s> <b>Mathematik</b> (9c) <s>Ksw</s> Sp', label_short: '<s>AGr</s> <b>Ma</b> (9c) <s>Ksw</s> Sp' } });
+      w.render_preview_side();
+    });
+    const swap = page.locator('#pv_side .pv-side-swap');
+    await expect(swap).toHaveCount(1);
+    await expect(swap.locator('.pv-side-tag')).toHaveText('Tausch');
+    await expect(swap.locator('b')).toContainText('Ma (9c)');
+    await expect(swap.locator('small')).toContainText('13:40 statt 10:40');
+    await expect(page.locator('#pv_side .pv-side-change', { hasText: 'AGr (9c)' })).toHaveCount(0);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

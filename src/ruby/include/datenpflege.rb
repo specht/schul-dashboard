@@ -991,7 +991,7 @@ class Main < Sinatra::Base
         StringIO.open do |io|
             io.puts "<div class='dp-overrides'>"
             io.puts "<h5>Rufname und Geschlecht im Dashboard</h5>"
-            io.puts "<p class='text-muted'>Für Schüler:innen, die in der LUSD noch mit altem Namen oder Geschlecht stehen. Gilt überall im Dashboard, nicht auf Zeugnissen; jeder neue LUSD-Export behält es. Die E-Mail-Adresse bleibt.</p>"
+            io.puts "<p class='text-muted'>Für Schüler:innen, die mit einem anderen Namen oder Geschlecht angesprochen werden möchten, als (noch) amtlich in der LUSD steht – etwa während einer Transition. Gilt überall im Dashboard, nicht auf Zeugnissen und nicht in der Schulverwaltung; jeder neue LUSD-Export behält es. Die E-Mail-Adresse bleibt.</p>"
             unless overrides.empty?
                 io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-override-list'><thead><tr><th>Name laut LUSD</th><th>Klasse</th><th>Rufname</th><th>Geschlecht</th><th>Gesetzt</th><th></th></tr></thead><tbody>"
                 overrides.sort_by { |email, _| (@@user_info[email] || {})[:last_name].to_s }.each do |email, o|

@@ -559,20 +559,32 @@ class Main < Sinatra::Base
             io.puts "<h3>Klasse #{sl_h(tr_klasse(klasse))}</h3>"
             io.puts "<p class='sl-intro'>So steht deine Klasse in der neuen Liste aus der Schulverwaltung (LUSD). Bitte prüfe jede Zeile: »Stimmt«, wenn alles richtig ist, sonst »Korrigieren«. Fehlt jemand, trag es unten ein. Zum Schluss »Liste bestätigen«. Im Dashboard ändert sich erst etwas, wenn die Liste übernommen wird.</p>"
             io.puts "<p class='sl-progress'><strong>#{done}</strong> von <strong>#{keys.size}</strong> geprüft</p>"
+            io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert</p>"
             io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th>Name</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th><th></th></tr></thead><tbody>"
             gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
             v[:students].each do |s|
-                notes = []
-                notes << 'neu' if s[:new] && !s[:new_address]
-                notes << "kommt aus #{sl_h(tr_klasse(s[:from]))}" if s[:from]
-                notes << 'bekommt eine neue Adresse' if s[:new_address]
-                s[:changes].each do |what, from, to|
-                    notes << "#{sl_h(what)}: bisher #{sl_h(from.to_s.empty? ? 'leer' : from)}"
-                end
-                official = s[:official_first_name] != s[:first_name] ? "<div class='sl-official'>Vornamen: #{sl_h(s[:official_first_name])}</div>" : ''
-                io.puts "<tr class='sl-row' data-student='#{sl_h(s[:key])}' data-values='#{sl_h({ 'rufname' => s[:first_name], 'nachname' => s[:last_name], 'vornamen' => s[:official_first_name], 'geschlecht' => s[:geschlecht], 'geburtstag' => s[:geburtstag], 'klasse' => s[:klasse], 'bildungsgang' => s[:bildungsgang] }.to_json)}'>"
-                io.puts "<td><div class='sl-name'>#{sl_h(s[:name])}</div>#{official}#{notes.empty? ? '' : "<div class='sl-notes'>#{notes.join(', ')}</div>"}</td>"
-                io.puts "<td>#{sl_h(gender[s[:geschlecht]] || s[:geschlecht])}</td><td>#{sl_h(sl_date(s[:geburtstag]))}</td><td>#{sl_h(Main.tr_bildungsgang(s[:bildungsgang]))}</td>"
+                # the changes against today in their column, like a diff: the
+                # old value struck through on red, the new one on green
+                ch = s[:changes].to_h { |what, from, to| [what, [from, to]] }
+                diff = ->(from, to) { datenpflege_word_diff(from, to) }
+                name_html = if ch['Name'] then diff.(*ch['Name'])
+                            elsif ch['Rufname'] then diff.("#{ch['Rufname'][0]} #{s[:last_name]}", s[:name])
+                            else sl_h(s[:name]) end
+                official = if ch['Vornamen'] then "<div class='sl-official'>Vornamen: #{diff.(*ch['Vornamen'])}</div>"
+                           elsif s[:official_first_name] != s[:first_name] then "<div class='sl-official'>Vornamen: #{sl_h(s[:official_first_name])}</div>"
+                           else '' end
+                badges = []
+                badges << "<span class='sl-badge sl-badge-added'>+ neu</span>" if s[:new] && !s[:new_address]
+                badges << "<span class='sl-badge sl-badge-added'>+ aus #{sl_h(tr_klasse(s[:from]))}</span>" if s[:from]
+                badges << "<span class='sl-badge'>neue Adresse</span>" if s[:new_address]
+                g = ->(x) { gender[x] || x }
+                gender_html = ch['Geschlecht'] ? diff.(g.(ch['Geschlecht'][0]), g.(ch['Geschlecht'][1])) : sl_h(g.(s[:geschlecht]))
+                birthday_html = ch['Geburtstag'] ? diff.(*ch['Geburtstag']) : sl_h(sl_date(s[:geburtstag]))
+                bildungsgang_html = ch['Bildungsgang'] ? diff.(*ch['Bildungsgang']) : sl_h(Main.tr_bildungsgang(s[:bildungsgang]))
+                row_class = (s[:new] || s[:from]) ? 'sl-row-added' : (ch.empty? ? '' : 'sl-row-changed')
+                io.puts "<tr class='sl-row #{row_class}' data-student='#{sl_h(s[:key])}' data-values='#{sl_h({ 'rufname' => s[:first_name], 'nachname' => s[:last_name], 'vornamen' => s[:official_first_name], 'geschlecht' => s[:geschlecht], 'geburtstag' => s[:geburtstag], 'klasse' => s[:klasse], 'bildungsgang' => s[:bildungsgang] }.to_json)}'>"
+                io.puts "<td><div class='sl-name'>#{name_html}</div>#{official}#{badges.empty? ? '' : "<div class='sl-badges'>#{badges.join(' ')}</div>"}</td>"
+                io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
                 io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]))}</td></tr>"
             end
             io.puts "</tbody></table></div>"
@@ -580,8 +592,8 @@ class Main < Sinatra::Base
                 io.puts "<h4>Verlässt die Klasse</h4>"
                 io.puts "<div class='sl-scroll'><table class='table sl-table sl-leaving'><tbody>"
                 v[:leaving].each do |s|
-                    where = s[:to] ? "wechselt in die #{sl_h(tr_klasse(s[:to]))}" : 'steht nicht mehr in der Liste'
-                    io.puts "<tr class='sl-row' data-student='#{sl_h(s[:key])}' data-leaving='1' data-values='{}'><td><div class='sl-name'>#{sl_h(s[:name])}</div><div class='sl-notes'>#{where}</div></td>"
+                    where = s[:to] ? "− wechselt in die #{sl_h(tr_klasse(s[:to]))}" : '− steht nicht mehr in der Liste'
+                    io.puts "<tr class='sl-row sl-row-removed' data-student='#{sl_h(s[:key])}' data-leaving='1' data-values='{}'><td><div class='sl-name'><span class='dp-old'>#{sl_h(s[:name])}</span></div><div class='sl-badges'><span class='sl-badge sl-badge-removed'>#{where}</span></div></td>"
                     io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]))}</td></tr>"
                 end
                 io.puts "</tbody></table></div>"

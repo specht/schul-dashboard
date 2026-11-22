@@ -344,10 +344,16 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     const cls = page.locator('.sl-class');
     await expect(cls.locator('h3')).toHaveText('Klasse 5a');
     const max = cls.locator('.sl-row', { hasText: 'Maximilian Mustermann' });
-    await expect(max.locator('.sl-notes')).toContainText('Rufname: bisher Max');
-    await expect(cls.locator('.sl-row', { hasText: 'Nele Neu' }).locator('.sl-notes')).toHaveText('neu');
+    // changes like a diff: the old Rufname struck through, the new one marked
+    await expect(max).toHaveClass(/sl-row-changed/);
+    await expect(max.locator('.sl-name .dp-old')).toHaveText('Max Mustermann');
+    await expect(max.locator('.sl-name .dp-new mark')).toHaveText('Maximilian');
+    const nele = cls.locator('.sl-row', { hasText: 'Nele Neu' });
+    await expect(nele).toHaveClass(/sl-row-added/);
+    await expect(nele.locator('.sl-badge-added')).toHaveText('+ neu');
     const mallory = cls.locator('.sl-leaving .sl-row', { hasText: 'Mallory' });
-    await expect(mallory).toContainText('steht nicht mehr in der Liste');
+    await expect(mallory).toHaveClass(/sl-row-removed/);
+    await expect(mallory.locator('.sl-badge-removed')).toHaveText('− steht nicht mehr in der Liste');
     await expect(cls.locator('.sl-progress')).toContainText('0 von 4');
     await expect(page.locator('#bu_sl_confirm')).toBeDisabled();
 
@@ -362,6 +368,8 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await expect(modal).toBeVisible();
     await expect(page.locator('#ti_sl_rufname')).toHaveValue('Maximilian');
     await page.locator('#ti_sl_rufname').fill('Max');
+    // what »nur im Dashboard« is for, explained next to it
+    await expect(page.locator('#sl_dashboard_only_hint')).toContainText('noch nicht amtlich');
     await page.locator('#ti_sl_dashboard_only').check();
     await page.locator('#bu_save_sl_correction').click();
     await expect(cls.locator('.sl-row', { hasText: 'Mustermann' }).first()).toBeVisible();

@@ -783,6 +783,7 @@ class Main < Sinatra::Base
         DataRepo.write(DataRepo.root, rel, LusdImport.ascii_txt(c[:students]))
         tr = datenpflege_saved_klassen.merge(c[:mapping].to_h { |k, m| [k, m[:target]] }).reject { |k, v| k == v }
         DataRepo.write(DataRepo.root, DATENPFLEGE_KLASSEN_TR, tr.sort.to_h.to_yaml) unless tr.empty?
+        datenpflege_commit!([rel, DATENPFLEGE_KLASSEN_TR])
         # applied: the draft (if it was this one) is done, and with it the
         # teachers' check (personal data)
         draft = datenpflege_draft
@@ -799,6 +800,56 @@ class Main < Sinatra::Base
     def datenpflege_uncommitted
         return {} unless DataRepo.writable?
         DataRepo.uncommitted(DataRepo.root, ['schueler']).select { |rel, _| rel =~ DATENPFLEGE_MANAGED }
+    end
+
+    DATENPFLEGE_PUSH_ERROR = 'push-error.txt'
+
+    # A change in the data repo is committed and pushed at once (decided
+    # 2026-11-22): nothing waits for a step that can be forgotten. A failed
+    # push is kept for the page (»Erneut schieben«); the commit stays.
+    def datenpflege_commit!(rels)
+        rels = DataRepo.uncommitted(DataRepo.root, rels).keys
+        return nil if rels.empty?
+        names = rels.map { |rel| File.basename(rel) }.join(', ')
+        result = DataRepo.commit(DataRepo.root, rels, "Schüler:innen: #{names} (über das Dashboard, #{@session_user[:display_name]})")
+        datenpflege_note_push(result[:push_error])
+        result
+    end
+
+    def datenpflege_note_push(error)
+        path = File.join(DATENPFLEGE_PENDING_DIR, DATENPFLEGE_PUSH_ERROR)
+        if error
+            FileUtils.mkpath(DATENPFLEGE_PENDING_DIR)
+            File.write(path, error.to_s[0, 500])
+        elsif File.exist?(path)
+            File.delete(path)
+        end
+    end
+
+    post '/api/datenpflege/push' do
+        require_data_manager!
+        begin
+            DataRepo.push(DataRepo.root)
+            datenpflege_note_push(nil)
+            respond(:ok => true)
+        rescue DataRepo::Error => e
+            datenpflege_note_push(e.message)
+            respond(:ok => false, :message => 'Das Schieben hat nicht geklappt.')
+        end
+    end
+
+    # a list for a day still to come can be withdrawn (committed and pushed)
+    post '/api/datenpflege/schueler/delete_list' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:date])
+        date = datenpflege_valid_date(data[:date])
+        assert(date && date > Date.today, 'only a list still to come')
+        rel = "schueler/#{date.strftime('%Y-%m-%d')}.TXT"
+        path = File.join(DataRepo.root, rel)
+        assert(DataRepo.writable? && File.exist?(path), 'no such list')
+        File.delete(path)
+        datenpflege_commit!([rel])
+        respond(:ok => true, :reload => false)
     end
 
     post '/api/datenpflege/commit' do
@@ -849,6 +900,14 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                 end
             end
+            error_path = File.join(DATENPFLEGE_PENDING_DIR, DATENPFLEGE_PUSH_ERROR)
+            unpushed = DataRepo.writable? && DataRepo.push? ? DataRepo.unpushed(DataRepo.root).to_i : 0
+            if unpushed > 0 || File.exist?(error_path)
+                io.puts "<div class='alert alert-warning dp-unpushed'>"
+                io.puts "<p><strong>Noch nicht geschoben:</strong> #{unpushed == 1 ? 'eine Änderung ist' : "#{unpushed} Änderungen sind"} im Daten-Repository auf dem Server committet, aber nicht geschoben.</p>"
+                io.puts "<p class='text-muted'>#{dp_h(File.read(error_path))}</p>" if File.exist?(error_path)
+                io.puts "<p><button class='btn btn-secondary' id='bu_push'>Erneut schieben</button></p></div>"
+            end
             changes = datenpflege_uncommitted
             unless changes.empty?
                 io.puts "<div class='dp-uncommitted'>"
@@ -861,7 +920,7 @@ class Main < Sinatra::Base
             end
             files = Parser.schueler_files
             unless files.empty?
-                io.puts "<h5>Listen</h5><div class='dp-scroll'><table class='table table-sm dp-files'><thead><tr><th>Gültig ab</th><th>Stand</th><th>Zeilen</th><th>Hochgeladen</th></tr></thead><tbody>"
+                io.puts "<h5>Listen</h5><div class='dp-scroll'><table class='table table-sm dp-files'><thead><tr><th>Gültig ab</th><th>Stand</th><th>Zeilen</th><th>Hochgeladen</th><th></th></tr></thead><tbody>"
                 files.keys.sort.reverse.each do |date|
                     path = files[date]
                     state = date > today ? 'geplant' : (path == current ? 'aktuell' : 'abgelöst')
@@ -874,7 +933,8 @@ class Main < Sinatra::Base
                     else
                         ''
                     end
-                    io.puts "<tr class='dp-file-#{state}'><td>#{Date.parse(date).strftime('%d.%m.%Y')}</td><td>#{state}</td><td>#{lines}</td><td>#{upload}</td></tr>"
+                    remove = state == 'geplant' && DataRepo.writable? ? "<button type='button' class='btn btn-secondary btn-sm bu_delete_list' data-date='#{dp_h(date)}'>Löschen</button>" : ''
+                    io.puts "<tr class='dp-file-#{state}'><td>#{Date.parse(date).strftime('%d.%m.%Y')}</td><td>#{state}</td><td>#{lines}</td><td>#{upload}</td><td class='dp-row-actions'>#{remove}</td></tr>"
                 end
                 io.puts "</tbody></table></div>"
             end
@@ -913,6 +973,7 @@ class Main < Sinatra::Base
         content = "# Rufname und Geschlecht im Dashboard statt der LUSD-Werte (nicht auf Zeugnissen),\n" +
                   "# gesetzt auf /datenpflege. Die Adresse bleibt.\n" + overrides.sort.to_h.to_yaml
         DataRepo.write(DataRepo.root, DATENPFLEGE_OVERRIDES, content)
+        datenpflege_commit!([DATENPFLEGE_OVERRIDES])
         DataVersion.bump!(DataVersion::PATH, "#{DATENPFLEGE_OVERRIDES} by #{@session_user[:email]}")
         respond(:ok => true, :reload => DataVersion.restarts?)
     end

@@ -80,4 +80,29 @@ class DataRepoTest < Minitest::Test
             assert_includes DataRepo.git_env(key)['GIT_SSH_COMMAND'], "-i #{key} -o IdentitiesOnly=yes"
         end
     end
+
+    # committed changes are counted until pushed; a deletion is committed too
+    def test_push_and_unpushed
+        Dir.mktmpdir do |dir|
+            remote = File.join(dir, 'remote.git')
+            DataRepo.git(dir, 'init', '-q', '--bare', remote)
+            with_repo do |root|
+                assert_nil DataRepo.unpushed(root)
+                branch = DataRepo.git(root, 'rev-parse', '--abbrev-ref', 'HEAD').strip
+                DataRepo.git(root, 'remote', 'add', 'origin', remote)
+                DataRepo.git(root, 'push', '-q', '-u', 'origin', branch)
+                assert_equal 0, DataRepo.unpushed(root)
+                DataRepo.write(root, 'schueler/2099-01-01.TXT', "neu\n")
+                DataRepo.commit(root, ['schueler/2099-01-01.TXT'], 'Liste')
+                assert_equal 1, DataRepo.unpushed(root)
+                DataRepo.push(root)
+                assert_equal 0, DataRepo.unpushed(root)
+                File.delete(File.join(root, 'schueler', '2099-01-01.TXT'))
+                assert_equal({ 'schueler/2099-01-01.TXT' => 'gelöscht' }, DataRepo.uncommitted(root, ['schueler/2099-01-01.TXT']))
+                DataRepo.commit(root, ['schueler/2099-01-01.TXT'], 'weg')
+                assert_empty DataRepo.uncommitted(root, ['schueler/2099-01-01.TXT'])
+                assert_equal 1, DataRepo.unpushed(root)
+            end
+        end
+    end
 end

@@ -104,6 +104,20 @@ module DataRepo
         result
     end
 
+    # Pushes what was committed (after pulling the others' commits). Raises
+    # Error if it fails.
+    def self.push(root)
+        git(root, 'pull', '-q', '--rebase')
+        git(root, 'push', '-q')
+    end
+
+    # Commits not pushed yet (nil without an upstream branch)
+    def self.unpushed(root)
+        git(root, 'rev-list', '--count', '@{u}..HEAD').strip.to_i
+    rescue Error
+        nil
+    end
+
     # Undoes uncommitted changes of these paths: new files are removed,
     # changed or deleted ones restored from the last commit.
     def self.rollback(root, rels)

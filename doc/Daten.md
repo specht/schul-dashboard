@@ -220,9 +220,12 @@ Admin → **Datenpflege** den Abgleich mit der LUSD:
 5. **Übernehmen** schreibt `schueler/JJJJ-MM-TT.TXT`. Eine vorhandene Liste
    für denselben Tag wird nur nach Bestätigung ersetzt. Danach lädt das
    Dashboard die Daten neu.
-6. **Committen** übernimmt die Datei in das Daten-Repository (und schiebt sie,
-   wenn eingestellt, zum Server des Repositorys); **Zurücknehmen** verwirft
-   nicht committete Änderungen.
+6. Jede Änderung (eine übernommene Liste, Rufname und Geschlecht im
+   Dashboard) wird sofort im Daten-Repository committet und, wenn
+   eingestellt, zum Server des Repositorys geschoben – es bleibt kein Schritt
+   übrig, den man vergessen kann. Klappt das Schieben nicht, sagt die Seite
+   es und bietet **Erneut schieben** an. Eine Liste für einen Tag, der noch
+   kommt, lässt sich wieder **löschen**; bis dahin gilt die bisherige.
 
 Fehler werden zuerst in der LUSD korrigiert. Das Dashboard speichert nur, was
 die LUSD nicht kennt, vor allem die E-Mail-Adresse.

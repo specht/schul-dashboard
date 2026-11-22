@@ -39,7 +39,7 @@ test('Datenpflege nur mit der Rolle (Admins haben sie)', async ({ page, baseURL 
   await expect(page).not.toHaveURL(/datenpflege/);
   const api = await playwrightRequest.newContext({ baseURL });
   await apiLogin(api, ACCOUNTS.teacher);
-  for (const path of ['/api/datenpflege/schueler/upload', '/api/datenpflege/commit', '/api/datenpflege/rollback']) {
+  for (const path of ['/api/datenpflege/schueler/upload', '/api/datenpflege/commit', '/api/datenpflege/rollback', '/api/datenpflege/push', '/api/datenpflege/schueler/delete_list']) {
     const response = await api.post(path, { data: {} });
     expect(response.ok(), path).toBe(false);
   }
@@ -115,28 +115,33 @@ test('Datenpflege: Fehler in der Liste verhindern das Übernehmen', async ({ pag
   await expect(page.locator('#dp_preview')).toBeEmpty();
 });
 
-test('Datenpflege: übernehmen und zurücknehmen', async ({ page }) => {
+test('Datenpflege: übernehmen committet sofort, eine geplante Liste lässt sich löschen', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.goto('/datenpflege');
   await upload(page, CHANGED, '2099-06-01');
   await expect(page.locator('#dp_future')).toBeVisible();
+  const replace = page.locator('#dp_replace');
+  if (await replace.isVisible()) await page.locator('#ti_replace').check();
   await page.locator('#bu_apply').click();
-  // no restart in the test stack: the page reloads at once
-  const pending = page.locator('.dp-uncommitted');
-  await expect(pending).toContainText('schueler/2099-06-01.TXT (neu)');
-  await expect(page.locator('.dp-files tr', { hasText: '01.06.2099' })).toContainText('geplant');
-  await page.locator('#bu_rollback').click();
+  // no restart in the test stack: the page reloads at once – committed, no
+  // step left to forget
+  const row = page.locator('.dp-files tr', { hasText: '01.06.2099' });
+  await expect(row).toContainText('geplant');
+  await expect(row).toContainText('Schüler:innen: 2099-06-01.TXT (über das Dashboard');
+  await expect(page.locator('.dp-uncommitted')).toHaveCount(0);
+  // withdrawn: asks first, committed too
+  await row.locator('.bu_delete_list').click();
   const dialog = page.locator('.modal.show');
-  await expect(dialog).toContainText('nicht committeten Änderungen');
-  await dialog.getByRole('button', { name: 'Zurücknehmen' }).click();
+  await expect(dialog).toContainText('ab 01.06.2099');
+  await dialog.getByRole('button', { name: 'Löschen' }).click();
   await expect(page.locator('.dp-files tr', { hasText: '01.06.2099' })).toHaveCount(0);
-  await expect(pending).toHaveCount(0);
+  await expect(page.locator('.dp-uncommitted')).toHaveCount(0);
 });
 
-test('Datenpflege: übernehmen und committen, eine vorhandene Liste nur mit Bestätigung ersetzen', async ({ page }) => {
+test('Datenpflege: eine vorhandene Liste nur mit Bestätigung ersetzen', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
   await page.goto('/datenpflege');
-  // another student each run, so that there is always something to commit
+  // another student each run, so that the list is always a new one
   const name = 'Zufall' + Array.from({ length: 6 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
   await upload(page, [CHANGED, `${name};Rita;;5b;weiblich;01.02.2014`].join('\r\n'), '2099-12-31');
   await expect(page.locator('#dp_apply')).toBeVisible();
@@ -148,12 +153,10 @@ test('Datenpflege: übernehmen und committen, eine vorhandene Liste nur mit Best
   }
   await expect(page.locator('#bu_apply')).toBeEnabled();
   await page.locator('#bu_apply').click();
-  await expect(page.locator('.dp-uncommitted')).toContainText('schueler/2099-12-31.TXT');
-  await page.locator('#bu_commit').click();
-  await expect(page.locator('.dp-uncommitted')).toHaveCount(0);
   const row = page.locator('.dp-files tr', { hasText: '31.12.2099' });
   await expect(row).toContainText('geplant');
   await expect(row).toContainText('Schüler:innen: 2099-12-31.TXT (über das Dashboard');
+  await expect(page.locator('.dp-uncommitted')).toHaveCount(0);
 });
 
 test('Namen melden: im Profil, erledigt auf /datenpflege', async ({ page, browser }, testInfo) => {
@@ -271,8 +274,11 @@ test('Datenpflege: Entwurf behalten, neuen Export damit vergleichen, ersetzen, v
 test('Datenpflege: Rufname und Geschlecht im Dashboard festlegen', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'one file for everybody');
   await login(page, ACCOUNTS.admin);
+  let email = '';
   try {
     await page.goto('/datenpflege');
+    email = await page.evaluate(() => JSON.parse(document.getElementById('dp_override_data')!.textContent!)
+      .find((x: { label: string }) => x.label === 'Mallory Mustermann (5a)').email);
     await page.locator('#ti_override_student').fill('Mallory Mustermann (5a)');
     await expect(page.locator('#bu_override_save')).toBeEnabled();
     await page.locator('#ti_override_rufname').fill('Mel');
@@ -282,7 +288,8 @@ test('Datenpflege: Rufname und Geschlecht im Dashboard festlegen', async ({ page
     const row = page.locator('.dp-override-list tr', { hasText: 'Mallory Mustermann' });
     await expect(row).toContainText('Mel');
     await expect(row).toContainText('divers');
-    await expect(page.locator('.dp-uncommitted')).toContainText('schueler/overrides.yaml');
+    // committed at once
+    await expect(page.locator('.dp-uncommitted')).toHaveCount(0);
 
     // a LUSD export with the old values: no change, the difference shown
     await upload(page, [HEADER, 'Mustermann;Mallory;;05a;männlich;03.01.2010'].join('\r\n'), '2000-01-01');
@@ -301,7 +308,8 @@ test('Datenpflege: Rufname und Geschlecht im Dashboard festlegen', async ({ page
     await dialog.getByRole('button', { name: 'Entfernen' }).click();
     await expect(page.locator('.dp-override-list tr', { hasText: 'Mallory' })).toHaveCount(0);
   } finally {
-    await page.request.post('/api/datenpflege/rollback', { data: {} });
+    // committed at once: removed the same way, even if the test stopped early
+    if (email) await page.request.post('/api/datenpflege/override', { data: { email, rufname: '', geschlecht: '' } });
   }
 });
 
@@ -471,6 +479,7 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await page.request.post('/api/schuelerliste/reset', { data: {} });
     const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
-    await page.request.post('/api/datenpflege/rollback', { data: {} });
+    // the override was committed: removed again
+    await page.request.post('/api/datenpflege/override', { data: { email: 'max.mustermann@mail.beispielschule.de', rufname: '', geschlecht: '' } });
   }
 });

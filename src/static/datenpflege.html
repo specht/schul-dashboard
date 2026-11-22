@@ -349,6 +349,22 @@
             });
         });
 
+        // ---- the data repo: a failed push, a planned list withdrawn ----
+        $('#bu_push').click(function (e) {
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/datenpflege/push', {}, function (data) {
+                if (data.ok) window.location.reload();
+                else { $(e.currentTarget).prop('disabled', false); message(data.message); }
+            });
+        });
+        $(document).on('click', '.bu_delete_list', function (e) {
+            const date = $(e.currentTarget).data('date');
+            const shown = date.split('-').reverse().join('.');
+            dashboardConfirm(`Die Liste, die ab ${shown} gelten sollte, löschen? Bis dahin gilt die bisherige weiter.`, function () {
+                api_call('/api/datenpflege/schueler/delete_list', { date: date }, after_change);
+            }, { title: 'Geplante Liste löschen', confirm: 'Löschen', danger: true });
+        });
+
         // ---- the teachers' check (include/schuelerliste.rb) ----
         $('#bu_sl_notify').click(function (e) {
             const n = $(e.currentTarget).data('count');

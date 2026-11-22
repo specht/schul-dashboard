@@ -586,20 +586,12 @@ class Timetable
                             if ventry[:fach_alt] && ventry[:fach_neu]
                                 # Fachwechsel
                                 event[:fach] = [ventry[:fach_alt], ventry[:fach_neu] ]
-                                matching_lesson_keys = Set.new()
-                                (ventry[:klassen_neu] || []).each do |klasse|
-                                    (@@lessons_for_klasse[klasse] || []).each do |fach|
-                                        if fach.split('_').first == ventry[:fach_neu]
-                                            matching_lesson_keys << fach
-                                        end
-                                    end
-                                end
-                                if matching_lesson_keys.size == 1
-                                    # update lesson_key
-                                    event[:lesson_key] = matching_lesson_keys.to_a.first
-                                else
-                                    # WARN no matching lesson key found OR more than one
-                                end
+                                # the lesson now belongs to the new subject's course (its
+                                # homework and lesson count); nil: no such course, keep the key
+                                new_lesson_key = VertretungLessonKey.for(ds, ventry[:fach_neu],
+                                    ventry[:klassen_neu], ventry[:klassen_alt], ventry[:lehrer_neu],
+                                    @@lessons_for_klasse, @@lessons[:lesson_keys])
+                                event[:lesson_key] = new_lesson_key unless new_lesson_key.nil?
                             end
                             if ventry[:fach_alt] && ventry[:fach_neu].nil?
                                 event[:fach] = [ventry[:fach_alt], ventry[:fach_neu] ]

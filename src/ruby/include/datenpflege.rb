@@ -4,6 +4,12 @@
 # data repo as schueler/JJJJ-MM-TT.TXT (data_repo.rb). Afterwards it can be
 # committed or rolled back there. Plan: review/2026-11/data-uploads.md.
 #
+# An upload can be kept as *the draft* (review/2026-11/student-data-review.md):
+# it has no effect anywhere, stays until it is replaced, applied or discarded,
+# and keeps the choices made on the page (class names, accounts, addresses)
+# per student. A new upload is compared with the draft too and takes its
+# choices over; the draft before keeps for one comparison.
+#
 # The comparison runs both lists through the dashboard's own parser, so new,
 # lost and renamed accounts are exactly what the dashboard would make of them
 # (including the substitution files in /data/schueler).
@@ -17,6 +23,7 @@ class Main < Sinatra::Base
     DATENPFLEGE_EXTENSIONS = ['xlsx', 'csv', 'txt']
     DATENPFLEGE_KLASSEN_TR = 'schueler/lusd-klassen.yaml'
     DATENPFLEGE_MANAGED = %r{\Aschueler/(\d{4}-\d{2}-\d{2}\.TXT|lusd-klassen\.yaml)\z}
+    DATENPFLEGE_DRAFT = 'entwurf.json'
 
     def require_data_manager!
         require_user_with_role!(:can_manage_data)
@@ -28,9 +35,65 @@ class Main < Sinatra::Base
     end
 
     def datenpflege_cleanup_pending
+        draft = datenpflege_draft || {}
+        keep = [draft['token'], draft['previous']].compact
         Dir[File.join(DATENPFLEGE_PENDING_DIR, '*')].each do |path|
+            next if File.basename(path) == DATENPFLEGE_DRAFT
+            next if keep.include?(File.basename(path).split('.').first)
             File.delete(path) if File.mtime(path) < Time.now - 24 * 60 * 60
         end
+    end
+
+    def datenpflege_draft_path
+        File.join(DATENPFLEGE_PENDING_DIR, DATENPFLEGE_DRAFT)
+    end
+
+    # {'token', 'previous', 'date', 'klassen', 'links', 'emails', 'email', 'saved'}
+    # – links and emails keyed by student (datenpflege_student_key); nil
+    # when there is none (or its upload is gone)
+    def datenpflege_draft
+        path = datenpflege_draft_path
+        return nil unless File.exist?(path)
+        draft = JSON.parse(File.read(path)) rescue nil
+        return nil unless draft && File.exist?(datenpflege_pending_path(draft['token']))
+        draft['previous'] = nil if draft['previous'] && !File.exist?(datenpflege_pending_path(draft['previous']))
+        draft
+    end
+
+    def datenpflege_save_draft(draft)
+        FileUtils.mkpath(DATENPFLEGE_PENDING_DIR)
+        File.write(datenpflege_draft_path, draft.to_json)
+    end
+
+    def datenpflege_delete_upload(token)
+        return unless token
+        ['json', 'TXT'].each do |ext|
+            path = datenpflege_pending_path(token, ext)
+            File.delete(path) if File.exist?(path)
+        end
+    end
+
+    # a student of an export, the same in the next export: LUSD's own number
+    # when the export has it, else name and birthday
+    def self.datenpflege_student_key(st)
+        return "lusd:#{st.lusd_id}" unless st.lusd_id.to_s.strip.empty?
+        "name:#{st.nachname}|#{st.vorname}|#{st.geburtsdatum}"
+    end
+
+    # export row => student key
+    def datenpflege_row_keys(pending)
+        LusdImport.convert(pending['rows'])[:students].to_h { |st| [st.row, Main.datenpflege_student_key(st)] }
+    end
+
+    # the page's choices ({row => value}) and the draft's ({student => value})
+    def datenpflege_choices_by_student(pending, by_row)
+        keys = datenpflege_row_keys(pending)
+        (by_row || {}).each_with_object({}) { |(row, v), h| h[keys[row.to_i]] = v if keys[row.to_i] }
+    end
+
+    def datenpflege_choices_by_row(pending, by_student)
+        rows = datenpflege_row_keys(pending).invert
+        (by_student || {}).each_with_object({}) { |(key, v), h| h[rows[key]] = v if rows[key] }
     end
 
     # class mapping kept in the data repo (LUSD class => class of the dashboard)
@@ -244,7 +307,26 @@ class Main < Sinatra::Base
             return out
         end
         out.merge!(datenpflege_diff(old_records, new_records))
+        out[:new_records] = new_records
         out
+    end
+
+    # this upload against the draft (or, for the draft, against the draft
+    # before): which LUSD corrections arrived. nil without one.
+    def datenpflege_since_draft(pending, c, klassen, date)
+        draft = datenpflege_draft
+        return nil unless draft && c[:errors].empty?
+        other = pending['token'] == draft['token'] ? draft['previous'] : draft['token']
+        return nil unless other
+        other_pending = (datenpflege_load_pending(other) rescue nil)
+        return nil unless other_pending
+        oc = datenpflege_compare(other_pending, klassen, date,
+                                 datenpflege_choices_by_row(other_pending, draft['links']),
+                                 datenpflege_choices_by_row(other_pending, draft['emails']))
+        return nil unless oc[:errors].empty?
+        datenpflege_diff(oc[:new_records], c[:new_records]).merge(
+            :label => pending['token'] == draft['token'] ? 'vorigen Entwurf' : 'Entwurf',
+            :filename => other_pending['filename'], :created => other_pending['created'])
     end
 
     def datenpflege_diff(old_records, new_records)
@@ -379,7 +461,34 @@ class Main < Sinatra::Base
         io.puts "</details>"
     end
 
-    def datenpflege_preview_html(c)
+    # what changed against the draft: new, gone, changed (own classes, so the
+    # sections of the main comparison keep theirs)
+    def datenpflege_since_html(io, since)
+        return unless since
+        order = ->(r) { [LusdImport.klasse_sort_key(r[:klasse].to_s), r[:last_name].to_s, r[:first_name].to_s] }
+        when_s = since[:created] ? Time.at(since[:created]).strftime('%d.%m.%Y, %H:%M') : ''
+        io.puts "<div class='dp-since'>"
+        io.puts "<h5>Seit dem #{since[:label]}</h5>"
+        io.puts "<p class='text-muted'>Verglichen mit #{dp_h(since[:filename])}#{when_s.empty? ? '' : ", hochgeladen am #{when_s}"}: was sich in der LUSD seitdem geändert hat.</p>"
+        moved = since[:moved].map { |o, n| [o, n, [['Name', o[:display_name], n[:display_name]]]] }
+        changed = since[:changed] + moved
+        if since[:added].empty? && since[:removed].empty? && changed.empty?
+            io.puts "<p class='dp-since-none'>Keine Unterschiede.</p>"
+        else
+            datenpflege_section(io, 'dp-since-added', 'Neu dazugekommen',
+                since[:added].sort_by(&order).map { |r| [dp_h(r[:display_name]), dp_h(r[:klasse])] }, %w(Name Klasse))
+            datenpflege_section(io, 'dp-since-removed', 'Nicht mehr dabei',
+                since[:removed].sort_by(&order).map { |r| [dp_h(r[:display_name]), dp_h(r[:klasse])] }, %w(Name Klasse))
+            datenpflege_section(io, 'dp-since-changed', 'Geändert',
+                changed.sort_by { |o, n, _| order.(n) }.map do |o, n, ch|
+                    [dp_h(n[:display_name]), dp_h(n[:klasse]),
+                     ch.map { |what, from, to| "<span class='dp-what'>#{what}</span> #{datenpflege_word_diff(from, to)}" }.join('<br>')]
+                end, %w(Name Klasse Änderung))
+        end
+        io.puts "</div>"
+    end
+
+    def datenpflege_preview_html(c, since = nil)
         StringIO.open do |io|
             io.puts "<p class='dp-summary'>Im Export: <strong>#{c[:total]}</strong> Schüler:innen (#{dp_h(c[:filename])})."
             io.puts " Verglichen mit #{dp_h(File.basename(c[:old_path]))}.</p>"
@@ -396,10 +505,11 @@ class Main < Sinatra::Base
                 return io.string
             end
 
+            datenpflege_since_html(io, since)
             local = ->(e) { dp_h(e.to_s.sub("@#{SCHUL_MAIL_DOMAIN}", '')) }
             by_email = (c[:students] || []).to_h { |st| [st.email, st] }
             order = ->(r) { [LusdImport.klasse_sort_key(r[:klasse].to_s), r[:last_name].to_s, r[:first_name].to_s] }
-            io.puts "<h5>Änderungen</h5>"
+            io.puts "<h5>Änderungen gegenüber dem Dashboard</h5>"
             line = "Im Dashboard bisher <strong>#{c[:old_total]}</strong>, danach <strong>#{c[:new_total]}</strong> Schüler:innen; <strong>#{c[:kept]}</strong> behalten ihre Adresse."
             line += " #{c[:birthdays_added]} bekommen den bisher fehlenden Geburtstag." if c[:birthdays_added].to_i > 0
             io.puts "<p>#{line} Adressen ohne @#{dp_h(SCHUL_MAIL_DOMAIN)}.</p>"
@@ -469,9 +579,16 @@ class Main < Sinatra::Base
 
     def datenpflege_respond_preview(pending, klassen, date, links = {}, emails = {})
         c = datenpflege_compare(pending, klassen, date, links, emails)
-        respond(:ok => true, :token => pending['token'], :html => datenpflege_preview_html(c),
+        since = datenpflege_since_draft(pending, c, klassen, date)
+        draft = datenpflege_draft
+        respond(:ok => true, :token => pending['token'], :html => datenpflege_preview_html(c, since),
                 :can_apply => c[:errors].empty?,
-                :existing => Parser.schueler_files.keys)
+                :existing => Parser.schueler_files.keys,
+                :date => date.strftime('%Y-%m-%d'),
+                # the choices in force (a new upload takes the draft's over)
+                :links => links, :emails => emails,
+                :is_draft => !draft.nil? && draft['token'] == pending['token'],
+                :has_draft => !draft.nil?)
     end
 
     post '/api/datenpflege/schueler/upload' do
@@ -507,7 +624,15 @@ class Main < Sinatra::Base
         pending = { 'token' => token, 'filename' => File.basename(data[:filename]), 'rows' => rows,
                     'email' => @session_user[:email], 'created' => Time.now.to_i }
         File.write(datenpflege_pending_path(token), pending.to_json)
-        datenpflege_respond_preview(pending, {}, date)
+        # with a draft: its class names, accounts and addresses
+        draft = datenpflege_draft
+        if draft
+            datenpflege_respond_preview(pending, draft['klassen'] || {}, date,
+                                        datenpflege_choices_by_row(pending, draft['links']),
+                                        datenpflege_choices_by_row(pending, draft['emails']))
+        else
+            datenpflege_respond_preview(pending, {}, date)
+        end
     end
 
     def datenpflege_load_pending(token)
@@ -530,17 +655,70 @@ class Main < Sinatra::Base
                                   :types => { :klassen => Hash, :links => Hash, :emails => Hash }, :max_body_length => 262144)
         date = datenpflege_valid_date(data[:date])
         assert(date, 'invalid date')
-        datenpflege_respond_preview(datenpflege_load_pending(data[:token]), datenpflege_klassen_param(data[:klassen]), date,
-                                    datenpflege_choices_param(data[:links], 100), datenpflege_choices_param(data[:emails], 23))
+        pending = datenpflege_load_pending(data[:token])
+        klassen = datenpflege_klassen_param(data[:klassen])
+        links = datenpflege_choices_param(data[:links], 100)
+        emails = datenpflege_choices_param(data[:emails], 23)
+        draft = datenpflege_draft
+        if draft && draft['token'] == pending['token']
+            datenpflege_save_draft(draft.merge('date' => date.strftime('%Y-%m-%d'), 'klassen' => klassen,
+                'links' => datenpflege_choices_by_student(pending, links),
+                'emails' => datenpflege_choices_by_student(pending, emails)))
+        end
+        datenpflege_respond_preview(pending, klassen, date, links, emails)
+    end
+
+    # keep this upload as the draft (replaces the one before, which stays
+    # for one comparison)
+    post '/api/datenpflege/schueler/keep' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:token, :date, :klassen], :optional_keys => [:links, :emails],
+                                  :types => { :klassen => Hash, :links => Hash, :emails => Hash }, :max_body_length => 262144)
+        date = datenpflege_valid_date(data[:date])
+        assert(date, 'invalid date')
+        pending = datenpflege_load_pending(data[:token])
+        klassen = datenpflege_klassen_param(data[:klassen])
+        links = datenpflege_choices_param(data[:links], 100)
+        emails = datenpflege_choices_param(data[:emails], 23)
+        old = datenpflege_draft
+        previous = old ? old['previous'] : nil
+        if old && old['token'] != pending['token']
+            datenpflege_delete_upload(old['previous']) unless old['previous'] == pending['token']
+            previous = old['token']
+        end
+        datenpflege_save_draft('token' => pending['token'], 'previous' => previous,
+            'date' => date.strftime('%Y-%m-%d'), 'klassen' => klassen,
+            'links' => datenpflege_choices_by_student(pending, links),
+            'emails' => datenpflege_choices_by_student(pending, emails),
+            'email' => @session_user[:email], 'saved' => Time.now.to_i)
+        datenpflege_respond_preview(pending, klassen, date, links, emails)
+    end
+
+    # the draft again, with its choices
+    post '/api/datenpflege/schueler/draft' do
+        require_data_manager!
+        draft = datenpflege_draft
+        unless draft
+            respond(:ok => false, :message => 'Es gibt keinen Entwurf.')
+            return
+        end
+        pending = datenpflege_load_pending(draft['token'])
+        date = datenpflege_valid_date(draft['date']) || Date.today
+        datenpflege_respond_preview(pending, draft['klassen'] || {}, date,
+                                    datenpflege_choices_by_row(pending, draft['links']),
+                                    datenpflege_choices_by_row(pending, draft['emails']))
     end
 
     post '/api/datenpflege/schueler/discard' do
         require_data_manager!
         data = parse_request_data(:required_keys => [:token])
-        ['json', 'TXT'].each do |ext|
-            path = datenpflege_pending_path(data[:token], ext)
-            File.delete(path) if File.exist?(path)
+        draft = datenpflege_draft
+        if draft && draft['token'] == data[:token]
+            # the draft goes, with the one before it
+            datenpflege_delete_upload(draft['previous'])
+            File.delete(datenpflege_draft_path) if File.exist?(datenpflege_draft_path)
         end
+        datenpflege_delete_upload(data[:token])
         respond(:ok => true)
     end
 
@@ -571,10 +749,13 @@ class Main < Sinatra::Base
         DataRepo.write(DataRepo.root, rel, LusdImport.ascii_txt(c[:students]))
         tr = datenpflege_saved_klassen.merge(c[:mapping].to_h { |k, m| [k, m[:target]] }).reject { |k, v| k == v }
         DataRepo.write(DataRepo.root, DATENPFLEGE_KLASSEN_TR, tr.sort.to_h.to_yaml) unless tr.empty?
-        ['json', 'TXT'].each do |ext|
-            path = datenpflege_pending_path(data[:token], ext)
-            File.delete(path) if File.exist?(path)
+        # applied: the draft (if it was this one) is done
+        draft = datenpflege_draft
+        if draft && draft['token'] == data[:token]
+            datenpflege_delete_upload(draft['previous'])
+            File.delete(datenpflege_draft_path) if File.exist?(datenpflege_draft_path)
         end
+        datenpflege_delete_upload(data[:token])
         DataVersion.bump!(DataVersion::PATH, "#{rel} by #{@session_user[:email]}")
         respond(:ok => true, :reload => DataVersion.restarts?)
     end
@@ -619,6 +800,18 @@ class Main < Sinatra::Base
             io.puts "<p class='dp-current'>Im Dashboard: <strong>#{count}</strong> Schüler:innen aus <strong>#{dp_h(File.basename(current))}</strong>, gelesen am <span id='data_loaded_at'>#{@@data_loaded_at.strftime('%d.%m.%Y, %H:%M:%S')}</span>.</p>"
             unless DataRepo.writable?
                 io.puts "<div class='alert alert-warning'>Das Datenverzeichnis ist hier nicht beschreibbar: Hochladen und Vergleichen geht, Übernehmen nicht (DATA_REPO_WRITABLE in env.rb).</div>"
+            end
+            draft = datenpflege_draft
+            if draft
+                pending = (datenpflege_load_pending(draft['token']) rescue nil)
+                if pending
+                    by = (@@user_info[draft['email']] || {})[:display_name] || draft['email']
+                    io.puts "<div class='dp-draft' data-token='#{dp_h(draft['token'])}'>"
+                    io.puts "<h5>Entwurf</h5>"
+                    io.puts "<p>#{dp_h(pending['filename'])}, hochgeladen am #{Time.at(pending['created'].to_i).strftime('%d.%m.%Y, %H:%M')}, als Entwurf behalten von #{dp_h(by)}. Er gilt noch nirgends; ein neuer Export wird mit ihm verglichen.</p>"
+                    io.puts "<p><button class='btn btn-secondary' id='bu_open_draft'>Entwurf öffnen</button></p>"
+                    io.puts "</div>"
+                end
             end
             changes = datenpflege_uncommitted
             unless changes.empty?

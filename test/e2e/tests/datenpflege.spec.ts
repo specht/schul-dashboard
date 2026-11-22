@@ -183,3 +183,73 @@ test('Namen melden nur für Schüler:innen, erledigen nur mit der Rolle', async 
   expect((await api.post('/api/name_report', { data: { kind: 'name', note: 'x' } })).ok()).toBe(false);
   expect((await api.post('/api/name_report/done', { data: { id: 'x' } })).ok()).toBe(false);
 });
+
+// A draft (review/2026-11/student-data-review.md): an upload kept until the
+// LUSD data is right – it has no effect, is shown again when the page opens,
+// keeps the choices made for it, and a new export is compared with it. One
+// draft for everybody: desktop only, made-up students of its own.
+test('Datenpflege: Entwurf behalten, neuen Export damit vergleichen, ersetzen, verwerfen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/datenpflege');
+  const preview = page.locator('#dp_preview');
+  const ENTWURF_1 = [HEADER,
+    'Entwurf;Erik;;5c;männlich;01.02.2014',
+    'Entwurf;Frida;;5a;weiblich;02.02.2014'].join('\r\n');
+  const ENTWURF_2 = [HEADER,
+    'Entwurf;Erik;;5c;männlich;01.02.2014',
+    'Entwurf;Frida;;5b;weiblich;02.02.2014',
+    'Entwurf;Greta;;5c;weiblich;03.02.2014'].join('\r\n');
+  try {
+    await upload(page, ENTWURF_1, '2000-01-01');
+    await expect(preview.locator('.dp-summary')).toContainText('2 Schüler:innen');
+    await expect(page.locator('#bu_keep_draft')).toHaveText('Als Entwurf behalten');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await expect(page.locator('#bu_keep_draft')).toBeHidden();
+    // an address chosen for the draft stays with it
+    const erik = preview.locator('.dp-added tr', { hasText: 'Erik Entwurf' });
+    await erik.locator('.ti_email').fill('erik.e');
+    await erik.locator('.ti_email').blur();
+    await expect(preview.locator('.dp-added tr', { hasText: 'Erik Entwurf' }).locator('.ti_email')).toHaveValue('erik.e');
+
+    // the page opens with the draft offered, not applied
+    await page.goto('/datenpflege');
+    await expect(page.locator('.dp-draft')).toContainText('lusd.csv');
+    await expect(preview).toBeEmpty();
+    await page.locator('#bu_open_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await expect(page.locator('#ti_date')).toHaveValue('2000-01-01');
+    await expect(preview.locator('.dp-added tr', { hasText: 'Erik Entwurf' }).locator('.ti_email')).toHaveValue('erik.e');
+
+    // a new export: compared with the draft, its choices taken over
+    await upload(page, ENTWURF_2, '2000-01-01');
+    const since = preview.locator('.dp-since');
+    await expect(since.locator('h5')).toHaveText('Seit dem Entwurf');
+    await expect(since.locator('.dp-since-added tr', { hasText: 'Greta Entwurf' })).toHaveCount(1);
+    await expect(since.locator('.dp-since-changed tr', { hasText: 'Frida Entwurf' })).toContainText(/Klasse\s*5a\s*5b/);
+    await expect(since.locator('.dp-since-removed .dp-count')).toHaveText('0');
+    await expect(preview.locator('.dp-added tr', { hasText: 'Erik Entwurf' }).locator('.ti_email')).toHaveValue('erik.e');
+    await expect(page.locator('#dp_is_draft')).toBeHidden();
+    await expect(page.locator('#bu_keep_draft')).toHaveText('Entwurf ersetzen');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    // the draft against the one before
+    await expect(since.locator('h5')).toHaveText('Seit dem vorigen Entwurf');
+    await expect(since.locator('.dp-since-added tr', { hasText: 'Greta Entwurf' })).toHaveCount(1);
+
+    // discarding the draft asks first
+    await page.locator('#bu_discard_upload').click();
+    const dialog = page.locator('.modal.show');
+    await expect(dialog).toContainText('Entwurf');
+    await dialog.getByRole('button', { name: 'Verwerfen' }).click();
+    await expect(preview).toBeEmpty();
+    await page.goto('/datenpflege');
+    await expect(page.locator('.dp-draft')).toHaveCount(0);
+  } finally {
+    // no draft left for other tests
+    const r = await page.request.post('/api/datenpflege/schueler/draft', { data: {} });
+    const d = await r.json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
+  }
+});

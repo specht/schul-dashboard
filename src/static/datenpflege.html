@@ -70,7 +70,7 @@
         #{print_datenpflege()}
         #{print_name_reports()}
         <h5>Neue Liste aus der LUSD</h5>
-        <p class='text-muted'>Excel- oder CSV-Export mit Nachname, Vorname, Rufname, Klasse, Geschlecht und Geburtsdatum. Hochladen ändert noch nichts: Erst kommt der Vergleich mit der Liste, die am gewählten Tag gilt.</p>
+        <p class='text-muted'>Excel- oder CSV-Export mit Nachname, Vorname, Rufname, Klasse, Geschlecht und Geburtsdatum. Hochladen ändert noch nichts: Erst kommt der Vergleich mit der Liste, die am gewählten Tag gilt. Einen Export kannst du als Entwurf behalten, bis die Daten in der LUSD stimmen; jeder neue Export wird dann auch mit dem Entwurf verglichen.</p>
         <div class='dp-form'>
             <label class='dp-drop' id='dp_drop' for='ti_file'>
                 <input type='file' id='ti_file' accept='.xlsx,.csv,.txt' hidden>
@@ -90,9 +90,11 @@
                 <label style='margin: 0;'><input type='checkbox' id='ti_replace'> Für diesen Tag gibt es schon eine Liste. Sie wird ersetzt.</label>
             </div>
             <p id='dp_future' class='text-muted' hidden>Die Liste gilt erst ab dem gewählten Tag; bis dahin bleibt die bisherige.</p>
+            <p id='dp_is_draft' class='text-muted' hidden>Das ist der Entwurf: Er gilt noch nirgends.</p>
             <div class='dp-actions'>
                 <button class='btn btn-secondary' id='bu_discard_upload'>Verwerfen</button>
                 <span class='dp-spacer'></span>
+                <button class='btn btn-secondary' id='bu_keep_draft'>Als Entwurf behalten</button>
                 <button class='btn btn-success' id='bu_apply'>Übernehmen</button>
             </div>
         </div>
@@ -103,6 +105,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         let token = null;
         let existing = [];
+        // the shown upload is the draft (kept on the server)
+        let is_draft = false;
 
         function today() {
             const d = new Date();
@@ -147,8 +151,15 @@
             message(null);
             token = data.token;
             existing = data.existing || [];
+            // the choices in force (a new upload takes the draft's over)
+            links = data.links || {};
+            emails = data.emails || {};
+            if (data.date) $('#ti_date').val(data.date);
+            is_draft = !!data.is_draft;
             $('#dp_preview').html(data.html);
             $('#dp_apply').prop('hidden', !data.can_apply);
+            $('#dp_is_draft').prop('hidden', !is_draft);
+            $('#bu_keep_draft').prop('hidden', is_draft).text(data.has_draft ? 'Entwurf ersetzen' : 'Als Entwurf behalten');
             update_apply_state();
         }
 
@@ -238,14 +249,41 @@
         $('#ti_date').on('change', recheck);
         $('#ti_replace').on('change', update_apply_state);
 
-        $('#bu_discard_upload').click(function () {
-            if (!token) return;
+        function discard() {
             api_call('/api/datenpflege/schueler/discard', { token: token }, function () {
+                if (is_draft) $('.dp-draft').remove();
                 token = null;
+                is_draft = false;
                 $('#dp_preview').empty();
                 $('#dp_apply').prop('hidden', true);
                 $('#ti_file').val('');
                 $('.dp-drop-file').text('').prop('hidden', true);
+            });
+        }
+        $('#bu_discard_upload').click(function () {
+            if (!token) return;
+            // the draft was kept on purpose: ask first
+            if (is_draft) {
+                dashboardConfirm('Der Entwurf und der Vergleich mit ihm gehen verloren; ein neuer Export wird dann nur noch mit dem Dashboard verglichen.',
+                    discard, { title: 'Entwurf verwerfen', confirm: 'Verwerfen', danger: true });
+            } else {
+                discard();
+            }
+        });
+
+        $('#bu_keep_draft').click(function () {
+            if (!token) return;
+            api_call('/api/datenpflege/schueler/keep', { token: token, date: $('#ti_date').val(), klassen: klassen(), links: links, emails: emails }, function (data) {
+                show_preview(data);
+                // the box for the earlier draft is out of date now
+                $('.dp-draft').remove();
+            });
+        });
+
+        $(document).on('click', '#bu_open_draft', function () {
+            api_call('/api/datenpflege/schueler/draft', {}, function (data) {
+                show_preview(data);
+                document.getElementById('dp_preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
 

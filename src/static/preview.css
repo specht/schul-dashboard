@@ -3169,6 +3169,18 @@ body.ui-preview.dark::before {
     margin-bottom: 1px;
 }
 
+/* one size for everything below a block's title, in lessons (topic,
+   homework), Termine and calendar events (calendar line, description); the
+   time and the markers have their own (doc/Gestaltung.md) */
+.ui-preview .fc-timegrid-event {
+    --pv-ev-detail: 0.78rem;
+}
+
+.ui-preview .fc-timegrid-event .line2:not(.pv-ev-row) > span:not(.cem),
+.ui-preview .fc-timegrid-event .pv-ev-fit {
+    font-size: var(--pv-ev-detail);
+}
+
 /* an event's description (below its line): inside the same padding as the
    title, not from edge to edge */
 .ui-preview .fc-timegrid-event .pv-ev-body {
@@ -3231,7 +3243,7 @@ body.ui-preview.dark::before {
 
 .ui-preview .pv-ev-label {
     margin-top: 4px;
-    font-size: 0.74rem;
+    font-size: var(--pv-ev-detail);
     font-weight: 700;
     opacity: 0.75;
     white-space: nowrap;
@@ -3242,7 +3254,7 @@ body.ui-preview.dark::before {
 .ui-preview .pv-ev-desc {
     opacity: 0.92 !important;
     border-top: 0 !important;
-    font-size: 0.9em;
+    font-size: var(--pv-ev-detail);
     line-height: 1.3;
 }
 
@@ -3299,7 +3311,7 @@ body.ui-preview.dark::before {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font: 0.78rem/1.4 var(--pv-text);
+    font: var(--pv-ev-detail)/1.4 var(--pv-text);
     opacity: 0.92;
 }
 

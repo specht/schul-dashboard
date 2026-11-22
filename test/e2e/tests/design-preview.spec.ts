@@ -1915,3 +1915,51 @@ test('Neues Design: Stundenplan, gleiche Stundenhöhe und Breite in jeder Woche'
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Desktop week: everything below a block's title (a lesson's topic and
+// homework, a Termin's calendar line and description) has one size, the same
+// in lessons, Termine and events from an external calendar; the time and the
+// markers (HA …) are no details. Termine had their details as large as the
+// title, lessons smaller (doc/Gestaltung.md, »Blöcke im Stundenplan«).
+test('Neues Design: Stundenplan, Details in allen Blöcken gleich groß', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    await page.evaluate(() => {
+      type Ev = { allDay: boolean; extendedProps: Record<string, unknown>; setExtendedProp: (k: string, v: unknown) => void };
+      const w = window as unknown as { calendar: { getEvents: () => Ev[]; addEvent: (e: object) => void; view: { activeStart: Date } } };
+      for (const e of w.calendar.getEvents().filter((e) => !e.allDay && e.extendedProps.lesson)) {
+        e.setExtendedProp('data', { ...(e.extendedProps.data as object || {}), hausaufgaben_text: 'AB 4 beenden', stundenthema_text: 'Brüche' });
+      }
+      const at = (days: number, h: number) => { const d = new Date(w.calendar.view.activeStart); d.setDate(d.getDate() + days); d.setHours(h, 0, 0, 0); return d; };
+      const termin = { is_event: true, organized_by: 'Fachbegleitung', description: 'Ort: Aula<br />Bitte pünktlich' };
+      w.calendar.addEvent({ ...termin, event_title: 'Probe Termin', start: at(2, 13), end: at(2, 15), eid: 'probe-termin' });
+      w.calendar.addEvent({ ...termin, event_title: 'Probe Kalender', source: 'ical', classNames: ['pv-ical'], start: at(3, 13), end: at(3, 15), eid: 'probe-ical' });
+    });
+    await page.waitForTimeout(800);
+    const sizes = await page.evaluate(() => {
+      const px = (el: Element) => getComputedStyle(el).fontSize;
+      const found: Record<string, string[]> = {};
+      const add = (key: string, el: Element | null) => { if (el) (found[key] ??= []).push(px(el)); };
+      for (const main of Array.from(document.querySelectorAll('.fc-timegrid-event .fc-event-main'))) {
+        add('title', main.querySelector('.pv-ev-title b'));
+        main.querySelectorAll('.pv-ev-label').forEach((el) => add('lesson label', el));
+        main.querySelectorAll('.pv-ev-desc').forEach((el) => add('lesson text', el));
+        main.querySelectorAll('.pv-ev-inline-topic').forEach((el) => add('lesson topic', el));
+        main.querySelectorAll('.line2:not(.pv-ev-row) > span:not(.cem)').forEach((el) => add('termin line', el));
+        main.querySelectorAll('.pv-ev-fit').forEach((el) => add('termin text', el));
+      }
+      return found;
+    });
+    const details = ['lesson label', 'lesson text', 'termin line', 'termin text'];
+    for (const key of details) expect(sizes[key]?.length, key).toBeGreaterThan(key.startsWith('termin') ? 1 : 0);
+    const all = new Set(Object.entries(sizes).filter(([k]) => k !== 'title').flatMap(([, v]) => v));
+    expect([...all], JSON.stringify(sizes)).toHaveLength(1);
+    expect(parseFloat([...all][0])).toBeLessThan(parseFloat(sizes.title[0]));
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

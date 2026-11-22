@@ -162,6 +162,12 @@ und dunkel auf Kontrast geprüft.
   Zähler), mit `font-variant-numeric: tabular-nums`.
 - Wochentage vor Daten in fester Breite (`.pv-weekday`), damit die Daten
   eine Spalte bilden.
+- **Gleiche Rolle, gleiche Größe:** Text mit derselben Aufgabe (Titel,
+  Details, Zeit, Marker) hat in allen Varianten eines Bausteins dieselbe
+  Größe, z. B. in Stunden, Terminen und Terminen aus einem externen
+  Kalender. Die Größe steht einmal als Variable am Baustein, die Varianten
+  nehmen die Variable, keine eigene Größe je Variante. Ein E2E-Test misst
+  das, wo es schon einmal auseinanderlief.
 
 ## 6. Flächen und Abstände
 
@@ -504,6 +510,12 @@ Seite ergänzt nur, was ihr Inhalt braucht.
   Kerben links und rechts und einer schwachen Naht in der Mitte.
 - Der Zeitraster der Woche zeigt den Schultag (frühester bis spätester
   Unterricht).
+- **Blöcke im Stundenplan:** der Titel in der Grundgröße, alles darunter
+  (Thema, Hausaufgaben samt Überschrift, Kalenderzeile und Beschreibung
+  eines Termins) in einer Detailgröße, `--pv-ev-detail` (`preview.css`);
+  Zeit und Marker (HA …) haben ihre eigene. Gilt für Stunden, Termine und
+  externe Kalender gleich (Test »Details in allen Blöcken gleich groß« in
+  `design-preview.spec.ts`).
 - **Achtung FullCalendar:** im Zeitraster selbst (`.fc-timegrid-body`,
   Spalten, Slots) keine Polster oder Verschiebungen. FullCalendar misst
   dort und rendert sonst endlos neu, die Seite friert ein. Abstand gehört in

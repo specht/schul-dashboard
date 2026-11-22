@@ -204,6 +204,28 @@
     min-height: 6.25rem;
 }
 
+/* desktop: the six weeks fill the window's height (up to a point), so the
+   month keeps its height from one to the next; the panel in the middle of
+   the window */
+@media (min-width: 992px) {
+    .ui-preview .pv-tests .fc-dayGridMonth-view .fc-daygrid-day-frame {
+        min-height: clamp(6.25rem, calc((100dvh - 300px) / 6), 9.5rem);
+    }
+
+    .ui-preview.pv-tests-page #main_container > .container-fluid {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 100dvh;
+        padding-bottom: 12px !important;
+    }
+
+    .ui-preview.pv-tests-page .pv-tests {
+        width: 100%;
+        margin-bottom: 0;
+    }
+}
+
 .ui-preview .pv-tests .fc-day-sat,
 .ui-preview .pv-tests .fc-day-sun {
     background: color-mix(in srgb, var(--pv-hover) 60%, transparent);
@@ -213,8 +235,16 @@
     background-color: transparent !important;
 }
 
+/* a day to click on: a neutral tint – in the accent the school's dates
+   (on the accent's soft colour) blended into it */
 .ui-preview.pv-tests-can-add .pv-tests .fc-daygrid-day:hover {
-    background-color: color-mix(in srgb, var(--acc-soft) 45%, transparent) !important;
+    background-color: color-mix(in srgb, var(--pv-hover) 75%, transparent) !important;
+}
+
+/* an entry under the pointer: a fine outline, its colours stay */
+.ui-preview .pv-tests .fc-h-event:hover {
+    outline: 1px solid color-mix(in srgb, var(--pv-ink) 35%, transparent);
+    outline-offset: -1px;
 }
 
 .ui-preview .pv-tests .fc .fc-daygrid-day-number {

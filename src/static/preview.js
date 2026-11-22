@@ -1008,6 +1008,26 @@
     })();
     window.pv_back = pv_back;
 
+    // Keyboard shortcuts in every calendar, as in the timetable (and Google
+    // Calendar): N or J the next week or month, P or K the one before, T
+    // today. A calendar marks its buttons with data-pv-key="next|prev|today";
+    // the visible, enabled one is pressed. Not while typing or with a dialog
+    // or menu open. (The timetable has its own handler, with C as well.)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || e.repeat) return;
+        var target = e.target;
+        if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+        if (document.querySelector('.modal.show, .pv-plan-menu') || document.body.classList.contains('pv-sheet-open')) return;
+        var which = { n: 'next', j: 'next', p: 'prev', k: 'prev', t: 'today' }[(e.key || '').toLowerCase()];
+        if (!which) return;
+        var button = Array.prototype.find.call(document.querySelectorAll('[data-pv-key="' + which + '"]'), function(b) {
+            return b.offsetParent !== null && !b.disabled;
+        });
+        if (!button) return;
+        button.click();
+        e.preventDefault();
+    });
+
     // Light and dark in place (no reload): the mode's class and stylesheet,
     // the colours from the server (they differ per mode), the menu entry
     // turning into the other one (Hell / Dunkel). Pages that bake colours

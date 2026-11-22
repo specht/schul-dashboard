@@ -240,7 +240,10 @@ das Daten-Repository: ein SSH-Schlüssel ohne Passphrase als
 `data-repo-deploy-key` in `INTERNAL_PATH` (im Container `/internal`), dem
 Benutzer des Dienstes gehörend und nur für ihn lesbar (`chmod 600`). Der
 öffentliche Teil wird beim Daten-Repository als Deploy Key mit Schreibrecht
-eingetragen, und dessen Remote muss eine SSH-Adresse sein (`git@…`). Ohne
+eingetragen, und dessen Remote muss eine SSH-Adresse sein (`git@…`); lauscht
+der Git-Server nicht auf Port 22, gehört der Port in die Adresse
+(`ssh://git@host:port/…`) – eine `~/.ssh/config` des Server-Benutzers gilt im
+Container nicht. Ohne
 Schlüssel bleiben die Commits im Checkout auf dem Server; die Seite sagt dann,
 dass das Schieben nicht geklappt hat.
 

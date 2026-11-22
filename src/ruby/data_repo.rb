@@ -32,8 +32,13 @@ module DataRepo
     # be readable by it alone (chmod 600) – ssh refuses it otherwise.
     DEPLOY_KEY = '/internal/data-repo-deploy-key'
 
-    def self.git_env(key = DEPLOY_KEY)
+    # the git server's host key, remembered across restarts (first contact
+    # accepts it, a changed one is refused)
+    KNOWN_HOSTS = '/internal/data-repo-known-hosts'
+
+    def self.git_env(key = DEPLOY_KEY, known_hosts = KNOWN_HOSTS)
         ssh = ['ssh', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=accept-new']
+        ssh += ['-o', "UserKnownHostsFile=#{known_hosts}"] if File.writable?(File.dirname(known_hosts))
         ssh += ['-i', key, '-o', 'IdentitiesOnly=yes'] if File.exist?(key)
         {
             'HOME' => '/tmp',

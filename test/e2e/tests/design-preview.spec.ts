@@ -2281,3 +2281,27 @@ test('Neues Design: Stundenplan folgt der Fensterbreite (Spalte daneben)', async
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// The column beside the week: a change of an entry without a class (a team
+// meeting) shows its name without empty parentheses.
+test('Neues Design: Änderungen der Woche ohne leere Klammern', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Spalte nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    await page.evaluate(() => {
+      const w = window as any;
+      const d = new Date(w.calendar.view.activeStart); d.setDate(d.getDate() + 1); d.setHours(12, 20, 0, 0);
+      w.calendar.addEvent({ start: d, end: new Date(d.getTime() + 45 * 60000),
+        extendedProps: { lesson: true, entfall: true, label: '<b>Team6</b> ()', label_short: '<b>Team6</b> ()' } });
+      w.render_preview_side();
+    });
+    const change = page.locator('#pv_side .pv-side-change', { hasText: 'Team6' });
+    await expect(change.locator('b')).toHaveText('Team6');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

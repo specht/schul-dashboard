@@ -343,13 +343,31 @@ end
 # src/ruby/data_repo.rb):
 # - DATA_REPO_WRITABLE = true: the web service (only it) gets the data repo
 #   a second time, writable, at /data-repo; /data stays read-only everywhere
-# - DATA_REPO_PUSH = true: it pushes its commits (needs a deploy key)
+# - DATA_REPO_PUSH = true: it pushes its commits (needs a deploy key); ssh
+#   needs an entry for the services' user (UID) in /etc/passwd, which the
+#   image doesn't have: a minimal one, mounted from this file (no file on
+#   disk; docker compose 2.23 or newer)
+# - DATA_REPO_GROUP = 33: the group the data repo belongs to (e.g. www-data);
+#   the web service joins it, to write there
 # - DATA_RELOAD_RESTARTS = false: services don't restart when the data
 #   changes (test stack, whose services the E2E tests share)
 # Without them the generated files stay as they were.
 if defined?(DATA_REPO_WRITABLE) && DATA_REPO_WRITABLE
     docker_compose[:services][:ruby][:volumes] += ["#{INPUT_DATA_PATH}:/data-repo"]
-    docker_compose[:services][:ruby][:environment] << 'DASHBOARD_DATA_REPO_PUSH=1' if defined?(DATA_REPO_PUSH) && DATA_REPO_PUSH
+    group = defined?(DATA_REPO_GROUP) ? DATA_REPO_GROUP : nil
+    docker_compose[:services][:ruby][:group_add] = [group.to_s] if group
+    if defined?(DATA_REPO_PUSH) && DATA_REPO_PUSH
+        docker_compose[:services][:ruby][:environment] << 'DASHBOARD_DATA_REPO_PUSH=1'
+        gid = group || UID
+        docker_compose[:configs] = {
+            'ruby_passwd' => { 'content' => "root:x:0:0:root:/root:/sbin/nologin\ndashboard:x:#{UID}:#{gid}:Dashboard:/tmp:/sbin/nologin\n" },
+            'ruby_group' => { 'content' => "root:x:0:\ndashboard:x:#{gid}:\n" },
+        }
+        docker_compose[:services][:ruby][:configs] = [
+            { 'source' => 'ruby_passwd', 'target' => '/etc/passwd' },
+            { 'source' => 'ruby_group', 'target' => '/etc/group' },
+        ]
+    end
 end
 if defined?(DATA_RELOAD_RESTARTS) && !DATA_RELOAD_RESTARTS
     docker_compose[:services].each_value do |v|

@@ -1608,6 +1608,8 @@ function render_preview_side() {
         let kept = label.clone();
         kept.find('s, del, strike').remove();
         let name = kept.text().trim().replace(/^\(.*\)$/, '') || label.text().trim();
+        // a team meeting has no class: no empty "()" behind its name
+        name = name.replace(/\s*\(\s*\)/g, '').trim();
         item.append($('<span>').addClass('pv-side-text').append($('<b>').text(name), $('<small>').text(names[e.start.getDay()] + ' ' + preview_hhmm(e.start) + ', ' + what)));
         item.on('click', open(e));
         box.append(item);

@@ -78,6 +78,8 @@ class DataRepoTest < Minitest::Test
             refute_includes DataRepo.git_env(key)['GIT_SSH_COMMAND'], '-i'
             File.write(key, 'x')
             assert_includes DataRepo.git_env(key)['GIT_SSH_COMMAND'], "-i #{key} -o IdentitiesOnly=yes"
+            # the host key remembered where it can be written
+            assert_includes DataRepo.git_env(key, File.join(dir, 'known'))['GIT_SSH_COMMAND'], "UserKnownHostsFile=#{File.join(dir, 'known')}"
         end
     end
 

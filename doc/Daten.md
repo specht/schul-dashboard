@@ -235,6 +235,12 @@ Damit das Dashboard in das Daten-Repository schreiben darf, braucht es in
 Schieben); ohne diese Einstellungen ist das Datenverzeichnis wie bisher nur
 lesbar.
 
+Laufen die Dienste unter einem anderen Benutzer als dem, dem das
+Daten-Repository gehört (`UID` in `env.rb`), muss das Repository für eine
+gemeinsame Gruppe schreibbar sein (`chgrp`, `chmod g+rwX`, Verzeichnisse mit
+`g+s`, `git config core.sharedRepository group`), und `DATA_REPO_GROUP` nennt
+deren Nummer, damit der Web-Dienst ihr angehört.
+
 Zum Schieben braucht der Server einen **Deploy Key** mit Schreibrecht nur für
 das Daten-Repository: ein SSH-Schlüssel ohne Passphrase als
 `data-repo-deploy-key` in `INTERNAL_PATH` (im Container `/internal`), dem

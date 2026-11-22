@@ -3169,6 +3169,14 @@ body.ui-preview.dark::before {
     margin-bottom: 1px;
 }
 
+/* an event's description (below its line): inside the same padding as the
+   title, not from edge to edge */
+.ui-preview .fc-timegrid-event .pv-ev-body {
+    left: 6px !important;
+    width: calc(100% - 12px) !important;
+    padding-left: 0 !important;
+}
+
 /* the room chip at the right edge of the padded block */
 .ui-preview .fc-timegrid-event .pv-ev-room {
     right: 4px !important;

@@ -452,5 +452,5 @@ test('Administration: Eintrag im Admin-Menü', async ({ page }, testInfo) => {
   await page.goto('/');
   const link = page.locator('a.dropdown-item[href="/postfaecher"]');
   await expect(link).toHaveCount(1);
-  await expect(link).toContainText('Postfach-Anfragen und E-Mail-Briefe');
+  await expect(link).toContainText('Postfach-Anfragen');
 });

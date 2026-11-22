@@ -211,6 +211,17 @@ File.write(File.join(target, 'public_events', 'public_events.yaml'), [{
         :description => 'Samstag',
         :entries => [{:key => 'vormittag', :description => '10:00 Uhr', :label => '10:00', :capacity => 100}],
     }],
+}, {
+    # like a real one: a day per row, many slots for one person each
+    # (/anmeldungen, anmeldungen.spec.ts); one day is over
+    :key => 'kennenlernen',
+    :title => 'Kennenlerngespräch',
+    :description => 'Anmeldung zum Kennenlerngespräch',
+    :mail_subject => 'Kennenlerngespräch',
+    :mail_text => "<p>Sie sind angemeldet: {entry[:row_description]}, {entry[:description]}.</p>",
+    :auto_rows => [[-7, [['09:00', '10:00']]], [7, [['09:00', '16:00']]], [8, [['13:00', '15:00']]]].map do |days, spans|
+        { :day => (Date.today + days).strftime('%Y-%m-%d'), :spans => spans, :duration => 20 }
+    end,
 }].to_yaml)
 
 # Klassenmemory (/klassenmemory_assign, design-preview-klassenmemory.spec.ts):

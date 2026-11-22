@@ -83,6 +83,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/delete_sign_up_for_event' do
+        require_admin!
         data = parse_request_data(:required_keys => [:tag])
         neo4j_query(<<~END_OF_QUERY, :tag => data[:tag])
             MATCH (n:PublicEventPerson {tag: $tag}) DETACH DELETE n;
@@ -173,7 +174,6 @@ class Main < Sinatra::Base
                 io.puts "</div>"
             end
             @@public_event_config.each.with_index do |event, event_index|
-                STDERR.puts event.to_yaml
                 sign_ups = get_sign_ups_for_public_event(event[:key])
                 next if sign_ups.empty?
                 io.puts "<hr />"
@@ -185,11 +185,11 @@ class Main < Sinatra::Base
                 sign_ups.keys.sort.each do |key|
                     sign_ups[key].each do |entry|
                         io.puts "<tr>"
-                        io.puts "<td>#{entry[:email]}</td>"
-                        io.puts "<td>#{entry[:name]}</td>"
-                        io.puts "<td>#{[(row_description_for_key_and_key[event[:key]] || {})[key], description_for_key_and_key[event[:key]][key]].reject { |x| x.nil? }.join(' / ')}</td>"
+                        io.puts "<td>#{CGI.escapeHTML(entry[:email].to_s)}</td>"
+                        io.puts "<td>#{CGI.escapeHTML(entry[:name].to_s)}</td>"
+                        io.puts "<td>#{CGI.escapeHTML([(row_description_for_key_and_key[event[:key]] || {})[key], description_for_key_and_key[event[:key]][key]].reject { |x| x.nil? }.join(' / '))}</td>"
                         if admin_logged_in?
-                            io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{entry[:tag]}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
+                            io.puts "<td><button class='btn btn-xs btn-danger bu-delete-signup' data-tag='#{CGI.escapeHTML(entry[:tag].to_s)}'><i class='fa fa-trash'></i>&nbsp;&nbsp;Löschen</button></td>"
                         else
                             io.puts "<td></td>"
                         end
@@ -200,6 +200,118 @@ class Main < Sinatra::Base
                 io.puts "</table>"
                 io.puts "</div>"
             end
+            io.string
+        end
+    end
+
+    # /anmeldungen in the new design: per event the slots of a day (or week)
+    # in a row that wraps instead of a table with a column per slot, past days
+    # folded away; below, who signed up for which slot.
+    def public_events_overview
+        require_admin_or_sekretariat!
+        self.class.refresh_public_event_config()
+        h = ->(x) { CGI.escapeHTML(x.to_s) }
+        today = Date.today
+        ts = Time.now.strftime('%Y-%m-%dT%H:%M')
+        StringIO.open do |io|
+            io.puts "<div class='pe-page'>"
+            io.puts "<h2>Anmeldungen</h2>"
+            io.puts "<div class='api_messages' style='display: none;'></div>"
+            io.puts "<p class='text-muted'>Keine Veranstaltungen eingerichtet.</p>" if @@public_event_config.empty?
+            @@public_event_config.each do |event|
+                rows = event[:rows] || []
+                sign_ups = get_sign_ups_for_public_event(event[:key])
+                # the same label in every row ("Schnuppertag für …"): once
+                # below the title, the rows go by their dates
+                labels = rows.map { |r| r[:description].to_s }.uniq
+                common = rows.size > 1 && labels.size == 1 ? labels.first : nil
+                row_label = lambda do |row|
+                    dates = row[:entries].map { |e| public_event_entry_date(e) }.compact
+                    common && !dates.empty? ? public_event_date_range(dates) : row[:description].to_s
+                end
+                past_row = ->(row) { !row[:entries].empty? && row[:entries].all? { |e| public_event_entry_past?(e, today, ts) } }
+                upcoming = rows.reject(&past_row)
+                past = rows.select(&past_row)
+                places = upcoming.sum { |r| r[:entries].sum { |e| e[:capacity] || 0 } }
+                booked = upcoming.sum { |r| r[:entries].sum { |e| (sign_ups[e[:key]] || []).size } }
+
+                io.puts "<section class='pe-event' data-event-key='#{h.(event[:key])}'>"
+                io.puts "<h3>#{h.(event[:title])}</h3>"
+                facts = []
+                facts << h.(common) if common
+                facts << "#{booked} von #{places} Plätzen belegt" if places > 0
+                facts << "#{sign_ups.values.sum(&:size)} Anmeldungen insgesamt"
+                io.puts "<p class='pe-facts'>#{facts.join(', ')}</p>"
+
+                print_rows = lambda do |list|
+                    list.each do |row|
+                        io.puts "<div class='pe-row'><div class='pe-day'>#{h.(row_label.(row))}</div><div class='pe-slots'>"
+                        row[:entries].each do |e|
+                            capacity = e[:capacity] || 0
+                            count = (sign_ups[e[:key]] || []).size
+                            percent = capacity > 0 ? [count * 100 / capacity, 100].min : 0
+                            state = capacity > 0 && count >= capacity ? ' pe-full' : (count == 0 ? ' pe-empty' : '')
+                            io.puts "<div class='pe-slot#{state}'><div class='pe-slot-head'><span>#{h.(e[:label] || e[:description])}</span><span class='pe-count'>#{count}/#{capacity}</span></div>"
+                            io.puts "<div class='pe-bar' aria-hidden='true'><div style='width: #{percent}%;'></div></div></div>"
+                        end
+                        io.puts "</div></div>"
+                    end
+                end
+                if upcoming.empty?
+                    io.puts "<p class='text-muted'>Keine kommenden Termine.</p>"
+                else
+                    io.puts "<div class='pe-rows'>"
+                    print_rows.(upcoming)
+                    io.puts "</div>"
+                end
+                unless past.empty?
+                    io.puts "<details class='pe-past'><summary>Vergangene Termine (#{past.size})</summary><div class='pe-rows'>"
+                    print_rows.(past)
+                    io.puts "</div></details>"
+                end
+
+                # who signed up: in the order of the slots, then by time
+                order = {}
+                slot_of = {}
+                rows.each do |row|
+                    row[:entries].each do |e|
+                        order[e[:key]] = order.size
+                        slot_of[e[:key]] = [common ? nil : row[:description], e[:description]].compact.reject(&:empty?).join(', ')
+                    end
+                end
+                people = sign_ups.flat_map { |key, list| list.map { |person| [key, person] } }
+                    .select { |key, _| order.key?(key) }
+                    .sort_by { |key, person| [order[key], person[:timestamp].to_s] }
+                past_key = {}
+                rows.each { |row| row[:entries].each { |e| past_key[e[:key]] = public_event_entry_past?(e, today, ts) } }
+                print_people = lambda do |list|
+                    io.puts "<div class='pe-table'><table class='table table-sm'><thead><tr><th>Termin</th><th>Name</th><th>E-Mail</th><th>Angemeldet</th>#{admin_logged_in? ? '<th></th>' : ''}</tr></thead><tbody>"
+                    list.each do |key, person|
+                        signed = (DateTime.parse(person[:timestamp].to_s).strftime('%d.%m.%Y, %H:%M') rescue '')
+                        io.puts "<tr><td>#{h.(slot_of[key])}</td><td>#{h.(person[:name])}</td><td class='pe-mail'>#{h.(person[:email])}</td><td class='pe-when'>#{signed}</td>"
+                        if admin_logged_in?
+                            io.puts "<td class='pe-actions'><button type='button' class='btn btn-secondary btn-sm bu-delete-signup' data-tag='#{h.(person[:tag])}' data-name='#{h.(person[:name])}'><i class='ti ti-trash'></i> Löschen</button></td>"
+                        end
+                        io.puts "</tr>"
+                    end
+                    io.puts "</tbody></table></div>"
+                end
+                coming_people = people.reject { |key, _| past_key[key] }
+                past_people = people.select { |key, _| past_key[key] }
+                io.puts "<h4>Angemeldet</h4>"
+                if coming_people.empty?
+                    io.puts "<p class='text-muted'>Für die kommenden Termine hat sich noch niemand angemeldet.</p>"
+                else
+                    print_people.(coming_people)
+                end
+                unless past_people.empty?
+                    io.puts "<details class='pe-past'><summary>Frühere Anmeldungen (#{past_people.size})</summary>"
+                    print_people.(past_people)
+                    io.puts "</details>"
+                end
+                io.puts "</section>"
+            end
+            io.puts "</div>"
             io.string
         end
     end

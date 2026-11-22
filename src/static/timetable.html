@@ -1452,6 +1452,9 @@ function render_preview_week_head() {
             $(c).find('img, iframe, svg, canvas, video').filter(function(_, x) { return x.offsetHeight > 0; }).length > 0);
     };
     let calendar_column = $('#calendar').closest('.row').children().filter(function(_, c) { return c.contains(document.getElementById('calendar')); });
+    // measured as they are now: a column hidden as empty before (a narrower
+    // window) would never show again
+    $('#calendar').closest('.row').children().not(calendar_column).removeClass('pv-col-empty');
     $('#calendar').closest('.row').children().not(calendar_column).each(function(_, col) {
         let visible = $(col).children().filter(function(_, c) {
             return !$(c).hasClass('timetable_chooser') && shows_something(c) && !$(c).is('.ttc-wrap');
@@ -3278,6 +3281,16 @@ document.addEventListener('DOMContentLoaded', function() {
             history.replaceState(null, '', location.pathname + location.search);
         render_preview_agenda();
         render_preview_week_head();
+    });
+    // wider or narrower across the column's width (1200 px) or the side
+    // columns' (992 px): the column beside the week appears or goes, empty
+    // columns give their room back – as at the start, not only after a reload
+    ['(min-width: 1200px)', '(min-width: 992px)'].forEach(function(q) {
+        window.matchMedia(q).addEventListener('change', function() {
+            if (!window.calendar || !document.body.classList.contains('ui-preview')) return;
+            render_preview_week_head();
+            setTimeout(function() { window.calendar.updateSize(); }, 0);
+        });
     });
     window.timetable_options = options;
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), options);

@@ -2246,3 +2246,38 @@ test('Neues Design: Mehr am Handy, Kacheln gut verteilt, Menü nach Themen', asy
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Desktop: the window made wider or narrower – the column beside the week
+// appears or goes as at the start, and the timetable takes the room (it kept
+// the layout it was loaded with: no column after going wide, an empty strip
+// after going narrow).
+test('Neues Design: Stundenplan folgt der Fensterbreite (Spalte daneben)', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    const layout = () => page.evaluate(() => {
+      const cal = document.querySelector('#calendar .fc-view-harness')!.getBoundingClientRect();
+      const side = document.getElementById('pv_side')!;
+      const s = side.getBoundingClientRect();
+      return { side: !side.hidden && s.width > 0, calRight: Math.round(cal.right), sideLeft: Math.round(s.left), width: window.innerWidth };
+    });
+    await page.setViewportSize({ width: 1100, height: 900 });
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    const narrow = await layout();
+    expect(narrow.side).toBe(false);
+    // wider: the column appears, the timetable ends before it
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect.poll(async () => (await layout()).side).toBe(true);
+    const wide = await layout();
+    expect(wide.calRight).toBeLessThanOrEqual(wide.sideLeft);
+    // narrower again: the column goes, no empty strip beside the timetable
+    await page.setViewportSize({ width: 1100, height: 900 });
+    await expect.poll(async () => (await layout()).side).toBe(false);
+    await expect.poll(async () => (await layout()).calRight).toBeGreaterThan(narrow.calRight - 3);
+    expect((await layout()).calRight).toBeGreaterThan(1100 - 80);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

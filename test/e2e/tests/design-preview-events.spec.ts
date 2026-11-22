@@ -210,3 +210,38 @@ test('Neues Design: Termin-Dialog ohne Scrollleiste', async ({ page }, testInfo)
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// The editor's menus (format, alignment, table) open in full: the editor's
+// frame cut them off, a click on the wand seemed to do nothing.
+test('Neues Design: Menüs im Texteditor nicht abgeschnitten', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Desktop-Dialog');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/events');
+    await page.locator('.bu-new-event').first().click();
+    await expect(page.locator('#composeModal')).toBeVisible();
+    for (const group of ['.note-style', '.note-para', '.note-table']) {
+      await page.locator(`#composeModal ${group} .dropdown-toggle`).first().click();
+      const menu = page.locator(`#composeModal ${group} .note-dropdown-menu`).first();
+      await expect(menu).toBeVisible();
+      // away from the button, so that its tooltip goes
+      await page.mouse.move(5, 5);
+      await expect(page.locator('.tooltip')).toHaveCount(0);
+      // every corner of the menu can be clicked (nothing cut off above it;
+      // 14 px inside, past the rounded corner)
+      const hidden = await menu.evaluate((m) => {
+        const r = m.getBoundingClientRect();
+        return [[r.left + 14, r.top + 14], [r.right - 14, r.top + 14], [r.left + 14, r.bottom - 14], [r.right - 14, r.bottom - 14]]
+          .filter(([x, y]) => !m.contains(document.elementFromPoint(x, y)))
+          .map(([x, y]) => `${Math.round(x - r.left)},${Math.round(y - r.top)} of ${Math.round(r.width)}x${Math.round(r.height)}: ${document.elementFromPoint(x, y)?.className}`);
+      });
+      expect(hidden, group).toEqual([]);
+      await page.locator('#composeModal .lb_title').click();
+      await expect(menu).toBeHidden();
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

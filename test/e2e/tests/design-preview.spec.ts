@@ -2052,12 +2052,16 @@ test('Neues Design: Termin aus dem Stundenplan anlegen (Klick, Ziehen, Rechtskli
     await page.waitForTimeout(300);
     expect(await page.evaluate(() => window.scrollY)).toBe(scrolled);
     await expect(pop.getByRole('button', { name: 'Termin erstellen…' })).toBeFocused();
-    // the close button level with the title
+    // the close button level with the title, its X in its middle
     const level = await pop.evaluate((el) => {
       const mid = (r: DOMRect) => r.top + r.height / 2;
-      return mid(el.querySelector('.pv-create-title')!.getBoundingClientRect()) - mid(el.querySelector('.pv-create-close i')!.getBoundingClientRect());
+      const title = mid(el.querySelector('.pv-create-title')!.getBoundingClientRect());
+      const button = mid(el.querySelector('.pv-create-close')!.getBoundingClientRect());
+      const glyph = el.querySelector('.pv-create-close i')!.getBoundingClientRect();
+      return { button: button - title, glyph: mid(glyph) - button, size: glyph.height };
     });
-    expect(Math.abs(level)).toBeLessThan(2);
+    expect(Math.abs(level.button), JSON.stringify(level)).toBeLessThan(2);
+    expect(Math.abs(level.glyph), JSON.stringify(level)).toBeLessThan(2);
     await expect(pop.locator('.pv-create-when')).toContainText(`${short(spot.time)} bis ${short(plusMinutes(spot.time, 60))} Uhr`);
     await expect(page.locator('#calendar .fc-event-mirror')).toHaveCount(1);
     await page.keyboard.press('Escape');

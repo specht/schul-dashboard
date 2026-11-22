@@ -3107,15 +3107,25 @@ body.ui-preview.dark::before {
 }
 
 /* ---------- Text editor (Summernote) ---------- */
+/* no overflow: hidden – it cut off the toolbar's menus (format, alignment,
+   table); the rounded corners come from the parts inside */
 .ui-preview .note-editor.note-frame {
     border: 1px solid var(--pv-line);
     border-radius: 12px;
-    overflow: hidden;
 }
 
 .ui-preview .note-toolbar {
     background: var(--pv-hover);
     border-bottom: 1px solid var(--pv-line);
+    border-radius: 11px 11px 0 0;
+}
+
+.ui-preview .note-editing-area,
+.ui-preview .note-editing-area .note-editable,
+.ui-preview .note-editing-area .note-codable,
+.ui-preview .note-statusbar {
+    border-bottom-left-radius: 11px;
+    border-bottom-right-radius: 11px;
 }
 
 .ui-preview .note-toolbar .btn,
@@ -6953,6 +6963,12 @@ body.ui-preview:has(.container-fluid.solid)::before {
     width: 28px;
     height: 28px;
     margin: 0 -6px 0 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
     border: 0;
     border-radius: 8px;
     background: transparent;

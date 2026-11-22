@@ -763,11 +763,13 @@ class Main < Sinatra::Base
         DataRepo.write(DataRepo.root, rel, LusdImport.ascii_txt(c[:students]))
         tr = datenpflege_saved_klassen.merge(c[:mapping].to_h { |k, m| [k, m[:target]] }).reject { |k, v| k == v }
         DataRepo.write(DataRepo.root, DATENPFLEGE_KLASSEN_TR, tr.sort.to_h.to_yaml) unless tr.empty?
-        # applied: the draft (if it was this one) is done
+        # applied: the draft (if it was this one) is done, and with it the
+        # teachers' check (personal data)
         draft = datenpflege_draft
         if draft && draft['token'] == data[:token]
             datenpflege_delete_upload(draft['previous'])
             File.delete(datenpflege_draft_path) if File.exist?(datenpflege_draft_path)
+            schuelerliste_reset!
         end
         datenpflege_delete_upload(data[:token])
         DataVersion.bump!(DataVersion::PATH, "#{rel} by #{@session_user[:email]}")

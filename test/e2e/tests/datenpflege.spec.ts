@@ -382,3 +382,85 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
   }
 });
+
+// The Datenpflege's view of the check (/datenpflege): per class how far it
+// is, a mail to the Klassenleitungen, the corrections – arrived ones marked
+// by themselves (here: »nur im Dashboard« taken over as an override), others
+// by hand; a new draft that changes a row asks again.
+test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(120_000);
+  const MAILPIT = process.env.MAILPIT_URL || 'http://localhost:8126';
+  const mailQuery = encodeURIComponent(`to:"${ACCOUNTS.admin}" subject:"Schülerliste"`);
+  await fetch(`${MAILPIT}/api/v1/search?query=${mailQuery}`, { method: 'DELETE' });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/schuelerliste/reset', { data: {} });
+  const DRAFT = (elliBirthday: string) => [HEADER,
+    'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
+    `Mustermann;Elisabeth;Elli;05a;weiblich;${elliBirthday}`,
+    'Neu;Nele;;05a;weiblich;01.03.2014'].join('\r\n');
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, DRAFT('02.01.2010'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await page.goto('/datenpflege');
+    const row = page.locator('.dp-review-list tr[data-klasse="5a"]');
+    await expect(row).toContainText('noch nicht geöffnet');
+    await expect(row).toContainText('0 von 4');
+
+    // the mail: one per Klassenleitung, with the link
+    await page.locator('#ti_sl_deadline').fill('2099-12-01');
+    await page.locator('#bu_sl_notify').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Senden' }).click();
+    await expect(page.locator('.dp-review-list tr[data-klasse="5a"] td').nth(5)).not.toBeEmpty();
+    let id = '';
+    await expect(async () => {
+      const { messages } = await (await fetch(`${MAILPIT}/api/v1/search?query=${mailQuery}`)).json();
+      id = messages?.[0]?.ID || '';
+      expect(id).not.toBe('');
+    }).toPass({ timeout: 15_000 });
+    const mail = await (await fetch(`${MAILPIT}/api/v1/message/${id}`)).json();
+    expect(mail.Text).toContain('/schuelerliste?klasse=5a');
+    expect(mail.Text).toContain('Bitte bis 01.12.2099');
+
+    // the Klassenleitung opens it and checks
+    await page.goto('/schuelerliste?klasse=5a');
+    const cls = page.locator('.sl-class');
+    await cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_ok').click();
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.sl-done')).toBeVisible();
+    await cls.locator('.sl-row', { hasText: 'Maximilian' }).locator('.bu_sl_correct').click();
+    await page.locator('#ti_sl_rufname').fill('Max');
+    await page.locator('#ti_sl_dashboard_only').check();
+    await page.locator('#bu_save_sl_correction').click();
+    await expect(cls.locator('.sl-corrected')).toContainText('nur im Dashboard');
+    await page.locator('#ti_sl_missing_name').fill('Paul Probe');
+    await page.locator('#bu_sl_missing').click();
+    await expect(cls.locator('.sl-missing li')).toHaveCount(1);
+
+    await page.goto('/datenpflege');
+    await expect(row.locator('.dp-review-status')).toContainText('geöffnet am');
+    await expect(row).toContainText('2 von 4');
+    const corrections = page.locator('.dp-corrections');
+    await expect(page.locator('.dp-corrections-title')).toContainText('2 offen von 2');
+    // »nur im Dashboard«: taken over as an override – arrived
+    await corrections.locator('tr', { hasText: 'Rufname: Max' }).locator('.bu_sl_take_override').click();
+    await expect(corrections.locator('tr', { hasText: 'Rufname: Max' })).toContainText('angekommen');
+    // missing: done by hand
+    await corrections.locator('tr', { hasText: 'Paul Probe' }).locator('.bu_sl_done').click();
+    await expect(corrections.locator('tr', { hasText: 'Paul Probe' })).toContainText('erledigt');
+    await expect(page.locator('.dp-corrections-title')).toContainText('0 offen von 2');
+
+    // a new draft changes Elli's birthday: her row is asked again
+    await upload(page, DRAFT('03.01.2010'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await page.goto('/schuelerliste?klasse=5a');
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.sl-changed-row')).toHaveText('geändert seit deiner Prüfung');
+  } finally {
+    await page.request.post('/api/schuelerliste/reset', { data: {} });
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
+    await page.request.post('/api/datenpflege/rollback', { data: {} });
+  }
+});

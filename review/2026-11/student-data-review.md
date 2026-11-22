@@ -128,3 +128,12 @@ the dashboard needs its own values that every LUSD import keeps.
 
 Tests with `src/example-data` only; the test stack's class list and a
 made-up export in the test.
+
+## Progress
+
+- 2026-11-22, branch `schuelerliste-pruefen`: step 1 (draft), step 2
+  (overrides), step 3 (`/schuelerliste` for Klassenleitungen 5–10), step 4
+  (overview, mail and reminder, corrections marked done when they arrived,
+  a changed row asks again, everything deleted when the draft is applied).
+  Open: tutors for 11/12 (LUSD export, 2026-11-23), step 5 (after-switch
+  checklist).

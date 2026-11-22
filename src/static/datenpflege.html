@@ -66,6 +66,10 @@
     .dp-of-rufname { flex: 1 1 12em; min-width: 0; }
     .dp-of-geschlecht { flex: 0 1 12em; }
     .dp-row-actions { white-space: nowrap; text-align: right; }
+    .dp-notify { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em 0.8em; margin: 0.6em 0 0.3em; }
+    .dp-notify input { width: auto; }
+    .dp-corrections-title { margin-top: 1.2em; font-weight: 600; }
+    .dp-correction-angekommen td, .dp-correction-erledigt td { color: var(--pv-muted, #6b7280); }
     .dp-date label { display: block; margin-bottom: 0.2em; }
 </style>
 <div class='container-fluid white'>
@@ -74,6 +78,7 @@
         <div class='api_messages' style='display: none;'></div>
         <h4>Schüler:innen</h4>
         #{print_datenpflege()}
+        #{print_schuelerliste_overview()}
         #{print_name_reports()}
         #{print_schueler_overrides()}
         <h5>Neue Liste aus der LUSD</h5>
@@ -340,6 +345,26 @@
             api_call('/api/name_report/done', { id: button.data('id') }, function (data) {
                 if (data.success) button.closest('tr').remove(); else button.prop('disabled', false);
             });
+        });
+
+        // ---- the teachers' check (include/schuelerliste.rb) ----
+        $('#bu_sl_notify').click(function (e) {
+            const n = $(e.currentTarget).data('count');
+            dashboardConfirm(`Eine Mail mit dem Link an die Klassenleitungen der ${n} ${n == 1 ? 'Klasse' : 'Klassen'}, die noch nicht bestätigt haben?`, function () {
+                api_call('/api/schuelerliste/notify', { deadline: $('#ti_sl_deadline').val() }, function (data) {
+                    if (data.success) window.location.reload();
+                });
+            }, { title: 'Klassenleitungen benachrichtigen', confirm: 'Senden' });
+        });
+        $(document).on('click', '.bu_sl_done', function (e) {
+            const b = $(e.currentTarget);
+            const payload = { review: b.data('review'), done: b.data('done') === true || b.data('done') === 'true' };
+            if (b.data('missing')) payload.missing = b.data('missing'); else payload.student = b.data('student');
+            api_call('/api/schuelerliste/done', payload, function (data) { if (data.success) window.location.reload(); });
+        });
+        $(document).on('click', '.bu_sl_take_override', function (e) {
+            const b = $(e.currentTarget);
+            api_call('/api/datenpflege/override', { email: b.data('email'), rufname: String(b.data('rufname') || ''), geschlecht: String(b.data('geschlecht') || '') }, after_change);
         });
 
         // ---- Rufname and gender in the dashboard ----

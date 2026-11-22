@@ -1963,3 +1963,39 @@ test('Neues Design: Stundenplan, Details in allen Blöcken gleich groß', async 
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Desktop week: entries below the visible part get a chip at the bottom of
+// their day's column – only from 16:00 on (an Elternabend); the afternoon's
+// lessons below the fold are expected and get none.
+test('Neues Design: Stundenplan, Hinweis unten nur für Einträge ab 16 Uhr', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.setViewportSize({ width: 1280, height: 600 });
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    await page.evaluate(() => {
+      const w = window as unknown as { calendar: { addEvent: (e: object) => void; view: { activeStart: Date } } };
+      const at = (days: number, h: number, m = 0) => { const d = new Date(w.calendar.view.activeStart); d.setDate(d.getDate() + days); d.setHours(h, m, 0, 0); return d; };
+      const termin = { is_event: true, organized_by: 'Probe', description: '' };
+      w.calendar.addEvent({ ...termin, event_title: 'Probe Nachmittag', start: at(1, 13, 40), end: at(1, 15), eid: 'probe-nachmittag' });
+      w.calendar.addEvent({ ...termin, event_title: 'Probe Abend', start: at(2, 19), end: at(2, 20), eid: 'probe-abend' });
+    });
+    // the grid reaches as far as the week's entries (preview_time_range)
+    await page.evaluate(() => (window as any).preview_time_range([{ is_event: true, start: '2026-11-23T19:00:00', end: '2026-11-23T20:00:00' }]));
+    await expect(page.locator('.fc-timegrid-event', { hasText: 'Probe Abend' })).toHaveCount(1);
+    await page.evaluate(() => { window.scrollTo(0, 0); (window as any).preview_below_hints(); });
+    // the afternoon entry is below the fold, but gets no chip
+    const afternoon = page.locator('.fc-timegrid-event', { hasText: 'Probe Nachmittag' });
+    expect(await afternoon.evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThan(600);
+    const chips = page.locator('.pv-below');
+    await expect(chips.filter({ hasText: 'Probe Abend' })).toHaveCount(1);
+    await expect(chips.filter({ hasText: 'Nachmittag' })).toHaveCount(0);
+    for (const text of await chips.locator('.pv-below-text').allTextContents()) {
+      expect(text.match(/^(\d+):/)?.[1] ?? '99', text).toMatch(/^(1[6-9]|2\d|99)$/);
+    }
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

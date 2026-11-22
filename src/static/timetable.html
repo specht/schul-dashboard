@@ -1052,15 +1052,19 @@ function preview_fit_event(el) {
 
 // New design, desktop week: entries below the visible part of the grid
 // (an Elternabend in the evening) are announced by a chip at the bottom of
-// their day's column; a click scrolls to the entry.
+// their day's column; a click scrolls to the entry. Only for entries from
+// 16:00 on: the afternoon's lessons are expected, the evening isn't.
 function preview_below_hints() {
     document.querySelectorAll('.pv-below').forEach(function(x) { x.remove(); });
     if (!document.body.classList.contains('ui-preview') || document.body.classList.contains('pv-agenda-on')) return;
+    let late = Array.from(document.querySelectorAll('#calendar .fc-timegrid-slot-lane[data-time]')).find(function(x) { return x.dataset.time >= '16:00:00'; });
+    if (!late) return;
+    let late_top = late.getBoundingClientRect().top - 1;
     let bottom = window.innerHeight;
     let per_column = new Map();
     document.querySelectorAll('#calendar .fc-timegrid-event-harness').forEach(function(harness) {
         let r = harness.getBoundingClientRect();
-        if (r.height === 0 || r.top < bottom - 24) return;
+        if (r.height === 0 || r.top < bottom - 24 || r.top < late_top) return;
         let col = harness.closest('.fc-timegrid-col');
         if (!col) return;
         if (!per_column.has(col)) per_column.set(col, []);

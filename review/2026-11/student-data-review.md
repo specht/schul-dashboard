@@ -83,7 +83,13 @@ the dashboard needs its own values that every LUSD import keeps.
 - Two fields only: **Rufname** and **Geschlecht** (m/w/d), per student
   (email), kept in the data repo next to the lists (private repository, not
   this one), applied after the list is read – everywhere the dashboard shows
-  or uses the name and gender.
+  or uses the name and gender, **except report cards**.
+- The Rufname comes from LUSD; the override only where it differs. The
+  official names stay as they are (`official_first_name`), and the official
+  gender is kept as `official_geschlecht`.
+- **Report cards** (Zeugnisse, Sozialverhalten, Zeugnisdruck) use the
+  official first name and the official gender (its wording, `@Geschlecht`),
+  never an override. A unit test makes sure of that.
 - Set and removed on `/datenpflege` (role `can_manage_data`), with who and
   when; nobody else sees that a value is an override. A name report from the
   profile (»Namen melden«) can be taken over as an override in one step.

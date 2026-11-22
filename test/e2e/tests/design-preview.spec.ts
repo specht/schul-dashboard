@@ -2109,3 +2109,89 @@ test('Neues Design: Termin aus dem Stundenplan anlegen (Klick, Ziehen, Rechtskli
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// Desktop week: the school's dates right in the all-day row for those who
+// manage them – a click on a free day adds one, a click on one edits it,
+// »Löschen« asks first. Others still see the details.
+test('Neues Design: Termine der Schule im Stundenplan anlegen, ändern, löschen', async ({ page, newUserPage }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  test.setTimeout(120_000);
+  const tag = Date.now().toString(36);
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  let id = '';
+  try {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    // a free spot in the all-day row: Friday of the week shown (never in the
+    // past – past dates are cleared when the dates are read)
+    const day = page.locator('#calendar .fc-daygrid-body .fc-daygrid-day').nth(4);
+    const date = (await day.getAttribute('data-date'))!;
+    const box = (await day.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height - 6);
+    const pop = page.locator('.pv-school-pop');
+    await expect(pop).toBeVisible();
+    await expect(pop.locator('.pv-create-title')).toHaveText('Neuer Termin der Schule');
+    await expect(page.locator('#ti_school_date_from')).toHaveValue(date);
+    await expect(page.locator('#ti_school_date_to')).toHaveValue(date);
+    await expect(page.locator('#ti_school_date_title')).toBeFocused();
+    await expect(pop.getByRole('button', { name: 'Eintragen' })).toBeDisabled();
+    // the date fields inside the popover
+    const inside = await pop.evaluate((p) => {
+      const r = p.getBoundingClientRect();
+      return Array.from(p.querySelectorAll('input')).every((i) => i.getBoundingClientRect().right <= r.right - 8);
+    });
+    expect(inside).toBe(true);
+    await page.locator('#ti_school_date_title').fill(`16.30 Uhr Probe ${tag}`);
+    const saved = page.waitForResponse('**/api/save_website_event');
+    await pop.getByRole('button', { name: 'Eintragen' }).click();
+    id = (await (await saved).json()).id;
+    expect(id).toBeTruthy();
+    await expect(pop).toHaveCount(0);
+    const chip = page.locator('#calendar .fc-daygrid-event', { hasText: `Probe ${tag}` });
+    await expect(chip).toHaveCount(1);
+
+    // a click on it: edit
+    await chip.click();
+    await expect(pop.locator('.pv-create-title')).toHaveText('Termin der Schule');
+    await expect(page.locator('#ti_school_date_title')).toHaveValue(`16.30 Uhr Probe ${tag}`);
+    await page.locator('#ti_school_date_title').fill(`17.00 Uhr Probe ${tag}`);
+    await pop.getByRole('button', { name: 'Speichern' }).click();
+    await expect(page.locator('#calendar .fc-daygrid-event', { hasText: `17.00 Uhr Probe ${tag}` })).toHaveCount(1);
+    const stored = (await (await page.request.post('/api/get_website_events', { data: {} })).json()).events.find((e: { id: string }) => e.id === id);
+    expect(stored.title).toBe(`17.00 Uhr Probe ${tag}`);
+    expect(stored.date).toBe(date);
+
+    // others see the details, not the form
+    expect((await page.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.teacher, mode: 'on' } })).status()).toBe(200);
+    const teacher = await newUserPage();
+    await login(teacher, ACCOUNTS.teacher);
+    expect((await teacher.request.post('/api/save_website_event', { data: { id, title: 'nein', date } })).ok()).toBe(false);
+    await teacher.setViewportSize({ width: 1440, height: 1000 });
+    const theirs = teacher.locator('#calendar .fc-daygrid-event', { hasText: `Probe ${tag}` });
+    // the timetable is written again after the change
+    await expect(async () => {
+      await teacher.goto('/');
+      await expect(theirs).toHaveCount(1, { timeout: 3_000 });
+    }).toPass({ timeout: 60_000 });
+    await theirs.click();
+    await expect(teacher.locator('.pv-school-pop')).toHaveCount(0);
+    await expect(teacher.locator('.modal.show')).toContainText(`Probe ${tag}`);
+
+    // deleting asks first
+    await page.locator('#calendar .fc-daygrid-event', { hasText: `Probe ${tag}` }).click();
+    await pop.getByRole('button', { name: 'Löschen' }).click();
+    const confirm = page.locator('.modal.show');
+    await expect(confirm).toContainText('löschen?');
+    await confirm.getByRole('button', { name: 'Löschen' }).click();
+    await expect(page.locator('#calendar .fc-daygrid-event', { hasText: `Probe ${tag}` })).toHaveCount(0);
+    const left = (await (await page.request.post('/api/get_website_events', { data: {} })).json()).events.filter((e: { id: string }) => e.id === id);
+    expect(left).toHaveLength(0);
+    id = '';
+  } finally {
+    if (id) await page.request.post('/api/delete_website_event', { data: { id } });
+    await page.request.post('/api/set_ui_preview_tester', { data: { email: ACCOUNTS.teacher, mode: 'off' } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

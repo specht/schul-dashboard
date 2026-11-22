@@ -33,6 +33,38 @@ class Main < Sinatra::Base
         respond(:events => self.class.get_website_events())
     end
     
+    # One school date at once, title and days (the timetable, new design: a
+    # click in the all-day row): create it (without id) or change it. The
+    # timetable shows it after its next update; the website only once
+    # somebody updates it (»Live-Seite aktualisieren«, /manage_calendar).
+    post '/api/save_website_event' do
+        require_user_who_can_manage_news!
+        data = parse_request_data(:required_keys => [:title, :date], :optional_keys => [:id, :date_end],
+                                  :max_value_lengths => {:title => 300, :date => 10, :date_end => 10, :id => 64})
+        title = data[:title].strip
+        assert(!title.empty?, 'title missing')
+        assert(data[:date] =~ /\A\d{4}-\d{2}-\d{2}\z/, 'invalid date')
+        date_end = (data[:date_end] || '').strip
+        date_end = nil if date_end.empty? || date_end == data[:date]
+        assert(date_end.nil? || (date_end =~ /\A\d{4}-\d{2}-\d{2}\z/ && date_end > data[:date]), 'invalid end')
+        id = data[:id]
+        if id
+            neo4j_query_expect_one(<<~END_OF_QUERY, :id => id, :title => title, :date => data[:date], :date_end => date_end)
+                MATCH (e:WebsiteEvent {id: $id})
+                SET e.title = $title, e.date = $date, e.date_end = $date_end
+                RETURN e.id;
+            END_OF_QUERY
+        else
+            id = RandomTag.generate()
+            neo4j_query(<<~END_OF_QUERY, :id => id, :title => title, :date => data[:date], :date_end => date_end)
+                CREATE (e:WebsiteEvent {id: $id, title: $title, date: $date})
+                SET e.date_end = $date_end;
+            END_OF_QUERY
+        end
+        trigger_update('all/wait')
+        respond(:id => id)
+    end
+
     post '/api/delete_website_event' do
         require_user_who_can_manage_news!
         data = parse_request_data(:required_keys => [:id])
@@ -40,6 +72,7 @@ class Main < Sinatra::Base
             MATCH (e:WebsiteEvent {id: $id})
             DELETE e;
         END_OF_QUERY
+        trigger_update('all/wait')
         respond(:result => 'yay')
     end
     
@@ -63,6 +96,7 @@ class Main < Sinatra::Base
             MATCH (e:WebsiteEvent {id: $id})
             SET e.date = $date;
         END_OF_QUERY
+        trigger_update('all/wait')
         respond(:result => 'yay')
     end
     
@@ -73,6 +107,7 @@ class Main < Sinatra::Base
             MATCH (e:WebsiteEvent {id: $id})
             SET e.date_end = $date_end;
         END_OF_QUERY
+        trigger_update('all/wait')
         respond(:result => 'yay')
     end
     
@@ -83,6 +118,7 @@ class Main < Sinatra::Base
             MATCH (e:WebsiteEvent {id: $id})
             SET e.title = $title;
         END_OF_QUERY
+        trigger_update('all/wait')
         respond(:result => 'yay')
     end
 

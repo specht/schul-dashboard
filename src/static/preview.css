@@ -6988,3 +6988,82 @@ body.ui-preview:has(.container-fluid.solid)::before {
 .pv-create-pop .pv-create-go {
     font-weight: 600;
 }
+
+/* the school's dates in the all-day row (timetable.html, preview_show_school_date) */
+.ui-preview #calendar .fc-daygrid-body .fc-highlight {
+    background: var(--acc-soft);
+}
+
+.pv-school-pop {
+    width: 22rem;
+    max-width: calc(100vw - 16px);
+}
+
+.pv-school-pop .pv-create-head {
+    margin-bottom: 8px;
+}
+
+.pv-school-label {
+    display: block;
+    margin: 0 0 3px;
+    font-size: 0.85rem;
+    color: var(--pv-muted);
+}
+
+.pv-school-days {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* date fields shrink with the popover (their own width is wider) */
+.pv-school-days .form-control {
+    min-width: 0;
+    width: 100%;
+    padding-left: 8px;
+    padding-right: 6px;
+}
+
+.pv-school-hint {
+    margin-top: 8px;
+    font-size: 0.82rem;
+    color: var(--pv-muted);
+}
+
+.pv-school-error {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #b42318;
+}
+
+.pv-school-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* deleting: quiet red text at the start, red in full only in the confirmation */
+.pv-school-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: auto;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #b42318;
+    font-weight: 600;
+}
+
+.pv-school-delete:hover {
+    background: var(--pv-hover);
+}
+
+.ui-preview.dark .pv-school-delete,
+.ui-preview.dark .pv-school-error {
+    color: #ff8f8f;
+}

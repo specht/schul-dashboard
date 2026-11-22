@@ -1154,23 +1154,28 @@ function preview_show_create(start, end) {
         .on('click', function() { preview_create_draft(start, end); });
     pop.append(go);
     $('body').append(pop);
-    // beside the marked time, inside the window
-    let place = function() {
+    // Enter creates it
+    preview_place_pop(pop, function() {
         let mirror = document.querySelector('#calendar .fc-event-mirror');
-        let r = mirror ? mirror.getBoundingClientRect() : document.getElementById('calendar').getBoundingClientRect();
+        return mirror ? mirror.getBoundingClientRect() : null;
+    }, go[0]);
+}
+// a popover beside `rect()` (the marked time, a clicked entry), inside the
+// window; out of sight until it is placed (once the mark is drawn), so that
+// nothing scrolls to it; then `focus` gets the focus – without scrolling and
+// without a focus ring after a click
+function preview_place_pop(pop, rect, focus) {
+    pop.css({ left: 0, top: (window.scrollY + 8) + 'px', visibility: 'hidden' });
+    requestAnimationFrame(function() {
+        let r = rect() || document.getElementById('calendar').getBoundingClientRect();
         let w = pop.outerWidth(), h = pop.outerHeight(), gap = 8;
         let left = r.right + gap;
         if (left + w > window.innerWidth - 8) left = r.left - gap - w;
         if (left < 8) left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left));
         let top = Math.max(8, Math.min(window.innerHeight - h - 8, r.top));
         pop.css({ left: (left + window.scrollX) + 'px', top: (top + window.scrollY) + 'px', visibility: '' });
-        // Enter creates it; without scrolling and without a focus ring after a click
-        go[0].focus({ preventScroll: true, focusVisible: false });
-    };
-    // placed once the marked time is drawn; until then out of sight, so that
-    // nothing scrolls to it
-    pop.css({ left: 0, top: (window.scrollY + 8) + 'px', visibility: 'hidden' });
-    requestAnimationFrame(place);
+        if (focus) focus.focus({ preventScroll: true, focusVisible: false });
+    });
 }
 // the time under the pointer: a free spot of a day's column, or null
 function preview_time_at(x, y) {
@@ -1197,6 +1202,96 @@ function preview_create_now() {
         select();
     }
 }
+// New design: the school's dates (WebsiteEvent, the website's calendar) right
+// in the all-day row, for those who manage them: a click on one edits it, a
+// click on a free day – or dragging over days – adds one. Untis's notes of
+// the day stay as they are (they are changed in Untis).
+const PV_CAN_MANAGE_SCHOOL_DATES = #{(user_who_can_manage_news_logged_in? && !tablet_logged_in?) ? 'true' : 'false'};
+function preview_school_dates_wanted() {
+    return PV_CAN_MANAGE_SCHOOL_DATES && document.body.classList.contains('ui-preview') && !document.body.classList.contains('pv-agenda-on');
+}
+function preview_post(url, payload) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+}
+// opts: {id, title, start, end (exclusive, as FullCalendar), event, rect}
+function preview_show_school_date(opts) {
+    preview_close_create(false);
+    let fmt = function(d) { return moment(d).format('YYYY-MM-DD'); };
+    let last = moment(opts.end).subtract(1, 'days');
+    let pop = $('<div class="pv-create-pop pv-school-pop" role="dialog">').attr('aria-label', opts.id ? 'Termin der Schule' : 'Neuer Termin der Schule');
+    let head = $('<div class="pv-create-head">');
+    head.append($('<div class="pv-create-title">').text(opts.id ? 'Termin der Schule' : 'Neuer Termin der Schule'));
+    head.append($('<button type="button" class="pv-create-close" aria-label="Schließen">').append($('<i class="ti ti-x">'))
+        .on('click', function() { preview_close_create(); }));
+    pop.append(head);
+    let title = $('<input type="text" class="form-control" id="ti_school_date_title" maxlength="300" placeholder="Titel, z. B. 16.30 Uhr Fachkonferenz">');
+    // the title as it shows (it may contain markup from the list of dates)
+    title.val($('<div>').html(opts.title || '').text());
+    let from = $('<input type="date" class="form-control" id="ti_school_date_from">').val(fmt(opts.start));
+    let to = $('<input type="date" class="form-control" id="ti_school_date_to">').val(fmt(last));
+    pop.append($('<label class="pv-school-label" for="ti_school_date_title">').text('Titel'), title);
+    pop.append($('<div class="pv-school-days">').append(
+        $('<div>').append($('<label class="pv-school-label" for="ti_school_date_from">').text('Von'), from),
+        $('<div>').append($('<label class="pv-school-label" for="ti_school_date_to">').text('Bis'), to)));
+    pop.append($('<div class="pv-school-hint">').text('Steht gleich im Stundenplan aller. Auf die Website kommt es mit »Live-Seite aktualisieren« unter Website-Termine.'));
+    let error = $('<div class="pv-school-error" role="alert">').attr('hidden', true);
+    pop.append(error);
+    let foot = $('<div class="pv-school-foot">');
+    let save = $('<button type="button" class="btn btn-primary pv-create-go">').text(opts.id ? 'Speichern' : 'Eintragen');
+    if (opts.id) {
+        let remove = $('<button type="button" class="pv-school-delete">').append($('<i class="ti ti-trash">'), $('<span>').text('Löschen'));
+        remove.on('click', function() {
+            dashboardConfirm(`Den Termin »${title.val().trim() || 'ohne Titel'}« löschen? Er verschwindet aus dem Stundenplan aller und beim nächsten Aktualisieren von der Website.`, function() {
+                preview_post('/api/delete_website_event', { id: opts.id }).then(function() {
+                    if (opts.event) opts.event.remove();
+                    preview_close_create();
+                }).catch(function(err) { error.text(`Das hat nicht geklappt (${err.message}).`).attr('hidden', false); });
+            }, { title: 'Termin löschen', confirm: 'Löschen', danger: true });
+        });
+        foot.append(remove);
+    }
+    foot.append(save);
+    pop.append(foot);
+    let check = function() {
+        save.prop('disabled', title.val().trim().length === 0 || !from.val() || (to.val() && to.val() < from.val()));
+    };
+    title.on('input', check); from.on('input change', function() { if (!to.val() || to.val() < from.val()) to.val(from.val()); check(); }); to.on('input change', check);
+    check();
+    let submit = function() {
+        if (save.prop('disabled')) return;
+        let t = title.val().trim(), d0 = from.val(), d1 = to.val() || from.val();
+        save.prop('disabled', true);
+        preview_post('/api/save_website_event', { id: opts.id || undefined, title: t, date: d0, date_end: d1 === d0 ? '' : d1 }).then(function(data) {
+            let end = moment(d1).add(1, 'days').format('YYYY-MM-DD');
+            if (opts.event) {
+                opts.event.setProp('title', t);
+                opts.event.setDates(d0, end, { allDay: true });
+            } else {
+                window.calendar.addEvent({ title: t, start: d0, end: end, allDay: true,
+                    extendedProps: { website_event_id: data.id, event_type: 'website_event', label: t } });
+            }
+            preview_close_create();
+        }).catch(function(err) {
+            error.text(`Das hat nicht geklappt (${err.message}).`).attr('hidden', false);
+            check();
+        });
+    };
+    save.on('click', submit);
+    title.on('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+    $('body').append(pop);
+    preview_place_pop(pop, function() {
+        let mark = document.querySelector('#calendar .fc-daygrid-body .fc-highlight, #calendar .fc-daygrid-body .fc-event-mirror');
+        return opts.rect || (mark ? mark.getBoundingClientRect() : null);
+    }, title[0]);
+}
+// a popover closes with a click beside it (the one for a marked time also
+// through FullCalendar's unselect)
+document.addEventListener('mousedown', function(e) {
+    if (!$('.pv-create-pop').length || !e.target.closest) return;
+    if (e.target.closest('.pv-create-pop, .modal, .fc-event, .fc-timegrid-body, .fc-daygrid-body')) return;
+    preview_close_create();
+});
 document.addEventListener('contextmenu', function(e) {
     if (!window.calendar || !preview_create_wanted()) return;
     if (!e.target.closest || !e.target.closest('#calendar .fc-timegrid-body')) return;
@@ -2251,20 +2346,31 @@ document.addEventListener('DOMContentLoaded', function() {
         slotEventOverlap: false,
         // new design: a Termin by clicking, dragging or right-clicking free
         // time (preview_show_create)
-        selectable: preview_create_wanted(),
+        // and a date of the school in the all-day row (preview_show_school_date)
+        selectable: preview_create_wanted() || preview_school_dates_wanted(),
         selectMirror: true,
         selectMinDistance: 5,
         unselectCancel: '.pv-create-pop',
         selectAllow: function(info) {
-            return !info.allDay && moment(info.start).format('YYYY-MM-DD') === moment(info.end.getTime() - 1).format('YYYY-MM-DD');
+            if (info.allDay) return preview_school_dates_wanted();
+            return preview_create_wanted() && moment(info.start).format('YYYY-MM-DD') === moment(info.end.getTime() - 1).format('YYYY-MM-DD');
         },
         select: function(info) {
-            if (info.allDay || !preview_create_wanted()) { window.calendar.unselect(); return; }
+            if (info.allDay) {
+                if (preview_school_dates_wanted()) preview_show_school_date({ start: info.start, end: info.end });
+                else window.calendar.unselect();
+                return;
+            }
+            if (!preview_create_wanted()) { window.calendar.unselect(); return; }
             preview_show_create(info.start, info.end);
         },
         unselect: function() { preview_close_create(false); },
         dateClick: function(info) {
-            if (info.allDay || !preview_create_wanted()) return;
+            if (info.allDay) {
+                if (preview_school_dates_wanted()) window.calendar.select({ start: info.date, end: moment(info.date).add(1, 'days').toDate(), allDay: true });
+                return;
+            }
+            if (!preview_create_wanted()) return;
             window.calendar.select(info.date, preview_create_hour(info.date));
         },
         slotLabelFormat: {
@@ -2595,6 +2701,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         eventClick: function(info) {
+            // new design: a date of the school, for those who manage them – edit it here
+            if (info.event.allDay && info.event.extendedProps.website_event_id && preview_school_dates_wanted()) {
+                preview_show_school_date({
+                    id: info.event.extendedProps.website_event_id, title: info.event.title,
+                    start: info.event.start, end: info.event.end || moment(info.event.start).add(1, 'days').toDate(),
+                    event: info.event, rect: info.el.getBoundingClientRect(),
+                });
+                return;
+            }
             $('.show-ha-amt-only').hide();
             $('.ha-amt-container').hide();
 

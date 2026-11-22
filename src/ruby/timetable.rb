@@ -1300,7 +1300,9 @@ class Timetable
                         :start => td0,
                         :end => td1,
                         :title => entry[:title],
-                        :label => entry[:title]
+                        :label => entry[:title],
+                        # editable right in the timetable (new design, can_manage_news)
+                        :website_event_id => entry[:id]
                     }
                 end
             end

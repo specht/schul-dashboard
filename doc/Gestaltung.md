@@ -517,6 +517,11 @@ Seite ergänzt nur, was ihr Inhalt braucht.
   ein kleines Popover mit der Zeit und »Termin erstellen…«, das weiter zu
   `/events` führt, Datum und Zeit eingetragen. Ohne diese Gesten ist nichts
   zu sehen; Esc oder ein Klick daneben schließt es.
+- **Termine der Schule im Stundenplan** (wer News verwaltet): ein Klick
+  auf einen Termin der Schule in der Ganztagszeile öffnet ihn zum Ändern
+  (Titel, von, bis, Löschen mit Rückfrage), ein Klick auf eine freie Stelle
+  dort oder Ziehen über Tage legt einen an – im selben Popover wie neue
+  Termine. Notizen des Tages aus Untis bleiben, wie sie sind.
 - **Blöcke im Stundenplan:** der Titel in der Grundgröße, alles darunter
   (Thema, Hausaufgaben samt Überschrift, Kalenderzeile und Beschreibung
   eines Termins) in einer Detailgröße, `--pv-ev-detail` (`preview.css`);

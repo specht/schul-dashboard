@@ -75,15 +75,31 @@ weeks after the teachers were asked.
   (Schueler_Schluessel) for new ones – needs that column in the export.
 - Everything about the review is deleted after the switch (personal data).
 
+## Overrides for Rufname and gender (decided 2026-11-22)
+
+Some students are officially still listed with their old name and gender;
+the dashboard needs its own values that every LUSD import keeps.
+
+- Two fields only: **Rufname** and **Geschlecht** (m/w/d), per student
+  (email), kept in the data repo next to the lists (private repository, not
+  this one), applied after the list is read – everywhere the dashboard shows
+  or uses the name and gender.
+- Set and removed on `/datenpflege` (role `can_manage_data`), with who and
+  when; nobody else sees that a value is an override. A name report from the
+  profile (»Namen melden«) can be taken over as an override in one step.
+- The comparisons know them: a LUSD value that differs from an override is
+  not a change and does not come up again with every upload; the draft
+  comparison shows »Override aktiv« quietly, so it stays visible to us.
+- In the teachers' review a correction of Rufname or gender can be marked
+  »nur im Dashboard« – it becomes a proposed override instead of a LUSD
+  correction.
+- Sensitive: no override values in logs, mails, commit messages of this
+  repository or test data beyond made-up examples.
+
 ## Open points
 
-- **Tutors from LUSD:** does the Abfrageassistent offer the tutor? Then add
-  it to the query (like Schueler_Schluessel). Otherwise a mapping kept in the
-  data repo.
-- **Values LUSD cannot hold** (a preferred first name that differs from the
-  official one): if such corrections come up, they need a small override in
-  the dashboard, or they return with every upload. »Namen melden« in the
-  profile is a start.
+- **Tutors from LUSD:** does the Abfrageassistent offer the tutor? Expected
+  yes; otherwise add the data in LUSD. Checked on 2026-11-23.
 - **After the switch:** mail accounts for new students (Postfach-Bot, run by
   the maintainer only), students who left (logins, mailing lists), name
   changes (the email stays the stable id). Listed on `/datenpflege` after the
@@ -93,12 +109,16 @@ weeks after the teachers were asked.
 
 1. Draft kept, second comparison (draft vs. previous draft). Tests: unit
    (diff of two drafts), E2E (upload, replace, see both comparisons).
-2. Teachers' page with corrections and confirmation, permissions. E2E:
+2. Overrides for Rufname and gender: read with the list, set on
+   `/datenpflege`, known to the comparisons. Tests: unit (applied after
+   reading, comparison ignores them), E2E (set, see it in the class list,
+   upload a draft with the old value: no change).
+3. Teachers' page with corrections and confirmation, permissions. E2E:
    Klassenleitung sees only the own class, corrects, confirms; a student and
    another teacher get nothing.
-3. Status and corrections on `/datenpflege`, automatic »done«, mails and
+4. Status and corrections on `/datenpflege`, automatic »done«, mails and
    reminders. E2E with Mailpit.
-4. After-switch checklist.
+5. After-switch checklist.
 
 Tests with `src/example-data` only; the test stack's class list and a
 made-up export in the test.

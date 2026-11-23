@@ -415,7 +415,7 @@ class Main < Sinatra::Base
                 if teacher_logged_in?
                     io.puts "<a class='btn btn-primary' href='/show_login_codes/#{klasse}'><i class='fa fa-sign-in'></i>&nbsp;&nbsp;Live-Anmeldungen der Klasse zeigen</a>"
                     io.puts "<a class='btn btn-warning' href='/klassenmail/#{klasse}'><i class='fa fa-send'></i>&nbsp;&nbsp;Mail an Eltern schicken</a>" if klassenleitung_of?(klasse)
-                    io.puts "<a class='btn btn-warning' href='/email_overview/#{klasse}'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;E-Mails aus dem Unterricht</a>"
+                    io.puts "<a class='btn btn-warning' href='/email_overview/#{klasse}'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;Bisherige E-Mails aus dem Unterricht</a>"
                     io.puts "<button class='btn btn-primary bu-email-letters'>Alle E-Mail-Briefe (Zugangsdaten)</button>"
                 end
             end
@@ -616,7 +616,7 @@ class Main < Sinatra::Base
                 tools << {:label => 'Live-Anmeldungen der Klasse', :href => "/show_login_codes/#{klasse}", :icon => 'login'}
                 # class teachers: mails to the parents without a lesson
                 tools << {:label => 'Mail an Eltern schicken', :href => "/klassenmail/#{klasse}", :icon => 'send'} if klassenleitung_of?(klasse)
-                tools << {:label => 'E-Mails aus dem Unterricht', :href => "/email_overview/#{klasse}", :icon => 'mail'}
+                tools << {:label => 'Bisherige E-Mails aus dem Unterricht', :href => "/email_overview/#{klasse}", :icon => 'mail'}
             end
             downloads << {:label => 'Excel-Tabelle', :href => "/api/directory_xlsx/#{klasse}", :icon => 'file-spreadsheet'}
             downloads << {:label => 'Kursbuch-PDF', :href => "/api/directory_kursbuch_pdf/by_last_name/#{klasse}", :icon => 'file-type-pdf'}

@@ -142,7 +142,7 @@ test('Neues Design: Klassenliste der eigenen Klasse', async ({ page }, testInfo)
     const tools = page.locator('.pv-dir-tools-sec');
     await expect(tools.locator('.pv-dir-link', { hasText: 'Gruppen bilden' })).toHaveAttribute('href', '/zufallsgruppen/5a');
     await expect(tools.locator('.pv-dir-link', { hasText: 'Live-Anmeldungen der Klasse' })).toHaveAttribute('href', '/show_login_codes/5a');
-    await expect(tools.locator('.pv-dir-link', { hasText: 'E-Mails aus dem Unterricht' })).toHaveAttribute('href', '/email_overview/5a');
+    await expect(tools.locator('.pv-dir-link', { hasText: 'Bisherige E-Mails aus dem Unterricht' })).toHaveAttribute('href', '/email_overview/5a');
     // the Sitzplan from today's page script, as a link here
     await expect(tools.locator('.pv-dir-link', { hasText: /^Sitzplan Raum / })).not.toHaveCount(0);
     await expect(page.locator('#additional_teacher_content')).toBeHidden();

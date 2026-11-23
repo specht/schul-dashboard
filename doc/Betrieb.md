@@ -289,8 +289,16 @@ Lehrkraft.
   Antworten. Otium-Mails schickt die Otium-Aufsicht für die Stunde, aus der
   das Kind ins Otium kam; der Text nennt die Lehrkraft der Stunde, die eine
   Kopie bekommt (ebenso die Klassenleitung).
-- Lehrkräfte sehen im Mail-Dialog eine Vorschau der Mail für jedes Kind der
-  Stunde, bevor sie sie senden.
+- Im Mail-Dialog markieren Lehrkräfte die Kinder und senden mit einem Knopf
+  an alle markierten. Sie schreiben entweder **eine Notiz für alle**
+  (voreingestellt) oder **einen Kommentar je Kind**; beides steht in der Mail
+  an der Stelle `{Notiz}`. Mit Kommentaren lässt sich unter jedem Kind die
+  fertige Mail aufklappen und für dieses eine Kind ändern; der geänderte Text
+  geht dann genau so raus. Unter jeder vorgemerkten oder gesendeten Mail
+  zeigt »Mail ansehen« die ganze Mail.
+- **Klassenleitungen** schreiben den Eltern ihrer Klasse auch ohne Stunde:
+  Lerngruppen → Klasse → »Mail an Eltern schicken« (`/klassenmail/<klasse>`),
+  derselbe Dialog; in der Mail steht als Fach »Klassenleitung«.
 - Alle Gründe liegen als `LessonMailTemplate`-Knoten in der Datenbank, mit
   Text und Regeln: Name, Farbe, Zustand, wer die Mail schickt (Lehrkraft der
   Stunde oder Otium-Aufsicht), ob die Klassenleitung eine Kopie bekommt, und
@@ -306,7 +314,9 @@ Lehrkraft.
   (Name, Farbe, Betreff, Text). Jede beginnt im Zustand **Test**: Nur Admins
   sehen sie im Mail-Dialog, und die Mail geht nur an die Person, die sie
   schickt – mit »[TEST]« im Betreff und einem Hinweis, an wen sie sonst
-  gegangen wäre. Ob eine Mail ein Test ist, wird beim Absenden festgehalten.
+  gegangen wäre. Der Mail-Dialog nennt die Adresse, an die sie geht. Test-Mails
+  gehen sofort raus, ohne die 10 Minuten Wartezeit (der `mail_bot` wird
+  gleich angestoßen). Ob eine Mail ein Test ist, wird beim Absenden festgehalten.
   Im Zustand **Aktiv** sehen alle Lehrkräfte die Vorlage, und die Mails gehen
   wie gewohnt an die Eltern. **Ausgeblendet** nimmt sie aus dem Mail-Dialog;
   Name und Farbe bleiben für schon verschickte Mails erhalten. Löschen lassen

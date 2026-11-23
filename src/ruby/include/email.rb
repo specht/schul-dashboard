@@ -30,7 +30,8 @@ class Main < Sinatra::Base
         # no student address, reason or details in the log
         debug "Mail about a lesson: #{data[:lesson_key]}/#{data[:lesson_offset]}#{test ? ' (test)' : ''}"
         t = DateTime.parse(DateTime.now.strftime("%Y-%m-%dT%H:%M:00%z")).to_time
-        unless DEVELOPMENT
+        # a test mail goes to the sender alone: no need to wait
+        unless DEVELOPMENT || test
             while t.min % 10 != 0
                 t += 60
             end
@@ -39,6 +40,8 @@ class Main < Sinatra::Base
         ts = t.strftime("%Y-%m-%dT%H:%M:%S")
         ts_h = t.strftime("%H:%M")
         ts_i = t.to_i
+        # sent on the mail bot's next run (it sends mails older than now)
+        ts_i = Time.now.to_i - 1 if test
         tag = RandomTag.generate(24)
         datum = Date.today.strftime('%Y-%m-%d')
         neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i, :test => test, :comment => comment.empty? ? nil : comment, :text => text.empty? ? nil : text})
@@ -63,6 +66,20 @@ class Main < Sinatra::Base
             :ts_sent => nil,
             :ts_sent_h => nil,
         }
+        # a test mail right away: the mail bot runs otherwise once a minute
+        # (src/scripts/send-pending-emails.rb, by cron)
+        if test
+            Thread.new do
+                begin
+                    http = Net::HTTP.new('mail_bot', 8080)
+                    http.open_timeout = 2
+                    http.read_timeout = 5
+                    http.request(Net::HTTP::Get.new('/api/send_pending_mails'))
+                rescue StandardError => e
+                    debug "Mail bot not reached for a test mail: #{e.class}"
+                end
+            end
+        end
         respond(:entry => entry)
     end
 

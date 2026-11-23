@@ -409,7 +409,9 @@ test('Mails aus dem Unterricht: Testvorlage im Mail-Dialog', async ({ page }, te
   await modal.locator('#div_email_sus_table .ti-mail-pick').first().check();
   await modal.locator('#bu_send_lesson_mails').click();
   const pending = modal.locator('#div_email_sus_table tr', { hasText: `»${name}«` });
-  await expect(pending).toContainText('Test, nur an dich');
+  await expect(pending).toContainText(`Test, nur an ${ACCOUNTS.admin}`);
+  // test mails go out right away (the mail bot is not part of the test stack)
+  await expect(notice).toContainText(ACCOUNTS.admin);
   await pending.getByRole('button', { name: 'Abbrechen' }).click();
   await expect(pending).toHaveCount(0);
   await modal.locator('#ti_mail_reason').selectOption('praise');

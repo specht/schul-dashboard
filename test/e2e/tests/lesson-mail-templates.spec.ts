@@ -190,10 +190,11 @@ test('Mails aus dem Unterricht: Lehrkraft sieht die Mail vor dem Senden', async 
   }
 });
 
-// Several students at once: the teacher picks them, adds a comment of its own
-// for each (in addition to the common note) and sends with one button.
-// Sending queues the mails (the mail bot sends them 10 minutes later, it is
-// not part of the test stack); until then the teacher can cancel each.
+// Several students at once: the teacher picks them and sends with one
+// button – either with one note for all (the default, as before) or with a
+// comment for each student, never both. Sending queues the mails (the mail
+// bot sends them 10 minutes later, it is not part of the test stack); until
+// then the teacher can cancel each.
 test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigenen Kommentar', async ({ page, newUserPage }, testInfo) => {
   // desktop and mobile run at the same time: each with a reason of its own
   const [reason, label] = testInfo.project.name === 'mobile' ? ['late', 'Verspätung'] : ['praise', 'Besonderes Lob'];
@@ -207,25 +208,34 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   await expect(send).toBeDisabled();
   await expect(picks.first()).toBeDisabled();
   await modal.locator('#ti_mail_reason').selectOption(reason);
-  await modal.locator('#ti_mail_details').fill('Sitzplan');
   await expect(send).toBeDisabled();
 
   const rows = table.locator('tr', { has: page.locator('.ti-mail-pick') });
   const firstName = (row: number) => rows.nth(row).locator('.mail-sus-pick span').textContent().then((t) => t!.split(', ')[1]);
   const first = await firstName(0);
   const second = await firstName(1);
-  // a picked student gets a comment field of their own
-  await expect(rows.nth(0).locator('.ti-mail-comment')).toBeHidden();
-  await picks.nth(0).check();
-  await rows.nth(0).locator('.ti-mail-comment').fill('hat sich umgesetzt');
-  await picks.nth(1).check();
-  await expect(send).toHaveText('An 2 Eltern senden');
-  // the preview shows the student's own comment next to the note
+  const preview = modal.getByTestId('mail-preview');
   const section = modal.locator('#mail_preview_section');
   if (!(await section.evaluate((d) => (d as HTMLDetailsElement).open))) await section.locator('summary').click();
+
+  // one note for all: no comment fields
+  await expect(modal.locator('#ti_mail_note_mode_common')).toBeChecked();
+  await modal.locator('#ti_mail_details').fill('Sitzplan');
+  await picks.nth(0).check();
+  await picks.nth(1).check();
+  await expect(send).toHaveText('An 2 Eltern senden');
+  await expect(rows.nth(0).locator('.ti-mail-comment')).toBeHidden();
   await modal.locator('#ti_mail_preview_sus').selectOption({ index: 0 });
+  await expect(preview).toContainText('(Sitzplan)');
+
+  // a comment for each: the note goes away, the picked students get a field
+  await modal.locator('#ti_mail_note_mode_individual').check();
+  await expect(modal.locator('#ti_mail_details')).toBeHidden();
+  await expect(rows.nth(0).locator('.ti-mail-comment')).toBeVisible();
+  await expect(rows.nth(2).locator('.ti-mail-comment')).toBeHidden();
   await rows.nth(0).locator('.ti-mail-comment').fill('hat sich umgesetzt');
-  await expect(modal.getByTestId('mail-preview')).toContainText('(Sitzplan; hat sich umgesetzt)');
+  await expect(preview).toContainText('(hat sich umgesetzt)');
+  await expect(preview).not.toContainText('Sitzplan');
 
   await send.click();
   const pendingFirst = table.locator('tr', { hasText: `»${label}« (${first})` });
@@ -238,7 +248,7 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   const queued = pendingFirst.getByTestId('queued-mail');
   await expect(queued).toBeHidden();
   await pendingFirst.getByText('Mail ansehen').click();
-  await expect(queued).toContainText('(Sitzplan; hat sich umgesetzt)');
+  await expect(queued).toContainText('(hat sich umgesetzt)');
   await expect(queued).toContainText(first);
   // only for the person who sent it
   const tag = await page.evaluate((name) => Object.values((window as any).pending_mail_data).flat()

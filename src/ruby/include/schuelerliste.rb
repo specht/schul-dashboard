@@ -235,7 +235,23 @@ class Main < Sinatra::Base
     end
 
     def schuelerliste_check_valid?(check, entry)
-        check && entry && check[:seen] == schuelerliste_values(entry).to_json
+        return false unless check && entry
+        now = schuelerliste_values(entry)
+        check[:seen] == now.to_json || schuelerliste_correction_taken?(check, now)
+    end
+
+    # a new export in which LUSD took over a correction exactly: what was
+    # asked for has the proposed value, nothing else changed (a field kept
+    # in the dashboard alone stays as LUSD had it) – that is no reason to
+    # ask again
+    def schuelerliste_correction_taken?(check, now)
+        return false unless check[:status] == 'correction' && !check[:gone]
+        fields = check[:fields] || {}
+        lusd = fields.keys - (check[:dashboard_only] || [])
+        return false if lusd.empty?
+        seen = (JSON.parse(check[:seen].to_s) rescue nil)
+        return false unless seen.is_a?(Hash) && seen.keys.sort == now.keys.sort
+        now.all? { |k, v| lusd.include?(k) ? v.to_s == fields[k].to_s : v == seen[k] }
     end
 
     # klasse => keys of the students and the leaving ones (what may be checked)
@@ -303,7 +319,7 @@ class Main < Sinatra::Base
                 MERGE (c:StudentCheck {review: $review, student: $student})
                 SET c.status = $status, c.fields = $fields, c.text = $text, c.gone = $gone,
                     c.gone_since = $gone_since, c.dashboard_only = $dashboard_only, c.by = $by, c.at = $at,
-                    c.seen = $seen, c.done = false;
+                    c.seen = $seen, c.done = false, c.wontfix = null;
             END_OF_QUERY
         end
         # a change reopens a confirmed list (in 11/12 every LK list of the student)
@@ -534,15 +550,22 @@ class Main < Sinatra::Base
         end
     end
 
+    # the Datenpflege's to-do list: a correction done in LUSD, or one that
+    # can't be done (with the reason, which the teacher sees), or open again
     post '/api/schuelerliste/done' do
         require_data_manager!
-        data = parse_request_data(:required_keys => [:review, :done], :optional_keys => [:student, :missing],
-                                  :types => { :done => Object }, :max_value_lengths => { :review => 64, :student => 200, :missing => 64 })
+        data = parse_request_data(:required_keys => [:review, :done], :optional_keys => [:student, :missing, :reason],
+                                  :types => { :done => Object },
+                                  :max_value_lengths => { :review => 64, :student => 200, :missing => 64, :reason => 300 })
         assert([true, false].include?(data[:done]))
+        reason = data[:done] ? data[:reason].to_s.strip : ''
+        values = { :review => data[:review], :done => data[:done], :wontfix => reason.empty? ? nil : reason,
+                   :by => @session_user[:email], :at => Time.now.to_i }
+        set = 'SET n.done = $done, n.wontfix = $wontfix, n.done_by = $by, n.done_at = $at'
         if data[:missing]
-            neo4j_query("MATCH (m:StudentMissing {review: $review, id: $id}) SET m.done = $done;", :review => data[:review], :id => data[:missing], :done => data[:done])
+            neo4j_query("MATCH (n:StudentMissing {review: $review, id: $id}) #{set};", values.merge(:id => data[:missing]))
         else
-            neo4j_query("MATCH (c:StudentCheck {review: $review, student: $student}) SET c.done = $done;", :review => data[:review], :student => data[:student].to_s, :done => data[:done])
+            neo4j_query("MATCH (n:StudentCheck {review: $review, student: $student}) #{set};", values.merge(:student => data[:student].to_s))
         end
         respond(:ok => true)
     end
@@ -584,6 +607,60 @@ class Main < Sinatra::Base
 
     # a mail to the Klassenleitungen of the classes not confirmed yet (one per
     # person, with all their classes)
+    # who gets a mail: the teachers of the lists not confirmed yet (list =>
+    # teachers), and the lists without one
+    def schuelerliste_notify_plan(view)
+        open = schuelerliste_overview(view).reject { |_, o| o[:confirmed] }.keys
+        by_teacher = Hash.new { |h, k| h[k] = [] }
+        open.each { |klasse| schuelerliste_teachers(klasse).each { |email| by_teacher[email] << klasse } }
+        { :open => open, :by_teacher => by_teacher, :without => open.count { |k| schuelerliste_teachers(k).empty? } }
+    end
+
+    # [subject, text] of the mail to one teacher
+    def schuelerliste_notify_mail(email, klassen, deadline)
+        teacher = @@user_info[email] || {}
+        sender = @session_user[:display_name] || @session_user[:email]
+        links = klassen.map { |k| "#{schuelerliste_label(k)}: #{WEB_ROOT}/schuelerliste?klasse=#{CGI.escape(k)}" }
+        lks = klassen.count { |k| schuelerliste_lk?(k) }
+        classes = klassen.size - lks
+        what = [classes > 0 ? (classes == 1 ? 'deine Klasse' : 'deine Klassen') : nil,
+                lks > 0 ? (lks == 1 ? 'deinen Leistungskurs' : 'deine Leistungskurse') : nil].compact.join(' und ')
+        lk_note = lks > 0 ? "\n#{SCHUELERLISTE_LK_NOTE}\n" : ''
+        body = <<~END_OF_TEXT
+            Hallo #{teacher[:first_name] || teacher[:display_name]},
+
+            wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer neu dazukommt und wer geht.
+            #{lk_note}
+            #{links.join("\n")}
+
+            Nachname und Vornamen (alle, wie im Ausweis) stehen auf Zeugnissen und anderen amtlichen Dokumenten; mit dem Rufnamen erscheint die Schülerin oder der Schüler im Dashboard, auf Sitzplänen, in der Nextcloud und überall sonst im Schulalltag.
+
+            Für jede Schülerin und jeden Schüler genügt »Stimmt« oder eine kurze Korrektur, zum Schluss »Liste bestätigen«.#{deadline ? " Bitte bis #{deadline.strftime('%d.%m.%Y')}." : ''}
+
+            Viele Grüße
+            #{sender}
+        END_OF_TEXT
+        subject = classes > 0 && lks == 0 ? 'Bitte prüf die neue Schülerliste deiner Klasse' :
+                  (classes == 0 ? 'Bitte prüf die neue Schülerliste deiner Leistungskurse' : 'Bitte prüf die neue Schülerliste deiner Klasse und Leistungskurse')
+        [subject, body]
+    end
+
+    # the mails as they would go out, to look at before sending
+    post '/api/schuelerliste/notify_preview' do
+        require_data_manager!
+        data = parse_request_data(:optional_keys => [:deadline], :max_value_lengths => { :deadline => 10 })
+        deadline = datenpflege_valid_date(data[:deadline].to_s)
+        view = schuelerliste_view
+        assert(view && !view[:errors], 'no draft')
+        plan = schuelerliste_notify_plan(view)
+        mails = plan[:by_teacher].sort_by { |email, _| schuelerliste_teacher_name(email) }.map do |email, klassen|
+            subject, body = schuelerliste_notify_mail(email, klassen, deadline)
+            { :name => schuelerliste_teacher_name(email), :lists => klassen.map { |k| schuelerliste_short(k) }.join(', '),
+              :subject => subject, :body => body }
+        end
+        respond(:ok => true, :mails => mails, :without => plan[:without])
+    end
+
     post '/api/schuelerliste/notify' do
         require_data_manager!
         data = parse_request_data(:optional_keys => [:deadline], :max_value_lengths => { :deadline => 10 })
@@ -594,35 +671,10 @@ class Main < Sinatra::Base
         # shows in their »Zu erledigen«
         schuelerliste_set_released(true)
         datenpflege_save_draft(datenpflege_draft.merge('deadline' => deadline.strftime('%Y-%m-%d'))) if deadline
-        overview = schuelerliste_overview(view)
-        open = overview.reject { |_, o| o[:confirmed] }.keys
-        by_teacher = Hash.new { |h, k| h[k] = [] }
-        open.each { |klasse| schuelerliste_teachers(klasse).each { |email| by_teacher[email] << klasse } }
-        sender = @session_user[:display_name] || @session_user[:email]
-        by_teacher.each_pair do |email, klassen|
-            teacher = @@user_info[email] || {}
-            links = klassen.map { |k| "#{schuelerliste_label(k)}: #{WEB_ROOT}/schuelerliste?klasse=#{CGI.escape(k)}" }
-            lks = klassen.count { |k| schuelerliste_lk?(k) }
-            classes = klassen.size - lks
-            what = [classes > 0 ? (classes == 1 ? 'deine Klasse' : 'deine Klassen') : nil,
-                    lks > 0 ? (lks == 1 ? 'deinen Leistungskurs' : 'deine Leistungskurse') : nil].compact.join(' und ')
-            lk_note = lks > 0 ? "\n#{SCHUELERLISTE_LK_NOTE}\n" : ''
-            body = <<~END_OF_TEXT
-                Hallo #{teacher[:first_name] || teacher[:display_name]},
-
-                wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer neu dazukommt und wer geht.
-                #{lk_note}
-                #{links.join("
-")}
-
-                Für jede Schülerin und jeden Schüler genügt »Stimmt« oder eine kurze Korrektur, zum Schluss »Liste bestätigen«.#{deadline ? " Bitte bis #{deadline.strftime('%d.%m.%Y')}." : ''}
-
-                Viele Grüße
-                #{sender}
-            END_OF_TEXT
-            subject_text = classes > 0 && lks == 0 ? 'Bitte prüf die neue Schülerliste deiner Klasse' :
-                           (classes == 0 ? 'Bitte prüf die neue Schülerliste deiner Leistungskurse' : 'Bitte prüf die neue Schülerliste deiner Klasse und Leistungskurse')
-            reply = @session_user[:email]
+        plan = schuelerliste_notify_plan(view)
+        reply = @session_user[:email]
+        plan[:by_teacher].each_pair do |email, klassen|
+            subject_text, body = schuelerliste_notify_mail(email, klassen, deadline)
             deliver_mail(body) do
                 to email
                 from SMTP_FROM
@@ -630,14 +682,14 @@ class Main < Sinatra::Base
                 subject subject_text
             end
         end
-        open.each do |klasse|
+        plan[:open].each do |klasse|
             next if schuelerliste_teachers(klasse).empty?
             neo4j_query(<<~END_OF_QUERY, :review => schuelerliste_review_key(klasse), :at => Time.now.to_i)
                 MERGE (n:StudentReviewNotice {review: $review})
                 SET n.at = $at, n.count = coalesce(n.count, 0) + 1;
             END_OF_QUERY
         end
-        respond(:ok => true, :sent => by_teacher.size, :without => open.count { |k| schuelerliste_teachers(k).empty? })
+        respond(:ok => true, :sent => plan[:by_teacher].size, :without => plan[:without])
     end
 
     def print_schuelerliste_overview
@@ -694,8 +746,10 @@ class Main < Sinatra::Base
                 entry = entries[c[:student]]
                 arrived = schuelerliste_arrived?(view, klasse, c)
                 rows << { :klasse => klasse, :review => c[:review], :student => c[:student], :name => entry ? entry[:name] : c[:student],
-                          :what => schuelerliste_correction_text(c), :by => c[:by], :at => c[:at],
-                          :arrived => arrived, :done => c[:done] == true,
+                          :official => entry && entry[:last_name] ? [entry[:official_first_name], entry[:last_name]].compact.join(' ') : nil,
+                          :geburtstag => entry && entry[:geburtstag],
+                          :what => schuelerliste_correction_todo_text(c, entry), :by => c[:by], :at => c[:at],
+                          :arrived => arrived, :done => c[:done] == true, :wontfix => c[:wontfix],
                           :override => (c[:dashboard_only] || []).any? && c[:student].to_s.include?('@') && !arrived ? c : nil,
                           # gone: at once in the dashboard, without waiting for LUSD
                           :gone_email => c[:gone] && !arrived && !c[:done] && @@user_info[c[:student]] ? c[:student] : nil,
@@ -704,16 +758,17 @@ class Main < Sinatra::Base
             state[:missing].each do |m|
                 rows << { :klasse => klasse, :review => m[:review], :missing => m[:id], :name => m[:name], :note => m[:note],
                           :what => "fehlt#{m[:note].to_s.empty? ? '' : ": #{sl_h(m[:note])}"}", :by => m[:by], :at => m[:at],
-                          :arrived => schuelerliste_missing_arrived?(view, klasse, m), :done => m[:done] == true }
+                          :arrived => schuelerliste_missing_arrived?(view, klasse, m), :done => m[:done] == true, :wontfix => m[:wontfix] }
             end
         end
         return if rows.empty?
         open = rows.count { |r| !r[:arrived] && !r[:done] }
         io.puts "<h6 class='dp-corrections-title'>Korrekturen: #{open} offen von #{rows.size}</h6>"
+        io.puts "<p class='text-muted dp-hint'>Die Liste zum Abarbeiten in der LUSD: »Erledigt«, wenn es dort korrigiert ist, »Geht nicht…« mit dem Grund, wenn nicht – die Lehrkraft sieht beides auf ihrer Liste. Was mit dem nächsten Export ankommt, ist von selbst abgehakt.</p>"
         io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-corrections'><thead><tr><th>Klasse</th><th>Schüler:in</th><th>Korrektur</th><th>Von</th><th>Stand</th><th></th></tr></thead><tbody>"
         rows.sort_by { |r| [(r[:arrived] || r[:done]) ? 1 : 0, LusdImport.klasse_sort_key(r[:klasse].to_s), r[:name].to_s] }.each do |r|
             by = (@@user_info[r[:by]] || {})[:display_last_name] || r[:by]
-            state = r[:arrived] ? 'angekommen' : (r[:done] ? 'erledigt' : 'offen')
+            state = r[:arrived] ? 'angekommen' : (r[:done] ? (r[:wontfix] ? 'geht nicht' : 'erledigt') : 'offen')
             attrs = "data-review='#{sl_h(r[:review])}' #{r[:missing] ? "data-missing='#{sl_h(r[:missing])}'" : "data-student='#{sl_h(r[:student])}'"}"
             actions = []
             if r[:gone_email]
@@ -727,12 +782,49 @@ class Main < Sinatra::Base
                 actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_override' data-email='#{sl_h(r[:student])}' data-rufname='#{sl_h(f['rufname'])}' data-geschlecht='#{sl_h(f['geschlecht'])}'>Im Dashboard festlegen</button>"
             end
             unless r[:arrived]
-                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='#{r[:done] ? 'false' : 'true'}'>#{r[:done] ? 'Wieder offen' : 'Erledigt'}</button>"
+                if r[:done]
+                    actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='false'>Wieder offen</button>"
+                else
+                    actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='true'>Erledigt</button>"
+                    actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_wontfix' #{attrs} data-name='#{sl_h(r[:name])}'>Geht nicht…</button>"
+                end
             end
-            io.puts "<tr class='dp-correction dp-correction-#{state}'><td>#{sl_h(schuelerliste_short(r[:klasse]))}</td><td>#{sl_h(r[:name])}</td><td style='white-space: normal;'>#{r[:what]}</td>"
-            io.puts "<td>#{sl_h(by)}</td><td>#{state}</td><td class='dp-row-actions'>#{actions.join(' ')}</td></tr>"
+            who = sl_h(r[:name])
+            who += "<div class='dp-who-official'>#{sl_h(r[:official])}#{r[:geburtstag] ? ", geb. #{sl_h(sl_date(r[:geburtstag]))}" : ''}</div>" if r[:official]
+            stand = sl_h(state)
+            stand += "<div class='dp-wontfix'>#{sl_h(r[:wontfix])}</div>" if r[:wontfix] && !r[:arrived]
+            io.puts "<tr class='dp-correction dp-correction-#{state.tr(' ', '-')}'><td>#{sl_h(schuelerliste_short(r[:klasse]))}</td><td>#{who}</td><td style='white-space: normal;'>#{r[:what]}</td>"
+            io.puts "<td>#{sl_h(by)}</td><td style='white-space: normal;'>#{stand}</td><td class='dp-row-actions'>#{actions.join(' ')}</td></tr>"
         end
         io.puts "</tbody></table></div>"
+    end
+
+    def schuelerliste_done_html(item)
+        if item[:wontfix]
+            "<span class='sl-wontfix'>Datenpflege: geht nicht – #{sl_h(item[:wontfix])}</span>"
+        else
+            "<span class='sl-done-lusd'>Datenpflege: in der LUSD korrigiert</span>"
+        end
+    end
+
+    # a correction for the to-do list: each field as it is now and as it
+    # should be (marked like a diff), »nur im Dashboard« apart
+    def schuelerliste_correction_todo_text(check, entry)
+        now = entry ? schuelerliste_values(entry) : {}
+        show = ->(k, v) { k == 'geschlecht' ? (SCHUELERLISTE_GENDER_LABELS[v] || v.to_s) : (k == 'geburtstag' ? sl_date(v) : (k == 'bildungsgang' ? Main.tr_bildungsgang(v).to_s : v.to_s)) }
+        parts = check[:fields].map do |k, v|
+            label = "<span class='dp-what'>#{SCHUELERLISTE_FIELD_LABELS[k]}</span>"
+            if (check[:dashboard_only] || []).include?(k)
+                "#{label} #{sl_h(show.(k, v))} (nur im Dashboard)"
+            elsif now.include?(k)
+                "#{label} #{datenpflege_word_diff(show.(k, now[k]), show.(k, v))}"
+            else
+                "#{label} #{sl_h(show.(k, v))}"
+            end
+        end
+        parts << "nicht mehr an der Schule#{check[:gone_since] ? " seit #{sl_date(check[:gone_since])}" : ''}" if check[:gone]
+        parts << "<span class='dp-what'>Anmerkung</span> #{sl_h(check[:text])}" unless check[:text].to_s.empty?
+        parts.join('<br>')
     end
 
     def schuelerliste_correction_text(check)
@@ -804,6 +896,7 @@ class Main < Sinatra::Base
             tutors = lk ? schuelerliste_tutors : {}
             marker = schuelerliste_tutor_marker?(klasse)
             with_tutor = lk ? v[:students].count { |e| !tutors[e[:key]].empty? } : 0
+            io.puts "<p class='sl-intro sl-names-note'><strong>Nachname</strong> und <strong>Vornamen</strong> (alle, wie im Ausweis) stehen auf Zeugnissen und anderen amtlichen Dokumenten. Mit dem <strong>Rufnamen</strong> erscheint die Schülerin oder der Schüler im Dashboard, auf Sitzplänen, in der Nextcloud und überall sonst im Schulalltag.</p>"
             io.puts "<p class='sl-progress'><strong>#{done}</strong> von <strong>#{keys.size}</strong> geprüft#{lk ? ", <strong class='sl-tutor-count'>#{with_tutor}</strong> mit Tutor:in" : ''}</p>"
             io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert <span class='sl-fix'>neuer Wert</span> Korrektur</p>"
             io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
@@ -832,7 +925,9 @@ class Main < Sinatra::Base
                 io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
                 io.puts "<td class='sl-tutor'>#{schuelerliste_tutor_html(tutors[s[:key]], marker && s[:key].include?('@'))}</td>" if lk
                 io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]))}</td></tr>"
-                io.puts schuelerliste_note_rows(state[:checks][s[:key]], valid.(s[:key]), row_class, lk ? SCHUELERLISTE_COLUMNS[0..-2] + [nil, nil] : SCHUELERLISTE_COLUMNS)
+                check = state[:checks][s[:key]]
+                taken = !!(check && valid.(s[:key]) && check[:seen] != schuelerliste_values(entries[s[:key]]).to_json)
+                io.puts schuelerliste_note_rows(check, valid.(s[:key]), row_class, lk ? SCHUELERLISTE_COLUMNS[0..-2] + [nil, nil] : SCHUELERLISTE_COLUMNS, taken)
             end
             io.puts "</tbody></table></div>"
             unless v[:leaving].empty?
@@ -850,7 +945,7 @@ class Main < Sinatra::Base
             unless state[:missing].empty?
                 io.puts "<ul class='sl-missing'>"
                 state[:missing].each do |m|
-                    io.puts "<li><span><strong>#{sl_h(m[:name])}</strong>#{m[:note].to_s.empty? ? '' : " – #{sl_h(m[:note])}"}</span> <button type='button' class='btn btn-link btn-sm bu_sl_missing_delete' data-id='#{sl_h(m[:id])}'>Entfernen</button></li>"
+                    io.puts "<li><span><strong>#{sl_h(m[:name])}</strong>#{m[:note].to_s.empty? ? '' : " – #{sl_h(m[:note])}"}</span>#{m[:done] ? " #{schuelerliste_done_html(m)}" : ''} <button type='button' class='btn btn-link btn-sm bu_sl_missing_delete' data-id='#{sl_h(m[:id])}'>Entfernen</button></li>"
                 end
                 io.puts "</ul>"
             end
@@ -916,7 +1011,7 @@ class Main < Sinatra::Base
     SCHUELERLISTE_COLUMNS = [nil, 'nachname', 'rufname', 'vornamen', 'geschlecht', 'geburtstag', 'bildungsgang', nil]
     SCHUELERLISTE_GENDER_LABELS = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
 
-    def schuelerliste_note_rows(check, valid, row_class, columns)
+    def schuelerliste_note_rows(check, valid, row_class, columns, taken = false)
         tr = ->(cells) { "<tr class='sl-note-row #{row_class}'>#{cells}</tr>" }
         # (the first column of the class table is the name heading on phones)
         span = ->(html) { tr.(columns.size > 2 ? "<td class='sl-head'></td><td colspan='#{columns.size - 1}' data-label=''>#{html}</td>" : "<td colspan='#{columns.size}' data-label=''>#{html}</td>") }
@@ -941,7 +1036,7 @@ class Main < Sinatra::Base
                     only = dashboard_only.include?(field) ? " <span class='sl-only'>(nur im Dashboard)</span>" : ''
                     "<td class='sl-fix-cell sl-fix-#{field}'><span class='sl-fix'>#{sl_h(v)}</span>#{only}</td>"
                 elsif i == columns.size - 1
-                    "<td class='sl-fix-label'>Korrektur#{schuelerliste_by_other(check)}</td>"
+                    "<td class='sl-fix-label'>#{taken ? 'Korrektur übernommen' : 'Korrektur'}#{schuelerliste_by_other(check)}</td>"
                 else
                     "<td#{i == 0 ? " class='sl-head'" : ''}></td>"
                 end
@@ -952,6 +1047,8 @@ class Main < Sinatra::Base
         unless rest[:fields].empty? && !rest[:gone] && rest[:text].to_s.empty?
             rows << span.("<span class='sl-corrected'>Korrektur#{in_columns.empty? ? schuelerliste_by_other(check) : ''}: #{schuelerliste_correction_text(rest)}</span>")
         end
+        # what the Datenpflege did with it
+        rows << span.(schuelerliste_done_html(check)) if check[:done] && !taken
         rows
     end
 

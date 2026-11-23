@@ -41,6 +41,8 @@
     .sl-done { color: #1f7a3d; font-weight: 600; }
     .sl-corrected { overflow-wrap: anywhere; }
     .sl-by, .sl-only, .sl-tutor-others { font-weight: 400; color: var(--pv-muted, #5f6368); }
+    .sl-wontfix { color: var(--acc-text, #8a5a00); }
+    .sl-done-lusd { color: var(--pv-muted, #5f6368); }
     .sl-tutor-mark { display: inline-flex; align-items: center; gap: 0.35em; margin: 0; cursor: pointer; }
     .sl-tutor-phone { display: none; }
     /* a corrected value, in its column below the row */
@@ -69,6 +71,17 @@
         .sl-table td { display: inline-block; border: 0; padding: 0.15em 0.5em 0.15em 0; white-space: normal; }
         .sl-table tr.sl-note-row { border-top: 0; padding-top: 0; }
         .sl-table tr.sl-note-row > td { display: block; border-left: 0; }
+        /* old design: the corrected values with their labels, »Korrektur« first */
+        body:not(.ui-preview) .sl-table tr.sl-note-row { display: flex; flex-wrap: wrap; gap: 0 0.6em; }
+        body:not(.ui-preview) .sl-table tr.sl-note-row > td:empty { display: none; }
+        body:not(.ui-preview) .sl-table tr.sl-note-row > td.sl-fix-label { order: -1; flex: 1 0 100%; text-align: left; font-weight: 600; }
+        body:not(.ui-preview) .sl-table tr.sl-note-row > td.sl-head + td, body:not(.ui-preview) .sl-table tr.sl-note-row > td:first-child { border-left: 0; }
+        body:not(.ui-preview) .sl-fix-nachname::before { content: 'Nachname: '; }
+        body:not(.ui-preview) .sl-fix-rufname::before { content: 'Rufname: '; }
+        body:not(.ui-preview) .sl-fix-vornamen::before { content: 'Vornamen: '; }
+        body:not(.ui-preview) .sl-fix-geschlecht::before { content: 'Geschlecht: '; }
+        body:not(.ui-preview) .sl-fix-geburtstag::before { content: 'Geburtstag: '; }
+        body:not(.ui-preview) .sl-fix-bildungsgang::before { content: 'Bildungsgang: '; }
         .sl-table td:first-child { display: block; }
         .sl-table tr.sl-row > td.sl-head + td { border-left: 0; }
         .sl-nachname .sl-badges { display: none; }
@@ -102,7 +115,7 @@
                 <h5 class="modal-title">Korrigieren<span id='sl_correct_name' class='text-muted'></span></h5>
             </div>
             <div class="modal-body sl-form">
-                <p class='text-muted sl-form-intro'>Trag nur ein, was anders sein muss. Wir korrigieren es in der Schulverwaltung.</p>
+                <p class='text-muted sl-form-intro'>Trag nur ein, was anders sein muss. Wir korrigieren es in der Schulverwaltung. Nachname und Vornamen stehen auf Zeugnissen und amtlichen Dokumenten, der Rufname im Dashboard, auf Sitzplänen und in der Nextcloud.</p>
                 <div class='sl-fields'>
                     <div class='form-row'>
                         <div><label for='ti_sl_rufname'>Rufname</label><input class='form-control' id='ti_sl_rufname' maxlength='100'></div>

@@ -2461,6 +2461,55 @@ html:has(body.ui-preview #calendar) {
         color: inherit;
         opacity: 0.85;
     }
+
+    /* while the agenda is swiped, the highlight slides from chip to chip as
+       far as the finger has moved, only on the chips: each chip plain, with
+       a lit copy above it, cut to the part of the highlight over that chip
+       (clip-path, set by install_preview_agenda_swipe) */
+    .pv-strip-day.pv-strip-sliding {
+        position: relative;
+        overflow: hidden;
+        background: var(--pv-surface);
+        color: var(--pv-ink);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    }
+
+    .dark .pv-strip-day.pv-strip-sliding {
+        color: var(--pv-ink);
+    }
+
+    .pv-strip-sliding .pv-strip-name {
+        color: var(--pv-muted);
+        opacity: 1;
+    }
+
+    /* today's ring stays under the highlight: it shows as the highlight moves away */
+    .pv-strip-day.pv-strip-sliding.pv-strip-today {
+        box-shadow: inset 0 0 0 2px var(--acc-text), 0 1px 4px rgba(0, 0, 0, 0.12);
+    }
+
+    .pv-strip-lit {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+        padding: 6px 0 7px;
+        border-radius: 12px;
+        background: var(--acc-text);
+        color: #ffffff;
+        pointer-events: none;
+    }
+
+    .dark .pv-strip-lit {
+        color: #0a1222;
+    }
+
+    .pv-strip-lit .pv-strip-name {
+        color: inherit;
+        opacity: 0.85;
+    }
 }
 
 /* ---------- Found by the sweep on real data (dark mode, contrast, overflow) ---------- */

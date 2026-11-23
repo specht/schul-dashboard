@@ -962,6 +962,113 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
   }
 });
 
+// Phones: swiping the agenda to the next day, the day chips above follow the
+// finger – the highlight slides in full colour from the shown day to the
+// next one as far as the agenda has moved, only on the chips (not in the
+// gaps), instead of jumping when the swipe ends (install_preview_agenda_swipe)
+test('Neues Design: Tageschips folgen dem Wischen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Wischen nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('body')).toHaveClass(/pv-agenda-on/);
+    // a Tuesday: Monday before it and Wednesday after it in the same week
+    const zeigen = (tag: number) => page.evaluate(async (tag) => {
+      const w = window as unknown as { calendar: { view: { currentStart: Date }; gotoDate: (d: Date) => void }; render_preview_agenda: () => void };
+      const d = new Date(w.calendar.view.currentStart);
+      while (d.getDay() !== 1) d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : -1));
+      d.setDate(d.getDate() + tag);
+      w.calendar.gotoDate(d);
+      w.render_preview_agenda();
+      await new Promise((r) => setTimeout(r, 300));
+    }, tag);
+    await zeigen(1);
+    const chips = page.locator('#pv_day_strip .pv-strip-day');
+    await expect(chips).toHaveCount(5);
+    await expect(chips.nth(1)).toHaveClass(/pv-strip-active/);
+    const agenda = page.locator('#pv_agenda');
+    await agenda.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    const box = (await agenda.boundingBox())!;
+    const y = box.y + Math.min(box.height / 2, 200);
+    const cdp = await page.context().newCDPSession(page);
+    // how much of each chip the highlight covers (data-lit of its lit copy)
+    const an = () => chips.evaluateAll((cs) => cs.map((c) => {
+      const lit = c.querySelector('.pv-strip-lit') as HTMLElement | null;
+      return lit ? parseFloat(lit.dataset.lit || 'NaN') : NaN;
+    }));
+    // half way to the left (the next day): both chips half lit
+    const halb = async (richtung: 1 | -1) => {
+      const x0 = box.x + box.width / 2 + richtung * box.width * 0.3;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+      for (let i = 1; i <= 10; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 - richtung * (box.width * 0.5 * i) / 10, y }] });
+        await page.waitForTimeout(16);
+      }
+    };
+    await halb(1);
+    let on = await an();
+    expect(on[1]).toBeGreaterThan(0.3);
+    expect(on[1]).toBeLessThan(0.65);
+    expect(on[2]).toBeGreaterThan(0.3);
+    expect(on[2]).toBeLessThan(0.65);
+    expect(on[0]).toBe(0);
+    expect(on[3]).toBe(0);
+    // nothing of the highlight in the gap between Tuesday and Wednesday
+    const imSpalt = await page.evaluate(() => {
+      const cs = [...document.querySelectorAll('#pv_day_strip .pv-strip-day')].map((c) => c.getBoundingClientRect());
+      const el = document.elementFromPoint((cs[1].right + cs[2].left) / 2, cs[1].top + cs[1].height / 2);
+      return el ? (el.closest('.pv-strip-lit') ? 'lit' : el.className) : '';
+    });
+    expect(imSpalt).not.toBe('lit');
+    // the lit copy above the plain chip, in the full accent
+    const lit = chips.nth(2).locator('.pv-strip-lit');
+    const akzent = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--acc-text').trim());
+    expect(akzent).not.toBe('');
+    expect(await lit.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    // above the chip's own text (positioned, painted later), its edge
+    // through the middle of »Mi«: the left part lit, the right part plain
+    const schnitt = await page.evaluate(() => {
+      const c = document.querySelectorAll('#pv_day_strip .pv-strip-day')[2] as HTMLElement;
+      const lit = c.querySelector('.pv-strip-lit') as HTMLElement;
+      const m = /inset\(0(?:px)? ([\d.]+)px/.exec(lit.style.clipPath)!;
+      const kante = c.getBoundingClientRect().right - parseFloat(m[1]);
+      const b = c.querySelector(':scope > b')!.getBoundingClientRect();
+      return { position: getComputedStyle(lit).position, links: b.left < kante, rechts: b.right > kante };
+    });
+    expect(schnitt).toEqual({ position: 'absolute', links: true, rechts: true });
+    // back to the start and let go: the swipe is cancelled, all as before
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: box.x + box.width / 2 + box.width * 0.3, y }] });
+    on = await an();
+    expect(on[1]).toBe(1);
+    expect(on[2]).toBe(0);
+    const pill = page.locator('#pv_day_strip .pv-strip-lit');
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(chips.nth(1)).toHaveClass(/pv-strip-active/);
+    await expect(page.locator('#pv_day_strip .pv-strip-sliding')).toHaveCount(0);
+    await expect(pill).toHaveCount(0);
+    // all the way: Wednesday is shown, its chip lit
+    await halb(1);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(chips.nth(2)).toHaveClass(/pv-strip-active/);
+    await expect(page.locator('#pv_day_strip .pv-strip-sliding')).toHaveCount(0);
+    await expect(page.locator('#pv_day_strip .pv-strip-lit')).toHaveCount(0);
+    // to the right from Monday: the week before – the highlight moves half a step and fades
+    await zeigen(0);
+    await halb(-1);
+    const deckkraft = parseFloat(await chips.nth(0).locator('.pv-strip-lit').evaluate((el) => el.style.opacity));
+    expect(deckkraft).toBeLessThan(0.7);
+    expect(deckkraft).toBeGreaterThan(0.3);
+    on = await an();
+    expect(on[0]).toBeLessThan(0.8);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(chips.nth(4)).toHaveClass(/pv-strip-active/);
+    await expect(page.locator('#pv_day_strip .pv-strip-lit')).toHaveCount(0);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Phones: other plans (Kürzel, classes, rooms) through a "Plan" button in the
 // header – a sheet with search, the shown plan in the accent; no chip panel
 // Back (button or swipe from the edge) closes what opened like a screen –

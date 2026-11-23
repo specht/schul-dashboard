@@ -1806,9 +1806,56 @@ function install_preview_agenda_swipe() {
         Object.assign(ghost.style, { position: 'fixed', top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '1' });
         document.body.appendChild(ghost);
     };
+    // the day chips above follow the finger: the highlight slides from the
+    // shown day to the next one as far as the agenda has moved, in full
+    // colour, only on the chips (not in the gaps between them). Each chip
+    // has a lit copy of itself above it, cut to the part of the highlight
+    // that lies over that chip – so the text changes colour exactly at the
+    // highlight's edge. Past the week's end (Fr → Mo) the highlight moves
+    // half a step and fades.
+    let strip_chips = function() {
+        if (location.hash === '#woche') return [];
+        return Array.from(document.querySelectorAll('#pv_day_strip .pv-strip-day'));
+    };
+    let strip_follow = function(x, ms) {
+        let chips = strip_chips();
+        let from = chips.findIndex(function(c) { return c.classList.contains('pv-strip-active'); });
+        if (from < 0 || chips.length < 2) return;
+        let step = chips[1].offsetLeft - chips[0].offsetLeft;
+        let w = chips[0].offsetWidth;
+        let p = Math.min(1, Math.abs(x) / width());
+        let dir = x < 0 ? 1 : -1;
+        let outside = from + dir < 0 || from + dir >= chips.length;
+        let pos = x === 0 ? from : from + dir * p * (outside ? 0.5 : 1);
+        let shown = outside ? 1 - p : 1;
+        let fade = ms ? ms + 'ms ease-out' : null;
+        chips.forEach(function(c, i) {
+            c.classList.add('pv-strip-sliding');
+            let lit = c.querySelector('.pv-strip-lit');
+            if (!lit) {
+                lit = document.createElement('span');
+                lit.className = 'pv-strip-lit';
+                lit.setAttribute('aria-hidden', 'true');
+                Array.from(c.children).forEach(function(child) { lit.appendChild(child.cloneNode(true)); });
+                c.appendChild(lit);
+            }
+            // where the highlight begins, seen from this chip
+            let off = (pos - i) * step;
+            let left = Math.max(0, Math.min(w, off)), right = Math.max(0, Math.min(w, -off));
+            lit.style.transition = fade ? 'clip-path ' + fade + ', opacity ' + fade : 'none';
+            lit.style.clipPath = 'inset(0 ' + right.toFixed(1) + 'px 0 ' + left.toFixed(1) + 'px round 12px)';
+            lit.style.opacity = String(shown);
+            lit.dataset.lit = ((w - left - right) / w).toFixed(2);
+        });
+    };
+    let strip_rest = function() {
+        strip_chips().forEach(function(c) { c.classList.remove('pv-strip-sliding'); });
+        document.querySelectorAll('#pv_day_strip .pv-strip-lit').forEach(function(el) { el.remove(); });
+    };
     let move = function(x, ms) {
         place(box, x, ms);
         if (ghost) place(ghost, x + ghost_dir * width(), ms);
+        strip_follow(x, ms);
     };
     box.addEventListener('touchstart', function(e) {
         start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
@@ -1829,7 +1876,7 @@ function install_preview_agenda_swipe() {
     }, { passive: true });
     let cancel = function() {
         move(0, 150);
-        setTimeout(drop_ghost, 150);
+        setTimeout(function() { drop_ghost(); strip_rest(); }, 150);
     };
     let finish = function(e) {
         if (!start) return;
@@ -1848,6 +1895,7 @@ function install_preview_agenda_swipe() {
             render_preview_agenda();
             place(box, 0, 0);
             drop_ghost();
+            strip_rest();
         }, 160);
     };
     box.addEventListener('touchend', finish);

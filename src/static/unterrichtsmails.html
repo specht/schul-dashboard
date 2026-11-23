@@ -88,6 +88,27 @@
         width: auto;
     }
 
+    .lesson-mail-custom-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5em 1em;
+    }
+
+    .lesson-mail-custom-row .lesson-mail-field:first-child {
+        flex: 1 1 14em;
+    }
+
+    #ti_lesson_mail_color {
+        width: 4em;
+        height: calc(1.5em + 0.75rem + 2px);
+        padding: 0.15em;
+    }
+
+    #ti_lesson_mail_status, #ti_lesson_mail_sender {
+        width: auto;
+        max-width: 100%;
+    }
+
     @media (min-width: 992px) {
         .lesson-mail-sticky {
             position: sticky;
@@ -115,10 +136,18 @@
                 Hier legst du die Texte dafür fest. Die Mail geht an die Eltern, das Kind und die Lehrkraft bekommen eine Kopie,
                 Antworten gehen an die Lehrkraft, die die Mail schickt. Änderungen gelten für alle Mails, die ab dem Speichern verschickt werden.
             </p>
+            <p class='text-muted'>
+                Mit »Neue Vorlage« legst du einen weiteren Grund an. Er beginnt im Zustand »Test«: Nur Admins sehen ihn im Stundenplan,
+                und die Mails gehen nur an die Person, die sie schickt – mit »[TEST]« im Betreff. Passt alles, stellst du ihn auf »Aktiv«;
+                ab dann sehen ihn alle Lehrkräfte und die Mails gehen an die Eltern. »Ausgeblendet« nimmt ihn wieder aus dem Stundenplan.
+                Für jeden Grund legst du außerdem fest, wer die Mail schickt (die Lehrkraft der Stunde oder die Otium-Aufsicht)
+                und ob die Klassenleitung eine Kopie bekommt.
+            </p>
             <div class='api_messages' style='display: none;'></div>
             <div class='lesson-mail-reason-row'>
                 <label for='ti_lesson_mail_reason'>Grund</label>
                 <select id='ti_lesson_mail_reason' class='form-control'></select>
+                <button id='bu_new_lesson_mail' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Vorlage</button>
                 <span id='lesson_mail_status' class='text-muted'></span>
             </div>
         </div>
@@ -127,6 +156,43 @@
         <div class='col-lg-6'>
             <div class='lesson-mail-panel'>
                 <h4>Text bearbeiten</h4>
+                <div id='lesson_mail_rules'>
+                    <div class='lesson-mail-custom-row'>
+                        <div class='lesson-mail-field'>
+                            <label for='ti_lesson_mail_label'>Name</label>
+                            <input id='ti_lesson_mail_label' class='form-control' type='text' maxlength='60' autocomplete='off' placeholder='z. B. Sportzeug fehlt'>
+                        </div>
+                        <div class='lesson-mail-field'>
+                            <label for='ti_lesson_mail_color'>Farbe</label>
+                            <input id='ti_lesson_mail_color' class='form-control' type='color'>
+                        </div>
+                        <div class='lesson-mail-field'>
+                            <label for='ti_lesson_mail_status'>Zustand</label>
+                            <select id='ti_lesson_mail_status' class='form-control'>
+                                <option value='test'>Test – nur an mich</option>
+                                <option value='active'>Aktiv – an die Eltern</option>
+                                <option value='hidden'>Ausgeblendet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class='lesson-mail-custom-row'>
+                        <div class='lesson-mail-field'>
+                            <label for='ti_lesson_mail_note_hint'>Beispiel für die Notiz</label>
+                            <input id='ti_lesson_mail_note_hint' class='form-control' type='text' maxlength='60' autocomplete='off' placeholder='z. B. Turnbeutel'>
+                        </div>
+                        <div class='lesson-mail-field'>
+                            <label for='ti_lesson_mail_sender'>Wer schickt sie?</label>
+                            <select id='ti_lesson_mail_sender' class='form-control'>
+                                <option value='teachers'>Die Lehrkraft der Stunde</option>
+                                <option value='otium'>Die Otium-Aufsicht</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class='lesson-mail-field form-check'>
+                        <input id='ti_lesson_mail_cc_klassenleitung' class='form-check-input' type='checkbox'>
+                        <label for='ti_lesson_mail_cc_klassenleitung' class='form-check-label' style='font-weight: normal;'>Die Klassenleitung bekommt eine Kopie</label>
+                    </div>
+                </div>
                 <div class='lesson-mail-field'>
                     <label for='ti_lesson_mail_subject'>Betreff</label>
                     <input id='ti_lesson_mail_subject' class='form-control' type='text' autocomplete='off'>
@@ -177,10 +243,19 @@
     window.addEventListener('load', function () {
         let templates = #{lesson_mail_templates_page_data.to_json.gsub('</', '<\/')};
         let placeholders = #{LessonMailTemplates::PLACEHOLDERS.to_json.gsub('</', '<\/')};
+        const NEW_BODY = #{LessonMailTemplates::NEW_TEMPLATE_BODY.to_json};
+        const DEFAULT_COLOR = #{LessonMailTemplates::DEFAULT_CUSTOM_COLOR.to_json};
+        const STATUS_LABELS = #{LessonMailTemplates::STATUS_LABELS.to_json};
         let el = function (id) { return document.getElementById(id); };
         let select = el('ti_lesson_mail_reason');
         let subject = el('ti_lesson_mail_subject');
         let body = el('ti_lesson_mail_body');
+        let label = el('ti_lesson_mail_label');
+        let color = el('ti_lesson_mail_color');
+        let state = el('ti_lesson_mail_status');
+        let sender = el('ti_lesson_mail_sender');
+        let cc = el('ti_lesson_mail_cc_klassenleitung');
+        let note_hint = el('ti_lesson_mail_note_hint');
         let note = el('ti_lesson_mail_preview_note');
         let student = el('ti_lesson_mail_preview_student');
         let current = null;
@@ -189,11 +264,26 @@
         let errors = [];
         let last_field = body;
 
-        for (let t of templates) {
-            let option = document.createElement('option');
-            option.value = t.reason;
-            option.textContent = t.label;
-            select.appendChild(option);
+        // own templates show their state in the list
+        function option_text(t) {
+            if (!t.custom || t.status === 'active') return t.label;
+            return `${t.label} (${STATUS_LABELS[t.status]})`;
+        }
+
+        function fill_select() {
+            select.textContent = '';
+            for (let t of templates) {
+                let option = document.createElement('option');
+                option.value = t.reason;
+                option.textContent = option_text(t);
+                select.appendChild(option);
+            }
+            if (current !== null && current.reason === '') {
+                let option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Neue Vorlage';
+                select.appendChild(option);
+            }
         }
 
         for (let name of Object.keys(placeholders)) {
@@ -228,16 +318,30 @@
         }
 
         function dirty() {
-            return current !== null && (subject.value !== current.subject || body.value !== current.body);
+            if (current === null) return false;
+            if (current.reason === '') return true;
+            if (subject.value !== current.subject || body.value !== current.body) return true;
+            return label.value !== current.label || color.value !== current.color || state.value !== current.status ||
+                sender.value !== current.sender || cc.checked !== current.cc_klassenleitung || note_hint.value !== current.note_hint;
         }
 
         function update_status() {
-            let status = current.customized ? `Angepasst am ${current.updated} von ${current.updated_by}` : 'Standardtext';
-            if (dirty()) status += ' – Änderungen nicht gespeichert';
+            let status;
+            if (current.reason === '') {
+                status = 'Neue Vorlage – noch nicht gespeichert';
+            } else {
+                if (current.custom) {
+                    status = `Eigene Vorlage, ${STATUS_LABELS[current.status]} – zuletzt geändert am ${current.updated} von ${current.updated_by}`;
+                } else {
+                    status = current.customized ? `Angepasst am ${current.updated} von ${current.updated_by}` : 'Standardtext';
+                }
+                if (dirty()) status += ' – Änderungen nicht gespeichert';
+            }
             el('lesson_mail_status').textContent = status;
             el('bu_save_lesson_mail').disabled = !dirty() || errors.length > 0;
             el('bu_discard_lesson_mail').disabled = !dirty();
-            el('bu_reset_lesson_mail').disabled = !current.customized && subject.value === current.default_subject && body.value === current.default_body;
+            el('bu_reset_lesson_mail').style.display = current.custom ? 'none' : '';
+            el('bu_reset_lesson_mail').disabled = current.custom || (!current.customized && subject.value === current.default_subject && body.value === current.default_body);
         }
 
         function show_errors(list) {
@@ -263,7 +367,9 @@
                 el('lesson_mail_preview_subject').textContent = data.subject;
                 // rendered and escaped by the server
                 el('lesson_mail_preview_body').innerHTML = data.html;
-                show_errors(data.errors);
+                let list = data.errors || [];
+                if (label.value.trim() === '') list = ['Der Name ist leer.'].concat(list);
+                show_errors(list);
             }, { no_please_wait: true });
         }
 
@@ -273,46 +379,98 @@
             preview_timer = setTimeout(load_preview, 250);
         }
 
-        function show(reason) {
-            current = template_for(reason);
-            select.value = reason;
-            subject.value = current.subject;
-            body.value = current.body;
-            note.value = current.example_note;
+        function show_template(t) {
+            current = t;
+            fill_select();
+            select.value = t.reason;
+            subject.value = t.subject;
+            body.value = t.body;
+            note.value = t.example_note;
+            label.value = t.label;
+            color.value = t.color;
+            state.value = t.status;
+            sender.value = t.sender;
+            cc.checked = t.cc_klassenleitung;
+            note_hint.value = t.note_hint;
+            // a new template always starts as a test, a built-in one never is
+            state.disabled = t.reason === '';
+            state.querySelector('option[value="test"]').disabled = !t.custom;
             show_errors([]);
             load_preview();
         }
 
-        function replace_templates(list) {
+        function show(reason) {
+            show_template(template_for(reason));
+        }
+
+        function show_new() {
+            show_template({
+                reason: '', custom: true, label: '', color: DEFAULT_COLOR, status: 'test',
+                sender: 'teachers', cc_klassenleitung: false, note_hint: '',
+                subject: '', body: NEW_BODY, example_note: '', customized: false,
+            });
+            label.focus();
+        }
+
+        function replace_templates(list, reason) {
             templates = list;
-            show(current.reason);
+            show(reason ?? current.reason);
+        }
+
+        // asks before unsaved changes get lost
+        function leave(then) {
+            if (!dirty()) return then();
+            dashboardConfirm('Deine Änderungen an diesem Text sind noch nicht gespeichert. Möchtest du sie verwerfen?', then,
+                { title: 'Änderungen verwerfen?', confirm: 'Verwerfen', danger: true });
         }
 
         select.addEventListener('change', function (e) {
             let reason = e.currentTarget.value;
-            if (!dirty()) return show(reason);
             select.value = current.reason;
-            dashboardConfirm('Deine Änderungen an diesem Text sind noch nicht gespeichert. Möchtest du sie verwerfen?', function () {
-                show(reason);
-            }, { title: 'Änderungen verwerfen?', confirm: 'Verwerfen', danger: true });
+            leave(function () { show(reason); });
+        });
+        el('bu_new_lesson_mail').addEventListener('click', function () {
+            leave(show_new);
         });
         for (let field of [subject, body]) {
             field.addEventListener('input', changed);
             field.addEventListener('focus', function (e) { last_field = e.currentTarget; });
         }
+        label.addEventListener('input', changed);
+        color.addEventListener('input', update_status);
+        note_hint.addEventListener('input', update_status);
+        for (let field of [state, sender, cc]) field.addEventListener('change', update_status);
         note.addEventListener('input', changed);
         student.addEventListener('change', changed);
 
-        el('bu_save_lesson_mail').addEventListener('click', function () {
-            api_call('/api/save_lesson_mail_template', {
+        function save() {
+            let data = {
                 reason: current.reason, subject: subject.value, body: body.value,
-            }, function (data) {
+                label: label.value, color: color.value, status: state.value,
+                sender: sender.value, cc_klassenleitung: cc.checked, note_hint: note_hint.value,
+            };
+            let url = current.reason === '' ? '/api/create_lesson_mail_template' : '/api/save_lesson_mail_template';
+            if (current.reason === '') {
+                delete data.reason;
+                delete data.status;
+            }
+            api_call(url, data, function (data) {
                 if (!data.success) return;
                 if (data.errors) return show_errors(data.errors);
-                replace_templates(data.templates);
+                replace_templates(data.templates, data.reason);
             });
+        }
+
+        el('bu_save_lesson_mail').addEventListener('click', function () {
+            if (current.custom && current.reason !== '' && state.value === 'active' && current.status === 'test') {
+                dashboardConfirm(`Ab jetzt sehen alle Lehrkräfte »${label.value.trim()}« im Stundenplan, und die Mails gehen an die Eltern.`, save,
+                    { title: 'Vorlage freischalten?', confirm: 'Freischalten' });
+            } else {
+                save();
+            }
         });
         el('bu_discard_lesson_mail').addEventListener('click', function () {
+            if (current.reason === '') return show(templates[0].reason);
             show(current.reason);
         });
         el('bu_reset_lesson_mail').addEventListener('click', function () {

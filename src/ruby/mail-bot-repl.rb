@@ -36,10 +36,7 @@ class MailBotRepl < Sinatra::Base
         ts = Time.now.to_i
         ts += 20 * 60 if DEVELOPMENT
         # texts changed by admins on /unterrichtsmails, defaults otherwise
-        templates = {}
-        $neo4j.neo4j_query("MATCH (t:LessonMailTemplate) RETURN t;").each do |row|
-            templates[row['t'][:reason]] = {:subject => row['t'][:subject], :body => row['t'][:body]}
-        end
+        templates = LessonMailTemplates.from_nodes($neo4j.neo4j_query("MATCH (t:LessonMailTemplate) RETURN t;").map { |row| row['t'] })
         $neo4j.neo4j_query(<<~END_OF_QUERY, {:ts => ts, :max_errors => MAX_SEND_ERRORS}).each do |row|
             MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:REGARDING]-(m:Mail)-[:SENT_BY]->(ut:User)
             MATCH (m)-[:SENT_TO]->(us:User)
@@ -65,30 +62,37 @@ class MailBotRepl < Sinatra::Base
                 year_key = "#{current_year}_#{(current_year + 1) % 100}"
                 klasse = @@user_info[sus_email][:klasse]
                 kl_cc_key = "#{year_key}/#{klasse}"
-                cc_emails = []
-                cc_emails << sus_email
-                cc_emails << row['ut.email']
-                # the lesson's teacher hears about mails others send (Otium)
-                lesson_teacher_email = Main.lesson_mail_lesson_teacher(lesson_key)
-                cc_emails << lesson_teacher_email if lesson_teacher_email && lesson_teacher_email != lehrer_email
-                if EMAILS_AUS_DEM_UNTERRICHT_KLASSENLEITUNG_CC.include?(kl_cc_key) || reason == 'disturbance_otium'
-                    @@klassenleiter[klasse].each do |shorthand|
-                        if @@shorthands[shorthand]
-                            cc_emails << @@shorthands[shorthand]
-                        end
-                    end
+                # a mail with an own template in the state 'test' (marked when
+                # it was sent) goes to the sender alone
+                test = mail[:test] == true
+                info = LessonMailTemplates.find(templates, reason) || {}
+                klassenleitung = []
+                # the class teachers get a copy where the reason says so
+                # (/unterrichtsmails) or for the classes set in credentials.rb
+                if EMAILS_AUS_DEM_UNTERRICHT_KLASSENLEITUNG_CC.include?(kl_cc_key) || info[:cc_klassenleitung]
+                    klassenleitung = (@@klassenleiter[klasse] || []).map { |shorthand| @@shorthands[shorthand] }.compact
                 end
+                # the lesson's teacher hears about mails others send (Otium)
+                envelope = LessonMailTemplates.envelope(test: test, sender: lehrer_email, student: sus_email,
+                                                        lesson_teacher: Main.lesson_mail_lesson_teacher(lesson_key),
+                                                        klassenleitung: klassenleitung)
                 # no addresses or details (about a student) in the log
-                debug "Sending parent mail #{tag} / #{lesson_key} / #{lesson_offset} / #{reason}"
-                rendered = LessonMailTemplates.render(LessonMailTemplates.effective(templates, reason),
-                                                      Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details))
+                debug "Sending parent mail #{tag} / #{lesson_key} / #{lesson_offset} / #{reason}#{test ? ' (test)' : ''}"
+                template = LessonMailTemplates.effective(templates, reason)
+                raise "no text for #{reason}" if template.nil?
+                vars = Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details, mail[:comment])
+                # a text the teacher changed for this student, else the template's
+                rendered = LessonMailTemplates.render(template, vars, mail[:text])
+                if test
+                    rendered = LessonMailTemplates.mark_as_test(rendered, info[:label] || reason, "#{vars[:name]} (#{vars[:klasse]})")
+                end
                 $neo4j.transaction do
                     deliver_mail do
                         from SMTP_FROM
                         reply_to lehrer_email
-                        cc cc_emails.uniq
-                        to "eltern." + sus_email
-                        bcc SMTP_FROM
+                        cc envelope[:cc] unless envelope[:cc].empty?
+                        to envelope[:to]
+                        bcc SMTP_FROM if envelope[:archive]
                         subject rendered[:subject]
                         rendered[:html]
                     end

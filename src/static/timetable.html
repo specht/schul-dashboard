@@ -22,9 +22,6 @@
         font-size: 200%;
         text-align: center;
     }
-    #div_email_sus_table tr:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-    }
 </style>
 <div class='container-fluid'>
     <div id='pv_day_band' class='pv-day-band' hidden></div>
@@ -199,52 +196,7 @@
     </div>
 </div>
 
-<div class="modal pv-sheet" id="mailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" >
-                    E-Mail an Eltern senden
-                </h5>
-            </div>
-            <div class="modal-body">
-                <div style="padding: 0.5em 0;">Bitte wählen Sie einen Grund für die E-Mail:</div>
-                <select id='ti_mail_reason' class='form-control'>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="">Grund auswählen</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="material">Material fehlt</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="homework">Hausaufgaben fehlen</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="signature">Unterschrift fehlt</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="disturbance">Störverhalten</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="disturbance_otium" disabled>Störverhalten (Otium) – schickt jetzt das Otium</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="late">Verspätung</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="praise">Besonderes Lob</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? '' : 'display: none;'}" value="disturbance_otium" #{user_with_role_logged_in?(:otium) ? 'selected' : ''}>Störverhalten (Otium)</option>
-                </select>
-                <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
-                <textarea id='ti_mail_details' class="form-control"></textarea>
-                <details id='mail_preview_section' class='lesson-mail-preview-details' style='display: none;'>
-                    <summary><span class='lesson-mail-preview-toggle'>Vorschau der E-Mail</span></summary>
-                    <div class='lesson-mail-preview-head'>
-                        <label for='ti_mail_preview_sus'>für</label>
-                        <select id='ti_mail_preview_sus' class='form-control form-control-sm'></select>
-                    </div>
-                    <div class='lesson-mail-preview' data-testid='mail-preview'>
-                        <div class='lesson-mail-preview-subject' id='mail_preview_subject'></div>
-                        <div class='lesson-mail-preview-body' id='mail_preview_body'></div>
-                    </div>
-                </details>
-                <div style="padding: 0.5em 0;">Die Mail geht an die Eltern, das Kind und Sie bekommen eine Kopie, Antworten gehen an Sie. Verschickt wird sie frühestens nach 10 Minuten – bis dahin können Sie sie hier abbrechen.</div>
-                <div style='max-width: 100%; overflow-x: auto;'>
-                    <table class='table table-sm table-striped' id='div_email_sus_table'>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
-            </div>
-        </div>
-    </div>
-</div>
+#{File.read('/static/_lesson_mail_dialog.html')}
 
 <div class="modal" id="atNotesModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
@@ -2165,106 +2117,7 @@ function reload_print_button(room_id) {
 
 var lesson_notes = #{lesson_notes_for_session_user.to_json};
 
-function mail_reason_changed() {
-    let reason = $('#ti_mail_reason').val();
-    let got_reason = false;
-    $('#ti_mail_details').val('');
-    if (reason === 'material') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Zirkel fehlt«)');
-    } else if (reason === 'homework') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »S. 23, Nr. 4«)');
-    } else if (reason === 'signature') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Anmeldung Klassenfahrt«)');
-    } else if (reason === 'disturbance') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    } else if (reason === 'disturbance_otium') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    } else if (reason === 'late') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »10 Minuten«)');
-    } else if (reason === 'praise') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    } else {
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    }
-    update_mail_preview();
-    if (got_reason) {
-        $('#ti_mail_details').prop('disabled', false);
-        for (let email of Object.keys(email_div_rows)) {
-            email_div_rows[email].bu_send.prop('disabled', (pending_mail_data[email] ?? []).some((x) => x.reason == reason));
-        }
-    } else {
-        $('#ti_mail_details').prop('disabled', true);
-        for (let email of Object.keys(email_div_rows)) {
-            email_div_rows[email].bu_send.prop('disabled', true);
-        }
-    }
-}
-
-// The mail exactly as it will be sent (texts: /unterrichtsmails), for one
-// student of the lesson.
-var mail_event = null;
-var mail_preview_timer = null;
-var mail_preview_seq = 0;
-function update_mail_preview() {
-    clearTimeout(mail_preview_timer);
-    let reason = $('#ti_mail_reason').val();
-    let email = $('#ti_mail_preview_sus').val();
-    if (!reason || !email || mail_event === null) {
-        $('#mail_preview_section').hide();
-        return;
-    }
-    $('#mail_preview_section').show();
-    mail_preview_timer = setTimeout(function() {
-        let seq = ++mail_preview_seq;
-        api_call('/api/preview_lesson_mail', {email: email, reason: reason, details: $('#ti_mail_details').val().trim(), lesson_key: mail_event.lesson_key}, function(data) {
-            if (seq !== mail_preview_seq || !data.success) return;
-            $('#mail_preview_subject').text(data.subject);
-            // rendered and escaped by the server
-            $('#mail_preview_body').html(data.html);
-        }, {no_please_wait: true});
-    }, 250);
-}
-
-var email_div_rows = {};
 var at_div_rows = {};
-var pending_mail_data = {};
-var REASON_LABEL = {
-    material: 'Material fehlt',
-    homework: 'Hausaufgaben fehlen',
-    signature: 'Unterschrift fehlt',
-    disturbance: 'Störung',
-    disturbance_otium: 'Störung (Otium)',
-    late: 'Verspätung',
-    praise: 'Besonderes Lob',
-}
-
-function generate_mail_pending_row(entry, sus_info) {
-    let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
-    if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
-        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
-    } else {
-        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet</em>`));
-        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`);
-        button.on('click', function(e) {
-            api_call('/api/cancel_email', {tag: entry.tag}, function(data) {
-                if (data.success) {
-                    row.remove();
-                    pending_mail_data[sus_info.email] = pending_mail_data[sus_info.email].filter((x) => x.tag !== entry.tag);
-                    mail_reason_changed();
-                }
-            });
-        });
-        row.append($(`<td style='text-align: right;'>`).append(button));
-    }
-    return row;
-}
 
 Date.prototype.getWeekYear = function() {
   var date = new Date(this.getTime());
@@ -2922,9 +2775,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('.bu-enter-ha-amt-text').show();
             }
 
-            $('#div_email_sus_table').empty();
-            email_div_rows = {};
-            pending_mail_data = {};
             let allow = false;
             if (typeof(event.lesson_key) !== 'undefined' &&
                 event.lesson_offset !== null &&
@@ -2944,50 +2794,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             console.log(event);
-            mail_event = allow ? event : null;
-            $('#ti_mail_preview_sus').empty();
             if (allow) {
-                for (let sus_info of event.schueler_for_lesson) {
-                    $('#ti_mail_preview_sus').append($('<option>').val(sus_info.email).text(`${sus_info.display_first_name} ${sus_info.display_last_name}`));
-                }
-                api_call('/api/get_pending_mails', {lesson_key: event.lesson_key, lesson_offset: event.lesson_offset}, function(pending_data) {
-                    pending_mail_data = pending_data.results;
-                    console.log(pending_data);
-                    for (let sus_info of event.schueler_for_lesson) {
-                        email_div_rows[sus_info.email] = {};
-                        let row = $(`<tr>`).data('email', sus_info.email).data('type', 'sus');
-                        row.append($(`<td>`).text(`${sus_info.display_last_name}, ${sus_info.display_first_name}`));
-                        // row.append($(`<td>`).append($(`<span class='badge bg-danger'>H</span>`)));
-                        let button = $(`<button class='btn btn-sm btn-warning' style='white-space: nowrap;'>`).html(`<i class='fa fa-send'></i>&nbsp;&nbsp;E-Mail senden`);
-                        button.on('click', function(e) {
-                            let email = $(e.target).closest('tr').data('email');
-                            email_div_rows[email].bu_send.prop('disabled', true);
-                            let reason = $('#ti_mail_reason').val().trim();
-                            let details = $('#ti_mail_details').val().trim();
-                            api_call('/api/send_email', {email: email, reason: reason, details: details, lesson_key: event.lesson_key, lesson_offset: event.lesson_offset, datum: event.datum}, function(data) {
-                                console.log(data);
-                                if (data.success) {
-                                    pending_mail_data[sus_info.email] ??= [];
-                                    pending_mail_data[sus_info.email].push(data.entry);
-                                    let row = generate_mail_pending_row(data.entry, sus_info);
-                                    let p = $(e.target).closest('tr');
-                                    while (p.next().data('type') === 'pending') p = p.next();
-                                    row.insertAfter(p);
-                                }
-                            });
-                        });
-                        email_div_rows[sus_info.email].bu_send = button;
-                        row.append($(`<td style='text-align: right;'>`).append(button));
-                        $('#div_email_sus_table').append(row);
-                        for (let entry of (pending_mail_data[sus_info.email] ?? [])) {
-                            let row = generate_mail_pending_row(entry, sus_info);
-                            $('#div_email_sus_table').append(row);
-                        }
-                    }
+                lesson_mail_open(event, event.schueler_for_lesson, function() {
                     $('.bu-mail').show();
-                    mail_reason_changed();
                 });
             } else {
+                lesson_mail_open(null, [], null);
                 $('.bu-mail').hide();
             }
 
@@ -3830,9 +3642,6 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#atNotesModal').modal('show');
     });
 
-    $('#ti_mail_reason').on('change', function(e) {
-        mail_reason_changed();
-    });
     // start page: code app instead of SMS (print_otp_nudge_panel); the
     // panels are refreshed in place, hence delegated
     $(document).on('click', '.bu-otp-nudge-switch', function(e) {
@@ -3849,21 +3658,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) panel.remove();
         });
     });
-    $('#ti_mail_details').on('input', update_mail_preview);
-    $('#ti_mail_preview_sus').on('change', update_mail_preview);
-    // Mails are mostly sent from a phone: there the preview starts folded
-    // (one line), so the send buttons stay close. Opening or closing it is
-    // remembered.
-    (function() {
-        let details = document.getElementById('mail_preview_section');
-        let open = null;
-        try { open = localStorage.getItem('mail_preview_open'); } catch (err) {}
-        details.open = (open === null) ? window.innerWidth >= 768 : (open === 'true');
-        details.addEventListener('toggle', function() {
-            try { localStorage.setItem('mail_preview_open', details.open ? 'true' : 'false'); } catch (err) {}
-        });
-    })();
-    mail_reason_changed();
     window.addEventListener('load', function() {
         // the panel may also appear later, when the start page refreshes
         setInterval(function() {

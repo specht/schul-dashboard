@@ -1,0 +1,33 @@
+#{this_is_a_page_for_logged_in_teachers}
+<div class='container bg-white' style='padding-top: 1em; padding-bottom: 1em;'>
+    <h2>Mail an Eltern – Klasse #{CGI.escapeHTML(tr_klasse(klasse))}</h2>
+    <p class='text-muted'>
+        Als Klassenleitung schreibst du hier den Eltern deiner Klasse, unabhängig vom Stundenplan: Anlass wählen,
+        Kinder markieren, eine Notiz für alle oder einen Kommentar je Kind. In der Mail steht als Fach »Klassenleitung«.
+        Was du heute hier verschickt hast, siehst du unter den Namen; alle Mails der Klasse unter
+        <a href='/email_overview/#{CGI.escape(klasse)}'>Bisherige E-Mails aus dem Unterricht</a>.
+    </p>
+    <div class='api_messages' style='display: none;'></div>
+    <button class='btn btn-warning' id='bu_open_class_mail'><i class='fa fa-envelope-o'></i>&nbsp;&nbsp;Mail an Eltern schreiben</button>
+</div>
+
+#{File.read('/static/_lesson_mail_dialog.html')}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // the class teacher's mails hang at no lesson (include/unterrichtsmails.rb)
+    let event = {
+        lesson_key: #{Main.class_mail_key(klasse).to_json},
+        lesson_offset: #{Main.class_mail_offset},
+        datum: #{Date.today.strftime('%Y-%m-%d').to_json},
+    };
+    let students = #{class_mail_students(klasse).to_json.gsub('</', '<\/')};
+    let open_dialog = function() {
+        lesson_mail_open(event, students, function() {
+            $('#mailModal').modal('show');
+        });
+    };
+    $('#bu_open_class_mail').on('click', open_dialog);
+    open_dialog();
+});
+</script>

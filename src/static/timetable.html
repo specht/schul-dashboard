@@ -1008,16 +1008,40 @@ function preview_plan_items() {
 // last whole line (with …), the rows below are hidden – never half a line.
 // Runs again when the block changes size or content.
 function preview_fit_event(el) {
+    // Homework before the topic: when the homework (below the topic) doesn't
+    // fit, the topic gets fewer lines – down to none – until at least the
+    // homework's first line shows (an »HA« chip with no homework to read
+    // looks like no homework)
     const fit = function () {
         const main = el.querySelector('.fc-event-main');
         if (!main) return;
+        const topic = main.querySelector('.pv-ev-topic');
+        const homework = main.querySelector('.pv-ev-homework');
+        if (!pass(main, null) || !topic || !homework || !homework.classList.contains('pv-fit-hidden')) return;
+        const lh = parseFloat(getComputedStyle(topic).lineHeight) || 16;
+        for (let n = Math.round(topic.getBoundingClientRect().height / lh) - 1; n >= 0; n--) {
+            pass(main, n);
+            if (!homework.classList.contains('pv-fit-hidden')) return;
+        }
+        // too short even without the topic: as it was
+        pass(main, null);
+    };
+    // one round: topic_lines null (as it comes), or the topic cut to that
+    // many lines (0: left out); false when the block isn't laid out
+    const pass = function (main, topic_lines) {
         const lines = main.querySelectorAll('.pv-ev-title, .line2, .pv-ev-label, .pv-ev-desc, .pv-ev-fit, .hide-br');
-        for (const l of main.querySelectorAll('.pv-fit-hidden, .pv-fit-clamp')) {
-            l.classList.remove('pv-fit-hidden', 'pv-fit-clamp');
+        for (const l of main.querySelectorAll('.pv-fit-hidden, .pv-fit-clamp, .pv-fit-out')) {
+            l.classList.remove('pv-fit-hidden', 'pv-fit-clamp', 'pv-fit-out');
             l.style.removeProperty('-webkit-line-clamp');
         }
+        const topic = main.querySelector('.pv-ev-topic');
+        if (topic && topic_lines === 0) topic.classList.add('pv-fit-out');
+        else if (topic && topic_lines !== null) {
+            topic.classList.add('pv-fit-clamp');
+            topic.style.setProperty('-webkit-line-clamp', topic_lines);
+        }
         const box = main.getBoundingClientRect();
-        if (box.height === 0) return;
+        if (box.height === 0) return false;
         const limit = box.bottom - (parseFloat(getComputedStyle(main).paddingBottom) || 0) + 0.5;
         let full = false;
         for (const l of lines) {
@@ -1043,6 +1067,7 @@ function preview_fit_event(el) {
             const next = label.nextElementSibling;
             if (next && next.classList.contains('pv-fit-hidden')) label.classList.add('pv-fit-hidden');
         }
+        return true;
     };
     let pending = false;
     const later = function () {
@@ -2704,7 +2729,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
-                if ((arg.event.extendedProps.data || {}).hausaufgaben_text)
+                // the new design, double lessons: no row of its own for the
+                // label – the text starts with »HA:« like the chip, one line
+                // less, so the homework fits (preview_fit_event shortens the
+                // topic for it)
+                if ((arg.event.extendedProps.data || {}).hausaufgaben_text && pv_design && arg.event.extendedProps.count > 1)
+                {
+                    let description = appendTextWithBreaks($('<div>').addClass('pv-ev-desc pv-ev-homework'), (arg.event.extendedProps.data || {}).hausaufgaben_text);
+                    description.prepend($('<b>').addClass('pv-ev-hw-tag').text('HA: '));
+                    description.css('white-space', 'normal');
+                    div3.append(description);
+                }
+                else if ((arg.event.extendedProps.data || {}).hausaufgaben_text)
                 {
                     div3.append($('<div>').addClass('pv-ev-label').html('Hausaufgaben (zu heute)'));
                     if (arg.event.extendedProps.count > 1)
@@ -2744,9 +2780,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 div2.append(div3).append(div4);
+                // the new design, double lessons: a row with markers only
+                // (HA …) wastes a line – the markers go to the right of the
+                // first detail line, as in single lessons, the text runs
+                // beside and below them (UI review 2026-11-23). Inside the
+                // text's own block: a cut text (-webkit-box) ignores floats
+                // as its direct children.
+                let markers_moved = false;
+                if (pv_design && arg.event.extendedProps.count > 1 && markers.children().length > 0 &&
+                    div1b.children().not(markers).length === 0)
+                {
+                    let first = div3.children('.pv-ev-desc').first();
+                    if (first.length) {
+                        let text = $('<span>').addClass('pv-ev-desc-txt').append(first.contents());
+                        first.append($('<div>').addClass('pv-ev-desc-inner').append(markers.addClass('pv-ev-float')).append(text));
+                        markers_moved = true;
+                    }
+                }
                 divs.push(div0[0]);
                 divs.push(div1[0]);
-                divs.push(div1b[0]);
+                if (!markers_moved)
+                    divs.push(div1b[0]);
                 if (arg.event.extendedProps.count > 1)
                 {
                     if ((arg.event.extendedProps.data || {}).stundenthema_text || (arg.event.extendedProps.data || {}).hausaufgaben_text || arg.event.extendedProps.info)

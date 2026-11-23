@@ -2142,6 +2142,101 @@ test('Neues Design: Stundenplan schneidet Text nur nach ganzen Zeilen ab', async
   }
 });
 
+// Desktop week, a double lesson with a long topic and homework: the homework
+// shows (its label and at least its first line), the topic gives way – an
+// »HA« chip without the homework to read looks like no homework
+// (timetable.html, preview_fit_event)
+test('Neues Design: Stundenplan zeigt die Hausaufgaben vor dem Thema', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    const changed = await page.evaluate(() => {
+      type Ev = { allDay: boolean; extendedProps: Record<string, unknown>; setExtendedProp: (k: string, v: unknown) => void };
+      const w = window as unknown as { calendar: { getEvents: () => Ev[] } };
+      const doubles = w.calendar.getEvents().filter((e) => !e.allDay && e.extendedProps.lesson && (e.extendedProps.count as number) > 1);
+      const topic = 'Wiederholung der Satzglieder, dann Übersetzung des zweiten Abschnitts mit Vokabelarbeit und einer kurzen Besprechung der Hausaufgabe von letzter Woche';
+      for (const e of doubles) e.setExtendedProp('data', { ...(e.extendedProps.data as object || {}), hausaufgaben_text: 'Vokabeln lernen', stundenthema_text: topic });
+      return doubles.length;
+    });
+    expect(changed).toBeGreaterThan(0);
+    await page.waitForTimeout(800);
+    const blocks = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('.fc-timegrid-event .fc-event-main'))
+      .filter((main) => main.querySelector('.pv-ev-topic') && main.querySelector('.pv-ev-homework'))
+      .map((main) => {
+        const hw = main.querySelector<HTMLElement>('.pv-ev-homework')!;
+        const box = main.getBoundingClientRect();
+        const limit = box.bottom - (parseFloat(getComputedStyle(main).paddingBottom) || 0) + 1;
+        // room below the title for a line (the markers sit beside the first
+        // detail line, no row of their own)
+        const row = main.querySelector<HTMLElement>('.pv-ev-title')!.getBoundingClientRect();
+        return { room: Math.round(limit - row.bottom), homework: !hw.classList.contains('pv-fit-hidden'),
+                 inside: hw.getBoundingClientRect().bottom <= limit, text: hw.textContent,
+                 label: main.querySelectorAll('.pv-ev-label').length,
+                 // the markers: no row of their own, level with the first detail line
+                 row: main.querySelectorAll('.line2').length,
+                 chip: (() => {
+                   const chip = main.querySelector<HTMLElement>('.pv-ev-float');
+                   const first = main.querySelector<HTMLElement>('.pv-ev-desc');
+                   if (!chip || !first) return 'missing';
+                   const c = chip.getBoundingClientRect(), f = first.getBoundingClientRect();
+                   const lh = parseFloat(getComputedStyle(first).lineHeight);
+                   return c.height > 0 && c.height <= lh + 1 && Math.abs(c.top - f.top) <= 2 ? 'beside' : `off ${Math.round(c.top - f.top)} ${Math.round(c.height)}/${lh}`;
+                 })() };
+      }));
+    // no row of its own for the label: the text starts with »HA:«
+    expect(blocks.length).toBeGreaterThan(0);
+    for (const b of blocks) expect(b.label).toBe(0);
+    // where there is room for a line, the homework shows (the topic gives way)
+    const roomy = blocks.filter((b) => b.room >= 24);
+    expect(roomy.length).toBeGreaterThan(0);
+    for (const b of roomy) expect(b).toEqual({ room: b.room, homework: true, inside: true, text: 'HA: Vokabeln lernen', label: 0, row: 0, chip: 'beside' });
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// Desktop week: appointments, duties and other blocks without a subject
+// colour sit on the card's surface with a hairline – a grey fill clashed
+// with today's tinted column (preview.css, .pv-quiet)
+test('Neues Design: Stundenplan, ruhige Blöcke auf heller Fläche, auch heute', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Raster nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-timegrid-event').first()).toBeVisible();
+    const today = page.locator('.fc-timegrid-col.fc-day-today');
+    test.skip(await today.count() === 0, 'heute ist kein Schultag in der Woche');
+    await page.evaluate(() => {
+      const w = window as any;
+      const start = new Date(); start.setHours(15, 0, 0, 0);
+      const end = new Date(); end.setHours(16, 0, 0, 0);
+      const ev: Record<string, unknown> = { is_event: true, event_title: 'Probe ruhig', organized_by: 'Test', start, end, eid: 'probe-ruhig' };
+      ev.color = w.timetable_event_color(ev);
+      w.preview_text_color(ev);
+      w.calendar.addEvent(ev);
+    });
+    const block = today.locator('.fc-timegrid-event.pv-quiet', { hasText: 'Probe ruhig' });
+    await expect(block).toBeVisible();
+    const look = await block.evaluate((el) => {
+      const probe = document.createElement('div');
+      probe.style.background = 'var(--pv-surface)';
+      document.body.appendChild(probe);
+      const surface = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      const col = getComputedStyle(el.closest('.fc-timegrid-col')!).backgroundColor;
+      const cs = getComputedStyle(el);
+      return { surface: cs.backgroundColor === surface, notColumn: cs.backgroundColor !== col, hairline: /inset 0px 0px 0px 1px/.test(cs.boxShadow) || /0px 0px 0px 1px .*inset/.test(cs.boxShadow) };
+    });
+    expect(look).toEqual({ surface: true, notColumn: true, hairline: true });
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Desktop week: every half hour has the same height in every week – a late
 // Termin makes the grid longer, it doesn't squeeze the lessons – and the
 // page keeps its width when a longer week brings a scrollbar.
@@ -2202,13 +2297,15 @@ test('Neues Design: Stundenplan, Details in allen Blöcken gleich groß', async 
         add('title', main.querySelector('.pv-ev-title b'));
         main.querySelectorAll('.pv-ev-label').forEach((el) => add('lesson label', el));
         main.querySelectorAll('.pv-ev-desc').forEach((el) => add('lesson text', el));
+        main.querySelectorAll('.pv-ev-hw-tag').forEach((el) => add('homework tag', el));
         main.querySelectorAll('.pv-ev-inline-topic').forEach((el) => add('lesson topic', el));
         main.querySelectorAll('.line2:not(.pv-ev-row) > span:not(.cem)').forEach((el) => add('termin line', el));
         main.querySelectorAll('.pv-ev-fit').forEach((el) => add('termin text', el));
       }
       return found;
     });
-    const details = ['lesson label', 'lesson text', 'termin line', 'termin text'];
+    // (homework in double lessons: no label row, the text starts with »HA:«)
+    const details = ['homework tag', 'lesson text', 'termin line', 'termin text'];
     for (const key of details) expect(sizes[key]?.length, key).toBeGreaterThan(key.startsWith('termin') ? 1 : 0);
     const all = new Set(Object.entries(sizes).filter(([k]) => k !== 'title').flatMap(([, v]) => v));
     expect([...all], JSON.stringify(sizes)).toHaveLength(1);

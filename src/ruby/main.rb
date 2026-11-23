@@ -463,6 +463,24 @@ class SetupDatabase
                 end
                 setup_constraints_and_indexes(CONSTRAINTS_LIST, INDEX_LIST)
                 transaction do
+                    # texts and rules of the lesson mails live in the database;
+                    # the built-in reasons start with their defaults (once –
+                    # whatever is already there stays as it is)
+                    LessonMailTemplates::REASONS.each do |reason|
+                        default = LessonMailTemplates::DEFAULTS[reason]
+                        rules = LessonMailTemplates::BUILTIN_RULES[reason]
+                        neo4j_query(<<~END_OF_QUERY, rules.merge({:reason => reason, :subject => default[:subject], :body => default[:body].strip, :ts => Time.now.to_i}))
+                            MERGE (t:LessonMailTemplate {reason: $reason})
+                            ON CREATE SET t.ts_created = $ts
+                            SET t.subject = COALESCE(t.subject, $subject), t.body = COALESCE(t.body, $body),
+                                t.label = COALESCE(t.label, $label), t.color = COALESCE(t.color, $color),
+                                t.status = COALESCE(t.status, $status), t.sender = COALESCE(t.sender, $sender),
+                                t.cc_klassenleitung = COALESCE(t.cc_klassenleitung, $cc_klassenleitung),
+                                t.note_hint = COALESCE(t.note_hint, $note_hint)
+                        END_OF_QUERY
+                    end
+                end
+                transaction do
                     main.class_variable_get(:@@user_info).keys.each do |email|
                         neo4j_query(<<~END_OF_QUERY, :email => email)
                             MERGE (u:User {email: $email})

@@ -2742,34 +2742,13 @@ class Main
     end
 
     def print_email_overview(klasse)
-        reason_order = [:material, :homework, :signature, :disturbance, :disturbance_otium, :late, :praise]
-        reason_label = {
-            :material => 'Material fehlt',
-            :homework => 'Hausaufgaben fehlen',
-            :signature => 'Unterschrift fehlt',
-            :disturbance => 'Störverhalten',
-            :disturbance_otium => 'Störverhalten (Otium)',
-            :late => 'Verspätung',
-            :praise => 'besonderes Lob',
-        }
-        reason_color = {
-            :material => '#fce94f',
-            :homework => '#fcaf3e',
-            :signature => '#f57900',
-            :disturbance => '#ef2929',
-            :disturbance_otium => '#cc0000',
-            :late => '#7b67ae',
-            :praise => '#4aa03f',
-        }
-        reason_text_color = {
-            :material => '#000000',
-            :homework => '#000000',
-            :signature => '#000000',
-            :disturbance => '#ffffff',
-            :disturbance_otium => '#ffffff',
-            :late => '#ffffff',
-            :praise => '#ffffff',
-        }
+        # built-in and own reasons (/unterrichtsmails); own ones still in the
+        # state 'test' have no real mails yet
+        catalog = LessonMailTemplates.catalog(stored_lesson_mail_templates).reject { |x| x[:status] == 'test' }
+        reason_order = catalog.map { |x| x[:reason] }
+        reason_label = Hash[catalog.map { |x| [x[:reason], x[:label]] }]
+        reason_color = Hash.new('#babdb6').merge(Hash[catalog.map { |x| [x[:reason], x[:color]] }])
+        reason_text_color = Hash.new('#000000').merge(Hash[catalog.map { |x| [x[:reason], x[:text_color]] }])
         data = {}
         ts0 = nil
         ts1 = nil
@@ -2790,7 +2769,7 @@ class Main
             MATCH (t:User)<-[:SENT_BY]-(m:Mail)-[:SENT_TO]->(u:User)
             MATCH (m)-[:REGARDING]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
             WHERE u.email IN $emails AND
-            m.ts >= $ts0 AND m.ts <= $ts1
+            m.ts >= $ts0 AND m.ts <= $ts1 AND m.test IS NULL
             RETURN t.email, m, u.email, l.key;
         END_OF_QUERY
             teacher_email = row['t.email']
@@ -2815,7 +2794,7 @@ class Main
         end
         StringIO.open do |io|
             reason_order.each do |reason|
-                io.puts "<span class='badge' style='background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{reason_label[reason]}</span>"
+                io.puts "<span class='badge' style='background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{CGI.escapeHTML(reason_label[reason].to_s)}</span>"
             end
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
@@ -2838,7 +2817,7 @@ class Main
                     (data[ym][:sus][email] || {}).each_pair do |reason, info|
                         (info || {}).each_pair do |fach, count|
                             (1..count).each do
-                                io.puts "<span class='badge' style='font-weight: normal; background-color: #{reason_color[reason.to_sym]}; color: #{reason_text_color[reason.to_sym]};'>#{fach}</span>"
+                                io.puts "<span class='badge' style='font-weight: normal; background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{fach}</span>"
                             end
                         end
                     end

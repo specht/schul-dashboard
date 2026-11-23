@@ -2,9 +2,11 @@ require 'cgi'
 
 # Texts of the mails teachers send to parents from a lesson ("Mails aus dem
 # Unterricht", timetable → Mail). Admins can change them on
-# /unterrichtsmails; a changed text is stored as
-# (:LessonMailTemplate {reason, subject, body}), the defaults below apply
-# otherwise. The mail bot and the preview both render through
+# /unterrichtsmails. Every text lives in the database as
+# (:LessonMailTemplate {reason, subject, body}); the built-in reasons get
+# their default text below once at startup (SetupDatabase in main.rb), which
+# also stays the text of »Standardtext wiederherstellen« and the fallback
+# should a node be missing. The mail bot and the preview both render through
 # LessonMailTemplates.render, so the preview shows exactly what gets sent.
 #
 # Placeholders: {Vorname}, {Name}, {Klasse}, {Fach}, {Notiz}, {Lehrkraft}
@@ -218,8 +220,196 @@ module LessonMailTemplates
         entry = (stored || {})[reason]
         if entry && !entry[:subject].to_s.strip.empty? && !entry[:body].to_s.strip.empty?
             {:subject => entry[:subject], :body => entry[:body]}
+        elsif custom_reason?(reason)
+            # an own template has no default; the mail bot counts it as an error
+            nil
         else
             DEFAULTS[reason]
         end
+    end
+
+    # is this the built-in default text of the reason?
+    def self.default_text?(reason, subject, body)
+        default = DEFAULTS[reason]
+        return false if default.nil?
+        subject.to_s.strip == default[:subject] && body.to_s.gsub(/\r\n?/, "\n").strip == default[:body].strip
+    end
+
+    # ------------------------------------------------------------------
+    # Every reason is a (:LessonMailTemplate) node with its text and its rules:
+    #   label              name in the timetable and the overviews
+    #   color              colour in the class overview of sent mails
+    #   status             'test', 'active' or 'hidden'
+    #   sender             who sends it: 'teachers' or 'otium' (the teacher on
+    #                      Otium duty, for the lesson the student came from)
+    #   cc_klassenleitung  the class teachers get a copy
+    #   note_hint          example for the note field, e.g. »Zirkel fehlt«
+    # The built-in reasons get these once from BUILTIN_RULES at startup
+    # (SetupDatabase in main.rb); after that the database decides.
+    #
+    # Own templates: admins add further reasons (reason 'eigen_…', custom:
+    # true). A new one starts as 'test': only admins see it in the timetable,
+    # and its mails go to the sender alone (marked as a test) instead of the
+    # parents. 'active' sends them like any other, 'hidden' takes a reason
+    # out of the timetable but keeps its name and colour for the mails already
+    # sent. Mails remember at sending time whether they were a test
+    # (Mail.test). Built-in reasons can be hidden, never be a test.
+
+    CUSTOM_PREFIX = 'eigen_'
+    STATUSES = %w(test active hidden).freeze
+    STATUS_LABELS = {'test' => 'Test', 'active' => 'Aktiv', 'hidden' => 'Ausgeblendet'}.freeze
+    SENDERS = %w(teachers otium).freeze
+    MAX_LABEL_LENGTH = 60
+    MAX_NOTE_HINT_LENGTH = 60
+    DEFAULT_CUSTOM_COLOR = '#729fcf'
+
+    BUILTIN_COLORS = {
+        'material' => '#fce94f',
+        'homework' => '#fcaf3e',
+        'signature' => '#f57900',
+        'disturbance' => '#ef2929',
+        'disturbance_otium' => '#cc0000',
+        'late' => '#7b67ae',
+        'praise' => '#4aa03f',
+    }.freeze
+
+    # the rules the built-in reasons start with
+    BUILTIN_RULES = Hash[REASONS.map do |reason|
+        [reason, {
+            :label => LABELS[reason],
+            :color => BUILTIN_COLORS[reason],
+            :status => 'active',
+            :sender => reason == 'disturbance_otium' ? 'otium' : 'teachers',
+            :cc_klassenleitung => reason == 'disturbance_otium',
+            :note_hint => EXAMPLE_NOTES[reason] || '',
+        }.freeze]
+    end].freeze
+
+    NEW_TEMPLATE_BODY = "Liebe Eltern,\n\n{Ihr Sohn|Ihre Tochter} {Vorname} …{Notiz}\n\nMit freundlichen Grüßen\n{Lehrkraft}"
+
+    def self.custom_reason?(reason)
+        !!(reason.to_s =~ /\A#{CUSTOM_PREFIX}[0-9a-z]{4,16}\z/)
+    end
+
+    def self.valid_color?(color)
+        !!(color.to_s =~ /\A#[0-9a-fA-F]{6}\z/)
+    end
+
+    # black or white, whichever reads better on the colour
+    def self.text_color(color)
+        return '#000000' unless valid_color?(color)
+        r, g, b = color[1, 6].scan(/../).map { |x| x.to_i(16) }
+        (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#000000' : '#ffffff'
+    end
+
+    # database rows (LessonMailTemplate nodes) → {reason => entry}; fields
+    # not set are nil
+    def self.from_nodes(nodes)
+        result = {}
+        nodes.each do |t|
+            result[t[:reason]] = {
+                :subject => t[:subject], :body => t[:body],
+                :custom => t[:custom] == true, :label => t[:label], :color => t[:color],
+                :status => t[:status], :sender => t[:sender],
+                :cc_klassenleitung => t[:cc_klassenleitung], :note_hint => t[:note_hint],
+                :ts_created => t[:ts_created], :ts_updated => t[:ts_updated], :updated_by => t[:updated_by],
+            }
+        end
+        result
+    end
+
+    # the rules of one reason: what is stored, else what it started with
+    def self.rules(reason, entry, custom)
+        start = custom ? {:label => '', :color => DEFAULT_CUSTOM_COLOR, :status => 'test', :sender => 'teachers',
+                          :cc_klassenleitung => false, :note_hint => ''} : BUILTIN_RULES[reason]
+        entry ||= {}
+        label = entry[:label].to_s.strip.empty? ? start[:label] : entry[:label].to_s
+        color = valid_color?(entry[:color]) ? entry[:color] : start[:color]
+        status = STATUSES.include?(entry[:status]) ? entry[:status] : start[:status]
+        # a built-in reason is never a test
+        status = 'active' if !custom && status == 'test'
+        {
+            :reason => reason, :custom => custom,
+            :label => label, :color => color, :text_color => text_color(color), :status => status,
+            :sender => SENDERS.include?(entry[:sender]) ? entry[:sender] : start[:sender],
+            :cc_klassenleitung => entry[:cc_klassenleitung].nil? ? start[:cc_klassenleitung] : entry[:cc_klassenleitung] == true,
+            :note_hint => entry[:note_hint].nil? ? start[:note_hint] : entry[:note_hint].to_s,
+        }
+    end
+
+    # every reason in display order: the built-in ones, then the own ones by
+    # age
+    def self.catalog(stored)
+        stored ||= {}
+        list = REASONS.map { |reason| rules(reason, stored[reason], false) }
+        stored.select { |reason, entry| entry[:custom] && custom_reason?(reason) }.sort_by do |reason, entry|
+            [entry[:ts_created].to_i, reason]
+        end.each do |reason, entry|
+            list << rules(reason, entry, true)
+        end
+        list
+    end
+
+    def self.find(stored, reason)
+        catalog(stored).find { |x| x[:reason] == reason }
+    end
+
+    # Can someone send a mail with this reason? Test templates only admins,
+    # hidden ones nobody; reasons the Otium sends only the Otium.
+    def self.sendable?(info, admin, otium = false)
+        return false if info.nil?
+        return false if info[:sender] == 'otium' && !otium
+        info[:status] == 'active' || (info[:status] == 'test' && admin)
+    end
+
+    def self.label_errors(label, stored, own_reason = nil)
+        label = label.to_s.strip
+        errors = []
+        errors << 'Der Name ist leer.' if label.empty?
+        errors << "Der Name ist zu lang (höchstens #{MAX_LABEL_LENGTH} Zeichen)." if label.size > MAX_LABEL_LENGTH
+        taken = catalog(stored).any? do |x|
+            x[:reason] != own_reason && x[:label].to_s.strip.downcase == label.downcase
+        end
+        errors << "Eine Vorlage »#{label}« gibt es schon." if taken && !label.empty?
+        errors
+    end
+
+    # German error messages for the rules of a reason (data: :label, :color,
+    # :status, :sender, :cc_klassenleitung, :note_hint)
+    def self.rule_errors(data, stored, own_reason, custom)
+        errors = label_errors(data[:label], stored, own_reason)
+        errors << 'Die Farbe ist ungültig.' unless valid_color?(data[:color])
+        statuses = custom ? STATUSES : STATUSES - ['test']
+        errors << 'Der Zustand ist ungültig.' unless statuses.include?(data[:status])
+        errors << 'Ungültig, wer die Mail schickt.' unless SENDERS.include?(data[:sender])
+        errors << 'Ungültige Angabe zur Klassenleitung.' unless [true, false].include?(data[:cc_klassenleitung])
+        errors << "Der Hinweis zur Notiz ist zu lang (höchstens #{MAX_NOTE_HINT_LENGTH} Zeichen)." if data[:note_hint].to_s.strip.size > MAX_NOTE_HINT_LENGTH
+        errors
+    end
+
+    # Who gets a mail. Normal: the parents, copies to the student, the sender,
+    # the lesson's teacher (if someone else sent it) and, where wanted, the
+    # class teachers; a copy to the school's own address for the archive.
+    # Test: the sender alone.
+    def self.envelope(test:, sender:, student:, lesson_teacher: nil, klassenleitung: [])
+        if test
+            {:to => [sender], :cc => [], :archive => false}
+        else
+            cc = [student, sender]
+            cc << lesson_teacher if lesson_teacher && lesson_teacher != sender
+            cc += klassenleitung
+            {:to => ["eltern.#{student}"], :cc => cc.compact.uniq, :archive => true}
+        end
+    end
+
+    # A test mail: »[TEST]« in the subject and a note above the text saying
+    # who would get it.
+    def self.mark_as_test(rendered, label, student_name)
+        notice = "Testmail der Vorlage »#{label}«: Im Normalbetrieb ginge diese Mail an die Eltern von #{student_name}, " \
+                 "mit Kopien an das Kind und dich. Solange die Vorlage im Zustand »Test« ist, bekommst nur du sie."
+        {
+            :subject => "[TEST] #{rendered[:subject]}",
+            :html => "<p><em>#{CGI.escapeHTML(notice)}</em></p>\n<hr>\n#{rendered[:html]}",
+        }
     end
 end

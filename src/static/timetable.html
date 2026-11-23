@@ -210,16 +210,11 @@
             <div class="modal-body">
                 <div style="padding: 0.5em 0;">Bitte wählen Sie einen Grund für die E-Mail:</div>
                 <select id='ti_mail_reason' class='form-control'>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="">Grund auswählen</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="material">Material fehlt</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="homework">Hausaufgaben fehlen</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="signature">Unterschrift fehlt</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="disturbance">Störverhalten</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="disturbance_otium" disabled>Störverhalten (Otium) – schickt jetzt das Otium</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="late">Verspätung</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? 'display: none;' : ''}" value="praise">Besonderes Lob</option>
-                    <option style="#{user_with_role_logged_in?(:otium) ? '' : 'display: none;'}" value="disturbance_otium" #{user_with_role_logged_in?(:otium) ? 'selected' : ''}>Störverhalten (Otium)</option>
+                    #{lesson_mail_options_html}
                 </select>
+                <div id='mail_test_notice' class='alert alert-warning' data-testid='mail-test-notice' style='display: none; margin: 0.5em 0 0 0;'>
+                    Diese Vorlage ist noch im Test: Die Mail geht nur an dich, nicht an die Eltern. Freischalten unter »Mails aus dem Unterricht«.
+                </div>
                 <div style="padding: 0.5em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren:</div>
                 <textarea id='ti_mail_details' class="form-control"></textarea>
                 <details id='mail_preview_section' class='lesson-mail-preview-details' style='display: none;'>
@@ -2142,32 +2137,12 @@ var lesson_notes = #{lesson_notes_for_session_user.to_json};
 
 function mail_reason_changed() {
     let reason = $('#ti_mail_reason').val();
-    let got_reason = false;
+    // reasons, their rules and note hints: /unterrichtsmails
+    let got_reason = !!reason;
+    let hint = $('#ti_mail_reason option:selected').data('note-hint') ?? '';
     $('#ti_mail_details').val('');
-    if (reason === 'material') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Zirkel fehlt«)');
-    } else if (reason === 'homework') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »S. 23, Nr. 4«)');
-    } else if (reason === 'signature') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »Anmeldung Klassenfahrt«)');
-    } else if (reason === 'disturbance') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    } else if (reason === 'disturbance_otium') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    } else if (reason === 'late') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz (z. B. »10 Minuten«)');
-    } else if (reason === 'praise') {
-        got_reason = true;
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    } else {
-        $('#ti_mail_details').attr('placeholder', 'Notiz');
-    }
+    $('#ti_mail_details').attr('placeholder', hint ? `Notiz (z. B. »${hint}«)` : 'Notiz');
+    $('#mail_test_notice').toggle($('#ti_mail_reason option:selected').data('test') === 1);
     update_mail_preview();
     if (got_reason) {
         $('#ti_mail_details').prop('disabled', false);
@@ -2210,22 +2185,18 @@ function update_mail_preview() {
 var email_div_rows = {};
 var at_div_rows = {};
 var pending_mail_data = {};
-var REASON_LABEL = {
-    material: 'Material fehlt',
-    homework: 'Hausaufgaben fehlen',
-    signature: 'Unterschrift fehlt',
-    disturbance: 'Störung',
-    disturbance_otium: 'Störung (Otium)',
-    late: 'Verspätung',
-    praise: 'Besonderes Lob',
-}
+// names of all reasons (/unterrichtsmails)
+var REASON_LABEL = #{lesson_mail_reason_labels.to_json.gsub('</', '<\/')};
 
 function generate_mail_pending_row(entry, sus_info) {
     let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
+    // the label of an own template is text an admin typed
+    let label = $('<span>').text(REASON_LABEL[entry.reason] ?? entry.reason).html();
+    let test = entry.test ? ' – Test, nur an dich' : '';
     if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
-        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet</em>`));
+        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet${test}</em>`));
     } else {
-        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${REASON_LABEL[entry.reason] ?? entry.reason}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet</em>`));
+        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet${test}</em>`));
         let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`);
         button.on('click', function(e) {
             api_call('/api/cancel_email', {tag: entry.tag}, function(data) {

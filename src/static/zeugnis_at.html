@@ -40,6 +40,9 @@ var lesson_labels = #{Hash[@@lessons[:lesson_keys].keys.map { |k| [k, @@lessons[
 var schueler_for_lesson = #{@@schueler_for_lesson.to_json};
 var user_info = #{@@user_info.select { |x| user_has_role(x, :schueler) }.to_json};
 var clicked_klasse = null;
+// own mail templates (/unterrichtsmails): one column »Weitere Mails«
+var mail_reason_labels = #{lesson_mail_reason_labels.to_json.gsub('</', '<\/')};
+var builtin_mail_reasons = #{LessonMailTemplates::REASONS.to_json};
 
 function load_at_noten(e, klasse_or_lesson_key) {
     let date_from = $('#ti_not_before').val() ?? '';
@@ -55,7 +58,7 @@ function load_at_noten(e, klasse_or_lesson_key) {
                     let container = $('#noten_here');
                     container.empty();
                     let header_cells = [];
-                    for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'AT', 'Hausaufgaben<br>vergessen', 'Material<br>vergessen', 'Unterschrift<br>vergessen', 'Verspätung', 'Lob', 'Störung', 'Störung<br>(Otium)']) {
+                    for (let item of ['Nr.', 'Nachname', 'Vorname', 'Klasse', 'AT', 'Hausaufgaben<br>vergessen', 'Material<br>vergessen', 'Unterschrift<br>vergessen', 'Verspätung', 'Lob', 'Störung', 'Störung<br>(Otium)', 'Weitere<br>Mails']) {
                         let label = `${item}`;
                         let th = $('<th>').html(label);
                         if (item === 'Nachname') th.addClass('thsticky');
@@ -135,6 +138,11 @@ function load_at_noten(e, klasse_or_lesson_key) {
                                     cells.push(`<td style='text-align: left; vertical-align: bottom;'><span class='badge badge-secondary'>${label_for_item[key]}</span> &times; ${count}</td>`);
                                 }
                             }
+                            let others = Object.keys(item_count).filter((key) => mail_reason_labels[key] && builtin_mail_reasons.indexOf(key) < 0).map(function(key) {
+                                let label = $('<span>').text(mail_reason_labels[key]).html();
+                                return `<span class='badge badge-secondary'>${label}</span> &times; ${Object.keys(item_count[key]).length}`;
+                            });
+                            cells.push(`<td style='text-align: left; vertical-align: bottom;'>${others.join('<br>')}</td>`);
                             // cells.push(`<td style='vertical-align: bottom;'>${JSON.stringify(item_count)}</td>`);
                             return cells;
 

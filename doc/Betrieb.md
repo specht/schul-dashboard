@@ -276,7 +276,7 @@ die Verbindung wird getrennt und die Codes gehen wieder per E-Mail.
 
 Lehrkräfte schicken aus einer Stunde im Stundenplan (Knopf »Mail«) eine
 E-Mail an die Eltern, z. B. bei fehlenden Hausaufgaben. Der Versand läuft
-zeitverzögert über den `mail_bot`. Die Texte der sieben Gründe ändern
+zeitverzögert über den `mail_bot`. Die Texte der sieben festen Gründe ändern
 Admins unter `/unterrichtsmails` (Administration → Seiten), mit einer
 Vorschau für Max bzw. Erika Mustermann (5a) und dem eigenen Namen als
 Lehrkraft.
@@ -291,10 +291,28 @@ Lehrkraft.
   Kopie bekommt (ebenso die Klassenleitung).
 - Lehrkräfte sehen im Mail-Dialog eine Vorschau der Mail für jedes Kind der
   Stunde, bevor sie sie senden.
-- Geänderte Texte liegen als `LessonMailTemplate`-Knoten in der Datenbank;
-  ohne Knoten gilt der Standardtext aus `src/ruby/lesson_mail_templates.rb`.
-  Der `mail_bot` liest die Texte vor jedem Durchlauf, ein Neustart ist nicht
-  nötig.
+- Alle Gründe liegen als `LessonMailTemplate`-Knoten in der Datenbank, mit
+  Text und Regeln: Name, Farbe, Zustand, wer die Mail schickt (Lehrkraft der
+  Stunde oder Otium-Aufsicht), ob die Klassenleitung eine Kopie bekommt, und
+  ein Beispiel für das Notizfeld. Die sieben festen Gründe bekommen beim Start
+  des Dashboards einmalig ihren Standardtext und ihre bisherigen Regeln aus
+  `src/ruby/lesson_mail_templates.rb` (schon Vorhandenes bleibt unberührt);
+  »Standardtext wiederherstellen« setzt nur den Text wieder ein. Der
+  `mail_bot` liest alles vor jedem Durchlauf, ein Neustart ist nicht nötig.
+- Unabhängig davon bekommt die Klassenleitung der in `credentials.rb`
+  eingetragenen Klassen (`EMAILS_AUS_DEM_UNTERRICHT_KLASSENLEITUNG_CC`) von
+  allen Mails eine Kopie.
+- **Eigene Vorlagen:** Mit »Neue Vorlage« legen Admins weitere Gründe an
+  (Name, Farbe, Betreff, Text). Jede beginnt im Zustand **Test**: Nur Admins
+  sehen sie im Mail-Dialog, und die Mail geht nur an die Person, die sie
+  schickt – mit »[TEST]« im Betreff und einem Hinweis, an wen sie sonst
+  gegangen wäre. Ob eine Mail ein Test ist, wird beim Absenden festgehalten.
+  Im Zustand **Aktiv** sehen alle Lehrkräfte die Vorlage, und die Mails gehen
+  wie gewohnt an die Eltern. **Ausgeblendet** nimmt sie aus dem Mail-Dialog;
+  Name und Farbe bleiben für schon verschickte Mails erhalten. Löschen lassen
+  sich eigene Vorlagen nicht.
+- Testmails zählen weder in der Mail-Übersicht der Klasse noch bei den
+  AT-Notizen; eigene Vorlagen erscheinen dort in der Spalte »Weitere Mails«.
 
 ## Neues Design (Vorschau)
 

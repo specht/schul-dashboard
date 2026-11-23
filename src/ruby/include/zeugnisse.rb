@@ -835,7 +835,7 @@ class Main < Sinatra::Base
         neo4j_query(<<~END_OF_QUERY, {:ts => Date.parse(@@config[:first_school_day]).to_time.to_i, :lesson_key => klasse_or_lesson_key, :email => @session_user[:email]}).each do |row|
             MATCH (t:User {email: $email})<-[:SENT_BY]-(m:Mail)-[:SENT_TO]->(u:User)
             MATCH (m)-[:REGARDING]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
-            WHERE m.ts >= $ts
+            WHERE m.ts >= $ts AND m.test IS NULL
             RETURN t.email, m, u.email, l.key;
         END_OF_QUERY
             email = row['u.email']

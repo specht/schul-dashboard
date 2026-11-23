@@ -87,4 +87,166 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_equal LessonMailTemplates::DEFAULTS['late'], LessonMailTemplates.effective(stored, 'late')
         assert_equal LessonMailTemplates::DEFAULTS['homework'], LessonMailTemplates.effective(nil, 'homework')
     end
+
+    # ---- own templates ----
+
+    def stored_with_own
+        {
+            'praise' => {:subject => 'Super', :body => 'Toll', :custom => false},
+            'eigen_b2c3d4f5' => {:subject => 'Sport', :body => 'Text', :custom => true, :label => 'Sportzeug fehlt',
+                                 :color => '#204a87', :status => 'active', :ts_created => 200},
+            'eigen_a1b2c3d4' => {:subject => 'Probe', :body => 'Text', :custom => true, :label => 'Neu im Test',
+                                 :color => 'kaputt', :status => 'test', :ts_created => 100},
+            'eigen_zzzz9999' => {:subject => 'Alt', :body => 'Text', :custom => true, :label => 'Alt',
+                                 :color => '#ffffff', :status => 'hidden', :ts_created => 300},
+            # not an own template: wrong prefix
+            'fremd' => {:subject => 'x', :body => 'y', :custom => true, :label => 'Fremd', :status => 'active'},
+        }
+    end
+
+    def test_catalog_lists_built_in_then_own_by_age
+        catalog = LessonMailTemplates.catalog(stored_with_own)
+        assert_equal LessonMailTemplates::REASONS + %w(eigen_a1b2c3d4 eigen_b2c3d4f5 eigen_zzzz9999), catalog.map { |x| x[:reason] }
+        assert catalog.first(7).all? { |x| x[:status] == 'active' && !x[:custom] }
+        own = catalog.find { |x| x[:reason] == 'eigen_a1b2c3d4' }
+        assert_equal 'Neu im Test', own[:label]
+        assert_equal 'test', own[:status]
+        # an invalid colour falls back
+        assert_equal LessonMailTemplates::DEFAULT_CUSTOM_COLOR, own[:color]
+        assert_equal '#ffffff', LessonMailTemplates.find(stored_with_own, 'eigen_b2c3d4f5')[:text_color]
+        assert_equal '#000000', LessonMailTemplates.find(stored_with_own, 'eigen_zzzz9999')[:text_color]
+        assert_nil LessonMailTemplates.find(stored_with_own, 'fremd')
+        assert_equal 7, LessonMailTemplates.catalog(nil).size
+    end
+
+    def test_from_nodes
+        stored = LessonMailTemplates.from_nodes([
+            {:reason => 'eigen_a1b2c3d4', :custom => true, :label => 'X', :status => 'komisch', :subject => 's', :body => 'b'},
+            {:reason => 'late', :subject => 's', :body => 'b'},
+        ])
+        assert_equal false, stored['late'][:custom]
+        # an unknown state counts as a test
+        assert_equal 'test', LessonMailTemplates.find(stored, 'eigen_a1b2c3d4')[:status]
+    end
+
+    def test_who_may_send_with_which_template
+        stored = stored_with_own
+        active = LessonMailTemplates.find(stored, 'eigen_b2c3d4f5')
+        test = LessonMailTemplates.find(stored, 'eigen_a1b2c3d4')
+        hidden = LessonMailTemplates.find(stored, 'eigen_zzzz9999')
+        assert LessonMailTemplates.sendable?(LessonMailTemplates.find(stored, 'praise'), false)
+        assert LessonMailTemplates.sendable?(active, false)
+        refute LessonMailTemplates.sendable?(test, false)
+        assert LessonMailTemplates.sendable?(test, true)
+        refute LessonMailTemplates.sendable?(hidden, true)
+        refute LessonMailTemplates.sendable?(LessonMailTemplates.find(stored, 'unbekannt'), true)
+        # the Otium mail only the Otium
+        otium = LessonMailTemplates.find(stored, 'disturbance_otium')
+        refute LessonMailTemplates.sendable?(otium, true)
+        assert LessonMailTemplates.sendable?(otium, false, true)
+    end
+
+    # the rules of the built-in reasons, as before they came into the database
+    def test_builtin_rules
+        catalog = LessonMailTemplates.catalog({})
+        otium = catalog.find { |x| x[:reason] == 'disturbance_otium' }
+        assert_equal 'otium', otium[:sender]
+        assert otium[:cc_klassenleitung]
+        (catalog - [otium]).each do |x|
+            assert_equal 'teachers', x[:sender], x[:reason]
+            refute x[:cc_klassenleitung], x[:reason]
+        end
+        assert_equal 'Zirkel fehlt', catalog.find { |x| x[:reason] == 'material' }[:note_hint]
+        assert_equal '', catalog.find { |x| x[:reason] == 'praise' }[:note_hint]
+        assert_equal '#4aa03f', catalog.find { |x| x[:reason] == 'praise' }[:color]
+    end
+
+    # what is stored wins; a built-in reason is never a test
+    def test_stored_rules_win
+        stored = {
+            'late' => {:label => 'Zu spät', :color => '#000000', :status => 'hidden', :sender => 'otium',
+                       :cc_klassenleitung => true, :note_hint => ''},
+            'praise' => {:status => 'test', :cc_klassenleitung => false},
+            'disturbance_otium' => {:cc_klassenleitung => false},
+        }
+        late = LessonMailTemplates.find(stored, 'late')
+        assert_equal ['Zu spät', '#000000', '#ffffff', 'hidden', 'otium', true, ''],
+                     late.values_at(:label, :color, :text_color, :status, :sender, :cc_klassenleitung, :note_hint)
+        assert_equal 'active', LessonMailTemplates.find(stored, 'praise')[:status]
+        refute LessonMailTemplates.find(stored, 'disturbance_otium')[:cc_klassenleitung]
+        # an own template starts with the plain rules
+        own = LessonMailTemplates.find({'eigen_a1b2c3d4' => {:custom => true, :label => 'X'}}, 'eigen_a1b2c3d4')
+        assert_equal ['test', 'teachers', false, ''], own.values_at(:status, :sender, :cc_klassenleitung, :note_hint)
+    end
+
+    def test_rule_errors
+        good = {:label => 'Turnbeutel', :color => '#204a87', :status => 'active', :sender => 'teachers',
+                :cc_klassenleitung => false, :note_hint => 'Sport'}
+        assert_empty LessonMailTemplates.rule_errors(good, {}, nil, true)
+        assert_empty LessonMailTemplates.rule_errors(good.merge(:label => 'Verspätung'), {}, 'late', false)
+        assert_match(/Zustand/, LessonMailTemplates.rule_errors(good.merge(:status => 'test'), {}, 'late', false).first)
+        assert_empty LessonMailTemplates.rule_errors(good.merge(:status => 'test'), {}, nil, true)
+        assert_match(/Farbe/, LessonMailTemplates.rule_errors(good.merge(:color => 'red'), {}, nil, true).first)
+        assert_match(/schickt/, LessonMailTemplates.rule_errors(good.merge(:sender => 'alle'), {}, nil, true).first)
+        assert_match(/Klassenleitung/, LessonMailTemplates.rule_errors(good.merge(:cc_klassenleitung => 'ja'), {}, nil, true).first)
+        assert_match(/zu lang/, LessonMailTemplates.rule_errors(good.merge(:note_hint => 'x' * 61), {}, nil, true).first)
+    end
+
+    def test_own_templates_have_no_default
+        assert_equal({:subject => 'Sport', :body => 'Text'}, LessonMailTemplates.effective(stored_with_own, 'eigen_b2c3d4f5'))
+        assert_nil LessonMailTemplates.effective({}, 'eigen_b2c3d4f5')
+        assert LessonMailTemplates.custom_reason?('eigen_b2c3d4f5')
+        refute LessonMailTemplates.custom_reason?('praise')
+        refute LessonMailTemplates.custom_reason?('eigen_')
+        refute LessonMailTemplates.custom_reason?("eigen_abcd\n")
+    end
+
+    def test_label_errors
+        stored = stored_with_own
+        assert_empty LessonMailTemplates.label_errors('Turnbeutel vergessen', stored)
+        assert_equal ['Der Name ist leer.'], LessonMailTemplates.label_errors('  ', stored)
+        assert_match(/zu lang/, LessonMailTemplates.label_errors('a' * 61, stored).first)
+        # names are unique, also against the built-in ones
+        assert_match(/gibt es schon/, LessonMailTemplates.label_errors('sportzeug fehlt', stored).first)
+        assert_match(/gibt es schon/, LessonMailTemplates.label_errors('Verspätung', stored).first)
+        # an own template keeps its name
+        assert_empty LessonMailTemplates.label_errors('Sportzeug fehlt', stored, 'eigen_b2c3d4f5')
+    end
+
+    # A test mail goes to the sender alone, without the archive copy; a real
+    # one as before.
+    def test_envelope
+        normal = LessonMailTemplates.envelope(test: false, sender: 'lehrer@s.de', student: 'kind@s.de',
+                                              lesson_teacher: 'clarke@s.de', klassenleitung: ['kl@s.de', 'lehrer@s.de'])
+        assert_equal ['eltern.kind@s.de'], normal[:to]
+        assert_equal ['kind@s.de', 'lehrer@s.de', 'clarke@s.de', 'kl@s.de'], normal[:cc]
+        assert normal[:archive]
+        own_lesson = LessonMailTemplates.envelope(test: false, sender: 'clarke@s.de', student: 'kind@s.de', lesson_teacher: 'clarke@s.de')
+        assert_equal ['kind@s.de', 'clarke@s.de'], own_lesson[:cc]
+        test = LessonMailTemplates.envelope(test: true, sender: 'lehrer@s.de', student: 'kind@s.de',
+                                            lesson_teacher: 'clarke@s.de', klassenleitung: ['kl@s.de'])
+        assert_equal({:to => ['lehrer@s.de'], :cc => [], :archive => false}, test)
+    end
+
+    def test_mark_as_test
+        rendered = LessonMailTemplates.render({:subject => 'Sport {Vorname}', :body => 'Hallo'}, vars)
+        marked = LessonMailTemplates.mark_as_test(rendered, 'Sport <b>', 'Max Mustermann (5a)')
+        assert_equal '[TEST] Sport Max', marked[:subject]
+        assert_includes marked[:html], 'Testmail der Vorlage »Sport &lt;b&gt;«'
+        assert_includes marked[:html], 'an die Eltern von Max Mustermann (5a)'
+        assert marked[:html].end_with?("<p>Hallo</p>\n")
+    end
+
+    # the built-in texts are in the database; »changed« compares with the default
+    def test_default_text
+        default = LessonMailTemplates::DEFAULTS['late']
+        assert LessonMailTemplates.default_text?('late', default[:subject], default[:body])
+        assert LessonMailTemplates.default_text?('late', " #{default[:subject]} ", default[:body].strip.gsub("\n", "\r\n"))
+        refute LessonMailTemplates.default_text?('late', default[:subject], 'anders')
+        refute LessonMailTemplates.default_text?('eigen_a1b2c3d4', 'x', 'y')
+    end
+
+    def test_new_template_body_is_valid
+        assert_empty LessonMailTemplates.template_errors('Betreff', LessonMailTemplates::NEW_TEMPLATE_BODY)
+    end
 end

@@ -283,7 +283,10 @@ Für 11 und 12 gibt es noch keine Daten, wer Tutor:in ist; dort prüfen die
 Lehrkräfte der Leistungskurse, eine Liste je LK. Leistungskurse sind die
 Kurse aus 11/12, deren Fachkürzel im Stundenplan großgeschrieben ist (`EN`,
 Grundkurse `en`). Was eine der beiden LK-Lehrkräfte geprüft hat, gilt auch in
-der Liste der anderen.
+der Liste der anderen. Dabei haken die LK-Lehrkräfte in der Spalte »Tutor:in«
+ihre Tutand:innen an. Diese Angaben bleiben nach der Übernahme erhalten; die
+Datenpflege sieht sie für 11 und 12 (fehlende und doppelte) und kann sie als
+CSV herunterladen, etwa für die LUSD.
 
 **Meldungen von Schüler:innen:** Im Profil können Schüler:innen einen falschen
 Namen melden; die Meldungen stehen auf der Seite Datenpflege. Passt die

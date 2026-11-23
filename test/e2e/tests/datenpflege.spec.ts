@@ -1,5 +1,5 @@
 import { test, expect, login, apiLogin, ACCOUNTS } from './fixtures';
-import { request as playwrightRequest, Page } from '@playwright/test';
+import { request as playwrightRequest, Page, Locator } from '@playwright/test';
 
 // Uploading a student list from LUSD on /datenpflege (include/datenpflege.rb):
 // compare with the list valid on the chosen day, apply it to the data repo
@@ -501,7 +501,17 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await page.locator('#ti_sl_dashboard_only').check();
     await page.locator('#bu_save_sl_correction').click();
     await expect(cls.locator('.sl-row', { hasText: 'Mustermann' }).first()).toBeVisible();
-    await expect(cls.locator('.sl-corrected', { hasText: 'Rufname: Max (nur im Dashboard)' })).toHaveCount(1);
+    // the correction in a row of its own below, the value exactly in its
+    // column; the student's row stays one line; one's own check without a name
+    const fix = cls.locator('tr.sl-note-row td.sl-fix-rufname');
+    await expect(fix).toHaveCount(1);
+    await expect(fix.locator('.sl-fix')).toHaveText('Max');
+    await expect(fix).toContainText('(nur im Dashboard)');
+    const left = async (l: Locator) => (await l.boundingBox())!.x;
+    expect(Math.abs(await left(fix) - await left(max.locator('td.sl-rufname')))).toBeLessThan(1);
+    const rowHeight = (name: string) => cls.locator('.sl-row', { hasText: name }).evaluate((tr) => tr.getBoundingClientRect().height);
+    expect(await rowHeight('Maximilian')).toBeLessThan(await rowHeight('Nele') + 2);
+    await expect(cls.locator('.sl-by')).toHaveCount(0);
 
     // someone leaving who is still there
     await mallory.locator('.bu_sl_correct').click();
@@ -599,7 +609,7 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await page.locator('#ti_sl_rufname').fill('Max');
     await page.locator('#ti_sl_dashboard_only').check();
     await page.locator('#bu_save_sl_correction').click();
-    await expect(cls.locator('.sl-corrected')).toContainText('nur im Dashboard');
+    await expect(cls.locator('tr.sl-note-row td.sl-fix-rufname')).toContainText('nur im Dashboard');
     await page.locator('#ti_sl_missing_name').fill('Paul Probe');
     await page.locator('#bu_sl_missing').click();
     await expect(cls.locator('.sl-missing li')).toHaveCount(1);
@@ -629,7 +639,7 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await page.locator('#ti_sl_gone').check();
     await page.locator('#ti_sl_gone_since').fill('2026-11-20');
     await page.locator('#bu_save_sl_correction').click();
-    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.sl-corrected')).toContainText('nicht mehr an der Schule');
+    await expect(cls.locator('.sl-corrected', { hasText: 'nicht mehr an der Schule' })).toHaveCount(1);
     await page.goto('/datenpflege');
     await corrections.locator('tr', { hasText: 'nicht mehr an der Schule' }).locator('.bu_sl_take_gone').click();
     await expect(page.locator('.modal.show')).toContainText('sofort nicht mehr an der Schule');
@@ -646,7 +656,7 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await page.locator('#bu_keep_draft').click();
     await expect(page.locator('#dp_is_draft')).toBeVisible();
     await page.goto('/schuelerliste?klasse=5a');
-    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.sl-changed-row')).toHaveText('geändert seit deiner Prüfung');
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('xpath=following-sibling::tr[1]').locator('.sl-changed-row')).toHaveText('geändert seit deiner Prüfung');
   } finally {
     await page.request.post('/api/schuelerliste/reset', { data: {} });
     const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
@@ -663,7 +673,7 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
 // list per LK (here LA-L108 by Clarke, with Alice in 11 and Bob in 12), with
 // a note why they may see students who aren't their tutees; who is in no LK
 // stays with the year, for the Datenpflege.
-test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', async ({ page }, testInfo) => {
+test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', async ({ page, baseURL }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
   test.setTimeout(90_000);
   const MAILPIT = process.env.MAILPIT_URL || 'http://localhost:8126';
@@ -671,6 +681,8 @@ test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', a
   await fetch(`${MAILPIT}/api/v1/search?query=${mailQuery}`, { method: 'DELETE' });
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/schuelerliste/reset', { data: {} });
+  let bobEmail = '';
+  let group = '';
   try {
     await page.goto('/datenpflege');
     await upload(page, [HEADER,
@@ -689,7 +701,7 @@ test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', a
     const year = page.locator('.dp-review-list tr[data-klasse="11"]');
     await expect(year).toContainText('11 ohne LK');
     await expect(year).toContainText('keine');
-    const group = (await lk.getAttribute('data-klasse'))!;
+    group = (await lk.getAttribute('data-klasse'))!;
 
     // the LK teacher's list: why they may see students who aren't their tutees
     await page.goto('/schuelerliste?klasse=' + encodeURIComponent(group));
@@ -702,6 +714,34 @@ test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', a
     await cls.locator('.sl-row', { hasText: 'Bob' }).locator('.bu_sl_ok').click();
     await expect(cls.locator('.sl-progress')).toContainText('1 von 2');
     await expect(page.locator('#sl_klasse option', { hasText: /^LK / })).toHaveCount(1);
+
+    // the tutees: the LK's teachers tick them (kept after the switch)
+    await expect(cls.locator('.sl-lk-note')).toContainText('Spalte »Tutor:in«');
+    await expect(cls.locator('.sl-table thead th:visible')).toContainText(['Tutor:in']);
+    await expect(cls.locator('.sl-tutor-count')).toHaveText('0');
+    const bobRow = cls.locator('.sl-row', { hasText: 'Bob' });
+    bobEmail = (await bobRow.getAttribute('data-student'))!;
+    await bobRow.locator('.ti_sl_tutor').check();
+    await expect(cls.locator('.sl-tutor-count')).toHaveText('1');
+    await expect(cls.locator('.sl-row', { hasText: 'Bob' }).locator('.ti_sl_tutor')).toBeChecked();
+    await expect(cls.locator('.sl-row', { hasText: 'Alice' }).locator('.ti_sl_tutor')).not.toBeChecked();
+    // a teacher not in the LK can't
+    const other = await playwrightRequest.newContext({ baseURL });
+    await apiLogin(other, ACCOUNTS.teacher);
+    expect((await other.post('/api/schuelerliste/tutor', { data: { klasse: group, student: bobEmail, tutor: true } })).ok()).toBe(false);
+    expect((await other.get('/api/datenpflege/tutoren.csv')).ok()).toBe(false);
+    await other.dispose();
+    // the Datenpflege: who is whose tutor, also as CSV for LUSD
+    await page.goto('/datenpflege');
+    const tutors = page.locator('.dp-tutors');
+    await expect(tutors.locator('summary')).toContainText('Tutor:innen in 11 und 12');
+    await tutors.locator('summary').click();
+    await expect(tutors.locator('tr', { hasText: 'Bob' })).toContainText('Clarke');
+    await expect(tutors.locator('tr', { hasText: 'Alice' })).toContainText('noch offen');
+    const csv = await (await page.request.get('/api/datenpflege/tutoren.csv')).text();
+    const bobLine = csv.split('\r\n').find((l) => l.includes(bobEmail))!;
+    expect(bobLine).toContain('Clarke');
+    expect(csv.split('\r\n')[0]).toContain('Tutor:in');
 
     // the mail: class and LK, with the note
     await page.goto('/datenpflege');
@@ -719,6 +759,7 @@ test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', a
     expect(mail.Text).toContain('/schuelerliste?klasse=' + encodeURIComponent(group).replace(/%20/g, '+'));
     expect(mail.Text).toContain('noch keine Daten, wer Tutor:in ist');
   } finally {
+    if (bobEmail) await page.request.post('/api/schuelerliste/tutor', { data: { klasse: group, student: bobEmail, tutor: false } });
     await page.request.post('/api/schuelerliste/reset', { data: {} });
     const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });

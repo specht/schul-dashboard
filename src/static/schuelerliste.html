@@ -1,6 +1,6 @@
 #{this_is_a_page_for_schuelerliste}
 <style>
-    .sl-page { max-width: 1100px; }
+    .sl-page { max-width: none; }
     .sl-page h2 { margin-bottom: 0.4em; }
     .sl-klassen { display: flex; align-items: center; gap: 0.6em; margin: 0.6em 0 1em; }
     .sl-klassen select { width: auto; }
@@ -8,7 +8,10 @@
     .sl-progress { color: var(--pv-muted, #5f6368); }
     .sl-scroll { overflow-x: auto; }
     .sl-table { width: 100%; }
-    .sl-table td { vertical-align: top; }
+    /* one line per student; what was said in a row of its own below */
+    .sl-table td { vertical-align: middle; white-space: nowrap; }
+    .sl-table tr.sl-note-row > td { border-top: 0; padding-top: 0; white-space: normal; font-size: 0.88em; }
+    .sl-nachname .sl-badges { display: inline-block; margin: 0 0 0 0.4em; }
     .sl-name { font-weight: 600; }
     .sl-official, .sl-notes { font-size: 0.88em; color: var(--pv-muted, #5f6368); }
     .sl-notes { color: var(--acc-text, #8a5a00); }
@@ -21,12 +24,12 @@
     .dp-old + .dp-new { margin-left: 0.2em; }
     /* the name as a heading only where the row becomes a card */
     .sl-table .sl-head { display: none; }
-    .sl-table tr.sl-row > td:first-child, .sl-table tr.sl-row > td.sl-head + td { border-left: 4px solid transparent; }
-    .sl-table tr.sl-row-added > td:first-child, .sl-table tr.sl-row-added > td.sl-head + td { border-left-color: #16a34a; }
+    .sl-table tr.sl-row > td:first-child, .sl-table tr.sl-row > td.sl-head + td, .sl-table tr.sl-note-row > td:first-child:not(.sl-head), .sl-table tr.sl-note-row > td.sl-head + td { border-left: 4px solid transparent; }
+    .sl-table tr.sl-row-added > td:first-child, .sl-table tr.sl-row-added > td.sl-head + td, .sl-table tr.sl-note-row.sl-row-added > td.sl-head + td { border-left-color: #16a34a; }
     .sl-table tr.sl-row-added { background: rgba(22, 163, 74, 0.05); }
     .sl-table tr.sl-row-removed > td:first-child { border-left-color: #dc2626; }
     .sl-table tr.sl-row-removed { background: rgba(220, 38, 38, 0.05); }
-    .sl-table tr.sl-row-changed > td:first-child, .sl-table tr.sl-row-changed > td.sl-head + td { border-left-color: #d97706; }
+    .sl-table tr.sl-row-changed > td:first-child, .sl-table tr.sl-row-changed > td.sl-head + td, .sl-table tr.sl-note-row.sl-row-changed > td.sl-head + td { border-left-color: #d97706; }
     .sl-badges { margin-top: 0.2em; }
     .sl-badge { display: inline-block; padding: 0 0.45em; border-radius: 999px; font-size: 0.82em; font-weight: 600; background: var(--pv-hover, #eef1f5); color: var(--pv-ink, #333); }
     .sl-badge-added { background: rgba(22, 163, 74, 0.15); color: #15803d; }
@@ -34,9 +37,16 @@
     body.dark .sl-badge-added { color: #7bd88f; }
     body.dark .sl-badge-removed { color: #ff8f8f; }
     .sl-legend { font-size: 0.88em; color: var(--pv-muted, #5f6368); display: flex; flex-wrap: wrap; align-items: center; gap: 0.3em 0.5em; }
-    .sl-actions { text-align: right; white-space: nowrap; }
+    .sl-actions { text-align: right; }
     .sl-done { color: #1f7a3d; font-weight: 600; }
-    .sl-corrected { display: inline-block; max-width: 26em; white-space: normal; text-align: left; font-size: 0.92em; vertical-align: top; }
+    .sl-corrected { overflow-wrap: anywhere; }
+    .sl-by, .sl-only, .sl-tutor-others { font-weight: 400; color: var(--pv-muted, #5f6368); }
+    .sl-tutor-mark { display: inline-flex; align-items: center; gap: 0.35em; margin: 0; cursor: pointer; }
+    .sl-tutor-phone { display: none; }
+    /* a corrected value, in its column below the row */
+    .sl-table tr.sl-note-row > td.sl-head { display: none !important; }
+    .sl-fix { padding: 0 0.3em; border-radius: 4px; background: rgba(217, 119, 6, 0.16); box-shadow: inset 0 0 0 1px rgba(217, 119, 6, 0.45); }
+    .sl-table tr.sl-note-row > td.sl-fix-label { text-align: right; color: var(--acc-text, #8a5a00); }
     .sl-page h4 { margin-top: 1.4em; font-size: 1.05rem; font-weight: 600; }
     .sl-missing { padding-left: 1.2em; }
     .sl-missing-form { display: flex; flex-wrap: wrap; gap: 0.5em; max-width: 48em; }
@@ -45,7 +55,7 @@
     .sl-confirm p { margin: 0; }
     .sl-confirmed { color: #1f7a3d; font-weight: 600; }
     .sl-changed { flex: 1 1 100%; color: var(--acc-text, #8a5a00); }
-    .sl-changed-row { font-size: 0.85em; color: var(--acc-text, #8a5a00); margin-bottom: 0.2em; white-space: normal; }
+    .sl-changed-row { color: var(--acc-text, #8a5a00); }
     .sl-form .form-row { display: flex; flex-wrap: wrap; gap: 0.6em 1em; margin-bottom: 0.6em; }
     .sl-form .form-row > div { flex: 1 1 12em; min-width: 0; }
     .sl-form label { display: block; margin-bottom: 0.2em; }
@@ -56,10 +66,13 @@
     @media (max-width: 640px) {
         .sl-table thead { display: none; }
         .sl-table tr { display: block; padding: 0.5em 0; border-top: 1px solid var(--pv-line, #e1e4e8); }
-        .sl-table td { display: inline-block; border: 0; padding: 0.15em 0.5em 0.15em 0; }
+        .sl-table td { display: inline-block; border: 0; padding: 0.15em 0.5em 0.15em 0; white-space: normal; }
+        .sl-table tr.sl-note-row { border-top: 0; padding-top: 0; }
+        .sl-table tr.sl-note-row > td { display: block; border-left: 0; }
         .sl-table td:first-child { display: block; }
         .sl-table tr.sl-row > td.sl-head + td { border-left: 0; }
         .sl-nachname .sl-badges { display: none; }
+        .sl-tutor-phone { display: inline; }
         body:not(.ui-preview) .sl-table .sl-nachname::before { content: 'Nachname: '; }
         body:not(.ui-preview) .sl-table .sl-rufname::before { content: 'Rufname: '; }
         body:not(.ui-preview) .sl-table .sl-vornamen::before { content: 'Vornamen: '; }
@@ -68,6 +81,10 @@
     /* new design: the table becomes cards in its own container */
     @container (max-width: 620px) {
         .sl-nachname .sl-badges { display: none; }
+        .sl-tutor-phone { display: inline; }
+        .ui-preview table.pv-gt-list > tbody > tr.sl-note-row { border-top: 0; padding-top: 0; }
+        .ui-preview table.pv-gt-list > tbody > tr.sl-note-row > td { font-weight: 400; font-size: 0.88rem; color: var(--pv-ink); }
+        .ui-preview table.pv-gt-list > tbody > tr.sl-note-row > td.sl-fix-label { order: -1; flex: 1 0 100%; text-align: left; font-weight: 600; color: var(--acc-text, var(--pv-ink)); }
     }
 </style>
 <div class='container-fluid white'>
@@ -139,6 +156,16 @@
         });
         $(document).on('click', '.bu_sl_reopen', function (e) {
             send('/api/schuelerliste/check', { student: $(e.currentTarget).closest('.sl-row').data('student'), status: 'open' });
+        });
+
+        // tutor (LK lists): ticked or not, at once
+        $(document).on('change', '.ti_sl_tutor', function (e) {
+            const box = e.currentTarget;
+            box.disabled = true;
+            api_call('/api/schuelerliste/tutor', { klasse: klasse, student: $(box).closest('.sl-row').data('student'), tutor: box.checked }, function (data) {
+                if (data.success) window.location.reload();
+                else { box.checked = !box.checked; box.disabled = false; }
+            });
         });
 
         // a correction taken back: the row is open again (what the

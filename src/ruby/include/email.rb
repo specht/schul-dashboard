@@ -7,8 +7,13 @@ REASON_TO_KEY = {
 class Main < Sinatra::Base
     post '/api/send_email' do
         assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
+        # comment: for this one student, in addition to the note (details)
+        # that is the same for all students the teacher picked
         data = parse_request_data(:required_keys => [:email, :reason, :details, :lesson_key, :lesson_offset, :datum],
-                                  :types => {:lesson_offset => Integer})
+                                  :optional_keys => [:comment],
+                                  :types => {:lesson_offset => Integer},
+                                  :max_value_lengths => {:details => 2048, :comment => 2048}, :max_body_length => 8192)
+        comment = data[:comment].to_s.strip
         # rules of the reason (/unterrichtsmails): own templates in the state
         # 'test' only for admins, their mails go to the sender alone
         # (mail-bot-repl.rb); reasons the Otium sends only for the Otium
@@ -29,13 +34,13 @@ class Main < Sinatra::Base
         ts_i = t.to_i
         tag = RandomTag.generate(24)
         datum = Date.today.strftime('%Y-%m-%d')
-        neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i, :test => test})
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i, :test => test, :comment => comment.empty? ? nil : comment})
             MATCH (ut:User {email: $teacher_email})
             MATCH (us:User {email: $sus_email})
             MERGE (l:Lesson {key: $lesson_key})
             MERGE (i:LessonInfo {offset: $lesson_offset})-[:BELONGS_TO]->(l)
             CREATE (us)<-[:SENT_TO]-(m:Mail {tag: $tag, reason: $reason, details: $details, ts: $ts})-[:SENT_BY]->(ut)
-            SET m.test = CASE WHEN $test THEN true ELSE null END
+            SET m.test = CASE WHEN $test THEN true ELSE null END, m.comment = $comment
             CREATE (m)-[:REGARDING]->(i)
             RETURN m;
         END_OF_QUERY
@@ -45,6 +50,7 @@ class Main < Sinatra::Base
             :reason => data[:reason],
             :test => test,
             :details => data[:details],
+            :comment => comment,
             :ts => ts_i,
             :ts_h => Time.at(ts_i).strftime('%H:%M'),
             :ts_sent => nil,
@@ -62,7 +68,7 @@ class Main < Sinatra::Base
         neo4j_query(<<~END_OF_QUERY, {:teacher_email => @session_user[:email], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset]}).each do |row|
             MATCH (l:Lesson {key: $lesson_key})<-[:BELONGS_TO]-(i:LessonInfo {offset: $lesson_offset})<-[:REGARDING]-(m:Mail)-[:SENT_BY]->(u:User {email: $teacher_email})
             MATCH (m)-[:SENT_TO]->(us:User)
-            RETURN m.tag AS tag, m.reason AS reason, m.details AS details, m.ts AS ts, m.ts_sent AS ts_sent, us.email AS email, m.test AS test
+            RETURN m.tag AS tag, m.reason AS reason, m.details AS details, m.ts AS ts, m.ts_sent AS ts_sent, us.email AS email, m.test AS test, m.comment AS comment
             ORDER BY ts;
         END_OF_QUERY
             results[row['email']] ||= []
@@ -71,6 +77,7 @@ class Main < Sinatra::Base
                 :reason => row['reason'],
                 :test => row['test'] == true,
                 :details => row['details'],
+                :comment => row['comment'] || '',
                 :ts => row['ts'],
                 :ts_h => Time.at(row['ts']).strftime('%H:%M'),
                 :ts_sent => row['ts_sent'],

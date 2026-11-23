@@ -80,7 +80,7 @@ class MailBotRepl < Sinatra::Base
                 debug "Sending parent mail #{tag} / #{lesson_key} / #{lesson_offset} / #{reason}#{test ? ' (test)' : ''}"
                 template = LessonMailTemplates.effective(templates, reason)
                 raise "no text for #{reason}" if template.nil?
-                vars = Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details)
+                vars = Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details, mail[:comment])
                 rendered = LessonMailTemplates.render(template, vars)
                 if test
                     rendered = LessonMailTemplates.mark_as_test(rendered, info[:label] || reason, "#{vars[:name]} (#{vars[:klasse]})")

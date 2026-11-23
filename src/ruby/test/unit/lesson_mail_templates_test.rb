@@ -246,6 +246,18 @@ class LessonMailTemplatesTest < Minitest::Test
         refute LessonMailTemplates.default_text?('eigen_a1b2c3d4', 'x', 'y')
     end
 
+    # the note is the same for all picked students, the comment is per student;
+    # {Notiz} holds both
+    def test_note_and_comment
+        template = {:subject => 'x', :body => 'Max war unruhig{Notiz}.'}
+        both = LessonMailTemplates.render(template, vars(note: 'Sitzplan', geschlecht: 'm').merge(:comment => " hat sich\numgesetzt "))
+        assert_includes both[:html], 'Max war unruhig (Sitzplan; hat sich umgesetzt).'
+        only_comment = LessonMailTemplates.render(template, vars.merge(:comment => 'vor der Tür'))
+        assert_includes only_comment[:html], 'Max war unruhig (vor der Tür).'
+        assert_includes LessonMailTemplates.render(template, vars(note: 'Sitzplan'))[:html], 'unruhig (Sitzplan).'
+        assert_includes LessonMailTemplates.render(template, vars.merge(:comment => '  '))[:html], 'Max war unruhig.'
+    end
+
     def test_new_template_body_is_valid
         assert_empty LessonMailTemplates.template_errors('Betreff', LessonMailTemplates::NEW_TEMPLATE_BODY)
     end

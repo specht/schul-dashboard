@@ -17,7 +17,7 @@ class Main < Sinatra::Base
     # preview alike. The person who sends the mail signs it and gets the
     # replies – for Otium mails the teacher on Otium duty; the lesson's
     # teacher is {Lehrkraft der Stunde}.
-    def self.lesson_mail_vars(sus_email, lesson_key, sender_email, details)
+    def self.lesson_mail_vars(sus_email, lesson_key, sender_email, details, comment = nil)
         sus = @@user_info[sus_email]
         lesson = @@lessons[:lesson_keys][lesson_key] || {}
         sender = @@user_info[sender_email] || {}
@@ -28,6 +28,7 @@ class Main < Sinatra::Base
             :klasse => tr_klasse(sus[:klasse]),
             :fach => lesson[:pretty_fach] || lesson[:fach],
             :note => details,
+            :comment => comment,
             :teacher => sender[:display_name],
             :lesson_teacher => lesson_teacher[:display_name_official] || lesson_teacher[:display_name],
             :geschlecht => sus[:geschlecht],
@@ -150,7 +151,8 @@ class Main < Sinatra::Base
     post '/api/preview_lesson_mail' do
         assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         data = parse_request_data(:required_keys => [:email, :reason, :details, :lesson_key],
-                                  :max_value_lengths => {:details => 2048}, :max_body_length => 4096)
+                                  :optional_keys => [:comment],
+                                  :max_value_lengths => {:details => 2048, :comment => 2048}, :max_body_length => 8192)
         stored = stored_lesson_mail_templates
         info = LessonMailTemplates.find(stored, data[:reason])
         # who sends it does not matter for a preview
@@ -158,7 +160,7 @@ class Main < Sinatra::Base
         assert(@@user_info[data[:email]] && !@@user_info[data[:email]][:teacher], 'unknown student')
         assert(@@lessons[:lesson_keys][data[:lesson_key]], 'unknown lesson')
         template = LessonMailTemplates.effective(stored, data[:reason])
-        rendered = LessonMailTemplates.render(template, Main.lesson_mail_vars(data[:email], data[:lesson_key], @session_user[:email], data[:details]))
+        rendered = LessonMailTemplates.render(template, Main.lesson_mail_vars(data[:email], data[:lesson_key], @session_user[:email], data[:details], data[:comment]))
         respond(:subject => rendered[:subject], :html => rendered[:html])
     end
 

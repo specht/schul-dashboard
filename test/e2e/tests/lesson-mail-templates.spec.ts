@@ -190,28 +190,59 @@ test('Mails aus dem Unterricht: Lehrkraft sieht die Mail vor dem Senden', async 
   }
 });
 
-// Sending queues the mail (the mail bot sends it 10 minutes later, it is not
-// part of the test stack); until then the teacher can cancel it.
-test('Mails aus dem Unterricht: Lehrkraft schickt eine Mail und bricht sie ab', async ({ page }, testInfo) => {
+// Several students at once: the teacher picks them, adds a comment of its own
+// for each (in addition to the common note) and sends with one button.
+// Sending queues the mails (the mail bot sends them 10 minutes later, it is
+// not part of the test stack); until then the teacher can cancel each.
+test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigenen Kommentar', async ({ page }, testInfo) => {
   // desktop and mobile run at the same time: each with a reason of its own
   const [reason, label] = testInfo.project.name === 'mobile' ? ['late', 'Verspätung'] : ['praise', 'Besonderes Lob'];
   await login(page, ACCOUNTS.admin);
   const modal = await openMailDialog(page);
   const table = modal.locator('#div_email_sus_table');
-  const send = table.locator('tr').first().getByRole('button', { name: 'E-Mail senden' });
-  // without a reason nothing can be sent
+  const picks = table.locator('.ti-mail-pick');
+  test.skip((await picks.count()) < 2, 'lesson with fewer than two students');
+  const send = modal.locator('#bu_send_lesson_mails');
+  // without a reason nothing can be picked or sent
   await expect(send).toBeDisabled();
+  await expect(picks.first()).toBeDisabled();
   await modal.locator('#ti_mail_reason').selectOption(reason);
-  await expect(send).toBeEnabled();
-  await modal.locator('#ti_mail_details').fill('Test');
-  await send.click();
-  const pending = table.locator('tr', { hasText: `»${label}«` });
-  await expect(pending).toContainText('wird um');
-  // one mail per reason and student
+  await modal.locator('#ti_mail_details').fill('Sitzplan');
   await expect(send).toBeDisabled();
-  await pending.getByRole('button', { name: 'Abbrechen' }).click();
-  await expect(pending).toHaveCount(0);
-  await expect(send).toBeEnabled();
+
+  const rows = table.locator('tr', { has: page.locator('.ti-mail-pick') });
+  const firstName = (row: number) => rows.nth(row).locator('.mail-sus-pick span').textContent().then((t) => t!.split(', ')[1]);
+  const first = await firstName(0);
+  const second = await firstName(1);
+  // a picked student gets a comment field of their own
+  await expect(rows.nth(0).locator('.ti-mail-comment')).toBeHidden();
+  await picks.nth(0).check();
+  await rows.nth(0).locator('.ti-mail-comment').fill('hat sich umgesetzt');
+  await picks.nth(1).check();
+  await expect(send).toHaveText('An 2 Eltern senden');
+  // the preview shows the student's own comment next to the note
+  const section = modal.locator('#mail_preview_section');
+  if (!(await section.evaluate((d) => (d as HTMLDetailsElement).open))) await section.locator('summary').click();
+  await modal.locator('#ti_mail_preview_sus').selectOption({ index: 0 });
+  await rows.nth(0).locator('.ti-mail-comment').fill('hat sich umgesetzt');
+  await expect(modal.getByTestId('mail-preview')).toContainText('(Sitzplan; hat sich umgesetzt)');
+
+  await send.click();
+  const pendingFirst = table.locator('tr', { hasText: `»${label}« (${first})` });
+  const pendingSecond = table.locator('tr', { hasText: `»${label}« (${second})` });
+  await expect(pendingFirst).toContainText('wird um');
+  await expect(pendingFirst).toContainText('hat sich umgesetzt');
+  await expect(pendingSecond).toContainText('wird um');
+  await expect(pendingSecond).not.toContainText('umgesetzt');
+  // sent: unpicked, and one mail per reason and student
+  await expect(send).toBeDisabled();
+  await expect(picks.nth(0)).not.toBeChecked();
+  await expect(picks.nth(0)).toBeDisabled();
+  await pendingFirst.getByRole('button', { name: 'Abbrechen' }).click();
+  await pendingSecond.getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(pendingFirst).toHaveCount(0);
+  await expect(pendingSecond).toHaveCount(0);
+  await expect(picks.nth(0)).toBeEnabled();
 });
 
 // Own templates: an admin adds a reason. It starts as a test (only admins see
@@ -325,8 +356,8 @@ test('Mails aus dem Unterricht: Testvorlage im Mail-Dialog', async ({ page }, te
   await modal.locator('#ti_mail_reason').selectOption(reason);
   await expect(notice).toBeVisible();
   await expect(modal.locator('#mail_preview_subject')).toContainText('Probe im Fach');
-  const send = modal.locator('#div_email_sus_table tr').first().getByRole('button', { name: 'E-Mail senden' });
-  await send.click();
+  await modal.locator('#div_email_sus_table .ti-mail-pick').first().check();
+  await modal.locator('#bu_send_lesson_mails').click();
   const pending = modal.locator('#div_email_sus_table tr', { hasText: `»${name}«` });
   await expect(pending).toContainText('Test, nur an dich');
   await pending.getByRole('button', { name: 'Abbrechen' }).click();

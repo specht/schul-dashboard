@@ -170,9 +170,12 @@ module LessonMailTemplates
         errors
     end
 
-    # vars: :first_name, :name, :klasse, :fach, :note, :teacher, :lesson_teacher, :geschlecht
+    # vars: :first_name, :name, :klasse, :fach, :note, :comment, :teacher,
+    # :lesson_teacher, :geschlecht. The note is the same for every student a
+    # teacher sends the mail to, the comment is for this one student; {Notiz}
+    # holds both: » (Sitzplan nicht eingehalten; hat sich umgesetzt)«.
     def self.values(vars)
-        note = vars[:note].to_s.gsub(/\s+/, ' ').strip
+        note = [vars[:note], vars[:comment]].map { |x| x.to_s.gsub(/\s+/, ' ').strip }.reject(&:empty?).join('; ')
         {
             'Vorname' => vars[:first_name],
             'Name' => vars[:name],

@@ -69,7 +69,8 @@ test('Datenpflege: Vergleich mit der bisherigen Liste', async ({ page }) => {
   await expect(preview.locator('.dp-moved')).toHaveCount(0);
   const bob = preview.locator('.dp-changed tr', { hasText: 'Bob Mustermann-Neu' });
   await expect(bob.locator('.dp-what')).toHaveText('Name');
-  await expect(bob.locator('.dp-new mark')).toHaveText('Mustermann-Neu');
+  await expect(bob.locator('.dp-new')).toHaveText('-Neu');
+  await expect(bob.locator('.dp-old')).toHaveCount(0);
   // Max changes class; the class table says where his class's students were
   const max = preview.locator('.dp-changed tr', { hasText: 'Max Mustermann' });
   await expect(max).toContainText(/Klasse\s*5a\s*5b/);
@@ -451,7 +452,7 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await page.goto('/datenpflege');
     await upload(page, [HEADER,
       'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
-      'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
+      'Mustermann;Elisabeth Anna;Elli;05a;weiblich;02.01.2010',
       'Neu;Nele;;05a;weiblich;01.03.2014'].join('\r\n'), '2000-01-01');
     await page.locator('#bu_keep_draft').click();
     await expect(page.locator('#dp_is_draft')).toBeVisible();
@@ -462,11 +463,22 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     const max = cls.locator('.sl-row', { hasText: 'Maximilian Mustermann' });
     // changes like a diff: the old Rufname struck through, the new one marked
     await expect(max).toHaveClass(/sl-row-changed/);
-    await expect(max.locator('.sl-name .dp-old')).toHaveText('Max Mustermann');
-    await expect(max.locator('.sl-name .dp-new mark')).toHaveText('Maximilian');
+    // (Nachname, Rufname and Vornamen each in a column; only what differs
+    // is marked, inline)
+    await expect(page.locator('.sl-table').first().locator('thead th:visible')).toHaveText(
+      ['Nachname', 'Rufname', 'Vornamen', 'Geschlecht', 'Geburtstag', 'Bildungsgang', '']);
+    await expect(max.locator('td.sl-rufname .dp-old')).toHaveText('Max');
+    await expect(max.locator('td.sl-rufname .dp-new')).toHaveText('Maximilian');
+    await expect(max.locator('td.sl-nachname')).toHaveText('Mustermann');
+    await expect(max.locator('td.sl-nachname .dp-old, td.sl-nachname .dp-new')).toHaveCount(0);
+    // a second first name: just that name in green, nothing struck through
+    const elli = cls.locator('.sl-row', { hasText: 'Elli' });
+    await expect(elli.locator('td.sl-vornamen')).toHaveText('Elisabeth Anna');
+    await expect(elli.locator('td.sl-vornamen .dp-new')).toHaveText('Anna');
+    await expect(elli.locator('.dp-old')).toHaveCount(0);
     const nele = cls.locator('.sl-row', { hasText: 'Nele Neu' });
     await expect(nele).toHaveClass(/sl-row-added/);
-    await expect(nele.locator('.sl-badge-added')).toHaveText('+ neu');
+    await expect(nele.locator('.sl-badge-added:visible')).toHaveText('+ neu');
     const mallory = cls.locator('.sl-leaving .sl-row', { hasText: 'Mallory' });
     await expect(mallory).toHaveClass(/sl-row-removed/);
     await expect(mallory.locator('.sl-badge-removed')).toHaveText('− steht nicht mehr in der Liste');
@@ -497,6 +509,17 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await page.locator('#ti_sl_text').fill('ist noch in der Klasse');
     await page.locator('#bu_save_sl_correction').click();
     await expect(cls.locator('.sl-leaving .sl-corrected')).toContainText('ist noch in der Klasse');
+    // a correction taken back: asked first, then the row is open again
+    await mallory.locator('.bu_sl_withdraw').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(cls.locator('.sl-leaving .sl-corrected')).toHaveCount(1);
+    await mallory.locator('.bu_sl_withdraw').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Zurücknehmen' }).click();
+    await expect(mallory.locator('.bu_sl_ok')).toBeVisible();
+    await expect(cls.locator('.sl-leaving .sl-corrected')).toHaveCount(0);
+    await expect(cls.locator('.sl-progress')).toContainText('3 von 4');
+    await mallory.locator('.bu_sl_ok').click();
+    await expect(mallory.locator('.sl-done')).toBeVisible();
 
     // missing: entered
     await page.locator('#ti_sl_missing_name').fill('Paul Probe');

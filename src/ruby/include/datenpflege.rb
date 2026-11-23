@@ -421,24 +421,60 @@ class Main < Sinatra::Base
         CGI.escapeHTML(s.to_s)
     end
 
-    # A change as in a word diff: the old value struck through on red, the
-    # new one on green, the words that differ emphasised.
+    # A change as in a word diff, inline: what stays once and plain, what
+    # goes struck through on red, what comes on green – a second first name
+    # added is just that name in green. Words and their separators (spaces,
+    # hyphens) are compared; with nothing but separators in common the whole
+    # value is replaced.
     def datenpflege_word_diff(from, to)
-        a = from.to_s.split(/(\s+)/)
-        b = to.to_s.split(/(\s+)/)
-        pre = 0
-        pre += 1 while pre < a.size && pre < b.size && a[pre] == b[pre]
-        suf = 0
-        suf += 1 while suf < a.size - pre && suf < b.size - pre && a[-1 - suf] == b[-1 - suf]
-        mark = lambda do |parts, cls|
-            head = parts[0, pre].join
-            mid = parts[pre, parts.size - pre - suf].join
-            tail = suf > 0 ? parts[-suf..].join : ''
-            "<span class='#{cls}'>#{dp_h(head)}#{mid.empty? ? '' : "<mark>#{dp_h(mid)}</mark>"}#{dp_h(tail)}</span>"
+        from, to = from.to_s, to.to_s
+        # spaces at the edges of a change stay outside the mark
+        wrap = lambda do |x, tag, cls|
+            core = x.strip
+            core.empty? ? dp_h(x) : "#{dp_h(x[/\A\s*/])}<#{tag} class='#{cls}'>#{dp_h(core)}</#{tag}>#{dp_h(x[/\s*\z/])}"
         end
-        old_html = from.to_s.empty? ? "<span class='dp-old dp-none'>leer</span>" : mark.(a, 'dp-old')
-        new_html = to.to_s.empty? ? "<span class='dp-new dp-none'>leer</span>" : mark.(b, 'dp-new')
-        "#{old_html} #{new_html}"
+        old_html = ->(x) { x.empty? ? '' : wrap.(x, 'del', 'dp-old') }
+        new_html = ->(x) { x.empty? ? '' : wrap.(x, 'ins', 'dp-new') }
+        return "<span class='dp-old dp-none'>leer</span> #{new_html.(to)}" if from.empty?
+        return "#{old_html.(from)} <span class='dp-new dp-none'>leer</span>" if to.empty?
+        a = from.scan(/[^\s\-]+|[\s\-]+/)
+        b = to.scan(/[^\s\-]+|[\s\-]+/)
+        # longest common subsequence of the tokens
+        len = Array.new(a.size + 1) { Array.new(b.size + 1, 0) }
+        (a.size - 1).downto(0) do |i|
+            (b.size - 1).downto(0) do |j|
+                len[i][j] = a[i] == b[j] ? len[i + 1][j + 1] + 1 : [len[i + 1][j], len[i][j + 1]].max
+            end
+        end
+        ops = []
+        i = j = 0
+        while i < a.size || j < b.size
+            if i < a.size && j < b.size && a[i] == b[j]
+                ops << [:same, a[i]]; i += 1; j += 1
+            elsif j < b.size && (i == a.size || len[i][j + 1] >= len[i + 1][j])
+                ops << [:add, b[j]]; j += 1
+            else
+                ops << [:del, a[i]]; i += 1
+            end
+        end
+        unless ops.any? { |op, t| op == :same && t =~ /[^\s\-]/ }
+            return "#{old_html.(from)}#{new_html.(to)}"
+        end
+        html = +''
+        gone, added = +'', +''
+        flush = lambda do
+            html << old_html.(gone) << new_html.(added)
+            gone, added = +'', +''
+        end
+        ops.each do |op, t|
+            case op
+            when :same then flush.(); html << dp_h(t)
+            when :del then gone << t
+            when :add then added << t
+            end
+        end
+        flush.()
+        html
     end
 
     def datenpflege_section(io, cls, title, rows, headers, hint: nil, open: true)

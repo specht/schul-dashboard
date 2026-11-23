@@ -66,11 +66,18 @@ class DatenpflegeDiffTest < Minitest::Test
     end
 
     def test_word_diff_marks_only_what_changed
-        html = @main.datenpflege_word_diff('Anna Maria', 'Anna Marie')
-        assert_includes html, 'Anna'
-        assert_match(/<mark>.*Maria.*<\/mark>/m, html)
-        assert_match(/<mark>.*Marie.*<\/mark>/m, html)
-        refute_match(/<mark>[^<]*Anna/, html)
+        # inline: what stays once and plain, only what differs marked
+        assert_equal "Anna <del class='dp-old'>Maria</del><ins class='dp-new'>Marie</ins>",
+                     @main.datenpflege_word_diff('Anna Maria', 'Anna Marie')
+        # a second first name: just that name, not the whole value again
+        assert_equal "Anna <ins class='dp-new'>Maria</ins>", @main.datenpflege_word_diff('Anna', 'Anna Maria')
+        assert_equal "Anna <del class='dp-old'>Maria</del> Luise", @main.datenpflege_word_diff('Anna Maria Luise', 'Anna Luise')
+        assert_equal "Mustermann<ins class='dp-new'>-Neu</ins>", @main.datenpflege_word_diff('Mustermann', 'Mustermann-Neu')
+        # nothing in common: the whole value
+        assert_equal "<del class='dp-old'>Max Peter</del><ins class='dp-new'>Paul Otto</ins>",
+                     @main.datenpflege_word_diff('Max Peter', 'Paul Otto')
+        assert_includes @main.datenpflege_word_diff('', 'x'), 'leer'
+        assert_equal "<del class='dp-old'>&lt;b&gt;</del><ins class='dp-new'>b</ins>", @main.datenpflege_word_diff('<b>', 'b')
     end
 
     def lusd(row, nachname, vorname, geburtsdatum, rufname = nil)

@@ -1759,7 +1759,7 @@ function preview_agenda_ghost(dir) {
         let monday = new Date(base);
         while (monday.getDay() !== 1) monday.setDate(monday.getDate() + (monday.getDay() === 0 ? 1 : -1));
         monday.setDate(monday.getDate() + 7 * dir);
-        if (!cached(monday)) return ghost.append($('<div>').addClass('pv-ag-empty').text('…'))[0];
+        if (!cached(monday)) return ghost.append($('<div>').addClass('pv-ag-empty pv-ag-loading').text('…'))[0];
         let events = [];
         for (let i = 0; i < 5; i++) {
             let d = new Date(monday);
@@ -1771,7 +1771,7 @@ function preview_agenda_ghost(dir) {
     }
     let day = new Date(base);
     do { day.setDate(day.getDate() + dir); } while (day.getDay() === 0 || day.getDay() === 6);
-    if (!cached(day)) return ghost.append($('<div>').addClass('pv-ag-empty').text('…'))[0];
+    if (!cached(day)) return ghost.append($('<div>').addClass('pv-ag-empty pv-ag-loading').text('…'))[0];
     preview_agenda_fill_day(ghost, day, events_of(day), new Date(), function() { return function() {}; });
     return ghost[0];
 }
@@ -1805,6 +1805,29 @@ function install_preview_agenda_swipe() {
         let r = box.getBoundingClientRect();
         Object.assign(ghost.style, { position: 'fixed', top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', margin: '0', pointerEvents: 'none', zIndex: '1' });
         document.body.appendChild(ghost);
+        ghost.style.top = landing() + 'px';
+    };
+    // Where the agenda's top will be on the screen once the day that slides
+    // in has taken its place – the neighbour slides in right there, so
+    // nothing jumps when the swipe ends. Scrolled down into the agenda, the
+    // new day starts with its first lesson (a little below the screen's top
+    // edge) instead of somewhere in its middle; a shorter day than the shown
+    // one makes the page shorter, and the page can then not stay scrolled as
+    // far as before – the neighbour already slides in where it will end up.
+    const TOP = 8;
+    let landing = function() {
+        let r = box.getBoundingClientRect();
+        let top = Math.max(r.top, TOP);
+        // the neighbour is only a placeholder while its week loads
+        if (!ghost || ghost.querySelector('.pv-ag-loading')) return top;
+        let doc_top = r.top + window.scrollY;
+        let height = document.documentElement.scrollHeight - box.offsetHeight + ghost.offsetHeight;
+        let max_scroll = Math.max(0, height - window.innerHeight);
+        return doc_top - Math.min(Math.max(0, doc_top - top), max_scroll);
+    };
+    let landed = function(top) {
+        let off = box.getBoundingClientRect().top - top;
+        if (Math.abs(off) >= 1) window.scrollBy(0, off);
     };
     // the day chips above follow the finger: the highlight slides from the
     // shown day to the next one as far as the agenda has moved, in full
@@ -1854,7 +1877,10 @@ function install_preview_agenda_swipe() {
     };
     let move = function(x, ms) {
         place(box, x, ms);
-        if (ghost) place(ghost, x + ghost_dir * width(), ms);
+        if (ghost) {
+            place(ghost, x + ghost_dir * width(), ms);
+            ghost.style.top = landing() + 'px';
+        }
         strip_follow(x, ms);
     };
     box.addEventListener('touchstart', function(e) {
@@ -1871,9 +1897,11 @@ function install_preview_agenda_swipe() {
             if (Math.abs(dx) < 10) return;
             dragging = true;
         }
+        // sideways now: the page does not scroll up or down as well
+        if (e.cancelable) e.preventDefault();
         ensure_ghost(dx < 0 ? 1 : -1);
         move(dx, 0);
-    }, { passive: true });
+    }, { passive: false });
     let cancel = function() {
         move(0, 150);
         setTimeout(function() { drop_ghost(); strip_rest(); }, 150);
@@ -1890,10 +1918,12 @@ function install_preview_agenda_swipe() {
         ensure_ghost(dir);
         move(-dir * width(), 160);
         setTimeout(function() {
+            let top = ghost ? parseFloat(ghost.style.top) : box.getBoundingClientRect().top;
             if (location.hash === '#woche') window.calendar.incrementDate({ weeks: dir });
             else if (dir > 0) window.calendar.next(); else window.calendar.prev();
             render_preview_agenda();
             place(box, 0, 0);
+            landed(top);
             drop_ghost();
             strip_rest();
         }, 160);

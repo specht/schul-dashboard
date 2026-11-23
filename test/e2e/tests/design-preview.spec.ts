@@ -1069,6 +1069,107 @@ test('Neues Design: Tageschips folgen dem Wischen', async ({ page }, testInfo) =
   }
 });
 
+// Phones: swiping the day with the page scrolled down, nothing jumps when the
+// swipe ends – the neighbouring day slides in exactly where it then stays:
+// scrolled into the agenda, the new day starts with its first lesson at the
+// top; a shorter day at the page's end slides in where the page can still
+// scroll to (install_preview_agenda_swipe, landing)
+test('Neues Design: Wischen springt bei gescrollter Seite nicht', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Wischen nur am Handy');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('body')).toHaveClass(/pv-agenda-on/);
+    const zeigen = (tag: number) => page.evaluate(async (tag) => {
+      const w = window as unknown as { calendar: { view: { currentStart: Date }; gotoDate: (d: Date) => void }; render_preview_agenda: () => void };
+      const d = new Date(w.calendar.view.currentStart);
+      while (d.getDay() !== 1) d.setDate(d.getDate() + (d.getDay() === 0 ? 1 : -1));
+      d.setDate(d.getDate() + tag);
+      w.calendar.gotoDate(d);
+      w.render_preview_agenda();
+      await new Promise((r) => setTimeout(r, 300));
+    }, tag);
+    const chips = page.locator('#pv_day_strip .pv-strip-day');
+    const cdp = await page.context().newCDPSession(page);
+    const lage = () => page.evaluate(() => {
+      const ghost = document.querySelector('.pv-agenda-ghost') as HTMLElement | null;
+      return {
+        oben: document.getElementById('pv_agenda')!.getBoundingClientRect().top,
+        geist: ghost ? ghost.getBoundingClientRect().top : null,
+        scroll: window.scrollY,
+        max: document.documentElement.scrollHeight - window.innerHeight,
+      };
+    });
+    // half way to the left, where the finger sits on the agenda; returns
+    // where the next day slides in, then lets go: the next day is shown
+    const wischen = async () => {
+      const r = await page.evaluate(() => {
+        const b = document.getElementById('pv_agenda')!.getBoundingClientRect();
+        const top = Math.max(b.top, 0), bottom = Math.min(b.bottom, window.innerHeight);
+        return { x: b.left, w: b.width, y: (top + bottom) / 2 };
+      });
+      const x0 = r.x + r.w * 0.8;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: r.y }] });
+      for (let i = 1; i <= 10; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 - (r.w * 0.5 * i) / 10, y: r.y }] });
+        await page.waitForTimeout(16);
+      }
+      const mitten = await lage();
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await expect(page.locator('.pv-agenda-ghost')).toHaveCount(0);
+      return mitten;
+    };
+    // at the top: the page stays where it is
+    await zeigen(1);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    let vorher = await lage();
+    let mitten = await wischen();
+    await expect(chips.nth(2)).toHaveClass(/pv-strip-active/);
+    let nachher = await lage();
+    expect(mitten.geist).toBeCloseTo(vorher.oben, 0);
+    expect(nachher.scroll).toBe(0);
+    expect(nachher.oben).toBeCloseTo(vorher.oben, 0);
+    // scrolled into the agenda (room below: the page as long as on a full
+    // day): the next day slides in with its start at the top and stays there
+    await zeigen(1);
+    await page.evaluate(() => {
+      const platz = document.createElement('div');
+      platz.id = 'test_platz';
+      platz.style.height = '2000px';
+      document.body.appendChild(platz);
+      const a = document.getElementById('pv_agenda')!;
+      window.scrollTo(0, a.getBoundingClientRect().top + window.scrollY + 120);
+    });
+    vorher = await lage();
+    expect(vorher.oben).toBeLessThan(-100);
+    mitten = await wischen();
+    await expect(chips.nth(2)).toHaveClass(/pv-strip-active/);
+    nachher = await lage();
+    expect(mitten.geist).toBeCloseTo(8, 0);
+    expect(Math.abs(nachher.oben - mitten.geist!)).toBeLessThan(1.5);
+    // a shorter day at the page's end: the page gets shorter – the next day
+    // slides in where the page can still scroll to, nothing moves at the end
+    await zeigen(1);
+    await page.evaluate(() => {
+      document.getElementById('test_platz')!.remove();
+      const lang = document.createElement('div');
+      lang.style.height = '1500px';
+      document.getElementById('pv_agenda')!.appendChild(lang);
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    });
+    vorher = await lage();
+    mitten = await wischen();
+    await expect(chips.nth(2)).toHaveClass(/pv-strip-active/);
+    nachher = await lage();
+    expect(mitten.geist!).toBeGreaterThan(vorher.oben + 1000);
+    expect(Math.abs(nachher.oben - mitten.geist!)).toBeLessThan(1.5);
+    expect(nachher.scroll).toBeLessThanOrEqual(nachher.max + 1);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Phones: other plans (Kürzel, classes, rooms) through a "Plan" button in the
 // header – a sheet with search, the shown plan in the accent; no chip panel
 // Back (button or swipe from the edge) closes what opened like a screen –

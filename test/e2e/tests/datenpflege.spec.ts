@@ -203,6 +203,66 @@ test('Namen melden nur für Schüler:innen, erledigen nur mit der Rolle', async 
 // LUSD data is right – it has no effect, is shown again when the page opens,
 // keeps the choices made for it, and a new export is compared with it. One
 // draft for everybody: desktop only, made-up students of its own.
+// Decisions in the comparison: someone new in LUSD who isn't (any longer)
+// at the school, someone in a class the dashboard doesn't know who is, and
+// someone LUSD no longer lists who is still there – or gone at once.
+test('Datenpflege: Entscheidungen im Vergleich (nicht mehr da, ist doch da, Klasse von Hand)', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(120_000);
+  await login(page, ACCOUNTS.admin);
+  const cleanup: (() => Promise<unknown>)[] = [];
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, [HEADER,
+      'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
+      'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
+      'Neu;Niko;;05a;männlich;01.03.2014',
+      'Weg;Quinn;;q9;weiblich;02.03.2014'].join('\r\n'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    const preview = page.locator('#dp_preview');
+
+    // new, but not here: kept out by name and birthday
+    const niko = preview.locator('.dp-added tr', { hasText: 'Niko Neu' });
+    const nikoEmail = (await niko.locator('.bu_row_gone').getAttribute('data-email'))!;
+    cleanup.push(() => page.request.post('/api/datenpflege/gone/remove', { data: { email: nikoEmail } }));
+    await niko.locator('.bu_row_gone').click();
+    await expect(preview.locator('.dp-added tr', { hasText: 'Niko Neu' })).toHaveCount(0);
+    await expect(preview.locator('.dp-manual tr', { hasText: 'Niko Neu' })).toContainText('als abgegangen vermerkt');
+
+    // a class the dashboard doesn't know: here after all, in 5a
+    const quinn = preview.locator('.dp-dropped tr', { hasText: 'Quinn Weg' });
+    await quinn.locator('.ti_row_klasse').selectOption('5a');
+    await expect(preview.locator('.dp-added tr', { hasText: 'Quinn Weg' })).toContainText('Klasse von Hand (LUSD: q9)');
+    const hand = preview.locator('.dp-manual tr', { hasText: 'Quinn Weg' });
+    await expect(hand).toContainText('Klasse von Hand statt q9');
+    await hand.locator('.bu_row_klasse_remove').click();
+    await expect(preview.locator('.dp-dropped tr', { hasText: 'Quinn Weg' })).toHaveCount(1);
+
+    // no longer in LUSD, but still here: kept by hand with the address
+    const mallory = preview.locator('.dp-removed tr', { hasText: 'Mallory' });
+    const malloryEmail = (await mallory.locator('.bu_row_keep').getAttribute('data-email'))!;
+    cleanup.push(() => page.request.post('/api/datenpflege/manual/remove', { data: { email: malloryEmail } }));
+    await mallory.locator('.bu_row_keep').click();
+    await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
+    await page.goto('/datenpflege');
+    await expect(page.locator('.dp-manual-list tr', { hasText: 'Mallory' })).toHaveCount(1);
+    await page.request.post('/api/datenpflege/manual/remove', { data: { email: malloryEmail } });
+    // … or gone at once (asked first)
+    await page.goto('/datenpflege');
+    cleanup.push(() => page.request.post('/api/datenpflege/gone/remove', { data: { email: malloryEmail } }));
+    await preview.locator('.dp-removed tr', { hasText: 'Mallory' }).locator('.bu_row_gone_now').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Abmelden' }).click();
+    await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
+    await page.goto('/datenpflege');
+    await expect(page.locator('.dp-gone-list tr', { hasText: 'Mallory' })).toHaveCount(1);
+  } finally {
+    for (const undo of cleanup) await undo().catch(() => null);
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
+  }
+});
+
 test('Datenpflege: Entwurf behalten, neuen Export damit vergleichen, ersetzen, verwerfen', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
   await login(page, ACCOUNTS.admin);

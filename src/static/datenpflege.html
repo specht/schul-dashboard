@@ -19,6 +19,8 @@
     .dp-klassen-box { margin-top: 1em; }
     .dp-list .ti_email { width: 15em; }
     .dp-list .ti_link { width: 16em; }
+    .dp-list .ti_row_klasse { display: inline-block; width: 12em; vertical-align: middle; }
+    .dp-dropped td:last-child, .dp-removed td:last-child, .dp-added td:last-child { white-space: nowrap; }
     .dp-klassen-box summary { cursor: pointer; }
     /* changes as in a word diff: old struck through on red, new on green */
     .dp-what { color: var(--pv-muted, #666); margin-right: 0.3em; }
@@ -314,6 +316,35 @@
             // "name@…" typed in full: only the part before the @
             emails[row] = e.currentTarget.value.trim().toLowerCase().split('@')[0];
             recheck();
+        });
+        // decisions in the comparison: kept in the data repository, then the
+        // comparison again (a restart first, if the data changed)
+        function after_decision(data) {
+            if (!data.ok) { message(data.message || 'Das hat nicht geklappt.'); return; }
+            if (data.reload) wait_for_reload($('#data_loaded_at').text()); else recheck();
+        }
+        $('#dp_preview').on('click', '.bu_row_gone', function (e) {
+            const b = $(e.currentTarget);
+            b.prop('disabled', true);
+            api_call('/api/datenpflege/row/gone', { token: token, row: String(b.data('row')), email: b.data('email') }, after_decision);
+        });
+        $('#dp_preview').on('click', '.bu_row_keep', function (e) {
+            const b = $(e.currentTarget);
+            b.prop('disabled', true);
+            api_call('/api/datenpflege/row/keep', { token: token, email: b.data('email') }, after_decision);
+        });
+        $('#dp_preview').on('click', '.bu_row_gone_now', function (e) {
+            const b = $(e.currentTarget);
+            dashboardConfirm(`${b.data('name')} sofort im Dashboard abmelden? Das gilt, bis die LUSD sie:ihn nicht mehr führt, und lässt sich unter »Nicht mehr an der Schule« zurücknehmen.`, function () {
+                api_call('/api/datenpflege/gone/add', { email: b.data('email') }, after_decision);
+            }, { title: 'Nicht mehr da', confirm: 'Abmelden', danger: true });
+        });
+        $('#dp_preview').on('change', '.ti_row_klasse', function (e) {
+            if (!e.currentTarget.value) return;
+            api_call('/api/datenpflege/row/klasse', { token: token, row: String($(e.currentTarget).data('row')), klasse: e.currentTarget.value }, after_decision);
+        });
+        $('#dp_preview').on('click', '.bu_row_klasse_remove', function (e) {
+            api_call('/api/datenpflege/row/klasse/remove', { key: $(e.currentTarget).data('key') }, after_decision);
         });
         $('#dp_preview').on('click', '.bu_unlink', function (e) {
             delete links[$(e.currentTarget).data('row')];

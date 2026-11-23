@@ -248,7 +248,20 @@ behält sie.
   enthält.
 
 Ein Eintrag endet erst, wenn ihn keine Liste mehr braucht, die heute oder
-später gilt.
+später gilt (der Entwurf zählt dabei mit).
+
+**Entscheidungen im Vergleich:** Die Listen des Vergleichs haben Knöpfe für
+die häufigen Fälle:
+
+- *Neu* – »Nicht mehr da«: steht in der LUSD, ist aber nicht (mehr) an der
+  Schule; kommt auf die Liste *Nicht mehr an der Schule* (erkannt an Name und
+  Geburtstag, da es noch kein Konto gibt).
+- *Nicht mehr dabei* – »Ist doch da«: kommt mit der bisherigen Adresse auf
+  *Noch nicht in der LUSD*; »Nicht mehr da« meldet sofort ab.
+- *Weggelassen* (Klasse gibt es im Dashboard nicht) – »ist da, in Klasse …«:
+  die Klasse von Hand (`schueler/klassen-von-hand.yaml`, gilt für jeden
+  Export, solange die LUSD keine bekannte Klasse liefert); »Nicht mehr da«
+  wie bei *Neu*.
 
 Damit das Dashboard in das Daten-Repository schreiben darf, braucht es in
 `env.rb` `DATA_REPO_WRITABLE = true` (und `DATA_REPO_PUSH = true` zum

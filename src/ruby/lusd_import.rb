@@ -96,7 +96,7 @@ module LusdImport
     Student = Struct.new(:row, :nachname, :vorname, :klasse, :lusd_klasse,
                          :geschlecht, :geburtsdatum, :rufname, :schulform, :sprachen,
                          :bildungsgang, :email, :email_note, :old_klasse, :matched_by, :email_taken, :email_custom,
-                         :folge, keyword_init: true) do
+                         :folge, :klasse_hand, keyword_init: true) do
         # Same rule as Parser#handle_schueler_line: the e-mail address is
         # built from this and the Nachname.
         def effective_rufname

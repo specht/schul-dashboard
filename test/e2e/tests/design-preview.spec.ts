@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { chromium, type Page } from '@playwright/test';
 import { test, expect, login, ACCOUNTS, displayedSchoolWeek } from './fixtures';
 
 // Neues Design (Vorschau): switched on in the profile – for now by admins only
@@ -2682,5 +2682,40 @@ test('Neues Design: Änderungen der Woche, Tausch statt Entfall', async ({ page 
     await expect(page.locator('#pv_side .pv-side-change', { hasText: 'AGr (9c)' })).toHaveCount(0);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
+// The week keeps the scrollbar's room (scrollbar-gutter): a dialog must not
+// make up for the scrollbar as well – Bootstrap added its width as padding
+// to the page and the sidebar, and the week jumped to the left when a
+// lesson was opened. (Headless browsers hide scrollbars: one with them.)
+test('Neues Design, Woche: ein Dialog verschiebt die Seite nicht', async ({ baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the week on the desktop');
+  const browser = await chromium.launch({ ignoreDefaultArgs: ['--hide-scrollbars'] });
+  const page = await browser.newPage({ baseURL, viewport: { width: 1600, height: 900 } });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-view-harness')).toBeVisible();
+    for (let i = 0; i < 6; i++) {
+      if (await page.locator('.fc-timegrid-event').count() > 0) break;
+      await page.evaluate(() => (window as any).calendar.next());
+      await page.waitForTimeout(400);
+    }
+    const where = async () => page.evaluate(() => ({
+      harness: document.querySelector('.fc-view-harness')!.getBoundingClientRect().right,
+      body: getComputedStyle(document.body).paddingRight,
+      navbar: getComputedStyle(document.querySelector('.navbar')!).paddingRight,
+    }));
+    const before = await where();
+    await page.locator('.fc-timegrid-event').first().click();
+    await expect(page.locator('#lessonModal')).toBeVisible();
+    await page.waitForTimeout(400);
+    const after = await where();
+    expect(after).toEqual(before);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    await browser.close();
   }
 });

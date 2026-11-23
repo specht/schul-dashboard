@@ -41,6 +41,29 @@
     #div_email_sus_table .mail-sus-comment {
         margin-top: 0.4em;
     }
+    #div_email_sus_table .mail-sus-head {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+    }
+    #div_email_sus_table .mail-sus-head .mail-sus-pick {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+    #div_email_sus_table .mail-sus-comment-short {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 90%;
+        font-style: italic;
+        opacity: 0.75;
+    }
+    #div_email_sus_table .bu-mail-comment-toggle {
+        margin-left: auto;
+        flex: 0 0 auto;
+    }
     #div_email_sus_table .mail-view-details {
         margin-top: 0.3em;
     }
@@ -2215,17 +2238,33 @@ function apply_mail_note_mode() {
     for (let email of Object.keys(email_div_rows)) {
         let row = email_div_rows[email];
         if (!individual) row.comment.val('');
-        row.comment_box.toggle(individual && row.pick.prop('checked'));
+        // switching to comments opens the field of every picked student
+        if (individual && row.pick.prop('checked')) row.open = true;
+        update_mail_comment_view(row);
     }
     update_mail_preview();
 }
 
-// Students picked for the mail
+// Students picked for the mail. With a comment for each, the field sits
+// below the student's name and can be folded: folded, the comment stays and
+// shows shortened next to the name; open stays open until folded.
 function set_mail_pick(email, picked) {
     let row = email_div_rows[email];
     row.pick.prop('checked', picked);
-    row.comment_box.toggle(picked && mail_individual());
+    row.open = picked;
     if (!picked) row.comment.val('');
+    update_mail_comment_view(row);
+}
+
+function update_mail_comment_view(row) {
+    let active = mail_individual() && row.pick.prop('checked');
+    let text = row.comment.val().trim();
+    row.comment_box.toggle(active && row.open);
+    row.toggle.toggle(active);
+    row.toggle.attr('aria-expanded', row.open ? 'true' : 'false')
+        .attr('title', row.open ? 'Kommentar einklappen' : 'Kommentar aufklappen')
+        .find('i').attr('class', row.open ? 'fa fa-chevron-up' : 'fa fa-chevron-down');
+    row.short.text(text).toggle(active && !row.open && text !== '');
 }
 
 function picked_mail_emails() {
@@ -2986,12 +3025,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         let row = $(`<tr>`).data('email', sus_info.email).data('type', 'sus');
                         let cell = $(`<td>`);
                         let pick = $(`<input type='checkbox' class='ti-mail-pick'>`);
-                        cell.append($(`<label class='mail-sus-pick'>`).append(pick).append($('<span>').text(`${sus_info.display_last_name}, ${sus_info.display_first_name}`)));
-                        let comment = $(`<textarea class='form-control form-control-sm ti-mail-comment' rows='1'>`).attr('placeholder', `Kommentar für ${sus_info.display_first_name} (optional)`);
+                        let head = $(`<div class='mail-sus-head'>`);
+                        head.append($(`<label class='mail-sus-pick'>`).append(pick).append($('<span>').text(`${sus_info.display_last_name}, ${sus_info.display_first_name}`)));
+                        let short = $(`<span class='mail-sus-comment-short'>`).hide();
+                        let toggle = $(`<button type='button' class='btn btn-sm btn-outline-secondary bu-mail-comment-toggle'>`).append($(`<i class='fa fa-chevron-down'>`)).hide();
+                        head.append(short).append(toggle);
+                        cell.append(head);
+                        let comment = $(`<textarea class='form-control form-control-sm ti-mail-comment' rows='2'>`).attr('placeholder', `Kommentar für ${sus_info.display_first_name}`);
                         let comment_box = $(`<div class='mail-sus-comment'>`).append(comment).hide();
                         cell.append(comment_box);
                         row.append(cell);
-                        email_div_rows[sus_info.email] = {pick: pick, comment: comment, comment_box: comment_box, row: row, sus_info: sus_info};
+                        let row_info = {pick: pick, comment: comment, comment_box: comment_box, short: short, toggle: toggle, open: false, row: row, sus_info: sus_info};
+                        email_div_rows[sus_info.email] = row_info;
+                        toggle.on('click', function(e) {
+                            row_info.open = !row_info.open;
+                            update_mail_comment_view(row_info);
+                            if (row_info.open) comment.trigger('focus');
+                        });
                         pick.on('change', function(e) {
                             set_mail_pick(sus_info.email, e.currentTarget.checked);
                             if (e.currentTarget.checked) {

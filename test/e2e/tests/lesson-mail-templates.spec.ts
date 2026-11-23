@@ -235,6 +235,15 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   await expect(rows.nth(2).locator('.ti-mail-comment')).toBeHidden();
   await rows.nth(0).locator('.ti-mail-comment').fill('hat sich umgesetzt');
   await expect(preview).toContainText('(hat sich umgesetzt)');
+  // folded, the comment stays and shows next to the name; open again
+  const toggle = rows.nth(0).locator('.bu-mail-comment-toggle');
+  await toggle.click();
+  await expect(rows.nth(0).locator('.ti-mail-comment')).toBeHidden();
+  await expect(rows.nth(0).locator('.mail-sus-comment-short')).toHaveText('hat sich umgesetzt');
+  await expect(rows.nth(1).locator('.ti-mail-comment')).toBeVisible();
+  await toggle.click();
+  await expect(rows.nth(0).locator('.ti-mail-comment')).toHaveValue('hat sich umgesetzt');
+  await expect(rows.nth(0).locator('.mail-sus-comment-short')).toBeHidden();
   await expect(preview).not.toContainText('Sitzplan');
 
   await send.click();

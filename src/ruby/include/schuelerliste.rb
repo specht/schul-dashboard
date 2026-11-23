@@ -9,6 +9,9 @@
 #                   dashboard_only, by, at})      status: ok | correction
 #   (:StudentMissing {id, review, name, note, by, at})
 #   (:StudentReview {review, confirmed_at, confirmed_by, draft})
+#   (:StudentTutor {student, teacher, by, at})   who is a student's tutor in
+#       11/12, marked by the LK teachers on their list; kept after the
+#       switch (the dashboard has no other source yet, later for LUSD)
 #
 # review: "klasse:5a"; student: the address for students who have one, the
 # key of the export otherwise (datenpflege_student_key). Personal data:
@@ -87,7 +90,7 @@ class Main < Sinatra::Base
         schuelerliste_klassen_all.select { |g| schuelerliste_teacher_shorthands(g).include?(shorthand) }
     end
 
-    SCHUELERLISTE_LK_NOTE = 'Für 11 und 12 gibt es noch keine Daten, wer Tutor:in ist. Deshalb prüfen die Lehrkräfte der Leistungskurse: Du siehst alle Schüler:innen deines LKs, auch die, deren Tutor:in du nicht bist. Eine der beiden LK-Lehrkräfte ist die Tutorin oder der Tutor; was die andere schon geprüft hat, ist hier auch abgehakt.'
+    SCHUELERLISTE_LK_NOTE = 'Für 11 und 12 gibt es noch keine Daten, wer Tutor:in ist. Deshalb prüfen die Lehrkräfte der Leistungskurse: Du siehst alle Schüler:innen deines LKs, auch die, deren Tutor:in du nicht bist. Eine der beiden LK-Lehrkräfte ist die Tutorin oder der Tutor; was die andere schon geprüft hat, ist hier auch abgehakt. Bitte hak in der Spalte »Tutor:in« deine Tutand:innen an – dann kennt das Dashboard sie künftig auch.'
 
     # Klassenleitungen see the draft only once the Datenpflege released it
     # (»Für Klassenleitungen freigeben«, or the first mail): before that the
@@ -373,6 +376,99 @@ class Main < Sinatra::Base
         require_data_manager!
         schuelerliste_reset!
         respond(:ok => true)
+    end
+
+    # ---------- tutors in 11/12 (StudentTutor) ----------
+
+    # student address => addresses of the teachers who marked themselves
+    def schuelerliste_tutors
+        tutors = Hash.new { |h, k| h[k] = [] }
+        neo4j_query("MATCH (t:StudentTutor) RETURN t.student AS student, t.teacher AS teacher ORDER BY t.at;").each do |row|
+            tutors[row['student']] << row['teacher']
+        end
+        tutors
+    end
+
+    # a teacher of the LK marks (or unmarks) themselves as tutor
+    def schuelerliste_tutor_marker?(klasse)
+        schuelerliste_lk?(klasse) && teacher_logged_in? && schuelerliste_teacher_shorthands(klasse).include?(@session_user[:shorthand])
+    end
+
+    post '/api/schuelerliste/tutor' do
+        require_teacher_or_data_manager_for_schuelerliste!
+        data = parse_request_data(:required_keys => [:klasse, :student, :tutor], :types => { :tutor => Object },
+                                  :max_value_lengths => { :student => 200 })
+        assert([true, false].include?(data[:tutor]))
+        klasse = data[:klasse]
+        schuelerliste_assert_klasse(klasse)
+        assert(schuelerliste_tutor_marker?(klasse), 'not a teacher of this LK')
+        view = schuelerliste_view
+        assert(view && !view[:errors], 'no draft')
+        assert(data[:student].include?('@') && (view[klasse] || { :students => [] })[:students].any? { |e| e[:key] == data[:student] }, 'not in this LK')
+        if data[:tutor]
+            neo4j_query(<<~END_OF_QUERY, :student => data[:student], :teacher => @session_user[:email], :at => Time.now.to_i)
+                MERGE (t:StudentTutor {student: $student, teacher: $teacher})
+                ON CREATE SET t.by = $teacher, t.at = $at;
+            END_OF_QUERY
+        else
+            neo4j_query("MATCH (t:StudentTutor {student: $student, teacher: $teacher}) DELETE t;", :student => data[:student], :teacher => @session_user[:email])
+        end
+        respond(:ok => true)
+    end
+
+    # the students of 11 and 12 today, with their tutors
+    def schuelerliste_tutor_rows
+        tutors = schuelerliste_tutors
+        OBERSTUFE.flat_map { |k| @@schueler_for_klasse[k] || [] }.filter_map do |email|
+            info = @@user_info[email]
+            next unless info
+            { :email => email, :klasse => info[:klasse], :last_name => info[:last_name].to_s,
+              :first_names => (info[:official_first_name] || info[:first_name]).to_s, :name => info[:display_name].to_s,
+              :geburtstag => info[:geburtstag], :tutors => tutors[email] }
+        end.sort_by { |r| [r[:klasse].to_s, r[:last_name], r[:first_names]] }
+    end
+
+    def schuelerliste_teacher_name(email)
+        info = @@user_info[email] || {}
+        info[:display_last_name] || info[:display_name] || email
+    end
+
+    def print_schuelerliste_tutors
+        rows = schuelerliste_tutor_rows
+        return '' if rows.empty?
+        known = rows.count { |r| !r[:tutors].empty? }
+        double = rows.count { |r| r[:tutors].size > 1 }
+        StringIO.open do |io|
+            io.puts "<details class='dp-section dp-tutors'>"
+            io.puts "<summary>Tutor:innen in 11 und 12: <strong class='dp-count'>#{known}</strong> von #{rows.size} angegeben#{double > 0 ? ", <span class='text-danger'>#{double} doppelt</span>" : ''}</summary>"
+            io.puts "<p class='text-muted dp-hint'>Die Lehrkräfte der Leistungskurse haken auf ihrer Schülerliste ihre Tutand:innen an. Die Angaben bleiben nach der Übernahme der Liste erhalten. <a class='btn btn-secondary btn-sm' id='bu_tutors_csv' href='/api/datenpflege/tutoren.csv'>Als CSV herunterladen</a></p>"
+            io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-tutor-list'><thead><tr><th>Jahrgang</th><th>Schüler:in</th><th>Tutor:in</th></tr></thead><tbody>"
+            rows.each do |r|
+                tutors = r[:tutors].map { |t| sl_h(schuelerliste_teacher_name(t)) }.join(', ')
+                tutors = "<span class='text-muted'>noch offen</span>" if r[:tutors].empty?
+                tutors += " <span class='text-danger'>(doppelt)</span>" if r[:tutors].size > 1
+                io.puts "<tr data-email='#{sl_h(r[:email])}'><td>#{sl_h(tr_klasse(r[:klasse]))}</td><td>#{sl_h(r[:name])}</td><td>#{tutors}</td></tr>"
+            end
+            io.puts "</tbody></table></div>"
+            io.puts "</details>"
+            io.string
+        end
+    end
+
+    # for LUSD: one line per student of 11/12, the tutor (or tutors) by
+    # shorthand and name; »;« like the LUSD's own CSV, UTF-8 with BOM (Excel)
+    get '/api/datenpflege/tutoren.csv' do
+        require_data_manager!
+        lines = [%w(Jahrgang Nachname Vornamen Geburtsdatum E-Mail Tutor:in-Kürzel Tutor:in)]
+        schuelerliste_tutor_rows.each do |r|
+            lines << [r[:klasse], r[:last_name], r[:first_names], sl_date(r[:geburtstag]), r[:email],
+                      r[:tutors].map { |t| (@@user_info[t] || {})[:shorthand] || '' }.join(', '),
+                      r[:tutors].map { |t| schuelerliste_teacher_name(t) }.join(', ')]
+        end
+        # (no formulas when opened in a spreadsheet)
+        cell = ->(x) { x = x.to_s.gsub(/[;\r\n"]/, ' '); x =~ /\A[=+\-@]/ ? "'#{x}" : x }
+        csv = lines.map { |l| l.map(&cell).join(';') }.join("\r\n") + "\r\n"
+        respond_raw_with_mimetype_and_filename("\uFEFF" + csv, 'text/csv; charset=utf-8', "tutorinnen-#{Date.today.strftime('%Y-%m-%d')}.csv")
     end
 
     # ---------- the Datenpflege's view on /datenpflege ----------
@@ -704,9 +800,13 @@ class Main < Sinatra::Base
                 io.puts "<p class='sl-intro sl-lk-note'>#{sl_h(SCHUELERLISTE_LK_NOTE)}</p>"
             end
             io.puts "<p class='sl-intro'>So #{schuelerliste_lk?(klasse) ? 'stehen die Schüler:innen deines Leistungskurses' : 'steht deine Klasse'} in der neuen Liste aus der Schulverwaltung (LUSD). Bitte prüfe jede Zeile: »Stimmt«, wenn alles richtig ist, sonst »Korrigieren«. Fehlt jemand, trag es unten ein. Zum Schluss »Liste bestätigen«. Im Dashboard ändert sich erst etwas, wenn die Liste übernommen wird.</p>"
-            io.puts "<p class='sl-progress'><strong>#{done}</strong> von <strong>#{keys.size}</strong> geprüft</p>"
-            io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert</p>"
-            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th><th></th></tr></thead><tbody>"
+            lk = schuelerliste_lk?(klasse)
+            tutors = lk ? schuelerliste_tutors : {}
+            marker = schuelerliste_tutor_marker?(klasse)
+            with_tutor = lk ? v[:students].count { |e| !tutors[e[:key]].empty? } : 0
+            io.puts "<p class='sl-progress'><strong>#{done}</strong> von <strong>#{keys.size}</strong> geprüft#{lk ? ", <strong class='sl-tutor-count'>#{with_tutor}</strong> mit Tutor:in" : ''}</p>"
+            io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert <span class='sl-fix'>neuer Wert</span> Korrektur</p>"
+            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
             gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
             v[:students].each do |s|
                 # the changes against today in their column, like a diff: what
@@ -730,7 +830,9 @@ class Main < Sinatra::Base
                 io.puts "<td class='sl-nachname'>#{cell.('Nachname', s[:last_name])}#{badges_html}</td>"
                 io.puts "<td class='sl-rufname'>#{cell.('Rufname', s[:first_name])}</td><td class='sl-vornamen'>#{cell.('Vornamen', s[:official_first_name])}</td>"
                 io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
+                io.puts "<td class='sl-tutor'>#{schuelerliste_tutor_html(tutors[s[:key]], marker && s[:key].include?('@'))}</td>" if lk
                 io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]))}</td></tr>"
+                io.puts schuelerliste_note_rows(state[:checks][s[:key]], valid.(s[:key]), row_class, lk ? SCHUELERLISTE_COLUMNS[0..-2] + [nil, nil] : SCHUELERLISTE_COLUMNS)
             end
             io.puts "</tbody></table></div>"
             unless v[:leaving].empty?
@@ -740,6 +842,7 @@ class Main < Sinatra::Base
                     where = s[:to] ? "− wechselt in die #{sl_h(tr_klasse(s[:to]))}" : '− steht nicht mehr in der Liste'
                     io.puts "<tr class='sl-row sl-row-removed' data-student='#{sl_h(s[:key])}' data-leaving='1' data-values='{}'><td><div class='sl-name'><span class='dp-old'>#{sl_h(s[:name])}</span></div><div class='sl-badges'><span class='sl-badge sl-badge-removed'>#{where}</span></div></td>"
                     io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]))}</td></tr>"
+                    io.puts schuelerliste_note_rows(state[:checks][s[:key]], valid.(s[:key]), 'sl-row-removed', [nil, nil])
                 end
                 io.puts "</tbody></table></div>"
             end
@@ -771,14 +874,85 @@ class Main < Sinatra::Base
         end
     end
 
+    # the tutor column of an LK list: »ich« to tick for the LK's teachers,
+    # who else marked the student
+    def schuelerliste_tutor_html(tutors, can_mark)
+        me = @session_user[:email]
+        others = (tutors - [me]).map { |t| sl_h(schuelerliste_teacher_name(t)) }
+        html = +''
+        if can_mark
+            html << "<label class='sl-tutor-mark'><input type='checkbox' class='ti_sl_tutor'#{tutors.include?(me) ? ' checked' : ''}> <span class='sl-tutor-phone'>Tutor:in: </span>ich</label>"
+        end
+        html << " <span class='sl-tutor-others'>#{others.join(', ')}</span>" unless others.empty?
+        html << "<span class='text-muted'>–</span>" if html.empty?
+        html
+    end
+
+    # the last column: only the buttons (one line), what was said goes in
+    # a row of its own below (schuelerliste_note_row)
     def schuelerliste_status_html(check, valid = true)
         if check.nil? || !valid
-            changed = check ? "<div class='sl-changed-row'>geändert seit deiner Prüfung</div>" : ''
-            "#{changed}<button type='button' class='btn btn-secondary btn-sm bu_sl_ok'>Stimmt</button> <button type='button' class='btn btn-secondary btn-sm bu_sl_correct'>Korrigieren…</button>"
+            "<button type='button' class='btn btn-secondary btn-sm bu_sl_ok'>Stimmt</button> <button type='button' class='btn btn-secondary btn-sm bu_sl_correct'>Korrigieren…</button>"
         elsif check[:status] == 'ok'
-            "<span class='sl-done'><i class='fa fa-check'></i> stimmt</span> <button type='button' class='btn btn-link btn-sm bu_sl_reopen'>Ändern</button>"
+            "<span class='sl-done'><i class='fa fa-check'></i> stimmt</span>#{schuelerliste_by_other(check)} <button type='button' class='btn btn-link btn-sm bu_sl_reopen'>Ändern</button>"
         else
-            "<span class='sl-corrected'>Korrektur: #{schuelerliste_correction_text(check)}</span> <button type='button' class='btn btn-link btn-sm bu_sl_correct' data-check='#{sl_h({ 'fields' => check[:fields], 'text' => check[:text], 'gone' => check[:gone], 'gone_since' => check[:gone_since], 'dashboard_only' => check[:dashboard_only] || [] }.to_json)}'>Ändern</button> <button type='button' class='btn btn-link btn-sm bu_sl_withdraw'>Zurücknehmen</button>"
+            "<button type='button' class='btn btn-link btn-sm bu_sl_correct' data-check='#{sl_h({ 'fields' => check[:fields], 'text' => check[:text], 'gone' => check[:gone], 'gone_since' => check[:gone_since], 'dashboard_only' => check[:dashboard_only] || [] }.to_json)}'>Ändern</button> <button type='button' class='btn btn-link btn-sm bu_sl_withdraw'>Zurücknehmen</button>"
         end
     end
+
+    # who checked, when it was someone else (in 11/12 the LK teachers share
+    # the checks of a student)
+    def schuelerliste_by_other(check)
+        return '' if check[:by].nil? || check[:by] == @session_user[:email]
+        name = (@@user_info[check[:by]] || {})[:display_last_name] || check[:by]
+        " <span class='sl-by'>(#{sl_h(name)})</span>"
+    end
+
+    # a correction below its row, each value exactly in its column (the
+    # student's row stays as it is); what has no column (Klasse, »nicht mehr
+    # an der Schule«, the note) across the columns in a row of its own. Or
+    # that the row changed since it was checked.
+    # columns: the field of each column, nil for a column without one
+    SCHUELERLISTE_COLUMNS = [nil, 'nachname', 'rufname', 'vornamen', 'geschlecht', 'geburtstag', 'bildungsgang', nil]
+    SCHUELERLISTE_GENDER_LABELS = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
+
+    def schuelerliste_note_rows(check, valid, row_class, columns)
+        tr = ->(cells) { "<tr class='sl-note-row #{row_class}'>#{cells}</tr>" }
+        # (the first column of the class table is the name heading on phones)
+        span = ->(html) { tr.(columns.size > 2 ? "<td class='sl-head'></td><td colspan='#{columns.size - 1}' data-label=''>#{html}</td>" : "<td colspan='#{columns.size}' data-label=''>#{html}</td>") }
+        if check && !valid
+            return span.("<span class='sl-changed-row'>geändert seit deiner Prüfung</span>")
+        end
+        return '' unless check && check[:status] == 'correction'
+        fields = check[:fields] || {}
+        dashboard_only = check[:dashboard_only] || []
+        in_columns = fields.keys & columns.compact
+        rows = +''
+        unless in_columns.empty?
+            cells = columns.each_with_index.map do |field, i|
+                if field && fields.include?(field)
+                    v = fields[field]
+                    v = case field
+                        when 'geschlecht' then SCHUELERLISTE_GENDER_LABELS[v] || v
+                        when 'geburtstag' then sl_date(v)
+                        when 'bildungsgang' then Main.tr_bildungsgang(v)
+                        else v
+                        end
+                    only = dashboard_only.include?(field) ? " <span class='sl-only'>(nur im Dashboard)</span>" : ''
+                    "<td class='sl-fix-cell sl-fix-#{field}'><span class='sl-fix'>#{sl_h(v)}</span>#{only}</td>"
+                elsif i == columns.size - 1
+                    "<td class='sl-fix-label'>Korrektur#{schuelerliste_by_other(check)}</td>"
+                else
+                    "<td#{i == 0 ? " class='sl-head'" : ''}></td>"
+                end
+            end
+            rows << tr.(cells.join)
+        end
+        rest = check.merge(:fields => fields.reject { |k, _| in_columns.include?(k) })
+        unless rest[:fields].empty? && !rest[:gone] && rest[:text].to_s.empty?
+            rows << span.("<span class='sl-corrected'>Korrektur#{in_columns.empty? ? schuelerliste_by_other(check) : ''}: #{schuelerliste_correction_text(rest)}</span>")
+        end
+        rows
+    end
+
 end

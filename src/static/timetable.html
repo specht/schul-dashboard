@@ -3032,7 +3032,28 @@ document.addEventListener('DOMContentLoaded', function() {
                         head.append(short).append(toggle);
                         cell.append(head);
                         let comment = $(`<textarea class='form-control form-control-sm ti-mail-comment' rows='2'>`).attr('placeholder', `Kommentar für ${sus_info.display_first_name}`);
-                        let comment_box = $(`<div class='mail-sus-comment'>`).append(comment).hide();
+                        // the mail for this student with this comment, below the field
+                        let mail_view = $(`<details class='mail-view-details mail-sus-preview'>`).append($(`<summary>`).text('Mail ansehen'));
+                        let mail_view_box = $(`<div class='lesson-mail-preview' data-testid='student-mail-preview'>`);
+                        let mail_view_subject = $(`<div class='lesson-mail-preview-subject'>`);
+                        let mail_view_body = $(`<div class='lesson-mail-preview-body'>`);
+                        mail_view.append(mail_view_box.append(mail_view_subject).append(mail_view_body));
+                        let mail_view_timer = null;
+                        let load_mail_view = function() {
+                            clearTimeout(mail_view_timer);
+                            if (!mail_view.prop('open') || mail_event === null) return;
+                            mail_view_timer = setTimeout(function() {
+                                api_call('/api/preview_lesson_mail', {email: sus_info.email, reason: $('#ti_mail_reason').val(), details: '', comment: comment.val().trim(), lesson_key: mail_event.lesson_key}, function(data) {
+                                    if (!data.success) return;
+                                    mail_view_subject.text(data.subject);
+                                    // rendered and escaped by the server
+                                    mail_view_body.html(data.html);
+                                }, {no_please_wait: true});
+                            }, 250);
+                        };
+                        mail_view.on('toggle', load_mail_view);
+                        comment.on('input', load_mail_view);
+                        let comment_box = $(`<div class='mail-sus-comment'>`).append(comment).append(mail_view).hide();
                         cell.append(comment_box);
                         row.append(cell);
                         let row_info = {pick: pick, comment: comment, comment_box: comment_box, short: short, toggle: toggle, open: false, row: row, sus_info: sus_info};

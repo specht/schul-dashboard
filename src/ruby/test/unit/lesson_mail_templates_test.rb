@@ -258,6 +258,18 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_includes LessonMailTemplates.render(template, vars.merge(:comment => '  '))[:html], 'Max war unruhig.'
     end
 
+    # a text the teacher changed for one student is taken as it is: escaped,
+    # paragraphs as usual, braces are no placeholders; the subject stays
+    def test_changed_text
+        template = {:subject => 'Lob für {Vorname}', :body => 'Hallo {Vorname}'}
+        normal = LessonMailTemplates.render(template, vars)
+        assert_equal 'Hallo Max', normal[:text]
+        changed = LessonMailTemplates.render(template, vars, "Liebe Eltern,\r\n\r\n{Vorname} <b>war</b> toll.\nGruß")
+        assert_equal 'Lob für Max', changed[:subject]
+        assert_equal "<p>Liebe Eltern,</p>\n<p>{Vorname} &lt;b&gt;war&lt;/b&gt; toll.<br>\nGruß</p>\n", changed[:html]
+        assert_equal normal[:html], LessonMailTemplates.render(template, vars, '  ')[:html]
+    end
+
     def test_new_template_body_is_valid
         assert_empty LessonMailTemplates.template_errors('Betreff', LessonMailTemplates::NEW_TEMPLATE_BODY)
     end

@@ -7,7 +7,54 @@ LESSON_MAIL_PREVIEW_STUDENTS = {
     'w' => {:first_name => 'Erika', :name => 'Erika Mustermann'},
 }
 
+# Class teachers send mails to the parents of their class without a lesson
+# (page /klassenmail/<klasse>): those mails hang at a lesson key of their own,
+# '_klassenleitung_<klasse>', with one LessonInfo per day. {Fach} is
+# »Klassenleitung« there.
+CLASS_MAIL_KEY_PREFIX = '_klassenleitung_'
+CLASS_MAIL_FACH = 'Klassenleitung'
+
 class Main < Sinatra::Base
+    # the class of a class teacher's mail key, nil for a lesson key
+    def self.class_mail_klasse(lesson_key)
+        return nil unless lesson_key.to_s.start_with?(CLASS_MAIL_KEY_PREFIX)
+        klasse = lesson_key.to_s[CLASS_MAIL_KEY_PREFIX.size..]
+        @@klassen_order.include?(klasse) ? klasse : nil
+    end
+
+    def self.class_mail_key(klasse)
+        "#{CLASS_MAIL_KEY_PREFIX}#{klasse}"
+    end
+
+    # the LessonInfo offset of a class teacher's mails: one per day
+    def self.class_mail_offset(date = Date.today)
+        (date - Date.new(2000, 1, 1)).to_i
+    end
+
+    def klassenleitung_of?(klasse)
+        teacher_logged_in? && (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand])
+    end
+
+    # May the session user send a mail about this student for this key? A
+    # lesson that exists (as before), or as class teacher about a student of
+    # their class.
+    def lesson_mail_key_allowed?(lesson_key, sus_email)
+        klasse = Main.class_mail_klasse(lesson_key)
+        if klasse
+            klassenleitung_of?(klasse) && (@@schueler_for_klasse[klasse] || []).include?(sus_email)
+        else
+            !@@lessons[:lesson_keys][lesson_key].nil?
+        end
+    end
+
+    # the students of a class for the mail dialog on the class page
+    def class_mail_students(klasse)
+        (@@schueler_for_klasse[klasse] || []).map do |email|
+            info = @@user_info[email] || {}
+            {:email => email, :display_first_name => info[:display_first_name], :display_last_name => info[:display_last_name]}
+        end.sort_by { |x| [x[:display_last_name].to_s, x[:display_first_name].to_s] }
+    end
+
     # The teacher of a lesson (first of the lesson's teachers), nil if unknown.
     def self.lesson_mail_lesson_teacher(lesson_key)
         @@shorthands[((@@lessons[:lesson_keys][lesson_key] || {})[:lehrer] || []).first]
@@ -26,7 +73,7 @@ class Main < Sinatra::Base
             :first_name => sus[:display_first_name],
             :name => sus[:display_name],
             :klasse => tr_klasse(sus[:klasse]),
-            :fach => lesson[:pretty_fach] || lesson[:fach],
+            :fach => class_mail_klasse(lesson_key) ? CLASS_MAIL_FACH : (lesson[:pretty_fach] || lesson[:fach]),
             :note => details,
             :comment => comment,
             :teacher => sender[:display_name],
@@ -158,10 +205,10 @@ class Main < Sinatra::Base
         # who sends it does not matter for a preview
         assert(info && LessonMailTemplates.sendable?(info, admin_logged_in?, true), 'unknown reason')
         assert(@@user_info[data[:email]] && !@@user_info[data[:email]][:teacher], 'unknown student')
-        assert(@@lessons[:lesson_keys][data[:lesson_key]], 'unknown lesson')
+        assert(lesson_mail_key_allowed?(data[:lesson_key], data[:email]), 'unknown lesson')
         template = LessonMailTemplates.effective(stored, data[:reason])
         rendered = LessonMailTemplates.render(template, Main.lesson_mail_vars(data[:email], data[:lesson_key], @session_user[:email], data[:details], data[:comment]))
-        respond(:subject => rendered[:subject], :html => rendered[:html])
+        respond(:subject => rendered[:subject], :html => rendered[:html], :text => rendered[:text])
     end
 
     # text and rules of a reason

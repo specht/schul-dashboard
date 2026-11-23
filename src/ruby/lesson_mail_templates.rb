@@ -207,15 +207,20 @@ module LessonMailTemplates
         end
     end
 
-    # template: {:subject, :body}; returns {:subject (plain text), :html}
-    def self.render(template, vars)
+    # template: {:subject, :body}; returns {:subject (plain text), :html,
+    # :text (the filled body as plain text, e.g. for a teacher to change it)}.
+    # text: a body a teacher changed for one student – taken as it is, its
+    # braces are no placeholders.
+    def self.render(template, vars, text = nil)
         subject = fill(template[:subject], vars).gsub(/\s+/, ' ').strip
-        paragraphs = fill(template[:body], vars).strip.split(/\n[ \t]*\n\s*/)
+        body = text.to_s.strip.empty? ? fill(template[:body], vars) : text.to_s
+        body = body.gsub(/\r\n?/, "\n").strip
+        paragraphs = body.split(/\n[ \t]*\n\s*/)
         html = paragraphs.map do |paragraph|
             lines = paragraph.split("\n").map { |line| CGI.escapeHTML(line.strip) }
             "<p>#{lines.join("<br>\n")}</p>\n"
         end.join('')
-        {:subject => subject, :html => html}
+        {:subject => subject, :html => html, :text => body}
     end
 
     # stored: {reason => {:subject, :body}} from the database

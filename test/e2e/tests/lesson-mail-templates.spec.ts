@@ -239,8 +239,9 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   const studentMail = rows.nth(0).getByTestId('student-mail-preview');
   await expect(studentMail).toBeHidden();
   await rows.nth(0).locator('.mail-sus-preview summary').click();
-  await expect(studentMail).toContainText(`${first} `);
-  await expect(studentMail).toContainText('(hat sich umgesetzt)');
+  const firstText = rows.nth(0).locator('.ti-mail-text');
+  await expect(firstText).toHaveValue(new RegExp(`${first} `));
+  await expect(firstText).toHaveValue(/\(hat sich umgesetzt\)/);
   // folded, the comment stays and shows next to the name; open again
   const toggle = rows.nth(0).locator('.bu-mail-comment-toggle');
   await toggle.click();
@@ -251,6 +252,16 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   await expect(rows.nth(0).locator('.ti-mail-comment')).toHaveValue('hat sich umgesetzt');
   await expect(rows.nth(0).locator('.mail-sus-comment-short')).toBeHidden();
   await expect(preview).not.toContainText('Sitzplan');
+  // the text of one student's mail, changed right there
+  await rows.nth(1).locator('.mail-sus-preview summary').click();
+  const secondText = rows.nth(1).locator('.ti-mail-text');
+  await expect(secondText).toHaveValue(new RegExp(second));
+  await secondText.fill(`${await secondText.inputValue()}\n\nEin Satz nur für ${second}.`);
+  await expect(rows.nth(1).locator('.mail-text-edited')).toBeVisible();
+  // a comment no longer goes into a changed text
+  await rows.nth(1).locator('.ti-mail-comment').fill('egal');
+  await page.waitForTimeout(600);
+  await expect(secondText).not.toHaveValue(/egal/);
 
   await send.click();
   const pendingFirst = table.locator('tr', { hasText: `»${label}« (${first})` });
@@ -265,6 +276,8 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   await pendingFirst.getByText('Mail ansehen').click();
   await expect(queued).toContainText('(hat sich umgesetzt)');
   await expect(queued).toContainText(first);
+  await pendingSecond.getByText('Mail ansehen').click();
+  await expect(pendingSecond.getByTestId('queued-mail')).toContainText(`Ein Satz nur für ${second}.`);
   // only for the person who sent it
   const tag = await page.evaluate((name) => Object.values((window as any).pending_mail_data).flat()
     .find((x: any) => x.comment === name)!.tag, 'hat sich umgesetzt');
@@ -417,5 +430,46 @@ test('Mails aus dem Unterricht: eigene Vorlagen legen nur Admins an', async ({ p
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
   expect((await page.request.post('/api/send_email', {
     data: { email: ACCOUNTS.schueler, reason: 'gibt_es_nicht', details: '', lesson_key: 'Ma_5a', lesson_offset: 0, datum: today },
+  })).status()).not.toBe(200);
+});
+
+// Class teachers write to the parents of their class without a lesson, from
+// the class page (Lerngruppen → Klasse): same dialog, {Fach} is
+// »Klassenleitung«. Clarke leads 5a, Torstenson does not.
+test('Mails aus dem Unterricht: Klassenleitung schreibt ohne Stunde', async ({ page, newUserPage }, testInfo) => {
+  // desktop and mobile run at the same time: each with a reason of its own
+  const [reason, label] = testInfo.project.name === 'mobile' ? ['material', 'Material fehlt'] : ['homework', 'Hausaufgaben fehlen'];
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/directory/5a');
+  await page.getByRole('link', { name: 'Mail an Eltern schicken' }).first().click();
+  await expect(page).toHaveURL(/\/klassenmail\/5a$/);
+  const modal = page.locator('#mailModal');
+  await expect(modal).toBeVisible();
+  await modal.locator('#ti_mail_reason').selectOption(reason);
+  const pick = modal.locator('.ti-mail-pick').first();
+  const name = (await modal.locator('.mail-sus-pick span').first().textContent())!.split(', ')[1];
+  await pick.check();
+  await modal.locator('#bu_send_lesson_mails').click();
+  const pending = modal.locator('#div_email_sus_table tr', { hasText: `»${label}« (${name})` });
+  await expect(pending).toContainText('wird um');
+  await pending.getByText('Mail ansehen').click();
+  await expect(pending.getByTestId('queued-mail')).toContainText('im Fach Klassenleitung');
+  // reopened, the mail of today is still listed
+  await page.reload();
+  await expect(modal.locator('#div_email_sus_table tr', { hasText: `»${label}« (${name})` })).toContainText('wird um');
+  await modal.locator('#div_email_sus_table tr', { hasText: `»${label}« (${name})` }).getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(modal.locator('#div_email_sus_table tr', { hasText: `»${label}« (${name})` })).toHaveCount(0);
+
+  // not the class teacher: no page, no mail
+  const other = await newUserPage();
+  await login(other, ACCOUNTS.teacher);
+  await other.goto('/klassenmail/5a');
+  await expect(other).not.toHaveURL(/klassenmail/);
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+  expect((await other.request.post('/api/send_email', {
+    data: { email: ACCOUNTS.schueler, reason: 'praise', details: '', lesson_key: '_klassenleitung_5a', lesson_offset: 0, datum: today },
+  })).status()).not.toBe(200);
+  expect((await other.request.post('/api/preview_lesson_mail', {
+    data: { email: ACCOUNTS.schueler, reason: 'praise', details: '', lesson_key: '_klassenleitung_5a' },
   })).status()).not.toBe(200);
 });

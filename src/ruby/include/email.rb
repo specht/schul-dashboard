@@ -8,12 +8,19 @@ class Main < Sinatra::Base
     post '/api/send_email' do
         assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         # comment: for this one student, in addition to the note (details)
-        # that is the same for all students the teacher picked
+        # that is the same for all students the teacher picked; text: the
+        # whole text of the mail, changed by the teacher for this student
         data = parse_request_data(:required_keys => [:email, :reason, :details, :lesson_key, :lesson_offset, :datum],
-                                  :optional_keys => [:comment],
+                                  :optional_keys => [:comment, :text],
                                   :types => {:lesson_offset => Integer},
-                                  :max_value_lengths => {:details => 2048, :comment => 2048}, :max_body_length => 8192)
+                                  :max_value_lengths => {:details => 2048, :comment => 2048, :text => LessonMailTemplates::MAX_BODY_LENGTH},
+                                  :max_body_length => 16 * 1024)
         comment = data[:comment].to_s.strip
+        text = data[:text].to_s.gsub(/\r\n?/, "\n").strip
+        # a lesson, or a class teacher's mail about a student of their class
+        # (one LessonInfo per day)
+        assert(lesson_mail_key_allowed?(data[:lesson_key], data[:email]), 'unknown lesson')
+        data[:lesson_offset] = Main.class_mail_offset if Main.class_mail_klasse(data[:lesson_key])
         # rules of the reason (/unterrichtsmails): own templates in the state
         # 'test' only for admins, their mails go to the sender alone
         # (mail-bot-repl.rb); reasons the Otium sends only for the Otium
@@ -34,13 +41,13 @@ class Main < Sinatra::Base
         ts_i = t.to_i
         tag = RandomTag.generate(24)
         datum = Date.today.strftime('%Y-%m-%d')
-        neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i, :test => test, :comment => comment.empty? ? nil : comment})
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i, :test => test, :comment => comment.empty? ? nil : comment, :text => text.empty? ? nil : text})
             MATCH (ut:User {email: $teacher_email})
             MATCH (us:User {email: $sus_email})
             MERGE (l:Lesson {key: $lesson_key})
             MERGE (i:LessonInfo {offset: $lesson_offset})-[:BELONGS_TO]->(l)
             CREATE (us)<-[:SENT_TO]-(m:Mail {tag: $tag, reason: $reason, details: $details, ts: $ts})-[:SENT_BY]->(ut)
-            SET m.test = CASE WHEN $test THEN true ELSE null END, m.comment = $comment
+            SET m.test = CASE WHEN $test THEN true ELSE null END, m.comment = $comment, m.text = $text
             CREATE (m)-[:REGARDING]->(i)
             RETURN m;
         END_OF_QUERY
@@ -105,7 +112,7 @@ class Main < Sinatra::Base
         template = LessonMailTemplates.effective(stored, mail[:reason])
         assert(template, 'unknown reason')
         vars = Main.lesson_mail_vars(row['sus_email'], row['lesson_key'], @session_user[:email], mail[:details], mail[:comment])
-        rendered = LessonMailTemplates.render(template, vars)
+        rendered = LessonMailTemplates.render(template, vars, mail[:text])
         if mail[:test] == true
             info = LessonMailTemplates.find(stored, mail[:reason]) || {}
             rendered = LessonMailTemplates.mark_as_test(rendered, info[:label] || mail[:reason], "#{vars[:name]} (#{vars[:klasse]})")

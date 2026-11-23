@@ -2775,7 +2775,8 @@ class Main
             teacher_email = row['t.email']
             sus_email = row['u.email']
             lesson_key = row['l.key']
-            fach = @@lessons[:lesson_keys][lesson_key][:fach]
+            # class teachers' mails hang at no lesson (CLASS_MAIL_KEY_PREFIX)
+            fach = Main.class_mail_klasse(lesson_key) ? 'KL' : ((@@lessons[:lesson_keys][lesson_key] || {})[:fach] || '?')
             reason = row['m'][:reason]
             ts = row['m'][:ts]
             ym = Time.at(ts).strftime('%Y-%m')

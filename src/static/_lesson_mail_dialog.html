@@ -1,0 +1,447 @@
+<style>
+    #div_email_sus_table tr:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    #div_email_sus_table .mail-sus-pick {
+        display: flex;
+        align-items: center;
+        gap: 0.6em;
+        margin: 0;
+        cursor: pointer;
+        font-weight: normal;
+    }
+    #div_email_sus_table .mail-sus-pick input {
+        width: 1.15em;
+        height: 1.15em;
+        flex: 0 0 auto;
+    }
+    #div_email_sus_table .mail-sus-comment {
+        margin-top: 0.4em;
+    }
+    #div_email_sus_table .mail-sus-head {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+    }
+    #div_email_sus_table .mail-sus-head .mail-sus-pick {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+    #div_email_sus_table .mail-sus-comment-short {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 90%;
+        font-style: italic;
+        opacity: 0.75;
+    }
+    #div_email_sus_table .bu-mail-comment-toggle {
+        margin-left: auto;
+        flex: 0 0 auto;
+    }
+    #div_email_sus_table .mail-view-details {
+        margin-top: 0.3em;
+    }
+    #div_email_sus_table .mail-view-details > summary {
+        cursor: pointer;
+        font-size: 90%;
+        opacity: 0.8;
+    }
+    #div_email_sus_table .mail-view-details .lesson-mail-preview {
+        margin-top: 0.4em;
+        font-style: normal;
+    }
+    #div_email_sus_table .ti-mail-text {
+        margin-top: 0.4em;
+        font-size: 95%;
+        line-height: 1.45;
+    }
+    #div_email_sus_table .mail-text-edited {
+        font-size: 85%;
+        margin-top: 0.2em;
+    }
+</style>
+<div class="modal pv-sheet" id="mailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" >
+                    E-Mail an Eltern senden
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div style="padding: 0.5em 0;">Bitte wählen Sie einen Grund für die E-Mail:</div>
+                <select id='ti_mail_reason' class='form-control'>
+                    #{lesson_mail_options_html}
+                </select>
+                <div id='mail_test_notice' class='alert alert-warning' data-testid='mail-test-notice' style='display: none; margin: 0.5em 0 0 0;'>
+                    Diese Vorlage ist noch im Test: Die Mail geht nur an dich, nicht an die Eltern. Freischalten unter »Mails aus dem Unterricht«.
+                </div>
+                <div id='mail_note_mode' style="padding: 0.6em 0 0.2em 0;">
+                    <div class='form-check form-check-inline'>
+                        <input class='form-check-input' type='radio' name='ti_mail_note_mode' id='ti_mail_note_mode_common' value='common' checked>
+                        <label class='form-check-label' for='ti_mail_note_mode_common'>Eine Notiz für alle</label>
+                    </div>
+                    <div class='form-check form-check-inline'>
+                        <input class='form-check-input' type='radio' name='ti_mail_note_mode' id='ti_mail_note_mode_individual' value='individual'>
+                        <label class='form-check-label' for='ti_mail_note_mode_individual'>Kommentar je Kind</label>
+                    </div>
+                </div>
+                <div id='mail_common_note_box'>
+                    <div style="padding: 0.3em 0;">Sie können eine Notiz hinzufügen, um das Problem zu konkretisieren; sie steht in der Mail an alle markierten Kinder:</div>
+                    <textarea id='ti_mail_details' class="form-control"></textarea>
+                </div>
+                <details id='mail_preview_section' class='lesson-mail-preview-details' style='display: none;'>
+                    <summary><span class='lesson-mail-preview-toggle'>Vorschau der E-Mail</span></summary>
+                    <div class='lesson-mail-preview-head'>
+                        <label for='ti_mail_preview_sus'>für</label>
+                        <select id='ti_mail_preview_sus' class='form-control form-control-sm'></select>
+                    </div>
+                    <div class='lesson-mail-preview' data-testid='mail-preview'>
+                        <div class='lesson-mail-preview-subject' id='mail_preview_subject'></div>
+                        <div class='lesson-mail-preview-body' id='mail_preview_body'></div>
+                    </div>
+                </details>
+                <div style="padding: 0.5em 0;">Die Mail geht an die Eltern, das Kind und Sie bekommen eine Kopie, Antworten gehen an Sie. Verschickt wird sie frühestens nach 10 Minuten – bis dahin können Sie sie hier abbrechen.</div>
+                <div style="padding: 0 0 0.5em 0;" id='mail_pick_hint'>Markieren Sie die Kinder, deren Eltern die Mail bekommen sollen.</div>
+                <div style='max-width: 100%; overflow-x: auto;'>
+                    <table class='table table-sm table-striped' id='div_email_sus_table'>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class='fa fa-times'></i>&nbsp;&nbsp;Schließen</button>
+                <button type="button" class="btn btn-warning" id="bu_send_lesson_mails" disabled><i class='fa fa-send'></i>&nbsp;&nbsp;<span class='label'>E-Mail senden</span></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// The mail to parents (texts and reasons: /unterrichtsmails), shared by the
+// timetable (a lesson) and the class page of the Klassenleitung (no lesson:
+// lesson_key '_klassenleitung_<klasse>'). lesson_mail_open() fills the dialog
+// for an event {lesson_key, lesson_offset, datum} and its students; null
+// empties it.
+var email_div_rows = {};
+var pending_mail_data = {};
+// names of all reasons (/unterrichtsmails)
+var REASON_LABEL = #{lesson_mail_reason_labels.to_json.gsub('</', '<\/')};
+
+function mail_reason_changed() {
+    let reason = $('#ti_mail_reason').val();
+    // reasons, their rules and note hints: /unterrichtsmails
+    let got_reason = !!reason;
+    let hint = $('#ti_mail_reason option:selected').data('note-hint') ?? '';
+    $('#ti_mail_details').val('');
+    $('#ti_mail_details').attr('placeholder', hint ? `Notiz (z. B. »${hint}«)` : 'Notiz');
+    $('#mail_test_notice').toggle($('#ti_mail_reason option:selected').data('test') === 1);
+    // a new reason starts with one note for all
+    $('#ti_mail_note_mode_common').prop('checked', true);
+    apply_mail_note_mode();
+    $('#ti_mail_details').prop('disabled', !got_reason);
+    $('#mail_note_mode input').prop('disabled', !got_reason);
+    // one mail per reason and student
+    for (let email of Object.keys(email_div_rows)) {
+        let taken = !got_reason || (pending_mail_data[email] ?? []).some((x) => x.reason == reason);
+        email_div_rows[email].pick.prop('disabled', taken);
+        if (taken) set_mail_pick(email, false);
+    }
+    update_mail_send_button();
+}
+
+// Either one note for all picked students or a comment for each, never
+// both: the field of the other way is emptied.
+function mail_individual() {
+    return $('#ti_mail_note_mode_individual').prop('checked');
+}
+
+function apply_mail_note_mode() {
+    let individual = mail_individual();
+    $('#mail_common_note_box').toggle(!individual);
+    if (individual) $('#ti_mail_details').val('');
+    $('#mail_pick_hint').text(individual
+        ? 'Markieren Sie die Kinder, deren Eltern die Mail bekommen sollen, und schreiben Sie zu jedem einen Kommentar.'
+        : 'Markieren Sie die Kinder, deren Eltern die Mail bekommen sollen.');
+    for (let email of Object.keys(email_div_rows)) {
+        let row = email_div_rows[email];
+        if (!individual) row.comment.val('');
+        // switching to comments opens the field of every picked student
+        if (individual && row.pick.prop('checked')) row.open = true;
+        update_mail_comment_view(row);
+    }
+    update_mail_preview();
+}
+
+// Students picked for the mail. With a comment for each, the field sits
+// below the student's name and can be folded: folded, the comment stays and
+// shows shortened next to the name; open stays open until folded.
+function set_mail_pick(email, picked) {
+    let row = email_div_rows[email];
+    row.pick.prop('checked', picked);
+    row.open = picked;
+    if (!picked) {
+        row.comment.val('');
+        row.text_edited = false;
+        row.mail_text.val('');
+        row.mail_text_edited.hide();
+    }
+    update_mail_comment_view(row);
+}
+
+function update_mail_comment_view(row) {
+    let active = mail_individual() && row.pick.prop('checked');
+    let text = row.comment.val().trim();
+    row.comment_box.toggle(active && row.open);
+    row.toggle.toggle(active);
+    row.toggle.attr('aria-expanded', row.open ? 'true' : 'false')
+        .attr('title', row.open ? 'Kommentar einklappen' : 'Kommentar aufklappen')
+        .find('i').attr('class', row.open ? 'fa fa-chevron-up' : 'fa fa-chevron-down');
+    row.short.text(text).toggle(active && !row.open && text !== '');
+}
+
+function picked_mail_emails() {
+    return Object.keys(email_div_rows).filter((email) => email_div_rows[email].pick.prop('checked'));
+}
+
+function update_mail_send_button() {
+    let count = picked_mail_emails().length;
+    let label = count === 0 ? 'E-Mail senden' : (count === 1 ? 'An 1 Eltern senden' : `An ${count} Eltern senden`);
+    $('#bu_send_lesson_mails .label').text(label);
+    $('#bu_send_lesson_mails').prop('disabled', count === 0 || !$('#ti_mail_reason').val());
+}
+
+// The mail exactly as it will be sent (texts: /unterrichtsmails), for one
+// student of the lesson.
+var mail_event = null;
+var mail_preview_timer = null;
+var mail_preview_seq = 0;
+function update_mail_preview() {
+    clearTimeout(mail_preview_timer);
+    let reason = $('#ti_mail_reason').val();
+    let email = $('#ti_mail_preview_sus').val();
+    if (!reason || !email || mail_event === null) {
+        $('#mail_preview_section').hide();
+        return;
+    }
+    $('#mail_preview_section').show();
+    mail_preview_timer = setTimeout(function() {
+        let seq = ++mail_preview_seq;
+        let comment = (mail_individual() && email_div_rows[email]) ? email_div_rows[email].comment.val().trim() : '';
+        let details = mail_individual() ? '' : $('#ti_mail_details').val().trim();
+        api_call('/api/preview_lesson_mail', {email: email, reason: reason, details: details, comment: comment, lesson_key: mail_event.lesson_key}, function(data) {
+            if (seq !== mail_preview_seq || !data.success) return;
+            $('#mail_preview_subject').text(data.subject);
+            // rendered and escaped by the server
+            $('#mail_preview_body').html(data.html);
+        }, {no_please_wait: true});
+    }, 250);
+}
+
+// »Mail ansehen«: the whole mail of a queued or sent mail, folded until
+// asked for, loaded when opened
+function mail_view_details(entry) {
+    let details = $(`<details class='mail-view-details'>`);
+    details.append($(`<summary>`).text('Mail ansehen'));
+    let preview = $(`<div class='lesson-mail-preview' data-testid='queued-mail'>`);
+    let subject = $(`<div class='lesson-mail-preview-subject'>`);
+    let body = $(`<div class='lesson-mail-preview-body'>`);
+    preview.append(subject).append(body);
+    details.append(preview);
+    let loaded = false;
+    details.on('toggle', function(e) {
+        if (!e.currentTarget.open || loaded) return;
+        loaded = true;
+        api_call('/api/preview_queued_email', {tag: entry.tag}, function(data) {
+            if (!data.success) {
+                loaded = false;
+                return;
+            }
+            subject.text(data.subject);
+            // rendered and escaped by the server
+            body.html(data.html);
+        }, {no_please_wait: true});
+    });
+    return details;
+}
+
+function generate_mail_pending_row(entry, sus_info) {
+    let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
+    // the label of an own template is text an admin typed
+    let label = $('<span>').text(REASON_LABEL[entry.reason] ?? entry.reason).html();
+    let test = entry.test ? ' – Test, nur an dich' : '';
+    if (entry.comment) test += ` – ${$('<span>').text(entry.comment).html()}`;
+    if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
+        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
+    } else {
+        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
+        let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`);
+        button.on('click', function(e) {
+            api_call('/api/cancel_email', {tag: entry.tag}, function(data) {
+                if (data.success) {
+                    row.remove();
+                    pending_mail_data[sus_info.email] = pending_mail_data[sus_info.email].filter((x) => x.tag !== entry.tag);
+                    mail_reason_changed();
+                }
+            });
+        });
+        row.append($(`<td style='text-align: right;'>`).append(button));
+    }
+    return row;
+}
+
+function lesson_mail_open(event, students, done) {
+    $('#div_email_sus_table').empty();
+    email_div_rows = {};
+    pending_mail_data = {};
+    mail_event = event;
+    $('#ti_mail_preview_sus').empty();
+    if (event === null) {
+        mail_reason_changed();
+        return;
+    }
+    for (let sus_info of students) {
+        $('#ti_mail_preview_sus').append($('<option>').val(sus_info.email).text(`${sus_info.display_first_name} ${sus_info.display_last_name}`));
+    }
+    api_call('/api/get_pending_mails', {lesson_key: event.lesson_key, lesson_offset: event.lesson_offset}, function(pending_data) {
+        pending_mail_data = pending_data.results;
+        console.log(pending_data);
+        for (let sus_info of students) {
+            let row = $(`<tr>`).data('email', sus_info.email).data('type', 'sus');
+            let row_info = {open: false, text_edited: false, row: row, sus_info: sus_info};
+            let cell = $(`<td>`);
+            let pick = $(`<input type='checkbox' class='ti-mail-pick'>`);
+            let head = $(`<div class='mail-sus-head'>`);
+            head.append($(`<label class='mail-sus-pick'>`).append(pick).append($('<span>').text(`${sus_info.display_last_name}, ${sus_info.display_first_name}`)));
+            let short = $(`<span class='mail-sus-comment-short'>`).hide();
+            let toggle = $(`<button type='button' class='btn btn-sm btn-outline-secondary bu-mail-comment-toggle'>`).append($(`<i class='fa fa-chevron-down'>`)).hide();
+            head.append(short).append(toggle);
+            cell.append(head);
+            let comment = $(`<textarea class='form-control form-control-sm ti-mail-comment' rows='2'>`).attr('placeholder', `Kommentar für ${sus_info.display_first_name}`);
+            // the mail for this student with this comment, below the field
+            let mail_view = $(`<details class='mail-view-details mail-sus-preview'>`).append($(`<summary>`).text('Mail ansehen'));
+            // the text of the mail can be changed for this one student; once
+            // changed, the comment above no longer goes into it
+            let mail_view_box = $(`<div class='lesson-mail-preview' data-testid='student-mail-preview'>`);
+            let mail_view_subject = $(`<div class='lesson-mail-preview-subject'>`);
+            let mail_text = $(`<textarea class='form-control ti-mail-text' rows='9'>`).attr('aria-label', `Text der Mail für ${sus_info.display_first_name}`);
+            let mail_text_edited = $(`<div class='mail-text-edited text-muted'>`).hide()
+                .append($('<span>').text('Für dieses Kind angepasst; der Kommentar oben wird nicht mehr eingesetzt. '))
+                .append($(`<a href='#' class='bu-mail-text-reset'>`).text('Zurücksetzen'));
+            mail_view.append(mail_view_box.append(mail_view_subject).append(mail_text).append(mail_text_edited));
+            let mail_view_timer = null;
+            let load_mail_view = function() {
+                clearTimeout(mail_view_timer);
+                if (!mail_view.prop('open') || mail_event === null) return;
+                mail_view_timer = setTimeout(function() {
+                    api_call('/api/preview_lesson_mail', {email: sus_info.email, reason: $('#ti_mail_reason').val(), details: '', comment: comment.val().trim(), lesson_key: mail_event.lesson_key}, function(data) {
+                        if (!data.success) return;
+                        mail_view_subject.text(data.subject);
+                        if (!row_info.text_edited) mail_text.val(data.text);
+                    }, {no_please_wait: true});
+                }, 250);
+            };
+            mail_view.on('toggle', load_mail_view);
+            comment.on('input', load_mail_view);
+            mail_text.on('input', function() {
+                row_info.text_edited = true;
+                mail_text_edited.show();
+            });
+            mail_text_edited.find('a').on('click', function(e) {
+                e.preventDefault();
+                row_info.text_edited = false;
+                mail_text_edited.hide();
+                load_mail_view();
+            });
+            let comment_box = $(`<div class='mail-sus-comment'>`).append(comment).append(mail_view).hide();
+            cell.append(comment_box);
+            row.append(cell);
+            Object.assign(row_info, {pick: pick, comment: comment, comment_box: comment_box, short: short, toggle: toggle, mail_text: mail_text, mail_text_edited: mail_text_edited});
+            email_div_rows[sus_info.email] = row_info;
+            toggle.on('click', function(e) {
+                row_info.open = !row_info.open;
+                update_mail_comment_view(row_info);
+                if (row_info.open) comment.trigger('focus');
+            });
+            pick.on('change', function(e) {
+                set_mail_pick(sus_info.email, e.currentTarget.checked);
+                if (e.currentTarget.checked) {
+                    // the preview follows the student just picked
+                    $('#ti_mail_preview_sus').val(sus_info.email);
+                    comment.trigger('focus');
+                }
+                update_mail_send_button();
+                update_mail_preview();
+            });
+            comment.on('input', function() {
+                $('#ti_mail_preview_sus').val(sus_info.email);
+                update_mail_preview();
+            });
+            $('#div_email_sus_table').append(row);
+            for (let entry of (pending_mail_data[sus_info.email] ?? [])) {
+                let row = generate_mail_pending_row(entry, sus_info);
+                $('#div_email_sus_table').append(row);
+            }
+        }
+        mail_reason_changed();
+        if (done) done();
+    });
+}
+
+// jQuery is loaded deferred: the handlers once the page is parsed
+document.addEventListener('DOMContentLoaded', function() {
+    $('#ti_mail_reason').on('change', function(e) {
+        mail_reason_changed();
+    });
+    // one mail per picked student, each with its own comment, one after the other
+    $('#bu_send_lesson_mails').on('click', function(e) {
+        let event = mail_event;
+        let reason = $('#ti_mail_reason').val().trim();
+        let individual = mail_individual();
+        let details = individual ? '' : $('#ti_mail_details').val().trim();
+        let queue = picked_mail_emails();
+        if (event === null || !reason || queue.length === 0) return;
+        $('#bu_send_lesson_mails').prop('disabled', true);
+        let send_next = function() {
+            if (queue.length === 0) {
+                mail_reason_changed();
+                return;
+            }
+            let email = queue.shift();
+            let row = email_div_rows[email];
+            api_call('/api/send_email', {email: email, reason: reason, details: details, comment: individual ? row.comment.val().trim() : '', text: (individual && row.text_edited) ? row.mail_text.val() : '', lesson_key: event.lesson_key, lesson_offset: event.lesson_offset, datum: event.datum}, function(data) {
+                if (!data.success) {
+                    mail_reason_changed();
+                    return;
+                }
+                pending_mail_data[email] ??= [];
+                pending_mail_data[email].push(data.entry);
+                let p = row.row;
+                while (p.next().data('type') === 'pending') p = p.next();
+                generate_mail_pending_row(data.entry, row.sus_info).insertAfter(p);
+                set_mail_pick(email, false);
+                send_next();
+            });
+        };
+        send_next();
+    });
+    $('#ti_mail_details').on('input', update_mail_preview);
+    $('#mail_note_mode input').on('change', apply_mail_note_mode);
+    $('#ti_mail_preview_sus').on('change', update_mail_preview);
+    // Mails are mostly sent from a phone: there the preview starts folded
+    // (one line), so the send buttons stay close. Opening or closing it is
+    // remembered.
+    (function() {
+        let details = document.getElementById('mail_preview_section');
+        let open = null;
+        try { open = localStorage.getItem('mail_preview_open'); } catch (err) {}
+        details.open = (open === null) ? window.innerWidth >= 768 : (open === 'true');
+        details.addEventListener('toggle', function() {
+            try { localStorage.setItem('mail_preview_open', details.open ? 'true' : 'false'); } catch (err) {}
+        });
+    })();
+    mail_reason_changed();
+});
+</script>

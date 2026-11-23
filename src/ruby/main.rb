@@ -3942,6 +3942,13 @@ class Main < Sinatra::Base
             unless admin_logged_in? || can_see_all_timetables_logged_in? || (@@teachers_for_klasse[klasse] || {}).include?(@session_user[:shorthand])
                 redirect "#{WEB_ROOT}/", 302
             end
+        elsif path == 'klassenmail'
+            # class teachers: mails to the parents of their class, without a
+            # lesson (include/unterrichtsmails.rb)
+            redirect "#{WEB_ROOT}/", 302 unless @session_user
+            parts = request.path.split('/')
+            klasse = CGI::unescape(parts[2] || '')
+            redirect "#{WEB_ROOT}/", 302 unless klassenleitung_of?(klasse)
         elsif path == 'at_overview'
             redirect "#{WEB_ROOT}/", 302 unless @session_user
             parts = request.path.split('/')

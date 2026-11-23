@@ -570,7 +570,8 @@
         });
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { neuBerechnen(); bandStand = null; bandAufbauen(); });
         if (window.MonitorEffekte) {
-            window.MonitorEffekte.start({buehne: el.mn, kaesten: '.mn-kasten', kiesel: null, dunkel: !!DATEN.dunkel});
+            // the footer is an opaque box: figures stand on its top edge
+            window.MonitorEffekte.start({buehne: el.mn, kaesten: '.mn-kasten', kiesel: null, dunkel: !!DATEN.dunkel, bandKante: true});
         }
     }
 

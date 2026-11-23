@@ -390,6 +390,18 @@ test('Flurmonitor, neues Design: Effekte laufen hinter den Kästen', async ({ pa
   expect(hit, 'Kasten verdeckt').toBe(true);
   await anhalten(page);
   await page.clock.runFor(2500);
+  // walking figures stand on the footer's top edge: it is an opaque box here
+  // (on the old monitor the ticker is text, the figures walk on its line) –
+  // the front layer ends exactly there, the feet were under the box
+  const boden = await page.evaluate(() => {
+    const mn = document.querySelector('#mn')!.getBoundingClientRect();
+    const fuss = document.querySelector('.mn-fuss')!.getBoundingClientRect();
+    const clip = (document.querySelector('canvas.fx-vorne-ebene') as HTMLElement).style.clipPath;
+    const m = /inset\(0(?:px)? 0(?:px)? ([\d.]+)px 0(?:px)?\)/.exec(clip);
+    return { schnitt: m ? Number(m[1]) : null, erwartet: mn.bottom - fuss.top };
+  });
+  expect(boden.schnitt).not.toBeNull();
+  expect(Math.abs(boden.schnitt! - boden.erwartet)).toBeLessThan(1.5);
 });
 
 // Only for the hallway, and only with ?design=neu or the account's new

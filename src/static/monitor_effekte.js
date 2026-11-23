@@ -508,11 +508,17 @@
             const r = band.getBoundingClientRect();
             if (r.height > 0 && getComputedStyle(band).display !== 'none') {
                 UNTEN = Math.max(10 * VW, Math.min(SICHTBAR_UNTEN, r.top - b.top - 0.2 * VW));
-                // Figuren, die nur kurz durchlaufen, gehen knapp auf der Schrift (Wunsch Jonas)
-                const zeile = band.querySelector('.ticker-message') || band;
-                const zr = zeile.getBoundingClientRect();
-                const schrift = parseFloat(getComputedStyle(zeile).fontSize) || 2.5 * VW;
-                LAUF_BODEN = Math.max(UNTEN, Math.min(SICHTBAR_UNTEN, zr.top - b.top + schrift * 0.22));
+                if (opt.bandKante) {
+                    // ein deckendes Band (neues Design): die Figuren stehen auf
+                    // seiner Oberkante, sonst verschwänden ihre Füße darunter
+                    LAUF_BODEN = Math.max(UNTEN, Math.min(SICHTBAR_UNTEN, r.top - b.top));
+                } else {
+                    // Figuren, die nur kurz durchlaufen, gehen knapp auf der Schrift (Wunsch Jonas)
+                    const zeile = band.querySelector('.ticker-message') || band;
+                    const zr = zeile.getBoundingClientRect();
+                    const schrift = parseFloat(getComputedStyle(zeile).fontSize) || 2.5 * VW;
+                    LAUF_BODEN = Math.max(UNTEN, Math.min(SICHTBAR_UNTEN, zr.top - b.top + schrift * 0.22));
+                }
             }
         }
         // Verabredung mit Jonas: das Schriftband bleibt von allen Effekten frei. Alle
@@ -13054,7 +13060,8 @@
     //       fixiert: Bühne ist das ganze Fenster}
     function start(o) {
         try {
-            opt = Object.assign({kaesten: '.klasse', kiesel: null, dunkel: false, fixiert: false}, o || {});
+            // bandKante: das Schriftband ist ein deckender Kasten (neues Design)
+            opt = Object.assign({kaesten: '.klasse', kiesel: null, dunkel: false, fixiert: false, bandKante: false}, o || {});
             buehne = opt.buehne || document.body;
             const soll = vorschauLesen();
             folgen = !!(soll && soll.folgen);

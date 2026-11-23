@@ -1041,6 +1041,16 @@ html {
     margin-left: -1px;
 }
 
+/* clicked: no ring of FullCalendar's own (it stayed on the button and drew
+   a dark frame inside the group); from the keyboard a ring of ours */
+.ui-preview .fc .fc-button:focus,
+.ui-preview .fc .fc-button-primary:focus,
+.ui-preview .fc .fc-button-primary:not(:disabled):active:focus,
+.ui-preview .fc .fc-button-primary:not(:disabled).fc-button-active:focus {
+    outline: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
 .ui-preview .fc .fc-button:focus-visible {
     outline: 2px solid var(--acc-text);
     outline-offset: 2px;

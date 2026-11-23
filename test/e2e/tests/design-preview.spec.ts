@@ -2719,3 +2719,25 @@ test('Neues Design, Woche: ein Dialog verschiebt die Seite nicht', async ({ base
     await browser.close();
   }
 });
+
+// A toolbar button keeps the focus after a click: FullCalendar then drew a
+// dark ring inside the group (»Woche vor«). Clicked: no ring; from the
+// keyboard: an outline of the design.
+test('Neues Design, Woche: kein dunkler Rahmen um geklickte Knöpfe', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the toolbar of the week');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const next = page.locator('.fc-next-button');
+    await expect(next).toBeVisible();
+    await next.click();
+    const style = await next.evaluate((b) => ({ shadow: getComputedStyle(b).boxShadow, outline: getComputedStyle(b).outlineStyle, focused: document.activeElement === b }));
+    expect(style.focused).toBe(true);
+    expect(style.shadow).not.toContain('0.2rem');
+    expect(style.shadow).not.toMatch(/rgba\(76, 91, 106/);
+    expect(style.outline).toBe('none');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

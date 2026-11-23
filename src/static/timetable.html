@@ -41,6 +41,18 @@
     #div_email_sus_table .mail-sus-comment {
         margin-top: 0.4em;
     }
+    #div_email_sus_table .mail-view-details {
+        margin-top: 0.3em;
+    }
+    #div_email_sus_table .mail-view-details > summary {
+        cursor: pointer;
+        font-size: 90%;
+        opacity: 0.8;
+    }
+    #div_email_sus_table .mail-view-details .lesson-mail-preview {
+        margin-top: 0.4em;
+        font-style: normal;
+    }
 </style>
 <div class='container-fluid'>
     <div id='pv_day_band' class='pv-day-band' hidden></div>
@@ -2224,6 +2236,33 @@ var pending_mail_data = {};
 // names of all reasons (/unterrichtsmails)
 var REASON_LABEL = #{lesson_mail_reason_labels.to_json.gsub('</', '<\/')};
 
+// »Mail ansehen«: the whole mail of a queued or sent mail, folded until
+// asked for, loaded when opened
+function mail_view_details(entry) {
+    let details = $(`<details class='mail-view-details'>`);
+    details.append($(`<summary>`).text('Mail ansehen'));
+    let preview = $(`<div class='lesson-mail-preview' data-testid='queued-mail'>`);
+    let subject = $(`<div class='lesson-mail-preview-subject'>`);
+    let body = $(`<div class='lesson-mail-preview-body'>`);
+    preview.append(subject).append(body);
+    details.append(preview);
+    let loaded = false;
+    details.on('toggle', function(e) {
+        if (!e.currentTarget.open || loaded) return;
+        loaded = true;
+        api_call('/api/preview_queued_email', {tag: entry.tag}, function(data) {
+            if (!data.success) {
+                loaded = false;
+                return;
+            }
+            subject.text(data.subject);
+            // rendered and escaped by the server
+            body.html(data.html);
+        }, {no_please_wait: true});
+    });
+    return details;
+}
+
 function generate_mail_pending_row(entry, sus_info) {
     let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
     // the label of an own template is text an admin typed
@@ -2231,9 +2270,9 @@ function generate_mail_pending_row(entry, sus_info) {
     let test = entry.test ? ' – Test, nur an dich' : '';
     if (entry.comment) test += ` – ${$('<span>').text(entry.comment).html()}`;
     if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
-        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet${test}</em>`));
+        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
     } else {
-        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet${test}</em>`));
+        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
         let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`);
         button.on('click', function(e) {
             api_call('/api/cancel_email', {tag: entry.tag}, function(data) {

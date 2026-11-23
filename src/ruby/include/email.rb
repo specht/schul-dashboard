@@ -87,6 +87,32 @@ class Main < Sinatra::Base
         respond(:results => results)
     end
 
+    # The whole mail of a queued or sent mail, for the list below the
+    # students in the mail dialog; only for the person who sent it. Rendered
+    # with today's text of the reason, test mails marked like the mail bot does.
+    post '/api/preview_queued_email' do
+        assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
+        data = parse_request_data(:required_keys => [:tag])
+        rows = neo4j_query(<<~END_OF_QUERY, {:teacher_email => @session_user[:email], :tag => data[:tag]})
+            MATCH (l:Lesson)<-[:BELONGS_TO]-(i:LessonInfo)<-[:REGARDING]-(m:Mail {tag: $tag})-[:SENT_BY]->(u:User {email: $teacher_email})
+            MATCH (m)-[:SENT_TO]->(us:User)
+            RETURN m, l.key AS lesson_key, us.email AS sus_email;
+        END_OF_QUERY
+        assert(rows.size == 1, 'unknown mail')
+        row = rows.first
+        mail = row['m']
+        stored = stored_lesson_mail_templates
+        template = LessonMailTemplates.effective(stored, mail[:reason])
+        assert(template, 'unknown reason')
+        vars = Main.lesson_mail_vars(row['sus_email'], row['lesson_key'], @session_user[:email], mail[:details], mail[:comment])
+        rendered = LessonMailTemplates.render(template, vars)
+        if mail[:test] == true
+            info = LessonMailTemplates.find(stored, mail[:reason]) || {}
+            rendered = LessonMailTemplates.mark_as_test(rendered, info[:label] || mail[:reason], "#{vars[:name]} (#{vars[:klasse]})")
+        end
+        respond(:subject => rendered[:subject], :html => rendered[:html])
+    end
+
     post '/api/cancel_email' do
         assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         data = parse_request_data(:required_keys => [:tag],

@@ -194,7 +194,7 @@ test('Mails aus dem Unterricht: Lehrkraft sieht die Mail vor dem Senden', async 
 // for each (in addition to the common note) and sends with one button.
 // Sending queues the mails (the mail bot sends them 10 minutes later, it is
 // not part of the test stack); until then the teacher can cancel each.
-test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigenen Kommentar', async ({ page }, testInfo) => {
+test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigenen Kommentar', async ({ page, newUserPage }, testInfo) => {
   // desktop and mobile run at the same time: each with a reason of its own
   const [reason, label] = testInfo.project.name === 'mobile' ? ['late', 'Verspätung'] : ['praise', 'Besonderes Lob'];
   await login(page, ACCOUNTS.admin);
@@ -234,6 +234,18 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   await expect(pendingFirst).toContainText('hat sich umgesetzt');
   await expect(pendingSecond).toContainText('wird um');
   await expect(pendingSecond).not.toContainText('umgesetzt');
+  // the whole mail, only when asked for
+  const queued = pendingFirst.getByTestId('queued-mail');
+  await expect(queued).toBeHidden();
+  await pendingFirst.getByText('Mail ansehen').click();
+  await expect(queued).toContainText('(Sitzplan; hat sich umgesetzt)');
+  await expect(queued).toContainText(first);
+  // only for the person who sent it
+  const tag = await page.evaluate((name) => Object.values((window as any).pending_mail_data).flat()
+    .find((x: any) => x.comment === name)!.tag, 'hat sich umgesetzt');
+  const other = await newUserPage();
+  await login(other, ACCOUNTS.teacher);
+  expect((await other.request.post('/api/preview_queued_email', { data: { tag } })).status()).not.toBe(200);
   // sent: unpicked, and one mail per reason and student
   await expect(send).toBeDisabled();
   await expect(picks.nth(0)).not.toBeChecked();

@@ -165,7 +165,7 @@
             lead.appendChild(icon('list-check'));
             text.appendChild(node('b', 'pv-todo-title', 'Schülerliste prüfen'));
             var parts = item.klassen.map(function (k) {
-                return 'Klasse ' + k.label + (k.open > 0 ? ': noch ' + k.open + ' von ' + k.total + ' Zeilen' : ': alles geprüft, noch bestätigen');
+                return k.label + (k.open > 0 ? ': noch ' + k.open + ' von ' + k.total + ' Zeilen' : ': alles geprüft, noch bestätigen');
             });
             if (item.deadline) parts.push('bitte bis ' + item.deadline.split('-').reverse().join('.'));
             text.appendChild(facts(parts));
@@ -202,7 +202,22 @@
         var rows = items.filter(function (item) { return !item.hidden || show_hidden; });
         var open = items.filter(is_open).length;
         el.textContent = '';
-        el.className = 'pv-todo pv-todo-' + mode + (mode === 'side' ? ' pv-side-box' : '');
+        // everything hidden: no box and no heading, only a quiet pill to
+        // show them again
+        var quiet = rows.length === 0 && hidden.length > 0;
+        el.className = 'pv-todo pv-todo-' + mode + (quiet ? ' pv-todo-quiet' : (mode === 'side' ? ' pv-side-box' : ''));
+        if (quiet) {
+            var label = hidden.length === 1 ? '1 ausgeblendete Umfrage' : hidden.length + ' ausgeblendete Umfragen';
+            var pill = node('button', 'pv-todo-show-hidden');
+            pill.type = 'button';
+            pill.setAttribute('aria-label', label + ' anzeigen');
+            pill.appendChild(icon('eye'));
+            pill.appendChild(node('span', null, label));
+            el.appendChild(pill);
+            last_expired = expired_count();
+            set_badges(open);
+            return true;
+        }
         var foldable = mode !== 'side' && rows.length > 2;
         el.classList.toggle('pv-todo-folded', foldable && folded);
         if (foldable) {

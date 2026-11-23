@@ -914,6 +914,48 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
   }
 });
 
+// The sidebar's badges look alike and stand in one column at the right: the
+// open items on »Stundenplan« and the unread messages on »Nachrichten« (the
+// latter was the old orange dot right after the name)
+test('Neues Design: Zähler im Menü gleich und rechtsbündig', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'die Seitenleiste nur am Desktop');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/messages');
+    await page.evaluate(() => {
+      (window as unknown as { update_new_messages_indicators: (ids: number[]) => void }).update_new_messages_indicators([1]);
+      document.querySelectorAll<HTMLElement>('.navbar .pv-todo-badge').forEach((b) => { b.hidden = false; b.querySelector('.pv-todo-badge-n')!.textContent = '1'; });
+    });
+    const shape = (sel: string) => page.locator(sel).first().evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const link = (el.closest('.nav-link') as HTMLElement).getBoundingClientRect();
+      // level with the name (its text, not the icon's box)
+      const label = [...el.closest('.nav-link')!.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim())!;
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const text = range.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return { right: Math.round(link.right - r.right), height: Math.round(r.height), middle: Math.round((r.top + r.bottom) / 2 - (text.top + text.bottom) / 2), bg: cs.backgroundColor, color: cs.color, size: cs.fontSize };
+    });
+    const todo = await shape('.navbar .nav-link > .pv-todo-badge');
+    const messages = await shape('.navbar .nav-link > .new-messages-indicator');
+    expect(messages).toEqual(todo);
+    expect(Math.abs(todo.middle)).toBeLessThanOrEqual(1);
+    // the tablet rail (names hidden): both at the icon's corner
+    await page.setViewportSize({ width: 1000, height: 800 });
+    const corner = (sel: string) => page.locator(sel).first().evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const icon = (el.closest('.nav-link')!.querySelector('.icon') as HTMLElement).getBoundingClientRect();
+      return { left: Math.round(r.left - icon.left), top: Math.round(r.top - icon.top), height: Math.round(r.height) };
+    });
+    expect(await corner('.navbar .nav-link > .new-messages-indicator')).toEqual(await corner('.navbar .nav-link > .pv-todo-badge'));
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 // Styles and scripts of the preview carry a version: after a change browsers
 // load them again instead of keeping an old copy (nginx serves them as files)
 test('Neues Design: Dateien mit Version, damit Änderungen ankommen', async ({ page }) => {

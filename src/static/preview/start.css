@@ -197,6 +197,26 @@
     text-decoration: underline;
 }
 
+/* everything hidden: only a small pill, no box and no heading (on its own
+   surface – readable on any backdrop) */
+.ui-preview .pv-todo-quiet .pv-todo-show-hidden {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--pv-surface);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    color: var(--pv-muted);
+    font-size: 0.8rem;
+}
+
+.ui-preview .pv-todo-quiet .pv-todo-show-hidden:hover {
+    color: var(--pv-ink);
+    text-decoration: none;
+}
+
 /* folded (phones and tablets, more than two rows): one line */
 .ui-preview .pv-todo-fold {
     display: flex;
@@ -282,6 +302,27 @@
     margin: 4px 8px 2px;
 }
 
+/* everything hidden: no panel above the week (the pill has its own
+   surface), and inside the day's card neither the line below nor a pill –
+   only the quiet line of text */
+.pv-todo-top.pv-todo-quiet {
+    padding: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.pv-todo-agenda.pv-todo-quiet {
+    margin: -4px 0 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.ui-preview .pv-todo-agenda.pv-todo-quiet .pv-todo-show-hidden {
+    padding: 2px 4px;
+    background: none;
+    box-shadow: none;
+}
+
 /* wide screens: the box in the column (.pv-side-box, preview.css) */
 .pv-todo-side {
     gap: 4px;
@@ -323,18 +364,54 @@
     display: none;
 }
 
+/* unread messages (main.rb, update_new_messages_indicators in
+   _template.html): the same badge, at the right like the one on
+   »Stundenplan« – not the old orange dot right after the name */
+.ui-preview .navbar .nav-link > .new-messages-indicator {
+    position: static;
+    top: 0;
+    display: inline-grid;
+    place-items: center;
+    width: auto;
+    min-width: 18px;
+    height: 18px;
+    margin-left: auto;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--acc) !important;
+    color: var(--acc-ink);
+    font: 700 11px/1 var(--pv-text);
+    font-variant-numeric: tabular-nums;
+    transition: none;
+}
+
+.ui-preview .navbar .nav-link > .new-messages-indicator span {
+    position: static;
+}
+
+/* the entries are aligned at the top (Gestaltung.md): the badge's middle
+   level with the first line's, not its top edge with the line's */
+.ui-preview .navbar .nav-link > .pv-nav-badge,
+.ui-preview .navbar .nav-link > .new-messages-indicator {
+    margin-top: 2px;
+    margin-top: max(0px, calc((1lh - 18px) / 2));
+}
+
 /* the tablet rail: at the icon's corner (the names are hidden there) */
 @media (min-width: 768px) and (max-width: 1199px) {
-    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link:has(> .pv-nav-badge) {
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link:has(> .pv-nav-badge),
+    .ui-preview .navbar .navbar-collapse > .navbar-nav > .nav-item > .nav-link:has(> .new-messages-indicator) {
         position: relative;
     }
 
-    .ui-preview .navbar .nav-link > .pv-nav-badge {
+    .ui-preview .navbar .nav-link > .pv-nav-badge,
+    .ui-preview .navbar .nav-link > .new-messages-indicator {
         position: absolute;
         top: 3px;
         left: calc(50% + 4px);
         min-width: 16px;
         height: 16px;
+        margin-top: 0;
         padding: 0 4px;
         font-size: 10px;
     }

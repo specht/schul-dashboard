@@ -113,6 +113,42 @@ test('Neues Design: »Zu erledigen« zeigt Umfragen am richtigen Ort, »Teilnehm
   }
 });
 
+// Everything hidden: no box and no heading, only a quiet pill to show the
+// hidden polls again
+test('Neues Design: nur Ausgeblendetes zeigt eine leise Zeile statt der Box', async ({ page }, testInfo) => {
+  const stamp = `${testInfo.project.name} ${Date.now().toString(36)}`;
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  let pid = '';
+  try {
+    const run = await pollFor(page.request, `Leise ${stamp}`, 24 * 60);
+    pid = run.pid;
+    expect((await page.request.post('/api/hide_poll_run', { data: { prid: run.prid } })).status()).toBe(200);
+    await page.goto('/');
+    const todo = page.locator('#pv_todo');
+    await expect(todo).toBeVisible();
+    // only the hidden poll (whatever else the account has open)
+    await page.evaluate(() => {
+      const w = window as any;
+      const items = w.pv_todo_data.items.filter((i: { hidden?: boolean }) => i.hidden);
+      w.pv_todo.update({ items, count: items.length });
+    });
+    const pill = todo.getByRole('button', { name: /^\d+ ausgeblendete Umfragen? anzeigen$/ });
+    await expect(pill).toBeVisible();
+    await expect(pill.locator('i.ti.ti-eye')).toBeVisible();
+    await expect(todo).toHaveClass(/pv-todo-quiet/);
+    await expect(todo).not.toHaveClass(/pv-side-box/);
+    await expect(todo.locator('.pv-todo-head, .pv-todo-fold')).toHaveCount(0);
+    // small: about one line high
+    expect((await todo.boundingBox())!.height).toBeLessThan(40);
+    await pill.click();
+    await expect(todo.locator('.pv-todo-row', { hasText: `Leise ${stamp}` })).toContainText('ausgeblendet');
+  } finally {
+    if (pid) await page.request.post('/api/delete_poll', { data: { pid } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 test('Neues Design: mehr als zwei Aufgaben falten sich am Handy und Tablet zu einer Zeile', async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === 'mobile';
   const stamp = `${testInfo.project.name} ${Date.now().toString(36)}`;

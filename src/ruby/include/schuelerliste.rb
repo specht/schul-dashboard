@@ -24,10 +24,70 @@ class Main < Sinatra::Base
     # only these can be kept in the dashboard alone (overrides)
     SCHUELERLISTE_DASHBOARD_ONLY = %w(rufname geschlecht)
 
-    # classes checked by Klassenleitungen (11 and 12: tutors, later)
+    OBERSTUFE = ['11', '12']
+
+    # What is checked, and by whom: classes 5–10 by their Klassenleitungen;
+    # in 11 and 12 there is no tutor data yet, so the teachers of a student's
+    # Leistungskurse check (one of the two is the tutor) – a list per LK
+    # ("lk:<lesson key>"). 11 and 12 themselves hold who is in no LK (new
+    # students, for the Datenpflege).
     def schuelerliste_klassen_all
-        KLASSEN_ORDER.reject { |k| ['11', '12'].include?(k.to_s) }
+        KLASSEN_ORDER.reject { |k| OBERSTUFE.include?(k.to_s) } + schuelerliste_lk_groups +
+            KLASSEN_ORDER.select { |k| OBERSTUFE.include?(k.to_s) }
     end
+
+    # an LK: a course of 11/12 whose subject code is in capitals (EN_11, MA;
+    # a GK is en_11), not a Zusatzkurs (ZK)
+    def self.schuelerliste_lk_lesson?(info)
+        return false unless ((info[:klassen] || []) & OBERSTUFE).any?
+        code = (info[:orig_fach] || info[:fach]).to_s.split(/[_\s-]/).first.to_s
+        !!(code =~ /\A[A-ZÄÖÜ]{2,}\z/) && code != 'ZK'
+    end
+
+    def schuelerliste_lk_groups
+        (@@lessons[:lesson_keys] || {}).select { |key, info| Main.schuelerliste_lk_lesson?(info) && !(@@schueler_for_lesson[key] || []).empty? }
+            .keys.map { |key| "lk:#{key}" }.sort_by { |g| schuelerliste_short(g) }
+    end
+
+    def schuelerliste_lk?(group)
+        group.to_s.start_with?('lk:')
+    end
+
+    def schuelerliste_lesson(group)
+        (@@lessons[:lesson_keys] || {})[group.to_s.sub('lk:', '')] || {}
+    end
+
+    # shorthands of who checks a list
+    def schuelerliste_teacher_shorthands(group)
+        return schuelerliste_lesson(group)[:lehrer] || [] if schuelerliste_lk?(group)
+        return [] if OBERSTUFE.include?(group.to_s)
+        @@klassenleiter[group] || []
+    end
+
+    # "5a", "LK Englisch (11)", "11 ohne LK"
+    def schuelerliste_short(group)
+        if schuelerliste_lk?(group)
+            lesson = schuelerliste_lesson(group)
+            "LK #{lesson[:pretty_folder_name] || lesson[:pretty_fach] || group.sub('lk:', '')}"
+        elsif OBERSTUFE.include?(group.to_s)
+            "#{tr_klasse(group)} ohne LK"
+        else
+            tr_klasse(group)
+        end
+    end
+
+    # "Klasse 5a", "LK Englisch (11)", "Jahrgang 11 ohne LK"
+    def schuelerliste_label(group)
+        return schuelerliste_short(group) if schuelerliste_lk?(group)
+        OBERSTUFE.include?(group.to_s) ? "Jahrgang #{schuelerliste_short(group)}" : "Klasse #{tr_klasse(group)}"
+    end
+
+    # the lists a teacher checks
+    def schuelerliste_klassen_of_teacher(shorthand)
+        schuelerliste_klassen_all.select { |g| schuelerliste_teacher_shorthands(g).include?(shorthand) }
+    end
+
+    SCHUELERLISTE_LK_NOTE = 'Für 11 und 12 gibt es noch keine Daten, wer Tutor:in ist. Deshalb prüfen die Lehrkräfte der Leistungskurse: Du siehst alle Schüler:innen deines LKs, auch die, deren Tutor:in du nicht bist. Eine der beiden LK-Lehrkräfte ist die Tutorin oder der Tutor; was die andere schon geprüft hat, ist hier auch abgehakt.'
 
     # Klassenleitungen see the draft only once the Datenpflege released it
     # (»Für Klassenleitungen freigeben«, or the first mail): before that the
@@ -41,8 +101,7 @@ class Main < Sinatra::Base
     def schuelerliste_klassen_for_user
         return schuelerliste_klassen_all if user_with_role_logged_in?(:can_manage_data)
         return [] unless teacher_logged_in? && schuelerliste_released?
-        shorthand = @session_user[:shorthand]
-        schuelerliste_klassen_all.select { |k| (@@klassenleiter[k] || []).include?(shorthand) }
+        schuelerliste_klassen_of_teacher(@session_user[:shorthand])
     end
 
     def this_is_a_page_for_schuelerliste
@@ -59,7 +118,8 @@ class Main < Sinatra::Base
         draft = datenpflege_draft
         return nil unless draft
         stamp = [draft['token'], (File.mtime(datenpflege_draft_path).to_f rescue 0),
-                 (File.mtime(Parser::OVERRIDES_PATH).to_f rescue 0), Parser.schueler_path]
+                 (File.mtime(Parser::OVERRIDES_PATH).to_f rescue 0), (File.mtime(Parser::MANUAL_ADDED_PATH).to_f rescue 0),
+                 (File.mtime(Parser::MANUAL_GONE_PATH).to_f rescue 0), Parser.schueler_path]
         @@schuelerliste_view ||= nil
         return @@schuelerliste_view[:view] if @@schuelerliste_view && @@schuelerliste_view[:stamp] == stamp
         pending = datenpflege_load_pending(draft['token'])
@@ -90,7 +150,7 @@ class Main < Sinatra::Base
         moved_away = moved.values.to_set
         view = Hash.new { |h, k| h[k] = { :students => [], :leaving => [] } }
         c[:new_records].each do |r|
-            next unless schuelerliste_klassen_all.include?(r[:klasse])
+            next unless KLASSEN_ORDER.include?(r[:klasse])
             old = old_by[r[:email]] || old_by[moved[r[:email]]]
             view[r[:klasse]][:students] << {
                 :key => key_for[r[:email]] || r[:email],
@@ -103,12 +163,31 @@ class Main < Sinatra::Base
             }
         end
         old_records.each do |o|
-            next unless schuelerliste_klassen_all.include?(o[:klasse])
+            next unless KLASSEN_ORDER.include?(o[:klasse])
             n = new_by[o[:email]]
             next if n && n[:klasse] == o[:klasse]
             next if moved_away.include?(o[:email]) && new_by.values.any? { |x| moved[x[:email]] == o[:email] && x[:klasse] == o[:klasse] }
             to = n ? n[:klasse] : (moved_away.include?(o[:email]) ? new_by[moved.key(o[:email])]&.dig(:klasse) : nil)
             view[o[:klasse]][:leaving] << { :key => o[:email], :name => o[:display_name], :to => to }
+        end
+        # 11 and 12: a list per LK (its students by their address), the
+        # rest stays in the year
+        in_lk = Set.new
+        schuelerliste_lk_groups.each do |g|
+            members = Set.new(@@schueler_for_lesson[g.sub('lk:', '')] || [])
+            v = { :students => [], :leaving => [] }
+            OBERSTUFE.each do |k|
+                next unless view.include?(k)
+                v[:students] += view[k][:students].select { |s| members.include?(s[:key]) }
+                v[:leaving] += view[k][:leaving].select { |s| members.include?(s[:key]) }
+            end
+            in_lk.merge((v[:students] + v[:leaving]).map { |s| s[:key] })
+            view[g] = v unless v[:students].empty? && v[:leaving].empty?
+        end
+        OBERSTUFE.each do |k|
+            next unless view.include?(k)
+            view[k][:students].reject! { |s| in_lk.include?(s[:key]) }
+            view[k][:leaving].reject! { |s| in_lk.include?(s[:key]) }
         end
         view.each_value do |v|
             v[:students].sort_by! { |s| [s[:last_name].to_s, s[:first_name].to_s] }
@@ -119,7 +198,13 @@ class Main < Sinatra::Base
     end
 
     def schuelerliste_review_key(klasse)
-        "klasse:#{klasse}"
+        schuelerliste_lk?(klasse) ? klasse : "klasse:#{klasse}"
+    end
+
+    # the checks of a student in 11/12 are shared by the LK lists (either
+    # LK teacher may check); confirmations and missing students are per list
+    def schuelerliste_check_review(klasse)
+        schuelerliste_lk?(klasse) ? 'lk' : schuelerliste_review_key(klasse)
     end
 
     # what a row shows: a check is only valid while this stays the same (a
@@ -151,7 +236,7 @@ class Main < Sinatra::Base
 
     def schuelerliste_state(klasse)
         review = schuelerliste_review_key(klasse)
-        checks = neo4j_query("MATCH (c:StudentCheck {review: $review}) RETURN c;", :review => review).map { |x| x['c'] }
+        checks = neo4j_query("MATCH (c:StudentCheck {review: $review}) RETURN c;", :review => schuelerliste_check_review(klasse)).map { |x| x['c'] }
         missing = neo4j_query("MATCH (m:StudentMissing {review: $review}) RETURN m ORDER BY m.at;", :review => review).map { |x| x['m'] }
         confirmed = neo4j_query("MATCH (r:StudentReview {review: $review}) RETURN r;", :review => review).map { |x| x['r'] }.first
         {
@@ -178,7 +263,7 @@ class Main < Sinatra::Base
         assert(view && !view[:errors], 'no draft')
         assert(schuelerliste_keys(view, klasse).include?(data[:student]), 'not in this class')
         assert(['ok', 'correction', 'open'].include?(data[:status]))
-        review = schuelerliste_review_key(klasse)
+        review = schuelerliste_check_review(klasse)
         if data[:status] == 'open'
             neo4j_query("MATCH (c:StudentCheck {review: $review, student: $student}) DELETE c;", :review => review, :student => data[:student])
         else
@@ -211,8 +296,12 @@ class Main < Sinatra::Base
                     c.seen = $seen, c.done = false;
             END_OF_QUERY
         end
-        # a change reopens a confirmed list
-        neo4j_query("MATCH (r:StudentReview {review: $review}) DELETE r;", :review => review)
+        # a change reopens a confirmed list (in 11/12 every LK list of the student)
+        reviews = [schuelerliste_review_key(klasse)]
+        if schuelerliste_lk?(klasse)
+            reviews += schuelerliste_klassen_in(view).select { |g| schuelerliste_lk?(g) && schuelerliste_keys(view, g).include?(data[:student]) }.map { |g| schuelerliste_review_key(g) }
+        end
+        neo4j_query("MATCH (r:StudentReview) WHERE r.review IN $reviews DELETE r;", :reviews => reviews.uniq)
         respond(:ok => true)
     end
 
@@ -287,7 +376,7 @@ class Main < Sinatra::Base
     end
 
     def schuelerliste_teachers(klasse)
-        (@@klassenleiter[klasse] || []).filter_map { |sh| @@shorthands[sh] }
+        schuelerliste_teacher_shorthands(klasse).filter_map { |sh| @@shorthands[sh] }
     end
 
     # klasse => {:total, :checked, :corrections, :confirmed, :opened, :notified}
@@ -301,7 +390,7 @@ class Main < Sinatra::Base
             review = schuelerliste_review_key(klasse)
             [klasse, {
                 :total => entries.size, :checked => checked,
-                :corrections => state[:checks].values.count { |c| c[:status] == 'correction' } + state[:missing].size,
+                :corrections => state[:checks].values.count { |c| c[:status] == 'correction' && (!schuelerliste_lk?(klasse) || entries.include?(c[:student])) } + state[:missing].size,
                 :confirmed => state[:confirmed] && checked == entries.size ? state[:confirmed] : nil,
                 :opened => seen[review], :notified => notices[review],
             }]
@@ -333,7 +422,10 @@ class Main < Sinatra::Base
     def schuelerliste_missing_arrived?(view, klasse, missing)
         words = remove_accents(missing[:name].to_s.downcase).split(/[\s,]+/).reject(&:empty?)
         return false if words.empty?
-        (view[klasse] || { :students => [] })[:students].any? do |e|
+        # 11/12: someone new is in no LK yet – anywhere in the year
+        groups = schuelerliste_lk?(klasse) || OBERSTUFE.include?(klasse.to_s) ?
+            view.keys.select { |g| schuelerliste_lk?(g) || OBERSTUFE.include?(g.to_s) } : [klasse]
+        groups.flat_map { |g| (view[g] || { :students => [] })[:students] }.any? do |e|
             name = remove_accents("#{e[:name]} #{e[:official_first_name]} #{e[:last_name]}".downcase)
             words.all? { |w| name.include?(w) }
         end
@@ -357,8 +449,7 @@ class Main < Sinatra::Base
     # is nothing (not released, all confirmed, no class)
     def start_page_schuelerliste_todo
         return nil unless teacher_logged_in? && schuelerliste_released?
-        sh = @session_user[:shorthand]
-        klassen = schuelerliste_klassen_all.select { |k| (@@klassenleiter[k] || []).include?(sh) }
+        klassen = schuelerliste_klassen_of_teacher(@session_user[:shorthand])
         return nil if klassen.empty?
         view = schuelerliste_view
         return nil if view.nil? || view[:errors]
@@ -368,7 +459,7 @@ class Main < Sinatra::Base
             state = schuelerliste_state(k)
             checked = entries.count { |key, e| schuelerliste_check_valid?(state[:checks][key], e) }
             next if state[:confirmed] && checked == entries.size
-            { :klasse => k, :label => tr_klasse(k), :open => entries.size - checked, :total => entries.size }
+            { :klasse => k, :label => schuelerliste_label(k), :open => entries.size - checked, :total => entries.size }
         end
         return nil if open.empty?
         { :kind => 'schuelerliste', :key => 'schuelerliste', :klassen => open, :deadline => datenpflege_draft['deadline'] }
@@ -407,12 +498,17 @@ class Main < Sinatra::Base
         sender = @session_user[:display_name] || @session_user[:email]
         by_teacher.each_pair do |email, klassen|
             teacher = @@user_info[email] || {}
-            links = klassen.map { |k| "Klasse #{tr_klasse(k)}: #{WEB_ROOT}/schuelerliste?klasse=#{CGI.escape(k)}" }
+            links = klassen.map { |k| "#{schuelerliste_label(k)}: #{WEB_ROOT}/schuelerliste?klasse=#{CGI.escape(k)}" }
+            lks = klassen.count { |k| schuelerliste_lk?(k) }
+            classes = klassen.size - lks
+            what = [classes > 0 ? (classes == 1 ? 'deine Klasse' : 'deine Klassen') : nil,
+                    lks > 0 ? (lks == 1 ? 'deinen Leistungskurs' : 'deine Leistungskurse') : nil].compact.join(' und ')
+            lk_note = lks > 0 ? "\n#{SCHUELERLISTE_LK_NOTE}\n" : ''
             body = <<~END_OF_TEXT
                 Hallo #{teacher[:first_name] || teacher[:display_name]},
 
-                wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{klassen.size == 1 ? 'deine Klasse' : 'deine Klassen'} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer neu dazukommt und wer geht.
-
+                wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer neu dazukommt und wer geht.
+                #{lk_note}
                 #{links.join("
 ")}
 
@@ -421,7 +517,8 @@ class Main < Sinatra::Base
                 Viele Grüße
                 #{sender}
             END_OF_TEXT
-            subject_text = 'Bitte prüf die neue Schülerliste deiner Klasse'
+            subject_text = classes > 0 && lks == 0 ? 'Bitte prüf die neue Schülerliste deiner Klasse' :
+                           (classes == 0 ? 'Bitte prüf die neue Schülerliste deiner Leistungskurse' : 'Bitte prüf die neue Schülerliste deiner Klasse und Leistungskurse')
             reply = @session_user[:email]
             deliver_mail(body) do
                 to email
@@ -455,13 +552,13 @@ class Main < Sinatra::Base
             else
                 io.puts "<p class='dp-release'><strong>Noch nicht freigegeben:</strong> nur die Datenpflege sieht den Entwurf (<a href='/schuelerliste'>so sehen ihn die Klassenleitungen</a>). Freigegeben wird er mit der ersten Mail oder hier. <button type='button' class='btn btn-secondary btn-sm' id='bu_sl_release' data-released='true'>Für Klassenleitungen freigeben</button></p>"
             end
-            io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-review-list'><thead><tr><th>Klasse</th><th>Klassenleitung</th><th>Geprüft</th><th>Korrekturen</th><th>Stand</th><th>Benachrichtigt</th></tr></thead><tbody>"
+            io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-review-list'><thead><tr><th>Klasse / LK</th><th>Prüft</th><th>Geprüft</th><th>Korrekturen</th><th>Stand</th><th>Benachrichtigt</th></tr></thead><tbody>"
             overview.each_pair do |klasse, o|
                 names = schuelerliste_teachers(klasse).map { |e| (@@user_info[e] || {})[:display_last_name] || e }
                 status = if o[:confirmed] then "bestätigt am #{fmt.(o[:confirmed][:confirmed_at])}"
                          elsif o[:opened] then "geöffnet am #{fmt.(o[:opened][:last_at])}"
                          else 'noch nicht geöffnet' end
-                io.puts "<tr data-klasse='#{sl_h(klasse)}'><td><a href='/schuelerliste?klasse=#{CGI.escape(klasse)}'>#{sl_h(tr_klasse(klasse))}</a></td>"
+                io.puts "<tr data-klasse='#{sl_h(klasse)}'><td><a href='/schuelerliste?klasse=#{CGI.escape(klasse)}'>#{sl_h(schuelerliste_short(klasse))}</a></td>"
                 io.puts "<td>#{names.empty? ? "<span class='text-danger'>keine</span>" : sl_h(names.join(', '))}</td>"
                 io.puts "<td>#{o[:checked]} von #{o[:total]}</td><td>#{o[:corrections]}</td><td class='dp-review-status'>#{sl_h(status)}</td>"
                 io.puts "<td>#{o[:notified] ? "#{fmt.(o[:notified][:at])}#{o[:notified][:count].to_i > 1 ? " (#{o[:notified][:count]}×)" : ''}" : ''}</td></tr>"
@@ -480,20 +577,29 @@ class Main < Sinatra::Base
 
     def schuelerliste_corrections_html(io, view)
         rows = []
+        # the checks in 11/12 are shared by the LK lists: each once, with the
+        # first LK list that has the student (any, once they are gone)
+        lks = schuelerliste_klassen_in(view).select { |g| schuelerliste_lk?(g) }
+        lk_of = {}
+        lks.each { |g| schuelerliste_keys(view, g).each { |key| lk_of[key] ||= g } }
         schuelerliste_klassen_in(view).each do |klasse|
             state = schuelerliste_state(klasse)
             entries = schuelerliste_entries(view, klasse)
             state[:checks].each_value do |c|
                 next unless c[:status] == 'correction'
+                next if schuelerliste_lk?(klasse) && (lk_of[c[:student]] || lks.first) != klasse
                 entry = entries[c[:student]]
                 arrived = schuelerliste_arrived?(view, klasse, c)
                 rows << { :klasse => klasse, :review => c[:review], :student => c[:student], :name => entry ? entry[:name] : c[:student],
                           :what => schuelerliste_correction_text(c), :by => c[:by], :at => c[:at],
                           :arrived => arrived, :done => c[:done] == true,
-                          :override => (c[:dashboard_only] || []).any? && c[:student].to_s.include?('@') && !arrived ? c : nil }
+                          :override => (c[:dashboard_only] || []).any? && c[:student].to_s.include?('@') && !arrived ? c : nil,
+                          # gone: at once in the dashboard, without waiting for LUSD
+                          :gone_email => c[:gone] && !arrived && !c[:done] && @@user_info[c[:student]] ? c[:student] : nil,
+                          :gone_since => c[:gone_since] }
             end
             state[:missing].each do |m|
-                rows << { :klasse => klasse, :review => m[:review], :missing => m[:id], :name => m[:name],
+                rows << { :klasse => klasse, :review => m[:review], :missing => m[:id], :name => m[:name], :note => m[:note],
                           :what => "fehlt#{m[:note].to_s.empty? ? '' : ": #{sl_h(m[:note])}"}", :by => m[:by], :at => m[:at],
                           :arrived => schuelerliste_missing_arrived?(view, klasse, m), :done => m[:done] == true }
             end
@@ -507,6 +613,12 @@ class Main < Sinatra::Base
             state = r[:arrived] ? 'angekommen' : (r[:done] ? 'erledigt' : 'offen')
             attrs = "data-review='#{sl_h(r[:review])}' #{r[:missing] ? "data-missing='#{sl_h(r[:missing])}'" : "data-student='#{sl_h(r[:student])}'"}"
             actions = []
+            if r[:gone_email]
+                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_gone' data-email='#{sl_h(r[:gone_email])}' data-name='#{sl_h(r[:name])}' data-seit='#{sl_h(r[:gone_since])}'>Im Dashboard abmelden</button>"
+            end
+            if r[:missing] && !r[:arrived] && !r[:done]
+                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_missing' data-name='#{sl_h(r[:name])}' data-note='#{sl_h(r[:note])}'>Von Hand eintragen</button>"
+            end
             if r[:override]
                 f = r[:override][:fields]
                 actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_override' data-email='#{sl_h(r[:student])}' data-rufname='#{sl_h(f['rufname'])}' data-geschlecht='#{sl_h(f['geschlecht'])}'>Im Dashboard festlegen</button>"
@@ -514,7 +626,7 @@ class Main < Sinatra::Base
             unless r[:arrived]
                 actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='#{r[:done] ? 'false' : 'true'}'>#{r[:done] ? 'Wieder offen' : 'Erledigt'}</button>"
             end
-            io.puts "<tr class='dp-correction dp-correction-#{state}'><td>#{sl_h(tr_klasse(r[:klasse]))}</td><td>#{sl_h(r[:name])}</td><td style='white-space: normal;'>#{r[:what]}</td>"
+            io.puts "<tr class='dp-correction dp-correction-#{state}'><td>#{sl_h(schuelerliste_short(r[:klasse]))}</td><td>#{sl_h(r[:name])}</td><td style='white-space: normal;'>#{r[:what]}</td>"
             io.puts "<td>#{sl_h(by)}</td><td>#{state}</td><td class='dp-row-actions'>#{actions.join(' ')}</td></tr>"
         end
         io.puts "</tbody></table></div>"
@@ -547,7 +659,7 @@ class Main < Sinatra::Base
                 return io.string
             end
             if klassen.empty?
-                io.puts "<p>Hier prüfen Klassenleitungen die neue Schülerliste ihrer Klasse. Du hast keine Klasse, die du prüfen kannst.</p>"
+                io.puts "<p>Hier prüfen Klassenleitungen die neue Schülerliste ihrer Klasse, in 11 und 12 die Lehrkräfte der Leistungskurse. Du hast keine Klasse, die du prüfen kannst.</p>"
                 return io.string
             end
             view = schuelerliste_view
@@ -561,8 +673,8 @@ class Main < Sinatra::Base
             end
             klasse = klassen.include?(klasse_param) ? klasse_param : klassen.first
             if klassen.size > 1
-                io.puts "<div class='sl-klassen'><label for='sl_klasse'>Klasse</label> <select class='form-control' id='sl_klasse'>"
-                klassen.each { |k| io.puts "<option value='#{sl_h(k)}'#{k == klasse ? ' selected' : ''}>#{sl_h(tr_klasse(k))}</option>" }
+                io.puts "<div class='sl-klassen'><label for='sl_klasse'>#{klassen.any? { |k| schuelerliste_lk?(k) } ? 'Klasse oder LK' : 'Klasse'}</label> <select class='form-control' id='sl_klasse'>"
+                klassen.each { |k| io.puts "<option value='#{sl_h(k)}'#{k == klasse ? ' selected' : ''}>#{sl_h(schuelerliste_short(k))}</option>" }
                 io.puts "</select></div>"
             end
             v = view[klasse] || { :students => [], :leaving => [] }
@@ -572,7 +684,7 @@ class Main < Sinatra::Base
             valid = ->(key) { schuelerliste_check_valid?(state[:checks][key], entries[key]) }
             done = keys.count { |k| valid.(k) }
             # the overview on /datenpflege: opened by the Klassenleitung
-            if (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand])
+            if schuelerliste_teacher_shorthands(klasse).include?(@session_user[:shorthand])
                 neo4j_query(<<~END_OF_QUERY, :review => schuelerliste_review_key(klasse), :at => Time.now.to_i)
                     MERGE (s:StudentReviewSeen {review: $review})
                     ON CREATE SET s.first_at = $at
@@ -580,8 +692,11 @@ class Main < Sinatra::Base
                 END_OF_QUERY
             end
             io.puts "<div class='sl-class' data-klasse='#{sl_h(klasse)}'>"
-            io.puts "<h3>Klasse #{sl_h(tr_klasse(klasse))}</h3>"
-            io.puts "<p class='sl-intro'>So steht deine Klasse in der neuen Liste aus der Schulverwaltung (LUSD). Bitte prüfe jede Zeile: »Stimmt«, wenn alles richtig ist, sonst »Korrigieren«. Fehlt jemand, trag es unten ein. Zum Schluss »Liste bestätigen«. Im Dashboard ändert sich erst etwas, wenn die Liste übernommen wird.</p>"
+            io.puts "<h3>#{sl_h(schuelerliste_label(klasse))}</h3>"
+            if schuelerliste_lk?(klasse)
+                io.puts "<p class='sl-intro sl-lk-note'>#{sl_h(SCHUELERLISTE_LK_NOTE)}</p>"
+            end
+            io.puts "<p class='sl-intro'>So #{schuelerliste_lk?(klasse) ? 'stehen die Schüler:innen deines Leistungskurses' : 'steht deine Klasse'} in der neuen Liste aus der Schulverwaltung (LUSD). Bitte prüfe jede Zeile: »Stimmt«, wenn alles richtig ist, sonst »Korrigieren«. Fehlt jemand, trag es unten ein. Zum Schluss »Liste bestätigen«. Im Dashboard ändert sich erst etwas, wenn die Liste übernommen wird.</p>"
             io.puts "<p class='sl-progress'><strong>#{done}</strong> von <strong>#{keys.size}</strong> geprüft</p>"
             io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert</p>"
             io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th>Name</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th><th></th></tr></thead><tbody>"
@@ -613,7 +728,7 @@ class Main < Sinatra::Base
             end
             io.puts "</tbody></table></div>"
             unless v[:leaving].empty?
-                io.puts "<h4>Verlässt die Klasse</h4>"
+                io.puts "<h4>#{OBERSTUFE.include?(klasse) || schuelerliste_lk?(klasse) ? 'Geht' : 'Verlässt die Klasse'}</h4>"
                 io.puts "<div class='sl-scroll'><table class='table sl-table sl-leaving'><tbody>"
                 v[:leaving].each do |s|
                     where = s[:to] ? "− wechselt in die #{sl_h(tr_klasse(s[:to]))}" : '− steht nicht mehr in der Liste'

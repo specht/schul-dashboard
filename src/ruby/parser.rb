@@ -428,7 +428,6 @@ class Parser
             :geschlecht => geschlecht,
             :bildungsgang => bildungsgang,
             # 9th column (lists from /datenpflege): LUSD's number of the student
-            :lusd_id => (dated && !(parts[8] || '').strip.empty?) ? parts[8].strip : nil,
             :can_log_in => true,
             :nc_login => @nc_sub[email] || email.split('@').first.sub(/\.\d+$/, ''),
         }
@@ -483,6 +482,52 @@ class Parser
         record
     end
     BILDUNGSGAENGE = ['altsprachlich', 'sesb', 'regulaer_la', 'regulaer_frz', 'regulaer']
+
+    # Students the dashboard counts although LUSD doesn't (yet), and students
+    # LUSD still lists although they left (set on /datenpflege, kept in the
+    # data repo next to the lists). Applied whenever a list is read – the
+    # current one and drafts alike – so they work at once and every LUSD
+    # import keeps them:
+    # - zusaetzlich.yaml: not yet in LUSD (e.g. not yet moved from their old
+    #   school's LUSD): address => { nachname, vornamen, rufname, klasse,
+    #   geschlecht, geburtstag: JJJJ-MM-TT, bildungsgang, notiz, by, at }.
+    #   Left out of a list that has the student already (the same address –
+    #   an import takes the entry's – or the same name and birthday).
+    # - abgaenge.yaml: gone as far as the dashboard is concerned: address =>
+    #   { name, klasse, seit, notiz, by, at }. Left out of every list.
+    MANUAL_ADDED_PATH = File.join(SCHUELER_DIR, 'zusaetzlich.yaml')
+    MANUAL_GONE_PATH = File.join(SCHUELER_DIR, 'abgaenge.yaml')
+
+    def self.read_yaml_hash(path)
+        return {} unless File.exist?(path)
+        data = YAML.safe_load(File.read(path, encoding: 'UTF-8'))
+        data.is_a?(Hash) ? data.select { |k, v| k.is_a?(String) && v.is_a?(Hash) } : {}
+    rescue Psych::Exception => e
+        debug "WARNING: #{path} could not be read (#{e.class}), ignored" if defined?(debug)
+        {}
+    end
+
+    # {:added => {address => entry}, :gone => {address => entry}}
+    def self.schueler_extras(dir = SCHUELER_DIR)
+        { :added => read_yaml_hash(File.join(dir, File.basename(MANUAL_ADDED_PATH))),
+          :gone => read_yaml_hash(File.join(dir, File.basename(MANUAL_GONE_PATH))) }
+    end
+
+    NO_EXTRAS = { :added => {}, :gone => {} }.freeze
+
+    # the same person as in a list: last name, birthday and the first of the
+    # first names, loosely (accents, case)
+    def self.manual_person_key(last_name, first_names, geburtstag)
+        norm = ->(x) { x.to_s.unicode_normalize(:nfkd).gsub(/\p{M}/, '').downcase.gsub(/[^a-z]/, '') }
+        [norm.(last_name), norm.(first_names.to_s.split(/[ -]/).first), geburtstag.to_s]
+    end
+
+    # a list line (as written by /datenpflege) for a student added by hand
+    def self.manual_added_line(email, e)
+        geb = (Date.parse(e['geburtstag'].to_s).strftime('%d.%m.%Y') rescue '')
+        [e['nachname'], e['vornamen'], e['klasse'], e['geschlecht'], geb, e['rufname'],
+         e['bildungsgang'], email].map { |x| x.to_s.gsub(/\s+/, ' ').strip }.join("\t")
+    end
 
     # The student list valid on a day: the newest schueler/JJJJ-MM-TT.TXT
     # whose date has come (uploads on /datenpflege), else ASCII.TXT.
@@ -540,7 +585,11 @@ class Parser
     # translate_klasse: see handle_schueler_line (default: not for dated lists)
     # overrides: Rufname and gender per address (schueler_overrides) – the
     # same for every list, the current one and drafts
-    def parse_schueler(list_path = nil, all_classes: false, translate_klasse: nil, overrides: Parser.schueler_overrides, &block)
+    # extras: students added by hand and gone ones (schueler_extras);
+    # keep_gone: yield the gone ones too, marked :gone (to recognise them in
+    # an export that still lists them)
+    def parse_schueler(list_path = nil, all_classes: false, translate_klasse: nil, overrides: Parser.schueler_overrides,
+                       extras: Parser.schueler_extras, keep_gone: false, &block)
 #         debug "Parsing schueler..."
         # create reproducible passwords while parsing SuS
 
@@ -551,16 +600,41 @@ class Parser
             debug "...skipping because #{path} does not exist"
             return
         end
+        gone = extras[:gone] || {}
+        added = extras[:added] || {}
+        listed_emails = Set.new
+        listed_people = Set.new
         srand(12)
         File.open(path, 'r:utf-8') do |f|
             f.each_line do |line|
                 next if line.strip[0] == '#' || line.strip.empty?
 
                 record = handle_schueler_line(line, translate_klasse.nil? ? !Parser.dated_schueler_list?(path) : translate_klasse)
+                listed_emails << record[:email]
+                listed_people << Parser.manual_person_key(record[:last_name], record[:official_first_name], record[:geburtstag])
+                if gone.include?(record[:email])
+                    next unless keep_gone
+                    record[:gone] = true
+                end
                 apply_schueler_override(record, overrides[record[:email]])
                 if all_classes || KLASSEN_ORDER.include?(record[:klasse])
                     yield record
                 end
+            end
+        end
+        added.each_pair do |email, e|
+            next if listed_emails.include?(email) || gone.include?(email)
+            next if listed_people.include?(Parser.manual_person_key(e['nachname'], e['vornamen'], e['geburtstag']))
+            begin
+                record = handle_schueler_line(Parser.manual_added_line(email, e), false)
+            rescue SchuelerLineError, StandardError => err
+                debug "WARNING: student added by hand could not be read (#{err.class})" if defined?(debug)
+                next
+            end
+            record[:manual] = true
+            apply_schueler_override(record, overrides[record[:email]])
+            if all_classes || KLASSEN_ORDER.include?(record[:klasse])
+                yield record
             end
         end
         if DEMO_ACCOUNT_EMAIL

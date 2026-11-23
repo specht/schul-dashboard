@@ -298,4 +298,14 @@ File.binwrite(File.join(target, 'jauch.png'), png_bytes(120, 160) do |x, y|
     head || body ? [120, 128, 140, 255] : [0, 0, 0, 0]
 end)
 
+# The course selection of 11 and 12 as Untis writes it, separated by commas
+# (the example file has tabs, which Parser#parse_kurswahl doesn't read, so
+# nobody in 11/12 was in a course): Alice (11) and Bob (12) in LA-L108 –
+# capital letters, so a Leistungskurs, taught by Clarke (the student review
+# in 11/12 goes to the LK teachers, include/schuelerliste.rb)
+File.write(File.join(target, 'kurswahl', 'untis', 'kurswahl.TXT'), [
+    '"Mustermann_A",474,"LA-L108",,"11",,"745",,,"474","LA-L108",,"1",',
+    '"MustermannB",474,"LA-L108",,"12",,"745",,,"474","LA-L108",,"1",',
+].join("\r\n") + "\r\n")
+
 puts "Example data for the test stack: school year #{first_school_day} – #{last_day}, with extra role accounts"

@@ -180,7 +180,7 @@ Mustermann	Elisabeth	5a	w	02.01.2010	Elli
 |      6 | Rufname (optional, sonst gilt der erste Vorname)                       |
 |      7 | Bildungsgang (nur datierte Listen, optional)                           |
 |      8 | E-Mail-Adresse (nur datierte Listen, optional)                         |
-|      9 | Schlüssel aus der LUSD (nur datierte Listen, optional)                 |
+|      9 | früher der Schlüssel aus der LUSD; wird nicht mehr gelesen             |
 
 Dabei ist zu beachten:
 
@@ -209,8 +209,10 @@ Admin → **Datenpflege** den Abgleich mit der LUSD:
    alle Unterschiede: wer neu ist, wer nicht mehr dabei ist und was sich bei
    den übrigen ändert (Klasse, Name, Rufname, Bildungsgang, Geschlecht,
    Geburtstag), markiert wie in einem Diff.
-3. Bisherige Schüler:innen werden über den Schlüssel aus der LUSD, sonst über
-   den Namen und den Geburtstag wiedergefunden und **behalten ihre Adresse**.
+3. Bisherige Schüler:innen werden über den Namen und den Geburtstag
+   wiedergefunden und **behalten ihre Adresse**. Den Schüler-Schlüssel der
+   LUSD nutzt das Dashboard nicht: Er bleibt nicht von einem Export zum
+   nächsten gleich.
    Neue bekommen eine Adresse aus Rufname und Nachname, zu lange Adressen
    werden gekürzt. Die Adresse lässt sich vor dem Übernehmen ändern, und ein
    neuer Eintrag kann von Hand einem bisherigen Konto zugeordnet werden.
@@ -229,6 +231,24 @@ Admin → **Datenpflege** den Abgleich mit der LUSD:
 
 Fehler werden zuerst in der LUSD korrigiert. Das Dashboard speichert nur, was
 die LUSD nicht kennt, vor allem die E-Mail-Adresse.
+
+**Noch nicht in der LUSD, nicht mehr an der Schule:** Zwei Listen auf der Seite
+Datenpflege überbrücken die Zeit, bis die LUSD stimmt. Beide gelten sofort und
+für jede Liste, die das Dashboard liest, auch für Entwürfe; jeder neue Export
+behält sie.
+
+- *Noch nicht in der LUSD* (`schueler/zusaetzlich.yaml`): Schüler:innen, die
+  schon da sind, aber noch nicht in der eigenen LUSD stehen (etwa weil die alte
+  Schule sie noch nicht abgegeben hat). Sie bekommen sofort eine Adresse und
+  zählen wie alle anderen. Enthält ein Export sie, übernimmt er die Adresse,
+  und der Eintrag endet von selbst.
+- *Nicht mehr an der Schule* (`schueler/abgaenge.yaml`): Schüler:innen, die
+  gegangen sind, aber noch in der LUSD stehen. Für das Dashboard sind sie
+  sofort weg. Der Eintrag endet von selbst, sobald keine Liste sie mehr
+  enthält.
+
+Ein Eintrag endet erst, wenn ihn keine Liste mehr braucht, die heute oder
+später gilt.
 
 Damit das Dashboard in das Daten-Repository schreiben darf, braucht es in
 `env.rb` `DATA_REPO_WRITABLE = true` (und `DATA_REPO_PUSH = true` zum
@@ -254,7 +274,16 @@ Schlüssel bleiben die Commits im Checkout auf dem Server; die Seite sagt dann,
 dass das Schieben nicht geklappt hat.
 
 **Bildungsgang:** Er ergibt sich aus der Schulform (`Schulform_kurz`) und den
-Fremdsprachen: SESB, altsprachlich oder regulär.
+Fremdsprachen: SESB, altsprachlich oder regulär. Wer Latein und Französisch
+hat, bekommt den Bildungsgang der Sprache, die zuerst kam
+(`Fremdsprache_Rang` oder eine Spalte `Sprachenfolge`).
+
+**Prüfung vor dem Wechsel:** Den Entwurf prüfen in 5–10 die Klassenleitungen.
+Für 11 und 12 gibt es noch keine Daten, wer Tutor:in ist; dort prüfen die
+Lehrkräfte der Leistungskurse, eine Liste je LK. Leistungskurse sind die
+Kurse aus 11/12, deren Fachkürzel im Stundenplan großgeschrieben ist (`EN`,
+Grundkurse `en`). Was eine der beiden LK-Lehrkräfte geprüft hat, gilt auch in
+der Liste der anderen.
 
 **Meldungen von Schüler:innen:** Im Profil können Schüler:innen einen falschen
 Namen melden; die Meldungen stehen auf der Seite Datenpflege. Passt die
@@ -270,8 +299,11 @@ In der LUSD (Berlin) unter Berichte im **Abfrageassistenten** eine Abfrage
 - Nachname, Vorname, Rufname, Namenszusatz, Geschlecht, Geburtsdatum;
 - Klassen: Klassenbezeichnung, Stufe/Semester (für die Oberstufe, wo die
   Klasse leer ist);
-- Schulform (kurz) und Fremdsprache(n) für den Bildungsgang;
-- wenn vorhanden, der Schlüssel der Schüler:in.
+- Schulform (kurz), Fremdsprache(n) und den Rang der Fremdsprache (welche
+  zuerst kam) für den Bildungsgang.
+
+Den Schüler-Schlüssel braucht das Dashboard nicht: Er bleibt nicht von einem
+Export zum nächsten gleich.
 
 Die Abfrage als Excel-Datei exportieren. Das Dashboard findet die Spalten
 über ihre Überschriften; Zeilen, die nur wegen mehrerer Fremdsprachen doppelt

@@ -71,8 +71,9 @@ weeks after the teachers were asked.
   the draft; one previous draft for the second comparison.
 - `(:StudentReview {key, klasse_or_tutor, confirmed_at, confirmed_by})`,
   `(:StudentCorrection {id, student_key, field, value, text, by, at, done})`.
-  `student_key`: the email for students in the live list, the LUSD key
-  (Schueler_Schluessel) for new ones – needs that column in the export.
+  `student_key`: the email for students in the live list, name and birthday
+  for new ones. Not LUSD's Schueler_Schluessel: it changes from one export to
+  the next (found 2026-11-23), so it is not read at all.
 - Everything about the review is deleted after the switch (personal data).
 
 ## Overrides for Rufname and gender (decided 2026-11-22)
@@ -102,10 +103,26 @@ the dashboard needs its own values that every LUSD import keeps.
 - Sensitive: no override values in logs, mails, commit messages of this
   repository or test data beyond made-up examples.
 
+## 11/12 and the lists kept by hand (decided 2026-11-23)
+
+- **No tutor data yet** (the export of 2026-11-23 has none): the teachers of
+  a student's Leistungskurse check, one list per LK (`lk:<lesson key>`; an
+  LK is a course of 11/12 with its subject code in capitals, not ZK). One of
+  the two LK teachers is the tutor; the page and the mail say why they may
+  see students who aren't their tutees. Checks are shared between the LK
+  lists, confirmations and missing students are per list. Who is in no LK
+  stays with the year (»11 ohne LK«) for the Datenpflege.
+- **Not yet in LUSD** (`schueler/zusaetzlich.yaml`) and **no longer at
+  school** (`schueler/abgaenge.yaml`), set on `/datenpflege`: applied to every
+  list that is read, so they work at once and every import keeps them; an
+  entry ends when no list valid now or later needs it. The corrections
+  »fehlt« and »nicht mehr an der Schule« from the review can be taken over in
+  one step.
+
 ## Open points
 
-- **Tutors from LUSD:** does the Abfrageassistent offer the tutor? Expected
-  yes; otherwise add the data in LUSD. Checked on 2026-11-23.
+- **Tutors from LUSD:** not in the export of 2026-11-23; LK teachers check
+  instead (above). Switch to tutors once LUSD has them.
 - **After the switch:** mail accounts for new students (Postfach-Bot, run by
   the maintainer only), students who left (logins, mailing lists), name
   changes (the email stays the stable id). Listed on `/datenpflege` after the
@@ -137,3 +154,6 @@ made-up export in the test.
   a changed row asks again, everything deleted when the draft is applied).
   Open: tutors for 11/12 (LUSD export, 2026-11-23), step 5 (after-switch
   checklist).
+- 2026-11-23: the real export read (all columns but the tutor; the language
+  rank recognised); 11/12 checked by the LK teachers; the lists »noch nicht
+  in der LUSD« and »nicht mehr an der Schule«. Open: step 5.

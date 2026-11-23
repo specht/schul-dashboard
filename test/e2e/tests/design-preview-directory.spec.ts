@@ -196,11 +196,12 @@ test('Neues Design: Klasse 11 und ein Kurs', async ({ page }, testInfo) => {
     // a student without a birthday
     await expect(page.locator('.pv-dir-row', { hasText: 'Ohnegeburtstag, Gina' }).locator('.pv-dir-facts')).not.toContainText('–');
 
-    // a course (nobody in it in the example data): the course's mailing
-    // lists, no class sections
+    // a course (Alice from 11 and Bob from 12, test/prepare_example_data.rb):
+    // its students, the course's mailing lists, no class sections
     await page.goto('/directory/LA-L108_11~12');
     await expect(page.locator('.pv-dir-head h2')).toHaveText('Latein LK (11, 12)');
-    await expect(page.locator('.pv-dir-students .pv-lempty')).toHaveText('In dieser Lerngruppe ist zurzeit niemand eingetragen.');
+    await expect(page.locator('.pv-dir-row', { hasText: 'Mustermann, Alice' })).toHaveCount(1);
+    await expect(page.locator('.pv-dir-row', { hasText: 'Mustermann, Bob' })).toHaveCount(1);
     await expect(page.locator('.pv-dir-list-label')).toHaveText(['Schülerinnen und Schüler', 'Eltern']);
     await expect(page.locator('.pv-dir-tools-sec')).toHaveCount(0);
     await expect(page.locator('.pv-dir-teachers-sec')).toHaveCount(0);

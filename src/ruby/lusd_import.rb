@@ -38,10 +38,12 @@ module LusdImport
         # first) – a number per language row, or the languages in order
         'sprachenfolge' => :sprachenfolge, 'schuelersprachenfolge' => :sprachenfolge,
         'sprachfolge' => :sprachenfolge, 'fremdsprachenfolge' => :sprachenfolge,
-        # LUSD's own number of a student: the safest way to recognise them in
-        # the next import
-        'schuelerschluessel' => :lusd_id, 'schuelerid' => :lusd_id, 'schuelernummer' => :lusd_id,
-        'lusdid' => :lusd_id, 'identnummer' => :lusd_id, 'schuelerkennung' => :lusd_id,
+        # the LUSD query field "Schueler_Fremdsprache_Rang": 1, 2, 3, …
+        # (0 for placeholders like "Platzhalter Fremdsprache 1")
+        'fremdspracherang' => :sprachenfolge, 'sprachenrang' => :sprachenfolge,
+        # not read: LUSD's "Schueler_Schluessel" is not stable from one export
+        # to the next (2026-11-23) – recognising students by it would give
+        # them someone else's account
         # 11/12: who checks a student's data before a switch
         # (review/2026-11/student-data-review.md) – recognised, not used yet
         'tutor' => :tutor, 'tutorin' => :tutor, 'tutorkuerzel' => :tutor, 'tutorname' => :tutor,
@@ -93,7 +95,7 @@ module LusdImport
 
     Student = Struct.new(:row, :nachname, :vorname, :klasse, :lusd_klasse,
                          :geschlecht, :geburtsdatum, :rufname, :schulform, :sprachen,
-                         :bildungsgang, :email, :email_note, :old_klasse, :matched_by, :email_taken, :lusd_id, :email_custom,
+                         :bildungsgang, :email, :email_note, :old_klasse, :matched_by, :email_taken, :email_custom,
                          :folge, keyword_init: true) do
         # Same rule as Parser#handle_schueler_line: the e-mail address is
         # built from this and the Nachname.
@@ -104,7 +106,7 @@ module LusdImport
         def line
             # 6 Rufname, 7 Bildungsgang, 8 address, 9 LUSD id (all optional,
             # empty in between)
-            parts = [nachname, vorname, klasse, geschlecht, geburtsdatum || '', rufname || '', bildungsgang || '', email || '', lusd_id || '']
+            parts = [nachname, vorname, klasse, geschlecht, geburtsdatum || '', rufname || '', bildungsgang || '', email || '']
             parts.pop while parts.size > 5 && parts.last.empty?
             parts.join("\t")
         end
@@ -324,7 +326,6 @@ module LusdImport
         [:geschlecht, 'Geschlecht', true, 'm, w oder d'],
         [:geburtsdatum, 'Geburtsdatum', true, 'für Zeugnisse und um Schüler:innen wiederzuerkennen'],
         [:rufname, 'Rufname', false, 'der Name, der im Dashboard steht; ohne ihn der erste Vorname'],
-        [:lusd_id, 'Schüler-Schlüssel', false, 'erkennt Schüler:innen im nächsten Export sicher wieder, auch nach einer Namensänderung'],
         [:schulform, 'Schulform (kurz)', false, 'für den Bildungsgang (SESB, altsprachlich, regulär)'],
         [:fremdsprache, 'Fremdsprachen', false, 'für den Bildungsgang (Latein oder Französisch)'],
         [:sprachenfolge, 'Sprachenfolge', false, 'für den Bildungsgang, wenn jemand Latein und Französisch hat: welche zuerst kam'],
@@ -428,7 +429,6 @@ module LusdImport
                                     lusd_klasse: lusd_klasse, geschlecht: geschlecht,
                                     geburtsdatum: geburtsdatum, rufname: rufname,
                                     schulform: columns[:schulform] ? get.(:schulform) : nil,
-                                    lusd_id: columns[:lusd_id] && !get.(:lusd_id).empty? ? get.(:lusd_id) : nil,
                                     sprachen: [get.(:fremdsprache)],
                                     folge: [[get.(:sprachenfolge), get.(:fremdsprache)]])
             seen[used] = students.last

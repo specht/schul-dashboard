@@ -71,6 +71,11 @@
     .dp-corrections-title { margin-top: 1.2em; font-weight: 600; }
     .dp-correction-angekommen td, .dp-correction-erledigt td { color: var(--pv-muted, #6b7280); }
     .dp-date label { display: block; margin-bottom: 0.2em; }
+    .dp-manual-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6em 1em; margin: 0.5em 0 1.5em; }
+    .dp-manual-form label { display: block; margin-bottom: 0.2em; }
+    .dp-mf-wide { flex: 1 1 16em; min-width: 0; }
+    .dp-mf-mid { flex: 1 1 10em; min-width: 0; }
+    .dp-mf-small { flex: 0 1 8em; min-width: 0; }
 </style>
 <div class='container-fluid white'>
     <div class='dp-page'>
@@ -81,6 +86,7 @@
         #{print_schuelerliste_overview()}
         #{print_name_reports()}
         #{print_schueler_overrides()}
+        #{print_schueler_extras()}
         <h5>Neue Liste aus der LUSD</h5>
         #{print_datenpflege_columns_hint()}
         <p class='text-muted'>Excel- oder CSV-Export aus der LUSD. Hochladen ändert noch nichts: Erst kommt der Vergleich mit der Liste, die am gewählten Tag gilt. Einen Export kannst du als Entwurf behalten, bis die Daten in der LUSD stimmen; jeder neue Export wird dann auch mit dem Entwurf verglichen.</p>
@@ -425,6 +431,65 @@
             dashboardConfirm(`Rufname und Geschlecht für ${st.label} wieder wie in der LUSD?`,
                 function () { override_save(st.email, '', ''); },
                 { title: 'Im Dashboard entfernen', confirm: 'Entfernen' });
+        });
+
+        // ---- not yet in LUSD, no longer at school (include/datenpflege.rb) ----
+        const MANUAL_REQUIRED = ['#ti_manual_nachname', '#ti_manual_vornamen', '#ti_manual_klasse', '#ti_manual_geschlecht', '#ti_manual_geburtstag'];
+        function manual_ready() {
+            $('#bu_manual_add').prop('disabled', MANUAL_REQUIRED.some((id) => !String($(id).val() || '').trim()));
+        }
+        $(MANUAL_REQUIRED.join(', ')).on('input change', manual_ready);
+        $('#bu_manual_add').click(function (e) {
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/datenpflege/manual/add', {
+                nachname: $('#ti_manual_nachname').val().trim(), vornamen: $('#ti_manual_vornamen').val().trim(),
+                rufname: $('#ti_manual_rufname').val().trim(), klasse: $('#ti_manual_klasse').val(),
+                geschlecht: $('#ti_manual_geschlecht').val(), geburtstag: $('#ti_manual_geburtstag').val(),
+                bildungsgang: $('#ti_manual_bildungsgang').val(), notiz: $('#ti_manual_notiz').val().trim(),
+            }, function (data) { manual_ready(); after_change(data); });
+        });
+        $(document).on('click', '.bu_manual_remove', function (e) {
+            const b = $(e.currentTarget);
+            dashboardConfirm(`${b.data('name')} aus dem Dashboard nehmen? Bis ein LUSD-Export sie:ihn enthält, gibt es dann kein Konto.`,
+                function () { api_call('/api/datenpflege/manual/remove', { email: b.data('email') }, after_change); },
+                { title: 'Eintrag entfernen', confirm: 'Entfernen', danger: true });
+        });
+        // a student missing in the teachers' check: into the form above
+        $(document).on('click', '.bu_sl_take_missing', function (e) {
+            const parts = String($(e.currentTarget).data('name') || '').trim().split(/\s+/);
+            $('#ti_manual_nachname').val(parts.length > 1 ? parts.pop() : '');
+            $('#ti_manual_vornamen').val(parts.join(' '));
+            $('#ti_manual_notiz').val(String($(e.currentTarget).data('note') || ''));
+            manual_ready();
+            document.querySelector('.dp-manual-added .dp-manual-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            $('#ti_manual_nachname').focus();
+        });
+        const GONE_STUDENTS = JSON.parse(document.getElementById('dp_gone_data').textContent);
+        let gone_email = null;
+        $('#ti_gone_student').on('input change', function () {
+            const st = GONE_STUDENTS.find((x) => x.label === $('#ti_gone_student').val().trim());
+            gone_email = st ? st.email : null;
+            $('#bu_gone_add').prop('disabled', !gone_email);
+        });
+        function gone_add(email, label, seit, notiz) {
+            dashboardConfirm(`${label} ist für das Dashboard dann sofort nicht mehr an der Schule: keine Anmeldung, nicht mehr in Klassen, Kursen und Verteilern.`,
+                function () { api_call('/api/datenpflege/gone/add', { email: email, seit: seit, notiz: notiz }, after_change); },
+                { title: 'Nicht mehr an der Schule', confirm: 'Vermerken', danger: true });
+        }
+        $('#bu_gone_add').click(function () {
+            if (!gone_email) return;
+            gone_add(gone_email, $('#ti_gone_student').val().trim(), $('#ti_gone_seit').val(), $('#ti_gone_notiz').val().trim());
+        });
+        // »nicht mehr an der Schule« from the teachers' check
+        $(document).on('click', '.bu_sl_take_gone', function (e) {
+            const b = $(e.currentTarget);
+            gone_add(b.data('email'), b.data('name'), String(b.data('seit') || ''), '');
+        });
+        $(document).on('click', '.bu_gone_remove', function (e) {
+            const b = $(e.currentTarget);
+            dashboardConfirm(`${b.data('name')} ist dann wieder im Dashboard, solange die LUSD sie:ihn führt.`,
+                function () { api_call('/api/datenpflege/gone/remove', { email: b.data('email') }, after_change); },
+                { title: 'Zurücknehmen', confirm: 'Zurücknehmen' });
         });
 
         $('#bu_rollback').click(function () {

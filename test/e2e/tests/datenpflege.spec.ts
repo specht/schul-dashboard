@@ -56,7 +56,8 @@ test('Datenpflege: Vergleich mit der bisherigen Liste', async ({ page }) => {
   await expect(preview.locator('.dp-summary')).toContainText('ASCII.TXT');
   // the columns: all needed ones there (closed), the missing optional ones named
   await expect(preview.locator('.dp-columns')).not.toHaveAttribute('open', '');
-  await expect(preview.locator('.dp-columns summary')).toContainText('es fehlen: Schüler-Schlüssel');
+  await expect(preview.locator('.dp-columns summary')).toContainText('es fehlen: Schulform (kurz)');
+  await expect(preview.locator('.dp-columns')).not.toContainText('Schlüssel');
   // new: the proposed address can be changed; a long name is shortened
   const nina = preview.locator('.dp-added tr', { hasText: 'Nina Neu' });
   await expect(nina.locator('.ti_email')).toHaveValue('nina.neu');
@@ -321,6 +322,121 @@ test('Rufname und Geschlecht im Dashboard nur mit der Rolle', async ({ baseURL }
   await api.dispose();
 });
 
+// Students not yet in LUSD (added by hand) and students gone although LUSD
+// still lists them (Parser.schueler_extras, schueler/zusaetzlich.yaml and
+// abgaenge.yaml): both work on every list that is read, so an export that
+// has them changes nothing – the added student keeps the address, the gone
+// one stays out. Made-up students only.
+const ALL = [
+  HEADER,
+  'Mustermann;Max;;05a;männlich;01.01.2010',
+  'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
+  'Mustermann;Mallory;;05a;männlich;03.01.2010',
+  'Mustermann;Alice;;11;weiblich;04.01.2010',
+  'Mustermann;Bob;;12;männlich;05.01.2010',
+];
+
+test('Datenpflege: noch nicht in der LUSD, nicht mehr an der Schule', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one file for everybody');
+  await login(page, ACCOUNTS.admin);
+  let added = '';
+  let gone = '';
+  try {
+    await page.goto('/datenpflege');
+    // added by hand: an address at once
+    await expect(page.locator('#bu_manual_add')).toBeDisabled();
+    await page.locator('#ti_manual_nachname').fill('Zusatz');
+    await page.locator('#ti_manual_vornamen').fill('Nora Lea');
+    await page.locator('#ti_manual_klasse').selectOption('5b');
+    await page.locator('#ti_manual_geschlecht').selectOption('w');
+    await page.locator('#ti_manual_geburtstag').fill('2014-04-05');
+    await page.locator('#ti_manual_notiz').fill('kommt von einer anderen Schule');
+    await page.locator('#bu_manual_add').click();
+    const row = page.locator('.dp-manual-list tr', { hasText: 'Nora Lea Zusatz' });
+    await expect(row).toContainText('nora.zusatz');
+    await expect(row).toContainText('kommt von einer anderen Schule');
+    added = (await row.getAttribute('data-email'))!;
+    // committed at once
+    await expect(page.locator('.dp-uncommitted')).toHaveCount(0);
+    // the same person twice: refused
+    await page.locator('#ti_manual_nachname').fill('Zusatz');
+    await page.locator('#ti_manual_vornamen').fill('Nora Lea');
+    await page.locator('#ti_manual_klasse').selectOption('5b');
+    await page.locator('#ti_manual_geschlecht').selectOption('w');
+    await page.locator('#ti_manual_geburtstag').fill('2014-04-05');
+    await page.locator('#bu_manual_add').click();
+    await expect(page.locator('.api_messages, #dp_message').filter({ hasText: 'schon von Hand eingetragen' })).toBeVisible();
+    await page.goto('/datenpflege');
+
+    // gone: chosen from the list, asks first
+    await page.locator('#ti_gone_student').fill('Mallory Mustermann (5a)');
+    await page.locator('#ti_gone_seit').fill('2026-11-20');
+    await page.locator('#bu_gone_add').click();
+    const dialog = page.locator('.modal.show');
+    await expect(dialog).toContainText('sofort nicht mehr an der Schule');
+    await dialog.getByRole('button', { name: 'Vermerken' }).click();
+    const goneRow = page.locator('.dp-gone-list tr', { hasText: 'Mallory Mustermann' });
+    await expect(goneRow).toContainText('20.11.2026');
+    gone = (await goneRow.getAttribute('data-email'))!;
+
+    // an export still without Nora, still with Mallory: no change at all
+    await upload(page, ALL.join('\r\n'), '2000-01-01');
+    const preview = page.locator('#dp_preview');
+    await expect(preview.locator('.dp-summary')).toContainText('5 Schüler:innen');
+    // Mallory neither new nor leaving, Nora not leaving
+    await expect(preview.locator('.dp-added .dp-count')).toHaveText('0');
+    await expect(preview.locator('.dp-removed tr', { hasText: /Mallory|Nora/ })).toHaveCount(0);
+    let manual = preview.locator('.dp-manual');
+    await expect(manual).not.toHaveAttribute('open', '');
+    await expect(manual.locator('tr', { hasText: 'Mallory Mustermann' })).toContainText('als abgegangen vermerkt');
+    await page.locator('#bu_discard_upload').click();
+    // Nora now in LUSD: she keeps the address, the entry ends with the list
+    await upload(page, [...ALL, 'Zusatz;Nora Lea;;05b;weiblich;05.04.2014'].join('\r\n'), '2098-03-01');
+    await expect(preview.locator('.dp-summary')).toContainText('6 Schüler:innen');
+    await expect(preview.locator('.dp-added .dp-count')).toHaveText('0');
+    await expect(preview.locator('.dp-changed tr', { hasText: 'Nora' })).toHaveCount(0);
+    await expect(preview.locator('.dp-removed tr', { hasText: /Mallory|Nora/ })).toHaveCount(0);
+    manual = preview.locator('.dp-manual');
+    await expect(manual.locator('tr', { hasText: 'Nora Lea Zusatz' })).toContainText('jetzt in der LUSD');
+    // applied for a day still to come: until then today's list needs both
+    // entries – they stay (and with the list withdrawn as well)
+    if (await page.locator('#dp_replace').isVisible()) await page.locator('#ti_replace').check();
+    await page.locator('#bu_apply').click();
+    const planned = page.locator('.dp-files tr', { hasText: '01.03.2098' });
+    await expect(planned).toContainText('geplant');
+    await expect(page.locator('.dp-manual-list tr', { hasText: 'Nora Lea Zusatz' })).toBeVisible();
+    await expect(page.locator('.dp-gone-list tr', { hasText: 'Mallory Mustermann' })).toBeVisible();
+    await planned.locator('.bu_delete_list').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Löschen' }).click();
+    await expect(page.locator('.dp-files tr', { hasText: '01.03.2098' })).toHaveCount(0);
+    await expect(page.locator('.dp-manual-list tr', { hasText: 'Nora Lea Zusatz' })).toBeVisible();
+
+    // taken back and removed (each asks first)
+    await goneRow.locator('.bu_gone_remove').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Zurücknehmen' }).click();
+    await expect(page.locator('.dp-gone-list tr', { hasText: 'Mallory' })).toHaveCount(0);
+    await page.locator('.dp-manual-list tr', { hasText: 'Nora Lea Zusatz' }).locator('.bu_manual_remove').click();
+    await expect(page.locator('.modal.show')).toContainText('kein Konto');
+    await page.locator('.modal.show').getByRole('button', { name: 'Entfernen' }).click();
+    await expect(page.locator('.dp-manual-list tr', { hasText: 'Nora' })).toHaveCount(0);
+  } finally {
+    // committed at once: removed the same way, even if the test stopped early
+    if (gone) await page.request.post('/api/datenpflege/gone/remove', { data: { email: gone } });
+    if (added) await page.request.post('/api/datenpflege/manual/remove', { data: { email: added } });
+    await page.request.post('/api/datenpflege/schueler/delete_list', { data: { date: '2098-03-01' } });
+  }
+});
+
+test('Noch nicht in der LUSD und nicht mehr an der Schule nur mit der Rolle', async ({ baseURL }) => {
+  const api = await playwrightRequest.newContext({ baseURL });
+  await apiLogin(api, ACCOUNTS.teacher);
+  const add = await api.post('/api/datenpflege/manual/add', { data: { nachname: 'X', vornamen: 'Y', klasse: '5a', geschlecht: 'w', geburtstag: '2014-01-01' } });
+  expect(add.ok()).toBe(false);
+  const away = await api.post('/api/datenpflege/gone/add', { data: { email: ACCOUNTS.schueler } });
+  expect(away.ok()).toBe(false);
+  await api.dispose();
+});
+
 // The teachers' check of the draft (/schuelerliste, include/schuelerliste.rb):
 // the class as in the draft, changes marked, every row »Stimmt« or a
 // correction, missing students, then confirmed. Clarke leads 5a (and may see
@@ -473,10 +589,34 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     // »nur im Dashboard«: taken over as an override – arrived
     await corrections.locator('tr', { hasText: 'Rufname: Max' }).locator('.bu_sl_take_override').click();
     await expect(corrections.locator('tr', { hasText: 'Rufname: Max' })).toContainText('angekommen');
-    // missing: done by hand
+    // missing: into the form for students not yet in LUSD, or done by hand
+    await corrections.locator('tr', { hasText: 'Paul Probe' }).locator('.bu_sl_take_missing').click();
+    await expect(page.locator('#ti_manual_nachname')).toHaveValue('Probe');
+    await expect(page.locator('#ti_manual_vornamen')).toHaveValue('Paul');
     await corrections.locator('tr', { hasText: 'Paul Probe' }).locator('.bu_sl_done').click();
     await expect(corrections.locator('tr', { hasText: 'Paul Probe' })).toContainText('erledigt');
+    await expect(corrections.locator('tr', { hasText: 'Paul Probe' }).locator('.bu_sl_take_missing')).toHaveCount(0);
     await expect(page.locator('.dp-corrections-title')).toContainText('0 offen von 2');
+
+    // »nicht mehr an der Schule«: gone in the dashboard at once, without
+    // waiting for LUSD – then the correction has arrived
+    await page.goto('/schuelerliste?klasse=5a');
+    await cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_reopen').click();
+    await cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_correct').click();
+    await page.locator('#ti_sl_gone').check();
+    await page.locator('#ti_sl_gone_since').fill('2026-11-20');
+    await page.locator('#bu_save_sl_correction').click();
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.sl-corrected')).toContainText('nicht mehr an der Schule');
+    await page.goto('/datenpflege');
+    await corrections.locator('tr', { hasText: 'nicht mehr an der Schule' }).locator('.bu_sl_take_gone').click();
+    await expect(page.locator('.modal.show')).toContainText('sofort nicht mehr an der Schule');
+    await page.locator('.modal.show').getByRole('button', { name: 'Vermerken' }).click();
+    const elliGone = page.locator('.dp-gone-list tr', { hasText: 'Elisabeth Mustermann' });
+    await expect(elliGone).toContainText('20.11.2026');
+    await expect(corrections.locator('tr', { hasText: 'nicht mehr an der Schule' })).toContainText('angekommen');
+    await elliGone.locator('.bu_gone_remove').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Zurücknehmen' }).click();
+    await expect(page.locator('.dp-gone-list tr', { hasText: 'Elisabeth' })).toHaveCount(0);
 
     // a new draft changes Elli's birthday: her row is asked again
     await upload(page, DRAFT('03.01.2010'), '2000-01-01');
@@ -490,6 +630,75 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
     // the override was committed: removed again
     await page.request.post('/api/datenpflege/override', { data: { email: 'max.mustermann@mail.beispielschule.de', rufname: '', geschlecht: '' } });
+    const extras = await page.request.get('/datenpflege');
+    const elli = /data-email='([^']+)'[^>]*>\s*<td>Elisabeth Mustermann/.exec(await extras.text());
+    if (elli) await page.request.post('/api/datenpflege/gone/remove', { data: { email: elli[1] } });
+  }
+});
+
+// 11 and 12: no tutor data yet – the teachers of the Leistungskurse check, a
+// list per LK (here LA-L108 by Clarke, with Alice in 11 and Bob in 12), with
+// a note why they may see students who aren't their tutees; who is in no LK
+// stays with the year, for the Datenpflege.
+test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(90_000);
+  const MAILPIT = process.env.MAILPIT_URL || 'http://localhost:8126';
+  const mailQuery = encodeURIComponent(`to:"${ACCOUNTS.admin}" subject:"Schülerliste"`);
+  await fetch(`${MAILPIT}/api/v1/search?query=${mailQuery}`, { method: 'DELETE' });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/schuelerliste/reset', { data: {} });
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, [HEADER,
+      'Mustermann;Alice;;11;weiblich;04.01.2010',
+      'Mustermann;Bob;;12;männlich;05.01.2010',
+      'Neu;Olaf;;11;männlich;06.06.2009'].join('\r\n'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await page.goto('/datenpflege');
+    const lk = page.locator('.dp-review-list tr[data-klasse^="lk:"]');
+    await expect(lk).toHaveCount(1);
+    await expect(lk.locator('td').first()).toContainText(/^LK /);
+    await expect(lk).toContainText('Clarke');
+    await expect(lk).toContainText('0 von 2');
+    // the new student is in no LK: with the year, nobody checks it but us
+    const year = page.locator('.dp-review-list tr[data-klasse="11"]');
+    await expect(year).toContainText('11 ohne LK');
+    await expect(year).toContainText('keine');
+    const group = (await lk.getAttribute('data-klasse'))!;
+
+    // the LK teacher's list: why they may see students who aren't their tutees
+    await page.goto('/schuelerliste?klasse=' + encodeURIComponent(group));
+    const cls = page.locator('.sl-class');
+    await expect(cls.locator('h3')).toContainText(/^LK /);
+    await expect(cls.locator('.sl-lk-note')).toContainText('noch keine Daten, wer Tutor:in ist');
+    await expect(cls.locator('.sl-row', { hasText: 'Alice' })).toBeVisible();
+    await expect(cls.locator('.sl-row', { hasText: 'Bob' })).toBeVisible();
+    await expect(cls.locator('.sl-row', { hasText: 'Olaf' })).toHaveCount(0);
+    await cls.locator('.sl-row', { hasText: 'Bob' }).locator('.bu_sl_ok').click();
+    await expect(cls.locator('.sl-progress')).toContainText('1 von 2');
+    await expect(page.locator('#sl_klasse option', { hasText: /^LK / })).toHaveCount(1);
+
+    // the mail: class and LK, with the note
+    await page.goto('/datenpflege');
+    await page.locator('#bu_sl_notify').click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Senden' }).click();
+    await expect(lk.locator('td').nth(5)).not.toBeEmpty();
+    let id = '';
+    await expect(async () => {
+      const { messages } = await (await fetch(`${MAILPIT}/api/v1/search?query=${mailQuery}`)).json();
+      id = messages?.[0]?.ID || '';
+      expect(id).not.toBe('');
+    }).toPass({ timeout: 15_000 });
+    const mail = await (await fetch(`${MAILPIT}/api/v1/message/${id}`)).json();
+    expect(mail.Subject).toBe('Bitte prüf die neue Schülerliste deiner Klasse und Leistungskurse');
+    expect(mail.Text).toContain('/schuelerliste?klasse=' + encodeURIComponent(group).replace(/%20/g, '+'));
+    expect(mail.Text).toContain('noch keine Daten, wer Tutor:in ist');
+  } finally {
+    await page.request.post('/api/schuelerliste/reset', { data: {} });
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
   }
 });
 
@@ -557,7 +766,9 @@ test('Schülerliste prüfen: in »Zu erledigen« für die Klassenleitung', async
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
     await page.goto('/datenpflege');
-    await upload(page, [HEADER, 'Mustermann;Max;;05a;männlich;01.01.2010', 'Neu;Nele;;05a;weiblich;01.03.2014'].join('\r\n'), '2000-01-01');
+    // Clarke leads 5a and teaches the LK LA-L108 (Alice in 11, Bob in 12)
+    await upload(page, [HEADER, 'Mustermann;Max;;05a;männlich;01.01.2010', 'Neu;Nele;;05a;weiblich;01.03.2014',
+      'Mustermann;Alice;;11;weiblich;04.01.2010', 'Mustermann;Bob;;12;männlich;05.01.2010'].join('\r\n'), '2000-01-01');
     await page.locator('#bu_keep_draft').click();
     await expect(page.locator('#dp_is_draft')).toBeVisible();
     const todo = page.locator('.pv-todo-row[data-kind="schuelerliste"]');
@@ -570,18 +781,30 @@ test('Schülerliste prüfen: in »Zu erledigen« für die Klassenleitung', async
     await page.goto('/');
     await expect(todo).toContainText('Schülerliste prüfen');
     await expect(todo).toContainText(/Klasse 5a: noch \d+ von \d+ Zeilen/);
+    await expect(todo).toContainText(/LK [^:]+: noch 2 von 2 Zeilen/);
     await expect(todo).toContainText('bitte bis 01.12.2099');
+    // two lists: to the page, the class first
     await todo.getByRole('link', { name: 'Prüfen' }).or(todo.getByRole('button', { name: 'Prüfen' })).first().click();
-    await expect(page).toHaveURL(/\/schuelerliste\?klasse=5a/);
-    // every row checked and confirmed: gone
+    await expect(page).toHaveURL(/\/schuelerliste$/);
     const cls = page.locator('.sl-class');
-    while (await cls.locator('.bu_sl_ok').count() > 0) {
-      const n = await cls.locator('.bu_sl_ok').count();
-      await cls.locator('.bu_sl_ok').first().click();
-      await expect(cls.locator('.bu_sl_ok')).toHaveCount(n - 1);
-    }
-    await page.locator('#bu_sl_confirm').click();
-    await expect(cls.locator('.sl-confirmed')).toBeVisible();
+    await expect(cls.locator('h3')).toHaveText('Klasse 5a');
+    const lk = await page.locator('#sl_klasse option', { hasText: /^LK / }).getAttribute('value');
+    // every row checked and confirmed, in both lists: gone
+    const checkAll = async () => {
+      while (await cls.locator('.bu_sl_ok').count() > 0) {
+        const n = await cls.locator('.bu_sl_ok').count();
+        await cls.locator('.bu_sl_ok').first().click();
+        await expect(cls.locator('.bu_sl_ok')).toHaveCount(n - 1);
+      }
+      await page.locator('#bu_sl_confirm').click();
+      await expect(cls.locator('.sl-confirmed')).toBeVisible();
+    };
+    await checkAll();
+    await page.goto('/');
+    await expect(todo).not.toContainText('Klasse 5a');
+    await expect(todo).toContainText(/LK [^:]+: noch 2 von 2 Zeilen/);
+    await page.goto('/schuelerliste?klasse=' + encodeURIComponent(lk!));
+    await checkAll();
     await page.goto('/');
     await expect(page.locator('.fc-timegrid-event, #pv_agenda').first()).toBeVisible();
     await expect(todo).toHaveCount(0);

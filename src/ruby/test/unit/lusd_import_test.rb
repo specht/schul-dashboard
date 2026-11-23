@@ -159,7 +159,9 @@ class LusdImportTest < Minitest::Test
                 ['Frz', 'X', '9a', 'm', '02.01.2011', 'GYM_SEK_I', 'Englisch, Französisch, Latein', '4712']]
         result = convert(rows)
         assert_equal({ 'La' => 'regulaer_la', 'Frz' => 'regulaer_frz' }, result[:students].to_h { |s| [s.nachname, s.bildungsgang] })
-        assert_equal ['4711', '4712'], result[:students].map(&:lusd_id)
+        # LUSD's own number is not used: it changes from one export to the next
+        refute_includes result[:students].first.line, '4711'
+        refute(LusdImport.column_report(rows).any? { |c| c[:found].to_s.include?('Schluessel') })
     end
 
     # headings as the LUSD query assistant writes them
@@ -260,5 +262,36 @@ class LusdImportTest < Minitest::Test
         # without an order: just regular, as before
         assert_equal 'regulaer', by['Ole'].bildungsgang
         assert LusdImport.column_report(rows).find { |x| x[:field] == :sprachenfolge }[:found]
+    end
+
+    # The LUSD query field for the order is "Schueler_Fremdsprache_Rang": a
+    # number per language row, 0 for placeholders; in SESB English and the
+    # partner language share rank 1
+    def test_fremdsprache_rang_from_lusd
+        header = ['Schueler_Nachname', 'Schueler_Vorname', 'Schueler_Klassen_Klassenbezeichnung',
+                  'Schueler_StufeSemester', 'Schueler_Geschlecht', 'Schueler_Geburtsdatum',
+                  'Schueler_Schulform_kurz', 'Schueler_Schluessel', 'Schueler_Fremdsprache', 'Schueler_Fremdsprache_Rang']
+        row = ->(name, form, id, lang, rang) { [name, 'Test', '7a', '07/1', 'w', '01.01.2013', form, id, lang, rang] }
+        rows = [header,
+            row.('Frz', 'GYM_SEK_I', '1', 'Englisch', '1'),
+            row.('Frz', 'GYM_SEK_I', '1', 'Französisch', '2'),
+            row.('Frz', 'GYM_SEK_I', '1', 'Latein', '3'),
+            row.('La', 'GYM_SEK_I', '2', 'Platzhalter Fremdsprache 1', '0'),
+            row.('La', 'GYM_SEK_I', '2', 'Englisch', '1'),
+            row.('La', 'GYM_SEK_I', '2', 'Latein', '2'),
+            row.('La', 'GYM_SEK_I', '2', 'Französisch', '3'),
+            row.('Sesb', 'SESB_SEK_I_GYM', '3', 'Neugriechisch', '1'),
+            row.('Sesb', 'SESB_SEK_I_GYM', '3', 'Englisch', '1'),
+            row.('Sesb', 'SESB_SEK_I_GYM', '3', 'Französisch', '2')]
+        result = LusdImport.convert(rows)
+        assert_empty result[:errors]
+        by = result[:students].to_h { |st| [st.nachname, st] }
+        assert_equal 3, by.size
+        assert_equal 'regulaer_frz', by['Frz'].bildungsgang
+        assert_equal 'regulaer_la', by['La'].bildungsgang
+        assert_equal 'sesb', by['Sesb'].bildungsgang
+        found = LusdImport.column_report(rows).to_h { |x| [x[:field], x[:found]] }
+        assert_equal 'Schueler_Fremdsprache_Rang', found[:sprachenfolge]
+        assert_equal 'Schueler_Fremdsprache', found[:fremdsprache]
     end
 end

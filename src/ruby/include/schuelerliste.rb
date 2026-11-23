@@ -152,6 +152,13 @@ class Main < Sinatra::Base
         c[:new_records].each do |r|
             next unless KLASSEN_ORDER.include?(r[:klasse])
             old = old_by[r[:email]] || old_by[moved[r[:email]]]
+            # the names field by field, each in its column
+            ch = (changes[r[:email]] || []).reject { |what, _, _| ['Name', 'Rufname', 'Vornamen'].include?(what) }
+            if old
+                [['Vornamen', :official_first_name], ['Rufname', :first_name], ['Nachname', :last_name]].each do |what, field|
+                    ch << [what, old[field].to_s, r[field].to_s] if old[field].to_s != r[field].to_s
+                end
+            end
             view[r[:klasse]][:students] << {
                 :key => key_for[r[:email]] || r[:email],
                 :name => r[:display_name], :first_name => r[:first_name], :last_name => r[:last_name],
@@ -159,7 +166,7 @@ class Main < Sinatra::Base
                 :geburtstag => r[:geburtstag], :bildungsgang => r[:bildungsgang], :klasse => r[:klasse],
                 :new => old.nil?, :from => (old && old[:klasse] != r[:klasse]) ? old[:klasse] : nil,
                 :new_address => moved.include?(r[:email]),
-                :changes => changes[r[:email]] || [],
+                :changes => ch,
             }
         end
         old_records.each do |o|
@@ -699,30 +706,29 @@ class Main < Sinatra::Base
             io.puts "<p class='sl-intro'>So #{schuelerliste_lk?(klasse) ? 'stehen die Schüler:innen deines Leistungskurses' : 'steht deine Klasse'} in der neuen Liste aus der Schulverwaltung (LUSD). Bitte prüfe jede Zeile: »Stimmt«, wenn alles richtig ist, sonst »Korrigieren«. Fehlt jemand, trag es unten ein. Zum Schluss »Liste bestätigen«. Im Dashboard ändert sich erst etwas, wenn die Liste übernommen wird.</p>"
             io.puts "<p class='sl-progress'><strong>#{done}</strong> von <strong>#{keys.size}</strong> geprüft</p>"
             io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert</p>"
-            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th>Name</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th><th></th></tr></thead><tbody>"
+            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th><th></th></tr></thead><tbody>"
             gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
             v[:students].each do |s|
-                # the changes against today in their column, like a diff: the
-                # old value struck through on red, the new one on green
+                # the changes against today in their column, like a diff: what
+                # goes struck through on red, what comes on green
                 ch = s[:changes].to_h { |what, from, to| [what, [from, to]] }
                 diff = ->(from, to) { datenpflege_word_diff(from, to) }
-                name_html = if ch['Name'] then diff.(*ch['Name'])
-                            elsif ch['Rufname'] then diff.("#{ch['Rufname'][0]} #{s[:last_name]}", s[:name])
-                            else sl_h(s[:name]) end
-                official = if ch['Vornamen'] then "<div class='sl-official'>Vornamen: #{diff.(*ch['Vornamen'])}</div>"
-                           elsif s[:official_first_name] != s[:first_name] then "<div class='sl-official'>Vornamen: #{sl_h(s[:official_first_name])}</div>"
-                           else '' end
+                cell = ->(what, now) { ch[what] ? diff.(*ch[what]) : sl_h(now) }
                 badges = []
                 badges << "<span class='sl-badge sl-badge-added'>+ neu</span>" if s[:new] && !s[:new_address]
                 badges << "<span class='sl-badge sl-badge-added'>+ aus #{sl_h(tr_klasse(s[:from]))}</span>" if s[:from]
                 badges << "<span class='sl-badge'>neue Adresse</span>" if s[:new_address]
+                badges_html = badges.empty? ? '' : "<div class='sl-badges'>#{badges.join(' ')}</div>"
                 g = ->(x) { gender[x] || x }
                 gender_html = ch['Geschlecht'] ? diff.(g.(ch['Geschlecht'][0]), g.(ch['Geschlecht'][1])) : sl_h(g.(s[:geschlecht]))
                 birthday_html = ch['Geburtstag'] ? diff.(*ch['Geburtstag']) : sl_h(sl_date(s[:geburtstag]))
                 bildungsgang_html = ch['Bildungsgang'] ? diff.(*ch['Bildungsgang']) : sl_h(Main.tr_bildungsgang(s[:bildungsgang]))
                 row_class = (s[:new] || s[:from]) ? 'sl-row-added' : (ch.empty? ? '' : 'sl-row-changed')
                 io.puts "<tr class='sl-row #{row_class}' data-student='#{sl_h(s[:key])}' data-values='#{sl_h({ 'rufname' => s[:first_name], 'nachname' => s[:last_name], 'vornamen' => s[:official_first_name], 'geschlecht' => s[:geschlecht], 'geburtstag' => s[:geburtstag], 'klasse' => s[:klasse], 'bildungsgang' => s[:bildungsgang] }.to_json)}'>"
-                io.puts "<td><div class='sl-name'>#{name_html}</div>#{official}#{badges.empty? ? '' : "<div class='sl-badges'>#{badges.join(' ')}</div>"}</td>"
+                # the name as a heading where the row becomes a card (phones)
+                io.puts "<td class='sl-head'><div class='sl-name'>#{sl_h(s[:name])}</div>#{badges_html}</td>"
+                io.puts "<td class='sl-nachname'>#{cell.('Nachname', s[:last_name])}#{badges_html}</td>"
+                io.puts "<td class='sl-rufname'>#{cell.('Rufname', s[:first_name])}</td><td class='sl-vornamen'>#{cell.('Vornamen', s[:official_first_name])}</td>"
                 io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
                 io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]))}</td></tr>"
             end
@@ -772,7 +778,7 @@ class Main < Sinatra::Base
         elsif check[:status] == 'ok'
             "<span class='sl-done'><i class='fa fa-check'></i> stimmt</span> <button type='button' class='btn btn-link btn-sm bu_sl_reopen'>Ändern</button>"
         else
-            "<span class='sl-corrected'>Korrektur: #{schuelerliste_correction_text(check)}</span> <button type='button' class='btn btn-link btn-sm bu_sl_correct' data-check='#{sl_h({ 'fields' => check[:fields], 'text' => check[:text], 'gone' => check[:gone], 'gone_since' => check[:gone_since], 'dashboard_only' => check[:dashboard_only] || [] }.to_json)}'>Ändern</button>"
+            "<span class='sl-corrected'>Korrektur: #{schuelerliste_correction_text(check)}</span> <button type='button' class='btn btn-link btn-sm bu_sl_correct' data-check='#{sl_h({ 'fields' => check[:fields], 'text' => check[:text], 'gone' => check[:gone], 'gone_since' => check[:gone_since], 'dashboard_only' => check[:dashboard_only] || [] }.to_json)}'>Ändern</button> <button type='button' class='btn btn-link btn-sm bu_sl_withdraw'>Zurücknehmen</button>"
         end
     end
 end

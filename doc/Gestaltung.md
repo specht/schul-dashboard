@@ -531,11 +531,23 @@ Seite ergänzt nur, was ihr Inhalt braucht.
   dort oder Ziehen über Tage legt einen an – im selben Popover wie neue
   Termine. Notizen des Tages aus Untis bleiben, wie sie sind.
 - **Blöcke im Stundenplan:** der Titel in der Grundgröße, alles darunter
-  (Thema, Hausaufgaben samt Überschrift, Kalenderzeile und Beschreibung
-  eines Termins) in einer Detailgröße, `--pv-ev-detail` (`preview.css`);
-  Zeit und Marker (HA …) haben ihre eigene. Gilt für Stunden, Termine und
-  externe Kalender gleich (Test »Details in allen Blöcken gleich groß« in
+  (Thema, Hausaufgaben, Kalenderzeile und Beschreibung eines Termins) in
+  einer Detailgröße, `--pv-ev-detail` (`preview.css`); Zeit und Marker
+  (HA …) haben ihre eigene. Gilt für Stunden, Termine und externe Kalender
+  gleich (Test »Details in allen Blöcken gleich groß« in
   `design-preview.spec.ts`).
+- **Ruhige Blöcke auf der Kartenfläche:** Termine, Aufsichten, Geburtstage
+  und alles ohne Fachfarbe stehen hell mit Haarlinie im Raster, nicht grau
+  gefüllt – grau auf der getönten Spalte von heute wirkt trüb.
+- **Keine Zeile nur für Marker:** Die Marker (HA, NC, LR …) stehen rechts in
+  der ersten Zeile unter dem Titel, der Text läuft daneben und darunter – in
+  Einzelstunden neben dem Thema, in Doppelstunden neben der ersten
+  Detailzeile.
+- **Hausaufgaben vor dem Thema:** In Doppelstunden steht die Hausaufgabe
+  ohne eigene Überschrift, mit »HA:« vorn. Passt nicht alles, wird zuerst
+  das Thema gekürzt (bis ganz weg), damit mindestens die erste Zeile der
+  Hausaufgabe zu sehen ist – ein »HA« ohne lesbare Hausaufgabe sieht aus
+  wie keine Hausaufgabe.
 - **Achtung FullCalendar:** im Zeitraster selbst (`.fc-timegrid-body`,
   Spalten, Slots) keine Polster oder Verschiebungen. FullCalendar misst
   dort und rendert sonst endlos neu, die Seite friert ein. Abstand gehört in

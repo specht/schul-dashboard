@@ -12,21 +12,21 @@
     .sl-name { font-weight: 600; }
     .sl-official, .sl-notes { font-size: 0.88em; color: var(--pv-muted, #5f6368); }
     .sl-notes { color: var(--acc-text, #8a5a00); }
-    /* changes like a diff: struck through on red what was, on green what will be */
-    .dp-old, .dp-new { padding: 0 0.25em; border-radius: 4px; }
-    .dp-old { background: rgba(220, 38, 38, 0.12); text-decoration: line-through; text-decoration-color: rgba(220, 38, 38, 0.7); }
-    .dp-new { background: rgba(22, 163, 74, 0.14); }
-    .dp-old mark, .dp-new mark { padding: 0; border-radius: 3px; color: inherit; font-weight: 700; }
-    .dp-old mark { background: rgba(220, 38, 38, 0.28); }
-    .dp-new mark { background: rgba(22, 163, 74, 0.32); }
+    /* changes like a word diff, inline: what stays plain, what goes struck
+       through on red, what comes on green */
+    .dp-old, .dp-new { padding: 0 0.2em; border-radius: 4px; color: inherit; }
+    .dp-old { background: rgba(220, 38, 38, 0.18); text-decoration: line-through; text-decoration-color: rgba(220, 38, 38, 0.7); }
+    .dp-new { background: rgba(22, 163, 74, 0.22); text-decoration: none; }
     .dp-none { font-style: italic; text-decoration: none; }
-    .dp-old + .dp-new { margin-left: 0.25em; }
-    .sl-table tr.sl-row > td:first-child { border-left: 4px solid transparent; }
-    .sl-table tr.sl-row-added > td:first-child { border-left-color: #16a34a; }
+    .dp-old + .dp-new { margin-left: 0.2em; }
+    /* the name as a heading only where the row becomes a card */
+    .sl-table .sl-head { display: none; }
+    .sl-table tr.sl-row > td:first-child, .sl-table tr.sl-row > td.sl-head + td { border-left: 4px solid transparent; }
+    .sl-table tr.sl-row-added > td:first-child, .sl-table tr.sl-row-added > td.sl-head + td { border-left-color: #16a34a; }
     .sl-table tr.sl-row-added { background: rgba(22, 163, 74, 0.05); }
     .sl-table tr.sl-row-removed > td:first-child { border-left-color: #dc2626; }
     .sl-table tr.sl-row-removed { background: rgba(220, 38, 38, 0.05); }
-    .sl-table tr.sl-row-changed > td:first-child { border-left-color: #d97706; }
+    .sl-table tr.sl-row-changed > td:first-child, .sl-table tr.sl-row-changed > td.sl-head + td { border-left-color: #d97706; }
     .sl-badges { margin-top: 0.2em; }
     .sl-badge { display: inline-block; padding: 0 0.45em; border-radius: 999px; font-size: 0.82em; font-weight: 600; background: var(--pv-hover, #eef1f5); color: var(--pv-ink, #333); }
     .sl-badge-added { background: rgba(22, 163, 74, 0.15); color: #15803d; }
@@ -58,7 +58,16 @@
         .sl-table tr { display: block; padding: 0.5em 0; border-top: 1px solid var(--pv-line, #e1e4e8); }
         .sl-table td { display: inline-block; border: 0; padding: 0.15em 0.5em 0.15em 0; }
         .sl-table td:first-child { display: block; }
+        .sl-table tr.sl-row > td.sl-head + td { border-left: 0; }
+        .sl-nachname .sl-badges { display: none; }
+        body:not(.ui-preview) .sl-table .sl-nachname::before { content: 'Nachname: '; }
+        body:not(.ui-preview) .sl-table .sl-rufname::before { content: 'Rufname: '; }
+        body:not(.ui-preview) .sl-table .sl-vornamen::before { content: 'Vornamen: '; }
         .sl-actions { display: block !important; text-align: left; }
+    }
+    /* new design: the table becomes cards in its own container */
+    @container (max-width: 620px) {
+        .sl-nachname .sl-badges { display: none; }
     }
 </style>
 <div class='container-fluid white'>
@@ -130,6 +139,15 @@
         });
         $(document).on('click', '.bu_sl_reopen', function (e) {
             send('/api/schuelerliste/check', { student: $(e.currentTarget).closest('.sl-row').data('student'), status: 'open' });
+        });
+
+        // a correction taken back: the row is open again (what the
+        // Datenpflege already took over stays, it has its own lists)
+        $(document).on('click', '.bu_sl_withdraw', function (e) {
+            const student = $(e.currentTarget).closest('.sl-row').data('student');
+            dashboardConfirm('Die Korrektur wird gelöscht, die Zeile ist wieder ungeprüft.', function () {
+                send('/api/schuelerliste/check', { student: student, status: 'open' });
+            }, { title: 'Korrektur zurücknehmen', confirm: 'Zurücknehmen', danger: true });
         });
 
         // the correction: the fields filled with what the list says (or

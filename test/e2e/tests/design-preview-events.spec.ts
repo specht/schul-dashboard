@@ -260,11 +260,12 @@ test('Neues Design: Einladungen an externe Teilnehmer mit Stand und Fortschritt'
   const d = new Date();
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const saved = await (await page.request.post('/api/save_event', { data: {
-    title: `Einladung Probe ${tag}`, jitsi: true, date: today, start_time: '17:00', end_time: '18:00', recipients: [a, b], description: '' } })).json();
+    title: `Einladung Probe ${tag}`, jitsi: 'yes', date: today, start_time: '17:00', end_time: '18:00', recipients: [a, b], description: '' } })).json();
   const eid = saved.eid || (saved.event || {}).eid;
   expect(eid).toBeTruthy();
   try {
-    await page.goto('/events#' + eid);
+    await page.goto('/events');
+    await page.getByText(`Einladung Probe ${tag}`).click();
     const modal = page.locator('#composeModal');
     await expect(modal).toBeVisible();
     const status = modal.locator('[data-testid=ext-invite-status]');
@@ -294,7 +295,8 @@ test('Neues Design: Einladungen an externe Teilnehmer mit Stand und Fortschritt'
     await expect(status.locator('.ext-invite-progress')).toBeHidden();
 
     // unsaved changes: save first, then invite
-    await page.locator('#ti_title').fill(`Einladung Probe ${tag} geändert`);
+    await page.locator('#ti_title').press('End');
+    await page.locator('#ti_title').pressSequentially(' geändert');
     await expect(rowA.locator('.bu-send-invitation')).toBeDisabled();
   } finally {
     await page.request.post('/api/delete_event', { data: { eid } });

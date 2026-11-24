@@ -503,7 +503,9 @@
         // damit es frei und lesbar bleibt.
         UNTEN = SICHTBAR_UNTEN;
         LAUF_BODEN = SICHTBAR_UNTEN;
-        const band = document.querySelector('.ticker');
+        // das Band auf der eigenen Bühne zuerst: im neuen Design steht das alte
+        // (leer, ausgeblendet) noch davor in der Seite
+        const band = (buehne && buehne !== document.body && buehne.querySelector('.ticker')) || document.querySelector('.ticker');
         if (band && band.textContent.trim() !== '') {
             const r = band.getBoundingClientRect();
             if (r.height > 0 && getComputedStyle(band).display !== 'none') {

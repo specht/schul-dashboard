@@ -261,6 +261,21 @@ class Main < Sinatra::Base
         (v[:students] + v[:leaving]).map { |s| s[:key] }.to_set
     end
 
+    # a row that needs a word of its own: new in the list, leaving it, or
+    # changed against the dashboard. A row as the dashboard already has it
+    # needs no »Stimmt«: confirming the list covers it (it can still be
+    # corrected) – agreeing doesn't make it right, so it stays in the list
+    def schuelerliste_needs_check?(entry)
+        return true if entry.include?(:to) && !entry.include?(:geschlecht)
+        !!(entry[:new] || entry[:from] || entry[:new_address] || !(entry[:changes] || []).empty?)
+    end
+
+    # [rows that need a check, the ones of them still open]
+    def schuelerliste_progress(entries, checks)
+        needed = entries.select { |_, e| schuelerliste_needs_check?(e) }
+        [needed.keys, needed.reject { |key, e| schuelerliste_check_valid?(checks[key], e) }.keys]
+    end
+
     def schuelerliste_state(klasse)
         review = schuelerliste_review_key(klasse)
         checks = neo4j_query("MATCH (c:StudentCheck {review: $review}) RETURN c;", :review => schuelerliste_check_review(klasse)).map { |x| x['c'] }
@@ -371,7 +386,7 @@ class Main < Sinatra::Base
             view = schuelerliste_view
             assert(view && !view[:errors], 'no draft')
             checks = schuelerliste_state(klasse)[:checks]
-            open = schuelerliste_entries(view, klasse).reject { |key, e| schuelerliste_check_valid?(checks[key], e) }
+            _, open = schuelerliste_progress(schuelerliste_entries(view, klasse), checks)
             unless open.empty?
                 respond(:ok => false, :message => "Es sind noch #{open.size} Zeilen nicht geprüft.")
                 return
@@ -501,19 +516,20 @@ class Main < Sinatra::Base
         schuelerliste_teacher_shorthands(klasse).filter_map { |sh| @@shorthands[sh] }
     end
 
-    # klasse => {:total, :checked, :corrections, :confirmed, :opened, :notified}
+    # klasse => {:total, :checked, :unchanged, :corrections, :confirmed, :opened, :notified}
+    # (total and checked: the rows that need a check)
     def schuelerliste_overview(view)
         seen = neo4j_query("MATCH (s:StudentReviewSeen) RETURN s;").map { |x| x['s'] }.to_h { |x| [x[:review], x] }
         notices = neo4j_query("MATCH (n:StudentReviewNotice) RETURN n;").map { |x| x['n'] }.to_h { |x| [x[:review], x] }
         schuelerliste_klassen_in(view).to_h do |klasse|
             state = schuelerliste_state(klasse)
             entries = schuelerliste_entries(view, klasse)
-            checked = entries.count { |key, e| schuelerliste_check_valid?(state[:checks][key], e) }
+            needed, open = schuelerliste_progress(entries, state[:checks])
             review = schuelerliste_review_key(klasse)
             [klasse, {
-                :total => entries.size, :checked => checked,
+                :total => needed.size, :checked => needed.size - open.size, :unchanged => entries.size - needed.size,
                 :corrections => state[:checks].values.count { |c| c[:status] == 'correction' && (!schuelerliste_lk?(klasse) || entries.include?(c[:student])) } + state[:missing].size,
-                :confirmed => state[:confirmed] && checked == entries.size ? state[:confirmed] : nil,
+                :confirmed => state[:confirmed] && open.empty? ? state[:confirmed] : nil,
                 :opened => seen[review], :notified => notices[review],
             }]
         end
@@ -586,9 +602,9 @@ class Main < Sinatra::Base
             entries = schuelerliste_entries(view, k)
             next if entries.empty?
             state = schuelerliste_state(k)
-            checked = entries.count { |key, e| schuelerliste_check_valid?(state[:checks][key], e) }
-            next if state[:confirmed] && checked == entries.size
-            { :klasse => k, :label => schuelerliste_label(k), :open => entries.size - checked, :total => entries.size }
+            needed, still = schuelerliste_progress(entries, state[:checks])
+            next if state[:confirmed] && still.empty?
+            { :klasse => k, :label => schuelerliste_label(k), :open => still.size, :total => needed.size }
         end
         return nil if open.empty?
         { :kind => 'schuelerliste', :key => 'schuelerliste', :klassen => open, :deadline => datenpflege_draft['deadline'] }
@@ -638,7 +654,7 @@ class Main < Sinatra::Base
 
             Nachname und Vornamen (alle, wie im Ausweis) stehen auf Zeugnissen und anderen amtlichen Dokumenten; mit dem Rufnamen erscheint die Schülerin oder der Schüler im Dashboard, auf Sitzplänen, in der Nextcloud und überall sonst im Schulalltag.
 
-            Für jede Schülerin und jeden Schüler genügt »Stimmt« oder eine kurze Korrektur, zum Schluss »Liste bestätigen«.#{deadline ? " Bitte bis #{deadline.strftime('%d.%m.%Y')}." : ''}
+            Was sich gegenüber dem Dashboard geändert hat, ist markiert: dort genügt »Stimmt« oder eine kurze Korrektur. Die übrigen Zeilen bitte einmal durchsehen, zum Schluss »Liste bestätigen«.#{deadline ? " Bitte bis #{deadline.strftime('%d.%m.%Y')}." : ''}
 
             Viele Grüße
             #{sender}
@@ -718,7 +734,9 @@ class Main < Sinatra::Base
                          else 'noch nicht geöffnet' end
                 io.puts "<tr data-klasse='#{sl_h(klasse)}'><td><a href='/schuelerliste?klasse=#{CGI.escape(klasse)}'>#{sl_h(schuelerliste_short(klasse))}</a></td>"
                 io.puts "<td>#{names.empty? ? "<span class='text-danger'>keine</span>" : sl_h(names.join(', '))}</td>"
-                io.puts "<td>#{o[:checked]} von #{o[:total]}</td><td>#{o[:corrections]}</td><td class='dp-review-status'>#{sl_h(status)}</td>"
+                same = o[:unchanged] > 0 ? "#{o[:unchanged]} unverändert" : ''
+                checked = o[:total] > 0 ? "#{o[:checked]} von #{o[:total]}#{same.empty? ? '' : ", #{same}"}" : same
+                io.puts "<td>#{checked}</td><td>#{o[:corrections]}</td><td class='dp-review-status'>#{sl_h(status)}</td>"
                 io.puts "<td>#{o[:notified] ? "#{fmt.(o[:notified][:at])}#{o[:notified][:count].to_i > 1 ? " (#{o[:notified][:count]}×)" : ''}" : ''}</td></tr>"
             end
             io.puts "</tbody></table></div>"
@@ -880,7 +898,10 @@ class Main < Sinatra::Base
             entries = schuelerliste_entries(view, klasse)
             keys = entries.keys.to_set
             valid = ->(key) { schuelerliste_check_valid?(state[:checks][key], entries[key]) }
-            done = keys.count { |k| valid.(k) }
+            needed, open_keys = schuelerliste_progress(entries, state[:checks])
+            needed = needed.to_set
+            done = needed.size - open_keys.size
+            unchanged = keys.size - needed.size
             # the overview on /datenpflege: opened by the Klassenleitung
             if schuelerliste_teacher_shorthands(klasse).include?(@session_user[:shorthand])
                 neo4j_query(<<~END_OF_QUERY, :review => schuelerliste_review_key(klasse), :at => Time.now.to_i)
@@ -894,13 +915,15 @@ class Main < Sinatra::Base
             if schuelerliste_lk?(klasse)
                 io.puts "<p class='sl-intro sl-lk-note'>#{sl_h(SCHUELERLISTE_LK_NOTE)}</p>"
             end
-            io.puts "<p class='sl-intro'>So #{schuelerliste_lk?(klasse) ? 'stehen die Schüler:innen deines Leistungskurses' : 'steht deine Klasse'} in der neuen Liste aus der Schulverwaltung (LUSD). Bitte prüfe jede Zeile: »Stimmt«, wenn alles richtig ist, sonst »Korrigieren«. Fehlt jemand, trag es unten ein. Zum Schluss »Liste bestätigen«. Im Dashboard ändert sich erst etwas, wenn die Liste übernommen wird.</p>"
+            io.puts "<p class='sl-intro'>So #{schuelerliste_lk?(klasse) ? 'stehen die Schüler:innen deines Leistungskurses' : 'steht deine Klasse'} in der neuen Liste aus der Schulverwaltung (LUSD). Markierte Zeilen (neu, geändert, geht) prüfst du einzeln: »Stimmt«, wenn alles richtig ist, sonst »Korrigieren«. Die übrigen stehen schon so im Dashboard – bitte trotzdem einmal durchsehen und korrigieren, was nicht stimmt. Fehlt jemand, trag es unten ein. Zum Schluss »Liste bestätigen«. Im Dashboard ändert sich erst etwas, wenn die Liste übernommen wird.</p>"
             lk = schuelerliste_lk?(klasse)
             tutors = lk ? schuelerliste_tutors : {}
             marker = schuelerliste_tutor_marker?(klasse)
             with_tutor = lk ? v[:students].count { |e| !tutors[e[:key]].empty? } : 0
             io.puts "<p class='sl-intro sl-names-note'><strong>Nachname</strong> und <strong>Vornamen</strong> (alle, wie im Ausweis) stehen auf Zeugnissen und anderen amtlichen Dokumenten. Mit dem <strong>Rufnamen</strong> erscheint die Schülerin oder der Schüler im Dashboard, auf Sitzplänen, in der Nextcloud und überall sonst im Schulalltag.</p>"
-            io.puts "<p class='sl-progress'><strong>#{done}</strong> von <strong>#{keys.size}</strong> geprüft#{lk ? ", <strong class='sl-tutor-count'>#{with_tutor}</strong> mit Tutor:in" : ''}</p>"
+            progress = needed.empty? ? "Keine Änderungen: <strong>#{unchanged}</strong> #{unchanged == 1 ? 'Zeile steht' : 'Zeilen stehen'} schon so im Dashboard" :
+                "<strong>#{done}</strong> von <strong>#{needed.size}</strong> markierten Zeilen geprüft#{unchanged > 0 ? ", <span class='sl-unchanged'>#{unchanged} unverändert</span>" : ''}"
+            io.puts "<p class='sl-progress'>#{progress}#{lk ? ", <strong class='sl-tutor-count'>#{with_tutor}</strong> mit Tutor:in" : ''}</p>"
             io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert <span class='sl-fix'>neuer Wert</span> Korrektur</p>"
             io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
             gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
@@ -927,7 +950,7 @@ class Main < Sinatra::Base
                 io.puts "<td class='sl-rufname'>#{cell.('Rufname', s[:first_name])}</td><td class='sl-vornamen'>#{cell.('Vornamen', s[:official_first_name])}</td>"
                 io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
                 io.puts "<td class='sl-tutor'>#{schuelerliste_tutor_html(tutors[s[:key]], marker && s[:key].include?('@'))}</td>" if lk
-                io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]))}</td></tr>"
+                io.puts "<td class='sl-actions'>#{schuelerliste_status_html(state[:checks][s[:key]], valid.(s[:key]), needed.include?(s[:key]))}</td></tr>"
                 check = state[:checks][s[:key]]
                 taken = !!(check && valid.(s[:key]) && check[:seen] != schuelerliste_values(entries[s[:key]]).to_json)
                 io.puts schuelerliste_note_rows(check, valid.(s[:key]), row_class, lk ? SCHUELERLISTE_COLUMNS[0..-2] + [nil, nil] : SCHUELERLISTE_COLUMNS, taken)
@@ -954,16 +977,17 @@ class Main < Sinatra::Base
             end
             io.puts "<div class='sl-missing-form'><input class='form-control' id='ti_sl_missing_name' maxlength='100' placeholder='Vor- und Nachname'><input class='form-control' id='ti_sl_missing_note' maxlength='1000' placeholder='Hinweis (optional)'><button type='button' class='btn btn-secondary' id='bu_sl_missing'>Eintragen</button></div>"
             io.puts "<div class='sl-confirm'>"
-            if state[:confirmed] && done < keys.size
+            if state[:confirmed] && !open_keys.empty?
                 io.puts "<p class='sl-changed'>Seit deiner Bestätigung hat sich die Liste geändert. Bitte prüf die markierten Zeilen noch einmal und bestätige dann erneut.</p>"
             end
-            if state[:confirmed] && done == keys.size
+            if state[:confirmed] && open_keys.empty?
                 by = (@@user_info[state[:confirmed][:confirmed_by]] || {})[:display_name] || state[:confirmed][:confirmed_by]
                 io.puts "<p class='sl-confirmed'><i class='fa fa-check'></i> Bestätigt am #{Time.at(state[:confirmed][:confirmed_at]).strftime('%d.%m.%Y')} von #{sl_h(by)}.</p>"
                 io.puts "<button type='button' class='btn btn-secondary' id='bu_sl_unconfirm'>Ändern</button>"
             else
-                open = keys.size - done
-                io.puts "<p class='text-muted'>#{open > 0 ? "Noch #{open} #{open == 1 ? 'Zeile' : 'Zeilen'} zu prüfen." : 'Alles geprüft.'}</p>"
+                open = open_keys.size
+                rest = unchanged > 0 ? " Mit »Liste bestätigen« bestätigst du auch die #{unchanged == 1 ? 'unveränderte Zeile' : "#{unchanged} unveränderten Zeilen"}." : ''
+                io.puts "<p class='text-muted'>#{open > 0 ? "Noch #{open} #{open == 1 ? 'markierte Zeile' : 'markierte Zeilen'} zu prüfen." : "#{needed.empty? ? 'Nichts einzeln zu prüfen.' : 'Alles Markierte geprüft.'}#{rest}"}</p>"
                 io.puts "<button type='button' class='btn btn-success' id='bu_sl_confirm'#{open > 0 ? ' disabled' : ''}>Liste bestätigen</button>"
             end
             io.puts "</div>"
@@ -988,8 +1012,11 @@ class Main < Sinatra::Base
 
     # the last column: only the buttons (one line), what was said goes in
     # a row of its own below (schuelerliste_note_row)
-    def schuelerliste_status_html(check, valid = true)
-        if check.nil? || !valid
+    def schuelerliste_status_html(check, valid = true, needed = true)
+        if (check.nil? || !valid) && !needed
+            # unchanged: covered by confirming the list, only a correction
+            "<button type='button' class='btn btn-secondary btn-sm bu_sl_correct'>Korrigieren…</button>"
+        elsif check.nil? || !valid
             "<button type='button' class='btn btn-secondary btn-sm bu_sl_ok'>Stimmt</button> <button type='button' class='btn btn-secondary btn-sm bu_sl_correct'>Korrigieren…</button>"
         elsif check[:status] == 'ok'
             "<span class='sl-done'><i class='fa fa-check'></i> stimmt</span>#{schuelerliste_by_other(check)} <button type='button' class='btn btn-link btn-sm bu_sl_reopen'>Ändern</button>"

@@ -451,6 +451,8 @@ class Main < Sinatra::Base
         p_yw = Date.today.strftime('%G-%V')
         user_id = @@user_info[user || @session_user[:email]][:id]
         timetable_path = "/gen/w/#{user_id}/#{p_yw}.json.gz"
+        # no timetable of this week (yet): no room
+        return nil unless File.exist?(timetable_path)
         timetable = nil
         Zlib::GzipReader.open(timetable_path) do |f|
             timetable = JSON.parse(f.read)
@@ -479,12 +481,17 @@ class Main < Sinatra::Base
     end
 
     def get_current_jitsi_users_for_lesson(lesson_key, offset, user = nil)
-        lesson_info = neo4j_query_expect_one(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset})['i']
+        lesson_info = (neo4j_query(<<~END_OF_QUERY, {:lesson_key => lesson_key, :offset => offset}).first || {})['i'] || {}
             MATCH (i:LessonInfo {offset: $offset})-[:BELONGS_TO]->(l:Lesson {key: $lesson_key})
             RETURN i;
         END_OF_QUERY
         room_name = get_jitsi_room_name_for_lesson_key(lesson_key, user)
-        assert(!(room_name.nil?), 'not today!', true)
+        # no room (the lesson is over, or not today): nobody in it – the
+        # lesson dialog keeps asking while it is open, that is no error
+        if room_name.nil?
+            return {:lesson_room => [], :breakout_rooms => [], :missing_sus => nil, :breakout_room_names => [],
+                    :lesson_room_name => nil, :breakout_room_index => {}, :breakout_room_urls => [], :no_room => true}
+        end
         lesson_room_name = CGI.escape(room_name.gsub(/[\:\?#\[\]@!$&\\'()*+,;=><\/"]/, '')).gsub('+', '%20').downcase
 
         jitsi_rooms = current_jitsi_rooms()
@@ -561,6 +568,8 @@ class Main < Sinatra::Base
         email = result['u.email']
         display_name_for_email = @@user_info[email][:teacher] ? @@user_info[email][:display_last_name] : @@user_info[email][:display_name]
         result = get_current_jitsi_users_for_lesson(result['l.key'], result['i.offset'], email)
+        # no room: as before, nothing to link to
+        assert(!result[:no_room], 'not today!', true)
         result[:presence_token] = data[:presence_token]
         result[:jwt_links] = {}
         room_name = result[:lesson_room_name]

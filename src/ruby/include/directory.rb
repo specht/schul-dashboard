@@ -144,6 +144,33 @@ class Main < Sinatra::Base
     end
 
     # students by last name, then first name
+    # the LKs of the students in 11/12 (schuelerliste.rb: a course of 11/12
+    # whose code is in capitals): email => [{:label, :key, :name}], with the
+    # school's short code of the subject ('DE' is »Deutsch LK«, its code
+    # without LK 'D'), the colour key of the new design and the name
+    def directory_lks
+        codes = {}
+        @@faecher.each { |code, name| codes[name] ||= code if name.is_a?(String) }
+        result = Hash.new { |h, k| h[k] = [] }
+        (@@lessons[:lesson_keys] || {}).each do |key, info|
+            next unless Main.schuelerliste_lk_lesson?(info)
+            code = (info[:orig_fach] || info[:fach]).to_s.split(/[_\s-]/).first.to_s
+            name = (@@faecher[code] || '').to_s.sub(/\s*LK\z/, '').strip
+            label = (codes[name] if !name.empty? && codes[name] != code) || code.capitalize
+            lk = { :label => label, :key => DesignTokens.subject_key(label) || DesignTokens.subject_key(code),
+                   :name => name.empty? ? label : name }
+            (@@schueler_for_lesson[key] || []).each { |email| result[email] << lk }
+        end
+        result.each_value { |l| l.uniq! { |x| x[:label] }; l.sort_by! { |x| x[:label].downcase } }
+        result
+    end
+
+    # "D, En" for a table cell (the names as its title), "–" without
+    def directory_lk_cell(lks)
+        return '<td>&ndash;</td>' if lks.nil? || lks.empty?
+        "<td title='#{CGI.escapeHTML(lks.map { |x| x[:name] }.join(', '))}'>#{CGI.escapeHTML(lks.map { |x| x[:label] }.join(', '))}</td>"
+    end
+
     def directory_sorted_students(schueler_liste)
         (schueler_liste || []).sort do |a, b|
             (@@user_info[a][:last_name].unicode_normalize(:nfd) == @@user_info[b][:last_name].unicode_normalize(:nfd)) ?
@@ -189,6 +216,9 @@ class Main < Sinatra::Base
             # <div style='max-width: 100%; overflow-x: auto;'>
             # <table class='table' style='width: unset; min-width: 100%;'>
 
+            schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
+            has_oberstufe = schueler_liste.any? { |email| (@@user_info[email][:klassenstufe] || 7) >= 11 }
+            lks = teacher_logged_in? && has_oberstufe ? directory_lks : {}
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='klassen_table table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
@@ -205,6 +235,8 @@ class Main < Sinatra::Base
                 io.puts "<th>m/w</th>"
                 io.puts "<th>Bildungsgang</th>"
                 io.puts "<th>Stufe</th>"
+                # the LKs next to the level, where they are seen
+                io.puts "<th>LK</th>" if has_oberstufe
             end
             # io.puts "<th>Status</th>"
             # if can_manage_salzh_logged_in?
@@ -235,8 +267,6 @@ class Main < Sinatra::Base
                     io.puts "<th>E-Mail-Brief</th>"
                 end
             end
-            schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
-            has_oberstufe = schueler_liste.any? { |email| (@@user_info[email][:klassenstufe] || 7) >= 11 }
             if teacher_logged_in? && has_oberstufe
                 io.puts "<th>Tutor:in</th>"
             end
@@ -287,6 +317,7 @@ class Main < Sinatra::Base
                     io.puts "<td>#{record[:geschlecht]}</td>"
                     io.puts "<td>#{tr_bildungsgang(record[:bildungsgang])}</td>"
                     io.puts "<td>#{record[:klassenstufe]}</td>"
+                    io.puts directory_lk_cell(lks[email]) if has_oberstufe
                 end
                 # salzh_label = ''
                 # if salzh_status[email][:status]
@@ -572,6 +603,7 @@ class Main < Sinatra::Base
                 RETURN u.email, u.last_access, COALESCE(u.group2, 'A') AS group2, COALESCE(u.group_af, '') AS group_af, COALESCE(u.group_ft, '') AS group_ft;
             END_OF_QUERY
         end
+        lks = teacher && has_oberstufe ? directory_lks : {}
         students = directory_sorted_students(schueler_liste).map.with_index do |email, i|
             record = @@user_info[email]
             s = {:nr => i + 1, :id => record[:id], :email => email,
@@ -591,6 +623,7 @@ class Main < Sinatra::Base
                 s[:af] = x['group_af'] || '' if show_af
                 s[:ft] = x['group_ft'] || '' if show_ft
                 s[:tutor] = (record[:tutor] && @@user_info[record[:tutor]]) ? @@user_info[record[:tutor]][:display_name] : nil if has_oberstufe
+                s[:lk] = lks[email] if has_oberstufe
                 # divers: the first name instead of a pronoun
                 s[:pronoun] = ({ 'm' => 'er', 'w' => 'sie' }[record[:geschlecht]] || record[:first_name]) if kl
             end
@@ -1491,10 +1524,12 @@ class Main < Sinatra::Base
             io.puts "<th>Letzter Zugriff</th>"
             io.puts "<th>Eltern-E-Mail-Adresse</th>"
             io.puts "<th>Klassenleitung / Tutor:in</th>"
+            io.puts "<th>LK</th>"
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
             schueler_liste = []
+            lks = directory_lks
             KLASSEN_ORDER.each do |klasse|
                 # classes without students have no list
                 schueler_liste += @@schueler_for_klasse[klasse] || []
@@ -1553,6 +1588,7 @@ class Main < Sinatra::Base
                     tutor = names.empty? ? '&ndash;' : names.join(', ')
                 end
                 io.puts "<td>#{tutor}</td>"
+                io.puts directory_lk_cell(lks[email])
                 io.puts "</tr>"
             end
             io.puts "</tbody>"

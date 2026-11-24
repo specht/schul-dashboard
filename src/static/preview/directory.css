@@ -256,8 +256,45 @@
     display: none;
 }
 
+/* the LKs (11/12): chips in the subject's colour with its short code; in
+   a column where there is room, below the name in list rows */
+.pv-dir-lks {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    vertical-align: top;
+}
+
+.ui-preview .pv-dir-lk {
+    display: inline-block;
+    min-width: 2.1em;
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: var(--c, var(--pv-hover));
+    color: var(--ci, var(--pv-ink));
+    font: 600 0.8rem/1.4 var(--pv-text);
+    text-align: center;
+}
+
+.pv-dir-lkcol {
+    white-space: nowrap;
+}
+
+.ui-preview .pv-dir-none {
+    color: var(--pv-muted);
+}
+
+.pv-dir-lks.pv-dir-lks-narrow {
+    display: none;
+}
+
 /* ---------- narrow: list rows ---------- */
 @container (max-width: 899px) {
+    .pv-dir-lks.pv-dir-lks-narrow {
+        display: flex;
+        margin-top: 4px;
+    }
+
     .pv-dir-table thead {
         display: none;
     }

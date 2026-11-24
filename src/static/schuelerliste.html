@@ -223,7 +223,7 @@
             const gone = $('#ti_sl_gone').is(':checked');
             const text = $('#ti_sl_text').val().trim();
             if (Object.keys(fields).length === 0 && !gone && text.length === 0) {
-                dashboardAlert('Trag ein, was anders sein muss – oder schließe das Fenster und tippe »Stimmt«.', 'Keine Korrektur');
+                dashboardAlert('Trag ein, was anders sein muss – oder schließe das Fenster, wenn alles stimmt.', 'Keine Korrektur');
                 return;
             }
             const dashboard_only = $('#ti_sl_dashboard_only').is(':checked') ? ['rufname', 'geschlecht'].filter((f) => f in fields) : [];

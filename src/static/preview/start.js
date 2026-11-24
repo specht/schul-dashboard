@@ -165,7 +165,7 @@
             lead.appendChild(icon('list-check'));
             text.appendChild(node('b', 'pv-todo-title', 'Schülerliste prüfen'));
             var parts = item.klassen.map(function (k) {
-                return k.label + (k.open > 0 ? ': noch ' + k.open + ' von ' + k.total + ' Zeilen' : ': alles geprüft, noch bestätigen');
+                return k.label + (k.open > 0 ? ': noch ' + k.open + ' von ' + k.total + ' Zeilen' : ': nur noch bestätigen');
             });
             if (item.deadline) parts.push('bitte bis ' + item.deadline.split('-').reverse().join('.'));
             text.appendChild(facts(parts));

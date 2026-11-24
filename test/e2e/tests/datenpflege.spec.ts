@@ -705,7 +705,8 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await page.goto('/datenpflege');
     const row = page.locator('.dp-review-list tr[data-klasse="5a"]');
     await expect(row).toContainText('noch nicht geöffnet');
-    await expect(row).toContainText('0 von 4');
+    // Elli is in the draft as in the dashboard: no row to check on its own
+    await expect(row).toContainText('0 von 3, 1 unverändert');
 
     // the mail: one per Klassenleitung, with the link
     await page.locator('#ti_sl_deadline').fill('2099-12-01');
@@ -732,8 +733,12 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     // the Klassenleitung opens it and checks
     await page.goto('/schuelerliste?klasse=5a');
     const cls = page.locator('.sl-class');
-    await cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_ok').click();
-    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.sl-done')).toBeVisible();
+    // unchanged: no »Stimmt« (the list's confirmation covers it), a correction still possible
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_ok')).toHaveCount(0);
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_correct')).toBeVisible();
+    await expect(cls.locator('.sl-progress')).toContainText('0 von 3 markierten Zeilen geprüft, 1 unverändert');
+    await cls.locator('.sl-leaving .sl-row', { hasText: 'Mallory' }).locator('.bu_sl_ok').click();
+    await expect(cls.locator('.sl-leaving .sl-row', { hasText: 'Mallory' }).locator('.sl-done')).toBeVisible();
     await cls.locator('.sl-row', { hasText: 'Maximilian' }).locator('.bu_sl_correct').click();
     await page.locator('#ti_sl_rufname').fill('Max');
     await page.locator('#ti_sl_dashboard_only').check();
@@ -745,7 +750,7 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
 
     await page.goto('/datenpflege');
     await expect(row.locator('.dp-review-status')).toContainText('geöffnet am');
-    await expect(row).toContainText('2 von 4');
+    await expect(row).toContainText('2 von 3, 1 unverändert');
     const corrections = page.locator('.dp-corrections');
     await expect(page.locator('.dp-corrections-title')).toContainText('2 offen von 2');
     // »nur im Dashboard«: taken over as an override – arrived
@@ -777,7 +782,6 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     // »nicht mehr an der Schule«: gone in the dashboard at once, without
     // waiting for LUSD – then the correction has arrived
     await page.goto('/schuelerliste?klasse=5a');
-    await cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_reopen').click();
     await cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_correct').click();
     await page.locator('#ti_sl_gone').check();
     await page.locator('#ti_sl_gone_since').fill('2026-11-20');
@@ -800,7 +804,8 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await page.locator('#ti_sl_rufname').fill('Nelly');
     await page.locator('#bu_save_sl_correction').click();
     await expect(cls.locator('tr.sl-note-row td.sl-fix-rufname', { hasText: 'Nelly' })).toHaveCount(1);
-    const checkedBefore = await cls.locator('.sl-progress strong').first().textContent();
+    // (Max as well by now: his Rufname, taken over as an override, is the dashboard's)
+    await expect(cls.locator('.sl-confirm')).toContainText('Alles Markierte geprüft. Mit »Liste bestätigen« bestätigst du auch die 2 unveränderten Zeilen.');
 
     // a new draft changes Elli's birthday: her row is asked again; it also
     // has Nele's Rufname as corrected – that counts as done, not asked again
@@ -813,7 +818,9 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     const nele = cls.locator('.sl-row', { hasText: 'Nelly' });
     await expect(nele.locator('.bu_sl_ok')).toHaveCount(0);
     await expect(nele.locator('xpath=following-sibling::tr[1]').locator('.sl-fix-label')).toHaveText('Korrektur übernommen');
-    expect(await cls.locator('.sl-progress strong').first().textContent()).toBe(String(Number(checkedBefore) - 1));
+    // Elli changed now: the one row to check again
+    await expect(cls.locator('.sl-confirm')).toContainText('Noch 1 markierte Zeile zu prüfen.');
+    await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_ok')).toHaveCount(1);
   } finally {
     await page.request.post('/api/schuelerliste/reset', { data: {} });
     const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
@@ -853,7 +860,8 @@ test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', a
     await expect(lk).toHaveCount(1);
     await expect(lk.locator('td').first()).toContainText(/^LK /);
     await expect(lk).toContainText('Clarke');
-    await expect(lk).toContainText('0 von 2');
+    // Alice and Bob as in the dashboard: nothing to check on its own
+    await expect(lk).toContainText('2 unverändert');
     // the new student is in no LK: with the year, nobody checks it but us
     const year = page.locator('.dp-review-list tr[data-klasse="11"]');
     await expect(year).toContainText('11 ohne LK');
@@ -868,8 +876,9 @@ test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', a
     await expect(cls.locator('.sl-row', { hasText: 'Alice' })).toBeVisible();
     await expect(cls.locator('.sl-row', { hasText: 'Bob' })).toBeVisible();
     await expect(cls.locator('.sl-row', { hasText: 'Olaf' })).toHaveCount(0);
-    await cls.locator('.sl-row', { hasText: 'Bob' }).locator('.bu_sl_ok').click();
-    await expect(cls.locator('.sl-progress')).toContainText('1 von 2');
+    await expect(cls.locator('.bu_sl_ok')).toHaveCount(0);
+    await expect(cls.locator('.sl-progress')).toContainText('Keine Änderungen: 2 Zeilen stehen schon so im Dashboard');
+    await expect(page.locator('#bu_sl_confirm')).toBeEnabled();
     await expect(page.locator('#sl_klasse option', { hasText: /^LK / })).toHaveCount(1);
 
     // the tutees: the LK's teachers tick them (kept after the switch)
@@ -1002,7 +1011,7 @@ test('Schülerliste prüfen: in »Zu erledigen« für die Klassenleitung', async
     await page.goto('/');
     await expect(todo).toContainText('Schülerliste prüfen');
     await expect(todo).toContainText(/Klasse 5a: noch \d+ von \d+ Zeilen/);
-    await expect(todo).toContainText(/LK [^:]+: noch 2 von 2 Zeilen/);
+    await expect(todo).toContainText(/LK [^:]+: nur noch bestätigen/);
     await expect(todo).toContainText('bitte bis 01.12.2099');
     // two lists: to the page, the class first
     await todo.getByRole('link', { name: 'Prüfen' }).or(todo.getByRole('button', { name: 'Prüfen' })).first().click();
@@ -1023,7 +1032,7 @@ test('Schülerliste prüfen: in »Zu erledigen« für die Klassenleitung', async
     await checkAll();
     await page.goto('/');
     await expect(todo).not.toContainText('Klasse 5a');
-    await expect(todo).toContainText(/LK [^:]+: noch 2 von 2 Zeilen/);
+    await expect(todo).toContainText(/LK [^:]+: nur noch bestätigen/);
     await page.goto('/schuelerliste?klasse=' + encodeURIComponent(lk!));
     await checkAll();
     await page.goto('/');

@@ -300,6 +300,13 @@ hat, bekommt den Bildungsgang der Sprache, die zuerst kam
 (`Fremdsprache_Rang` oder eine Spalte `Sprachenfolge`).
 
 **Prüfung vor dem Wechsel:** Den Entwurf prüfen in 5–10 die Klassenleitungen.
+Einzeln bestätigen (»Stimmt« oder »Korrigieren«) müssen sie nur die
+markierten Zeilen: wer neu dazukommt, wer geht und wessen Daten sich gegenüber
+dem Dashboard geändert haben. Zeilen, die schon so im Dashboard stehen,
+bestätigen sie mit der ganzen Liste (»Liste bestätigen«); korrigieren lassen
+sie sich trotzdem, denn dass beide übereinstimmen, heißt nicht, dass sie
+stimmen. Ändert ein neuer Export eine solche Zeile, wird sie markiert und
+muss einzeln bestätigt werden.
 Für 11 und 12 gibt es noch keine Daten, wer Tutor:in ist; dort prüfen die
 Lehrkräfte der Leistungskurse, eine Liste je LK. Leistungskurse sind die
 Kurse aus 11/12, deren Fachkürzel im Stundenplan großgeschrieben ist (`EN`,

@@ -27,6 +27,9 @@
     .dp-old + .dp-new { margin-left: 0.2em; }
     /* the name as a heading only where the row becomes a card */
     .sl-table .sl-head { display: none; }
+    /* the rows numbered; in a card the number stands before the name */
+    .sl-table .sl-nr { width: 1%; padding-right: 0.4em; text-align: right; font-variant-numeric: tabular-nums; color: var(--pv-muted, #5f6368); }
+    .sl-head-nr { font-variant-numeric: tabular-nums; color: var(--pv-muted, #5f6368); font-weight: 400; }
     .sl-table tr.sl-row > td:first-child, .sl-table tr.sl-row > td.sl-head + td, .sl-table tr.sl-note-row > td:first-child:not(.sl-head), .sl-table tr.sl-note-row > td.sl-head + td { border-left: 4px solid transparent; }
     .sl-table tr.sl-row-added > td:first-child, .sl-table tr.sl-row-added > td.sl-head + td, .sl-table tr.sl-note-row.sl-row-added > td.sl-head + td { border-left-color: #16a34a; }
     .sl-table tr.sl-row-added { background: rgba(22, 163, 74, 0.05); }
@@ -86,6 +89,7 @@
         body:not(.ui-preview) .sl-fix-geburtstag::before { content: 'Geburtstag: '; }
         body:not(.ui-preview) .sl-fix-bildungsgang::before { content: 'Bildungsgang: '; }
         .sl-table td:first-child { display: block; }
+        .sl-table td.sl-nr, .sl-table th.sl-nr { display: none; }
         .sl-table tr.sl-row > td.sl-head + td { border-left: 0; }
         .sl-nachname .sl-badges { display: none; }
         .sl-tutor-phone { display: inline; }
@@ -97,6 +101,7 @@
     /* new design: the table becomes cards in its own container */
     @container (max-width: 620px) {
         .sl-nachname .sl-badges { display: none; }
+        .ui-preview .sl-table td.sl-nr { display: none !important; }
         .sl-tutor-phone { display: inline; }
         .ui-preview table.pv-gt-list > tbody > tr.sl-note-row { border-top: 0; padding-top: 0; }
         .ui-preview table.pv-gt-list > tbody > tr.sl-note-row > td { font-weight: 400; font-size: 0.88rem; color: var(--pv-ink); }

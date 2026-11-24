@@ -948,10 +948,11 @@ class Main < Sinatra::Base
                 "<strong>#{done}</strong> von <strong>#{needed.size}</strong> markierten Zeilen geprüft#{unchanged > 0 ? ", <span class='sl-unchanged'>#{unchanged} unverändert</span>" : ''}"
             io.puts "<p class='sl-progress'>#{progress}#{lk ? ", <strong class='sl-tutor-count'>#{with_tutor}</strong> mit Tutor:in" : ''}</p>"
             io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert <span class='sl-fix'>neuer Wert</span> Korrektur</p>"
-            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
+            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th class='sl-nr'>Nr.</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
             gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
             abroad = Parser.abroad_now
-            v[:students].each do |s|
+            # numbered: who is missing is easier to see
+            v[:students].each_with_index do |s, nr|
                 # the changes against today in their column, like a diff: what
                 # goes struck through on red, what comes on green
                 ch = s[:changes].to_h { |what, from, to| [what, [from, to]] }
@@ -973,7 +974,8 @@ class Main < Sinatra::Base
                 row_class = (s[:new] || s[:from]) ? 'sl-row-added' : (ch.empty? ? '' : 'sl-row-changed')
                 io.puts "<tr class='sl-row #{row_class}' data-student='#{sl_h(s[:key])}' data-values='#{sl_h({ 'rufname' => s[:first_name], 'nachname' => Nachname.anzeige(s[:last_name]), 'vornamen' => s[:official_first_name], 'geschlecht' => s[:geschlecht], 'geburtstag' => s[:geburtstag], 'klasse' => s[:klasse], 'bildungsgang' => s[:bildungsgang] }.to_json)}'>"
                 # the name as a heading where the row becomes a card (phones)
-                io.puts "<td class='sl-head'><div class='sl-name'>#{sl_h(s[:name])}</div>#{badges_html}</td>"
+                io.puts "<td class='sl-head'><div class='sl-name'><span class='sl-head-nr'>#{nr + 1}.</span> #{sl_h(s[:name])}</div>#{badges_html}</td>"
+                io.puts "<td class='sl-nr'>#{nr + 1}.</td>"
                 io.puts "<td class='sl-nachname'>#{cell.('Nachname', Nachname.anzeige(s[:last_name]))}#{badges_html}</td>"
                 io.puts "<td class='sl-rufname'>#{cell.('Rufname', s[:first_name])}</td><td class='sl-vornamen'>#{cell.('Vornamen', s[:official_first_name])}</td>"
                 io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
@@ -1066,7 +1068,8 @@ class Main < Sinatra::Base
     # an der Schule«, the note) across the columns in a row of its own. Or
     # that the row changed since it was checked.
     # columns: the field of each column, nil for a column without one
-    SCHUELERLISTE_COLUMNS = [nil, 'nachname', 'rufname', 'vornamen', 'geschlecht', 'geburtstag', 'bildungsgang', nil]
+    # (:nr the number of the row, empty in a correction row)
+    SCHUELERLISTE_COLUMNS = [nil, :nr, 'nachname', 'rufname', 'vornamen', 'geschlecht', 'geburtstag', 'bildungsgang', nil]
     SCHUELERLISTE_GENDER_LABELS = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
 
     def schuelerliste_note_rows(check, valid, row_class, columns, taken = false)
@@ -1079,7 +1082,7 @@ class Main < Sinatra::Base
         return '' unless check && check[:status] == 'correction'
         fields = check[:fields] || {}
         dashboard_only = check[:dashboard_only] || []
-        in_columns = fields.keys & columns.compact
+        in_columns = fields.keys & columns.compact.grep(String)
         rows = +''
         unless in_columns.empty?
             cells = columns.each_with_index.map do |field, i|
@@ -1096,7 +1099,7 @@ class Main < Sinatra::Base
                 elsif i == columns.size - 1
                     "<td class='sl-fix-label'>#{taken ? 'Korrektur übernommen' : 'Korrektur'}#{schuelerliste_by_other(check)}</td>"
                 else
-                    "<td#{i == 0 ? " class='sl-head'" : ''}></td>"
+                    "<td#{i == 0 ? " class='sl-head'" : (field == :nr ? " class='sl-nr'" : '')}></td>"
                 end
             end
             rows << tr.(cells.join)

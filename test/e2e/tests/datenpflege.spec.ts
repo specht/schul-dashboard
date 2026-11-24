@@ -680,7 +680,9 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     // (Nachname, Rufname and Vornamen each in a column; only what differs
     // is marked, inline)
     await expect(page.locator('.sl-table').first().locator('thead th:visible')).toHaveText(
-      ['Nachname', 'Rufname', 'Vornamen', 'Geschlecht', 'Geburtstag', 'Bildungsgang', '']);
+      ['Nr.', 'Nachname', 'Rufname', 'Vornamen', 'Geschlecht', 'Geburtstag', 'Bildungsgang', '']);
+    // numbered, so a missing student shows
+    await expect(cls.locator('.sl-table').first().locator('tbody tr.sl-row td.sl-nr')).toHaveText(['1.', '2.', '3.']);
     await expect(max.locator('td.sl-rufname .dp-old')).toHaveText('Max');
     await expect(max.locator('td.sl-rufname .dp-new')).toHaveText('Maximilian');
     await expect(max.locator('td.sl-nachname')).toHaveText('Mustermann');

@@ -4,7 +4,9 @@
         background-image: none;
         background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
-    .dp-page { max-width: 60em; padding-block: 1em 3em; }
+    /* the tables take the whole width; running text keeps a line length that reads */
+    .dp-page { max-width: none; padding-block: 1em 3em; }
+    .dp-page p, .dp-page .alert, .dp-page .dp-form { max-width: 60em; }
     .dp-page h5 { margin-top: 1.4em; }
     .dp-form { display: flex; flex-wrap: wrap; gap: 0.6em 1em; align-items: flex-end; }
     .dp-form label { display: block; margin-bottom: 0.2em; }

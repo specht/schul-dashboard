@@ -773,6 +773,12 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await expect(page.locator('#dp_is_draft')).toBeVisible();
     await page.goto('/datenpflege');
     const row = page.locator('.dp-review-list tr[data-klasse="5a"]');
+    // the table takes the width it needs on a wide screen: nothing cut off
+    // or to scroll (the page was 60em narrow)
+    await page.setViewportSize({ width: 1600, height: 900 });
+    const fits = await page.locator('.dp-review-list').evaluate((t) => t.closest('.dp-scroll')!.scrollWidth <= t.closest('.dp-scroll')!.clientWidth + 1);
+    expect(fits).toBe(true);
+    expect(await page.locator('.dp-review-list').evaluate((t) => t.closest('.dp-scroll')!.clientWidth)).toBeGreaterThan(1000);
     await expect(row).toContainText('noch nicht geöffnet');
     // Elli is in the draft as in the dashboard: no row to check on its own
     await expect(row).toContainText('0 von 3, 1 unverändert');

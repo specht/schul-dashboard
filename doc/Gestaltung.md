@@ -558,10 +558,16 @@ Seite ergänzt nur, was ihr Inhalt braucht.
 - **Eigener Schalter pro Bildschirm.** Die Monitore laufen den ganzen Tag im
   Schulhaus und folgen nie der Vorschau eines Kontos. Das neue Design
   bekommt nur ein Monitor, dessen Adresse `?design=neu` (hell) oder
-  `?design=neu-dunkel` (dunkel) trägt, und nur im Flur; Sekretariat,
-  Lehrerzimmer und Silentium bleiben, wie sie sind. Ohne den Parameter
-  liefert `/monitor` dieselben Bytes wie vorher (`include/monitor_neu.rb`,
-  `preview/monitor/`).
+  `?design=neu-dunkel` (dunkel) trägt – im Flur, im Sekretariat, im
+  Lehrerzimmer und im Silentium (dort auch der Buchungsmonitor). Ohne den
+  Parameter liefert jeder Monitor dieselben Bytes wie vorher
+  (`include/monitor_neu.rb`, `preview/monitor/`).
+- **Lehrerzimmer und Silentium:** heute und morgen nebeneinander, die Karten
+  der Lehrkräfte laufen ohne Ende durch wie bisher. Über jedem Tag alle
+  Kürzel; nur die mit Einträgen nehmen ein Antippen an: es springt zur
+  nächsten Karte, hebt sie 5 Sekunden hervor, die Spalte steht 5 Sekunden
+  still (auch nach Wischen). **Sekretariat:** links die Klassen, rechts die
+  Lehrkräfte. Wetter- und Festeffekte nur im Flur, wie bisher.
 - **Feste Kacheln.** Jede Klasse hat immer ihre Kachel an derselben Stelle,
   auch ohne Änderungen (dann steht nur der Name darin, leise). Wo eine
   Klasse steht, hängt nie davon ab, welche Klassen heute Änderungen haben:

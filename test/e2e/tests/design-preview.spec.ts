@@ -985,11 +985,10 @@ test('Neues Design: Monitore bleiben unverändert', async ({ page }) => {
       expect(html, path).not.toContain('ui-preview');
       expect(html, path).not.toContain('pv-tabbar');
       expect(html, path).not.toContain('/preview.css');
-      // the hallway monitor in its own new design (monitor-neu.spec.ts):
-      // with ?design=neu, or for someone with the new design switched on
-      // (the previews in manage_monitor) – not with ?design=alt, never on the
-      // Lehrerzimmer and Sekretariat monitors
-      const neu = path === '/monitor' || path.includes('design=neu');
+      // the monitors in their own new design (monitor-neu.spec.ts): with
+      // ?design=neu, or for someone with the new design switched on (the
+      // previews in manage_monitor) – not with ?design=alt
+      const neu = !path.includes('design=alt');
       if (neu) expect(html, path).toContain('/preview/monitor/');
       else expect(html, path).not.toContain('/preview/monitor/');
     }

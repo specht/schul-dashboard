@@ -216,6 +216,9 @@ class Main < Sinatra::Base
             # <div style='max-width: 100%; overflow-x: auto;'>
             # <table class='table' style='width: unset; min-width: 100%;'>
 
+            schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
+            has_oberstufe = schueler_liste.any? { |email| (@@user_info[email][:klassenstufe] || 7) >= 11 }
+            lks = teacher_logged_in? && has_oberstufe ? directory_lks : {}
             io.puts "<div class='table-responsive' style='max-width: 100%; overflow-x: auto;'>"
             io.puts "<table class='klassen_table table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
             io.puts "<thead>"
@@ -232,6 +235,8 @@ class Main < Sinatra::Base
                 io.puts "<th>m/w</th>"
                 io.puts "<th>Bildungsgang</th>"
                 io.puts "<th>Stufe</th>"
+                # the LKs next to the level, where they are seen
+                io.puts "<th>LK</th>" if has_oberstufe
             end
             # io.puts "<th>Status</th>"
             # if can_manage_salzh_logged_in?
@@ -262,13 +267,9 @@ class Main < Sinatra::Base
                     io.puts "<th>E-Mail-Brief</th>"
                 end
             end
-            schueler_liste = @@schueler_for_klasse[klasse] || @@schueler_for_lesson[klasse] || []
-            has_oberstufe = schueler_liste.any? { |email| (@@user_info[email][:klassenstufe] || 7) >= 11 }
             if teacher_logged_in? && has_oberstufe
                 io.puts "<th>Tutor:in</th>"
-                io.puts "<th>LK</th>"
             end
-            lks = teacher_logged_in? && has_oberstufe ? directory_lks : {}
             io.puts "</tr>"
             io.puts "</thead>"
             io.puts "<tbody>"
@@ -316,6 +317,7 @@ class Main < Sinatra::Base
                     io.puts "<td>#{record[:geschlecht]}</td>"
                     io.puts "<td>#{tr_bildungsgang(record[:bildungsgang])}</td>"
                     io.puts "<td>#{record[:klassenstufe]}</td>"
+                    io.puts directory_lk_cell(lks[email]) if has_oberstufe
                 end
                 # salzh_label = ''
                 # if salzh_status[email][:status]
@@ -391,7 +393,6 @@ class Main < Sinatra::Base
                             tutor = @@user_info[record[:tutor]][:display_name]
                         end
                         io.puts "<td>#{tutor}</td>"
-                        io.puts directory_lk_cell(lks[email])
                     end
                 end
                 io.puts "</tr>"

@@ -657,7 +657,7 @@ class Main < Sinatra::Base
         body = <<~END_OF_TEXT
             #{greeting} #{name},
 
-            wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer neu dazukommt und wer geht.
+            wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer noch in der Liste fehlt und wer entgegen der Liste nicht mehr an der Schule ist – wir korrigieren diese Angaben dann anschließend in der LUSD.
             #{lk_note}
             #{links.join("\n")}
 

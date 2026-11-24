@@ -636,9 +636,18 @@ class Main < Sinatra::Base
     end
 
     # [subject, text] of the mail to one teacher
+    # the mail's text as HTML: paragraphs, the addresses as links
+    def schuelerliste_mail_html(text)
+        text.strip.split(/\n{2,}/).map do |para|
+            html = CGI.escapeHTML(para.strip).gsub(%r{https?://[^\s<]+}) { |u| "<a href=\"#{u}\">#{u}</a>" }.gsub("\n", "<br>\n")
+            "<p>#{html}</p>"
+        end.join("\n")
+    end
+
     def schuelerliste_notify_mail(email, klassen, deadline)
         teacher = @@user_info[email] || {}
-        sender = @session_user[:display_name] || @session_user[:email]
+        name = teacher[:first_name] || teacher[:display_name]
+        greeting = { 'w' => 'Liebe', 'm' => 'Lieber' }[teacher[:geschlecht]] || 'Hallo'
         links = klassen.map { |k| "#{schuelerliste_label(k)}: #{WEB_ROOT}/schuelerliste?klasse=#{CGI.escape(k)}" }
         lks = klassen.count { |k| schuelerliste_lk?(k) }
         classes = klassen.size - lks
@@ -646,7 +655,7 @@ class Main < Sinatra::Base
                 lks > 0 ? (lks == 1 ? 'deinen Leistungskurs' : 'deine Leistungskurse') : nil].compact.join(' und ')
         lk_note = lks > 0 ? "\n#{SCHUELERLISTE_LK_NOTE}\n" : ''
         body = <<~END_OF_TEXT
-            Hallo #{teacher[:first_name] || teacher[:display_name]},
+            #{greeting} #{name},
 
             wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer neu dazukommt und wer geht.
             #{lk_note}
@@ -656,8 +665,10 @@ class Main < Sinatra::Base
 
             Was sich gegenüber dem Dashboard geändert hat, ist markiert: dort genügt »Stimmt« oder eine kurze Korrektur. Die übrigen Zeilen bitte einmal durchsehen, zum Schluss »Liste bestätigen«.#{deadline ? " Bitte bis #{deadline.strftime('%d.%m.%Y')}." : ''}
 
-            Viele Grüße
-            #{sender}
+            Falls du Fragen hast, schreib mir bitte.
+
+            Danke und viele Grüße
+            Micha
         END_OF_TEXT
         subject = classes > 0 && lks == 0 ? 'Bitte prüf die neue Schülerliste deiner Klasse' :
                   (classes == 0 ? 'Bitte prüf die neue Schülerliste deiner Leistungskurse' : 'Bitte prüf die neue Schülerliste deiner Klasse und Leistungskurse')
@@ -693,13 +704,25 @@ class Main < Sinatra::Base
         plan = schuelerliste_notify_plan(view)
         reply = @session_user[:email]
         plan[:by_teacher].each_pair do |email, klassen|
-            subject_text, body = schuelerliste_notify_mail(email, klassen, deadline)
-            deliver_mail(body) do
+            subject_text, plain_text = schuelerliste_notify_mail(email, klassen, deadline)
+            html_text = schuelerliste_mail_html(plain_text)
+            # the text as written, and as HTML with links to click; answers
+            # go to whoever sent it
+            mail = Mail.new do
                 to email
                 from SMTP_FROM
                 reply_to reply
                 subject subject_text
+                html_part do
+                    content_type 'text/html; charset=UTF-8'
+                    body html_text
+                end
+                text_part do
+                    content_type 'text/plain; charset=UTF-8'
+                    body plain_text
+                end
             end
+            deliver_with_development_guard!(mail)
         end
         plan[:open].each do |klasse|
             next if schuelerliste_teachers(klasse).empty?

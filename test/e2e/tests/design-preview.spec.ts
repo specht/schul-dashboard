@@ -914,10 +914,10 @@ test('Neues Design: Tag als Agenda am Handy', async ({ page }, testInfo) => {
   }
 });
 
-// The sidebar's badges look alike and stand in one column at the right: the
-// open items on »Stundenplan« and the unread messages on »Nachrichten« (the
-// latter was the old orange dot right after the name)
-test('Neues Design: Zähler im Menü gleich und rechtsbündig', async ({ page }, testInfo) => {
+// The sidebar's badge for unread messages on »Nachrichten« stands at the right,
+// level with the name (it was the old orange dot right after the name); at
+// »Stundenplan« no badge: »Zu erledigen« is on the page itself
+test('Neues Design: Zähler im Menü rechtsbündig, keiner an »Stundenplan«', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'die Seitenleiste nur am Desktop');
   await login(page, ACCOUNTS.admin);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
@@ -926,8 +926,9 @@ test('Neues Design: Zähler im Menü gleich und rechtsbündig', async ({ page },
     await page.goto('/messages');
     await page.evaluate(() => {
       (window as unknown as { update_new_messages_indicators: (ids: number[]) => void }).update_new_messages_indicators([1]);
-      document.querySelectorAll<HTMLElement>('.navbar .pv-todo-badge').forEach((b) => { b.hidden = false; b.querySelector('.pv-todo-badge-n')!.textContent = '1'; });
     });
+    await expect(page.locator(".navbar .nav-link[href='/']").first()).toHaveText('Stundenplan');
+    await expect(page.locator(".navbar .nav-link[href='/'] > span, .pv-todo-badge")).toHaveCount(0);
     const shape = (sel: string) => page.locator(sel).first().evaluate((el) => {
       const r = el.getBoundingClientRect();
       const link = (el.closest('.nav-link') as HTMLElement).getBoundingClientRect();
@@ -936,21 +937,20 @@ test('Neues Design: Zähler im Menü gleich und rechtsbündig', async ({ page },
       const range = document.createRange();
       range.selectNodeContents(label);
       const text = range.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      return { right: Math.round(link.right - r.right), height: Math.round(r.height), middle: Math.round((r.top + r.bottom) / 2 - (text.top + text.bottom) / 2), bg: cs.backgroundColor, color: cs.color, size: cs.fontSize };
+      return { right: Math.round(link.right - r.right), middle: Math.round((r.top + r.bottom) / 2 - (text.top + text.bottom) / 2) };
     });
-    const todo = await shape('.navbar .nav-link > .pv-todo-badge');
     const messages = await shape('.navbar .nav-link > .new-messages-indicator');
-    expect(messages).toEqual(todo);
-    expect(Math.abs(todo.middle)).toBeLessThanOrEqual(1);
-    // the tablet rail (names hidden): both at the icon's corner
+    expect(Math.abs(messages.middle)).toBeLessThanOrEqual(1);
+    expect(messages.right).toBeLessThan(24);
+    // the tablet rail (names hidden): at the icon's corner
     await page.setViewportSize({ width: 1000, height: 800 });
-    const corner = (sel: string) => page.locator(sel).first().evaluate((el) => {
+    const corner = await page.locator('.navbar .nav-link > .new-messages-indicator').first().evaluate((el) => {
       const r = el.getBoundingClientRect();
       const icon = (el.closest('.nav-link')!.querySelector('.icon') as HTMLElement).getBoundingClientRect();
-      return { left: Math.round(r.left - icon.left), top: Math.round(r.top - icon.top), height: Math.round(r.height) };
+      return { dx: r.left - icon.right, dy: r.top - icon.top };
     });
-    expect(await corner('.navbar .nav-link > .new-messages-indicator')).toEqual(await corner('.navbar .nav-link > .pv-todo-badge'));
+    expect(Math.abs(corner.dx)).toBeLessThan(16);
+    expect(Math.abs(corner.dy)).toBeLessThan(16);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }

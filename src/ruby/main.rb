@@ -2608,7 +2608,7 @@ class Main < Sinatra::Base
             if user_logged_in?
                 unless external_user_logged_in?
                     # the new design: a badge with what is open (include/start_todo.rb)
-                    nav_items << ['/', "Stundenplan#{start_page_todo_nav_badge}", 'fa fa-calendar']
+                    nav_items << ['/', 'Stundenplan', 'fa fa-calendar']
                 end
                 if teacher_logged_in?
                     nav_items << :kurse

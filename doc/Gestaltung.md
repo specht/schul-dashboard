@@ -619,11 +619,11 @@ Seite ergänzt nur, was ihr Inhalt braucht.
   Hausaufgaben der Schülerinnen und Schüler), die sie aufklappt.
 - **Erledigtes und Ausgeblendetes:** Beantwortete Umfragen bleiben bis zum
   Ende stehen (»beantwortet«, Knopf »Ändern«), zählen aber nicht mehr.
-  Ausgeblendete stehen hinter einer leisen Zeile »1 ausgeblendete Umfrage
-  anzeigen«.
-- **Zähler:** ein kleines Abzeichen mit der Zahl der offenen Aufgaben an
-  »Stundenplan« in der Seitenleiste und an »Heute« in der Tab-Leiste, auf
-  jeder Seite.
+  Jede Umfrage lässt sich in ihrer Zeile ausblenden (leiser Knopf mit
+  Auge, beantwortet oder nicht); ausgeblendete stehen hinter einer leisen
+  Zeile »1 ausgeblendete Umfrage anzeigen«.
+- **Kein Zähler** an »Stundenplan« (Seitenleiste) oder »Heute«
+  (Tab-Leiste): die Liste steht auf der Seite selbst.
 - **Dringende Anfragen** (jemand wartet jetzt, etwa am Telefon auf eine
   Freigabe) stehen als Leiste oben auf jeder Seite, nur für die, die sie
   bearbeiten können: wer wartet, seit wann, und ein Knopf, der den Dialog

@@ -3,8 +3,9 @@ import { request as playwrightRequest, type Page, type APIRequestContext } from 
 
 // Neues Design (Vorschau), start page: "Zu erledigen" – open polls and the
 // other tasks of the start page in one place, never as a column of their own
-// beside the timetable (preview/start.js, include/start_todo.rb) – with a
-// badge on "Stundenplan" / "Heute"; and the Datentresor hotline as a bar on
+// beside the timetable (preview/start.js, include/start_todo.rb) – every poll
+// can be hidden there, no badge on "Stundenplan" / "Heute"; and the
+// Datentresor hotline as a bar on
 // every page for admins with the hotline role (preview/hotline.js). The
 // admin (also a teacher, hotline role in test/prepare_example_data.rb) is the
 // participant; the preview is for admins only on the test stack.
@@ -39,7 +40,7 @@ async function unfold(page: Page) {
   if (await fold.count() > 0 && (await fold.getAttribute('aria-expanded')) === 'false') await fold.click();
 }
 
-test('Neues Design: »Zu erledigen« zeigt Umfragen am richtigen Ort, »Teilnehmen« öffnet sie, der Zähler stimmt', async ({ page }, testInfo) => {
+test('Neues Design: »Zu erledigen« zeigt Umfragen am richtigen Ort, »Teilnehmen« öffnet sie, ausblenden geht immer', async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === 'mobile';
   const title = `Zu erledigen ${testInfo.project.name} ${Date.now().toString(36)}`;
   await login(page, ACCOUNTS.admin);
@@ -48,6 +49,8 @@ test('Neues Design: »Zu erledigen« zeigt Umfragen am richtigen Ort, »Teilnehm
   try {
     const { pid, prid } = await pollFor(page.request, title, 3 * 24 * 60);
     pids.push(pid);
+    const unanswered = `Noch offen ${testInfo.project.name} ${Date.now().toString(36)}`;
+    pids.push((await pollFor(page.request, unanswered, 3 * 24 * 60)).pid);
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/ui-preview/);
     const todo = page.locator('#pv_todo');
@@ -89,14 +92,12 @@ test('Neues Design: »Zu erledigen« zeigt Umfragen am richtigen Ort, »Teilnehm
     await page.locator('#bu_close_poll_response_modal').evaluate((b: HTMLElement) => b.click());
     await expect(page.locator('#pollResponseModal')).toBeHidden();
 
-    // the badge: what is open, also on other pages
+    // no badge on »Stundenplan« / »Heute«: the list is on the page itself
     const count = await openCount(page.request);
     expect(count).toBeGreaterThan(0);
     await page.goto('/polls');
-    const badge = mobile ? page.locator(".pv-tabbar a.pv-tab[href='/'] .pv-badge")
-      : page.locator(".navbar .nav-link[href='/'] .pv-todo-badge");
-    await expect(badge).toBeVisible();
-    await expect(badge).toContainText(String(count));
+    await expect(page.locator(".navbar .nav-link[href='/']").first()).toBeAttached();
+    await expect(page.locator(".navbar .nav-link[href='/'] .pv-todo-badge, .pv-tabbar a.pv-tab[href='/'] .pv-badge, .pv-todo-badge")).toHaveCount(0);
     // answered: still listed (it may change), no longer counted
     expect((await page.request.post('/api/submit_poll_run', { data: { prid, response: '{}' } })).status()).toBe(200);
     expect(await openCount(page.request)).toBe(count - 1);
@@ -105,8 +106,25 @@ test('Neues Design: »Zu erledigen« zeigt Umfragen am richtigen Ort, »Teilnehm
     const answered = todo.locator('.pv-todo-row', { hasText: title });
     await expect(answered).toContainText('beantwortet');
     await expect(answered.getByRole('button', { name: 'Ändern' })).toBeVisible();
-    if (count - 1 > 0) await expect(badge).toContainText(String(count - 1));
-    else await expect(page.locator(".navbar .nav-link[href='/'] .pv-todo-badge, .pv-tabbar a.pv-tab[href='/'] .pv-badge").filter({ visible: true })).toHaveCount(0);
+
+    // hidden, answered or not: gone from the list at once, behind »… anzeigen«
+    await answered.getByRole('button', { name: 'Umfrage ausblenden' }).click();
+    await expect(answered).toHaveCount(0);
+    const open = todo.locator('.pv-todo-row', { hasText: unanswered });
+    await unfold(page);
+    await open.getByRole('button', { name: 'Umfrage ausblenden' }).click();
+    await expect(open).toHaveCount(0);
+    expect(await openCount(page.request)).toBe(count - 2);
+    await page.reload();
+    await unfold(page);
+    await expect(answered).toHaveCount(0);
+    await expect(open).toHaveCount(0);
+    await todo.locator('.pv-todo-show-hidden').click();
+    await unfold(page);
+    await expect(answered).toContainText('ausgeblendet');
+    await expect(open).toContainText('ausgeblendet');
+    await expect(open.getByRole('button', { name: 'Umfrage ausblenden' })).toHaveCount(0);
+    await expect(open.getByRole('button', { name: 'Teilnehmen' })).toBeVisible();
   } finally {
     for (const pid of pids) await page.request.post('/api/delete_poll', { data: { pid } });
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });

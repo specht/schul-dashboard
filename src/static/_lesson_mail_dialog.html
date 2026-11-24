@@ -145,9 +145,10 @@ function mail_reason_changed() {
     apply_mail_note_mode();
     $('#ti_mail_details').prop('disabled', !got_reason);
     $('#mail_note_mode input').prop('disabled', !got_reason);
-    // one mail per reason and student
+    // one mail per reason and student; a test mail (to the sender alone)
+    // does not count, the real one can follow once the template is active
     for (let email of Object.keys(email_div_rows)) {
-        let taken = !got_reason || (pending_mail_data[email] ?? []).some((x) => x.reason == reason);
+        let taken = !got_reason || (pending_mail_data[email] ?? []).some((x) => x.reason == reason && !x.test);
         email_div_rows[email].pick.prop('disabled', taken);
         if (taken) set_mail_pick(email, false);
     }

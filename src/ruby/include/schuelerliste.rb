@@ -159,7 +159,8 @@ class Main < Sinatra::Base
             ch = (changes[r[:email]] || []).reject { |what, _, _| ['Name', 'Rufname', 'Vornamen'].include?(what) }
             if old
                 [['Vornamen', :official_first_name], ['Rufname', :first_name], ['Nachname', :last_name]].each do |what, field|
-                    ch << [what, old[field].to_s, r[field].to_s] if old[field].to_s != r[field].to_s
+                    shown = ->(rec) { field == :last_name ? Nachname.anzeige(rec[field]) : rec[field].to_s }
+                    ch << [what, shown.(old), shown.(r)] if old[field].to_s != r[field].to_s
                 end
             end
             view[r[:klasse]][:students] << {
@@ -223,7 +224,7 @@ class Main < Sinatra::Base
         if entry.include?(:to) && !entry.include?(:geschlecht)
             { 'to' => entry[:to] }
         else
-            { 'rufname' => entry[:first_name], 'nachname' => entry[:last_name], 'vornamen' => entry[:official_first_name],
+            { 'rufname' => entry[:first_name], 'nachname' => Nachname.anzeige(entry[:last_name]), 'vornamen' => entry[:official_first_name],
               'geschlecht' => entry[:geschlecht], 'geburtstag' => entry[:geburtstag], 'klasse' => entry[:klasse],
               'bildungsgang' => entry[:bildungsgang] }
         end
@@ -299,6 +300,8 @@ class Main < Sinatra::Base
                     k = k.to_s
                     next unless SCHUELERLISTE_FIELDS.include?(k) && v.is_a?(String)
                     v = v.strip
+                    # a particle in front, as everywhere it is shown (nachname.rb)
+                    v = Nachname.anzeige(Nachname.intern(v)) if k == 'nachname'
                     fields[k] = v[0, 100] unless v.empty?
                 end
                 assert(fields['geschlecht'].nil? || Parser::OVERRIDE_GENDERS.include?(fields['geschlecht']))
@@ -477,7 +480,7 @@ class Main < Sinatra::Base
         require_data_manager!
         lines = [%w(Jahrgang Nachname Vornamen Geburtsdatum E-Mail Tutor:in-Kürzel Tutor:in)]
         schuelerliste_tutor_rows.each do |r|
-            lines << [r[:klasse], r[:last_name], r[:first_names], sl_date(r[:geburtstag]), r[:email],
+            lines << [r[:klasse], Nachname.anzeige(r[:last_name]), r[:first_names], sl_date(r[:geburtstag]), r[:email],
                       r[:tutors].map { |t| (@@user_info[t] || {})[:shorthand] || '' }.join(', '),
                       r[:tutors].map { |t| schuelerliste_teacher_name(t) }.join(', ')]
         end
@@ -545,7 +548,7 @@ class Main < Sinatra::Base
         groups = schuelerliste_lk?(klasse) || OBERSTUFE.include?(klasse.to_s) ?
             view.keys.select { |g| schuelerliste_lk?(g) || OBERSTUFE.include?(g.to_s) } : [klasse]
         groups.flat_map { |g| (view[g] || { :students => [] })[:students] }.any? do |e|
-            name = remove_accents("#{e[:name]} #{e[:official_first_name]} #{e[:last_name]}".downcase)
+            name = remove_accents("#{e[:name]} #{e[:official_first_name]} #{Nachname.anzeige(e[:last_name])}".downcase)
             words.all? { |w| name.include?(w) }
         end
     end
@@ -746,7 +749,7 @@ class Main < Sinatra::Base
                 entry = entries[c[:student]]
                 arrived = schuelerliste_arrived?(view, klasse, c)
                 rows << { :klasse => klasse, :review => c[:review], :student => c[:student], :name => entry ? entry[:name] : c[:student],
-                          :official => entry && entry[:last_name] ? [entry[:official_first_name], entry[:last_name]].compact.join(' ') : nil,
+                          :official => entry && entry[:last_name] ? [entry[:official_first_name], Nachname.anzeige(entry[:last_name])].compact.join(' ') : nil,
                           :geburtstag => entry && entry[:geburtstag],
                           :what => schuelerliste_correction_todo_text(c, entry), :by => c[:by], :at => c[:at],
                           :arrived => arrived, :done => c[:done] == true, :wontfix => c[:wontfix],
@@ -917,10 +920,10 @@ class Main < Sinatra::Base
                 birthday_html = ch['Geburtstag'] ? diff.(*ch['Geburtstag']) : sl_h(sl_date(s[:geburtstag]))
                 bildungsgang_html = ch['Bildungsgang'] ? diff.(*ch['Bildungsgang']) : sl_h(Main.tr_bildungsgang(s[:bildungsgang]))
                 row_class = (s[:new] || s[:from]) ? 'sl-row-added' : (ch.empty? ? '' : 'sl-row-changed')
-                io.puts "<tr class='sl-row #{row_class}' data-student='#{sl_h(s[:key])}' data-values='#{sl_h({ 'rufname' => s[:first_name], 'nachname' => s[:last_name], 'vornamen' => s[:official_first_name], 'geschlecht' => s[:geschlecht], 'geburtstag' => s[:geburtstag], 'klasse' => s[:klasse], 'bildungsgang' => s[:bildungsgang] }.to_json)}'>"
+                io.puts "<tr class='sl-row #{row_class}' data-student='#{sl_h(s[:key])}' data-values='#{sl_h({ 'rufname' => s[:first_name], 'nachname' => Nachname.anzeige(s[:last_name]), 'vornamen' => s[:official_first_name], 'geschlecht' => s[:geschlecht], 'geburtstag' => s[:geburtstag], 'klasse' => s[:klasse], 'bildungsgang' => s[:bildungsgang] }.to_json)}'>"
                 # the name as a heading where the row becomes a card (phones)
                 io.puts "<td class='sl-head'><div class='sl-name'>#{sl_h(s[:name])}</div>#{badges_html}</td>"
-                io.puts "<td class='sl-nachname'>#{cell.('Nachname', s[:last_name])}#{badges_html}</td>"
+                io.puts "<td class='sl-nachname'>#{cell.('Nachname', Nachname.anzeige(s[:last_name]))}#{badges_html}</td>"
                 io.puts "<td class='sl-rufname'>#{cell.('Rufname', s[:first_name])}</td><td class='sl-vornamen'>#{cell.('Vornamen', s[:official_first_name])}</td>"
                 io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
                 io.puts "<td class='sl-tutor'>#{schuelerliste_tutor_html(tutors[s[:key]], marker && s[:key].include?('@'))}</td>" if lk

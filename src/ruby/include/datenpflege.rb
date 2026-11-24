@@ -209,6 +209,8 @@ class Main < Sinatra::Base
     # too long, leaving out parts of the names (second first names, the
     # second part of double names, von/de …). Returns [address, note].
     def datenpflege_new_email(parser, rufname, nachname, taken)
+        # (the particle in front, as in the address)
+        nachname = Nachname.anzeige(nachname)
         build = ->(r, n) { parser.name_to_email(r, n, false) }
         local = ->(e) { e.split('@').first }
         full = build.(rufname, nachname)
@@ -671,11 +673,11 @@ class Main < Sinatra::Base
                     hint: 'Festgelegt unter »Rufname und Geschlecht im Dashboard«: kein Unterschied, der übernommen wird.')
             end
             hand_rows = (c[:students] || []).select(&:klasse_hand).map do |st|
-                [dp_h("#{st.vorname} #{st.nachname}"), dp_h(st.klasse),
+                [dp_h("#{st.vorname} #{Nachname.anzeige(st.nachname)}"), dp_h(st.klasse),
                  "Klasse von Hand statt #{dp_h(st.lusd_klasse)} aus der LUSD <button type='button' class='btn btn-link btn-sm p-0 bu_row_klasse_remove' data-key='#{dp_h(datenpflege_person_key(st))}'>lösen</button>"]
             end
-            manual_rows = hand_rows + (c[:gone_listed] || []).map { |st| [dp_h("#{st.vorname} #{st.nachname}"), dp_h(st.klasse), 'als abgegangen vermerkt: bleibt draußen, bis die LUSD sie:ihn nicht mehr führt'] } +
-                          (c[:manual_listed] || []).map { |st| [dp_h("#{st.vorname} #{st.nachname}"), dp_h(st.klasse), 'von Hand eingetragen, jetzt in der LUSD: der Eintrag endet, sobald diese Liste gilt'] }
+            manual_rows = hand_rows + (c[:gone_listed] || []).map { |st| [dp_h("#{st.vorname} #{Nachname.anzeige(st.nachname)}"), dp_h(st.klasse), 'als abgegangen vermerkt: bleibt draußen, bis die LUSD sie:ihn nicht mehr führt'] } +
+                          (c[:manual_listed] || []).map { |st| [dp_h("#{st.vorname} #{Nachname.anzeige(st.nachname)}"), dp_h(st.klasse), 'von Hand eingetragen, jetzt in der LUSD: der Eintrag endet, sobald diese Liste gilt'] }
             unless manual_rows.empty?
                 datenpflege_section(io, 'dp-manual', 'Von Hand geführt', manual_rows, %w(Name Klasse Stand), open: !hand_rows.empty?,
                     hint: 'Festgelegt unter »Noch nicht in der LUSD« und »Nicht mehr an der Schule«: kein Unterschied, der übernommen wird.')
@@ -1086,7 +1088,7 @@ class Main < Sinatra::Base
         overrides = Parser.schueler_overrides
         students = @@user_info.select { |_, u| !u[:teacher] && u[:klasse] }.map do |email, u|
             o = overrides[email] || {}
-            { :email => email, :label => "#{u[:official_first_name]} #{u[:last_name]} (#{u[:klasse]})",
+            { :email => email, :label => "#{u[:official_first_name]} #{Nachname.anzeige(u[:last_name])} (#{u[:klasse]})",
               :rufname => o['rufname'].to_s, :geschlecht => o['geschlecht'].to_s }
         end.sort_by { |x| x[:label] }
         StringIO.open do |io|
@@ -1098,7 +1100,8 @@ class Main < Sinatra::Base
                 overrides.sort_by { |email, _| (@@user_info[email] || {})[:last_name].to_s }.each do |email, o|
                     u = @@user_info[email] || {}
                     by = (@@user_info[o['by']] || {})[:display_name] || o['by']
-                    io.puts "<tr data-email='#{dp_h(email)}'><td>#{dp_h("#{u[:official_first_name]} #{u[:last_name]}".strip.empty? ? email : "#{u[:official_first_name]} #{u[:last_name]}")}</td><td>#{dp_h(u[:klasse])}</td>"
+                    official = "#{u[:official_first_name]} #{Nachname.anzeige(u[:last_name])}".strip
+                    io.puts "<tr data-email='#{dp_h(email)}'><td>#{dp_h(official.empty? ? email : official)}</td><td>#{dp_h(u[:klasse])}</td>"
                     gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }[o['geschlecht']] || '–'
                     at = (Date.parse(o['at'].to_s).strftime('%d.%m.%Y') rescue o['at'].to_s)
                     io.puts "<td>#{dp_h(o['rufname'] || '–')}</td><td>#{dp_h(gender)}</td>"
@@ -1216,7 +1219,8 @@ class Main < Sinatra::Base
         end
         taken = Set.new(@@user_info.keys) + current.map { |r| r[:email] } + extras[:added].keys + extras[:gone].keys
         email, _, _ = datenpflege_new_email(Parser.new, LusdImport.effective_rufname(vornamen, rufname.empty? ? nil : rufname), nachname, taken)
-        entry = { 'nachname' => nachname, 'vornamen' => vornamen, 'klasse' => data[:klasse], 'geschlecht' => data[:geschlecht],
+        # the particle behind the name, as the lists keep it (nachname.rb)
+        entry = { 'nachname' => Nachname.intern(nachname), 'vornamen' => vornamen, 'klasse' => data[:klasse], 'geschlecht' => data[:geschlecht],
                   'geburtstag' => geburtstag.strftime('%Y-%m-%d'), 'by' => @session_user[:email], 'at' => Date.today.strftime('%Y-%m-%d') }
         entry['rufname'] = rufname unless rufname.empty?
         entry['bildungsgang'] = bildungsgang unless bildungsgang.empty?
@@ -1389,7 +1393,7 @@ class Main < Sinatra::Base
             unless extras[:added].empty?
                 io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-manual-list'><thead><tr><th>Name</th><th>Klasse</th><th>Adresse</th><th>Notiz</th><th>Eingetragen</th><th></th></tr></thead><tbody>"
                 extras[:added].sort_by { |_, e| [LusdImport.klasse_sort_key(e['klasse'].to_s), e['nachname'].to_s] }.each do |email, e|
-                    name = [e['rufname'].to_s.empty? ? e['vornamen'] : "#{e['vornamen']} (#{e['rufname']})", e['nachname']].join(' ')
+                    name = [e['rufname'].to_s.empty? ? e['vornamen'] : "#{e['vornamen']} (#{e['rufname']})", Nachname.anzeige(e['nachname'])].join(' ')
                     io.puts "<tr data-email='#{dp_h(email)}'><td>#{dp_h(name)}</td><td>#{dp_h(e['klasse'])}</td><td>#{local.(email)}</td><td style='white-space: normal;'>#{dp_h(e['notiz'])}</td><td>#{when_by.(e)}</td>"
                     io.puts "<td class='dp-row-actions'><button type='button' class='btn btn-secondary btn-sm bu_manual_remove' data-email='#{dp_h(email)}' data-name='#{dp_h(name)}'>Entfernen</button></td></tr>"
                 end

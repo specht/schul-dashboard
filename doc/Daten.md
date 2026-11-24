@@ -286,6 +286,14 @@ Container nicht. Ohne
 Schlüssel bleiben die Commits im Checkout auf dem Server; die Seite sagt dann,
 dass das Schieben nicht geklappt hat.
 
+**Namenszusätze (von, de, van der …):** Die Listen führen sie hinter dem
+Namen, »Hofe, von« – so standen sie schon immer in den Listen des Dashboards,
+und so wird unter dem Namen sortiert. Gezeigt werden sie davor, »von Hofe«
+(im Dashboard, auf den Listen zum Prüfen, in den Adressen). Die LUSD schreibt
+sie davor (oder in die Spalte `Namenszusatz`); jede Liste wird beim Lesen in
+die eine Form gebracht, damit dieselbe Person nicht als geändert gilt
+(`src/ruby/nachname.rb`).
+
 **Bildungsgang:** Er ergibt sich aus der Schulform (`Schulform_kurz`) und den
 Fremdsprachen: SESB, altsprachlich oder regulär. Wer Latein und Französisch
 hat, bekommt den Bildungsgang der Sprache, die zuerst kam

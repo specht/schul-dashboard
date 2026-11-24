@@ -1,4 +1,5 @@
 require 'csv'
+require_relative 'nachname'
 require 'date'
 require 'set'
 require 'yaml'
@@ -348,7 +349,8 @@ class Parser
     def handle_schueler_line(line, translate_klasse = true)
         line = line.encode('utf-8').strip
         parts = line.split("\t")
-        nachname = parts[0].strip.gsub(/\s+/, ' ')#.unicode_normalize(:nfd)
+        # name particles behind the name, whatever form the list has (nachname.rb)
+        nachname = Nachname.intern(parts[0])
         vorname = parts[1].strip.gsub(/\s+/, ' ')#.unicode_normalize(:nfd)
         if @use_mock_names
             while true do
@@ -519,7 +521,7 @@ class Parser
     # first names, loosely (accents, case)
     def self.manual_person_key(last_name, first_names, geburtstag)
         norm = ->(x) { x.to_s.unicode_normalize(:nfkd).gsub(/\p{M}/, '').downcase.gsub(/[^a-z]/, '') }
-        [norm.(last_name), norm.(first_names.to_s.split(/[ -]/).first), geburtstag.to_s]
+        [norm.(Nachname.intern(last_name)), norm.(first_names.to_s.split(/[ -]/).first), geburtstag.to_s]
     end
 
     # a list line (as written by /datenpflege) for a student added by hand

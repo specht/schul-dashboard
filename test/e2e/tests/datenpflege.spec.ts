@@ -263,6 +263,66 @@ test('Datenpflege: Entscheidungen im Vergleich (nicht mehr da, ist doch da, Klas
   }
 });
 
+// After a change the services read the data again – about half a minute in
+// production (not in the test stack, simulated here): a bar says so wherever
+// the page is scrolled, the page rests, then it is reloaded and comes back to
+// the same place with the comparison open (before, the note was out of sight
+// and nothing seemed to happen).
+test('Datenpflege: nach einer Änderung sichtbar warten, dann zurück an dieselbe Stelle', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await login(page, ACCOUNTS.admin);
+  let malloryEmail = '';
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, [HEADER,
+      'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
+      'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
+      'Neu;Niko;;05a;männlich;01.03.2014'].join('\r\n'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    // the draft opens by itself
+    await page.goto('/datenpflege');
+    const preview = page.locator('#dp_preview');
+    const mallory = preview.locator('.dp-removed tr', { hasText: 'Mallory' });
+    const keep = mallory.locator('.bu_row_keep');
+    malloryEmail = (await keep.getAttribute('data-email'))!;
+
+    // the restart, simulated: the change answers that the data is read
+    // again, the web service has a new time after a few polls
+    const before = await page.locator('#data_loaded_at').textContent();
+    let polls = 0;
+    await page.route('**/api/datenpflege/row/keep', async (route) => {
+      const response = await route.fetch();
+      await route.fulfill({ response, json: { ...(await response.json()), reload: true } });
+    });
+    await page.route('**/api/data_status', (route) => route.fulfill({ json: { loaded_at: ++polls >= 2 ? 'neu' : before } }));
+
+    await keep.scrollIntoViewIfNeeded();
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y).toBeGreaterThan(300);
+    await keep.click();
+    const bar = page.getByTestId('dp-reloading');
+    await expect(bar).toBeInViewport();
+    await expect(bar).toContainText('etwa eine halbe Minute');
+    await expect(page.locator('body')).toHaveClass(/dp-busy/);
+
+    // reloaded by itself: the comparison open again, at the same place
+    await expect(page.locator('.dp-manual-list tr', { hasText: 'Mallory' })).toHaveCount(1, { timeout: 20_000 });
+    await expect(bar).toHaveCount(0);
+    await expect(page.locator('body')).not.toHaveClass(/dp-busy/);
+    await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
+    await expect(preview.locator('.dp-added, .dp-removed, .dp-manual').first()).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y - 200);
+  } finally {
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    if (malloryEmail) await page.request.post('/api/datenpflege/manual/remove', { data: { email: malloryEmail } }).catch(() => null);
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
+  }
+});
+
 // Name particles: the dashboard keeps them behind the name (»Hofe, von«),
 // LUSD writes them in front (»von Hofe«) – the same person, no change to
 // check, and shown in front everywhere.

@@ -26,6 +26,9 @@ class NachnameTest < Minitest::Test
         skip 'needs the test stack (./test.sh unit)' unless in_test_stack?
         Dir.chdir(APP_ROOT) do
             require_app 'parser'
+            # main.rb's gems bring the locales remove_accents needs; alone the
+            # parser has none (passed only after a test that set this)
+            I18n.enforce_available_locales = false
             records = []
             dir = Dir.mktmpdir
             path = File.join(dir, '2099-01-01.TXT')

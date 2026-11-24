@@ -412,14 +412,28 @@ test('Mails aus dem Unterricht: Testvorlage im Mail-Dialog', async ({ page }, te
   await expect(pending).toContainText(`Test, nur an ${ACCOUNTS.admin}`);
   // test mails go out right away (the mail bot is not part of the test stack)
   await expect(notice).toContainText(ACCOUNTS.admin);
-  await pending.getByRole('button', { name: 'Abbrechen' }).click();
-  await expect(pending).toHaveCount(0);
-  await modal.locator('#ti_mail_reason').selectOption('praise');
+  const rules = { label: name, color: '#204a87', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' };
+
+  // switched on, the same student can get the real mail: a test mail does
+  // not count as the one mail per reason and student
+  expect((await page.request.post('/api/save_lesson_mail_template', { data: { reason, status: 'active', ...rules } })).status()).toBe(200);
+  const modal2 = await openMailDialog(page);
+  await modal2.locator('#ti_mail_reason').selectOption(reason);
+  const firstPick = modal2.locator('#div_email_sus_table .ti-mail-pick').first();
+  await expect(firstPick).toBeEnabled();
+  await firstPick.check();
+  await modal2.locator('#bu_send_lesson_mails').click();
+  const rows = modal2.locator('#div_email_sus_table tr', { hasText: `»${name}«` });
+  await expect(rows).toHaveCount(2);
+  await expect(rows.filter({ hasNotText: 'Test, nur an' })).toContainText('wird um');
+  // the real one does count
+  await expect(firstPick).toBeDisabled();
+  for (let i = 0; i < 2; i++) await rows.first().getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(rows).toHaveCount(0);
+  await modal2.locator('#ti_mail_reason').selectOption('praise');
   await expect(notice).toBeHidden();
   // tidy up: out of the timetable
-  const save = await page.request.post('/api/save_lesson_mail_template', {
-    data: { reason, label: name, color: '#204a87', status: 'hidden', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' },
-  });
+  const save = await page.request.post('/api/save_lesson_mail_template', { data: { reason, status: 'hidden', ...rules } });
   expect(save.status()).toBe(200);
 });
 

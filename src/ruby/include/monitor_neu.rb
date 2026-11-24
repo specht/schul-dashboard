@@ -7,8 +7,10 @@
 # on sees the new monitor too (the previews in manage_monitor); ?design=alt
 # shows today's layout. The page keeps the template without the new frame.
 #
-# Only the monitors in the hallway: Sekretariat, Lehrerzimmer and Silentium
-# keep their layout, also with the parameter.
+# Every screen of monitor.html has it (monitor_neu_modus): the hallway, the
+# Sekretariat, the Lehrerzimmer (with the shorthands to tap) and the
+# Silentium (like the Lehrerzimmer, during the Zeugniskonferenzen); the
+# bookings monitor of the Silentium (monitor_buchungen.html) its own styles.
 #
 # With the opt-in, monitor.html switches its own styles and script off
 # (media / type attributes below) and loads preview/monitor/monitor.css and
@@ -19,15 +21,9 @@
 class Main < Sinatra::Base
     # value of ?design= → dark?
     MONITOR_NEU_DESIGNS = {'neu' => false, 'neu-dunkel' => true}
-    MONITOR_NEU_NICHT_IM_FLUR = %w(monitor-sek monitor-lz monitor-silentium)
-    MONITOR_NEU_NICHT_IM_FLUR_PFADE = %w(/monitor/sek /monitor/lz /monitor/silentium)
-
     def monitor_neu?
         path = ((request.path rescue '') || '').to_s
         return false unless path == '/monitor' || path.start_with?('/monitor/')
-        email = (@session_user || {})[:email]
-        return false if MONITOR_NEU_NICHT_IM_FLUR.any? { |x| email == "#{x}@#{SCHUL_MAIL_DOMAIN}" }
-        return false if MONITOR_NEU_NICHT_IM_FLUR_PFADE.include?(path.sub(/\/\z/, ''))
         design = (params['design'] rescue nil)
         return true if design.is_a?(String) && MONITOR_NEU_DESIGNS.include?(design)
         # ?design=alt (or anything else given): today's layout
@@ -39,6 +35,21 @@ class Main < Sinatra::Base
         return false if (@session_user || {})[:is_monitor]
         ui_preview_account?
     end
+
+    # which screen: by the monitor account, or by the path (the previews on
+    # „Monitore verwalten“) – as monitor.html decides it
+    def monitor_neu_modus
+        path = ((request.path rescue '') || '').to_s.sub(/\/\z/, '')
+        email = (@session_user || {})[:email]
+        konto = ->(name) { email == "#{name}@#{SCHUL_MAIL_DOMAIN}" }
+        return 'sekretariat' if konto.('monitor-sek') || path == '/monitor/sek'
+        return 'silentium' if konto.('monitor-silentium') || path == '/monitor/silentium'
+        return 'lehrerzimmer' if konto.('monitor-lz') || path == '/monitor/lz'
+        'flur'
+    end
+
+    # the screen's switch for the Zeugniskonferenzen (manage_monitor)
+    MONITOR_NEU_ZK_SCHALTER = { 'flur' => 'flur', 'sekretariat' => 'sek', 'lehrerzimmer' => 'lz', 'silentium' => 'silentium' }
 
     def monitor_neu_dunkel?
         return false unless monitor_neu?
@@ -84,6 +95,21 @@ class Main < Sinatra::Base
         "#{own ? own[4] : 'l'}#{key}0"
     end
 
+    # the Silentium's bookings monitor (monitor_buchungen.html) in the new
+    # design: the same page, its styles laid over it (only with the opt-in)
+    def monitor_neu_buchungen_html(color_scheme)
+        return '' unless monitor_neu?
+        dark = monitor_neu_dunkel?
+        backdrop, backdrop_css = design_preview_backdrop_css(color_scheme, dark)
+        backdrop_url = backdrop_css[/url\(([^)]+)\)/, 1].to_s
+        tokens = DesignTokens.css(DesignTokens.effective_scheme(color_scheme), dark, backdrop, 1.0)
+        klassen = ['mn-buchungen'] + (dark ? ['mn-dunkel-seite'] : [])
+        "\n<style id='monitor_neu_tokens'>#{tokens} :root { --mn-backdrop: url('#{backdrop_url.gsub(/['\\]/, '')}'); }</style>\n" +
+            "<link href='#{preview_asset('/include/fonts-v2/fonts.css')}' rel='stylesheet' />\n" +
+            "<link href='#{preview_asset('/preview/monitor/buchungen.css')}' rel='stylesheet' />\n" +
+            "<script>document.body.classList.add(#{klassen.map(&:to_json).join(', ')});</script>\n"
+    end
+
     # styles, tokens, data and script of the new design (only with the opt-in)
     def monitor_neu_html(color_scheme)
         return '' unless monitor_neu?
@@ -91,7 +117,12 @@ class Main < Sinatra::Base
         backdrop, backdrop_css = design_preview_backdrop_css(color_scheme, dark)
         backdrop_url = backdrop_css[/url\(([^)]+)\)/, 1].to_s
         heute = Date.today.strftime('%Y-%m-%d')
+        modus = monitor_neu_modus
         daten = {
+            :modus => modus,
+            # the shorthands in the school's order; the ones starting with _
+            # (no person) only on the Sekretariat's monitor, as before
+            :kuerzel => (@@shorthand_order || []),
             :klassen => KLASSEN_ORDER,
             :klassen_tr => KLASSEN_TR,
             :schema => @@color_scheme_info[color_scheme[0, 19]],
@@ -100,7 +131,7 @@ class Main < Sinatra::Base
             :stunden => monitor_neu_stunden,
             :zeugniskonferenzen => {
                 :heute => ZEUGNISKONFERENZEN[heute] || [],
-                :an => get_monitor_zeugniskonferenzen()['flur'],
+                :an => get_monitor_zeugniskonferenzen()[MONITOR_NEU_ZK_SCHALTER[modus]],
                 :laufend => running_zeugniskonferenzen,
                 :beendet => finished_zeugniskonferenzen,
             },

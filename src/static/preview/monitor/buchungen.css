@@ -1,0 +1,146 @@
+/* Neues Design des Buchungsmonitors im Silentium (monitor_buchungen.html):
+   dieselbe Seite, diese Styles darüber – nur mit ?design=neu (oder dem neuen
+   Design im eigenen Konto, include/monitor_neu.rb). Wie der neue
+   Flurmonitor: das Bild des Farbschemas in voller Farbe, deckende Kästen,
+   dieselben Schriften und Farben aus Tokens. */
+
+body.mn-buchungen {
+    --mn-paper: #f3f5f8;
+    --mn-surface: #ffffff;
+    --mn-sunken: #eef1f5;
+    --mn-ink: #131b26;
+    --mn-muted: #5b6573;
+    --mn-line: #dfe3e8;
+    --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.12);
+    --mn-text: 'Atkinson Hyperlegible Next', 'Fira Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mn-display: 'Bricolage Grotesque', 'Fira Sans Fallback Display', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+    --mn-mono: 'Atkinson Hyperlegible Mono', 'Fira Sans Fallback', ui-monospace, Menlo, Consolas, monospace;
+    background: var(--mn-backdrop) 50% 0 / 100% auto no-repeat, var(--mn-paper) !important;
+    color: var(--mn-ink) !important;
+    font-family: var(--mn-text);
+}
+
+body.mn-buchungen.mn-dunkel-seite {
+    --mn-paper: #0e131a;
+    --mn-surface: #161d27;
+    --mn-sunken: #1f2733;
+    --mn-ink: #e6ebf2;
+    --mn-muted: #9aa5b4;
+    --mn-line: #2a3442;
+    --mn-shadow: 0 0.15vw 0.8vw rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+}
+
+/* the old backdrop under the page: the scheme's picture is the body's now */
+body.mn-buchungen .embed-responsive {
+    display: none !important;
+}
+
+body.mn-buchungen .bm-wrapper {
+    padding: 1.5vw 2.4vw 0.9vw;
+    gap: 1.1vw;
+}
+
+body.mn-buchungen .bm-card {
+    background-color: var(--mn-surface);
+    border: 1px solid var(--mn-line);
+    border-radius: 1.05vw;
+    box-shadow: var(--mn-shadow);
+}
+
+body.mn-buchungen .bm-header {
+    padding: 0.9vw 1.4vw;
+    align-items: center;
+}
+
+body.mn-buchungen .bm-title {
+    font: 800 2.7vw/1 var(--mn-display);
+    letter-spacing: -0.01em;
+}
+
+body.mn-buchungen .bm-date {
+    font-size: 1.45vw;
+    color: var(--mn-muted);
+    opacity: 1;
+}
+
+body.mn-buchungen .bm-clock {
+    font: 800 3.6vw/1 var(--mn-display);
+    letter-spacing: -0.02em;
+}
+
+body.mn-buchungen .bm-board {
+    padding: 1vw;
+    gap: 0.7vw;
+}
+
+body.mn-buchungen .bm-hour {
+    font-family: var(--mn-display);
+    color: var(--mn-muted);
+}
+
+/* a column per tablet set: the head on the sunken colour, the track quiet */
+body.mn-buchungen .bm-col-head {
+    background-color: var(--mn-sunken);
+    border-radius: 0.7vw 0.7vw 0 0;
+    font: 800 1.5vw/1.15 var(--mn-display);
+    color: var(--mn-ink);
+}
+
+body.mn-buchungen .bm-col.bm-col-free .bm-col-head {
+    font-weight: 600;
+    color: var(--mn-muted);
+    opacity: 1;
+}
+
+body.mn-buchungen .bm-col-count {
+    font: 400 1.05vw/1 var(--mn-text);
+    color: var(--mn-muted);
+    opacity: 1;
+}
+
+body.mn-buchungen .bm-col-track {
+    background-color: color-mix(in srgb, var(--mn-sunken) 55%, transparent);
+    border-radius: 0 0 0.7vw 0.7vw;
+}
+
+body.mn-buchungen .bm-gridline {
+    border-top-color: var(--mn-line);
+}
+
+body.mn-buchungen .bm-gridline.bm-gridline-hour {
+    border-top-color: color-mix(in srgb, var(--mn-ink) 18%, transparent);
+}
+
+body.mn-buchungen .bm-break {
+    background-color: color-mix(in srgb, var(--mn-ink) 5%, transparent);
+}
+
+/* a booking in the scheme's accent; the one running now with a frame, past
+   ones quiet */
+body.mn-buchungen .bm-booking {
+    background-color: var(--acc);
+    color: var(--acc-ink);
+    border-radius: 0.6vw;
+    box-shadow: none;
+}
+
+body.mn-buchungen .bm-booking.bm-booking-now {
+    background-color: var(--acc);
+    color: var(--acc-ink);
+    box-shadow: 0 0 0 0.22vw var(--mn-ink);
+}
+
+body.mn-buchungen .bm-booking-room {
+    font-family: var(--mn-mono);
+}
+
+body.mn-buchungen .bm-booking-klasse {
+    font-family: var(--mn-display);
+    font-weight: 800;
+}
+
+body.mn-buchungen .bm-empty,
+body.mn-buchungen .bm-attribution {
+    color: var(--mn-muted);
+}

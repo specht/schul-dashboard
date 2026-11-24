@@ -484,3 +484,159 @@ body.mn-aktiv.mn-dunkel-seite {
         transition: none;
     }
 }
+
+/* ---------- Lehrerzimmer, Silentium, Sekretariat: zwei Spalten ----------
+   Lehrerzimmer und Silentium: heute und morgen, darüber die Kürzel zum
+   Antippen (nur die mit Einträgen nehmen es an, die anderen leise zur
+   Orientierung); die Karten der Lehrkräfte laufen ohne Ende durch.
+   Sekretariat: links die Klassen, rechts die Lehrkräfte. */
+
+.mn-raster.mn-zwei {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.4vw;
+}
+
+.mn-spalte2 {
+    min-height: 0;
+    padding: 0.9vw 1.1vw 0;
+    gap: 0.7vw;
+    overflow: hidden;
+}
+
+.mn-spalte-kopf {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9vw;
+    flex: none;
+}
+
+.mn-spalte-kopf h2 {
+    font-size: 1.85vw;
+}
+
+.mn-spalte-datum {
+    font-size: 1.3vw;
+    color: var(--mn-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* the shorthands: one row that scrolls sideways, like before */
+.mn-chips {
+    flex: none;
+    display: flex;
+    gap: 0.35vw;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0.1vw 0 0.35vw;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 2vw), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 2vw), transparent);
+}
+
+.mn-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.mn-chip {
+    flex: none;
+    min-width: 2.9vw;
+    box-sizing: border-box;
+    padding: 0.5vw 0.55vw;
+    border: 1px solid transparent;
+    border-radius: 0.65vw;
+    background: transparent;
+    font: 700 1.05vw/1 var(--mn-mono);
+    text-align: center;
+    color: var(--mn-muted);
+    opacity: 0.5;
+}
+
+button.mn-chip {
+    appearance: none;
+    cursor: pointer;
+    opacity: 1;
+    color: var(--mn-ink);
+    background: var(--mn-sunken);
+    border-color: var(--mn-line);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+button.mn-chip.mn-chip-gewaehlt {
+    background: var(--acc);
+    border-color: transparent;
+    color: var(--acc-ink);
+}
+
+/* the column the cards run in (no scrollbar; a finger moves it too) */
+.mn-lauf {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0 -1.1vw;
+    padding: 0 1.1vw;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 0.9vw, #000 calc(100% - 1.6vw), transparent);
+    mask-image: linear-gradient(180deg, transparent, #000 0.9vw, #000 calc(100% - 1.6vw), transparent);
+}
+
+.mn-lauf::-webkit-scrollbar {
+    display: none;
+}
+
+.mn-lauf-inhalt {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7vw;
+    padding: 0.6vw 0 0.7vw;
+}
+
+.mn-karte {
+    padding: 0.55vw 0.8vw 0.6vw;
+    border-radius: 0.8vw;
+    background: var(--mn-sunken);
+    transition: background-color 0.4s, box-shadow 0.4s;
+}
+
+.mn-karte-name {
+    margin: 0 0 0.3vw;
+    font: 800 1.35vw/1.1 var(--mn-display);
+    color: var(--mn-ink);
+}
+
+/* tapped: the card stands out for a few seconds */
+.mn-karte.mn-markiert {
+    background: var(--acc-soft);
+    box-shadow: 0 0 0 0.22vw var(--acc);
+}
+
+/* the columns are wide: the subject (also written out) has room */
+.mn-spalte2 .mn-liste {
+    grid-template-columns: 2.5em minmax(0, 9em) minmax(0, 1fr) auto;
+}
+
+/* a teacher's entries: lesson, classes, subject, teacher, room */
+.mn-spalte2 .mn-liste.mn-liste-lk {
+    grid-template-columns: 2.5em 4.5em minmax(0, 9em) minmax(0, 1fr) auto;
+}
+
+.mn-spalte2 .mn-fach {
+    overflow-wrap: anywhere;
+}
+
+.mn-kl {
+    min-width: 0;
+    font-weight: 700;
+}
+
+.mn-leer {
+    margin: 0.8vw 0;
+    color: var(--mn-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mn-karte,
+    button.mn-chip {
+        transition: none;
+    }
+}

@@ -413,17 +413,26 @@ test('Flurmonitor, neues Design: Effekte laufen hinter den Kästen', async ({ pa
 // design: on the monitors of Sekretariat and Lehrerzimmer, with ?design=alt
 // (or any other value), and without the account's new design nothing of it
 // is loaded.
-test('Flurmonitor, neues Design: nur mit ?design=neu und nur im Flur', async ({ page }) => {
+test('Monitore, neues Design: nur mit ?design=neu (oder dem neuen Design im Konto)', async ({ page }) => {
   await login(page, ACCOUNTS.admin);
-  // without the new design in the account: today's monitor
+  // without the new design in the account (as the monitors' accounts): today's monitors
   await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
-  expect(await (await page.request.get('/monitor')).text()).not.toContain('/preview/monitor/');
+  for (const path of ['/monitor', '/monitor/lz', '/monitor/sek', '/monitor/silentium']) {
+    const html = await (await page.request.get(path)).text();
+    expect(html, path).not.toContain('/preview/monitor/');
+    expect(html, path).not.toContain("media='not all'");
+  }
+  await page.goto('/monitor/lz');
+  await expect(page.locator('.main_lz')).toBeVisible();
+  await expect(page.getByTestId('monitor-neu')).toHaveCount(0);
   await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
   try {
-    // with it: the new monitor in the previews (manage_monitor's iframe)
-    expect(await (await page.request.get('/monitor')).text()).toContain('/preview/monitor/monitor.js');
-    for (const path of ['/monitor?design=alt', '/monitor?design=', '/monitor?design[]=neu',
-      '/monitor/lz?design=neu', '/monitor/sek?design=neu', '/monitor/lz', '/monitor/sek']) {
+    // with it: the new monitors in the previews (manage_monitor's iframes)
+    for (const path of ['/monitor', '/monitor/lz', '/monitor/sek']) {
+      expect(await (await page.request.get(path)).text(), path).toContain('/preview/monitor/monitor.js');
+    }
+    expect(await (await page.request.get('/monitor/silentium')).text()).toContain('/preview/monitor/buchungen.css');
+    for (const path of ['/monitor?design=alt', '/monitor?design=', '/monitor?design[]=neu', '/monitor/lz?design=alt']) {
       const html = await (await page.request.get(path)).text();
       expect(html, path).not.toContain('monitor_neu');
       expect(html, path).not.toContain('/preview/monitor/');
@@ -435,9 +444,6 @@ test('Flurmonitor, neues Design: nur mit ?design=neu und nur im Flur', async ({ 
     expect(html).not.toContain('ui-preview');
     expect(html).not.toContain('pv-tabbar');
     expect(html).not.toContain('/preview.css');
-    await page.goto('/monitor/lz?design=neu');
-    await expect(page.locator('.main_lz')).toBeVisible();
-    await expect(page.getByTestId('monitor-neu')).toHaveCount(0);
   } finally {
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
@@ -457,4 +463,129 @@ test('Flurmonitor, neues Design: Zeugniskonferenzen statt Vertretungsplan', asyn
   } finally {
     if (await an()) await umschalten();
   }
+});
+
+// ---------- Lehrerzimmer, Silentium, Sekretariat ----------
+
+// the shorthands the page has (the school's order), from its own data
+async function kuerzelDerSeite(page: Page, url: string) {
+  const html = await (await page.request.get(url)).text();
+  const m = /id='monitor_neu_daten'>([\s\S]*?)<\/script>/.exec(html)!;
+  return (JSON.parse(m[1].replace(/<\\\//g, '</')).kuerzel as string[]).filter((k) => !k.startsWith('_'));
+}
+
+function lkEintrag(k: string, i: number) {
+  return { stunde_label: String((i % 8) + 1), klassen_neu: ['5a'], fach_neu: ['Ma', 'De', 'En'][i % 3], fach_alt: ['Ma', 'De', 'En'][i % 3],
+    lehrer_neu: [k], lehrer_alt: [k], raum_neu: '108', raum_alt: '108', vertretungs_text: i % 2 ? 'Aufgaben im Raum' : '' };
+}
+
+// a monitor with a plan of its own: today and tomorrow, classes and teachers
+async function monitorMitPlan(page: Page, url: string, heuteLehrer: Record<string, number>,
+  morgenLehrer: Record<string, number>, klassenAnzahl: Record<string, number> = {}) {
+  const [zeit, heute, morgen] = await page.evaluate(() => {
+    const d = new Date();
+    d.setHours(11, 5, 0, 0);
+    const z = (n: number) => String(n).padStart(2, '0');
+    const iso = (x: Date) => `${x.getFullYear()}-${z(x.getMonth() + 1)}-${z(x.getDate())}`;
+    const m = new Date(d); m.setDate(m.getDate() + 1);
+    return [d.getTime(), iso(d), iso(m)];
+  }) as [number, string, string];
+  const lehrer = (anzahl: Record<string, number>) =>
+    Object.fromEntries(Object.entries(anzahl).map(([k, n]) => [k, Array.from({ length: n }, (_, i) => lkEintrag(k, i))]));
+  const klassen: Record<string, unknown[]> = {};
+  for (const [k, n] of Object.entries(klassenAnzahl)) klassen[k] = Array.from({ length: n }, (_, i) => eintrag(k, i));
+  const stand = `${heute}T07:12:00`;
+  const paket = { today: heute, tomorrow: morgen, timestamp: stand, vplan_timestamp: stand,
+    data: { [heute]: { klassen, lehrer: lehrer(heuteLehrer), vplan_timestamp: stand },
+            [morgen]: { klassen: {}, lehrer: lehrer(morgenLehrer), vplan_timestamp: stand } } };
+  await page.clock.install({ time: new Date(zeit) });
+  await page.routeWebSocket(/\/ws_monitor$/, (ws) => {
+    ws.onMessage(() => {});
+    ws.send(JSON.stringify({ command: 'update_time', time: Math.floor(zeit / 1000) }));
+    ws.send(JSON.stringify({ command: 'update_monitor_messages', data: { messages: ['Konferenz um 15 Uhr'], images: [] } }));
+    ws.send(JSON.stringify({ command: 'update_vplan', data: paket }));
+  });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto(url);
+  await expect(page.getByTestId('monitor-neu')).toBeVisible();
+}
+
+// The Lehrerzimmer: today and tomorrow side by side, the teachers' cards run
+// on without an end as before; the shorthands above each day: only the ones
+// with entries take a tap – to the nearest card, highlighted for 5 s, the
+// column stands still for 5 s, then runs on. No weather or feasts here.
+test('Lehrerzimmer, neues Design: heute und morgen, Kürzel antippen', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const url = '/monitor/lz?design=neu';
+  const kuerzel = await kuerzelDerSeite(page, url);
+  expect(kuerzel.length).toBeGreaterThanOrEqual(2);
+  const [a, b] = kuerzel;
+  // enough entries that the column runs on without an end
+  await monitorMitPlan(page, url, { [a]: 12, [b]: 12 }, { [a]: 2 });
+  const mn = page.getByTestId('monitor-neu');
+  await expect(mn).toHaveClass(/mn-lehrerzimmer/);
+  const spalten = page.locator('.mn-spalte2');
+  await expect(spalten).toHaveCount(2);
+  await expect(spalten.nth(0).locator('h2')).toHaveText('Heute');
+  await expect(spalten.nth(1).locator('h2')).toHaveText('Morgen');
+  const heute = spalten.nth(0);
+  // every shorthand to see, only the ones with entries to tap
+  await expect(heute.locator('.mn-chip')).toHaveCount(kuerzel.length);
+  await expect(heute.locator('button.mn-chip')).toHaveCount(2);
+  await expect(spalten.nth(1).locator('button.mn-chip')).toHaveCount(1);
+  await expect(heute.locator('.mn-lauf')).toHaveAttribute('data-endlos', '1');
+  // no effects in the Lehrerzimmer
+  await expect(page.locator('canvas.fx-hinten-ebene')).toHaveCount(0);
+
+  // tapped: to the nearest card of b, highlighted, the column still
+  await page.clock.runFor(8000);
+  await heute.locator(`button.mn-chip[data-kuerzel="${b}"]`).click();
+  const markiert = heute.locator('.mn-karte.mn-markiert');
+  await expect(markiert).toHaveCount(1);
+  await expect(markiert).toHaveAttribute('data-kuerzel', b);
+  await page.clock.runFor(1500);
+  const lauf = heute.locator('.mn-lauf');
+  const nah = await page.evaluate(() => {
+    const l = document.querySelector('.mn-spalte2 .mn-lauf')!.getBoundingClientRect();
+    const k = document.querySelector('.mn-spalte2 .mn-karte.mn-markiert')!.getBoundingClientRect();
+    return k.top - l.top;
+  });
+  expect(Math.abs(nah)).toBeLessThan(40);
+  const still = await lauf.evaluate((e) => e.scrollTop);
+  await page.clock.runFor(2000);
+  expect(await lauf.evaluate((e) => e.scrollTop)).toBe(still);
+  // after 5 s: no longer highlighted, the column runs on
+  await page.clock.runFor(3500);
+  await expect(markiert).toHaveCount(0);
+  await page.clock.runFor(2000);
+  expect(await lauf.evaluate((e) => e.scrollTop)).not.toBe(still);
+});
+
+// The Sekretariat: the classes with changes on the left, the teachers on the right
+test('Sekretariat, neues Design: Klassen links, Lehrkräfte rechts', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  const url = '/monitor/sek?design=neu';
+  const [a] = await kuerzelDerSeite(page, url);
+  await monitorMitPlan(page, url, { [a]: 3 }, {}, { '5a': 2 });
+  await expect(page.getByTestId('monitor-neu')).toHaveClass(/mn-sekretariat/);
+  const spalten = page.locator('.mn-spalte2');
+  await expect(spalten.nth(0).locator('h2')).toHaveText('Klassen');
+  await expect(spalten.nth(1).locator('h2')).toHaveText('Lehrkräfte');
+  await expect(spalten.nth(0).locator('.mn-karte-name').first()).toHaveText('5a');
+  await expect(spalten.nth(1).locator(`.mn-karte[data-kuerzel="${a}"] .mn-zeile`)).toHaveCount(3);
+  // no shorthands to tap here
+  await expect(page.locator('.mn-chip')).toHaveCount(0);
+});
+
+// The Silentium's bookings monitor: its new styles only with the opt-in
+test('Buchungsmonitor, neues Design: nur mit ?design=neu', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/monitor/silentium');
+  await expect(page.locator('.bm-wrapper')).toBeVisible();
+  await expect(page.locator('body')).not.toHaveClass(/mn-buchungen/);
+  await page.goto('/monitor/silentium?design=neu');
+  await expect(page.locator('body')).toHaveClass(/mn-buchungen/);
+  await expect(page.locator('.bm-header')).toBeVisible();
+  // opaque boxes over the scheme's picture
+  expect(await page.locator('.bm-header').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(255, 255, 255)');
 });

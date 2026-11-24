@@ -24,9 +24,12 @@
     .dp-klassen-box summary { cursor: pointer; }
     /* changes as in a word diff: old struck through on red, new on green */
     .dp-what { color: var(--pv-muted, #666); margin-right: 0.3em; }
-    .dp-old, .dp-new { padding: 0 0.2em; border-radius: 4px; color: inherit; }
-    .dp-old { background: rgba(220, 38, 38, 0.16); text-decoration: line-through; text-decoration-color: rgba(220, 38, 38, 0.6); }
-    .dp-new { background: rgba(22, 163, 74, 0.2); text-decoration: none; }
+    .dp-old, .dp-new { padding: 0.05em 0.25em; border-radius: 4px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+    /* text and ground set together, so both read on every scheme, light and dark */
+    .dp-old { background: #ffe4e1; color: #8e1519; text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: rgba(142, 21, 25, 0.5); }
+    .dp-new { background: #d3f3db; color: #0d4f20; text-decoration: none; }
+    body.dark .dp-old { background: #4a1c1f; color: #ffb8b2; text-decoration-color: rgba(255, 184, 178, 0.55); }
+    body.dark .dp-new { background: #163a22; color: #93e2a8; }
     .dp-old + .dp-new { margin-left: 0.2em; }
     .dp-none { font-style: italic; text-decoration: none; }
     .dp-actions { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: center; margin-top: 1em; }

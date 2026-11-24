@@ -574,6 +574,30 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await expect(elli.locator('td.sl-vornamen')).toHaveText('Elisabeth Anna');
     await expect(elli.locator('td.sl-vornamen .dp-new')).toHaveText('Anna');
     await expect(elli.locator('.dp-old')).toHaveCount(0);
+    // the marks readable light and dark: their own ink on their own ground
+    // (an inherited ink on a faint tint was hard to read, above all on phones)
+    for (const dark of [false, true]) {
+      const marks = await page.evaluate((dark) => {
+        document.body.classList.toggle('dark', dark);
+        const rgb = (c: string) => (c.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+        const lum = (c: string) => {
+          const [r, g, b] = rgb(c).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        return [...document.querySelectorAll('.sl-table .dp-old, .sl-table .dp-new')].slice(0, 6).map(el => {
+          const s = getComputedStyle(el);
+          const [a, b] = [lum(s.color), lum(s.backgroundColor)].sort((x, y) => y - x);
+          return { contrast: (a + 0.05) / (b + 0.05), own: s.color !== getComputedStyle(el.parentElement!).color, opaque: !/rgba\(.*,\s*0?\.\d+\)$/.test(s.backgroundColor) };
+        });
+      }, dark);
+      expect(marks.length).toBeGreaterThan(1);
+      for (const m of marks) {
+        expect(m.contrast, `dark=${dark}`).toBeGreaterThanOrEqual(4.5);
+        expect(m.own, `dark=${dark}`).toBe(true);
+        expect(m.opaque, `dark=${dark}`).toBe(true);
+      }
+    }
+    await page.evaluate(() => document.body.classList.remove('dark'));
     const nele = cls.locator('.sl-row', { hasText: 'Nele Neu' });
     await expect(nele).toHaveClass(/sl-row-added/);
     await expect(nele.locator('.sl-badge-added:visible')).toHaveText('+ neu');

@@ -10,6 +10,7 @@
 
 require 'csv'
 require 'date'
+require_relative 'nachname'
 require 'zlib'
 require 'rexml/document'
 
@@ -96,7 +97,7 @@ module LusdImport
     Student = Struct.new(:row, :nachname, :vorname, :klasse, :lusd_klasse,
                          :geschlecht, :geburtsdatum, :rufname, :schulform, :sprachen,
                          :bildungsgang, :email, :email_note, :old_klasse, :matched_by, :email_taken, :email_custom,
-                         :folge, keyword_init: true) do
+                         :folge, :klasse_hand, keyword_init: true) do
         # Same rule as Parser#handle_schueler_line: the e-mail address is
         # built from this and the Nachname.
         def effective_rufname
@@ -398,7 +399,8 @@ module LusdImport
             # everyone without one; real particles are lower case ("von", "de")
             vorsatz = get.(:vorsatz)
             vorsatz = '' unless vorsatz == vorsatz.downcase
-            nachname = [vorsatz, get.(:nachname)].reject(&:empty?).join(' ')
+            # the particle behind the name, as the dashboard keeps it (nachname.rb)
+            nachname = Nachname.intern([vorsatz, get.(:nachname)].reject(&:empty?).join(' '))
             vorname = get.(:vorname)
             lusd_klasse = normalize_klasse(get.(:klasse))
             if lusd_klasse.empty? && (year = get.(:stufe)[/\A0*(\d+)/, 1])

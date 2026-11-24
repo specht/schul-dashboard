@@ -22,11 +22,14 @@ class Main < Sinatra::Base
     DATENPFLEGE_MAX_UPLOAD = 5 * 1024 * 1024
     DATENPFLEGE_EXTENSIONS = ['xlsx', 'csv', 'txt']
     DATENPFLEGE_KLASSEN_TR = 'schueler/lusd-klassen.yaml'
-    DATENPFLEGE_MANAGED = %r{\Aschueler/(\d{4}-\d{2}-\d{2}\.TXT|lusd-klassen\.yaml|overrides\.yaml|zusaetzlich\.yaml|abgaenge\.yaml)\z}
+    DATENPFLEGE_MANAGED = %r{\Aschueler/(\d{4}-\d{2}-\d{2}\.TXT|lusd-klassen\.yaml|overrides\.yaml|zusaetzlich\.yaml|abgaenge\.yaml|klassen-von-hand\.yaml)\z}
     DATENPFLEGE_OVERRIDES = 'schueler/overrides.yaml'
     # students added by hand and gone ones (Parser.schueler_extras)
     DATENPFLEGE_ADDED = 'schueler/zusaetzlich.yaml'
     DATENPFLEGE_GONE = 'schueler/abgaenge.yaml'
+    # a student whose LUSD class the dashboard doesn't know, in a class
+    # chosen by hand (person key => {klasse, name, by, at})
+    DATENPFLEGE_KLASSE_HAND = 'schueler/klassen-von-hand.yaml'
     DATENPFLEGE_RUFNAME = /\A[\p{L}\p{M}][\p{L}\p{M}' .\-]{0,39}\z/u
     DATENPFLEGE_DRAFT = 'entwurf.json'
 
@@ -128,6 +131,15 @@ class Main < Sinatra::Base
         records
     end
 
+    # a student of an export as the same person (name and birthday)
+    def datenpflege_person_key(st)
+        Parser.manual_person_key(st.nachname, st.vorname, datenpflege_iso_date(st.geburtsdatum)).join('|')
+    end
+
+    def datenpflege_klassen_von_hand(dir = Parser::SCHUELER_DIR)
+        Parser.read_yaml_hash(File.join(dir, File.basename(DATENPFLEGE_KLASSE_HAND)))
+    end
+
     def datenpflege_iso_date(ddmmyyyy)
         return nil unless ddmmyyyy.to_s =~ /\A(\d{2})\.(\d{2})\.(\d{4})\z/
         "#{$3}-#{$2}-#{$1}"
@@ -197,6 +209,8 @@ class Main < Sinatra::Base
     # too long, leaving out parts of the names (second first names, the
     # second part of double names, von/de …). Returns [address, note].
     def datenpflege_new_email(parser, rufname, nachname, taken)
+        # (the particle in front, as in the address)
+        nachname = Nachname.anzeige(nachname)
         build = ->(r, n) { parser.name_to_email(r, n, false) }
         local = ->(e) { e.split('@').first }
         full = build.(rufname, nachname)
@@ -266,6 +280,15 @@ class Main < Sinatra::Base
         end
 
         result = LusdImport.convert(rows, mapping.transform_values { |m| m[:target] })
+        # a class the dashboard doesn't know: the one chosen by hand
+        hand = datenpflege_klassen_von_hand
+        result[:students].each do |st|
+            next if KLASSEN_ORDER.include?(st.klasse)
+            e = hand[datenpflege_person_key(st)]
+            next unless e && KLASSEN_ORDER.include?(e['klasse'])
+            st.klasse = e['klasse']
+            st.klasse_hand = true
+        end
         # addresses: whoever is in the dashboard keeps theirs
         taken = Set.new(all_old.map { |r| r[:email] }) + extras[:added].keys + extras[:gone].keys
         result[:students].each do |st|
@@ -274,6 +297,15 @@ class Main < Sinatra::Base
                 st.old_klasse = old[:klasse]
                 st.matched_by = how
             end
+        end
+        # someone marked gone who has no account (new in LUSD): the address
+        # of the entry, so it keeps them out
+        gone_people = extras[:gone].each_with_object({}) do |(email, e), h|
+            h[Parser.manual_person_key(e['nachname'], e['vornamen'], e['geburtstag']).join('|')] = email if e['nachname'] && e['geburtstag']
+        end
+        result[:students].each do |st|
+            next if st.email
+            st.email = gone_people[datenpflege_person_key(st)]
         end
         wish_errors = []
         result[:students].each do |st|
@@ -608,12 +640,18 @@ class Main < Sinatra::Base
                             candidates.map { |o| "<option value='#{dp_h(o[:email])}'>#{dp_h(o[:display_name])} (#{dp_h(o[:klasse])})</option>" }.join +
                             "</select>"
                     end
-                    [dp_h(r[:display_name]), dp_h(r[:klasse]), address, link, note]
-                end, ['Name', 'Klasse', 'Adresse', 'oder bestehendes Konto', 'Hinweis'],
-                hint: 'Ist jemand schon im Dashboard, aber unter anderem Namen: das Konto auswählen, dann bleiben Adresse und Daten erhalten.')
+                    note = [note, st&.klasse_hand ? "Klasse von Hand (LUSD: #{dp_h(st.lusd_klasse)})" : nil].reject { |x| x.to_s.empty? }.join('; ')
+                    gone = row ? "<button type='button' class='btn btn-secondary btn-sm bu_row_gone' data-row='#{row}' data-email='#{dp_h(r[:email])}'>Nicht mehr da</button>" : ''
+                    [dp_h(r[:display_name]), dp_h(r[:klasse]), address, link, note, gone]
+                end, ['Name', 'Klasse', 'Adresse', 'oder bestehendes Konto', 'Hinweis', ''],
+                hint: 'Ist jemand schon im Dashboard, aber unter anderem Namen: das Konto auswählen, dann bleiben Adresse und Daten erhalten. Steht jemand in der LUSD, ist aber nicht (mehr) an der Schule: »Nicht mehr da«.')
             datenpflege_section(io, 'dp-removed', 'Nicht mehr dabei',
-                c[:removed].sort_by(&order).map { |r| [dp_h(r[:display_name]), dp_h(r[:klasse]), local.(r[:email])] },
-                %w(Name Klasse Adresse))
+                c[:removed].sort_by(&order).map do |r|
+                    [dp_h(r[:display_name]), dp_h(r[:klasse]), local.(r[:email]),
+                     "<button type='button' class='btn btn-secondary btn-sm bu_row_keep' data-email='#{dp_h(r[:email])}'>Ist doch da</button> " +
+                     "<button type='button' class='btn btn-secondary btn-sm bu_row_gone_now' data-email='#{dp_h(r[:email])}' data-name='#{dp_h(r[:display_name])}'>Nicht mehr da</button>"]
+                end, ['Name', 'Klasse', 'Adresse', ''],
+                hint: 'Fehlt jemand in der LUSD, ist aber noch da: »Ist doch da« behält sie:ihn von Hand, bis die LUSD sie:ihn wieder führt. »Nicht mehr da« meldet sofort im Dashboard ab, ohne auf die Übernahme zu warten.')
             datenpflege_section(io, 'dp-changed', 'Geändert',
                 c[:changed].sort_by { |o, n, _| order.(n) }.map do |o, n, changes|
                     st = by_email[n[:email]]
@@ -634,15 +672,26 @@ class Main < Sinatra::Base
                     end, %w(Name Klasse Unterschied), open: false,
                     hint: 'Festgelegt unter »Rufname und Geschlecht im Dashboard«: kein Unterschied, der übernommen wird.')
             end
-            manual_rows = (c[:gone_listed] || []).map { |st| [dp_h("#{st.vorname} #{st.nachname}"), dp_h(st.klasse), 'als abgegangen vermerkt: bleibt draußen, bis die LUSD sie:ihn nicht mehr führt'] } +
-                          (c[:manual_listed] || []).map { |st| [dp_h("#{st.vorname} #{st.nachname}"), dp_h(st.klasse), 'von Hand eingetragen, jetzt in der LUSD: der Eintrag endet, sobald diese Liste gilt'] }
+            hand_rows = (c[:students] || []).select(&:klasse_hand).map do |st|
+                [dp_h("#{st.vorname} #{Nachname.anzeige(st.nachname)}"), dp_h(st.klasse),
+                 "Klasse von Hand statt #{dp_h(st.lusd_klasse)} aus der LUSD <button type='button' class='btn btn-link btn-sm p-0 bu_row_klasse_remove' data-key='#{dp_h(datenpflege_person_key(st))}'>lösen</button>"]
+            end
+            manual_rows = hand_rows + (c[:gone_listed] || []).map { |st| [dp_h("#{st.vorname} #{Nachname.anzeige(st.nachname)}"), dp_h(st.klasse), 'als abgegangen vermerkt: bleibt draußen, bis die LUSD sie:ihn nicht mehr führt'] } +
+                          (c[:manual_listed] || []).map { |st| [dp_h("#{st.vorname} #{Nachname.anzeige(st.nachname)}"), dp_h(st.klasse), 'von Hand eingetragen, jetzt in der LUSD: der Eintrag endet, sobald diese Liste gilt'] }
             unless manual_rows.empty?
-                datenpflege_section(io, 'dp-manual', 'Von Hand geführt', manual_rows, %w(Name Klasse Stand), open: false,
+                datenpflege_section(io, 'dp-manual', 'Von Hand geführt', manual_rows, %w(Name Klasse Stand), open: !hand_rows.empty?,
                     hint: 'Festgelegt unter »Noch nicht in der LUSD« und »Nicht mehr an der Schule«: kein Unterschied, der übernommen wird.')
             end
             unless c[:dropped].empty?
                 datenpflege_section(io, 'dp-dropped', 'Weggelassen (Klasse gibt es im Dashboard nicht)',
-                    c[:dropped].sort_by(&order).map { |r| [dp_h(r[:display_name]), dp_h(r[:klasse])] }, %w(Name Klasse))
+                    c[:dropped].sort_by(&order).map do |r|
+                        row = by_email[r[:email]]&.row
+                        actions = row ? "<select class='form-control form-control-sm ti_row_klasse' data-row='#{row}' aria-label='Ist da, in Klasse'>" +
+                                        "<option value=''>ist da, in Klasse …</option>" + KLASSEN_ORDER.map { |k| "<option value='#{dp_h(k)}'>#{dp_h(tr_klasse(k))}</option>" }.join +
+                                        "</select> <button type='button' class='btn btn-secondary btn-sm bu_row_gone' data-row='#{row}' data-email='#{dp_h(r[:email])}'>Nicht mehr da</button>" : ''
+                        [dp_h(r[:display_name]), dp_h(r[:klasse]), actions]
+                    end, ['Name', 'Klasse', ''],
+                    hint: 'Ist jemand doch da: die Klasse wählen (gilt für jeden Export, bis die LUSD eine bekannte Klasse liefert). Sonst »Nicht mehr da«.')
             end
             datenpflege_klassen_html(io, c)
             io.string
@@ -838,7 +887,7 @@ class Main < Sinatra::Base
         tr = datenpflege_saved_klassen.merge(c[:mapping].to_h { |k, m| [k, m[:target]] }).reject { |k, v| k == v }
         DataRepo.write(DataRepo.root, DATENPFLEGE_KLASSEN_TR, tr.sort.to_h.to_yaml) unless tr.empty?
         datenpflege_extras_cleanup!
-        datenpflege_commit!([rel, DATENPFLEGE_KLASSEN_TR, DATENPFLEGE_ADDED, DATENPFLEGE_GONE])
+        datenpflege_commit!([rel, DATENPFLEGE_KLASSEN_TR, DATENPFLEGE_ADDED, DATENPFLEGE_GONE, DATENPFLEGE_KLASSE_HAND])
         # applied: the draft (if it was this one) is done, and with it the
         # teachers' check (personal data)
         draft = datenpflege_draft
@@ -904,7 +953,7 @@ class Main < Sinatra::Base
         assert(DataRepo.writable? && File.exist?(path), 'no such list')
         File.delete(path)
         datenpflege_extras_cleanup!
-        datenpflege_commit!([rel, DATENPFLEGE_ADDED, DATENPFLEGE_GONE])
+        datenpflege_commit!([rel, DATENPFLEGE_ADDED, DATENPFLEGE_GONE, DATENPFLEGE_KLASSE_HAND])
         respond(:ok => true, :reload => false)
     end
 
@@ -1039,7 +1088,7 @@ class Main < Sinatra::Base
         overrides = Parser.schueler_overrides
         students = @@user_info.select { |_, u| !u[:teacher] && u[:klasse] }.map do |email, u|
             o = overrides[email] || {}
-            { :email => email, :label => "#{u[:official_first_name]} #{u[:last_name]} (#{u[:klasse]})",
+            { :email => email, :label => "#{u[:official_first_name]} #{Nachname.anzeige(u[:last_name])} (#{u[:klasse]})",
               :rufname => o['rufname'].to_s, :geschlecht => o['geschlecht'].to_s }
         end.sort_by { |x| x[:label] }
         StringIO.open do |io|
@@ -1051,7 +1100,8 @@ class Main < Sinatra::Base
                 overrides.sort_by { |email, _| (@@user_info[email] || {})[:last_name].to_s }.each do |email, o|
                     u = @@user_info[email] || {}
                     by = (@@user_info[o['by']] || {})[:display_name] || o['by']
-                    io.puts "<tr data-email='#{dp_h(email)}'><td>#{dp_h("#{u[:official_first_name]} #{u[:last_name]}".strip.empty? ? email : "#{u[:official_first_name]} #{u[:last_name]}")}</td><td>#{dp_h(u[:klasse])}</td>"
+                    official = "#{u[:official_first_name]} #{Nachname.anzeige(u[:last_name])}".strip
+                    io.puts "<tr data-email='#{dp_h(email)}'><td>#{dp_h(official.empty? ? email : official)}</td><td>#{dp_h(u[:klasse])}</td>"
                     gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }[o['geschlecht']] || '–'
                     at = (Date.parse(o['at'].to_s).strftime('%d.%m.%Y') rescue o['at'].to_s)
                     io.puts "<td>#{dp_h(o['rufname'] || '–')}</td><td>#{dp_h(gender)}</td>"
@@ -1097,12 +1147,20 @@ class Main < Sinatra::Base
     # took over, or the same name and birthday), a gone one when none still
     # lists them. Lists for a day still to come count – until then the
     # entry still works on today's list.
-    def datenpflege_extras_cleanup!
+    def datenpflege_extras_cleanup!(token = nil)
         dir = File.join(DataRepo.root, 'schueler')
         extras = Parser.schueler_extras(dir)
         return if extras[:added].empty? && extras[:gone].empty?
         today = Date.today.strftime('%Y-%m-%d')
         paths = ([Parser.schueler_path(Date.today, dir)] + Parser.schueler_files(dir).select { |d, _| d > today }.values).uniq
+        # the draft (and the upload a decision was made on) count like a list
+        # still to come: a decision made in its comparison must not end at once
+        draft = datenpflege_draft
+        [draft && draft['token'], token].compact.uniq.each do |t|
+            next unless t =~ /\A[a-z0-9]+\z/
+            path = datenpflege_pending_path(t, 'TXT')
+            paths << path if File.exist?(path)
+        end
         lists = paths.select { |path| File.exist?(path) }.map do |path|
             records = datenpflege_parse_list(path, nil, extras: Parser::NO_EXTRAS)
             [Set.new(records.map { |r| r[:email] }),
@@ -1117,9 +1175,9 @@ class Main < Sinatra::Base
         datenpflege_write_extras(DATENPFLEGE_GONE, gone) if gone.size != extras[:gone].size
     end
 
-    def datenpflege_extras_changed!(rel)
-        datenpflege_extras_cleanup!
-        datenpflege_commit!([DATENPFLEGE_ADDED, DATENPFLEGE_GONE])
+    def datenpflege_extras_changed!(rel, token = nil)
+        datenpflege_extras_cleanup!(token)
+        datenpflege_commit!([DATENPFLEGE_ADDED, DATENPFLEGE_GONE, DATENPFLEGE_KLASSE_HAND])
         DataVersion.bump!(DataVersion::PATH, "#{rel} by #{@session_user[:email]}")
         respond(:ok => true, :reload => DataVersion.restarts?)
     end
@@ -1161,7 +1219,8 @@ class Main < Sinatra::Base
         end
         taken = Set.new(@@user_info.keys) + current.map { |r| r[:email] } + extras[:added].keys + extras[:gone].keys
         email, _, _ = datenpflege_new_email(Parser.new, LusdImport.effective_rufname(vornamen, rufname.empty? ? nil : rufname), nachname, taken)
-        entry = { 'nachname' => nachname, 'vornamen' => vornamen, 'klasse' => data[:klasse], 'geschlecht' => data[:geschlecht],
+        # the particle behind the name, as the lists keep it (nachname.rb)
+        entry = { 'nachname' => Nachname.intern(nachname), 'vornamen' => vornamen, 'klasse' => data[:klasse], 'geschlecht' => data[:geschlecht],
                   'geburtstag' => geburtstag.strftime('%Y-%m-%d'), 'by' => @session_user[:email], 'at' => Date.today.strftime('%Y-%m-%d') }
         entry['rufname'] = rufname unless rufname.empty?
         entry['bildungsgang'] = bildungsgang unless bildungsgang.empty?
@@ -1216,6 +1275,108 @@ class Main < Sinatra::Base
         datenpflege_extras_changed!(DATENPFLEGE_GONE)
     end
 
+    # ---------- decisions in the comparison (Neu, Nicht mehr dabei,
+    # Weggelassen) ----------
+
+    # a student of an upload by export row
+    def datenpflege_upload_student(token, row)
+        pending = datenpflege_load_pending(token)
+        st = LusdImport.convert(pending['rows'], {})[:students].find { |x| x.row == row.to_i }
+        assert(st, 'no such row')
+        st
+    end
+
+    # »nicht mehr da« for someone the export lists (new, or in a class the
+    # dashboard doesn't know): kept out by name and birthday, under the
+    # address the comparison gave them; someone with an account like
+    # »Nicht mehr an der Schule«
+    post '/api/datenpflege/row/gone' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:token, :row, :email], :max_value_lengths => { :token => 32, :row => 8, :email => 128 })
+        st = datenpflege_upload_student(data[:token], data[:row])
+        email = data[:email].strip.downcase
+        assert(email =~ /\A[a-z0-9][a-z0-9.\-]{0,40}@#{Regexp.escape(SCHUL_MAIL_DOMAIN)}\z/, 'invalid address')
+        geburtstag = datenpflege_iso_date(st.geburtsdatum)
+        assert(geburtstag, 'no birthday')
+        return unless datenpflege_require_writable!
+        extras = datenpflege_extras_in_repo
+        info = @@user_info[email]
+        if info
+            assert(!info[:teacher], 'not a student')
+            if extras[:added].include?(email)
+                datenpflege_write_extras(DATENPFLEGE_ADDED, extras[:added].reject { |e, _| e == email })
+                datenpflege_extras_changed!(DATENPFLEGE_ADDED, data[:token])
+                return
+            end
+        end
+        entry = { 'name' => "#{st.vorname} #{st.nachname}", 'nachname' => st.nachname, 'vornamen' => st.vorname,
+                  'geburtstag' => geburtstag, 'klasse' => (info || {})[:klasse] || st.lusd_klasse.to_s,
+                  'by' => @session_user[:email], 'at' => Date.today.strftime('%Y-%m-%d') }
+        datenpflege_write_extras(DATENPFLEGE_GONE, extras[:gone].merge(email => entry))
+        datenpflege_extras_changed!(DATENPFLEGE_GONE, data[:token])
+    end
+
+    # »ist doch da« for someone the export no longer lists: kept by hand,
+    # with the address and data the dashboard has now
+    post '/api/datenpflege/row/keep' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:email], :optional_keys => [:token],
+                                  :max_value_lengths => { :email => 128, :token => 32 })
+        email = data[:email].strip.downcase
+        info = @@user_info[email]
+        assert(info && !info[:teacher] && info[:klasse], 'not a student')
+        return unless datenpflege_require_writable!
+        extras = datenpflege_extras_in_repo
+        if extras[:gone].include?(email)
+            respond(:ok => false, :message => 'Diese Person ist als »nicht mehr an der Schule« vermerkt – dort zurücknehmen.')
+            return
+        end
+        r = datenpflege_parse_list(Parser.schueler_path, nil, extras: extras).find { |x| x[:email] == email }
+        assert(r, 'not in the list')
+        entry = { 'nachname' => r[:last_name], 'vornamen' => r[:official_first_name], 'klasse' => r[:klasse],
+                  'geschlecht' => r[:geschlecht], 'geburtstag' => r[:geburtstag],
+                  'notiz' => 'steht nicht mehr in der LUSD, ist aber noch da',
+                  'by' => @session_user[:email], 'at' => Date.today.strftime('%Y-%m-%d') }
+        entry['rufname'] = r[:first_name] if r[:first_name].to_s != r[:official_first_name].to_s.split(/[ -]/).first
+        entry['bildungsgang'] = r[:bildungsgang].to_s if r[:bildungsgang]
+        datenpflege_write_extras(DATENPFLEGE_ADDED, extras[:added].merge(email => entry.compact))
+        datenpflege_extras_changed!(DATENPFLEGE_ADDED, data[:token])
+    end
+
+    # »ist da, in Klasse …« for someone in a class the dashboard doesn't
+    # know (kept for every export until removed)
+    post '/api/datenpflege/row/klasse' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:token, :row, :klasse], :max_value_lengths => { :token => 32, :row => 8, :klasse => 16 })
+        assert(KLASSEN_ORDER.include?(data[:klasse]), 'invalid klasse')
+        st = datenpflege_upload_student(data[:token], data[:row])
+        assert(datenpflege_iso_date(st.geburtsdatum), 'no birthday')
+        return unless datenpflege_require_writable!
+        hand = datenpflege_klassen_von_hand(File.join(DataRepo.root, 'schueler'))
+        hand[datenpflege_person_key(st)] = { 'klasse' => data[:klasse], 'name' => "#{st.vorname} #{st.nachname}",
+                                             'lusd' => st.lusd_klasse.to_s, 'by' => @session_user[:email], 'at' => Date.today.strftime('%Y-%m-%d') }
+        datenpflege_write_klassen_von_hand(hand)
+        respond(:ok => true)
+    end
+
+    post '/api/datenpflege/row/klasse/remove' do
+        require_data_manager!
+        data = parse_request_data(:required_keys => [:key], :max_value_lengths => { :key => 200 })
+        return unless datenpflege_require_writable!
+        hand = datenpflege_klassen_von_hand(File.join(DataRepo.root, 'schueler'))
+        assert(hand.include?(data[:key]), 'no such entry')
+        hand.delete(data[:key])
+        datenpflege_write_klassen_von_hand(hand)
+        respond(:ok => true)
+    end
+
+    def datenpflege_write_klassen_von_hand(hand)
+        DataRepo.write(DataRepo.root, DATENPFLEGE_KLASSE_HAND,
+                       "# Schüler:innen, deren Klasse aus der LUSD das Dashboard nicht kennt, in einer von Hand\n" +
+                       "# gewählten Klasse (gesetzt auf /datenpflege; Nachname|erster Vorname|Geburtstag).\n" + hand.sort.to_h.to_yaml)
+        datenpflege_commit!([DATENPFLEGE_KLASSE_HAND])
+    end
+
     def print_schueler_extras
         require_data_manager!
         extras = Parser.schueler_extras
@@ -1232,7 +1393,7 @@ class Main < Sinatra::Base
             unless extras[:added].empty?
                 io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-manual-list'><thead><tr><th>Name</th><th>Klasse</th><th>Adresse</th><th>Notiz</th><th>Eingetragen</th><th></th></tr></thead><tbody>"
                 extras[:added].sort_by { |_, e| [LusdImport.klasse_sort_key(e['klasse'].to_s), e['nachname'].to_s] }.each do |email, e|
-                    name = [e['rufname'].to_s.empty? ? e['vornamen'] : "#{e['vornamen']} (#{e['rufname']})", e['nachname']].join(' ')
+                    name = [e['rufname'].to_s.empty? ? e['vornamen'] : "#{e['vornamen']} (#{e['rufname']})", Nachname.anzeige(e['nachname'])].join(' ')
                     io.puts "<tr data-email='#{dp_h(email)}'><td>#{dp_h(name)}</td><td>#{dp_h(e['klasse'])}</td><td>#{local.(email)}</td><td style='white-space: normal;'>#{dp_h(e['notiz'])}</td><td>#{when_by.(e)}</td>"
                     io.puts "<td class='dp-row-actions'><button type='button' class='btn btn-secondary btn-sm bu_manual_remove' data-email='#{dp_h(email)}' data-name='#{dp_h(name)}'>Entfernen</button></td></tr>"
                 end

@@ -245,3 +245,62 @@ test('Neues Design: Menüs im Texteditor nicht abgeschnitten', async ({ page }, 
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// External participants: each one's invitation as a state (not invited yet,
+// being sent, invited today at …, not sent), the state above the table
+// with the progress while the invitation bot sends them – all of it without
+// opening the dialog again. The test stack has no invitation bot: the test
+// sends the waiting one itself, the dialog notices by asking again.
+test('Neues Design: Einladungen an externe Teilnehmer mit Stand und Fortschritt', async ({ page }, testInfo) => {
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  const tag = `${testInfo.project.name}-${Date.now().toString(36)}`;
+  const a = `ext-a-${tag}@example.org`, b = `ext-b-${tag}@example.org`;
+  await page.request.post('/api/add_external_users', { data: { text: `Anna Extern <${a}>, Bert Extern <${b}>` } });
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const saved = await (await page.request.post('/api/save_event', { data: {
+    title: `Einladung Probe ${tag}`, jitsi: 'yes', date: today, start_time: '17:00', end_time: '18:00', recipients: [a, b], description: '' } })).json();
+  const eid = saved.eid || (saved.event || {}).eid;
+  expect(eid).toBeTruthy();
+  try {
+    await page.goto('/events');
+    await page.getByText(`Einladung Probe ${tag}`).click();
+    const modal = page.locator('#composeModal');
+    await expect(modal).toBeVisible();
+    const status = modal.locator('[data-testid=ext-invite-status]');
+    const rowA = modal.locator(`tr[data-email="${a}"]`);
+    const rowB = modal.locator(`tr[data-email="${b}"]`);
+    await expect(status).toContainText('0 von 2 eingeladen');
+    await expect(modal.locator('#bu_send_missing_event_invitations')).toHaveText(/Alle 2 Einladungen senden/);
+    await expect(rowA.locator('.ext-invite-state')).toHaveText('noch nicht eingeladen');
+
+    // one at a time: the row says so at once
+    await rowA.locator('.bu-send-invitation').click();
+    await expect(rowA.locator('.ext-invite-state')).toContainText('eingeladen heute um');
+    await expect(rowA.locator('.bu-send-invitation')).toContainText('Erneut senden');
+    await expect(status).toContainText('1 von 2 eingeladen');
+    await expect(modal.locator('#bu_send_missing_event_invitations')).toHaveText(/Fehlende Einladungen senden \(1\)/);
+
+    // the missing ones: waiting for the bot, with the progress
+    await modal.locator('#bu_send_missing_event_invitations').click();
+    await expect(rowB.locator('.ext-invite-state')).toContainText('wird versendet');
+    await expect(status).toContainText('Einladungen werden versendet: 0 von 1');
+    await expect(status.locator('.ext-invite-progress')).toBeVisible();
+    await expect(rowB.locator('.bu-send-invitation')).toBeDisabled();
+    // (what the invitation bot does) – the dialog follows by itself
+    await page.request.post('/api/invite_external_user_for_event', { data: { eid, email: b } });
+    await expect(rowB.locator('.ext-invite-state')).toContainText('eingeladen heute um', { timeout: 10_000 });
+    await expect(status).toContainText('Alle 2 eingeladen');
+    await expect(status.locator('.ext-invite-progress')).toBeHidden();
+
+    // unsaved changes: save first, then invite
+    await page.locator('#ti_title').press('End');
+    await page.locator('#ti_title').pressSequentially(' geändert');
+    await expect(rowA.locator('.bu-send-invitation')).toBeDisabled();
+  } finally {
+    await page.request.post('/api/delete_event', { data: { eid } });
+    for (const email of [a, b]) await page.request.post('/api/delete_external_user', { data: { email } });
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});

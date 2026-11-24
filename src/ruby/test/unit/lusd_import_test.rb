@@ -124,7 +124,7 @@ class LusdImportTest < Minitest::Test
         assert_empty result[:errors]
         assert_equal 1, result[:duplicates]
         assert_equal 1, result[:skipped]
-        assert_equal [['Mustermann', '5a'], ['Oberstufe', '12'], ['von Hofe', '11']],
+        assert_equal [['Mustermann', '5a'], ['Oberstufe', '12'], ['Hofe, von', '11']],
                      result[:students].map { |s| [s.nachname, s.klasse] }
     end
 

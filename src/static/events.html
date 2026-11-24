@@ -1,4 +1,26 @@
 #{this_is_a_page_for_user_with_role(:can_create_events)}
+<style>
+    /* external participants: the state of the invitations above the table */
+    .ext-invite-status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6em 1em; }
+    .ext-invite-status-text { flex: 1 1 16em; }
+    .ext-invite-progress { flex: 1 0 100%; height: 6px; margin: 0; }
+    .ext-invite-progress .progress-bar { transition: width 0.4s; }
+    .ext-invite-table .ext-invite-action { text-align: right; white-space: nowrap; }
+    .ext-invite-sent { color: #1f7a3d; }
+    body.dark .ext-invite-sent { color: #7bd88f; }
+    .ext-invite-failed { color: #b45309; }
+    @keyframes ext-spin { to { transform: rotate(360deg); } }
+    .ext-spin { display: inline-block; animation: ext-spin 1s linear infinite; }
+    @media (prefers-reduced-motion: reduce) { .ext-spin { animation: none; } }
+    /* new design: one calm surface, colour only where it says something */
+    .ui-preview .ext-invite-status { background: var(--pv-hover); border: 0; border-radius: 12px; color: var(--pv-ink); }
+    .ui-preview .ext-invite-status.alert-success .ti { color: #1f7a3d; }
+    .ui-preview .ext-invite-status.alert-danger .ext-invite-status-text { color: var(--pv-ink); }
+    .ui-preview .ext-invite-progress { background: var(--pv-line); border-radius: 999px; }
+    .ui-preview .ext-invite-progress .progress-bar { background: var(--acc); border-radius: 999px; }
+    .ui-preview .ext-invite-intro { margin-bottom: 0.6em; }
+    body.dark.ui-preview .ext-invite-status.alert-success .ti { color: #7bd88f; }
+</style>
 <div class='container'>
     <div class='row'>
         <div class='col-md-12'>
@@ -81,32 +103,20 @@
                 </div>
                 <div class="form-group div_ext_users_for_event_present">
                     <label style='width: 100%;'>Externe Teilnehmer</label>
-                    <div class='alert alert-info'>
-                        Sie möchten externe Teilnehmer einladen, die sich nicht im Dashboard anmelden können. Diese Teilnehmer benötigen deshalb einen Link per E-Mail, über den sie den Jitsi Meet-Raum öffnen können.
+                    <div class='#{ui_preview? ? 'text-muted ext-invite-intro' : 'alert alert-info'}'>#{ui_preview? ? 'Externe Teilnehmer melden sich nicht im Dashboard an: Sie bekommen eine Einladung per E-Mail mit dem Link zum Jitsi-Raum.' : 'Sie möchten externe Teilnehmer einladen, die sich nicht im Dashboard anmelden können. Diese Teilnehmer benötigen deshalb einen Link per E-Mail, über den sie den Jitsi Meet-Raum öffnen können.'}</div>
+                    <!-- the state of the invitations: what is missing, what is being sent (with progress), all done -->
+                    <div class='alert ext-invite-status' data-testid='ext-invite-status' role='status' aria-live='polite'>
+                        <div class='ext-invite-status-text'></div>
+                        <div class='progress ext-invite-progress' hidden><div class='progress-bar' role='progressbar'></div></div>
+                        <button class='btn btn-success' id='bu_send_missing_event_invitations' hidden></button>
                     </div>
-                    <div class='alert alert-danger div_invites_missing' style='display: none;'>
-                        Noch nicht alle externen Teilnehmer haben eine Einladung erhalten. Gehen Sie bitte wie folgt vor:
-                        <ol>
-                        <li>Klicken Sie, falls Sie ungespeicherte Änderungen vorgenommen haben, unten auf »Speichern« oder »Änderungen speichern«</li>
-                        <li>Klicken Sie hier, um die fehlenden Einladungen per E-Mail zu versenden:</li>
-                        </ol>
-                        <div style='text-align: center;'>
-                            <button class='btn btn-success' id='bu_send_missing_event_invitations' disabled><i class='fa fa-send'></i>&nbsp;&nbsp;Fehlende Einladungen versenden</button>
-                        </div>
-                    </div>
-                    <div class='alert alert-warning div_invites_requested' style='display: none;'>
-                        Es werden momentan Einladungen versendet. Bitte schauen Sie später noch einmal nach, ob alle Einladungen versendet werden konnten.
-                    </div>
-                    <div class='alert alert-success div_invites_complete' style='display: none;'>
-                        Alle externen Teilnehmer haben eine Einladung erhalten. Sie können bei Bedarf einzelne Einladungen neu versenden.
-                    </div>
-                    <table class='table table-striped narrow'>
+                    <table class='table table-striped narrow ext-invite-table'>
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>E-Mail</th>
-                            <th>Gesendete Einladungen</th>
-                            <th>Einladung senden</th>
+                            <th>Einladung</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody class='ext-users-for-event-here'>
@@ -198,9 +208,10 @@ function pending_changes() {
         (old_start_time !== $('#ti_start_time').val()) ||
         (old_end_time !== $('#ti_end_time').val()) ||
         (old_jitsi !== ($('#ti_event_jitsi').data('state') === 'yes'));
-    if (flag)
-        $('.bu-send-invitation').prop('disabled', true).removeClass('btn-success').addClass('btn-outline-secondary');
-    $('#bu_send_missing_event_invitations').prop('disabled', flag);
+    if (flag !== ext_invites_unsaved) {
+        ext_invites_unsaved = flag;
+        if (ext_invites_data) render_ext_invitations();
+    }
     return flag;
 }
 
@@ -309,63 +320,132 @@ function update_net_recipients_list() {
     net_recipients_list = Object.keys(net_recipients_hash).sort();
     has_external_recipients = false;
 
-    api_call('/api/get_external_invitations_for_event', {eid: old_eid || ''}, function(data) {
-        $('.div_ext_users_for_event_present').hide();
-        $('.ext-users-for-event-here').empty();
-        let missing_invites = false;
-        let requested_invites = false;
-        for (let email of net_recipients_list) {
-            if (email in external_users_for_session_user.recipients) {
-                $('.div_ext_users_for_event_present').show();
-                let row = $('<tr>');
-                let this_invitations = data.invitations[email] || [];
-                let this_invitation_requested = data.invitation_requested[email];
-                row.append($('<td>').text(external_users_for_session_user.recipients[email].label));
-                row.append($('<td>').text(email));
-                if (this_invitations.length === 0) {
-                    row.append($('<td>').html('&ndash;'));
-                    missing_invites = true;
-                } else {
-                    row.append($('<td>').html(this_invitations.map(function(x) { return '' + x; }).join('<br />')));
-                }
-                if (this_invitation_requested)
-                    requested_invites = true;
-                let bu_invite = $('<button>').data('email', email).data('eid', old_eid).addClass('btn').addClass('btn-xs').addClass('btn-success').addClass('bu-send-invitation').html("<i class='fa fa-send'></i>&nbsp;&nbsp;Einladung senden");
-                if ((old_eid || '').length === 0)
-                    bu_invite.removeClass('btn-success').addClass('btn-outline-secondary').prop('disabled', true);
-                row.append($('<td>').append(bu_invite));
-                bu_invite.click(function(e) {
-                    let eid = $(e.target).closest('.btn').data('eid');
-                    let email = $(e.target).closest('.btn').data('email');
-                    api_call('/api/invite_external_user_for_event', {eid: eid, email: email}, function(data) {
-                        if (data.success)
-                            update_net_recipients_list();
-                    });
-                });
-                $('.ext-users-for-event-here').append(row);
-            }
-        }
-        if (missing_invites) {
-            if (requested_invites) {
-                $('.div_invites_complete').hide();
-                $('.div_invites_missing').hide();
-                $('.div_invites_requested').show();
-            } else {
-                $('.div_invites_complete').hide();
-                $('.div_invites_missing').show();
-                $('.div_invites_requested').hide();
-            }
-        } else {
-            $('.div_invites_complete').show();
-            $('.div_invites_missing').hide();
-            $('.div_invites_requested').hide();
-        }
+    load_ext_invitations(function() {
         if (net_recipients_list.length === 0)
             $('#recipient_count').html('keine Teilnehmer');
         else
             $('#recipient_count').html('' + net_recipients_list.length + ' Teilnehmer');
         update_buttons();
     });
+}
+
+// ---- external participants: each one's invitation, sent by the invitation
+// bot (one mail every few seconds) – while some are waiting, the dialog asks
+// again every few seconds, shows the progress and each one as it is sent ----
+let ext_invites_data = null;
+let ext_invites_unsaved = false;
+let ext_invites_poll = null;
+let ext_invites_batch = null;      // {eid, total}: the invitations being sent
+let ext_invites_sending = {};      // email => true while a single one is sent
+
+function ext_icon(name) {
+    const ui = document.body.classList.contains('ui-preview');
+    const map = {check: ['ti-check', 'fa-check'], send: ['ti-send', 'fa-send'], wait: ['ti-loader-2 ext-spin', 'fa-spinner fa-spin'],
+                 warn: ['ti-alert-triangle', 'fa-exclamation-triangle'], clock: ['ti-clock', 'fa-clock-o']};
+    const m = map[name];
+    return $('<i>').addClass(ui ? 'ti ' + m[0] : 'fa ' + m[1]).attr('aria-hidden', 'true');
+}
+
+function ext_when(ts) {
+    const d = new Date(ts * 1000);
+    const today = new Date();
+    const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+    if (d.toDateString() === today.toDateString()) return `heute um ${time}`;
+    return `am ${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear() !== today.getFullYear() ? d.getFullYear() : ''} um ${time}`;
+}
+
+function load_ext_invitations(after) {
+    const eid = old_eid || '';
+    api_call('/api/get_external_invitations_for_event', {eid: eid}, function(data) {
+        if ((old_eid || '') !== eid) return;
+        ext_invites_data = data;
+        render_ext_invitations();
+        if (after) after();
+    }, {no_please_wait: true});
+}
+
+function render_ext_invitations() {
+    const data = ext_invites_data || {};
+    const sent = data.sent || {};
+    const requested = data.invitation_requested || {};
+    const failed = data.failed || {};
+    const saved = (old_eid || '').length > 0;
+    const unsaved = ext_invites_unsaved || !saved;
+    const ext = net_recipients_list.filter((email) => email in external_users_for_session_user.recipients);
+    $('.div_ext_users_for_event_present').toggle(ext.length > 0);
+    const body = $('.ext-users-for-event-here').empty();
+    let invited = 0, waiting = 0, missing = 0, failures = 0;
+    for (const email of ext) {
+        const times = sent[email] || [];
+        const row = $('<tr>').attr('data-email', email);
+        row.append($('<td>').text(external_users_for_session_user.recipients[email].label));
+        row.append($('<td>').text(email));
+        const state = $('<td>').addClass('ext-invite-state');
+        if (requested[email] || ext_invites_sending[email]) {
+            waiting += 1;
+            state.addClass('ext-invite-waiting').append(ext_icon('wait'), document.createTextNode(' wird versendet …'));
+        } else if (failed[email]) {
+            failures += 1;
+            state.addClass('ext-invite-failed').append(ext_icon('warn'), document.createTextNode(' nicht versendet'));
+        } else if (times.length > 0) {
+            invited += 1;
+            const last = Math.max.apply(null, times);
+            state.addClass('ext-invite-sent').append(ext_icon('check'), document.createTextNode(` eingeladen ${ext_when(last)}`));
+            if (times.length > 1) state.append($('<span>').addClass('text-muted').text(` (${times.length}×)`));
+        } else {
+            missing += 1;
+            state.addClass('ext-invite-missing text-muted').text('noch nicht eingeladen');
+        }
+        row.append(state);
+        const busy = requested[email] || ext_invites_sending[email];
+        const again = times.length > 0 && !failed[email];
+        const button = $('<button>').addClass('btn btn-sm bu-send-invitation').attr('data-email', email)
+            .addClass(again ? 'btn-outline-secondary' : (document.body.classList.contains('ui-preview') ? 'btn-secondary' : 'btn-success'))
+            .append(ext_icon('send'), document.createTextNode(again ? ' Erneut senden' : ' Einladen'))
+            .prop('disabled', unsaved || !!busy);
+        row.append($('<td>').addClass('ext-invite-action').append(button));
+        body.append(row);
+    }
+    // the state above the table
+    const box = $('.ext-invite-status').removeClass('alert-danger alert-warning alert-success alert-info');
+    const text = box.find('.ext-invite-status-text').empty();
+    const bar = box.find('.ext-invite-progress');
+    const all_button = $('#bu_send_missing_event_invitations');
+    const open = missing + failures;
+    if (waiting > 0) {
+        if (!ext_invites_batch || ext_invites_batch.eid !== old_eid || ext_invites_batch.total < waiting) ext_invites_batch = {eid: old_eid, total: waiting};
+        const done = Math.max(0, ext_invites_batch.total - waiting);
+        box.addClass('alert-warning ext-invite-busy');
+        text.append(ext_icon('wait'), document.createTextNode(` Einladungen werden versendet: ${done} von ${ext_invites_batch.total}`));
+        bar.prop('hidden', false).find('.progress-bar').css('width', `${Math.round(100 * done / ext_invites_batch.total)}%`)
+            .attr('aria-valuenow', done).attr('aria-valuemax', ext_invites_batch.total);
+        all_button.prop('hidden', true);
+    } else {
+        ext_invites_batch = null;
+        bar.prop('hidden', true);
+        box.removeClass('ext-invite-busy');
+        if (open > 0) {
+            box.addClass('alert-danger');
+            const parts = [`${invited} von ${ext.length} eingeladen`];
+            if (failures > 0) parts.push(`${failures} nicht versendet`);
+            text.text(parts.join(', ') + '.');
+            if (unsaved) text.append(document.createTextNode(saved ? ' Bitte zuerst »Änderungen speichern«, dann einladen.' : ' Bitte zuerst »Speichern«, dann einladen.'));
+            all_button.prop('hidden', false).prop('disabled', unsaved).empty()
+                .append(ext_icon('send'), document.createTextNode(open === ext.length ? ` ${open === 1 ? 'Einladung' : 'Alle ' + open + ' Einladungen'} senden` : ` Fehlende Einladungen senden (${open})`));
+        } else {
+            box.addClass('alert-success');
+            text.append(ext_icon('check'), document.createTextNode(ext.length === 1 ? ' Eingeladen.' : ` Alle ${ext.length} eingeladen.`));
+            all_button.prop('hidden', true);
+        }
+    }
+    // ask again while some are waiting (and the dialog is open)
+    clearTimeout(ext_invites_poll);
+    ext_invites_poll = null;
+    if (waiting > 0 && saved) {
+        ext_invites_poll = setTimeout(function() {
+            if ($('#composeModal').hasClass('show')) load_ext_invitations();
+        }, 3000);
+    }
 }
 
 function gen_recipient_span(key, with_rm) {
@@ -430,7 +510,8 @@ function compact_address_list(emails) {
 }
 
 function edit_event(event) {
-    $('.bu-send-invitation').prop('disabled', false).removeClass('btn-outline-secondary').addClass('btn-success');
+    ext_invites_unsaved = false;
+    ext_invites_sending = {};
 
     $('#summernote').summernote('reset');
     $('#summernote').summernote('code', event.info.description);
@@ -731,14 +812,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     $('#bu_send_missing_event_invitations').click(function(e) {
+        $(e.currentTarget).prop('disabled', true);
+        ext_invites_batch = null;
         api_call('/api/send_missing_event_invitations', {eid: old_eid}, function(data) {
-            console.log(data);
-            if (data.success) {
-                update_net_recipients_list();
-                update_buttons();
-            }
+            load_ext_invitations();
         });
     });
+    // a single invitation: sent at once, the row shows it while it goes
+    $(document).on('click', '.bu-send-invitation', function(e) {
+        const email = $(e.currentTarget).attr('data-email');
+        if (!old_eid || !email) return;
+        ext_invites_sending[email] = true;
+        render_ext_invitations();
+        api_call('/api/invite_external_user_for_event', {eid: old_eid, email: email}, function(data) {
+            delete ext_invites_sending[email];
+            load_ext_invitations();
+        }, {no_please_wait: true});
+    });
+    $('#composeModal').on('hidden.bs.modal', function() { clearTimeout(ext_invites_poll); ext_invites_poll = null; });
 
     load_recipients('#{@session_user[:id]}', function() {
         update_stored_events();

@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { chromium, type Page } from '@playwright/test';
 import { test, expect, login, ACCOUNTS, displayedSchoolWeek } from './fixtures';
 
 // Neues Design (Vorschau): switched on in the profile – for now by admins only
@@ -2684,3 +2684,72 @@ test('Neues Design: Änderungen der Woche, Tausch statt Entfall', async ({ page 
     await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
   }
 });
+
+// The week keeps the scrollbar's room (scrollbar-gutter): a dialog must not
+// make up for the scrollbar as well – Bootstrap added its width as padding
+// to the page and the sidebar, and the week jumped to the left when a
+// lesson was opened. (Headless browsers hide scrollbars: one with them.)
+test('Neues Design, Woche: ein Dialog verschiebt die Seite nicht', async ({ baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the week on the desktop');
+  const browser = await chromium.launch({ ignoreDefaultArgs: ['--hide-scrollbars'] });
+  const page = await browser.newPage({ baseURL, viewport: { width: 1600, height: 900 } });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    await expect(page.locator('.fc-view-harness')).toBeVisible();
+    for (let i = 0; i < 6; i++) {
+      if (await page.locator('.fc-timegrid-event').count() > 0) break;
+      await page.evaluate(() => (window as any).calendar.next());
+      await page.waitForTimeout(400);
+    }
+    const where = async () => page.evaluate(() => ({
+      harness: document.querySelector('.fc-view-harness')!.getBoundingClientRect().right,
+      body: getComputedStyle(document.body).paddingRight,
+      navbar: getComputedStyle(document.querySelector('.navbar')!).paddingRight,
+    }));
+    const before = await where();
+    await page.locator('.fc-timegrid-event').first().click();
+    await expect(page.locator('#lessonModal')).toBeVisible();
+    await page.waitForTimeout(400);
+    const after = await where();
+    expect(after).toEqual(before);
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+    await browser.close();
+  }
+});
+
+// A button of the week's head keeps the focus after a click: Bootstrap's
+// ring then drew a dark frame inside the arrows' group. Clicked: no ring;
+// from the keyboard: a ring of the design.
+test('Neues Design, Woche: kein dunkler Rahmen um geklickte Knöpfe', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'the head of the week');
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/');
+    const weiter = page.getByRole('button', { name: 'Weiter' });
+    await expect(weiter).toBeVisible();
+    await weiter.click();
+    // (the head is drawn anew for the next week: the new button, focused by
+    // a click as it was)
+    await page.getByRole('button', { name: 'Weiter' }).click();
+    const geklickt = await page.getByRole('button', { name: 'Weiter' }).evaluate((b) => {
+      (b as HTMLElement).focus();
+      return getComputedStyle(b).outlineStyle;
+    });
+    expect(geklickt).toBe('none');
+    // from the keyboard: a visible ring
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    const tastatur = await page.evaluate(() => {
+      const b = document.activeElement as HTMLElement;
+      return { label: b.getAttribute('aria-label'), outline: getComputedStyle(b).outlineStyle };
+    });
+    if (tastatur.label === 'Weiter') expect(tastatur.outline).toBe('solid');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+

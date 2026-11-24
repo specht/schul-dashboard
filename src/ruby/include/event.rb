@@ -265,21 +265,28 @@ class Main < Sinatra::Base
         id = data[:eid]
         invitations = {}
         invitation_requested = {}
+        # the same, for the dialog to show each person's state: when sent
+        # (seconds), waiting for the invitation bot, or not sent
+        sent = {}
+        failed = {}
         unless (id || '').empty?
             data = {:session_email => @session_user[:email], :id => id}
-            temp = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:email => x['r.email'], :invitations => x['invitations'] || [], :invitation_requested => x['invitation_requested'] } }
+            temp = neo4j_query(<<~END_OF_QUERY, data).map { |x| {:email => x['r.email'], :invitations => x['invitations'] || [], :invitation_requested => x['invitation_requested'], :failed => x['failed'] } }
                 MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(e:Event {id: $id})<-[rt:IS_PARTICIPANT]-(r)
                 WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND COALESCE(rt.deleted, false) = false
-                RETURN r.email, COALESCE(rt.invitations, []) AS invitations, COALESCE(rt.invitation_requested, false) AS invitation_requested;
+                RETURN r.email, COALESCE(rt.invitations, []) AS invitations, COALESCE(rt.invitation_requested, false) AS invitation_requested,
+                       COALESCE(rt.invitation_failed, false) AS failed;
             END_OF_QUERY
             temp.each do |entry|
                 invitations[entry[:email]] = entry[:invitations].map do |x|
                     Time.at(x).strftime('%d.%m.%Y %H:%M:%S')
                 end
                 invitation_requested[entry[:email]] = entry[:invitation_requested]
+                sent[entry[:email]] = entry[:invitations]
+                failed[entry[:email]] = entry[:failed] && !entry[:invitation_requested]
             end
         end
-        respond(:invitations => invitations, :invitation_requested => invitation_requested)
+        respond(:invitations => invitations, :invitation_requested => invitation_requested, :sent => sent, :failed => failed)
     end
     
     def self.invite_external_user_for_event(eid, email, session_user_email)
@@ -356,7 +363,7 @@ class Main < Sinatra::Base
         rows = $neo4j.neo4j_query(<<~END_OF_QUERY, data)
             MATCH (e:Event {id: $eid})<-[rt:IS_PARTICIPANT]-(r)
             WHERE (r:ExternalUser OR r:PredefinedExternalUser) AND (r.email = $email) AND COALESCE(rt.deleted, false) = false AND COALESCE(e.deleted, false) = false
-            SET rt.invitations = COALESCE(rt.invitations, []) + [$timestamp];
+            SET rt.invitations = COALESCE(rt.invitations, []) + [$timestamp], rt.invitation_failed = false;
         END_OF_QUERY
     end
     
@@ -381,7 +388,7 @@ class Main < Sinatra::Base
         neo4j_query(<<~END_OF_QUERY, :session_email => @session_user[:email], :id => id)
             MATCH (a:User {email: $session_email})<-[:ORGANIZED_BY]-(e:Event {id: $id})<-[rt:IS_PARTICIPANT]-(u)
             WHERE (u:ExternalUser OR u:PredefinedExternalUser) AND SIZE(COALESCE(rt.invitations, [])) = 0
-            SET rt.invitation_requested = true;
+            SET rt.invitation_requested = true, rt.invitation_failed = false;
         END_OF_QUERY
         trigger_send_invites()
         respond(:ok => true)

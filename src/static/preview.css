@@ -1459,6 +1459,18 @@ html:has(body.ui-preview #calendar) {
     scrollbar-gutter: stable;
 }
 
+/* … so a dialog has nothing to make up for: the room stays when it hides
+   the scrollbar, and Bootstrap must not add the scrollbar's width as
+   padding to the page and the fixed bars (the page jumped to the left) –
+   its measuring element shows no scrollbar here */
+html:has(body.ui-preview #calendar) .modal-scrollbar-measure {
+    scrollbar-width: none;
+}
+
+html:has(body.ui-preview #calendar) .modal-scrollbar-measure::-webkit-scrollbar {
+    display: none;
+}
+
 .ui-preview .fc .fc-view-harness {
     background: var(--pv-surface);
     color: var(--pv-ink);
@@ -2789,6 +2801,25 @@ html:has(body.ui-preview #calendar) {
 
     .pv-wh-seg button[aria-pressed='true']:hover {
         background: var(--acc);
+    }
+
+    /* clicked: no ring (Bootstrap's stayed on the button and drew a dark
+       frame inside the group); from the keyboard a ring of ours, inside the
+       group so its round corners don't cut it */
+    .pv-wh-seg button:focus,
+    .pv-wh-btn:focus {
+        outline: none;
+    }
+
+    .pv-wh-btn:focus-visible {
+        outline: 2px solid var(--acc-text);
+        outline-offset: 2px;
+    }
+
+    .pv-wh-seg button:focus-visible {
+        outline: 2px solid var(--acc-text);
+        outline-offset: -3px;
+        border-radius: 8px;
     }
 
     .pv-plan-wrap {

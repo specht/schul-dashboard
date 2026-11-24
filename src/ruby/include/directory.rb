@@ -157,7 +157,7 @@ class Main < Sinatra::Base
             code = (info[:orig_fach] || info[:fach]).to_s.split(/[_\s-]/).first.to_s
             name = (@@faecher[code] || '').to_s.sub(/\s*LK\z/, '').strip
             label = (codes[name] if !name.empty? && codes[name] != code) || code.capitalize
-            lk = { :label => label, :key => DesignTokens.subject_key(label) || DesignTokens.subject_key(code),
+            lk = { :label => label, :key => DesignTokens.subject_key(label) || DesignTokens.subject_key(code), :lesson => key,
                    :name => name.empty? ? label : name }
             (@@schueler_for_lesson[key] || []).each { |email| result[email] << lk }
         end
@@ -166,6 +166,12 @@ class Main < Sinatra::Base
     end
 
     # "D, En" for a table cell (the names as its title), "–" without
+    # in an LK's own list, that LK first (all of them have it), the others after it
+    def directory_lks_of(lks, email, group)
+        mine, others = (lks[email] || []).partition { |x| x[:lesson] == group }
+        mine + others
+    end
+
     def directory_lk_cell(lks)
         return '<td>&ndash;</td>' if lks.nil? || lks.empty?
         "<td title='#{CGI.escapeHTML(lks.map { |x| x[:name] }.join(', '))}'>#{CGI.escapeHTML(lks.map { |x| x[:label] }.join(', '))}</td>"
@@ -317,7 +323,7 @@ class Main < Sinatra::Base
                     io.puts "<td>#{record[:geschlecht]}</td>"
                     io.puts "<td>#{tr_bildungsgang(record[:bildungsgang])}</td>"
                     io.puts "<td>#{record[:klassenstufe]}</td>"
-                    io.puts directory_lk_cell(lks[email]) if has_oberstufe
+                    io.puts directory_lk_cell(directory_lks_of(lks, email, klasse)) if has_oberstufe
                 end
                 # salzh_label = ''
                 # if salzh_status[email][:status]
@@ -623,7 +629,7 @@ class Main < Sinatra::Base
                 s[:af] = x['group_af'] || '' if show_af
                 s[:ft] = x['group_ft'] || '' if show_ft
                 s[:tutor] = (record[:tutor] && @@user_info[record[:tutor]]) ? @@user_info[record[:tutor]][:display_name] : nil if has_oberstufe
-                s[:lk] = lks[email] if has_oberstufe
+                s[:lk] = directory_lks_of(lks, email, klasse).map { |x| x.reject { |k, _| k == :lesson } } if has_oberstufe
                 # divers: the first name instead of a pronoun
                 s[:pronoun] = ({ 'm' => 'er', 'w' => 'sie' }[record[:geschlecht]] || record[:first_name]) if kl
             end

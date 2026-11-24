@@ -181,6 +181,19 @@ test('Neues Design: Klasse 11 und ein Kurs', async ({ page }, testInfo) => {
     await expect(alice).toHaveCount(1);
     await expect(page.locator('.pv-dir-table th', { hasText: 'Antikenfahrt' })).toBeVisible({ visible: !phone });
     await expect(alice.locator('.pv-dir-af')).toHaveText('nicht eingeteilt');
+    // the LKs: the school's short code (»LA« is Latein LK, Latein is »La«) in
+    // the subject's colour – a column where there is room, below the name on phones
+    await expect(page.locator('.pv-dir-table th', { hasText: /^LK$/ })).toBeVisible({ visible: !phone });
+    const lk = alice.locator(phone ? '.pv-dir-lks-narrow .pv-dir-lk' : 'td.pv-dir-lkcol .pv-dir-lk');
+    await expect(lk).toHaveText(['La']);
+    await expect(lk).toBeVisible();
+    await expect(lk).toHaveAttribute('title', 'LK Latein');
+    const colour = await lk.evaluate((e) => [getComputedStyle(e).backgroundColor,
+      getComputedStyle(document.documentElement).getPropertyValue('--subj-la').trim()]);
+    expect(colour[1]).not.toBe('');
+    expect(colour[0]).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(alice.locator('.pv-dir-lks-narrow')).toBeVisible({ visible: phone });
+    if (!phone) await expect(page.locator('.pv-dir-row', { hasText: 'Ohnegeburtstag, Gina' }).locator('td.pv-dir-lkcol')).toHaveText('–');
     // not the class teacher: no Dashboard-Amt to give, but the E-Mail-Brief (admin)
     if (!phone) {
       await alice.locator('.pv-dir-more').click();
@@ -189,7 +202,8 @@ test('Neues Design: Klasse 11 und ein Kurs', async ({ page }, testInfo) => {
     }
     await alice.locator('.pv-dir-name').click();
     const modal = page.locator('#directoryStudentModal');
-    await expect(modal.locator('.pv-dir-dl dt')).toContainText(['Tutor:in', 'Letzter Zugriff', 'Gruppe', 'Antikenfahrt']);
+    await expect(modal.locator('.pv-dir-dl dt')).toContainText(['Tutor:in', 'Leistungskurse', 'Letzter Zugriff', 'Gruppe', 'Antikenfahrt']);
+    await expect(modal.locator('.pv-dir-dl-row', { hasText: 'Leistungskurse' }).locator('dd')).toHaveText('La');
     await expect(modal.locator('.pv-dir-dl dt', { hasText: 'Dashboard-Amt' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();
@@ -233,4 +247,16 @@ test('Klassenliste im bisherigen Design', async ({ page }) => {
   await expect(page.locator('.bu-email-letters')).toBeVisible();
   await expect(page.locator('#additional_teacher_content h3', { hasText: 'Gruppenbildung' })).toBeVisible();
   await expect(page.locator('h3', { hasText: 'Lehrkräfte der Klasse 5a' })).toBeVisible();
+  // no LK column below 11
+  await expect(table.locator('thead th', { hasText: /^LK$/ })).toHaveCount(0);
+  // 11: the LKs with the school's short code, the name as the title
+  await page.goto('/directory/11');
+  const eleven = page.locator('.klassen_table');
+  const headers = await eleven.locator('thead th').allTextContents();
+  const col = headers.indexOf('LK');
+  expect(col).toBeGreaterThan(-1);
+  const alice = eleven.locator('tr.user_row', { hasText: 'Alice' }).locator('td').nth(col);
+  await expect(alice).toHaveText('La');
+  await expect(alice).toHaveAttribute('title', 'Latein');
+  await expect(eleven.locator('tr.user_row', { hasText: 'Gina' }).locator('td').nth(col)).toHaveText('–');
 });

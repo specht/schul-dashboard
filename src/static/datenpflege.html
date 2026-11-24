@@ -84,11 +84,11 @@
     .dp-mf-small { flex: 0 1 8em; min-width: 0; }
     /* while the services read the data again (about half a minute): a bar
        that is seen wherever the page is scrolled, the page rests meanwhile */
-    .dp-reloading { position: fixed; left: 50%; bottom: calc(1.2em + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    .dp-reloading { position: fixed; left: 50%; bottom: calc(2.6em + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
                     z-index: 1060; display: flex; gap: 0.6em; align-items: flex-start; width: max-content; max-width: calc(100vw - 2em);
                     padding: 0.7em 1.1em; border-radius: 10px; background: #1f2328; color: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
     body.dark .dp-reloading { background: #e8e9ec; color: #1f2328; }
-    .dp-reloading .ti { font-size: 1.2em; line-height: 1.2; }
+    .dp-reloading i { font-size: 1.2em; line-height: 1.2; }
     .dp-reloading .dp-spin { animation: dp-spin 1s linear infinite; }
     @keyframes dp-spin { to { transform: rotate(360deg); } }
     body.dp-busy .dp-page { pointer-events: none; opacity: 0.55; transition: opacity 0.2s; }
@@ -271,7 +271,10 @@
         // reloads once the web service answers with a new time
         function wait_for_reload(before) {
             $('body').addClass('dp-busy');
-            const bar = $("<div class='dp-reloading' role='status' aria-live='polite' data-testid='dp-reloading'><i class='ti ti-loader-2 dp-spin' aria-hidden='true'></i><span></span></div>");
+            // Tabler in the new design, Fork Awesome in today's
+            const preview = document.body.classList.contains('ui-preview');
+            const bar = $("<div class='dp-reloading' role='status' aria-live='polite' data-testid='dp-reloading'><i aria-hidden='true'></i><span></span></div>");
+            bar.find('i').addClass(preview ? 'ti ti-loader-2 dp-spin' : 'fa fa-spinner fa-spin');
             bar.find('span').text('Gespeichert. Die Daten werden neu geladen – das dauert etwa eine halbe Minute, dann erscheint die Seite neu.');
             $('body').append(bar);
             const started = Date.now();
@@ -284,7 +287,7 @@
                             reload_here();
                         } else if (Date.now() - started > 5 * 60 * 1000) {
                             $('body').removeClass('dp-busy');
-                            bar.find('.ti').removeClass('ti-loader-2 dp-spin').addClass('ti-alert-triangle');
+                            bar.find('i').attr('class', preview ? 'ti ti-alert-triangle' : 'fa fa-exclamation-triangle');
                             bar.find('span').text('Neu laden dauert ungewöhnlich lange – bitte die Dienste prüfen.');
                         } else {
                             setTimeout(poll, 3000);
@@ -440,7 +443,7 @@
             links = place.links || {};
             emails = place.emails || {};
             const mine = ++latest;
-            api_call('/api/datenpflege/schueler/preview', { token: place.token, date: place.date, klassen: place.klassen || [], links: links, emails: emails }, function (data) {
+            api_call('/api/datenpflege/schueler/preview', { token: place.token, date: place.date, klassen: place.klassen || {}, links: links, emails: emails }, function (data) {
                 if (mine !== latest) return;
                 if (data.ok) show_preview(data);
                 back_to_place();
@@ -459,6 +462,8 @@
                 links: links, emails: emails,
             }, function (data) {
                 if (!data.ok) button.prop('disabled', false);
+                // applied: the upload is gone, a reload doesn't open it again
+                else token = null;
                 after_change(data);
             });
         });

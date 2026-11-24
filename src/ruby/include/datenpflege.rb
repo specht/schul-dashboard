@@ -790,6 +790,11 @@ class Main < Sinatra::Base
                                   :types => { :klassen => Hash, :links => Hash, :emails => Hash }, :max_body_length => 262144)
         date = datenpflege_valid_date(data[:date])
         assert(date, 'invalid date')
+        # gone meanwhile (applied, discarded, expired): said, not a server error
+        unless File.exist?(datenpflege_pending_path(data[:token]))
+            respond(:ok => false, :message => 'Dieser Upload ist nicht mehr da (übernommen, verworfen oder abgelaufen). Bitte die Datei noch einmal hochladen.')
+            return
+        end
         pending = datenpflege_load_pending(data[:token])
         klassen = datenpflege_klassen_param(data[:klassen])
         links = datenpflege_choices_param(data[:links], 100)

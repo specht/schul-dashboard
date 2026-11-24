@@ -100,6 +100,20 @@
                 </table>
             </div>
             <p class='small text-muted fx-ohne-effekt'></p>
+            <h5 class='mt-3'>Tages-Designs</h5>
+            <p class='small mb-2'>An diesen Tagen bekommt der ganze Flur-Monitor ein eigenes Aussehen (Kacheln, Schilder, Hintergrund, Laufschrift).
+            Die Schrift bleibt die normale, damit der Plan gut lesbar bleibt. Wetter, Feste und Storys laufen darüber wie sonst.
+            Für einen einzelnen Tag bleibt „bis“ leer. Nur das Layout, das die Monitore heute zeigen, bekommt das Design.</p>
+            <div class='form-inline mb-2 fx-look-form' data-testid='monitor-look-form'>
+                <select class='form-control form-control-sm mr-2 mb-1 ti_fx_look_design' aria-label='Design'></select>
+                <input type='date' class='form-control form-control-sm mr-1 mb-1 ti_fx_look_datum' aria-label='Datum (von)'>
+                <span class='mr-1 mb-1 small'>bis</span>
+                <input type='date' class='form-control form-control-sm mr-2 mb-1 ti_fx_look_bis' aria-label='bis (optional)'>
+                <button class='btn btn-sm btn-success mb-1 bu_fx_look_eintragen'><i class='fa fa-plus'></i>&nbsp;&nbsp;Eintragen</button>
+            </div>
+            <p class='small text-danger fx-look-fehler' style='display: none;'></p>
+            <ul class='list-unstyled small fx-look-termine' data-testid='monitor-look-termine'></ul>
+            <div class='mb-2 fx-look-vorschau-knoepfe'></div>
             <h5 class='mt-3'>Schultermine</h5>
             <p class='small mb-2'>An diesen Tagen zeigen die Monitore im Schulhaus statt der Fest- und Wettereffekte ein eigenes Motiv.
             Für einen einzelnen Tag bleibt „bis“ leer; beim Forschertag wird es mit drei Tagen vorbelegt.</p>
@@ -140,6 +154,7 @@
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='schulanfang'>Erster Schultag</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='adventskonzert'>Adventskonzert</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='forschertag'>Forschertag</button>
+                <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='klotzchen'>Klötzchen-Tag (Design)</button>
                 <button class='btn btn-sm btn-outline-info mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='rundgang'>Alle nacheinander</button>
                 <button class='btn btn-sm btn-outline-secondary mr-1 mb-1 bu_monitor_effekt_vorschau' data-effekt='' style='display: none;'>Vorschau schließen</button>
             </div>
@@ -354,6 +369,7 @@
             $('.fx-storys-plan').text(d.storys === false ? '' : plan_text);
             if (!fx_pausen_geladen && d.story_pausen) { fx_pausen_zeigen(d.story_pausen); fx_pausen_geladen = true; }
             if (d.storys_aus) fx_story_schalter_zeigen(d.storys_aus);
+            if (d.looks) fx_look_zeigen(d);
             effekte_warnungen_zeigen(d);
             effekte_termine_zeigen(d);
         }
@@ -524,6 +540,53 @@
                 effekte_stand_laden();
             });
         });
+        // Tages-Designs: Liste der kommenden Tage, Eintragen, Löschen und Vorschau
+        function fx_look_zeigen(d) {
+            const looks = d.looks || {};
+            const auswahl = $('.ti_fx_look_design');
+            if (auswahl.children().length === 0) {
+                for (const [schluessel, name] of Object.entries(looks)) {
+                    $('<option>').val(schluessel).text(name).appendTo(auswahl);
+                    $('<button>').addClass('btn btn-sm btn-outline-info mr-1 bu_fx_look_vorschau').attr('data-look', schluessel)
+                        .text(`Vorschau: ${name}`).appendTo($('.fx-look-vorschau-knoepfe'));
+                }
+            }
+            const liste = $('.fx-look-termine').empty();
+            const termine = d.look_termine || [];
+            if (termine.length === 0) $('<li>').addClass('text-muted').text('Keine Tages-Designs eingetragen.').appendTo(liste);
+            for (const t of termine) {
+                const [j, m, tag] = t.datum.split('-');
+                const li = $('<li>').addClass('mb-1').appendTo(liste);
+                $('<button>').addClass('btn btn-sm btn-outline-danger py-0 px-1 mr-2 bu_fx_look_loeschen').attr('aria-label', 'Eintrag löschen').data('id', t.id)
+                    .html("<i class='fa fa-trash'></i>").appendTo(li);
+                let zeitraum = `${tag}.${m}.${j}`;
+                if (t.bis && t.bis !== t.datum) { const [j2, m2, tag2] = t.bis.split('-'); zeitraum += ` – ${tag2}.${m2}.${j2}`; }
+                $('<b>').text(zeitraum).appendTo(li);
+                $('<span>').text(` – ${looks[t.look] || t.look}`).appendTo(li);
+            }
+        }
+        $('.bu_fx_look_eintragen').on('click', function(e) {
+            const datum = $('.ti_fx_look_datum').val(), bis = $('.ti_fx_look_bis').val(), fehler = $('.fx-look-fehler');
+            if (!datum) { fehler.text('Bitte zuerst ein Datum wählen.').show(); return; }
+            if (bis && bis < datum) { fehler.text('„bis“ darf nicht vor dem Startdatum liegen.').show(); return; }
+            fehler.hide();
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/add_monitor_look_termin', {look: $('.ti_fx_look_design').val(), datum: datum, bis: bis || ''}, function(data) {
+                $(e.currentTarget).prop('disabled', false);
+                $('.ti_fx_look_bis').val('');
+                effekte_stand_laden();
+            });
+        });
+        $('.ti_fx_look_datum, .ti_fx_look_bis').on('input', function() { $('.fx-look-fehler').hide(); });
+        $('.fx-look-termine').on('click', '.bu_fx_look_loeschen', function(e) {
+            const knopf = $(e.currentTarget).prop('disabled', true);
+            api_call('/api/delete_monitor_look_termin', {id: knopf.data('id')}, function(data) { effekte_stand_laden(); });
+        });
+        // Vorschau eines Designs im Vorschaufenster (die Monitore im Schulhaus bleiben unverändert)
+        $('.fx-look-vorschau-knoepfe').on('click', '.bu_fx_look_vorschau', function(e) {
+            // dieselbe Vorschau wie bei den Effekten und Storys (mit „Im Schulhaus einmal zeigen“)
+            $(`.bu_monitor_effekt_vorschau[data-effekt="${$(e.currentTarget).attr('data-look')}"]`).first().trigger('click');
+        });
         $('.bu_monitor_effekt_vorschau').on('click', function(e) {
             let effekt = $(e.currentTarget).data('effekt');
             $('.bu_monitor_effekt_vorschau').removeClass('active');
@@ -535,6 +598,9 @@
                 $('.bu_fx_test_starten').toggle(effekt !== 'rundgang');
                 fx_test_uhr();
                 $('.bu_monitor_effekt_vorschau[data-effekt=""]').show();
+                // das Vorschaufenster steht weiter unten auf der Seite: dorthin scrollen, sonst sieht man nichts
+                const fenster = document.querySelector('.fx-vorschau');
+                if (fenster) { fenster.style.scrollMarginTop = '5rem'; fenster.scrollIntoView({behavior: 'smooth', block: 'start'}); }
             } else {
                 // Vorschau schließen: das Fenster verschwindet, das Live-Bild oben bleibt
                 $('.if_monitor_vorschau').attr('src', 'about:blank');

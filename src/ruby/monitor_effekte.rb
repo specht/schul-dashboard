@@ -354,6 +354,21 @@ module MonitorEffekte
 
     # zeit: aktuelle Uhrzeit (Time); der Schulanfang endet um 12 Uhr, danach sind
     # Einschulungen. Ohne zeit (Tests) gilt der ganze Tag.
+    # Tages-Designs (Jonas, 24.11.): ein eigener Look für den ganzen Flur-Monitor an bestimmten Tagen,
+    # datumsbezogen auf „Monitore verwalten“ eingetragen. Weitere Designs kommen später hier dazu.
+    # Die Looks sind eigene Gestaltungen (keine Namen, Figuren oder Bilder aus Spielen oder Filmen).
+    LOOKS = {'klotzchen' => 'Klötzchen-Tag'}.freeze
+
+    # Welches Design gilt an diesem Tag? termine: [{:look, :datum, :bis}]; der erste passende gewinnt.
+    def self.look_heute(datum, termine)
+        tag = datum.to_s
+        t = (termine || []).find do |x|
+            bis = x[:bis].to_s.empty? ? x[:datum].to_s : x[:bis].to_s
+            x[:datum].to_s <= tag && tag <= bis && LOOKS.include?(x[:look])
+        end
+        t ? t[:look] : nil
+    end
+
     # Ein eingetragener Schultermin geht an seinen Tagen allen Festen vor.
     # termine: [{:datum => 'JJJJ-MM-TT', :bis => 'JJJJ-MM-TT' oder leer, :motiv => …}]
     def self.schultermin(datum, termine)

@@ -302,6 +302,24 @@ class MonitorEffekteTest < Minitest::Test
         assert_equal 17, MonitorEffekte.story_plan(Date.new(2026, 11, 16), %w(a)).size
     end
 
+    def test_tages_designs
+        termine = [{:look => 'klotzchen', :datum => '2026-12-03', :bis => '2026-12-04'}, {:look => 'gibtsnicht', :datum => '2026-12-10', :bis => ''},
+                   {:look => 'klotzchen', :datum => '2026-12-15', :bis => ''}]
+        assert_equal 'klotzchen', MonitorEffekte.look_heute(Date.new(2026, 12, 3), termine)
+        assert_equal 'klotzchen', MonitorEffekte.look_heute(Date.new(2026, 12, 4), termine)
+        assert_nil MonitorEffekte.look_heute(Date.new(2026, 12, 5), termine)
+        assert_nil MonitorEffekte.look_heute(Date.new(2026, 12, 10), termine), 'unbekanntes Design wird ignoriert'
+        assert_equal 'klotzchen', MonitorEffekte.look_heute(Date.new(2026, 12, 15), termine), 'einzelner Tag ohne „bis“'
+        assert_nil MonitorEffekte.look_heute(Date.new(2026, 12, 16), termine)
+        assert_nil MonitorEffekte.look_heute(Date.new(2026, 12, 3), [])
+        assert_nil MonitorEffekte.look_heute(Date.new(2026, 12, 3), nil)
+        # die Designs sind eigene Gestaltungen: keine fremden Namen in den Bezeichnungen
+        MonitorEffekte::LOOKS.each_value { |name| refute_match(/minecraft|mojang/i, name) }
+        css = File.read(['/static/monitor_looks.css', File.join(__dir__, '../../../static/monitor_looks.css')].find { |f| File.exist?(f) })
+        refute_match(/minecraft|mojang|creeper/i, css)
+        MonitorEffekte::LOOKS.each_key { |k| assert_includes css, "look-#{k}" }
+    end
+
     def test_storys_einzeln_aus
         # nur bekannte Namen, jeder einmal, in fester Reihenfolge; Unsinn wird abgelehnt
         assert_equal %w(brand brom), MonitorEffekte.storys_aus_pruefen(%w(brom quatsch brand brom))

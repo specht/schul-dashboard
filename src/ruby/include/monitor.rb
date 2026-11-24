@@ -367,6 +367,49 @@ class Main < Sinatra::Base
         END_OF_QUERY
     end
 
+    # Die Monitore fragen sofort neu ab (ohne die Seite neu zu laden): ein Tages-Design erscheint oder
+    # verschwindet an Ort und Stelle, Wetter, Storys und Scrollen laufen ungestört weiter.
+    def monitor_effekte_neu_melden
+        (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|
+            info[:ws].send({:command => 'monitor_effekte_neu'}.to_json)
+        end
+    end
+
+    # Tages-Designs: je ein Eintrag mit Design, Datum und optional „bis“ (höchstens 31 Tage)
+    def monitor_look_termine
+        neo4j_query(<<~END_OF_QUERY).map { |r| {:id => r['id'], :look => r['look'], :datum => r['datum'], :bis => r['bis'] || ''} }
+            MATCH (t:MonitorLookTermin)
+            RETURN t.id AS id, t.look AS look, t.datum AS datum, t.bis AS bis
+            ORDER BY t.datum;
+        END_OF_QUERY
+    end
+
+    post '/api/add_monitor_look_termin' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:look, :datum], :optional_keys => [:bis], :max_string_length => 20)
+        assert(MonitorEffekte::LOOKS.include?(data[:look]))
+        datum = Date.parse(data[:datum]) rescue nil
+        assert(!datum.nil?)
+        bis = data[:bis].to_s.strip.empty? ? nil : (Date.parse(data[:bis]) rescue nil)
+        assert(data[:bis].to_s.strip.empty? || (!bis.nil? && bis >= datum && bis - datum <= 31))
+        neo4j_query(<<~END_OF_QUERY, :id => RandomTag.generate(12), :look => data[:look], :datum => datum.to_s, :bis => bis ? bis.to_s : '')
+            CREATE (t:MonitorLookTermin {id: $id, look: $look, datum: $datum, bis: $bis});
+        END_OF_QUERY
+        monitor_effekte_neu_melden
+        respond(:ok => true)
+    end
+
+    post '/api/delete_monitor_look_termin' do
+        require_user_who_can_manage_monitors!
+        data = parse_request_data(:required_keys => [:id], :max_string_length => 32)
+        neo4j_query(<<~END_OF_QUERY, :id => data[:id])
+            MATCH (t:MonitorLookTermin {id: $id})
+            DETACH DELETE t;
+        END_OF_QUERY
+        monitor_effekte_neu_melden
+        respond(:ok => true)
+    end
+
     post '/api/add_monitor_schultermin' do
         require_user_who_can_manage_monitors!
         data = parse_request_data(:required_keys => [:datum, :motiv], :optional_keys => [:titel, :bis], :max_string_length => 80)
@@ -439,6 +482,7 @@ class Main < Sinatra::Base
                    :storys => monitor_storys_an?,
                    :wetter => wetter,
                    :fest => fest,
+                   :look => MonitorEffekte.look_heute(Date.today, monitor_look_termine),
                    :ruht => ruht,
                    :bereit => !daten.nil? || !MONITOR_DWD_WARNCELL,
                    :vorschau => @@monitor_effekte_vorschau,
@@ -461,6 +505,7 @@ class Main < Sinatra::Base
         if test
             antwort[:an] = true
             antwort[:wetter], antwort[:fest], antwort[:story] = MonitorEffekte.test_soll(test[:effekt])
+            antwort[:look] = MonitorEffekte::LOOKS.include?(test[:effekt]) ? test[:effekt] : nil     # ein Design lässt sich im Schulhaus ebenfalls einmal zeigen
             antwort[:ruht] = nil
             antwort[:test] = {:effekt => test[:effekt], :rest_ms => ((test[:bis] - Time.now) * 1000).to_i, :bis => (test[:bis].to_f * 1000).to_i}
         end
@@ -470,6 +515,8 @@ class Main < Sinatra::Base
             antwort[:schultermine] = termine.select { |t| (t[:bis].to_s.empty? ? t[:datum] : t[:bis]) >= Date.today.to_s }
             antwort[:schultermin_motive] = MonitorEffekte::SCHULTERMIN_MOTIVE
             antwort[:story_pausen] = pausen
+            antwort[:looks] = MonitorEffekte::LOOKS
+            antwort[:look_termine] = monitor_look_termine.select { |t| (t[:bis].to_s.empty? ? t[:datum] : t[:bis]) >= Date.today.to_s }
             antwort[:storys_aus] = storys_aus
             antwort[:phaenomene] = MonitorEffekte::PHAENOMENE
             antwort[:phaenomene_ohne_effekt] = MonitorEffekte::PHAENOMENE_OHNE_EFFEKT
@@ -555,7 +602,7 @@ class Main < Sinatra::Base
     # Vorschau auf „Monitore verwalten“: Fenster im Folgen-Modus (/monitor…?effekt=folgen)
     # zeigen den gewählten Effekt; die echten Monitore reagieren nicht darauf.
     @@monitor_effekte_vorschau = ''
-    MONITOR_VORSCHAU_NAMEN = (MonitorEffekte::EFFEKTE + MonitorEffekte::FESTE + MonitorEffekte::STORYS + %w(zeus rundgang)).freeze
+    MONITOR_VORSCHAU_NAMEN = (MonitorEffekte::EFFEKTE + MonitorEffekte::FESTE + MonitorEffekte::STORYS + MonitorEffekte::LOOKS.keys + %w(zeus rundgang)).freeze
 
     # Test auf den echten Monitoren im Schulhaus: Ein Klick auf „Monitore verwalten“
     # zeigt einen Effekt für ein paar Minuten auf allen Flur-Monitoren; danach (oder
@@ -572,7 +619,7 @@ class Main < Sinatra::Base
         require_user_who_can_manage_monitors!
         data = parse_request_data(:required_keys => [:effekt], :max_string_length => 16)
         effekt = data[:effekt]
-        assert(effekt == '' || MonitorEffekte::EFFEKTE.include?(effekt) || MonitorEffekte::FESTE.include?(effekt) || MonitorEffekte::STORYS.include?(effekt))
+        assert(effekt == '' || MonitorEffekte::EFFEKTE.include?(effekt) || MonitorEffekte::FESTE.include?(effekt) || MonitorEffekte::STORYS.include?(effekt) || MonitorEffekte::LOOKS.include?(effekt))
         @@monitor_effekte_test = effekt == '' ? nil : {:effekt => effekt, :bis => Time.now + MonitorEffekte.test_dauer(effekt)}
         # die Monitore fragen sofort neu ab
         (@@ws_clients[:monitor] || {}).each_pair do |client_id, info|

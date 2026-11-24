@@ -927,6 +927,7 @@ class Main < Sinatra::Base
             io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert <span class='sl-fix'>neuer Wert</span> Korrektur</p>"
             io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
             gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
+            abroad = Parser.abroad_now
             v[:students].each do |s|
                 # the changes against today in their column, like a diff: what
                 # goes struck through on red, what comes on green
@@ -937,6 +938,10 @@ class Main < Sinatra::Base
                 badges << "<span class='sl-badge sl-badge-added'>+ neu</span>" if s[:new] && !s[:new_address]
                 badges << "<span class='sl-badge sl-badge-added'>+ aus #{sl_h(tr_klasse(s[:from]))}</span>" if s[:from]
                 badges << "<span class='sl-badge'>neue Adresse</span>" if s[:new_address]
+                if (away = abroad[s[:key]])
+                    back = (Date.parse(away['zurueck'].to_s).strftime('%d.%m.%Y') rescue nil)
+                    badges << "<span class='sl-badge sl-badge-abroad'>im Ausland#{back ? ", zurück ab #{back}" : ''}</span>"
+                end
                 badges_html = badges.empty? ? '' : "<div class='sl-badges'>#{badges.join(' ')}</div>"
                 g = ->(x) { gender[x] || x }
                 gender_html = ch['Geschlecht'] ? diff.(g.(ch['Geschlecht'][0]), g.(ch['Geschlecht'][1])) : sl_h(g.(s[:geschlecht]))

@@ -501,6 +501,9 @@ class Parser
     #   { name, klasse, seit, notiz, by, at }. Left out of every list.
     MANUAL_ADDED_PATH = File.join(SCHUELER_DIR, 'zusaetzlich.yaml')
     MANUAL_GONE_PATH = File.join(SCHUELER_DIR, 'abgaenge.yaml')
+    # students abroad for a while (/datenpflege): they keep their account,
+    # but are in no class, course or list until their return date
+    MANUAL_ABROAD_PATH = File.join(SCHUELER_DIR, 'im-ausland.yaml')
 
     def self.read_yaml_hash(path)
         return {} unless File.exist?(path)
@@ -518,6 +521,17 @@ class Parser
     end
 
     NO_EXTRAS = { :added => {}, :gone => {} }.freeze
+
+    def self.schueler_abroad(dir = SCHUELER_DIR)
+        read_yaml_hash(File.join(dir, File.basename(MANUAL_ABROAD_PATH)))
+    end
+
+    # who is abroad on a day: an entry without a return date, or whose return
+    # date ('zurueck', the first day back) hasn't come yet
+    def self.abroad_now(today = Date.today, dir = SCHUELER_DIR)
+        day = today.strftime('%Y-%m-%d')
+        schueler_abroad(dir).select { |_, e| e.is_a?(Hash) && (e['zurueck'].to_s.empty? || e['zurueck'].to_s > day) }
+    end
 
     # the same person as in a list: last name, birthday and the first of the
     # first names, loosely (accents, case)

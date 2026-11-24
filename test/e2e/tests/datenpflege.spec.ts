@@ -595,6 +595,53 @@ test('Datenpflege: noch nicht in der LUSD, nicht mehr an der Schule', async ({ p
   }
 });
 
+// Abroad for a while: LUSD keeps them in their class; the dashboard keeps the
+// account but takes them out of classes, courses, lists and report cards
+// until the return date (the services don't read the data again in the test
+// stack: the entry and its answer are checked here, the date in
+// parser_abroad_test.rb)
+test('Datenpflege: im Ausland, zurück ab einem Tag', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'shared data');
+  await login(page, ACCOUNTS.admin);
+  let email = '';
+  try {
+    await page.goto('/datenpflege');
+    const section = page.locator('.dp-manual-abroad');
+    await expect(section.locator('h5')).toHaveText('Im Ausland');
+    await section.locator('#ti_abroad_student').fill('Alice Mustermann (11)');
+    await expect(section.locator('#bu_abroad_add')).toBeEnabled();
+    await section.locator('#ti_abroad_zurueck').fill('2099-02-01');
+    await section.locator('#ti_abroad_notiz').fill('Austausch');
+    // (the page reloads at once: the answer read on its way)
+    let added: { ok?: boolean, dashboard_changed?: boolean } = {};
+    await page.route('**/api/datenpflege/abroad/add', async (route) => {
+      const response = await route.fetch();
+      added = await response.json();
+      await route.fulfill({ response });
+    });
+    await section.locator('#bu_abroad_add').click();
+    await expect(page.locator('.modal.show')).toContainText('in keiner Klasse');
+    await page.locator('.modal.show').getByRole('button', { name: 'Vermerken' }).click();
+    // out of the class now: the services read the data again
+    await expect.poll(() => added).toMatchObject({ ok: true, dashboard_changed: true });
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    const row = page.locator('.dp-abroad-list tr', { hasText: 'Alice' });
+    await expect(row).toContainText('01.02.2099');
+    await expect(row).toContainText('Austausch');
+    email = (await row.getAttribute('data-email'))!;
+    // a return date that has come already is refused
+    const past = await page.request.post('/api/datenpflege/abroad/add', { data: { email, zurueck: '2000-01-01' } });
+    expect(past.ok()).toBe(false);
+    // back: at once
+    await row.getByRole('button', { name: 'Wieder da' }).click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Wieder da' }).click();
+    await expect(page.locator('.dp-abroad-list tr', { hasText: 'Alice' })).toHaveCount(0);
+    email = '';
+  } finally {
+    if (email) await page.request.post('/api/datenpflege/abroad/remove', { data: { email } });
+  }
+});
+
 test('Noch nicht in der LUSD und nicht mehr an der Schule nur mit der Rolle', async ({ baseURL }) => {
   const api = await playwrightRequest.newContext({ baseURL });
   await apiLogin(api, ACCOUNTS.teacher);
@@ -733,6 +780,16 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await expect(cls.locator('.sl-confirmed')).toContainText('Bestätigt am');
     await page.locator('#bu_sl_unconfirm').click();
     await expect(page.locator('#bu_sl_confirm')).toBeEnabled();
+
+    // the Datenpflege's comparison of the draft: what the Klassenleitung
+    // confirmed (the new one is here, the leaving one goes) moves out of
+    // »Neu« and »Nicht mehr dabei« into closed sections
+    await page.goto('/datenpflege');
+    const preview = page.locator('#dp_preview');
+    await expect(preview.locator('.dp-added-ok tr', { hasText: 'Nele Neu' })).toHaveCount(1);
+    await expect(preview.locator('.dp-added tr', { hasText: 'Nele Neu' })).toHaveCount(0);
+    await expect(preview.locator('.dp-removed-ok tr', { hasText: 'Mallory' })).toHaveCount(1);
+    await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
 
     // a teacher without a class: nothing to check
     const api = await playwrightRequest.newContext({ baseURL });

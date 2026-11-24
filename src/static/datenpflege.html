@@ -33,6 +33,8 @@
     body.dark .dp-old { background: #4a1c1f; color: #ffb8b2; text-decoration-color: rgba(255, 184, 178, 0.55); }
     body.dark .dp-new { background: #163a22; color: #93e2a8; }
     .dp-old + .dp-new { margin-left: 0.2em; }
+    /* what the Klassenleitung said about a row (the check of the draft) */
+    .dp-teacher-note { color: var(--acc-text, #8a5a00); white-space: normal; }
     .dp-none { font-style: italic; text-decoration: none; }
     .dp-actions { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: center; margin-top: 1em; }
     .dp-actions .dp-spacer { flex: 1; }
@@ -665,6 +667,30 @@
             const b = $(e.currentTarget);
             gone_add(b.data('email'), b.data('name'), String(b.data('seit') || ''), '');
         });
+        // abroad for a while: out of classes and lists until the return date
+        const ABROAD_STUDENTS = JSON.parse(document.getElementById('dp_abroad_data').textContent);
+        let abroad_email = null;
+        $('#ti_abroad_student').on('input change', function () {
+            const st = ABROAD_STUDENTS.find((x) => x.label === $('#ti_abroad_student').val().trim());
+            abroad_email = st ? st.email : null;
+            $('#bu_abroad_add').prop('disabled', !abroad_email);
+        });
+        $('#bu_abroad_add').click(function () {
+            if (!abroad_email) return;
+            const label = $('#ti_abroad_student').val().trim();
+            const back = $('#ti_abroad_zurueck').val();
+            const until = back ? ` bis zum ${back.split('-').reverse().join('.')}` : ' bis du den Eintrag beendest';
+            dashboardConfirm(`${label} steht dann${until} in keiner Klasse, keinem Kurs, keinem Verteiler und auf keinem Zeugnis. Konto und Adresse bleiben.`,
+                function () { api_call('/api/datenpflege/abroad/add', { email: abroad_email, zurueck: back, notiz: $('#ti_abroad_notiz').val().trim() }, after_change); },
+                { title: 'Im Ausland', confirm: 'Vermerken' });
+        });
+        $(document).on('click', '.bu_abroad_remove', function (e) {
+            const b = $(e.currentTarget);
+            dashboardConfirm(`${b.data('name')} ist dann sofort wieder in Klasse, Kursen und Verteilern.`,
+                function () { api_call('/api/datenpflege/abroad/remove', { email: b.data('email') }, after_change); },
+                { title: 'Wieder da', confirm: 'Wieder da' });
+        });
+
         $(document).on('click', '.bu_gone_remove', function (e) {
             const b = $(e.currentTarget);
             dashboardConfirm(`${b.data('name')} ist dann wieder im Dashboard, solange die LUSD sie:ihn führt.`,

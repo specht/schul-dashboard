@@ -125,9 +125,9 @@ class Main < Sinatra::Base
         nil
     end
 
-    def datenpflege_parse_list(path, translate = nil, keep_gone: false, extras: Parser.schueler_extras)
+    def datenpflege_parse_list(path, translate = nil, keep_gone: false, extras: Parser.schueler_extras, lenient: false)
         records = []
-        Parser.new.parse_schueler(path, all_classes: true, translate_klasse: translate, keep_gone: keep_gone, extras: extras) { |r| records << r }
+        Parser.new.parse_schueler(path, all_classes: true, translate_klasse: translate, keep_gone: keep_gone, extras: extras, lenient: lenient) { |r| records << r }
         records
     end
 
@@ -1167,7 +1167,9 @@ class Main < Sinatra::Base
             paths << path if File.exist?(path)
         end
         lists = paths.select { |path| File.exist?(path) }.map do |path|
-            records = datenpflege_parse_list(path, nil, extras: Parser::NO_EXTRAS)
+            # only who is listed: a line the comparison asks a decision for
+            # (an address too long) doesn't stop it
+            records = datenpflege_parse_list(path, nil, extras: Parser::NO_EXTRAS, lenient: true)
             [Set.new(records.map { |r| r[:email] }),
              Set.new(records.map { |r| Parser.manual_person_key(r[:last_name], r[:official_first_name], r[:geburtstag]) })]
         end
@@ -1180,11 +1182,31 @@ class Main < Sinatra::Base
         datenpflege_write_extras(DATENPFLEGE_GONE, gone) if gone.size != extras[:gone].size
     end
 
+    # the students (address and class) today's list gives with the entries
+    # by hand as they are now – what the services would load
+    def datenpflege_students_now
+        dir = File.join(DataRepo.root, 'schueler')
+        students = Set.new
+        Parser.new.parse_schueler(Parser.schueler_path(Date.today, dir), extras: Parser.schueler_extras(dir), lenient: true) do |r|
+            students << [r[:email], r[:klasse]] if KLASSEN_ORDER.include?(r[:klasse])
+        end
+        students
+    end
+
+    # The services read the data again (about half a minute) only when the
+    # students they have change: a decision about someone who is only in the
+    # draft (new, a class by hand) or kept as already there changes nothing
+    # in the dashboard yet – the comparison shows it at once.
     def datenpflege_extras_changed!(rel, token = nil)
         datenpflege_extras_cleanup!(token)
         datenpflege_commit!([DATENPFLEGE_ADDED, DATENPFLEGE_GONE, DATENPFLEGE_KLASSE_HAND])
+        loaded = Main.class_variable_defined?(:@@loaded_students) ? @@loaded_students : nil
+        if loaded && datenpflege_students_now == loaded
+            respond(:ok => true, :reload => false, :dashboard_changed => false)
+            return
+        end
         DataVersion.bump!(DataVersion::PATH, "#{rel} by #{@session_user[:email]}")
-        respond(:ok => true, :reload => DataVersion.restarts?)
+        respond(:ok => true, :reload => DataVersion.restarts?, :dashboard_changed => true)
     end
 
     def datenpflege_require_writable!

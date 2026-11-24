@@ -346,7 +346,9 @@ class Parser
     # translate_klasse: the class as WinSchule wrote it (ASCII.TXT), renamed
     # with fix_parsed_klasse and PARSE_KLASSE_TR; the dated lists from
     # /datenpflege already hold the dashboard's class names.
-    def handle_schueler_line(line, translate_klasse = true)
+    # lenient: an address that is too long doesn't stop the reading (where a
+    # list is only looked through, e.g. who it still has)
+    def handle_schueler_line(line, translate_klasse = true, lenient = false)
         line = line.encode('utf-8').strip
         parts = line.split("\t")
         # name particles behind the name, whatever form the list has (nachname.rb)
@@ -409,7 +411,7 @@ class Parser
             end
         end
         if email.sub('@' + SCHUL_MAIL_DOMAIN, '').size > 23
-            unless @use_mock_names
+            unless @use_mock_names || lenient
                 raise SchuelerLineError, "#{vorname} #{nachname}: E-Mail-Adresse zu lang (#{email}, höchstens 23 Zeichen vor dem @)"
             end
         end
@@ -591,7 +593,7 @@ class Parser
     # keep_gone: yield the gone ones too, marked :gone (to recognise them in
     # an export that still lists them)
     def parse_schueler(list_path = nil, all_classes: false, translate_klasse: nil, overrides: Parser.schueler_overrides,
-                       extras: Parser.schueler_extras, keep_gone: false, &block)
+                       extras: Parser.schueler_extras, keep_gone: false, lenient: false, &block)
 #         debug "Parsing schueler..."
         # create reproducible passwords while parsing SuS
 
@@ -611,7 +613,7 @@ class Parser
             f.each_line do |line|
                 next if line.strip[0] == '#' || line.strip.empty?
 
-                record = handle_schueler_line(line, translate_klasse.nil? ? !Parser.dated_schueler_list?(path) : translate_klasse)
+                record = handle_schueler_line(line, translate_klasse.nil? ? !Parser.dated_schueler_list?(path) : translate_klasse, lenient)
                 listed_emails << record[:email]
                 listed_people << Parser.manual_person_key(record[:last_name], record[:official_first_name], record[:geburtstag])
                 if gone.include?(record[:email])

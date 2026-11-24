@@ -903,11 +903,15 @@ class Main < Sinatra::Base
             end
         end
 
+        # which students this service has (address and class): a change of
+        # the Datenpflege that leaves them as they are needs no restart
+        @@loaded_students = Set.new
         parser.parse_schueler do |record|
             unless KLASSEN_ORDER.include?(record[:klasse])
                 next
                 # raise "Klasse #{record[:klasse]} is included in KLASSEN_ORDER"
             end
+            @@loaded_students << [record[:email], record[:klasse]]
             @@user_info[record[:email]] = {
                 :teacher => false,
                 :first_name => record[:first_name],

@@ -217,16 +217,22 @@ test('Datenpflege: Entscheidungen im Vergleich (nicht mehr da, ist doch da, Klas
       'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
       'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
       'Neu;Niko;;05a;männlich;01.03.2014',
-      'Weg;Quinn;;q9;weiblich;02.03.2014'].join('\r\n'), '2000-01-01');
+      'Weg;Quinn;;q9;weiblich;02.03.2014',
+      // an address too long: a decision of its own in the comparison, and
+      // no reason for the other decisions to fail
+      'Schneiderhahn-Oberhofer;Anna-Katharina;;05a;weiblich;08.08.2014'].join('\r\n'), '2000-01-01');
     await page.locator('#bu_keep_draft').click();
     await expect(page.locator('#dp_is_draft')).toBeVisible();
     const preview = page.locator('#dp_preview');
 
-    // new, but not here: kept out by name and birthday
+    // new, but not here: kept out by name and birthday – only the draft
+    // changes, the services don't read the data again (half a minute)
     const niko = preview.locator('.dp-added tr', { hasText: 'Niko Neu' });
     const nikoEmail = (await niko.locator('.bu_row_gone').getAttribute('data-email'))!;
     cleanup.push(() => page.request.post('/api/datenpflege/gone/remove', { data: { email: nikoEmail } }));
+    const nikoGone = page.waitForResponse('**/api/datenpflege/row/gone');
     await niko.locator('.bu_row_gone').click();
+    expect(await (await nikoGone).json()).toMatchObject({ ok: true, dashboard_changed: false });
     await expect(preview.locator('.dp-added tr', { hasText: 'Niko Neu' })).toHaveCount(0);
     await expect(preview.locator('.dp-manual tr', { hasText: 'Niko Neu' })).toContainText('als abgegangen vermerkt');
 
@@ -252,7 +258,10 @@ test('Datenpflege: Entscheidungen im Vergleich (nicht mehr da, ist doch da, Klas
     await page.goto('/datenpflege');
     cleanup.push(() => page.request.post('/api/datenpflege/gone/remove', { data: { email: malloryEmail } }));
     await preview.locator('.dp-removed tr', { hasText: 'Mallory' }).locator('.bu_row_gone_now').click();
+    // in the dashboard now: this one has the data read again
+    const malloryGone = page.waitForResponse('**/api/datenpflege/gone/add');
     await page.locator('.modal.show').getByRole('button', { name: 'Abmelden' }).click();
+    expect(await (await malloryGone).json()).toMatchObject({ ok: true, dashboard_changed: true });
     await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
     await page.goto('/datenpflege');
     await expect(page.locator('.dp-gone-list tr', { hasText: 'Mallory' })).toHaveCount(1);

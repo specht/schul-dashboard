@@ -81,7 +81,7 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                {Ihr Sohn|Ihre Tochter} {Vorname} hat {Datum} eine geforderte Unterschrift nicht vorlegen können{Notiz}. Bitte geben Sie diese Ihrem Kind morgen mit.
+                {Ihr Sohn|Ihre Tochter} {Vorname} hat {Datum} eine geforderte Unterschrift nicht vorlegen können{Notiz}. Bitte geben Sie diese Ihrem Kind zur nächsten Unterrichtsstunde mit.
 
                 Mit freundlichen Grüßen
                 {Lehrkraft}
@@ -141,7 +141,17 @@ module LessonMailTemplates
     # be sent days after the lesson). At startup, a stored text that is still
     # exactly the old default gets the new one (SetupDatabase in main.rb);
     # texts admins changed stay as they are.
-    LEGACY_DEFAULT_BODIES = Hash[DEFAULTS.map { |reason, t| [reason, t[:body].strip.gsub('{Datum}', 'heute')] }].freeze
+    # reason => the earlier default bodies, oldest first
+    LEGACY_DEFAULT_BODIES = Hash[DEFAULTS.map do |reason, t|
+        body = t[:body].strip
+        if reason == 'signature'
+            # it also said »morgen« (also between the two: {Datum} with »morgen«)
+            later = body.sub('zur nächsten Unterrichtsstunde', 'morgen')
+            [reason, [later.gsub('{Datum}', 'heute'), later].freeze]
+        else
+            [reason, [body.gsub('{Datum}', 'heute')].freeze]
+        end
+    end].freeze
 
     TOKEN = /\{([^{}]*)\}/
 

@@ -482,7 +482,7 @@ class SetupDatabase
                         # with {Datum} – only where nobody changed it
                         neo4j_query(<<~END_OF_QUERY, {:reason => reason, :old => LessonMailTemplates::LEGACY_DEFAULT_BODIES[reason], :body => default[:body].strip})
                             MATCH (t:LessonMailTemplate {reason: $reason})
-                            WHERE t.body = $old
+                            WHERE t.body IN $old
                             SET t.body = $body
                         END_OF_QUERY
                     end

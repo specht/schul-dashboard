@@ -2399,7 +2399,26 @@ class Main < Sinatra::Base
         if @session_user && dashboard_sso_needs_refresh?
             issue_dashboard_sso_cookie!
         end
+        # A page belongs to whoever it was loaded for, and its requests say so
+        # (X-Dashboard-User, code.js). After a login as someone else in
+        # another tab, the cookie's first session is theirs: the old tab must
+        # neither get their data in the background nor change anything in
+        # their name.
+        expected = request.env['HTTP_X_DASHBOARD_USER']
+        if expected && !expected.empty? && request.path.start_with?('/api/') && expected != Main.session_user_tag(@session_user)
+            # (the body as every API answer: after '/api/*' writes @respond_hash)
+            respond(:error => 'wrong_user', :logged_in => !@session_user.nil?)
+            content_type :json
+            halt 409
+        end
         debug "[#{(@session_user || {})[:nc_login] || (@session_user || {})[:email] || 'anon'}] #{request.request_method} #{request.path}"
+    end
+
+    # who a page was loaded for, as its requests repeat it (not secret: the
+    # page's own user; a hash so the address isn't in every request)
+    def self.session_user_tag(user)
+        return '' unless user && user[:email]
+        Digest::SHA256.hexdigest("dashboard-user:#{user[:email]}")[0, 16]
     end
 
     get "/.well-known/sso_public_key.pem" do

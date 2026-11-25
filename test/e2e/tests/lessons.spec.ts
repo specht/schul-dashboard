@@ -12,6 +12,9 @@ test('Lehrkraft trägt Stundenthema und Hausaufgaben ein, Schüler:in sieht sie 
   // teacher: pick the first Mathematik lesson of the displayed week
   await login(page, ACCOUNTS.admin);
   await page.goto('/lessons/Ma_5a');
+  // no Lernraum any more (a leftover of the pandemic)
+  await expect(page.locator('#ti_lesson_lr, #ti_homework_lr')).toHaveCount(0);
+  expect(await page.content()).not.toContain('Lernraum');
   const week = displayedSchoolWeek();
   const row = page.locator('tr.lesson').filter({
     hasText: new RegExp(week.map(germanDate).map((d) => d.replace(/\./g, '\\.')).join('|')),

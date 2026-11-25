@@ -1203,7 +1203,7 @@ class Timetable
             (@lesson_info[lesson_key] || {}).keys.sort.each do |offset|
                 data = @lesson_info[lesson_key][offset][:data] || {}
                 collected = {}
-                [:hausaufgaben_text, :homework_nc, :homework_lr].each do |k|
+                [:hausaufgaben_text, :homework_nc].each do |k|
                     if data[k]
                         if data[k].class == String
                             unless data[k].strip.empty?
@@ -1531,7 +1531,7 @@ class Timetable
                                                 data[k] = values.to_a.join('<br />')
                                             end
                                         end
-                                        [:lesson_jitsi, :lesson_nc, :lesson_lr, :homework_nc, :homework_lr, :breakout_rooms_roaming].each do |k|
+                                        [:lesson_jitsi, :lesson_nc, :homework_nc, :breakout_rooms_roaming].each do |k|
                                             flag = false
                                             (0...e[:count]).each do |o|
                                                 if (((@lesson_info[lesson_key] || {})[e[:lesson_offset] + o] || {})[:data] || {})[k]
@@ -1979,11 +1979,10 @@ class Timetable
                                             io2.puts data[:stundenthema_text]
                                             io2.puts
                                         end
-                                        if data[:lesson_jitsi] || data[:lesson_nc] || data[:lesson_lr]
+                                        if data[:lesson_jitsi] || data[:lesson_nc]
                                             options = []
                                             options << 'Jitsi' if data[:lesson_jitsi]
                                             options << 'Nextcloud' if data[:lesson_nc]
-                                            options << 'Lernraum' if data[:lesson_lr]
                                             io2.puts "Die Stunde wird per #{options.join(' / ')} durchgeführt."
                                             io2.puts
                                         end
@@ -1991,10 +1990,9 @@ class Timetable
                                             io2.puts data[:notizen]
                                             io2.puts
                                         end
-                                        if data[:hausaufgaben_text] || data[:homework_nc] || data[:homework_lr]
+                                        if data[:hausaufgaben_text] || data[:homework_nc]
                                             options = []
                                             options << 'Nextcloud' if data[:homework_nc]
-                                            options << 'Lernraum' if data[:homework_lr]
                                             options_label = ''
                                             options_label = " (#{options.join(' / ')})" unless options.empty?
                                             io2.print "Hausaufgaben#{options_label}"
@@ -2193,7 +2191,6 @@ class Timetable
                             homework_text = []
                             homework_text << entry[:info][:hausaufgaben_text] if entry[:info][:hausaufgaben_text]
                             homework_text << "Es befinden sich Hausaufgaben in der Nextcloud." if entry[:info][:homework_nc]
-                            homework_text << "Es befinden sich Hausaufgaben im Lernraum." if entry[:info][:homework_lr]
                             chronological_homework << {
                                 :datum => datum,
                                 :text => homework_text,

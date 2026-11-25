@@ -183,7 +183,7 @@
         return s;
     }
 
-    // a quiet icon with its label (homework: Nextcloud, Lernraum, Amt), no pill: facts stay quiet
+    // a quiet icon with its label (homework: Nextcloud, Amt), no pill: facts stay quiet
     function chip(name, text, label) {
         var s = el('span', 'pv-kb-tag');
         if (label) s.setAttribute('title', label);
@@ -218,10 +218,9 @@
         }
         if (topic) cell.appendChild(line('pv-kb-topic', 'Stundenthema', topic));
         var est = str(i.homework_est_time);
-        if (hw || amt || i.homework_nc || i.homework_lr) {
+        if (hw || amt || i.homework_nc) {
             var where = [];
             if (i.homework_nc) where.push('in der Nextcloud');
-            if (i.homework_lr) where.push('im Lernraum');
             var h = line('pv-kb-hw', 'Hausaufgaben', hw);
             // the list: in words after the text
             var extra = [];
@@ -237,7 +236,6 @@
             var hm = el('span', 'pv-kb-hw-meta');
             if (est && hw) hm.appendChild(el('span', 'pv-kb-min', 'etwa ' + est + ' Min.'));
             if (i.homework_nc) hm.appendChild(chip('cloud', 'Nextcloud', 'Hausaufgaben in der Nextcloud'));
-            if (i.homework_lr) hm.appendChild(chip('school', 'Lernraum', 'Hausaufgaben im Lernraum'));
             if (amt) hm.appendChild(chip('user', 'Amt: ' + amt));
             if (hm.firstChild) h.appendChild(hm);
             cell.appendChild(h);
@@ -267,10 +265,6 @@
         if (i.lesson_nc) {
             facts.push('Aufgaben in der Nextcloud');
             marks.appendChild(mark('cloud', 'Aufgaben in der Nextcloud'));
-        }
-        if (i.lesson_lr) {
-            facts.push('Aufgaben im Lernraum');
-            marks.appendChild(mark('school', 'Aufgaben im Lernraum'));
         }
         var comments = (window.lesson_data[o] || {}).comments || {};
         var text_n = 0, audio_n = 0;

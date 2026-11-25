@@ -281,8 +281,13 @@ Admins unter `/unterrichtsmails` (Administration → Seiten), mit einer
 Vorschau für Max bzw. Erika Mustermann (5a) und dem eigenen Namen als
 Lehrkraft.
 
+- Lehrkräfte können die Mail auch Tage nach der Stunde schicken (Stunde im
+  Stundenplan anklicken), nicht aber vor ihr. Die Übersicht »Bisherige
+  E-Mails aus dem Unterricht« zeigt jede Mail mit dem Tag, an dem sie
+  verschickt wurde.
 - Platzhalter: `{Vorname}`, `{Name}`, `{Klasse}`, `{Fach}`, `{Notiz}`
-  (wird zu » (Notiz)« oder entfällt), `{Lehrkraft}`, `{Lehrkraft der Stunde}`;
+  (wird zu » (Notiz)« oder entfällt), `{Lehrkraft}`, `{Lehrkraft der Stunde}`,
+  `{Datum}` (»heute« am Tag der Stunde, sonst z. B. »am Montag, 23.11.«);
   vom Geschlecht abhängige Wörter als `{männlich|weiblich}`, z. B.
   `{Ihr Sohn|Ihre Tochter}`.
 - Wer die Mail schickt, unterschreibt sie (`{Lehrkraft}`) und bekommt die

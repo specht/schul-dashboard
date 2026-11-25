@@ -59,7 +59,7 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                {Ihr Sohn|Ihre Tochter} {Vorname} hat heute im Fach {Fach} das Arbeitsmaterial nicht oder nicht vollständig dabei gehabt{Notiz}. Bitte üben Sie mit {Vorname}, die Schultasche sorgfältig zu packen.
+                {Ihr Sohn|Ihre Tochter} {Vorname} hat {Datum} im Fach {Fach} das Arbeitsmaterial nicht oder nicht vollständig dabei gehabt{Notiz}. Bitte üben Sie mit {Vorname}, die Schultasche sorgfältig zu packen.
 
                 Mit freundlichen Grüßen
                 {Lehrkraft}
@@ -70,7 +70,7 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                {Ihr Sohn|Ihre Tochter} {Vorname} hat heute im Fach {Fach} die Hausaufgaben nicht oder nicht vollständig vorlegen können{Notiz}. Bitte sprechen auch Sie mit {Vorname} über die Notwendigkeit, die Hausaufgaben sorgfältig und vollständig anzufertigen und mitzubringen.
+                {Ihr Sohn|Ihre Tochter} {Vorname} hat {Datum} im Fach {Fach} die Hausaufgaben nicht oder nicht vollständig vorlegen können{Notiz}. Bitte sprechen auch Sie mit {Vorname} über die Notwendigkeit, die Hausaufgaben sorgfältig und vollständig anzufertigen und mitzubringen.
 
                 Mit freundlichen Grüßen
                 {Lehrkraft}
@@ -81,7 +81,7 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                {Ihr Sohn|Ihre Tochter} {Vorname} hat heute eine geforderte Unterschrift nicht vorlegen können{Notiz}. Bitte geben Sie diese Ihrem Kind morgen mit.
+                {Ihr Sohn|Ihre Tochter} {Vorname} hat {Datum} eine geforderte Unterschrift nicht vorlegen können{Notiz}. Bitte geben Sie diese Ihrem Kind morgen mit.
 
                 Mit freundlichen Grüßen
                 {Lehrkraft}
@@ -92,7 +92,7 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                {Ihr Sohn|Ihre Tochter} {Vorname} fiel heute im Fach {Fach} durch Störverhalten und Unaufmerksamkeit auf{Notiz}. Dies hatte nicht nur negative Folgen für {seine|ihre} eigene Konzentration, sondern war auch zum Nachteil für die gesamte Klasse. Bitte sprechen Sie mit {Vorname} über die Notwendigkeit, dem Unterricht aufmerksam zu folgen und Störverhalten im Unterricht zu unterlassen.
+                {Ihr Sohn|Ihre Tochter} {Vorname} fiel {Datum} im Fach {Fach} durch Störverhalten und Unaufmerksamkeit auf{Notiz}. Dies hatte nicht nur negative Folgen für {seine|ihre} eigene Konzentration, sondern war auch zum Nachteil für die gesamte Klasse. Bitte sprechen Sie mit {Vorname} über die Notwendigkeit, dem Unterricht aufmerksam zu folgen und Störverhalten im Unterricht zu unterlassen.
 
                 Mit freundlichen Grüßen
                 {Lehrkraft}
@@ -103,7 +103,7 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                {Ihr Sohn|Ihre Tochter} {Vorname} zeigte heute im Fach {Fach} ein derart ausgeprägtes Störverhalten{Notiz}, dass {Lehrkraft der Stunde} {ihn|sie} im Sinne {seiner|ihrer} Mitschüler:innen als pädagogische Maßnahme vorübergehend vom Unterricht ausschließen musste.
+                {Ihr Sohn|Ihre Tochter} {Vorname} zeigte {Datum} im Fach {Fach} ein derart ausgeprägtes Störverhalten{Notiz}, dass {Lehrkraft der Stunde} {ihn|sie} im Sinne {seiner|ihrer} Mitschüler:innen als pädagogische Maßnahme vorübergehend vom Unterricht ausschließen musste.
 
                 {Er|Sie} hat die Zeit im Otium verbracht und muss die versäumten Unterrichtsinhalte selbständig nacharbeiten. Bitte sprechen Sie eingehend mit {Vorname} über die Konsequenzen {seines|ihres} Verhaltens.
 
@@ -116,7 +116,7 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                {Ihr Sohn|Ihre Tochter} {Vorname} hat heute im Fach {Fach} einen Klassenbucheintrag aufgrund einer Verspätung erhalten{Notiz}.
+                {Ihr Sohn|Ihre Tochter} {Vorname} hat {Datum} im Fach {Fach} einen Klassenbucheintrag aufgrund einer Verspätung erhalten{Notiz}.
 
                 Bitte beachten Sie, dass diese E-Mail nur eine einzelfallbezogene Rückmeldung darstellt und sich daraus kein Anspruch auf die vollständige Meldung vergangener und zukünftiger Verspätungen ergibt.
 
@@ -129,13 +129,19 @@ module LessonMailTemplates
             :body => <<~END_OF_TEXT,
                 Liebe Eltern,
 
-                ich freue mich, Ihnen mitteilen zu können, dass {Ihr Sohn|Ihre Tochter} {Vorname} heute im Fach {Fach} durch besonders erwähnenswerte positive Leistungen aufgefallen ist{Notiz}. Bitte loben Sie {ihn|sie} für {sein|ihr} Engagement und {seine|ihre} Leistungsbereitschaft.
+                ich freue mich, Ihnen mitteilen zu können, dass {Ihr Sohn|Ihre Tochter} {Vorname} {Datum} im Fach {Fach} durch besonders erwähnenswerte positive Leistungen aufgefallen ist{Notiz}. Bitte loben Sie {ihn|sie} für {sein|ihr} Engagement und {seine|ihre} Leistungsbereitschaft.
 
                 Mit freundlichen Grüßen
                 {Lehrkraft}
             END_OF_TEXT
         },
     }.freeze
+
+    # The default texts said »heute« before {Datum} existed (mails can now
+    # be sent days after the lesson). At startup, a stored text that is still
+    # exactly the old default gets the new one (SetupDatabase in main.rb);
+    # texts admins changed stay as they are.
+    LEGACY_DEFAULT_BODIES = Hash[DEFAULTS.map { |reason, t| [reason, t[:body].strip.gsub('{Datum}', 'heute')] }].freeze
 
     TOKEN = /\{([^{}]*)\}/
 

@@ -284,6 +284,21 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_empty LessonMailTemplates.template_errors('x', 'Am {Datum}')
     end
 
+    # The defaults say {Datum} now; on the lesson's day the mail reads as
+    # before (»heute«), the old texts are known for the switch at startup.
+    def test_defaults_with_date
+        LessonMailTemplates::REASONS.each do |reason|
+            body = LessonMailTemplates::DEFAULTS[reason][:body]
+            assert_includes body, '{Datum}', reason
+            legacy = LessonMailTemplates::LEGACY_DEFAULT_BODIES[reason]
+            assert_includes legacy, 'heute', reason
+            refute_includes legacy, '{Datum}', reason
+            today = LessonMailTemplates.render({:subject => 'x', :body => body}, vars.merge(:datum => Date.today.to_s))
+            old = LessonMailTemplates.render({:subject => 'x', :body => legacy}, vars)
+            assert_equal old[:html], today[:html], reason
+        end
+    end
+
     def test_new_template_body_is_valid
         assert_empty LessonMailTemplates.template_errors('Betreff', LessonMailTemplates::NEW_TEMPLATE_BODY)
     end

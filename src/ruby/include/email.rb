@@ -21,6 +21,11 @@ class Main < Sinatra::Base
         # (one LessonInfo per day)
         assert(lesson_mail_key_allowed?(data[:lesson_key], data[:email]), 'unknown lesson')
         data[:lesson_offset] = Main.class_mail_offset if Main.class_mail_klasse(data[:lesson_key])
+        # the lesson's day: today or earlier (mails also days after the
+        # lesson); class teachers' mails are of today
+        data[:datum] = Date.today.strftime('%Y-%m-%d') if Main.class_mail_klasse(data[:lesson_key])
+        assert(data[:datum] =~ /\A\d{4}-\d{2}-\d{2}\z/ && (Date.parse(data[:datum]) rescue nil), 'bad date')
+        assert(DEVELOPMENT || Date.parse(data[:datum]) <= Date.today, 'lesson in the future')
         # rules of the reason (/unterrichtsmails): own templates in the state
         # 'test' only for admins, their mails go to the sender alone
         # (mail-bot-repl.rb); reasons the Otium sends only for the Otium
@@ -50,7 +55,7 @@ class Main < Sinatra::Base
             MERGE (l:Lesson {key: $lesson_key})
             MERGE (i:LessonInfo {offset: $lesson_offset})-[:BELONGS_TO]->(l)
             CREATE (us)<-[:SENT_TO]-(m:Mail {tag: $tag, reason: $reason, details: $details, ts: $ts})-[:SENT_BY]->(ut)
-            SET m.test = CASE WHEN $test THEN true ELSE null END, m.comment = $comment, m.text = $text
+            SET m.test = CASE WHEN $test THEN true ELSE null END, m.comment = $comment, m.text = $text, m.datum = $datum
             CREATE (m)-[:REGARDING]->(i)
             RETURN m;
         END_OF_QUERY
@@ -128,7 +133,7 @@ class Main < Sinatra::Base
         stored = stored_lesson_mail_templates
         template = LessonMailTemplates.effective(stored, mail[:reason])
         assert(template, 'unknown reason')
-        vars = Main.lesson_mail_vars(row['sus_email'], row['lesson_key'], @session_user[:email], mail[:details], mail[:comment])
+        vars = Main.lesson_mail_vars(row['sus_email'], row['lesson_key'], @session_user[:email], mail[:details], mail[:comment], mail[:datum])
         rendered = LessonMailTemplates.render(template, vars, mail[:text])
         if mail[:test] == true
             info = LessonMailTemplates.find(stored, mail[:reason]) || {}

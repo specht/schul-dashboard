@@ -80,7 +80,7 @@ class MailBotRepl < Sinatra::Base
                 debug "Sending parent mail #{tag} / #{lesson_key} / #{lesson_offset} / #{reason}#{test ? ' (test)' : ''}"
                 template = LessonMailTemplates.effective(templates, reason)
                 raise "no text for #{reason}" if template.nil?
-                vars = Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details, mail[:comment])
+                vars = Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details, mail[:comment], mail[:datum])
                 # a text the teacher changed for this student, else the template's
                 rendered = LessonMailTemplates.render(template, vars, mail[:text])
                 if test

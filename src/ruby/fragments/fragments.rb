@@ -2779,11 +2779,12 @@ class Main
             fach = Main.class_mail_klasse(lesson_key) ? 'KL' : ((@@lessons[:lesson_keys][lesson_key] || {})[:fach] || '?')
             reason = row['m'][:reason]
             ts = row['m'][:ts]
+            # the day it was sent (or will be, while it waits)
+            ts_sent = row['m'][:ts_sent] || ts
             ym = Time.at(ts).strftime('%Y-%m')
-            data[ym][:sus][sus_email] ||= {}
-            data[ym][:sus][sus_email][reason] ||= {}
-            data[ym][:sus][sus_email][reason][fach] ||= 0
-            data[ym][:sus][sus_email][reason][fach] += 1
+            next unless data[ym]
+            data[ym][:sus][sus_email] ||= []
+            data[ym][:sus][sus_email] << {:reason => reason, :fach => fach, :ts => ts_sent}
             data[:total] ||= {}
             data[:total][sus_email] ||= 0
             data[:total][sus_email] += 1
@@ -2815,12 +2816,11 @@ class Main
                 io.puts "<td>#{@@user_info[email][:display_name]}</td>"
                 cols.each do |ym|
                     io.puts "<td>"
-                    (data[ym][:sus][email] || {}).each_pair do |reason, info|
-                        (info || {}).each_pair do |fach, count|
-                            (1..count).each do
-                                io.puts "<span class='badge' style='font-weight: normal; background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{fach}</span>"
-                            end
-                        end
+                    # one badge per mail: subject and the day it was sent
+                    (data[ym][:sus][email] || []).sort_by { |x| x[:ts].to_i }.each do |mail|
+                        reason = mail[:reason]
+                        day = Time.at(mail[:ts].to_i).strftime('%d.%m.')
+                        io.puts "<span class='badge' title='#{CGI.escapeHTML(reason_label[reason].to_s)}, gesendet am #{day}' style='font-weight: normal; background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{CGI.escapeHTML(mail[:fach].to_s)} #{day}</span>"
                     end
                     io.puts "</td>"
                 end

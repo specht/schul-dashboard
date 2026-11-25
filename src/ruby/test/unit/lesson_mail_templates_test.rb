@@ -270,6 +270,20 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_equal normal[:html], LessonMailTemplates.render(template, vars, '  ')[:html]
     end
 
+    # {Datum}: the lesson's day – »heute« when the mail goes out that day,
+    # the weekday and date when a teacher sends it later
+    def test_date_placeholder
+        today = Date.new(2026, 11, 25)
+        assert_equal 'heute', LessonMailTemplates.date_phrase('2026-11-25', today)
+        assert_equal 'am Montag, 23.11.', LessonMailTemplates.date_phrase('2026-11-23', today)
+        assert_equal 'heute', LessonMailTemplates.date_phrase(nil, today)
+        assert_equal 'heute', LessonMailTemplates.date_phrase('kaputt', today)
+        template = {:subject => 'x', :body => '{Vorname} hat {Datum} gefehlt.'}
+        later = LessonMailTemplates.render(template, vars.merge(:datum => '2026-11-23', :today => today))
+        assert_includes later[:html], 'Max hat am Montag, 23.11. gefehlt.'
+        assert_empty LessonMailTemplates.template_errors('x', 'Am {Datum}')
+    end
+
     def test_new_template_body_is_valid
         assert_empty LessonMailTemplates.template_errors('Betreff', LessonMailTemplates::NEW_TEMPLATE_BODY)
     end

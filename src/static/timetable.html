@@ -2779,7 +2779,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof(event.lesson_key) !== 'undefined' &&
                 event.lesson_offset !== null &&
                 event.lesson_offset >= 0 &&
-                (#{DEVELOPMENT ? 'true' : 'false'} || ('#{Date.today.strftime('%Y-%m-%d')}' === event.datum)))
+                // mails also days after the lesson, not before it
+                (#{DEVELOPMENT ? 'true' : 'false'} || (typeof(event.datum) === 'string' && event.datum <= '#{Date.today.strftime('%Y-%m-%d')}')))
             {
                 if ('#{user_with_role_logged_in?(:otium) ? 'true' : 'false'}' === 'true') {
                     allow = true;

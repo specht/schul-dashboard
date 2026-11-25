@@ -1,4 +1,5 @@
 require 'cgi'
+require 'date'
 
 # Texts of the mails teachers send to parents from a lesson ("Mails aus dem
 # Unterricht", timetable → Mail). Admins can change them on
@@ -46,6 +47,7 @@ module LessonMailTemplates
         'Notiz' => 'Notiz der Lehrkraft in Klammern, z. B. » (Zirkel fehlt)« – mit Leerzeichen davor; ohne Notiz entfällt sie',
         'Lehrkraft' => 'Name der Lehrkraft, die die Mail schickt (bei Otium-Mails die Otium-Aufsicht); sie bekommt auch die Antworten',
         'Lehrkraft der Stunde' => 'Lehrkraft der Stunde, z. B. »Herr Clarke« – bei Otium-Mails die Lehrkraft, die das Kind ins Otium geschickt hat',
+        'Datum' => 'Tag der Stunde: »heute«, wenn die Mail am selben Tag rausgeht, sonst z. B. »am Montag, 24.11.«',
     }.freeze
 
     MAX_SUBJECT_LENGTH = 200
@@ -174,6 +176,16 @@ module LessonMailTemplates
     # :lesson_teacher, :geschlecht. The note is the same for every student a
     # teacher sends the mail to, the comment is for this one student; {Notiz}
     # holds both: » (Sitzplan nicht eingehalten; hat sich umgesetzt)«.
+    WEEKDAYS = %w(Sonntag Montag Dienstag Mittwoch Donnerstag Freitag Samstag).freeze
+
+    # {Datum}: »heute« on the lesson's day, »am Montag, 24.11.« later (a
+    # teacher may send the mail days after the lesson)
+    def self.date_phrase(datum, today = Date.today)
+        date = (Date.parse(datum.to_s) rescue nil)
+        return 'heute' if date.nil? || date == today
+        "am #{WEEKDAYS[date.wday]}, #{date.strftime('%d.%m.')}"
+    end
+
     def self.values(vars)
         note = [vars[:note], vars[:comment]].map { |x| x.to_s.gsub(/\s+/, ' ').strip }.reject(&:empty?).join('; ')
         {
@@ -184,6 +196,7 @@ module LessonMailTemplates
             'Notiz' => note.empty? ? '' : " (#{note})",
             'Lehrkraft' => vars[:teacher],
             'Lehrkraft der Stunde' => vars[:lesson_teacher],
+            'Datum' => date_phrase(vars[:datum], vars[:today] || Date.today),
         }.transform_values { |v| v.to_s.gsub(/\s+/, ' ') }
     end
 

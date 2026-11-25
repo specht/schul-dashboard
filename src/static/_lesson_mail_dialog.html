@@ -234,7 +234,7 @@ function update_mail_preview() {
         let seq = ++mail_preview_seq;
         let comment = (mail_individual() && email_div_rows[email]) ? email_div_rows[email].comment.val().trim() : '';
         let details = mail_individual() ? '' : $('#ti_mail_details').val().trim();
-        api_call('/api/preview_lesson_mail', {email: email, reason: reason, details: details, comment: comment, lesson_key: mail_event.lesson_key}, function(data) {
+        api_call('/api/preview_lesson_mail', {email: email, reason: reason, details: details, comment: comment, lesson_key: mail_event.lesson_key, datum: mail_event.datum ?? ''}, function(data) {
             if (seq !== mail_preview_seq || !data.success) return;
             $('#mail_preview_subject').text(data.subject);
             // rendered and escaped by the server
@@ -339,7 +339,7 @@ function lesson_mail_open(event, students, done) {
                 clearTimeout(mail_view_timer);
                 if (!mail_view.prop('open') || mail_event === null) return;
                 mail_view_timer = setTimeout(function() {
-                    api_call('/api/preview_lesson_mail', {email: sus_info.email, reason: $('#ti_mail_reason').val(), details: '', comment: comment.val().trim(), lesson_key: mail_event.lesson_key}, function(data) {
+                    api_call('/api/preview_lesson_mail', {email: sus_info.email, reason: $('#ti_mail_reason').val(), details: '', comment: comment.val().trim(), lesson_key: mail_event.lesson_key, datum: mail_event.datum ?? ''}, function(data) {
                         if (!data.success) return;
                         mail_view_subject.text(data.subject);
                         if (!row_info.text_edited) mail_text.val(data.text);

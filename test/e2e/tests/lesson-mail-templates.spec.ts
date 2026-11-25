@@ -470,6 +470,12 @@ test('Mails aus dem Unterricht: Klassenleitung schreibt ohne Stunde', async ({ p
   await expect(pending).toContainText('wird um');
   await pending.getByText('Mail ansehen').click();
   await expect(pending.getByTestId('queued-mail')).toContainText('im Fach Klassenleitung');
+  // the overview of the class's mails: each mail with the day it goes out
+  const [, mm, dd] = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' }).split('-');
+  const overview = await page.context().newPage();
+  await overview.goto('/email_overview/5a');
+  await expect(overview.locator('td .badge', { hasText: `KL ${dd}.${mm}.` }).first()).toBeVisible();
+  await overview.close();
   // reopened, the mail of today is still listed
   await page.reload();
   await expect(modal.locator('#div_email_sus_table tr', { hasText: `»${label}« (${name})` })).toContainText('wird um');
@@ -488,4 +494,64 @@ test('Mails aus dem Unterricht: Klassenleitung schreibt ohne Stunde', async ({ p
   expect((await other.request.post('/api/preview_lesson_mail', {
     data: { email: ACCOUNTS.schueler, reason: 'praise', details: '', lesson_key: '_klassenleitung_5a' },
   })).status()).not.toBe(200);
+});
+
+// Mails also days after the lesson (not before it): {Datum} says »heute« on
+// the lesson's day and »am Montag, 23.11.« later; the class's overview of
+// sent mails shows each mail with its day.
+test('Mails aus dem Unterricht: auch Tage nach der Stunde, mit Datum', async ({ page }, testInfo) => {
+  await login(page, ACCOUNTS.admin);
+  const berlin = (d: Date) => d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+  const today = berlin(new Date());
+  const lastWeek = berlin(new Date(Date.now() - 7 * 24 * 3600 * 1000));
+  const nextWeek = berlin(new Date(Date.now() + 7 * 24 * 3600 * 1000));
+  const name = `Datum ${testInfo.project.name} ${Date.now()}`;
+  const created = await page.request.post('/api/create_lesson_mail_template', {
+    data: { label: name, color: '#204a87', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: '{Vorname} hat {Datum} gefehlt.' },
+  });
+  const reason = (await created.json()).reason;
+  const preview = async (datum: string) => (await (await page.request.post('/api/preview_lesson_mail', {
+    data: { email: ACCOUNTS.schueler, reason, details: '', lesson_key: 'Ma_5a', datum },
+  })).json()).text;
+  expect(await preview(today)).toBe('Max hat heute gefehlt.');
+  const [, m, d] = lastWeek.split('-');
+  const later = await preview(lastWeek);
+  expect(later.startsWith('Max hat am ')).toBe(true);
+  expect(later.endsWith(`, ${d}.${m}. gefehlt.`)).toBe(true);
+
+  // the lesson of last week still takes a mail, one next week not
+  const send = (datum: string) => page.request.post('/api/send_email', {
+    data: { email: ACCOUNTS.schueler, reason, details: '', lesson_key: 'Ma_5a', lesson_offset: 0, datum },
+  });
+  const sent = await send(lastWeek);
+  expect(sent.status()).toBe(200);
+  const tag = (await sent.json()).entry.tag;
+  const queued = await (await page.request.post('/api/preview_queued_email', { data: { tag } })).json();
+  expect(queued.html).toContain(`am `);
+  expect(queued.html).toContain(`${d}.${m}.`);
+  expect((await send(nextWeek)).status()).not.toBe(200);
+  expect((await page.request.post('/api/cancel_email', { data: { tag } })).status()).toBe(200);
+
+  // in the timetable: the mail button on a lesson of last week
+  await page.goto('/');
+  await showDayInTimetable(page, new Date(`${lastWeek}T12:00:00`)).catch(() => {});
+  const lessons = page.locator(`td.fc-timegrid-col[data-date="${lastWeek}"] .fc-event`);
+  let found = false;
+  for (let i = 0; i < (await lessons.count()) && !found; i++) {
+    await lessons.nth(i).click();
+    await expect(page.locator('#lessonModal')).toBeVisible();
+    await page.waitForTimeout(500);
+    found = await page.locator('#lessonModal .bu-mail').isVisible();
+    if (!found) {
+      await page.locator('#lessonModal').getByRole('button', { name: 'Schließen' }).click();
+      await expect(page.locator('#lessonModal')).toBeHidden();
+    }
+  }
+  test.skip(!found, 'Clarke had no lesson a week ago');
+  expect(found).toBe(true);
+
+  // tidy up
+  await page.request.post('/api/save_lesson_mail_template', {
+    data: { reason, label: name, color: '#204a87', status: 'hidden', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' },
+  });
 });

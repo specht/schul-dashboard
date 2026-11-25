@@ -478,6 +478,13 @@ class SetupDatabase
                                 t.cc_klassenleitung = COALESCE(t.cc_klassenleitung, $cc_klassenleitung),
                                 t.note_hint = COALESCE(t.note_hint, $note_hint)
                         END_OF_QUERY
+                        # once: the old default with »heute« becomes the one
+                        # with {Datum} – only where nobody changed it
+                        neo4j_query(<<~END_OF_QUERY, {:reason => reason, :old => LessonMailTemplates::LEGACY_DEFAULT_BODIES[reason], :body => default[:body].strip})
+                            MATCH (t:LessonMailTemplate {reason: $reason})
+                            WHERE t.body IN $old
+                            SET t.body = $body
+                        END_OF_QUERY
                     end
                 end
                 transaction do

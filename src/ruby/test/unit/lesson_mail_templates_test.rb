@@ -15,13 +15,16 @@ class LessonMailTemplatesTest < Minitest::Test
     # The default texts are the ones the mail bot had built in before they
     # became editable (lesson_mail_templates_golden.json was produced by the
     # old code). The Otium mail is the exception: it is now signed by the
-    # teacher on Otium duty who sends it and names the lesson's teacher.
+    # teacher on Otium duty who sends it and names the lesson's teacher. The
+    # Unterschrift mail asks for the signature »zur nächsten Unterrichtsstunde«
+    # instead of »morgen« (2026-11-25), otherwise it reads as before.
     def test_defaults_reproduce_the_former_mails
         golden = JSON.parse(File.read(File.join(__dir__, 'lesson_mail_templates_golden.json')))
         assert_equal 21, golden.size
         golden.each do |key, (subject, html)|
             reason, geschlecht, note = key.split('/', 3)
             next if reason == 'disturbance_otium'
+            html = html.sub('Ihrem Kind morgen mit', 'Ihrem Kind zur nächsten Unterrichtsstunde mit') if reason == 'signature'
             rendered = LessonMailTemplates.render(LessonMailTemplates::DEFAULTS[reason], vars(geschlecht: geschlecht, note: note))
             assert_equal subject, rendered[:subject], key
             assert_equal normalize(html), normalize(rendered[:html]), key
@@ -268,6 +271,45 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_equal 'Lob für Max', changed[:subject]
         assert_equal "<p>Liebe Eltern,</p>\n<p>{Vorname} &lt;b&gt;war&lt;/b&gt; toll.<br>\nGruß</p>\n", changed[:html]
         assert_equal normal[:html], LessonMailTemplates.render(template, vars, '  ')[:html]
+    end
+
+    # {Datum}: the lesson's day – »heute« when the mail goes out that day,
+    # the weekday and date when a teacher sends it later
+    def test_date_placeholder
+        today = Date.new(2026, 11, 25)
+        assert_equal 'heute', LessonMailTemplates.date_phrase('2026-11-25', today)
+        assert_equal 'am Montag, 23.11.', LessonMailTemplates.date_phrase('2026-11-23', today)
+        assert_equal 'heute', LessonMailTemplates.date_phrase(nil, today)
+        assert_equal 'heute', LessonMailTemplates.date_phrase('kaputt', today)
+        template = {:subject => 'x', :body => '{Vorname} hat {Datum} gefehlt.'}
+        later = LessonMailTemplates.render(template, vars.merge(:datum => '2026-11-23', :today => today))
+        assert_includes later[:html], 'Max hat am Montag, 23.11. gefehlt.'
+        assert_empty LessonMailTemplates.template_errors('x', 'Am {Datum}')
+    end
+
+    # The defaults say {Datum} now; on the lesson's day the mail reads as
+    # before (»heute«), the old texts are known for the switch at startup.
+    def test_defaults_with_date
+        LessonMailTemplates::REASONS.each do |reason|
+            body = LessonMailTemplates::DEFAULTS[reason][:body]
+            assert_includes body, '{Datum}', reason
+            legacy = LessonMailTemplates::LEGACY_DEFAULT_BODIES[reason].first
+            assert_includes legacy, 'heute', reason
+            refute_includes legacy, '{Datum}', reason
+            next if reason == 'signature'
+            today = LessonMailTemplates.render({:subject => 'x', :body => body}, vars.merge(:datum => Date.today.to_s))
+            old = LessonMailTemplates.render({:subject => 'x', :body => legacy}, vars)
+            assert_equal old[:html], today[:html], reason
+        end
+    end
+
+    # Unterschrift: »zur nächsten Unterrichtsstunde« instead of »morgen«
+    # (Jonas, 25.11.); the old text, as it was live, is replaced at startup
+    def test_signature_text
+        body = LessonMailTemplates::DEFAULTS['signature'][:body]
+        assert_includes body, 'Bitte geben Sie diese Ihrem Kind zur nächsten Unterrichtsstunde mit.'
+        old = LessonMailTemplates::LEGACY_DEFAULT_BODIES['signature'].first
+        assert_includes old, '{Vorname} hat heute eine geforderte Unterschrift nicht vorlegen können{Notiz}. Bitte geben Sie diese Ihrem Kind morgen mit.'
     end
 
     def test_new_template_body_is_valid

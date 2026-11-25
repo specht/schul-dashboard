@@ -173,6 +173,14 @@
     background: var(--pv-hover);
 }
 
+/* hiding a poll: only the icon, square, as quiet as »Später« */
+.ui-preview .pv-todo-btn.pv-todo-hide {
+    justify-content: center;
+    width: 31px;
+    padding: 0;
+    font-size: 1.05rem;
+}
+
 .ui-preview .pv-todo-btn:disabled {
     opacity: 0.6;
     cursor: default;

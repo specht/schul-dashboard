@@ -54,6 +54,17 @@ hierher übernehmen, wenn sie angegangen werden.
       Kollegium und gibt eine Lehrkraft frei« schlug am Handy einmal fehl
       (`toBeVisible`, 22.11.2026, im vollen Lauf), danach 3 Läufe ohne
       Fehler – beobachten
+- [x] E2E: `lesson-mail-templates.spec.ts` »Lehrkraft sieht die Mail vor dem
+      Senden« schlug nachmittags und abends immer fehl: Der Stunden-Dialog
+      fragt die Jitsi-Anwesenheit ab, und für eine Stunde, die schon vorbei
+      war, antwortete der Server mit 500 (»not today!«). Jetzt eine leere Antwort
+      (`get_current_jitsi_users_for_lesson`, Test in `lessons.spec.ts`).
+- [ ] E2E, manchmal am Handy: `lesson-mail-templates.spec.ts`
+      »Testvorlage im Mail-Dialog« (24.11.2026). Eine Testmail geht sofort
+      raus; trifft »Abbrechen« genau diesen Moment, antwortet
+      `/api/cancel_email` mit 500 (»unknown mail«). Abbrechen einer schon
+      versendeten Mail sollte eine verständliche Meldung geben, der Test
+      nicht auf den Moment angewiesen sein.
 
 ## 2. UI/UX
 

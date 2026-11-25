@@ -217,16 +217,22 @@ test('Datenpflege: Entscheidungen im Vergleich (nicht mehr da, ist doch da, Klas
       'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
       'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
       'Neu;Niko;;05a;männlich;01.03.2014',
-      'Weg;Quinn;;q9;weiblich;02.03.2014'].join('\r\n'), '2000-01-01');
+      'Weg;Quinn;;q9;weiblich;02.03.2014',
+      // an address too long: a decision of its own in the comparison, and
+      // no reason for the other decisions to fail
+      'Schneiderhahn-Oberhofer;Anna-Katharina;;05a;weiblich;08.08.2014'].join('\r\n'), '2000-01-01');
     await page.locator('#bu_keep_draft').click();
     await expect(page.locator('#dp_is_draft')).toBeVisible();
     const preview = page.locator('#dp_preview');
 
-    // new, but not here: kept out by name and birthday
+    // new, but not here: kept out by name and birthday – only the draft
+    // changes, the services don't read the data again (half a minute)
     const niko = preview.locator('.dp-added tr', { hasText: 'Niko Neu' });
     const nikoEmail = (await niko.locator('.bu_row_gone').getAttribute('data-email'))!;
     cleanup.push(() => page.request.post('/api/datenpflege/gone/remove', { data: { email: nikoEmail } }));
+    const nikoGone = page.waitForResponse('**/api/datenpflege/row/gone');
     await niko.locator('.bu_row_gone').click();
+    expect(await (await nikoGone).json()).toMatchObject({ ok: true, dashboard_changed: false });
     await expect(preview.locator('.dp-added tr', { hasText: 'Niko Neu' })).toHaveCount(0);
     await expect(preview.locator('.dp-manual tr', { hasText: 'Niko Neu' })).toContainText('als abgegangen vermerkt');
 
@@ -252,12 +258,75 @@ test('Datenpflege: Entscheidungen im Vergleich (nicht mehr da, ist doch da, Klas
     await page.goto('/datenpflege');
     cleanup.push(() => page.request.post('/api/datenpflege/gone/remove', { data: { email: malloryEmail } }));
     await preview.locator('.dp-removed tr', { hasText: 'Mallory' }).locator('.bu_row_gone_now').click();
+    // in the dashboard now: this one has the data read again
+    const malloryGone = page.waitForResponse('**/api/datenpflege/gone/add');
     await page.locator('.modal.show').getByRole('button', { name: 'Abmelden' }).click();
+    expect(await (await malloryGone).json()).toMatchObject({ ok: true, dashboard_changed: true });
     await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
     await page.goto('/datenpflege');
     await expect(page.locator('.dp-gone-list tr', { hasText: 'Mallory' })).toHaveCount(1);
   } finally {
     for (const undo of cleanup) await undo().catch(() => null);
+    const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
+    if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
+  }
+});
+
+// After a change the services read the data again – about half a minute in
+// production (not in the test stack, simulated here): a bar says so wherever
+// the page is scrolled, the page rests, then it is reloaded and comes back to
+// the same place with the comparison open (before, the note was out of sight
+// and nothing seemed to happen).
+test('Datenpflege: nach einer Änderung sichtbar warten, dann zurück an dieselbe Stelle', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'one draft for everybody');
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await login(page, ACCOUNTS.admin);
+  let malloryEmail = '';
+  try {
+    await page.goto('/datenpflege');
+    await upload(page, [HEADER,
+      'Mustermann;Max;Maximilian;05a;männlich;01.01.2010',
+      'Mustermann;Elisabeth;Elli;05a;weiblich;02.01.2010',
+      'Neu;Niko;;05a;männlich;01.03.2014'].join('\r\n'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    // the draft opens by itself
+    await page.goto('/datenpflege');
+    const preview = page.locator('#dp_preview');
+    const mallory = preview.locator('.dp-removed tr', { hasText: 'Mallory' });
+    const keep = mallory.locator('.bu_row_keep');
+    malloryEmail = (await keep.getAttribute('data-email'))!;
+
+    // the restart, simulated: the change answers that the data is read
+    // again, the web service has a new time after a few polls
+    const before = await page.locator('#data_loaded_at').textContent();
+    let polls = 0;
+    await page.route('**/api/datenpflege/row/keep', async (route) => {
+      const response = await route.fetch();
+      await route.fulfill({ response, json: { ...(await response.json()), reload: true } });
+    });
+    await page.route('**/api/data_status', (route) => route.fulfill({ json: { loaded_at: ++polls >= 2 ? 'neu' : before } }));
+
+    await keep.scrollIntoViewIfNeeded();
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y).toBeGreaterThan(300);
+    await keep.click();
+    const bar = page.getByTestId('dp-reloading');
+    await expect(bar).toBeInViewport();
+    await expect(bar).toContainText('etwa eine halbe Minute');
+    await expect(page.locator('body')).toHaveClass(/dp-busy/);
+
+    // reloaded by itself: the comparison open again, at the same place
+    await expect(page.locator('.dp-manual-list tr', { hasText: 'Mallory' })).toHaveCount(1, { timeout: 20_000 });
+    await expect(bar).toHaveCount(0);
+    await expect(page.locator('body')).not.toHaveClass(/dp-busy/);
+    await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
+    await expect(preview.locator('.dp-added, .dp-removed, .dp-manual').first()).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y - 200);
+  } finally {
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    if (malloryEmail) await page.request.post('/api/datenpflege/manual/remove', { data: { email: malloryEmail } }).catch(() => null);
     const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));
     if (d.ok && d.token) await page.request.post('/api/datenpflege/schueler/discard', { data: { token: d.token } });
   }
@@ -526,6 +595,53 @@ test('Datenpflege: noch nicht in der LUSD, nicht mehr an der Schule', async ({ p
   }
 });
 
+// Abroad for a while: LUSD keeps them in their class; the dashboard keeps the
+// account but takes them out of classes, courses, lists and report cards
+// until the return date (the services don't read the data again in the test
+// stack: the entry and its answer are checked here, the date in
+// parser_abroad_test.rb)
+test('Datenpflege: im Ausland, zurück ab einem Tag', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'shared data');
+  await login(page, ACCOUNTS.admin);
+  let email = '';
+  try {
+    await page.goto('/datenpflege');
+    const section = page.locator('.dp-manual-abroad');
+    await expect(section.locator('h5')).toHaveText('Im Ausland');
+    await section.locator('#ti_abroad_student').fill('Alice Mustermann (11)');
+    await expect(section.locator('#bu_abroad_add')).toBeEnabled();
+    await section.locator('#ti_abroad_zurueck').fill('2099-02-01');
+    await section.locator('#ti_abroad_notiz').fill('Austausch');
+    // (the page reloads at once: the answer read on its way)
+    let added: { ok?: boolean, dashboard_changed?: boolean } = {};
+    await page.route('**/api/datenpflege/abroad/add', async (route) => {
+      const response = await route.fetch();
+      added = await response.json();
+      await route.fulfill({ response });
+    });
+    await section.locator('#bu_abroad_add').click();
+    await expect(page.locator('.modal.show')).toContainText('in keiner Klasse');
+    await page.locator('.modal.show').getByRole('button', { name: 'Vermerken' }).click();
+    // out of the class now: the services read the data again
+    await expect.poll(() => added).toMatchObject({ ok: true, dashboard_changed: true });
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    const row = page.locator('.dp-abroad-list tr', { hasText: 'Alice' });
+    await expect(row).toContainText('01.02.2099');
+    await expect(row).toContainText('Austausch');
+    email = (await row.getAttribute('data-email'))!;
+    // a return date that has come already is refused
+    const past = await page.request.post('/api/datenpflege/abroad/add', { data: { email, zurueck: '2000-01-01' } });
+    expect(past.ok()).toBe(false);
+    // back: at once
+    await row.getByRole('button', { name: 'Wieder da' }).click();
+    await page.locator('.modal.show').getByRole('button', { name: 'Wieder da' }).click();
+    await expect(page.locator('.dp-abroad-list tr', { hasText: 'Alice' })).toHaveCount(0);
+    email = '';
+  } finally {
+    if (email) await page.request.post('/api/datenpflege/abroad/remove', { data: { email } });
+  }
+});
+
 test('Noch nicht in der LUSD und nicht mehr an der Schule nur mit der Rolle', async ({ baseURL }) => {
   const api = await playwrightRequest.newContext({ baseURL });
   await apiLogin(api, ACCOUNTS.teacher);
@@ -564,7 +680,9 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     // (Nachname, Rufname and Vornamen each in a column; only what differs
     // is marked, inline)
     await expect(page.locator('.sl-table').first().locator('thead th:visible')).toHaveText(
-      ['Nachname', 'Rufname', 'Vornamen', 'Geschlecht', 'Geburtstag', 'Bildungsgang', '']);
+      ['Nr.', 'Nachname', 'Rufname', 'Vornamen', 'Geschlecht', 'Geburtstag', 'Bildungsgang', '']);
+    // numbered, so a missing student shows
+    await expect(cls.locator('.sl-table').first().locator('tbody tr.sl-row td.sl-nr')).toHaveText(['1.', '2.', '3.']);
     await expect(max.locator('td.sl-rufname .dp-old')).toHaveText('Max');
     await expect(max.locator('td.sl-rufname .dp-new')).toHaveText('Maximilian');
     await expect(max.locator('td.sl-nachname')).toHaveText('Mustermann');
@@ -665,6 +783,16 @@ test('Schülerliste prüfen: Klassenleitung prüft, korrigiert und bestätigt', 
     await page.locator('#bu_sl_unconfirm').click();
     await expect(page.locator('#bu_sl_confirm')).toBeEnabled();
 
+    // the Datenpflege's comparison of the draft: what the Klassenleitung
+    // confirmed (the new one is here, the leaving one goes) moves out of
+    // »Neu« and »Nicht mehr dabei« into closed sections
+    await page.goto('/datenpflege');
+    const preview = page.locator('#dp_preview');
+    await expect(preview.locator('.dp-added-ok tr', { hasText: 'Nele Neu' })).toHaveCount(1);
+    await expect(preview.locator('.dp-added tr', { hasText: 'Nele Neu' })).toHaveCount(0);
+    await expect(preview.locator('.dp-removed-ok tr', { hasText: 'Mallory' })).toHaveCount(1);
+    await expect(preview.locator('.dp-removed tr', { hasText: 'Mallory' })).toHaveCount(0);
+
     // a teacher without a class: nothing to check
     const api = await playwrightRequest.newContext({ baseURL });
     await apiLogin(api, ACCOUNTS.teacher);
@@ -704,6 +832,12 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await expect(page.locator('#dp_is_draft')).toBeVisible();
     await page.goto('/datenpflege');
     const row = page.locator('.dp-review-list tr[data-klasse="5a"]');
+    // the table takes the width it needs on a wide screen: nothing cut off
+    // or to scroll (the page was 60em narrow)
+    await page.setViewportSize({ width: 1600, height: 900 });
+    const fits = await page.locator('.dp-review-list').evaluate((t) => t.closest('.dp-scroll')!.scrollWidth <= t.closest('.dp-scroll')!.clientWidth + 1);
+    expect(fits).toBe(true);
+    expect(await page.locator('.dp-review-list').evaluate((t) => t.closest('.dp-scroll')!.clientWidth)).toBeGreaterThan(1000);
     await expect(row).toContainText('noch nicht geöffnet');
     // Elli is in the draft as in the dashboard: no row to check on its own
     await expect(row).toContainText('0 von 3, 1 unverändert');

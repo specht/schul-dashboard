@@ -75,6 +75,22 @@
         return f.join(', ');
     }
 
+    // the LKs (11/12) as chips in the subject's colour with the school's
+    // short code, the name as the title
+    function lk_chips(s) {
+        var box = el('span', 'pv-dir-lks');
+        (s.lk || []).forEach(function (x) {
+            var chip = el('span', 'pv-dir-lk', x.label);
+            chip.title = 'LK ' + x.name;
+            if (x.key) {
+                chip.style.setProperty('--c', 'var(--subj-' + x.key + ')');
+                chip.style.setProperty('--ci', 'var(--subj-' + x.key + '-ink)');
+            }
+            box.appendChild(chip);
+        });
+        return box;
+    }
+
     function picture(s, cls) {
         var d = el('div', 'pv-dir-pic' + (cls ? ' ' + cls : ''));
         if (s.pic) d.style.backgroundImage = 'url(' + JSON.stringify(s.pic) + ')';
@@ -294,6 +310,7 @@
             if (s.bildungsgang) dl_row(dl, 'Bildungsgang', s.bildungsgang);
             if (s.stufe) dl_row(dl, 'Stufe', String(s.stufe));
             if ('tutor' in s) dl_row(dl, 'Tutor:in', s.tutor || 'keine Angabe');
+            if ('lk' in s) dl_row(dl, 'Leistungskurse', s.lk.length ? lk_chips(s) : 'keine');
             dl_row(dl, 'Letzter Zugriff', s.zugriff);
             ['group2', 'af', 'ft'].forEach(function (kind) {
                 if (!(kind in s)) return;
@@ -361,6 +378,7 @@
         af: !!data.af_names,
         ft: !!data.ft_names,
         act: !!(can.letters || can.amt),
+        lk: teacher && data.students.some(function (s) { return 'lk' in s; }),
     };
 
     function student_row(s) {
@@ -397,11 +415,18 @@
         text.appendChild(line);
         var f = facts(s);
         if (f) text.appendChild(el('div', 'pv-dir-facts', f));
+        // narrow: the LKs below the name (the column is gone there)
+        if (show.lk && s.lk && s.lk.length) text.appendChild(lk_chips(s)).classList.add('pv-dir-lks-narrow');
         who.appendChild(text);
         if (teacher) who.appendChild(icon('chevron-right')).classList.add('pv-dir-chev');
         person.appendChild(who);
         tr.appendChild(person);
 
+        if (show.lk) {
+            var lk = el('td', 'pv-dir-lkcol');
+            if (s.lk && s.lk.length) lk.appendChild(lk_chips(s)); else lk.appendChild(el('span', 'pv-dir-none', '–'));
+            tr.appendChild(lk);
+        }
         var mail = el('td', 'pv-dir-mail');
         mail.appendChild(copy_field(s.email));
         tr.appendChild(mail);
@@ -452,6 +477,7 @@
         }
         th('Nr.', 'pv-dir-nr');
         th('Name', 'pv-dir-person');
+        if (show.lk) th('LK', 'pv-dir-lkcol');
         th('E-Mail', 'pv-dir-mail');
         if (show.parents) th('Eltern', 'pv-dir-parents');
         if (show.group2) th('Gruppe', 'pv-dir-g');

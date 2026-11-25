@@ -4,7 +4,9 @@
         background-image: none;
         background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
-    .dp-page { max-width: 60em; padding-block: 1em 3em; }
+    /* the tables take the whole width; running text keeps a line length that reads */
+    .dp-page { max-width: none; padding-block: 1em 3em; }
+    .dp-page p, .dp-page .alert, .dp-page .dp-form { max-width: 60em; }
     .dp-page h5 { margin-top: 1.4em; }
     .dp-form { display: flex; flex-wrap: wrap; gap: 0.6em 1em; align-items: flex-end; }
     .dp-form label { display: block; margin-bottom: 0.2em; }
@@ -31,6 +33,8 @@
     body.dark .dp-old { background: #4a1c1f; color: #ffb8b2; text-decoration-color: rgba(255, 184, 178, 0.55); }
     body.dark .dp-new { background: #163a22; color: #93e2a8; }
     .dp-old + .dp-new { margin-left: 0.2em; }
+    /* what the Klassenleitung said about a row (the check of the draft) */
+    .dp-teacher-note { color: var(--acc-text, #8a5a00); white-space: normal; }
     .dp-none { font-style: italic; text-decoration: none; }
     .dp-actions { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: center; margin-top: 1em; }
     .dp-actions .dp-spacer { flex: 1; }
@@ -82,6 +86,18 @@
     .dp-mf-wide { flex: 1 1 16em; min-width: 0; }
     .dp-mf-mid { flex: 1 1 10em; min-width: 0; }
     .dp-mf-small { flex: 0 1 8em; min-width: 0; }
+    /* while the services read the data again (about half a minute): a bar
+       that is seen wherever the page is scrolled, the page rests meanwhile */
+    .dp-reloading { position: fixed; left: 50%; bottom: calc(2.6em + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+                    z-index: 1060; display: flex; gap: 0.6em; align-items: flex-start; width: max-content; max-width: calc(100vw - 2em);
+                    padding: 0.7em 1.1em; border-radius: 10px; background: #1f2328; color: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
+    body.dark .dp-reloading { background: #e8e9ec; color: #1f2328; }
+    .dp-reloading i { font-size: 1.2em; line-height: 1.2; }
+    .dp-reloading .dp-spin { animation: dp-spin 1s linear infinite; }
+    @keyframes dp-spin { to { transform: rotate(360deg); } }
+    body.dp-busy .dp-page { pointer-events: none; opacity: 0.55; transition: opacity 0.2s; }
+    /* phones in the new design: above the tab bar */
+    @media (max-width: 767px) { body.ui-preview .dp-reloading { bottom: calc(5em + env(safe-area-inset-bottom, 0px)); } }
 </style>
 <div class='container-fluid white'>
     <div class='dp-page'>
@@ -241,10 +257,30 @@
             update_apply_state();
         }
 
-        // after a change: the services read the data again; reload the page
-        // once the web service answers with a new time
+        // a reload comes back to the same place: where the page was scrolled,
+        // with the comparison that was open (a kept draft opens by itself)
+        const PLACE = 'dp_place';
+        function reload_here() {
+            try {
+                sessionStorage.setItem(PLACE, JSON.stringify({
+                    at: Date.now(), y: window.scrollY, token: is_draft ? null : token,
+                    date: $('#ti_date').val(), klassen: token ? klassen() : null, links: links, emails: emails,
+                }));
+            } catch (e) { }
+            window.location.reload();
+        }
+
+        // after a change: the services read the data again (about half a
+        // minute); a bar says so where it is seen, the page rests, and it
+        // reloads once the web service answers with a new time
         function wait_for_reload(before) {
-            message('Die Daten werden neu geladen, das Dashboard ist dafür kurz nicht erreichbar …');
+            $('body').addClass('dp-busy');
+            // Tabler in the new design, Fork Awesome in today's
+            const preview = document.body.classList.contains('ui-preview');
+            const bar = $("<div class='dp-reloading' role='status' aria-live='polite' data-testid='dp-reloading'><i aria-hidden='true'></i><span></span></div>");
+            bar.find('i').addClass(preview ? 'ti ti-loader-2 dp-spin' : 'fa fa-spinner fa-spin');
+            bar.find('span').text('Gespeichert. Die Daten werden neu geladen – das dauert etwa eine halbe Minute, dann erscheint die Seite neu.');
+            $('body').append(bar);
             const started = Date.now();
             const poll = function () {
                 fetch('/api/data_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
@@ -252,9 +288,11 @@
                     .catch(() => null)
                     .then(function (info) {
                         if (info && info.loaded_at && info.loaded_at !== before) {
-                            window.location.reload();
+                            reload_here();
                         } else if (Date.now() - started > 5 * 60 * 1000) {
-                            message('Neu laden dauert ungewöhnlich lange – bitte die Dienste prüfen.');
+                            $('body').removeClass('dp-busy');
+                            bar.find('i').attr('class', preview ? 'ti ti-alert-triangle' : 'fa fa-exclamation-triangle');
+                            bar.find('span').text('Neu laden dauert ungewöhnlich lange – bitte die Dienste prüfen.');
                         } else {
                             setTimeout(poll, 3000);
                         }
@@ -269,7 +307,7 @@
                 return;
             }
             if (data.reload) wait_for_reload($('#data_loaded_at').text());
-            else window.location.reload();
+            else reload_here();
         }
 
         // a file chosen or dropped: compared at once
@@ -393,7 +431,32 @@
         });
         // a kept draft opens by itself: what still needs fixing or a
         // decision is there at once, not only after »Entwurf öffnen«
-        if (document.getElementById('bu_open_draft')) compare_call('/api/datenpflege/schueler/draft', {}, null, true);
+        let place = null;
+        try {
+            place = JSON.parse(sessionStorage.getItem(PLACE) || 'null');
+            sessionStorage.removeItem(PLACE);
+        } catch (e) { }
+        if (place && Date.now() - place.at > 10 * 60 * 1000) place = null;
+        function back_to_place() {
+            if (place) window.scrollTo(0, place.y);
+            place = null;
+        }
+        if (place && place.token) {
+            // an upload that was open (not kept): compared again, quietly
+            // if it is gone meanwhile (applied, discarded)
+            links = place.links || {};
+            emails = place.emails || {};
+            const mine = ++latest;
+            api_call('/api/datenpflege/schueler/preview', { token: place.token, date: place.date, klassen: place.klassen || {}, links: links, emails: emails }, function (data) {
+                if (mine !== latest) return;
+                if (data.ok) show_preview(data);
+                back_to_place();
+            });
+        } else if (document.getElementById('bu_open_draft')) {
+            compare_call('/api/datenpflege/schueler/draft', {}, back_to_place, true);
+        } else {
+            back_to_place();
+        }
 
         $('#bu_apply').click(function (e) {
             const button = $(e.currentTarget);
@@ -403,6 +466,8 @@
                 links: links, emails: emails,
             }, function (data) {
                 if (!data.ok) button.prop('disabled', false);
+                // applied: the upload is gone, a reload doesn't open it again
+                else token = null;
                 after_change(data);
             });
         });
@@ -420,7 +485,7 @@
                     $(e.currentTarget).prop('disabled', false);
                     return;
                 }
-                window.location.reload();
+                reload_here();
             });
         });
 
@@ -437,7 +502,7 @@
         $('#bu_push').click(function (e) {
             $(e.currentTarget).prop('disabled', true);
             api_call('/api/datenpflege/push', {}, function (data) {
-                if (data.ok) window.location.reload();
+                if (data.ok) reload_here();
                 else { $(e.currentTarget).prop('disabled', false); message(data.message); }
             });
         });
@@ -452,7 +517,7 @@
         // ---- the teachers' check (include/schuelerliste.rb) ----
         $('#bu_sl_release').click(function (e) {
             const released = $(e.currentTarget).data('released') === true || $(e.currentTarget).data('released') === 'true';
-            api_call('/api/schuelerliste/release', { released: released }, function (data) { if (data.success) window.location.reload(); });
+            api_call('/api/schuelerliste/release', { released: released }, function (data) { if (data.success) reload_here(); });
         });
         // the mails first as a preview (each recipient's own), then sent
         let notify_mails = [];
@@ -479,7 +544,7 @@
         $('#bu_notify_send').click(function (e) {
             $(e.currentTarget).prop('disabled', true);
             api_call('/api/schuelerliste/notify', { deadline: $('#ti_sl_deadline').val() }, function (data) {
-                if (data.success) window.location.reload();
+                if (data.success) reload_here();
                 else $(e.currentTarget).prop('disabled', false);
             });
         });
@@ -499,13 +564,13 @@
             const reason = $('#ti_wontfix_reason').val().trim();
             if (!wontfix) return;
             if (!reason) { $('#ti_wontfix_reason').trigger('focus'); return; }
-            api_call('/api/schuelerliste/done', Object.assign({ reason: reason }, wontfix), function (data) { if (data.success) window.location.reload(); });
+            api_call('/api/schuelerliste/done', Object.assign({ reason: reason }, wontfix), function (data) { if (data.success) reload_here(); });
         });
         $(document).on('click', '.bu_sl_done', function (e) {
             const b = $(e.currentTarget);
             const payload = { review: b.data('review'), done: b.data('done') === true || b.data('done') === 'true' };
             if (b.data('missing')) payload.missing = b.data('missing'); else payload.student = b.data('student');
-            api_call('/api/schuelerliste/done', payload, function (data) { if (data.success) window.location.reload(); });
+            api_call('/api/schuelerliste/done', payload, function (data) { if (data.success) reload_here(); });
         });
         $(document).on('click', '.bu_sl_take_override', function (e) {
             const b = $(e.currentTarget);
@@ -602,6 +667,30 @@
             const b = $(e.currentTarget);
             gone_add(b.data('email'), b.data('name'), String(b.data('seit') || ''), '');
         });
+        // abroad for a while: out of classes and lists until the return date
+        const ABROAD_STUDENTS = JSON.parse(document.getElementById('dp_abroad_data').textContent);
+        let abroad_email = null;
+        $('#ti_abroad_student').on('input change', function () {
+            const st = ABROAD_STUDENTS.find((x) => x.label === $('#ti_abroad_student').val().trim());
+            abroad_email = st ? st.email : null;
+            $('#bu_abroad_add').prop('disabled', !abroad_email);
+        });
+        $('#bu_abroad_add').click(function () {
+            if (!abroad_email) return;
+            const label = $('#ti_abroad_student').val().trim();
+            const back = $('#ti_abroad_zurueck').val();
+            const until = back ? ` bis zum ${back.split('-').reverse().join('.')}` : ' bis du den Eintrag beendest';
+            dashboardConfirm(`${label} steht dann${until} in keiner Klasse, keinem Kurs, keinem Verteiler und auf keinem Zeugnis. Konto und Adresse bleiben.`,
+                function () { api_call('/api/datenpflege/abroad/add', { email: abroad_email, zurueck: back, notiz: $('#ti_abroad_notiz').val().trim() }, after_change); },
+                { title: 'Im Ausland', confirm: 'Vermerken' });
+        });
+        $(document).on('click', '.bu_abroad_remove', function (e) {
+            const b = $(e.currentTarget);
+            dashboardConfirm(`${b.data('name')} ist dann sofort wieder in Klasse, Kursen und Verteilern.`,
+                function () { api_call('/api/datenpflege/abroad/remove', { email: b.data('email') }, after_change); },
+                { title: 'Wieder da', confirm: 'Wieder da' });
+        });
+
         $(document).on('click', '.bu_gone_remove', function (e) {
             const b = $(e.currentTarget);
             dashboardConfirm(`${b.data('name')} ist dann wieder im Dashboard, solange die LUSD sie:ihn führt.`,

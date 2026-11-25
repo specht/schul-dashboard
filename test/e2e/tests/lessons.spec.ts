@@ -68,3 +68,14 @@ test('Kursbuch ohne oder mit unbekanntem Kurs führt zur Startseite', async ({ p
     await expect(page).toHaveURL(/\/$/);
   }
 });
+
+// The lesson dialog asks every few seconds who is in the lesson's Jitsi room.
+// For a lesson that is over (or has no room today) that is no server error
+// but an empty answer – in the afternoon every earlier lesson was a 500.
+test('Jitsi-Anwesenheit einer Stunde ohne Raum: leere Antwort statt Serverfehler', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  // Clarke's Latin LK (src/example-data), a lesson that has no info and no room
+  const r = await page.request.post('/api/get_current_jitsi_users_for_lesson', { data: { lesson_key: 'LA-L108_11~12', offset: 99999 } });
+  expect(r.status()).toBe(200);
+  expect(await r.json()).toMatchObject({ lesson_room: [], breakout_rooms: [], no_room: true });
+});

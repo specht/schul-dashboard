@@ -250,6 +250,18 @@ behält sie.
 Ein Eintrag endet erst, wenn ihn keine Liste mehr braucht, die heute oder
 später gilt (der Entwurf zählt dabei mit).
 
+**Im Ausland** (`schueler/im-ausland.yaml`): Schüler:innen, die eine Zeit im
+Ausland sind und danach zurückkommen; die LUSD führt sie weiter in ihrer
+Klasse. Konto, Adresse und Nextcloud bleiben, aber bis zur Rückkehr stehen sie
+in keiner Klasse, keinem Kurs, keinem Verteiler, auf keinem Zeugnis und im
+Datentresor nicht. Mit einem Tag der Rückkehr (»Zurück ab«) sind sie an diesem
+Tag von selbst wieder dabei, ohne Datum erst mit »Wieder da«. In der
+Schülerliste der Klassenleitungen stehen sie mit dem Hinweis »im Ausland«.
+
+Das Dashboard liest seine Daten nur dann neu (etwa eine halbe Minute), wenn
+sich ändert, wer in welcher Klasse ist; Entscheidungen, die nur den Entwurf
+betreffen, zeigt der Vergleich sofort.
+
 **Entscheidungen im Vergleich:** Die Listen des Vergleichs haben Knöpfe für
 die häufigen Fälle:
 
@@ -262,6 +274,12 @@ die häufigen Fälle:
   die Klasse von Hand (`schueler/klassen-von-hand.yaml`, gilt für jeden
   Export, solange die LUSD keine bekannte Klasse liefert); »Nicht mehr da«
   wie bei *Neu*.
+
+Im Vergleich des Entwurfs zählen die Antworten der Klassenleitungen: Wen sie
+als neu bestätigt haben (»Stimmt«) und wessen Abgang sie bestätigt haben,
+steht nicht mehr in *Neu* und *Nicht mehr dabei*, sondern zugeklappt darunter
+(»… von der Klassenleitung bestätigt«). Widersprechen sie (etwa »nicht mehr
+an der Schule« für jemand Neues), steht ihre Antwort in der Zeile.
 
 Damit das Dashboard in das Daten-Repository schreiben darf, braucht es in
 `env.rb` `DATA_REPO_WRITABLE = true` (und `DATA_REPO_PUSH = true` zum

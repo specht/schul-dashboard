@@ -81,10 +81,6 @@
         });
     }
 
-    function open_count() {
-        return current_items().filter(is_open).length;
-    }
-
     // ---------- rows ----------
 
     function node(tag, cls, text) {
@@ -143,12 +139,21 @@
             if (item.avatar) avatar.style.backgroundImage = 'url(' + JSON.stringify(item.avatar) + ')';
             lead.appendChild(avatar);
             text.appendChild(node('b', 'pv-todo-title', item.title));
-            var state = item.answered ? 'beantwortet' : (item.hidden ? 'ausgeblendet' : null);
-            text.appendChild(facts([item.organizer, state, item.answered ? null : when_span(item)]));
+            text.appendChild(facts([item.organizer, item.answered ? 'beantwortet' : null, item.hidden ? 'ausgeblendet' : null,
+                item.answered ? null : when_span(item)]));
             var launch = button(item.answered ? 'Ändern' : 'Teilnehmen', 'bu-launch-poll' + (item.answered ? ' pv-todo-quiet' : ''));
             launch.setAttribute('data-poll-run-id', item.prid);
             if (item.answered) r.classList.add('pv-todo-done');
             actions.appendChild(launch);
+            // hide it, answered or not (shown again under »… anzeigen«)
+            if (!item.hidden) {
+                var hide = button('', 'pv-todo-quiet pv-todo-hide');
+                hide.appendChild(icon('eye-off'));
+                hide.setAttribute('aria-label', 'Umfrage ausblenden');
+                hide.setAttribute('title', 'Ausblenden');
+                hide.setAttribute('data-prid', item.prid);
+                actions.appendChild(hide);
+            }
         } else if (item.kind === 'deadline') {
             var info = DEADLINES[item.key] || [item.key, null];
             lead.appendChild(icon('hourglass'));
@@ -215,7 +220,6 @@
             pill.appendChild(node('span', null, label));
             el.appendChild(pill);
             last_expired = expired_count();
-            set_badges(open);
             return true;
         }
         var foldable = mode !== 'side' && rows.length > 2;
@@ -247,28 +251,7 @@
         }
         el.appendChild(list);
         last_expired = expired_count();
-        set_badges(open);
         return items.length > 0;
-    }
-
-    // the badges on "Stundenplan" (sidebar) and "Heute" (tab bar), as the
-    // server drew them on every page (include/start_todo.rb)
-    function set_badges(n) {
-        document.querySelectorAll('.pv-todo-badge').forEach(function (b) {
-            b.hidden = n === 0;
-            var num = b.querySelector('.pv-todo-badge-n');
-            if (num) num.textContent = String(n);
-            var link = b.closest('a');
-            if (link && link.getAttribute('title')) link.setAttribute('title', 'Stundenplan' + (n > 0 ? ' ' + n + ' offen' : ''));
-        });
-        var tab = document.querySelector(".pv-tabbar a.pv-tab[href='/']");
-        if (tab) {
-            var badge = tab.querySelector('.pv-badge');
-            if (n > 0) {
-                if (!badge) { badge = node('span', 'pv-badge'); tab.insertBefore(badge, tab.firstChild); }
-                badge.textContent = String(n);
-            } else if (badge) badge.remove();
-        }
     }
 
     function wanted_mode() {
@@ -293,7 +276,6 @@
         if (!mode || !render()) {
             if (el.parentNode) el.parentNode.removeChild(el);
             last_expired = expired_count();
-            set_badges(open_count());
             return;
         }
         if (mode === 'side') {
@@ -334,6 +316,14 @@
             render();
             var again = el.querySelector('.pv-todo-fold');
             if (again) again.focus();
+        } else if (t.classList.contains('pv-todo-hide')) {
+            t.disabled = true;
+            var prid = t.getAttribute('data-prid');
+            api_call('/api/hide_poll_run', { prid: prid }, function (d) {
+                if (!d.success) { t.disabled = false; return; }
+                (data.items || []).forEach(function (item) { if (item.kind === 'poll' && item.prid === prid) item.hidden = true; });
+                render();
+            });
         } else if (t.classList.contains('pv-todo-show-hidden')) {
             show_hidden = true;
             render();

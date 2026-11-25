@@ -442,6 +442,39 @@
     }
 
     // ------------------------------------------------------------------
+    // Tages-Designs (Jonas, 24.11.): ein eigener Look für den ganzen Monitor an bestimmten Tagen.
+    // Die Gestaltung steht in monitor_looks.css (Klasse look-<name> am body); hier kommen nur die
+    // Schmuck-Ebene hinter den Kacheln und die Abwechslung zwischen Holz- und Steinkacheln dazu.
+    // Nur im heutigen Monitor-Layout; das neue Layout (bandKante) hat sein eigenes Design.
+    const LOOKS = ['klotzchen'];
+    let lookName = '', lookDeko = null, lookFest = false;
+    // „Bewegung reduzieren“ am Rechner: keine Effekte und Storys, aber das Tages-Design (ruhig) bleibt
+    let reduziert = false;
+    function lookSetzen(name) {
+        if (opt.bandKante) return;
+        name = LOOKS.indexOf(name) >= 0 ? name : '';
+        if (name === lookName) return;
+        for (const c of Array.from(document.body.classList)) if (c.indexOf('look-') === 0 && c !== 'look-stein') document.body.classList.remove(c);
+        if (lookDeko) { lookDeko.remove(); lookDeko = null; }
+        for (const k of document.querySelectorAll(opt.kaesten)) k.classList.remove('look-stein');
+        lookName = name;
+        if (!name) return;
+        document.body.classList.add('look-' + name);
+        const el = document.createElement('div');
+        el.className = 'fx-look-deko';
+        const teile = ['<div class="lk-wolke lk-w1"></div>', '<div class="lk-wolke lk-w2"></div>', '<div class="lk-sonne"></div>', '<div class="lk-mond"></div>', '<div class="lk-boden"></div>'];
+        for (const [x, art] of [[2, ''], [6, 'holz'], [30, 'stein'], [34, ''], [62, 'holz'], [88, '']]) {
+            teile.push(`<div class="lk-wuerfel ${art}" style="left:${x}vw"><i class="o"></i><i class="l"></i><i class="r"></i></div>`);
+        }
+        for (const x of [12, 50, 78, 96]) teile.push(`<div class="lk-fackel" style="left:${x}vw"></div>`);
+        el.innerHTML = teile.join('');
+        buehne.insertBefore(el, cvH || buehne.firstChild);
+        // Stein und Holz im Wechsel
+        Array.from(document.querySelectorAll(opt.kaesten)).forEach((k, i) => k.classList.toggle('look-stein', i % 2 === 0));
+        lookDeko = el;
+    }
+
+    // ------------------------------------------------------------------
     // Ebenen, Größe, Kästen
 
     function ebenenAnlegen() {
@@ -12933,6 +12966,7 @@
 
     // Wendet an, was gerade gelten soll – startet und stoppt nur, was sich ändert
     function anwenden(soll) {
+        if (reduziert) { if (!lookFest) lookSetzen(soll.look || ''); return; }
         const w = soll.wetter ? `${soll.wetter.effekt}:${soll.wetter.staerke}:${soll.wetter.zeus ? 'zeus' : ''}:${soll.wetter.stufe || ''}` : '';
         const f = soll.fest ? `${soll.fest.fest}:${soll.fest.nah ? 1 : 0}` : '';
         if (w !== zustand.wetter) {
@@ -12951,6 +12985,7 @@
         }
         // Storys: in der Vorschau und im Test die gewählte immer wieder, im Schulhaus ab und zu
         storyEinmal = !!soll.storyEinmal;
+        if (!lookFest) lookSetzen(soll.look || '');
         storysSetzen(soll.story || (soll.storysPlan ? 'plan' : ''));
         // kein zusätzlicher Hinweis am Monitor (Wunsch Jonas): die Effekte sprechen für sich
         if (wetter || fest) schleifeStarten();
@@ -12982,6 +13017,7 @@
             return soll;
         }
         for (const name of text.split(',').map((s) => s.trim().toLowerCase())) {
+            if (LOOKS.indexOf(name) >= 0) soll.look = name;
             if (WETTER.indexOf(name) >= 0) soll.wetter = {effekt: name, staerke: staerke, titel: VORSCHAU_TITEL[name], bis: null, zeus: name === 'gewitter'};
             if (name === 'zeus') soll.wetter = {effekt: 'gewitter', staerke: staerke, titel: 'Schweres Gewitter mit Zeus', bis: null, zeus: true};
             if (FESTE.indexOf(name) >= 0) soll.fest = {fest: name, nah: true};
@@ -13050,7 +13086,7 @@
                 // Effekte und Storys haben je einen eigenen Schalter
                 const an = d.an !== false;
                 planSetzen(d.storyplan || [], d.jetzt_ms);
-                anwenden({wetter: an ? d.wetter || null : null, fest: an ? d.fest || null : null, story: d.story || null, storyEinmal: !!(testLauf && d.story), storysPlan: d.storys !== false});
+                anwenden({wetter: an ? d.wetter || null : null, fest: an ? d.fest || null : null, look: d.look || '', story: d.story || null, storyEinmal: !!(testLauf && d.story), storysPlan: d.storys !== false});
                 // direkt nach dem Start des Servers sind die Warnungen evtl. noch unterwegs
                 if (d.bereit === false) setTimeout(abfragen, 30 * 1000);
             })
@@ -13070,9 +13106,12 @@
             if (folgen) folgenStaerke = soll.staerke;
             vorschau = !!soll && !folgen;
             // Wer am Rechner „Bewegung reduzieren“ eingestellt hat, bekommt keine Effekte
-            if (!vorschau && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            reduziert = !vorschau && !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
             cssEinfuegen();
             ebenenAnlegen();
+            // Vorschau eines Tages-Designs: …/monitor?look=klotzchen (bleibt, bis die Seite neu lädt)
+            const lookWahl = new URLSearchParams(window.location.search).get('look');
+            if (lookWahl) { lookFest = true; lookSetzen(lookWahl); }
             if (vorschau && soll.rundgang) {
                 let i = 0;
                 anwenden(soll.rundgang[0]);

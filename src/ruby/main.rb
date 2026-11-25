@@ -910,11 +910,18 @@ class Main < Sinatra::Base
             end
         end
 
+        # which students this service has (address and class): a change of
+        # the Datenpflege that leaves them as they are needs no restart
+        @@loaded_students = Set.new
+        # abroad for a while (Datenpflege): the account stays, but no class,
+        # course, list, report card or birthday until the return date
+        abroad = Parser.abroad_now
         parser.parse_schueler do |record|
             unless KLASSEN_ORDER.include?(record[:klasse])
                 next
                 # raise "Klasse #{record[:klasse]} is included in KLASSEN_ORDER"
             end
+            @@loaded_students << [record[:email], record[:klasse]] unless abroad.include?(record[:email])
             @@user_info[record[:email]] = {
                 :teacher => false,
                 :first_name => record[:first_name],
@@ -939,6 +946,10 @@ class Main < Sinatra::Base
                 :geburtstag => record[:geburtstag],
                 :roles => Set.new([:schueler]),
             }
+            if abroad.include?(record[:email])
+                @@user_info[record[:email]][:abroad] = abroad[record[:email]]
+                next
+            end
             @@schueler_for_klasse[record[:klasse]] ||= []
             @@schueler_for_klasse[record[:klasse]] << record[:email]
             birthday = record[:geburtstag]
@@ -1355,6 +1366,8 @@ class Main < Sinatra::Base
             (@@user_info[a][:last_name].downcase <=> @@user_info[b][:last_name].downcase)
         end.each do |email|
             user = @@user_info[email]
+            # abroad: in no course until back
+            next if user[:abroad]
             lessons = nil
             if user_has_role(email, :teacher)
                 lessons = @@lessons_for_shorthand[user[:shorthand]].dup
@@ -1998,13 +2011,16 @@ class Main < Sinatra::Base
         # remembered before reading, so a change while starting isn't lost
         @@data_version = DataVersion.read
         @@data_schueler_path = Parser.schueler_path
+        # who is abroad today: back on their return date by itself
+        @@data_abroad = Parser.abroad_now.keys.sort
         @@data_loaded_at = Time.now
         self.collect_data() unless defined?(SKIP_COLLECT_DATA) && SKIP_COLLECT_DATA
         # long-running services start again when the data changes or another
         # dated student list becomes current (not scripts run with
         # ./config.rb exec)
         if ENV['DASHBOARD_SERVICE'] && ['puma', 'rackup'].include?(File.basename($0)) && DataVersion.restarts?
-            DataVersion.watch(@@data_version, state: -> { Parser.schueler_path }, known_state: @@data_schueler_path) { DataVersion.restart! }
+            DataVersion.watch(@@data_version, state: -> { [Parser.schueler_path, Parser.abroad_now.keys.sort] },
+                              known_state: [@@data_schueler_path, @@data_abroad]) { DataVersion.restart! }
         end
         @@ws_clients = {}
         @@color_scheme_info = {}
@@ -2611,7 +2627,7 @@ class Main < Sinatra::Base
             if user_logged_in?
                 unless external_user_logged_in?
                     # the new design: a badge with what is open (include/start_todo.rb)
-                    nav_items << ['/', "Stundenplan#{start_page_todo_nav_badge}", 'fa fa-calendar']
+                    nav_items << ['/', 'Stundenplan', 'fa fa-calendar']
                 end
                 if teacher_logged_in?
                     nav_items << :kurse

@@ -346,7 +346,9 @@ class Parser
     # translate_klasse: the class as WinSchule wrote it (ASCII.TXT), renamed
     # with fix_parsed_klasse and PARSE_KLASSE_TR; the dated lists from
     # /datenpflege already hold the dashboard's class names.
-    def handle_schueler_line(line, translate_klasse = true)
+    # lenient: an address that is too long doesn't stop the reading (where a
+    # list is only looked through, e.g. who it still has)
+    def handle_schueler_line(line, translate_klasse = true, lenient = false)
         line = line.encode('utf-8').strip
         parts = line.split("\t")
         # name particles behind the name, whatever form the list has (nachname.rb)
@@ -409,7 +411,7 @@ class Parser
             end
         end
         if email.sub('@' + SCHUL_MAIL_DOMAIN, '').size > 23
-            unless @use_mock_names
+            unless @use_mock_names || lenient
                 raise SchuelerLineError, "#{vorname} #{nachname}: E-Mail-Adresse zu lang (#{email}, höchstens 23 Zeichen vor dem @)"
             end
         end
@@ -499,6 +501,9 @@ class Parser
     #   { name, klasse, seit, notiz, by, at }. Left out of every list.
     MANUAL_ADDED_PATH = File.join(SCHUELER_DIR, 'zusaetzlich.yaml')
     MANUAL_GONE_PATH = File.join(SCHUELER_DIR, 'abgaenge.yaml')
+    # students abroad for a while (/datenpflege): they keep their account,
+    # but are in no class, course or list until their return date
+    MANUAL_ABROAD_PATH = File.join(SCHUELER_DIR, 'im-ausland.yaml')
 
     def self.read_yaml_hash(path)
         return {} unless File.exist?(path)
@@ -516,6 +521,17 @@ class Parser
     end
 
     NO_EXTRAS = { :added => {}, :gone => {} }.freeze
+
+    def self.schueler_abroad(dir = SCHUELER_DIR)
+        read_yaml_hash(File.join(dir, File.basename(MANUAL_ABROAD_PATH)))
+    end
+
+    # who is abroad on a day: an entry without a return date, or whose return
+    # date ('zurueck', the first day back) hasn't come yet
+    def self.abroad_now(today = Date.today, dir = SCHUELER_DIR)
+        day = today.strftime('%Y-%m-%d')
+        schueler_abroad(dir).select { |_, e| e.is_a?(Hash) && (e['zurueck'].to_s.empty? || e['zurueck'].to_s > day) }
+    end
 
     # the same person as in a list: last name, birthday and the first of the
     # first names, loosely (accents, case)
@@ -591,7 +607,7 @@ class Parser
     # keep_gone: yield the gone ones too, marked :gone (to recognise them in
     # an export that still lists them)
     def parse_schueler(list_path = nil, all_classes: false, translate_klasse: nil, overrides: Parser.schueler_overrides,
-                       extras: Parser.schueler_extras, keep_gone: false, &block)
+                       extras: Parser.schueler_extras, keep_gone: false, lenient: false, &block)
 #         debug "Parsing schueler..."
         # create reproducible passwords while parsing SuS
 
@@ -611,7 +627,7 @@ class Parser
             f.each_line do |line|
                 next if line.strip[0] == '#' || line.strip.empty?
 
-                record = handle_schueler_line(line, translate_klasse.nil? ? !Parser.dated_schueler_list?(path) : translate_klasse)
+                record = handle_schueler_line(line, translate_klasse.nil? ? !Parser.dated_schueler_list?(path) : translate_klasse, lenient)
                 listed_emails << record[:email]
                 listed_people << Parser.manual_person_key(record[:last_name], record[:official_first_name], record[:geburtstag])
                 if gone.include?(record[:email])

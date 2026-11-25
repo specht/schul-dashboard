@@ -467,7 +467,8 @@ class Main < Sinatra::Base
         # the picture in the day's header (and in "Mehr"), the search an icon there
         tabs = []
         unless external_user_logged_in?
-            tabs << ['/', 'Heute', 'fa-calendar', start_page_todo_count]
+            # no count of what is open: »Zu erledigen« is on the page itself
+            tabs << ['/', 'Heute', 'fa-calendar', nil]
             tabs << ['/#woche', 'Woche', 'fa-th', nil]
         end
         tabs << ['/#aufgaben', 'Aufgaben', 'fa-check-square-o', nil] if schueler_logged_in?

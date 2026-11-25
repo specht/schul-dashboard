@@ -636,9 +636,18 @@ class Main < Sinatra::Base
     end
 
     # [subject, text] of the mail to one teacher
+    # the mail's text as HTML: paragraphs, the addresses as links
+    def schuelerliste_mail_html(text)
+        text.strip.split(/\n{2,}/).map do |para|
+            html = CGI.escapeHTML(para.strip).gsub(%r{https?://[^\s<]+}) { |u| "<a href=\"#{u}\">#{u}</a>" }.gsub("\n", "<br>\n")
+            "<p>#{html}</p>"
+        end.join("\n")
+    end
+
     def schuelerliste_notify_mail(email, klassen, deadline)
         teacher = @@user_info[email] || {}
-        sender = @session_user[:display_name] || @session_user[:email]
+        name = teacher[:first_name] || teacher[:display_name]
+        greeting = { 'w' => 'Liebe', 'm' => 'Lieber' }[teacher[:geschlecht]] || 'Hallo'
         links = klassen.map { |k| "#{schuelerliste_label(k)}: #{WEB_ROOT}/schuelerliste?klasse=#{CGI.escape(k)}" }
         lks = klassen.count { |k| schuelerliste_lk?(k) }
         classes = klassen.size - lks
@@ -646,9 +655,9 @@ class Main < Sinatra::Base
                 lks > 0 ? (lks == 1 ? 'deinen Leistungskurs' : 'deine Leistungskurse') : nil].compact.join(' und ')
         lk_note = lks > 0 ? "\n#{SCHUELERLISTE_LK_NOTE}\n" : ''
         body = <<~END_OF_TEXT
-            Hallo #{teacher[:first_name] || teacher[:display_name]},
+            #{greeting} #{name},
 
-            wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer neu dazukommt und wer geht.
+            wir bereiten eine neue Schülerliste aus der Schulverwaltung (LUSD) vor. Bevor sie ins Dashboard kommt, prüf bitte, ob für #{what} alles stimmt: Namen, Geschlecht, Geburtstag, Bildungsgang, wer noch in der Liste fehlt und wer entgegen der Liste nicht mehr an der Schule ist – wir korrigieren diese Angaben dann anschließend in der LUSD.
             #{lk_note}
             #{links.join("\n")}
 
@@ -656,8 +665,10 @@ class Main < Sinatra::Base
 
             Was sich gegenüber dem Dashboard geändert hat, ist markiert: dort genügt »Stimmt« oder eine kurze Korrektur. Die übrigen Zeilen bitte einmal durchsehen, zum Schluss »Liste bestätigen«.#{deadline ? " Bitte bis #{deadline.strftime('%d.%m.%Y')}." : ''}
 
-            Viele Grüße
-            #{sender}
+            Falls du Fragen hast, schreib mir bitte.
+
+            Danke und viele Grüße
+            Micha
         END_OF_TEXT
         subject = classes > 0 && lks == 0 ? 'Bitte prüf die neue Schülerliste deiner Klasse' :
                   (classes == 0 ? 'Bitte prüf die neue Schülerliste deiner Leistungskurse' : 'Bitte prüf die neue Schülerliste deiner Klasse und Leistungskurse')
@@ -693,13 +704,25 @@ class Main < Sinatra::Base
         plan = schuelerliste_notify_plan(view)
         reply = @session_user[:email]
         plan[:by_teacher].each_pair do |email, klassen|
-            subject_text, body = schuelerliste_notify_mail(email, klassen, deadline)
-            deliver_mail(body) do
+            subject_text, plain_text = schuelerliste_notify_mail(email, klassen, deadline)
+            html_text = schuelerliste_mail_html(plain_text)
+            # the text as written, and as HTML with links to click; answers
+            # go to whoever sent it
+            mail = Mail.new do
                 to email
                 from SMTP_FROM
                 reply_to reply
                 subject subject_text
+                html_part do
+                    content_type 'text/html; charset=UTF-8'
+                    body html_text
+                end
+                text_part do
+                    content_type 'text/plain; charset=UTF-8'
+                    body plain_text
+                end
             end
+            deliver_with_development_guard!(mail)
         end
         plan[:open].each do |klasse|
             next if schuelerliste_teachers(klasse).empty?
@@ -925,9 +948,11 @@ class Main < Sinatra::Base
                 "<strong>#{done}</strong> von <strong>#{needed.size}</strong> markierten Zeilen geprüft#{unchanged > 0 ? ", <span class='sl-unchanged'>#{unchanged} unverändert</span>" : ''}"
             io.puts "<p class='sl-progress'>#{progress}#{lk ? ", <strong class='sl-tutor-count'>#{with_tutor}</strong> mit Tutor:in" : ''}</p>"
             io.puts "<p class='sl-legend'><span class='sl-badge sl-badge-added'>+ neu</span> kommt dazu <span class='sl-badge sl-badge-removed'>− geht</span> verlässt die Klasse <span class='dp-old'>bisher</span> <span class='dp-new'>neu</span> geändert <span class='sl-fix'>neuer Wert</span> Korrektur</p>"
-            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
+            io.puts "<div class='sl-scroll'><table class='table sl-table'><thead><tr><th class='sl-head'>Name</th><th class='sl-nr'>Nr.</th><th>Nachname</th><th>Rufname</th><th>Vornamen</th><th>Geschlecht</th><th>Geburtstag</th><th>Bildungsgang</th>#{lk ? '<th>Tutor:in</th>' : ''}<th></th></tr></thead><tbody>"
             gender = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
-            v[:students].each do |s|
+            abroad = Parser.abroad_now
+            # numbered: who is missing is easier to see
+            v[:students].each_with_index do |s, nr|
                 # the changes against today in their column, like a diff: what
                 # goes struck through on red, what comes on green
                 ch = s[:changes].to_h { |what, from, to| [what, [from, to]] }
@@ -937,6 +962,10 @@ class Main < Sinatra::Base
                 badges << "<span class='sl-badge sl-badge-added'>+ neu</span>" if s[:new] && !s[:new_address]
                 badges << "<span class='sl-badge sl-badge-added'>+ aus #{sl_h(tr_klasse(s[:from]))}</span>" if s[:from]
                 badges << "<span class='sl-badge'>neue Adresse</span>" if s[:new_address]
+                if (away = abroad[s[:key]])
+                    back = (Date.parse(away['zurueck'].to_s).strftime('%d.%m.%Y') rescue nil)
+                    badges << "<span class='sl-badge sl-badge-abroad'>im Ausland#{back ? ", zurück ab #{back}" : ''}</span>"
+                end
                 badges_html = badges.empty? ? '' : "<div class='sl-badges'>#{badges.join(' ')}</div>"
                 g = ->(x) { gender[x] || x }
                 gender_html = ch['Geschlecht'] ? diff.(g.(ch['Geschlecht'][0]), g.(ch['Geschlecht'][1])) : sl_h(g.(s[:geschlecht]))
@@ -945,7 +974,8 @@ class Main < Sinatra::Base
                 row_class = (s[:new] || s[:from]) ? 'sl-row-added' : (ch.empty? ? '' : 'sl-row-changed')
                 io.puts "<tr class='sl-row #{row_class}' data-student='#{sl_h(s[:key])}' data-values='#{sl_h({ 'rufname' => s[:first_name], 'nachname' => Nachname.anzeige(s[:last_name]), 'vornamen' => s[:official_first_name], 'geschlecht' => s[:geschlecht], 'geburtstag' => s[:geburtstag], 'klasse' => s[:klasse], 'bildungsgang' => s[:bildungsgang] }.to_json)}'>"
                 # the name as a heading where the row becomes a card (phones)
-                io.puts "<td class='sl-head'><div class='sl-name'>#{sl_h(s[:name])}</div>#{badges_html}</td>"
+                io.puts "<td class='sl-head'><div class='sl-name'><span class='sl-head-nr'>#{nr + 1}.</span> #{sl_h(s[:name])}</div>#{badges_html}</td>"
+                io.puts "<td class='sl-nr'>#{nr + 1}.</td>"
                 io.puts "<td class='sl-nachname'>#{cell.('Nachname', Nachname.anzeige(s[:last_name]))}#{badges_html}</td>"
                 io.puts "<td class='sl-rufname'>#{cell.('Rufname', s[:first_name])}</td><td class='sl-vornamen'>#{cell.('Vornamen', s[:official_first_name])}</td>"
                 io.puts "<td>#{gender_html}</td><td>#{birthday_html}</td><td>#{bildungsgang_html}</td>"
@@ -1038,7 +1068,8 @@ class Main < Sinatra::Base
     # an der Schule«, the note) across the columns in a row of its own. Or
     # that the row changed since it was checked.
     # columns: the field of each column, nil for a column without one
-    SCHUELERLISTE_COLUMNS = [nil, 'nachname', 'rufname', 'vornamen', 'geschlecht', 'geburtstag', 'bildungsgang', nil]
+    # (:nr the number of the row, empty in a correction row)
+    SCHUELERLISTE_COLUMNS = [nil, :nr, 'nachname', 'rufname', 'vornamen', 'geschlecht', 'geburtstag', 'bildungsgang', nil]
     SCHUELERLISTE_GENDER_LABELS = { 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }
 
     def schuelerliste_note_rows(check, valid, row_class, columns, taken = false)
@@ -1051,7 +1082,7 @@ class Main < Sinatra::Base
         return '' unless check && check[:status] == 'correction'
         fields = check[:fields] || {}
         dashboard_only = check[:dashboard_only] || []
-        in_columns = fields.keys & columns.compact
+        in_columns = fields.keys & columns.compact.grep(String)
         rows = +''
         unless in_columns.empty?
             cells = columns.each_with_index.map do |field, i|
@@ -1068,7 +1099,7 @@ class Main < Sinatra::Base
                 elsif i == columns.size - 1
                     "<td class='sl-fix-label'>#{taken ? 'Korrektur übernommen' : 'Korrektur'}#{schuelerliste_by_other(check)}</td>"
                 else
-                    "<td#{i == 0 ? " class='sl-head'" : ''}></td>"
+                    "<td#{i == 0 ? " class='sl-head'" : (field == :nr ? " class='sl-nr'" : '')}></td>"
                 end
             end
             rows << tr.(cells.join)

@@ -5,8 +5,8 @@
 #   the library needs back, deadlines of the Datentresor and the hint about
 #   the Authenticator app – from the same queries as the panels of today's
 #   design (start_page_panels_html in include/user.rb), as data for the page.
-#   A badge on "Stundenplan" (sidebar) and "Heute" (tab bar) counts what is
-#   open, on every page.
+#   No badge on "Stundenplan" / "Heute": the list is on the page itself.
+#   Every poll can be hidden there (answered or not).
 # - The Datentresor hotline (admins with the role datentresor_hotline): a
 #   request means someone is waiting on the phone right now, so it is a bar
 #   on every page (preview/hotline.js). Releasing stays exactly as it was:
@@ -86,14 +86,6 @@ class Main < Sinatra::Base
     rescue StandardError => e
         debug "start_page_todo_count: #{e}"
         0
-    end
-
-    # the badge on "Stundenplan" in the sidebar (main.rb, nav_items); always
-    # there in the new design, hidden at 0, so that the start page can update it
-    def start_page_todo_nav_badge
-        return '' unless ui_preview?
-        count = start_page_todo_count
-        "<span class='pv-nav-badge pv-todo-badge'#{count > 0 ? '' : ' hidden'}><span class='pv-todo-badge-n'>#{count}</span><span class='sr-only'> offen</span></span>"
     end
 
     # timetable.html: the data and the script, only in the new design

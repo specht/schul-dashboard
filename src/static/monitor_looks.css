@@ -1,0 +1,102 @@
+/* Tages-Designs für den Flur-Monitor (src/static/monitor_effekte.js, lookSetzen).
+   Jedes Design hängt an einer Klasse am <body> (look-<name>). Alles hier ist eigene Gestaltung:
+   keine Namen, Figuren, Schriften, Texturen oder Bilder aus Spielen oder Filmen. Die Schrift bleibt
+   die normale des Monitors, damit der Vertretungsplan aus der Entfernung lesbar bleibt. */
+
+/* ------------------------------------------------------------------
+   Klötzchen-Tag: Holz- und Steinkacheln aus groben Pixelquadraten, viereckige Schilder, Gras und Erde */
+
+body.look-klotzchen .embed-responsive-item {
+    background: linear-gradient(#5aa9e6 0, #8fcdf5 60%, #b9e3fa 100%) !important;
+}
+body.look-klotzchen .klasse {
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    border-radius: 0;
+    border: .28vw solid #3b2713;
+    color: #2b1a0a;
+    background:
+        conic-gradient(rgba(0,0,0,.05) 25%, transparent 0 50%, rgba(255,255,255,.05) 0 75%, transparent 0) 0 0 / 1.1vw 1.1vw,
+        #d2b27a;
+    box-shadow: inset .3vw .3vw 0 rgba(255,255,255,.34), inset -.3vw -.3vw 0 rgba(0,0,0,.28);
+    transition: none;
+}
+body.look-klotzchen .klasse.look-stein {
+    background:
+        conic-gradient(rgba(0,0,0,.07) 25%, transparent 0 50%, rgba(255,255,255,.08) 0 75%, transparent 0) 0 0 / .9vw .9vw,
+        #b5b5b5;
+}
+body.look-klotzchen .klasse.highlight {
+    background: conic-gradient(rgba(0,0,0,.08) 25%, transparent 0 50%, rgba(255,255,255,.2) 0 75%, transparent 0) 0 0 / 1.1vw 1.1vw, #f2c230;
+    transition: none;
+}
+/* Die Schrift bleibt innerhalb des Feldes (Jonas, 24.11.): Feldgröße und Tabelle wie im normalen Monitor; die Tabelle läuft
+   innerhalb von Rand und Kante, und Zeilen, die oben oder unten angeschnitten sind, blenden weich aus statt abgeschnitten zu wirken. */
+body.look-klotzchen .main .klasse .content {
+    top: .1vw; bottom: .1vw; left: 1.75vw; right: .3vw;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 .5vw, #000 calc(100% - .5vw), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 .5vw, #000 calc(100% - .5vw), transparent 100%);
+}
+body.look-klotzchen .main .klasse .content table { margin-top: .5vw; }
+/* Lesbarkeit (Jonas, 24.11.): die Schrift im Plan bekommt einen weißen Rahmen, damit sie auf Holz und Stein klar steht */
+body.look-klotzchen .klasse .content {
+    text-shadow: .13vw 0 0 #fff, -.13vw 0 0 #fff, 0 .13vw 0 #fff, 0 -.13vw 0 #fff,
+                 .1vw .1vw 0 #fff, -.1vw -.1vw 0 #fff, .1vw -.1vw 0 #fff, -.1vw .1vw 0 #fff;
+}
+/* die durchgestrichenen alten Werte ohne Rahmen: sonst überdeckt er die dünne Linie und es wirkt verschmiert */
+body.look-klotzchen .klasse .content s { text-shadow: none; color: #5a4630; opacity: .8; }
+/* Klassenschild: viereckiges Holzschild mit Nagel statt des runden Kiesels */
+body.look-klotzchen .klasse > h3 {
+    border-radius: 0;
+    background: #e8d3a0;
+    border: .22vw solid #3b2713;
+    color: #3b1a05;
+    box-shadow: inset .2vw .2vw 0 rgba(255,255,255,.6), inset -.2vw -.2vw 0 rgba(0,0,0,.25);
+}
+body.look-klotzchen .klasse > h3::after {
+    content: ""; position: absolute; left: 50%; top: -.05vw; width: .5vw; height: .5vw; margin-left: -.25vw; background: #7d8790;
+}
+/* Laufschrift als Holzbalken */
+body.look-klotzchen .ticker,
+body.look-klotzchen .ticker.ticker-photo-bg {
+    background: repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 .3vw, transparent .3vw 1.5vw), #8a5a2b !important;
+    border: .3vw solid #3b2713;
+    box-shadow: inset .3vw .3vw 0 rgba(255,255,255,.25), inset -.3vw -.3vw 0 rgba(0,0,0,.3);
+}
+body.look-klotzchen .ticker .ticker-message,
+body.look-klotzchen .ticker-photo-bg .ticker-message {
+    color: #fff4d6;
+    text-shadow: none;
+}
+
+/* Hintergrund-Schmuck (wird von monitor_effekte.js als eigene Ebene hinter die Kacheln gesetzt) */
+.fx-look-deko { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; pointer-events: none; }
+.fx-look-deko > * { position: absolute; }
+.fx-look-deko .lk-wolke { background: #fff; opacity: .92; box-shadow: 0 .6vw 0 #dfeaf2; }
+.fx-look-deko .lk-wolke::before, .fx-look-deko .lk-wolke::after { content: ""; position: absolute; background: #fff; }
+.fx-look-deko .lk-w1 { left: 8vw; top: 1.6vw; width: 10vw; height: 1.6vw; }
+.fx-look-deko .lk-w1::before { left: 1.6vw; top: -1.3vw; width: 5.6vw; height: 1.3vw; }
+.fx-look-deko .lk-w1::after { left: 4vw; top: -2.2vw; width: 2.4vw; height: .9vw; }
+.fx-look-deko .lk-w2 { left: 62vw; top: .9vw; width: 11vw; height: 1.6vw; }
+.fx-look-deko .lk-w2::before { left: 2.4vw; top: -1.3vw; width: 6.4vw; height: 1.3vw; }
+.fx-look-deko .lk-sonne { right: 2.6vw; top: .6vw; width: 2.8vw; height: 2.8vw; background: #ffe45e; box-shadow: 0 0 0 .4vw #ffd21f, 0 0 0 .8vw rgba(255,226,94,.45); }
+.fx-look-deko .lk-mond { left: 44vw; top: 1vw; width: 1.9vw; height: 1.9vw; background: #eef2f6; box-shadow: inset -.55vw 0 0 #cfd8e0, 0 0 .5vw rgba(255,255,255,.7); opacity: .85; }
+.fx-look-deko .lk-boden { left: 0; right: 0; bottom: 0; height: 6.8vw;
+    background: repeating-linear-gradient(90deg, #6b4423 0 1vw, #7a4f2a 1vw 2vw); }
+.fx-look-deko .lk-boden::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2vw;
+    background: repeating-linear-gradient(90deg, #5fb43a 0 1vw, #55a533 1vw 2vw); border-top: .25vw solid #8fd460; box-shadow: inset 0 -.5vw 0 #3f8a28; }
+.fx-look-deko .lk-boden::after { content: ""; position: absolute; left: 0; right: 0; top: 2vw; bottom: 0;
+    background:
+        radial-gradient(circle, rgba(0,0,0,.18) .25vw, transparent .26vw) 0 0 / 2vw 2vw,
+        radial-gradient(circle, rgba(255,255,255,.08) .2vw, transparent .21vw) 1vw 1vw / 2vw 2vw; }
+/* Würfel mit drei Schattierungen */
+.fx-look-deko .lk-wuerfel { bottom: 6.5vw; width: 3.4vw; height: 3.4vw; }
+.fx-look-deko .lk-wuerfel i { position: absolute; display: block; }
+.fx-look-deko .lk-wuerfel .o { left: 0; top: 0; width: 3.4vw; height: 1.45vw; background: #6dc548; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.fx-look-deko .lk-wuerfel .l { left: 0; top: .72vw; width: 1.7vw; height: 2vw; background: #7a4f2a; clip-path: polygon(0 0, 100% 50%, 100% 100%, 0 50%); }
+.fx-look-deko .lk-wuerfel .r { left: 1.7vw; top: .72vw; width: 1.7vw; height: 2vw; background: #5e3a1c; clip-path: polygon(0 50%, 100% 0, 100% 50%, 0 100%); }
+.fx-look-deko .lk-wuerfel.holz .o { background: #c9a566; } .fx-look-deko .lk-wuerfel.holz .l { background: #a5803f; } .fx-look-deko .lk-wuerfel.holz .r { background: #84632d; }
+.fx-look-deko .lk-wuerfel.stein .o { background: #bdbdbd; } .fx-look-deko .lk-wuerfel.stein .l { background: #8f8f8f; } .fx-look-deko .lk-wuerfel.stein .r { background: #6f6f6f; }
+/* Fackel */
+.fx-look-deko .lk-fackel { bottom: 6.3vw; width: .6vw; height: 2.6vw; background: #6b4423; border: .1vw solid #3b2713; }
+.fx-look-deko .lk-fackel::before { content: ""; position: absolute; left: -.22vw; top: -1.3vw; width: 1vw; height: 1.3vw; background: #ffb321;
+    box-shadow: inset .22vw .22vw 0 #ffe45e, 0 0 1.4vw .5vw rgba(255,190,60,.55); }

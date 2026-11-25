@@ -7,7 +7,7 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 
 const EFFEKTE = ['schnee', 'regen', 'gewitter', 'hitze', 'sturm', 'glatteis', 'frost',
   'weihnachten', 'nikolaus', 'ostern', 'valentinstag', 'fasching', 'sommerferien', 'schulanfang',
-  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug', 'brand', 'kran', 'bienen', 'diebstahl', 'brom', 'ballspiel', 'strom', 'schatz', 'umzug', 'graffiti', 'rundgang'];
+  'adventskonzert', 'forschertag', 'roehre', 'kiesel', 'rohrbruch', 'gondel', 'spinne', 'schief', 'taube', 'maus', 'raupe', 'ballon', 'blasen', 'heissluft', 'ufo', 'abflug', 'brand', 'kran', 'bienen', 'diebstahl', 'brom', 'ballspiel', 'strom', 'schatz', 'umzug', 'graffiti', 'klotzchen', 'rundgang'];
 
 for (const effekt of EFFEKTE) {
   test(`Monitor-Effekt ${effekt}: läuft hinter den Kästen, die Einträge bleiben lesbar`, async ({ page }) => {
@@ -178,6 +178,60 @@ test('Monitor-Effekte: Schultermin eintragen, Forschertag mit drei Tagen, wieder
   await expect(liste).not.toContainText('E2E-Forschertage');
 });
 
+test('Monitor-Effekte: Tages-Design eintragen, gilt heute, Vorschau zeigt den Look, wieder löschen', async ({ page }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/manage_monitor');
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const heute = new Date();
+  const gestern = new Date(heute.getTime() - 86400000), morgen = new Date(heute.getTime() + 86400000);
+  const form = page.getByTestId('monitor-look-form');
+  await expect(form).toBeVisible();
+  await expect(form.locator('.ti_fx_look_design')).toHaveValue('klotzchen');
+  await form.locator('.ti_fx_look_datum').fill(iso(gestern));
+  await form.locator('.ti_fx_look_bis').fill(iso(morgen));
+  await form.locator('.bu_fx_look_eintragen').click();
+  const liste = page.getByTestId('monitor-look-termine');
+  await expect(liste).toContainText('Klötzchen-Tag');
+  const stand = await (await page.request.get('/api/monitor_effekte')).json();
+  expect(stand.look).toBe('klotzchen');
+  expect(stand.look_termine.length).toBe(1);
+  // the preview window shows the look, the real monitors stay as they are
+  await page.locator('.bu_fx_look_vorschau').click();
+  await expect(page.locator('.if_monitor_vorschau')).toHaveAttribute('src', '/monitor?effekt=klotzchen');
+  // on the monitor itself the look is switched on for the day (no preview parameter needed)
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/monitor');
+  await expect(page.locator('body')).toHaveClass(/look-klotzchen/, { timeout: 15000 });
+  // entering and deleting a day while a monitor is running: it switches in place, without reloading the page
+  await page.evaluate(() => { (window as any).__nichtNeuGeladen = true; });
+  await page.request.post('/api/delete_monitor_look_termin', { data: { id: stand.look_termine[0].id } });
+  await expect(page.locator('body')).not.toHaveClass(/look-klotzchen/, { timeout: 20000 });
+  await expect(page.locator('.fx-look-deko')).toHaveCount(0);
+  await page.request.post('/api/add_monitor_look_termin', { data: { look: 'klotzchen', datum: iso(heute), bis: '' } });
+  await expect(page.locator('body')).toHaveClass(/look-klotzchen/, { timeout: 20000 });
+  expect(await page.evaluate(() => (window as any).__nichtNeuGeladen)).toBe(true);
+  // the entry of today stays: look it up again for the clean-up below
+  stand.look_termine = (await (await page.request.get('/api/monitor_effekte')).json()).look_termine;
+  await expect(page.locator('.fx-look-deko')).toHaveCount(1);
+  await expect(page.locator('.klasse.look-stein').first()).toBeVisible();
+  // the writing stays the monitor's normal one
+  const schrift = await page.locator('.main .klasse').first().evaluate((e) => getComputedStyle(e).fontFamily);
+  expect(schrift).not.toMatch(/monospace/i);
+  // date range is checked
+  await page.goto('/manage_monitor');
+  await form.locator('.ti_fx_look_datum').fill(iso(morgen));
+  await form.locator('.ti_fx_look_bis').fill(iso(gestern));
+  await form.locator('.bu_fx_look_eintragen').click();
+  await expect(page.locator('.fx-look-fehler')).toBeVisible();
+  // delete again
+  await liste.locator('li', { hasText: 'Klötzchen-Tag' }).locator('.bu_fx_look_loeschen').click();
+  await expect(liste).not.toContainText('Klötzchen-Tag');
+  expect((await (await page.request.get('/api/monitor_effekte')).json()).look).toBeNull();
+  await page.goto('/monitor');
+  await expect(page.locator('.klasse').first()).toBeVisible();
+  await expect(page.locator('body')).not.toHaveClass(/look-klotzchen/);
+});
+
 test('Monitor-Effekte: nur für Monitore und Monitor-Verwaltung', async ({ page }) => {
   await login(page, ACCOUNTS.schueler);
   expect((await page.request.get('/api/monitor_effekte')).status()).not.toBe(200);
@@ -185,6 +239,8 @@ test('Monitor-Effekte: nur für Monitore und Monitor-Verwaltung', async ({ page 
   expect((await page.request.post('/api/set_monitor_storys', { data: { an: 'nein' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/set_monitor_story_pausen', { data: { pausen: '' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/set_monitor_story_an', { data: { story: 'brom', an: 'nein' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/add_monitor_look_termin', { data: { look: 'klotzchen', datum: '2099-01-01' } })).status()).not.toBe(200);
+  expect((await page.request.post('/api/delete_monitor_look_termin', { data: { id: 'x' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/add_monitor_schultermin', { data: { datum: '2099-01-01', motiv: 'adventskonzert' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/delete_monitor_schultermin', { data: { id: 'x' } })).status()).not.toBe(200);
   expect((await page.request.post('/api/monitor_effekte_test', { data: { effekt: 'sturm' } })).status()).not.toBe(200);

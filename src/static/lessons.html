@@ -343,10 +343,6 @@ var tablet_set_info = #{@@tablet_sets.to_json};#{lessons_preview_js(show_lesson_
                             <button id='ti_lesson_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Aufgaben im Nextcloud-Ordner. Der Link zum Ordner wird automatisch bereitgestellt.</span>
                         </div>
-                        <div class='button-with-label'>
-                            <button id='ti_lesson_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Lernraum</button>
-                            <span>Es befinden sich Aufgaben im Lernraum.</span>
-                        </div>
                     </div>
                     <hr />
                     <div class="form-group">
@@ -375,10 +371,6 @@ var tablet_set_info = #{@@tablet_sets.to_json};#{lessons_preview_js(show_lesson_
                         <div class='button-with-label'>
                             <button id='ti_homework_nc' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Nextcloud</button>
                             <span>Es befinden sich Hausaufgaben im Nextcloud-Ordner.</span>
-                        </div>
-                        <div class='button-with-label'>
-                            <button id='ti_homework_lr' data-state='off' class='btn_lesson_data btn btn-sm btn-outline-secondary' disabled><i class='fa fa-times'></i>&nbsp;&nbsp;Lernraum</button>
-                            <span>Es befinden sich Hausaufgaben im Lernraum.</span>
                         </div>
                     </div>
                     <hr />
@@ -497,7 +489,7 @@ var cursor = null;
 var force_pending_changes = false;
 var pending_changes = false;
 var data_keys = ['thema', 'notizen', 'hausaufgaben_text', 'ha_amt_text', 'stundenthema_text', 'homework_est_time'];
-var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'lesson_lr', 'homework_nc', 'homework_lr', 'lesson_fixed'];
+var data_keys_bools = ['lesson_jitsi', 'lesson_nc', 'homework_nc', 'lesson_fixed'];
 var can_select = false;
 
 function sanitize_breakout_room_config(config) {
@@ -941,10 +933,6 @@ function update_table() {
                     cell.append($('<span>').addClass('bv').html('NC'));
                     printed_something = true;
                 }
-                if (((lesson_data[i] || {}).info || {}).homework_lr) {
-                    printed_something = true;
-                    cell.append($('<span>').addClass('bv').html('LR'));
-                }
                 let parts = [];
                 parts.push(((lesson_data[i] || {}).info || {})[key] || '');
                 parts.push(((lesson_data[i] || {}).info || {})['ha_amt_text'] || '');
@@ -999,10 +987,6 @@ function update_table() {
         }
         if (((lesson_data[i] || {}).info || {}).lesson_nc) {
             cell.append($('<span>').addClass('bv').html('NC'));
-            wrote_something = true;
-        }
-        if (((lesson_data[i] || {}).info || {}).lesson_lr) {
-            cell.append($('<span>').addClass('bv').html('LR'));
             wrote_something = true;
         }
         if (!wrote_something)

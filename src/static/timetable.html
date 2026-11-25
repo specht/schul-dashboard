@@ -795,7 +795,6 @@ function preview_agenda_fill_day(box, day, all, now, open) {
         if (data.stundenthema_text) marks.append($('<span>').addClass('pv-ag-mark pv-ag-topic').append($('<i>').addClass('fa fa-info-circle'), $('<span>').text(data.stundenthema_text)));
         if (data.hausaufgaben_text) marks.append($('<span>').addClass('pv-ag-mark').text('HA'));
         if (data.lesson_nc || data.homework_nc) marks.append($('<span>').addClass('pv-ag-mark').text('NC'));
-        if (data.lesson_lr || data.homework_lr) marks.append($('<span>').addClass('pv-ag-mark').text('LR'));
         if (per_user.text_comments || per_user.audio_comments) marks.append($('<span>').addClass('pv-ag-mark').append($('<i>').addClass('fa fa-comment')));
         if (marks.children().length > 0) card.append(marks);
         if (running) {
@@ -2522,8 +2521,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (event_data.lesson_nc || event_data.homework_nc)
                     markers.append($('<span>').addClass('mute').html('NC'));
-                if (event_data.lesson_lr || event_data.homework_lr)
-                    markers.append($('<span>').addClass('mute').html('LR'));
                 if (event_data.hausaufgaben_text) {
                     if ((per_user.homework_feedback || {}).short_state)
                         markers.append($('<span>').text('HA ' + per_user.homework_feedback.short_state));
@@ -3011,7 +3008,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 body.append(p);
                 wrote_something = true;
             }
-            if (event_data.lesson_jitsi || event_data.lesson_nc || event_data.lesson_lr) {
+            if (event_data.lesson_jitsi || event_data.lesson_nc) {
                 if (event_data.lesson_jitsi) {
                     let p = $('<p>');
                     p.append('Für diese Unterrichtsstunde wird ein Jitsi Meet-Stream bereitgestellt. ');
@@ -3070,25 +3067,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
-                let parts = [];
                 if (event_data.lesson_nc)
-                    parts.push('in der Nextcloud');
-                if (event_data.lesson_lr)
-                    parts.push('im Lernraum');
-                let first = parts.slice(0, parts.length - 1).join(', ');
-                let second = [parts[parts.length - 1]];
-                if (first.length > 0)
-                    second.unshift(first);
-                if (event_data.lesson_nc || event_data.lesson_lr) {
-                    let label = second.join(' und ');
-                    body.append('<p>Es befindet sich Unterrichtsmaterial ' + label + '.</p>');
-                }
+                    body.append('<p>Es befindet sich Unterrichtsmaterial in der Nextcloud.</p>');
                 if (event_data.lesson_nc) {
                     body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                     body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                 }
-                if (event_data.lesson_lr)
-                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                 wrote_something = true;
             }
             if (teacher_tablet_logged_in || klassenraum_logged_in) {
@@ -3114,7 +3098,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
-            if (event_data.hausaufgaben_text || event_data.homework_nc || event_data.homework_lr) {
+            if (event_data.hausaufgaben_text || event_data.homework_nc) {
                 if (wrote_something)
                     body.append('<hr>');
                 body.append('<p><b>Hausaufgaben</b> (zu heute)</p>');
@@ -3125,8 +3109,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     body.append($('<a>').attr('href', nc_ausgabe_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Ausgabe-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                     body.append($('<a>').attr('href', nc_einsammel_link).attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-nextcloud'></i>&nbsp;&nbsp;Zum Einsammel-Ordner&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                 }
-                if (event_data.homework_lr)
-                    body.append($('<a>').attr('href', 'https://www.lernraum-berlin.de/').attr('target', '_blank').addClass('btn').addClass('btn-primary').css('margin-right', '5px').css('margin-bottom', '5px').html("<i class='fa fa-external-link'></i>&nbsp;&nbsp;Zum Lernraum&nbsp;&nbsp;<i class='fa fa-angle-double-right'></i>"));
                 if (per_user.homework_feedback)
                 {
                     let parts = [];

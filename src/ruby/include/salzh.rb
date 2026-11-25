@@ -412,7 +412,7 @@ class Main < Sinatra::Base
                     io.puts "<div class='col-lg-12 col-md-4 col-sm-6'>"
                     io.puts "<div class='hint'>"
                     io.puts "<p><strong>Unterricht im saLzH</strong></p>"
-                    io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> für das schulisch angeleite Lernen zu Hause (saLzH) eingetragen. Bitte schau regelmäßig in deinem Stunden&shy;plan nach, ob du Aufgaben in der Nextcloud oder im Lernraum bekommst oder ob Stunden per Jitsi durch&shy;geführt werden. <strong>Ab dem #{p.strftime('%d.%m.')}</strong> erwarten wir dich wieder in der Schule.</p>"
+                    io.puts "<p>Du bist <strong>bis zum #{Date.parse(end_date).strftime('%d.%m.')}</strong> für das schulisch angeleite Lernen zu Hause (saLzH) eingetragen. Bitte schau regelmäßig in deinem Stunden&shy;plan nach, ob du Aufgaben in der Nextcloud bekommst oder ob Stunden per Jitsi durch&shy;geführt werden. <strong>Ab dem #{p.strftime('%d.%m.')}</strong> erwarten wir dich wieder in der Schule.</p>"
                     io.puts "</div>"
                     io.puts "</div>"
                 elsif salzh_status[:status] == :contact_person

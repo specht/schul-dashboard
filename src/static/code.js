@@ -1,3 +1,62 @@
+// The page belongs to whoever it was loaded for: its own requests (jQuery
+// and fetch, to this server only) name that user (X-Dashboard-User, a hash;
+// main.rb, before). Logged in as someone else in another tab, the server
+// refuses (409 wrong_user) – this tab shows a note instead of the other
+// person's data.
+(function () {
+    var meta = document.querySelector("meta[name='dashboard-user']");
+    var tag = meta ? meta.getAttribute('content') : '';
+    if (!tag) return;
+    var own = function (url) {
+        url = String(url || '');
+        return url.charAt(0) === '/' && url.charAt(1) !== '/';
+    };
+    var shown = false;
+    window.dashboard_wrong_user = function (logged_in) {
+        if (shown) return;
+        shown = true;
+        var text = logged_in === false
+            ? 'In diesem Browser wurdest du inzwischen abgemeldet (in einem anderen Tab). Diese Seite ist deshalb angehalten; neu laden führt zur Anmeldung.'
+            : 'In diesem Browser hat sich inzwischen jemand anderes angemeldet (in einem anderen Tab). Diese Seite gehört noch zur vorherigen Anmeldung; damit hier keine fremden Daten erscheinen und nichts im falschen Namen gespeichert wird, ist sie angehalten. Neu laden zeigt die aktuelle Anmeldung.';
+        if (typeof dashboardConfirm === 'function')
+            dashboardConfirm(text, function () { window.location.reload(); }, { title: 'Andere Anmeldung', confirm: 'Neu laden', cancel: 'Schließen' });
+    };
+    var wrong = function (status, body) {
+        return status === 409 && body && body.error === 'wrong_user';
+    };
+    var hook = function () {
+        if (!window.jQuery) return false;
+        jQuery(document).ajaxSend(function (e, xhr, settings) {
+            if (own(settings.url)) xhr.setRequestHeader('X-Dashboard-User', tag);
+        });
+        jQuery(document).ajaxError(function (e, xhr) {
+            if (wrong(xhr.status, xhr.responseJSON)) window.dashboard_wrong_user(xhr.responseJSON.logged_in);
+        });
+        return true;
+    };
+    if (!hook()) document.addEventListener('DOMContentLoaded', hook);
+    if (window.fetch) {
+        var original = window.fetch;
+        window.fetch = function (input, init) {
+            var url = typeof input === 'string' ? input : (input && input.url);
+            if (own(url)) {
+                init = Object.assign({}, init || {});
+                var headers = new Headers(init.headers || (typeof input !== 'string' && input ? input.headers : undefined));
+                headers.set('X-Dashboard-User', tag);
+                init.headers = headers;
+            }
+            return original.call(this, input, init).then(function (response) {
+                if (response.status === 409 && own(url)) {
+                    response.clone().json().then(function (body) {
+                        if (wrong(response.status, body)) window.dashboard_wrong_user(body.logged_in);
+                    }).catch(function () { });
+                }
+                return response;
+            });
+        };
+    }
+})();
+
 var editor = null;
 var term = null;
 var fitAddon = null;
@@ -93,6 +152,11 @@ function api_call(url, data, callback, options) {
         clearTimeout(window.please_wait_timeout);
         $('.api_messages').empty();
         console.log(http.responseText);
+        // someone else logged in in another tab: the note says so (above)
+        if (http.status === 409 && (http.responseJSON || {}).error === 'wrong_user') {
+            if (typeof (callback) !== 'undefined') callback({ success: false, error: 'wrong_user' });
+            return;
+        }
         show_error_message('Bei der Bearbeitung der Anfrage ist ein Fehler aufgetreten.');
         if (typeof (callback) !== 'undefined') {
             var error_message = 'unknown_error';

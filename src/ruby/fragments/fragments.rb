@@ -2765,6 +2765,19 @@ class Main
         end
         emails = @@schueler_for_klasse[klasse]
         data[:total] ||= {}
+        # new since this teacher last looked at this class's overview
+        me = (@session_user || {})[:email]
+        stored = neo4j_query(<<~END_OF_QUERY, {:email => me, :klasse => klasse}).first
+            MATCH (v:MailOverviewVisit {email: $email, klasse: $klasse})
+            RETURN v.baseline AS baseline, v.last AS last;
+        END_OF_QUERY
+        visit = LessonMailTemplates.overview_visit(stored ? {:baseline => stored['baseline'], :last => stored['last']} : nil, Time.now)
+        first_visit = stored.nil?
+        neo4j_query(<<~END_OF_QUERY, {:email => me, :klasse => klasse, :baseline => visit[:baseline], :last => visit[:last]}) if me
+            MERGE (v:MailOverviewVisit {email: $email, klasse: $klasse})
+            SET v.baseline = $baseline, v.last = $last;
+        END_OF_QUERY
+        new_count = 0
         neo4j_query(<<~END_OF_QUERY, {:emails => emails, :ts0 => ts0, :ts1 => ts1}).each do |row|
             MATCH (t:User)<-[:SENT_BY]-(m:Mail)-[:SENT_TO]->(u:User)
             MATCH (m)-[:REGARDING]->(li:LessonInfo)-[:BELONGS_TO]->(l:Lesson)
@@ -2784,7 +2797,10 @@ class Main
             ym = Time.at(ts).strftime('%Y-%m')
             next unless data[ym]
             data[ym][:sus][sus_email] ||= []
-            data[ym][:sus][sus_email] << {:reason => reason, :fach => fach, :ts => ts_sent}
+            # one's own mails are known already
+            is_new = !first_visit && teacher_email != me && ts_sent.to_i > visit[:baseline]
+            new_count += 1 if is_new
+            data[ym][:sus][sus_email] << {:reason => reason, :fach => fach, :ts => ts_sent, :new => is_new}
             data[:total] ||= {}
             data[:total][sus_email] ||= 0
             data[:total][sus_email] += 1
@@ -2795,6 +2811,10 @@ class Main
             Time.now.to_i >= Date.parse(ym + '-01').to_time.to_i
         end
         StringIO.open do |io|
+            if new_count > 0
+                since = Time.at(visit[:baseline]).strftime('%d.%m. um %H:%M Uhr')
+                io.puts "<p class='mail-overview-new' data-testid='mail-overview-new'><span class='mail-overview-new-mark'></span> #{new_count == 1 ? '1 neue Mail' : "#{new_count} neue Mails"} seit deinem letzten Besuch am #{since} – rot umrandet.</p>"
+            end
             reason_order.each do |reason|
                 io.puts "<span class='badge' style='background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{CGI.escapeHTML(reason_label[reason].to_s)}</span>"
             end
@@ -2820,7 +2840,8 @@ class Main
                     (data[ym][:sus][email] || []).sort_by { |x| x[:ts].to_i }.each do |mail|
                         reason = mail[:reason]
                         day = Time.at(mail[:ts].to_i).strftime('%d.%m.')
-                        io.puts "<span class='badge' title='#{CGI.escapeHTML(reason_label[reason].to_s)}, gesendet am #{day}' style='font-weight: normal; background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{CGI.escapeHTML(mail[:fach].to_s)} #{day}</span>"
+                        new_mark = mail[:new] ? " mail-overview-is-new' data-new='1" : ''
+                        io.puts "<span class='badge#{new_mark}' title='#{CGI.escapeHTML(reason_label[reason].to_s)}, gesendet am #{day}#{mail[:new] ? ' (neu)' : ''}' style='font-weight: normal; background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{CGI.escapeHTML(mail[:fach].to_s)} #{day}</span>"
                     end
                     io.puts "</td>"
                 end

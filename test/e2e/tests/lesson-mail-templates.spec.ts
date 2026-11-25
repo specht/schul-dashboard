@@ -428,7 +428,11 @@ test('Mails aus dem Unterricht: Testvorlage im Mail-Dialog', async ({ page }, te
   await expect(rows.filter({ hasNotText: 'Test, nur an' })).toContainText('wird um');
   // the real one does count
   await expect(firstPick).toBeDisabled();
-  for (let i = 0; i < 2; i++) await rows.first().getByRole('button', { name: 'Abbrechen' }).click();
+  // one after the other: each row has to be gone before the next click
+  for (let left = 2; left > 0; left--) {
+    await rows.first().getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(rows).toHaveCount(left - 1);
+  }
   await expect(rows).toHaveCount(0);
   await modal2.locator('#ti_mail_reason').selectOption('praise');
   await expect(notice).toBeHidden();
@@ -462,8 +466,11 @@ test('Mails aus dem Unterricht: Klassenleitung schreibt ohne Stunde', async ({ p
   const modal = page.locator('#mailModal');
   await expect(modal).toBeVisible();
   await modal.locator('#ti_mail_reason').selectOption(reason);
-  const pick = modal.locator('.ti-mail-pick').first();
-  const name = (await modal.locator('.mail-sus-pick span').first().textContent())!.split(', ')[1];
+  // the first student without such a mail today (an aborted run may have
+  // left one: one mail per reason and student)
+  const free = modal.locator('.mail-sus-pick', { has: page.locator('.ti-mail-pick:not([disabled])') }).first();
+  const pick = free.locator('.ti-mail-pick');
+  const name = (await free.locator('span').textContent())!.split(', ')[1];
   await pick.check();
   await modal.locator('#bu_send_lesson_mails').click();
   const pending = modal.locator('#div_email_sus_table tr', { hasText: `»${label}« (${name})` });
@@ -471,10 +478,16 @@ test('Mails aus dem Unterricht: Klassenleitung schreibt ohne Stunde', async ({ p
   await pending.getByText('Mail ansehen').click();
   await expect(pending.getByTestId('queued-mail')).toContainText('im Fach Klassenleitung');
   // the overview of the class's mails: each mail with the day it goes out
-  const [, mm, dd] = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' }).split('-');
+  // (the next day when sent just before midnight)
+  const day = (offset: number) => {
+    const [, mm, dd] = new Date(Date.now() + offset).toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' }).split('-');
+    return `KL ${dd}.${mm}.`;
+  };
   const overview = await page.context().newPage();
   await overview.goto('/email_overview/5a');
-  await expect(overview.locator('td .badge', { hasText: `KL ${dd}.${mm}.` }).first()).toBeVisible();
+  const row = overview.locator('tr', { hasText: name });
+  await expect(row.locator('.badge', { hasText: /^KL \d\d\.\d\d\.$/ }).first()).toBeVisible();
+  expect([day(0), day(24 * 3600 * 1000)]).toContain((await row.locator('.badge', { hasText: /^KL / }).last().textContent())!.trim());
   await overview.close();
   // reopened, the mail of today is still listed
   await page.reload();
@@ -554,4 +567,29 @@ test('Mails aus dem Unterricht: auch Tage nach der Stunde, mit Datum', async ({ 
   await page.request.post('/api/save_lesson_mail_template', {
     data: { reason, label: name, color: '#204a87', status: 'hidden', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' },
   });
+});
+
+// The class's overview of sent mails outlines what came in since one last
+// looked (reloads within half an hour are the same visit); one's own mails
+// are not new to oneself.
+test('Mails aus dem Unterricht: Übersicht zeigt neue Mails seit dem letzten Besuch', async ({ page, newUserPage }) => {
+  await login(page, ACCOUNTS.admin);
+  await page.goto('/email_overview/5a');
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+  const colleague = await newUserPage();
+  await login(colleague, ACCOUNTS.teacher);
+  const sent = await colleague.request.post('/api/send_email', {
+    data: { email: ACCOUNTS.schueler, reason: 'praise', details: '', lesson_key: 'Ma_5a', lesson_offset: 0, datum: today },
+  });
+  expect(sent.status()).toBe(200);
+  const tag = (await sent.json()).entry.tag;
+  try {
+    await page.reload();
+    await expect(page.getByTestId('mail-overview-new')).toContainText('seit deinem letzten Besuch');
+    const row = page.locator('tr', { hasText: 'Max Mustermann' });
+    await expect(row.locator('.badge[data-new="1"]').first()).toBeVisible();
+    await expect(row.locator('.badge[data-new="1"]').first()).toHaveAttribute('title', /Besonderes Lob.*\(neu\)/);
+  } finally {
+    expect((await colleague.request.post('/api/cancel_email', { data: { tag } })).status()).toBe(200);
+  }
 });

@@ -170,6 +170,7 @@ require './include/public_event.rb'
 require './include/roles.rb'
 require './include/salzh.rb'
 require './include/school_wifi.rb'
+require './include/session_user_tag.rb'
 require './include/sitzplan_daten.rb'
 require './include/sitzplaneditor.rb'
 require './include/sitzplanhelfer.rb'
@@ -2414,12 +2415,6 @@ class Main < Sinatra::Base
         debug "[#{(@session_user || {})[:nc_login] || (@session_user || {})[:email] || 'anon'}] #{request.request_method} #{request.path}"
     end
 
-    # who a page was loaded for, as its requests repeat it (not secret: the
-    # page's own user; a hash so the address isn't in every request)
-    def self.session_user_tag(user)
-        return '' unless user && user[:email]
-        Digest::SHA256.hexdigest("dashboard-user:#{user[:email]}")[0, 16]
-    end
 
     get "/.well-known/sso_public_key.pem" do
         content_type "text/plain"

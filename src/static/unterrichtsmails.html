@@ -178,8 +178,10 @@
         white-space: nowrap;
     }
 
+    /* always below the button, scrolling in itself (opened upwards, a long
+       list went under the fixed top bar) */
     .lesson-mail-reason-menu {
-        max-height: 60vh;
+        max-height: min(60vh, 26em);
         overflow-y: auto;
     }
 
@@ -295,7 +297,7 @@
                 <label id='lesson_mail_reason_label' for='bu_lesson_mail_reason'>Grund</label>
                 <span class='lesson-mail-reason-select dropdown'>
                     <select id='ti_lesson_mail_reason' class='lesson-mail-reason-model' tabindex='-1' aria-hidden='true'></select>
-                    <button type='button' id='bu_lesson_mail_reason' class='form-control lesson-mail-reason-toggle' data-toggle='dropdown' data-boundary='viewport' aria-haspopup='listbox' aria-expanded='false'>
+                    <button type='button' id='bu_lesson_mail_reason' class='form-control lesson-mail-reason-toggle' data-toggle='dropdown' data-boundary='viewport' data-flip='false' aria-haspopup='listbox' aria-expanded='false'>
                         <span class='lesson-mail-dot' aria-hidden='true'></span><span class='lesson-mail-reason-name'></span><i class='#{ui_preview? ? 'ti ti-chevron-down' : 'fa fa-caret-down'} lesson-mail-color-caret' aria-hidden='true'></i>
                     </button>
                     <div class='dropdown-menu lesson-mail-reason-menu' role='listbox' aria-labelledby='lesson_mail_reason_label'></div>

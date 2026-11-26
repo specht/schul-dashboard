@@ -314,11 +314,21 @@ test('Mails aus dem Unterricht: eigene Vorlage anlegen, testen, freischalten, au
   await page.locator('#ti_lesson_mail_label').fill(name);
   await page.locator('#ti_lesson_mail_note_hint').fill('Turnbeutel');
   await page.locator('#ti_lesson_mail_cc_klassenleitung').check();
-  // the colour from the Cling palette: a new one starts with »Golf«, a click picks another
-  await expect(page.getByRole('radio', { name: 'Golf' })).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('radio', { name: 'Gras' }).click();
-  await expect(page.getByRole('radio', { name: 'Gras' })).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByRole('radio', { name: 'Golf' })).toHaveAttribute('aria-checked', 'false');
+  // the colour from the Cling palette, behind a button: a new one starts
+  // with »Golf«, the menu offers the swatches, a pick closes it
+  const colour = page.locator('#bu_lesson_mail_color');
+  await expect(colour).toContainText('Golf');
+  await expect(page.locator('.lesson-mail-swatches')).toBeHidden();
+  await colour.click();
+  await expect(page.locator('.lesson-mail-swatch[aria-label="Golf"]')).toHaveAttribute('aria-checked', 'true');
+  await page.locator('.lesson-mail-swatch[aria-label="Gras"]').click();
+  await expect(page.locator('.lesson-mail-swatches')).toBeHidden();
+  await expect(colour).toContainText('Gras');
+  await expect(page.locator('.lesson-mail-swatch[aria-label="Gras"]')).toHaveAttribute('aria-checked', 'true');
+  // the button shows the colour, not its name (that only for screen readers)
+  expect(await colour.locator('.lesson-mail-color-current').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(74, 160, 63)');
+  await expect(colour.locator('.lesson-mail-color-name')).toHaveClass(/sr-only/);
+  await expect(page.locator('.lesson-mail-swatch[aria-label="Golf"]')).toHaveAttribute('aria-checked', 'false');
   await page.locator('#ti_lesson_mail_body').fill('Liebe Eltern,\n\n{Vorname} hatte heute kein Sportzeug dabei{Notiz}.\n\nViele Grüße\n{Lehrkraft}');
   await expect(page.locator('#lesson_mail_preview_body')).toContainText('Max hatte heute kein Sportzeug dabei');
   await page.locator('#bu_save_lesson_mail').click();
@@ -330,7 +340,10 @@ test('Mails aus dem Unterricht: eigene Vorlage anlegen, testen, freischalten, au
   // saved with its colour
   await page.reload();
   await page.locator('#ti_lesson_mail_reason').selectOption(reason);
-  await expect(page.getByRole('radio', { name: 'Gras' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('#bu_lesson_mail_color')).toContainText('Gras');
+  // the reason's colour in front of it in the choice of reasons
+  expect(await page.locator('.lesson-mail-reason-chip').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(74, 160, 63)');
+  await expect(page.locator('.lesson-mail-swatch[aria-label="Gras"]')).toHaveAttribute('aria-checked', 'true');
 
   // names are unique
   const twice = await page.request.post('/api/create_lesson_mail_template', {

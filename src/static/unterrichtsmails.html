@@ -111,25 +111,77 @@
         width: 100%;
     }
 
-    /* the colour: swatches of the Cling palette (cling.rb), as in the profile */
-    .lesson-mail-swatches {
-        display: grid;
-        grid-template-columns: repeat(14, minmax(0, 1fr));
-        gap: 5px;
-        max-width: 34em;
+    /* the colour: a button with the colour and its name, the swatches of the
+       Cling palette (cling.rb, as in the profile) in its menu */
+    .lesson-mail-custom-row .lesson-mail-field.lesson-mail-color {
+        flex: 0 0 auto;
     }
 
-    @media (max-width: 575px) {
-        .lesson-mail-swatches {
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-        }
+    .lesson-mail-color-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5em;
+        width: auto;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .lesson-mail-color-chip {
+        flex: none;
+        width: 1.2em;
+        height: 1.2em;
+        border-radius: 5px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        background: var(--sw, transparent);
+    }
+
+    .lesson-mail-color-caret {
+        margin-left: auto;
+        opacity: 0.6;
+    }
+
+    /* the reason with its colour in front, inside the field */
+    .lesson-mail-reason-select {
+        position: relative;
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .lesson-mail-reason-select > select {
+        width: auto;
+        max-width: 100%;
+    }
+
+    .lesson-mail-reason-chip {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .lesson-mail-reason-select > select {
+        padding-left: 2.3rem;
+    }
+
+    /* (kept on the screen: the button may stand at its right edge) */
+    .lesson-mail-color-menu {
+        padding: 8px;
+        max-width: calc(100vw - 16px);
+    }
+
+    .lesson-mail-swatches {
+        display: grid;
+        grid-template-columns: repeat(7, 30px);
+        gap: 5px;
     }
 
     .lesson-mail-swatch {
         display: grid;
         place-items: center;
-        aspect-ratio: 1;
-        min-height: 26px;
+        width: 30px;
+        height: 30px;
         padding: 0;
         border: 1px solid rgba(0, 0, 0, 0.12);
         border-radius: 7px;
@@ -201,7 +253,10 @@
             <div class='api_messages' style='display: none;'></div>
             <div class='lesson-mail-reason-row'>
                 <label for='ti_lesson_mail_reason'>Grund</label>
-                <select id='ti_lesson_mail_reason' class='form-control'></select>
+                <span class='lesson-mail-reason-select'>
+                    <span class='lesson-mail-color-chip lesson-mail-reason-chip' aria-hidden='true'></span>
+                    <select id='ti_lesson_mail_reason' class='form-control'></select>
+                </span>
                 <button id='bu_new_lesson_mail' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Vorlage</button>
                 <span id='lesson_mail_status' class='text-muted'></span>
             </div>
@@ -216,6 +271,20 @@
                         <div class='lesson-mail-field'>
                             <label for='ti_lesson_mail_label'>Name</label>
                             <input id='ti_lesson_mail_label' class='form-control' type='text' maxlength='60' autocomplete='off' placeholder='z. B. Sportzeug fehlt'>
+                        </div>
+                        <div class='lesson-mail-field lesson-mail-color'>
+                            <label id='lesson_mail_color_label'>Farbe</label>
+                            <input id='ti_lesson_mail_color' type='hidden'>
+                            <div class='dropdown'>
+                                <button type='button' id='bu_lesson_mail_color' class='form-control lesson-mail-color-toggle' data-toggle='dropdown' data-boundary='viewport' aria-haspopup='true' aria-expanded='false' aria-labelledby='lesson_mail_color_label bu_lesson_mail_color'>
+                                    <span class='lesson-mail-color-chip lesson-mail-color-current' aria-hidden='true'></span><span class='lesson-mail-color-name sr-only'></span><i class='#{ui_preview? ? 'ti ti-chevron-down' : 'fa fa-caret-down'} lesson-mail-color-caret' aria-hidden='true'></i>
+                                </button>
+                                <div class='dropdown-menu lesson-mail-color-menu' aria-labelledby='bu_lesson_mail_color'>
+                                    <div class='lesson-mail-swatches' role='radiogroup' aria-labelledby='lesson_mail_color_label'>
+                                        #{Cling::COLOURS.map { |hex, name| "<button type='button' class='lesson-mail-swatch#{Cling.light?(hex) ? ' lesson-mail-swatch-light' : ''}' data-hex='#{hex}' style='--sw: #{hex}' title='#{name}' aria-label='#{name}' role='radio' aria-checked='false'><i class='#{ui_preview? ? 'ti ti-check' : 'fa fa-check'}' aria-hidden='true'></i></button>" }.join}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class='lesson-mail-field lesson-mail-choice'>
                             <label for='ti_lesson_mail_status'>Zustand</label>
@@ -237,13 +306,6 @@
                                 <option value='teachers'>Die Lehrkraft der Stunde</option>
                                 <option value='otium'>Die Otium-Aufsicht</option>
                             </select>
-                        </div>
-                    </div>
-                    <div class='lesson-mail-field'>
-                        <label id='lesson_mail_color_label'>Farbe</label>
-                        <input id='ti_lesson_mail_color' type='hidden'>
-                        <div class='lesson-mail-swatches' role='radiogroup' aria-labelledby='lesson_mail_color_label'>
-                            #{Cling::COLOURS.map { |hex, name| "<button type='button' class='lesson-mail-swatch#{Cling.light?(hex) ? ' lesson-mail-swatch-light' : ''}' data-hex='#{hex}' style='--sw: #{hex}' title='#{name}' aria-label='#{name}' role='radio' aria-checked='false'><i class='#{ui_preview? ? 'ti ti-check' : 'fa fa-check'}' aria-hidden='true'></i></button>" }.join}
                         </div>
                     </div>
                     <div class='lesson-mail-field form-check'>
@@ -441,6 +503,7 @@
             current = t;
             fill_select();
             select.value = t.reason;
+            document.querySelector('.lesson-mail-reason-chip').style.setProperty('--sw', t.color);
             subject.value = t.subject;
             body.value = t.body;
             note.value = t.example_note;
@@ -498,17 +561,23 @@
         label.addEventListener('input', changed);
         // the swatches: the one chosen marked, a click chooses
         function paint_color() {
+            let name = '';
             document.querySelectorAll('.lesson-mail-swatch').forEach(function (b) {
                 const on = b.dataset.hex === color.value;
                 b.classList.toggle('active', on);
                 b.setAttribute('aria-checked', on ? 'true' : 'false');
+                if (on) name = b.getAttribute('title');
             });
+            document.querySelector('.lesson-mail-color-current').style.setProperty('--sw', color.value);
+            document.querySelector('.lesson-mail-color-name').textContent = name;
         }
         document.querySelectorAll('.lesson-mail-swatch').forEach(function (b) {
             b.addEventListener('click', function (e) {
                 color.value = e.currentTarget.dataset.hex;
                 paint_color();
                 update_status();
+                $('#bu_lesson_mail_color').dropdown('hide');
+                document.getElementById('bu_lesson_mail_color').focus();
             });
         });
         note_hint.addEventListener('input', update_status);

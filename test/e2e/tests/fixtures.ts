@@ -301,9 +301,16 @@ async function loginWithCode(page: Page, email: string) {
 // behind the menu button first).
 export async function openProfileMenu(page: Page) {
   const toggler = page.locator('.navbar-toggler');
-  if (await toggler.isVisible()) await toggler.click();
-  await page.locator('#navbarDropdownProfile').click();
-  await expect(page.locator('[aria-labelledby="navbarDropdownProfile"]')).toBeVisible();
+  if (await toggler.isVisible()) {
+    await toggler.click();
+    // phones: the menu slides open first – a click while it moves got lost
+    await expect(page.locator('.navbar-collapse.show:not(.collapsing)')).toBeVisible();
+  }
+  const menu = page.locator('[aria-labelledby="navbarDropdownProfile"]');
+  await expect(async () => {
+    if (!(await menu.isVisible())) await page.locator('#navbarDropdownProfile').click();
+    await expect(menu).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 10_000 });
 }
 
 // Enters email and code on the login pages, without visiting / first –

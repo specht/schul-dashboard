@@ -1,4 +1,20 @@
 #{this_is_a_page_for_logged_in_teachers}
+<style>
+    /* mails since one's last visit (print_email_overview) */
+    .mail-overview-is-new {
+        outline: 2px solid #d61f1f;
+        outline-offset: 1px;
+    }
+    .mail-overview-new-mark {
+        display: inline-block;
+        width: 1.1em;
+        height: 0.9em;
+        border-radius: 0.2em;
+        outline: 2px solid #d61f1f;
+        vertical-align: -0.1em;
+        margin-right: 0.3em;
+    }
+</style>
 <div class='container-fluid white'>
     #{print_email_overview(klasse)}
 </div>

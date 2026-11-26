@@ -424,6 +424,23 @@ module LessonMailTemplates
         errors
     end
 
+    # The class's overview of sent mails marks what came in since the teacher
+    # last looked (each teacher, each class). Reloads within half an hour
+    # count as the same visit, so the marks stay while one looks.
+    # visit: {:baseline, :last} as stored, nil the first time; returns the new
+    # one – mails after its :baseline are new. The first visit marks nothing.
+    OVERVIEW_SAME_VISIT = 30 * 60
+
+    def self.overview_visit(visit, now)
+        now = now.to_i
+        return {:baseline => now, :last => now} if visit.nil? || visit[:last].nil?
+        if now - visit[:last].to_i > OVERVIEW_SAME_VISIT
+            {:baseline => visit[:last].to_i, :last => now}
+        else
+            {:baseline => (visit[:baseline] || visit[:last]).to_i, :last => now}
+        end
+    end
+
     # Who gets a mail. Normal: the parents, copies to the student, the sender,
     # the lesson's teacher (if someone else sent it) and, where wanted, the
     # class teachers; a copy to the school's own address for the archive.

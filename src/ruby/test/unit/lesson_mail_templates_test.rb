@@ -312,6 +312,18 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_includes old, '{Vorname} hat heute eine geforderte Unterschrift nicht vorlegen können{Notiz}. Bitte geben Sie diese Ihrem Kind morgen mit.'
     end
 
+    # what is new in the class's overview: since the visit before; reloads
+    # within half an hour are the same visit; the first visit marks nothing
+    def test_overview_visit
+        first = LessonMailTemplates.overview_visit(nil, 1000)
+        assert_equal({:baseline => 1000, :last => 1000}, first)
+        reload = LessonMailTemplates.overview_visit(first, 1000 + 600)
+        assert_equal({:baseline => 1000, :last => 1600}, reload)
+        next_day = LessonMailTemplates.overview_visit(reload, 90_000)
+        assert_equal({:baseline => 1600, :last => 90_000}, next_day)
+        assert_equal({:baseline => 50, :last => 60}, LessonMailTemplates.overview_visit({:baseline => nil, :last => 50}, 60))
+    end
+
     def test_new_template_body_is_valid
         assert_empty LessonMailTemplates.template_errors('Betreff', LessonMailTemplates::NEW_TEMPLATE_BODY)
     end

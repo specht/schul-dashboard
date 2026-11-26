@@ -332,6 +332,18 @@ test('Neues Design: Nachricht schreiben mit Empfänger-Chips, Gesendet, bearbeit
     // only the tools that survive the design's own type
     await expect(modal.locator('.note-btn-bold')).toBeVisible();
     await expect(modal.locator('.note-fontname, .note-fontsize, .note-color')).toHaveCount(0);
+    // the list buttons make a list one can see (a general reset took the
+    // bullets and numbers, they seemed to do nothing)
+    const editable = modal.locator('.note-editable');
+    await editable.click();
+    await page.keyboard.type('Punkt');
+    await modal.locator('.note-btn-group.note-para button').nth(0).click();
+    await expect(editable.locator('ul li')).toHaveText('Punkt');
+    expect(await editable.locator('ul').evaluate((e) => getComputedStyle(e).listStyleType)).toBe('disc');
+    await modal.locator('.note-btn-group.note-para button').nth(1).click();
+    await expect(editable.locator('ol li')).toHaveText('Punkt');
+    expect(await editable.locator('ol').evaluate((e) => getComputedStyle(e).listStyleType)).toBe('decimal');
+    await page.evaluate(() => (window as unknown as { $: (s: string) => { summernote: (c: string) => void } }).$('#summernote').summernote('reset'));
 
     // recipients: suggestions, arrow keys and Enter, chips in the field
     const input = modal.locator('#ti_recipients');

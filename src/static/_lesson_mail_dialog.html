@@ -62,6 +62,70 @@
         font-size: 85%;
         margin-top: 0.2em;
     }
+    /* the reason: a button with its colour as a small dot, the list with a
+       dot before every reason (a native select can't show colours); the
+       select stays underneath as the model, out of sight */
+    .mail-reason-select {
+        position: relative;
+        display: block;
+    }
+    .mail-reason-model {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .mail-reason-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.55em;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+    }
+    .mail-reason-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .mail-reason-caret {
+        margin-left: auto;
+        opacity: 0.6;
+    }
+    .mail-reason-menu {
+        width: 100%;
+        max-height: min(50vh, 24em);
+        overflow-y: auto;
+    }
+    .mail-reason-item {
+        display: flex;
+        align-items: center;
+        gap: 0.55em;
+        white-space: normal;
+    }
+    .mail-reason-item.active, .mail-reason-item.active:hover {
+        background: var(--pv-hover, rgba(128, 128, 128, 0.15));
+        color: inherit;
+        font-weight: 600;
+    }
+    .mail-reason-dot {
+        display: inline-block;
+        flex: none;
+        width: 0.7em;
+        height: 0.7em;
+        border-radius: 50%;
+        background: var(--sw, transparent);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+        vertical-align: 0.05em;
+    }
+    /* no reason chosen yet: an empty ring */
+    .mail-reason-dot.mail-reason-none {
+        box-shadow: inset 0 0 0 1.5px rgba(128, 128, 128, 0.5);
+    }
 </style>
 <div class="modal pv-sheet" id="mailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered" role="document">
@@ -73,9 +137,15 @@
             </div>
             <div class="modal-body">
                 <div style="padding: 0.5em 0;">Bitte wählen Sie einen Grund für die E-Mail:</div>
-                <select id='ti_mail_reason' class='form-control'>
-                    #{lesson_mail_options_html}
-                </select>
+                <div class='mail-reason-select dropdown'>
+                    <select id='ti_mail_reason' class='mail-reason-model' tabindex='-1' aria-hidden='true'>
+                        #{lesson_mail_options_html}
+                    </select>
+                    <button type='button' id='bu_mail_reason' class='form-control mail-reason-toggle' data-toggle='dropdown' data-boundary='viewport' data-flip='false' aria-haspopup='listbox' aria-expanded='false' aria-label='Grund'>
+                        <span class='mail-reason-dot' aria-hidden='true'></span><span class='mail-reason-name'></span><i class='#{ui_preview? ? 'ti ti-chevron-down' : 'fa fa-caret-down'} mail-reason-caret' aria-hidden='true'></i>
+                    </button>
+                    <div class='dropdown-menu mail-reason-menu' role='listbox' aria-label='Grund'></div>
+                </div>
                 <div id='mail_test_notice' class='alert alert-warning' data-testid='mail-test-notice' style='display: none; margin: 0.5em 0 0 0;'>
                     Diese Vorlage ist noch im Test: Die Mail geht nur an dich (<strong>#{CGI.escapeHTML((@session_user || {})[:email].to_s)}</strong>), nicht an die Eltern, und sofort, ohne die 10 Minuten Wartezeit. Freischalten unter »Mails aus dem Unterricht«.
                 </div>
@@ -131,8 +201,44 @@ var pending_mail_data = {};
 // test mails go to the sender alone
 var MAIL_TEST_TO = #{(@session_user || {})[:email].to_s.to_json};
 var REASON_LABEL = #{lesson_mail_reason_labels.to_json.gsub('</', '<\/')};
+var REASON_COLOR = #{lesson_mail_reason_colors.to_json.gsub('</', '<\/')};
+
+// the dot of a reason's colour (the summary of mails sent, the list)
+function mail_reason_dot(color) {
+    let dot = $(`<span class='mail-reason-dot' aria-hidden='true'>`);
+    if (color) dot[0].style.setProperty('--sw', color); else dot.addClass('mail-reason-none');
+    return dot;
+}
+
+// the visible list: an item with a dot per option of the select (the model)
+function mail_reason_build_menu() {
+    let menu = $('.mail-reason-menu').empty();
+    $('#ti_mail_reason option').each(function(_, option) {
+        let item = $(`<button type='button' class='dropdown-item mail-reason-item' role='option'>`);
+        item.attr('data-reason', option.value);
+        item.append(mail_reason_dot(option.dataset.color || null)).append(document.createTextNode(option.textContent));
+        if (option.disabled) item.prop('disabled', true).addClass('disabled');
+        item.on('click', function(e) {
+            $('#ti_mail_reason').val(e.currentTarget.dataset.reason).trigger('change');
+        });
+        menu.append(item);
+    });
+}
+
+// the button shows the reason chosen, with its colour
+function mail_reason_paint() {
+    let option = $('#ti_mail_reason option:selected')[0];
+    $('.mail-reason-name').text(option ? option.textContent : '');
+    $('.mail-reason-toggle .mail-reason-dot').replaceWith(mail_reason_dot(option && option.value ? option.dataset.color : null));
+    $('.mail-reason-item').each(function(_, item) {
+        let on = option && item.dataset.reason === option.value;
+        item.classList.toggle('active', !!on);
+        item.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+}
 
 function mail_reason_changed() {
+    mail_reason_paint();
     let reason = $('#ti_mail_reason').val();
     // reasons, their rules and note hints: /unterrichtsmails
     let got_reason = !!reason;
@@ -274,12 +380,14 @@ function generate_mail_pending_row(entry, sus_info) {
     let row = $(`<tr>`).data('email', sus_info.email).data('type', 'pending');
     // the label of an own template is text an admin typed
     let label = $('<span>').text(REASON_LABEL[entry.reason] ?? entry.reason).html();
+    // the reason's colour before it, as in the choice of reasons
+    let dot = mail_reason_dot(REASON_COLOR[entry.reason])[0].outerHTML;
     let test = entry.test ? ` – Test, nur an ${$('<span>').text(MAIL_TEST_TO).html()}` : '';
     if (entry.comment) test += ` – ${$('<span>').text(entry.comment).html()}`;
     if (typeof(entry.ts_sent_h) !== 'undefined' && entry.ts_sent_h !== null) {
-        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
+        row.append($(`<td colspan='2'>`).html(`<i class='fa fa-check text-success'></i>&nbsp;&nbsp;<em>${dot} »${label}« (${sus_info.display_first_name}) wurde um ${entry.ts_sent_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
     } else {
-        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>»${label}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
+        row.append($(`<td>`).html(`<i class='fa fa-clock-o'></i>&nbsp;&nbsp;<em>${dot} »${label}« (${sus_info.display_first_name}) wird um ${entry.ts_h} Uhr gesendet${test}</em>`).append(mail_view_details(entry)));
         let button = $(`<button class='btn btn-sm btn-secondary'>`).html(`<i class='fa fa-times'></i>&nbsp;&nbsp;Abbrechen`);
         button.on('click', function(e) {
             api_call('/api/cancel_email', {tag: entry.tag}, function(data) {
@@ -418,6 +526,8 @@ function lesson_mail_open(event, students, done) {
 
 // jQuery is loaded deferred: the handlers once the page is parsed
 document.addEventListener('DOMContentLoaded', function() {
+    mail_reason_build_menu();
+    mail_reason_paint();
     $('#ti_mail_reason').on('change', function(e) {
         mail_reason_changed();
     });

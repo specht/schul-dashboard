@@ -143,7 +143,7 @@ class Main < Sinatra::Base
         first = true
         LessonMailTemplates.catalog(stored_lesson_mail_templates).each do |x|
             next if x[:status] == 'hidden' || (x[:status] == 'test' && !admin)
-            attrs = " value=\"#{CGI.escapeHTML(x[:reason])}\" data-note-hint=\"#{CGI.escapeHTML(x[:note_hint].to_s)}\""
+            attrs = " value=\"#{CGI.escapeHTML(x[:reason])}\" data-note-hint=\"#{CGI.escapeHTML(x[:note_hint].to_s)}\" data-color=\"#{CGI.escapeHTML(x[:color].to_s)}\""
             label = x[:label]
             if x[:status] == 'test'
                 attrs += ' data-test="1"'
@@ -165,6 +165,11 @@ class Main < Sinatra::Base
     # name of every reason, for lists of mails already sent
     def lesson_mail_reason_labels
         Hash[LessonMailTemplates.catalog(stored_lesson_mail_templates).map { |x| [x[:reason], x[:label]] }]
+    end
+
+    # and its colour (the dot before it)
+    def lesson_mail_reason_colors
+        Hash[LessonMailTemplates.catalog(stored_lesson_mail_templates).map { |x| [x[:reason], x[:color]] }]
     end
 
     def lesson_mail_templates_page_data

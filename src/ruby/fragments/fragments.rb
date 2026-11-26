@@ -2826,7 +2826,9 @@ class Main
                 io.puts "<span class='badge' style='background-color: #{reason_color[reason]}; color: #{reason_text_color[reason]};'>#{CGI.escapeHTML(reason_label[reason].to_s)}</span>"
             end
             io.puts "<div style='max-width: 100%; overflow-x: auto;'>"
-            io.puts "<table class='table table-condensed table-striped narrow' style='width: unset; min-width: 100%;'>"
+            # the mails wrap within their month: all of them in sight (was one
+            # line per cell, cut off)
+            io.puts "<table class='table table-condensed table-striped narrow wrapit mail-overview-table' style='width: 100%;'>"
             io.puts "<thead>"
             io.puts "<tr>"
             io.puts "<th>Name</th>"
@@ -2840,7 +2842,7 @@ class Main
                 (data[:total][b] || 0) <=> (data[:total][a] || 0)
             end.each do |email|
                 io.puts "<tr>"
-                io.puts "<td>#{@@user_info[email][:display_name]}</td>"
+                io.puts "<td class='nowrap'>#{@@user_info[email][:display_name]}</td>"
                 cols.each do |ym|
                     io.puts "<td>"
                     # one badge per mail: subject and the day it was sent

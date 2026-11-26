@@ -158,7 +158,18 @@ async function openMailDialog(page: Page) {
 test('Mails aus dem Unterricht: Lehrkraft sieht die Mail vor dem Senden', async ({ page }, testInfo) => {
   await login(page, ACCOUNTS.admin);
   const modal = await openMailDialog(page);
-  await modal.locator('#ti_mail_reason').selectOption('homework');
+  // the reasons as a list with a dot in each one's colour; the button then
+  // shows the reason with its dot
+  const reasonButton = modal.locator('#bu_mail_reason');
+  await expect(reasonButton).toContainText('Grund auswählen');
+  await reasonButton.click();
+  const homework = modal.locator('.mail-reason-item[data-reason="homework"]');
+  await expect(homework).toBeVisible();
+  expect(await homework.locator('.mail-reason-dot').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(250, 170, 33)');
+  await homework.click();
+  await expect(reasonButton).toContainText('Hausaufgaben fehlen');
+  await expect(modal.locator('#ti_mail_reason')).toHaveValue('homework');
+  expect(await reasonButton.locator('.mail-reason-dot').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(250, 170, 33)');
   const preview = modal.getByTestId('mail-preview');
   // folded on phones (one line, the send buttons stay close), open on
   // larger screens; the choice is remembered
@@ -267,6 +278,9 @@ test('Mails aus dem Unterricht: Lehrkraft schickt mehreren Eltern je einen eigen
   const pendingFirst = table.locator('tr', { hasText: `»${label}« (${first})` });
   const pendingSecond = table.locator('tr', { hasText: `»${label}« (${second})` });
   await expect(pendingFirst).toContainText('wird um');
+  // the summary: the reason's colour before it
+  await expect(pendingFirst.locator('.mail-reason-dot')).toHaveCount(1);
+  expect(await pendingFirst.locator('.mail-reason-dot').evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
   await expect(pendingFirst).toContainText('hat sich umgesetzt');
   await expect(pendingSecond).toContainText('wird um');
   await expect(pendingSecond).not.toContainText('umgesetzt');
@@ -622,6 +636,11 @@ test('Mails aus dem Unterricht: Übersicht zeigt neue Mails seit dem letzten Bes
     const row = page.locator('tr', { hasText: 'Max Mustermann' });
     await expect(row.locator('.badge[data-new="1"]').first()).toBeVisible();
     await expect(row.locator('.badge[data-new="1"]').first()).toHaveAttribute('title', /Besonderes Lob.*\(neu\)/);
+    // all mails in sight: the badges wrap in their month, nothing to scroll
+    // sideways or cut off
+    const table = page.locator('.mail-overview-table');
+    expect(await table.evaluate((t) => t.parentElement!.scrollWidth <= t.parentElement!.clientWidth + 1)).toBe(true);
+    expect(await row.locator('td').nth(1).evaluate((td) => getComputedStyle(td).whiteSpace)).not.toBe('nowrap');
   } finally {
     expect((await colleague.request.post('/api/cancel_email', { data: { tag } })).status()).toBe(200);
   }

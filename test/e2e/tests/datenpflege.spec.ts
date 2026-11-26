@@ -887,6 +887,12 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await expect(row).toContainText('2 von 3, 1 unverändert');
     const corrections = page.locator('.dp-corrections');
     await expect(page.locator('.dp-corrections-title')).toContainText('2 offen von 2');
+    // by what is to do: »nur im Dashboard« and »fehlt« apart; what the
+    // Klassenleitung confirmed only counted (nothing to do in LUSD)
+    await expect(page.locator('.dp-corrections-dashboard tr', { hasText: 'Max (nur im Dashboard)' })).toHaveCount(1);
+    await expect(page.locator('.dp-corrections-missing tr', { hasText: 'Paul Probe' })).toHaveCount(1);
+    await expect(page.locator('.dp-corrections-box > .dp-hint')).toContainText('Bestätigt haben sie 1 Zeile');
+    await expect(page.locator('.dp-corrections-box .dp-progress')).toHaveAttribute('aria-valuenow', '0');
     // »nur im Dashboard«: taken over as an override – arrived
     await corrections.locator('tr', { hasText: 'Max (nur im Dashboard)' }).locator('.bu_sl_take_override').click();
     await expect(corrections.locator('tr', { hasText: 'Max (nur im Dashboard)' })).toContainText('angekommen');
@@ -897,6 +903,8 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     // the to-do list: »Geht nicht« with the reason (the teacher sees it),
     // open again, then done
     const paul = corrections.locator('tr', { hasText: 'Paul Probe' });
+    // ticked off in place, without a reload (a mark on the page stays)
+    await page.evaluate(() => { (window as unknown as { dp_mark: boolean }).dp_mark = true; });
     await paul.locator('.bu_sl_wontfix').click();
     await page.locator('#bu_wontfix_save').click();
     await expect(page.locator('#dpWontfixModal')).toBeVisible();
@@ -912,6 +920,8 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await expect(corrections.locator('tr', { hasText: 'Paul Probe' })).toContainText('erledigt');
     await expect(corrections.locator('tr', { hasText: 'Paul Probe' }).locator('.bu_sl_take_missing')).toHaveCount(0);
     await expect(page.locator('.dp-corrections-title')).toContainText('0 offen von 2');
+    expect(await page.evaluate(() => (window as unknown as { dp_mark?: boolean }).dp_mark)).toBe(true);
+    await expect(page.locator('.dp-corrections-box .dp-progress')).toHaveAttribute('aria-valuenow', '2');
 
     // »nicht mehr an der Schule«: gone in the dashboard at once, without
     // waiting for LUSD – then the correction has arrived
@@ -941,12 +951,30 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     // (Max as well by now: his Rufname, taken over as an override, is the dashboard's)
     await expect(cls.locator('.sl-confirm')).toContainText('Alles Markierte geprüft. Mit »Liste bestätigen« bestätigst du auch die 2 unveränderten Zeilen.');
 
+    // done in LUSD (ticked) – but the next export still has the old Rufname:
+    // marked, to look at again
+    await page.goto('/datenpflege');
+    const neleTodo = page.locator('.dp-corrections-lusd tr', { hasText: 'Nelly' });
+    await neleTodo.locator('.bu_sl_done').first().click();
+    await expect(neleTodo).toContainText('erledigt, wartet auf den nächsten Export');
+    await page.waitForTimeout(1100);
+    await upload(page, DRAFT('02.01.2010'), '2000-01-01');
+    await page.locator('#bu_keep_draft').click();
+    await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await page.goto('/datenpflege');
+    await expect(neleTodo).toContainText('erledigt, aber im neuen Export noch anders');
+    await expect(page.locator('.dp-corrections-box .dp-late')).toContainText('im neuen Export noch anders');
+
     // a new draft changes Elli's birthday: her row is asked again; it also
     // has Nele's Rufname as corrected – that counts as done, not asked again
     await page.goto('/datenpflege');
     await upload(page, DRAFT('03.01.2010', 'Nelly'), '2000-01-01');
     await page.locator('#bu_keep_draft').click();
     await expect(page.locator('#dp_is_draft')).toBeVisible();
+    await page.goto('/datenpflege');
+    await expect(neleTodo).toContainText('angekommen');
+    // (Paul was ticked as done, but the export doesn't have him either)
+    await expect(corrections.locator('tr', { hasText: 'Paul Probe' })).toContainText('erledigt, aber im neuen Export noch anders');
     await page.goto('/schuelerliste?klasse=5a');
     await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('xpath=following-sibling::tr[1]').locator('.sl-changed-row')).toHaveText('geändert seit deiner Prüfung');
     const nele = cls.locator('.sl-row', { hasText: 'Nelly' });
@@ -955,6 +983,15 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     // Elli changed now: the one row to check again
     await expect(cls.locator('.sl-confirm')).toContainText('Noch 1 markierte Zeile zu prüfen.');
     await expect(cls.locator('.sl-row', { hasText: 'Elli' }).locator('.bu_sl_ok')).toHaveCount(1);
+
+    // a remark: read, nothing to change – the Klassenleitung sees that
+    const malloryKey = await cls.locator('.sl-leaving .sl-row', { hasText: 'Mallory' }).getAttribute('data-student');
+    expect((await page.request.post('/api/schuelerliste/check', { data: { klasse: '5a', student: malloryKey, status: 'correction', text: 'zieht nach Hamburg' } })).ok()).toBe(true);
+    await page.goto('/datenpflege');
+    const remark = page.locator('.dp-corrections-note tr', { hasText: 'zieht nach Hamburg' });
+    await remark.getByRole('button', { name: 'Nichts zu tun' }).click();
+    await expect(remark).toContainText('nichts zu tun');
+    expect(await (await page.request.get('/schuelerliste?klasse=5a')).text()).toContain('Datenpflege: gelesen, nichts zu ändern');
   } finally {
     await page.request.post('/api/schuelerliste/reset', { data: {} });
     const d = await (await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).json().catch(() => ({}));

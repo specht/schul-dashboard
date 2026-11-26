@@ -573,20 +573,31 @@ class Main < Sinatra::Base
     # can't be done (with the reason, which the teacher sees), or open again
     post '/api/schuelerliste/done' do
         require_data_manager!
-        data = parse_request_data(:required_keys => [:review, :done], :optional_keys => [:student, :missing, :reason],
-                                  :types => { :done => Object },
+        data = parse_request_data(:required_keys => [:review, :done], :optional_keys => [:student, :missing, :reason, :noted],
+                                  :types => { :done => Object, :noted => Object },
                                   :max_value_lengths => { :review => 64, :student => 200, :missing => 64, :reason => 300 })
         assert([true, false].include?(data[:done]))
         reason = data[:done] ? data[:reason].to_s.strip : ''
-        values = { :review => data[:review], :done => data[:done], :wontfix => reason.empty? ? nil : reason,
+        # »Nichts zu tun«: read, nothing to change (a remark)
+        noted = data[:done] && data[:noted] == true && reason.empty?
+        values = { :review => data[:review], :done => data[:done], :wontfix => reason.empty? ? nil : reason, :noted => noted,
                    :by => @session_user[:email], :at => Time.now.to_i }
-        set = 'SET n.done = $done, n.wontfix = $wontfix, n.done_by = $by, n.done_at = $at'
+        set = 'SET n.done = $done, n.wontfix = $wontfix, n.noted = $noted, n.done_by = $by, n.done_at = $at'
         if data[:missing]
             neo4j_query("MATCH (n:StudentMissing {review: $review, id: $id}) #{set};", values.merge(:id => data[:missing]))
         else
             neo4j_query("MATCH (n:StudentCheck {review: $review, student: $student}) #{set};", values.merge(:student => data[:student].to_s))
         end
-        respond(:ok => true)
+        # the row as it is now: the page replaces it (and counts again)
+        view = schuelerliste_view
+        row = nil
+        if view && !view[:errors]
+            r = schuelerliste_correction_rows(view).find do |x|
+                x[:review] == data[:review] && (data[:missing] ? x[:missing] == data[:missing] : x[:student] == data[:student].to_s)
+            end
+            row = schuelerliste_correction_row_html(r, schuelerliste_draft_created(view)) if r
+        end
+        respond(:ok => true, :row => row)
     end
 
     # the start page's »Zu erledigen« (include/start_todo.rb): for a
@@ -774,7 +785,12 @@ class Main < Sinatra::Base
         end
     end
 
-    def schuelerliste_corrections_html(io, view)
+    # The Datenpflege's to-do list: every correction and missing student the
+    # Klassenleitungen reported, with what has to happen and how far it is.
+    # kind: :lusd (a value to change in LUSD), :note (a remark to read and
+    # decide), :gone (no longer at the school), :missing (missing from the
+    # list), :dashboard (a value for the dashboard only)
+    def schuelerliste_correction_rows(view)
         rows = []
         # the checks in 11/12 are shared by the LK lists: each once, with the
         # first LK list that has the student (any, once they are gone)
@@ -789,62 +805,138 @@ class Main < Sinatra::Base
                 next if schuelerliste_lk?(klasse) && (lk_of[c[:student]] || lks.first) != klasse
                 entry = entries[c[:student]]
                 arrived = schuelerliste_arrived?(view, klasse, c)
-                rows << { :klasse => klasse, :review => c[:review], :student => c[:student], :name => entry ? entry[:name] : c[:student],
+                fields = c[:fields] || {}
+                in_lusd = fields.keys - (c[:dashboard_only] || [])
+                kind = if c[:gone] then :gone
+                       elsif !in_lusd.empty? then :lusd
+                       elsif !fields.empty? then :dashboard
+                       else :note
+                       end
+                rows << { :kind => kind, :klasse => klasse, :review => c[:review], :student => c[:student], :name => entry ? entry[:name] : c[:student],
                           :official => entry && entry[:last_name] ? [entry[:official_first_name], Nachname.anzeige(entry[:last_name])].compact.join(' ') : nil,
                           :geburtstag => entry && entry[:geburtstag],
-                          :what => schuelerliste_correction_todo_text(c, entry), :by => c[:by], :at => c[:at],
-                          :arrived => arrived, :done => c[:done] == true, :wontfix => c[:wontfix],
+                          # a remark: its text (the column says what it is)
+                          :what => kind == :note ? sl_h(c[:text]) : schuelerliste_correction_todo_text(c, entry), :by => c[:by], :at => c[:at],
+                          :arrived => arrived, :done => c[:done] == true, :wontfix => c[:wontfix], :noted => c[:noted] == true, :done_at => c[:done_at],
                           :override => (c[:dashboard_only] || []).any? && c[:student].to_s.include?('@') && !arrived ? c : nil,
                           # gone: at once in the dashboard, without waiting for LUSD
                           :gone_email => c[:gone] && !arrived && !c[:done] && @@user_info[c[:student]] ? c[:student] : nil,
                           :gone_since => c[:gone_since] }
             end
             state[:missing].each do |m|
-                rows << { :klasse => klasse, :review => m[:review], :missing => m[:id], :name => m[:name], :note => m[:note],
+                rows << { :kind => :missing, :klasse => klasse, :review => m[:review], :missing => m[:id], :name => m[:name], :note => m[:note],
                           :what => "fehlt#{m[:note].to_s.empty? ? '' : ": #{sl_h(m[:note])}"}", :by => m[:by], :at => m[:at],
-                          :arrived => schuelerliste_missing_arrived?(view, klasse, m), :done => m[:done] == true, :wontfix => m[:wontfix] }
+                          :arrived => schuelerliste_missing_arrived?(view, klasse, m), :done => m[:done] == true, :wontfix => m[:wontfix],
+                          :noted => m[:noted] == true, :done_at => m[:done_at] }
             end
         end
-        return if rows.empty?
-        open = rows.count { |r| !r[:arrived] && !r[:done] }
-        io.puts "<h6 class='dp-corrections-title'>Korrekturen: #{open} offen von #{rows.size}</h6>"
-        io.puts "<p class='text-muted dp-hint'>Die Liste zum Abarbeiten in der LUSD: »Erledigt«, wenn es dort korrigiert ist, »Geht nicht…« mit dem Grund, wenn nicht – die Lehrkraft sieht beides auf ihrer Liste. Was mit dem nächsten Export ankommt, ist von selbst abgehakt.</p>"
-        io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-corrections'><thead><tr><th>Klasse</th><th>Schüler:in</th><th>Korrektur</th><th>Von</th><th>Stand</th><th></th></tr></thead><tbody>"
-        rows.sort_by { |r| [(r[:arrived] || r[:done]) ? 1 : 0, LusdImport.klasse_sort_key(r[:klasse].to_s), r[:name].to_s] }.each do |r|
-            by = (@@user_info[r[:by]] || {})[:display_last_name] || r[:by]
-            state = r[:arrived] ? 'angekommen' : (r[:done] ? (r[:wontfix] ? 'geht nicht' : 'erledigt') : 'offen')
-            attrs = "data-review='#{sl_h(r[:review])}' #{r[:missing] ? "data-missing='#{sl_h(r[:missing])}'" : "data-student='#{sl_h(r[:student])}'"}"
-            actions = []
-            if r[:gone_email]
-                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_gone' data-email='#{sl_h(r[:gone_email])}' data-name='#{sl_h(r[:name])}' data-seit='#{sl_h(r[:gone_since])}'>Im Dashboard abmelden</button>"
-            end
-            if r[:missing] && !r[:arrived] && !r[:done]
-                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_missing' data-name='#{sl_h(r[:name])}' data-note='#{sl_h(r[:note])}'>Von Hand eintragen</button>"
-            end
-            if r[:override]
-                f = r[:override][:fields]
-                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_override' data-email='#{sl_h(r[:student])}' data-rufname='#{sl_h(f['rufname'])}' data-geschlecht='#{sl_h(f['geschlecht'])}'>Im Dashboard festlegen</button>"
-            end
-            unless r[:arrived]
-                if r[:done]
-                    actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='false'>Wieder offen</button>"
-                else
-                    actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='true'>Erledigt</button>"
-                    actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_wontfix' #{attrs} data-name='#{sl_h(r[:name])}'>Geht nicht…</button>"
-                end
-            end
-            who = sl_h(r[:name])
-            who += "<div class='dp-who-official'>#{sl_h(r[:official])}#{r[:geburtstag] ? ", geb. #{sl_h(sl_date(r[:geburtstag]))}" : ''}</div>" if r[:official]
-            stand = sl_h(state)
-            stand += "<div class='dp-wontfix'>#{sl_h(r[:wontfix])}</div>" if r[:wontfix] && !r[:arrived]
-            io.puts "<tr class='dp-correction dp-correction-#{state.tr(' ', '-')}'><td>#{sl_h(schuelerliste_short(r[:klasse]))}</td><td>#{who}</td><td style='white-space: normal;'>#{r[:what]}</td>"
-            io.puts "<td>#{sl_h(by)}</td><td style='white-space: normal;'>#{stand}</td><td class='dp-row-actions'>#{actions.join(' ')}</td></tr>"
+        rows
+    end
+
+    # where a row is: 'angekommen' (the draft has it), 'erledigt' (ticked,
+    # waiting for the next export), 'nicht angekommen' (ticked, but a newer
+    # export still differs – to look at again), 'in der LUSD geändert' (a
+    # remark, ticked), 'nichts zu tun', 'geht nicht', 'offen'
+    def schuelerliste_correction_state(r, draft_created)
+        return 'angekommen' if r[:arrived]
+        return 'offen' unless r[:done]
+        return 'geht nicht' if r[:wontfix]
+        return 'nichts zu tun' if r[:noted]
+        # a remark has nothing an export could show
+        return 'in der LUSD geändert' if r[:kind] == :note
+        draft_created.to_i > r[:done_at].to_i ? 'nicht angekommen' : 'erledigt'
+    end
+
+    SCHUELERLISTE_CORRECTION_GROUPS = [
+        [:lusd, 'In der LUSD ändern', 'Ein Wert ist in der LUSD falsch: dort ändern, dann »Erledigt«. Mit dem nächsten Export ist es von selbst abgehakt (»angekommen«).'],
+        [:note, 'Anmerkungen', 'Lesen und entscheiden: in der LUSD geändert (»Erledigt«), »Nichts zu tun« oder »Geht nicht…« mit dem Grund. Die Lehrkraft sieht die Antwort auf ihrer Liste.'],
+        [:gone, 'Nicht mehr an der Schule', 'In der LUSD abmelden; im Dashboard sofort mit »Im Dashboard abmelden«.'],
+        [:missing, 'Fehlt in der Liste', 'In der LUSD aufnehmen; bis dahin im Dashboard mit »Von Hand eintragen«.'],
+        [:dashboard, 'Nur im Dashboard', 'Kein Fall für die LUSD: »Im Dashboard festlegen«, dann ist es von selbst abgehakt.'],
+    ]
+
+    def schuelerliste_correction_row_html(r, draft_created)
+        by = (@@user_info[r[:by]] || {})[:display_last_name] || r[:by]
+        state = schuelerliste_correction_state(r, draft_created)
+        attrs = "data-review='#{sl_h(r[:review])}' #{r[:missing] ? "data-missing='#{sl_h(r[:missing])}'" : "data-student='#{sl_h(r[:student])}'"}"
+        actions = []
+        if r[:gone_email]
+            actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_gone' data-email='#{sl_h(r[:gone_email])}' data-name='#{sl_h(r[:name])}' data-seit='#{sl_h(r[:gone_since])}'>Im Dashboard abmelden</button>"
         end
-        io.puts "</tbody></table></div>"
+        if r[:missing] && !r[:arrived] && !r[:done]
+            actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_missing' data-name='#{sl_h(r[:name])}' data-note='#{sl_h(r[:note])}'>Von Hand eintragen</button>"
+        end
+        if r[:override]
+            f = r[:override][:fields]
+            actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_take_override' data-email='#{sl_h(r[:student])}' data-rufname='#{sl_h(f['rufname'])}' data-geschlecht='#{sl_h(f['geschlecht'])}'>Im Dashboard festlegen</button>"
+        end
+        unless r[:arrived]
+            if r[:done]
+                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='false'>Wieder offen</button>"
+            else
+                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='true'>Erledigt</button>"
+                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_done' #{attrs} data-done='true' data-noted='true'>Nichts zu tun</button>" if r[:kind] == :note
+                actions << "<button type='button' class='btn btn-secondary btn-sm bu_sl_wontfix' #{attrs} data-name='#{sl_h(r[:name])}'>Geht nicht…</button>"
+            end
+        end
+        who = sl_h(r[:name])
+        who += "<div class='dp-who-official'>#{sl_h(r[:official])}#{r[:geburtstag] ? ", geb. #{sl_h(sl_date(r[:geburtstag]))}" : ''}</div>" if r[:official]
+        labels = { 'erledigt' => 'erledigt, wartet auf den nächsten Export', 'nicht angekommen' => 'erledigt, aber im neuen Export noch anders' }
+        stand = sl_h(labels[state] || state)
+        stand += "<div class='dp-wontfix'>#{sl_h(r[:wontfix])}</div>" if r[:wontfix] && !r[:arrived]
+        finished = !['offen', 'nicht angekommen'].include?(state)
+        "<tr class='dp-correction dp-correction-#{state.tr(' ', '-')}' data-kind='#{r[:kind]}' data-finished='#{finished}'><td>#{sl_h(schuelerliste_short(r[:klasse]))}</td><td>#{who}</td><td style='white-space: normal;'>#{r[:what]}</td>" +
+            "<td>#{sl_h(by)}</td><td class='dp-correction-state' style='white-space: normal;'>#{stand}</td><td class='dp-row-actions'>#{actions.join(' ')}</td></tr>"
+    end
+
+    def schuelerliste_draft_created(view)
+        (datenpflege_load_pending(view[:draft])['created'] rescue nil)
+    end
+
+    def schuelerliste_corrections_html(io, view)
+        rows = schuelerliste_correction_rows(view)
+        confirmed = schuelerliste_klassen_in(view).sum do |klasse|
+            state = schuelerliste_state(klasse)
+            entries = schuelerliste_entries(view, klasse)
+            state[:checks].values.count { |c| c[:status] == 'ok' && schuelerliste_check_valid?(c, entries[c[:student]]) }
+        end
+        return if rows.empty? && confirmed == 0
+        created = schuelerliste_draft_created(view)
+        states = rows.map { |r| schuelerliste_correction_state(r, created) }
+        open = states.count { |x| ['offen', 'nicht angekommen'].include?(x) }
+        finished = rows.size - open
+        io.puts "<div class='dp-corrections-box'>"
+        io.puts "<h6 class='dp-corrections-title'>Korrekturen: <span class='dp-open-count'>#{open}</span> offen von #{rows.size}</h6>"
+        unless rows.empty?
+            io.puts "<div class='dp-progress' role='progressbar' aria-valuemin='0' aria-valuemax='#{rows.size}' aria-valuenow='#{finished}' aria-label='Korrekturen abgearbeitet'><div class='dp-progress-bar' style='width: #{(100.0 * finished / rows.size).round(1)}%'></div></div>"
+        end
+        io.puts "<p class='text-muted dp-hint'>Was die Klassenleitungen gemeldet haben, nach dem, was zu tun ist. Bestätigt haben sie <strong>#{confirmed}</strong> #{confirmed == 1 ? 'Zeile' : 'Zeilen'}: die stimmen so, in der LUSD ist dafür nichts zu tun. Wird ein neuer Export als Entwurf behalten, zeigt jede Zeile, ob sie angekommen ist.</p>"
+        late = states.count('nicht angekommen')
+        if late > 0
+            io.puts "<p class='dp-late'>#{late} als erledigt #{late == 1 ? 'markierte Korrektur ist' : 'markierte Korrekturen sind'} im neuen Export noch anders – bitte in der LUSD nachsehen.</p>"
+        end
+        SCHUELERLISTE_CORRECTION_GROUPS.each do |kind, title, hint|
+            group = rows.each_with_index.select { |r, _| r[:kind] == kind }
+            next if group.empty?
+            group_open = group.count { |_, i| ['offen', 'nicht angekommen'].include?(states[i]) }
+            io.puts "<details class='dp-section dp-corrections-group dp-corrections-#{kind}'#{group_open > 0 ? ' open' : ''}>"
+            io.puts "<summary>#{sl_h(title)}: <strong class='dp-count'><span class='dp-group-open'>#{group_open}</span> offen</strong> von #{group.size}</summary>"
+            io.puts "<p class='text-muted dp-hint'>#{sl_h(hint)}</p>"
+            io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-corrections'><thead><tr><th>Klasse</th><th>Schüler:in</th><th>#{kind == :note ? 'Anmerkung' : 'Korrektur'}</th><th>Von</th><th>Stand</th><th></th></tr></thead><tbody>"
+            # what is still to do first
+            group.sort_by { |r, i| [['offen', 'nicht angekommen'].include?(states[i]) ? 0 : 1, LusdImport.klasse_sort_key(r[:klasse].to_s), r[:name].to_s] }.each do |r, _|
+                io.puts schuelerliste_correction_row_html(r, created)
+            end
+            io.puts "</tbody></table></div>"
+            io.puts "</details>"
+        end
+        io.puts "</div>"
     end
 
     def schuelerliste_done_html(item)
-        if item[:wontfix]
+        if item[:noted]
+            "<span class='sl-done-lusd'>Datenpflege: gelesen, nichts zu ändern</span>"
+        elsif item[:wontfix]
             "<span class='sl-wontfix'>Datenpflege: geht nicht – #{sl_h(item[:wontfix])}</span>"
         else
             "<span class='sl-done-lusd'>Datenpflege: in der LUSD korrigiert</span>"

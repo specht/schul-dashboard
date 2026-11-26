@@ -275,6 +275,17 @@ die häufigen Fälle:
   Export, solange die LUSD keine bekannte Klasse liefert); »Nicht mehr da«
   wie bei *Neu*.
 
+**Korrekturen abarbeiten:** Was die Klassenleitungen melden, steht auf der
+Seite Datenpflege nach dem, was zu tun ist: *In der LUSD ändern* (ein Wert ist
+dort falsch, gezeigt als »jetzt → richtig« mit amtlichem Namen und Geburtstag),
+*Anmerkungen* (lesen und entscheiden: »Erledigt«, »Nichts zu tun« oder »Geht
+nicht…« mit Grund), *Nicht mehr an der Schule*, *Fehlt in der Liste* und *Nur
+im Dashboard*. Abhaken geht ohne Neuladen, ein Balken zeigt den Fortschritt;
+die Lehrkraft sieht die Antwort auf ihrer Liste. Bestätigungen zählen nur mit:
+dort ist in der LUSD nichts zu tun. Wird nach dem Abarbeiten ein neuer Export
+als Entwurf behalten, ist jede Korrektur, die er enthält, »angekommen«; was als
+erledigt abgehakt, im neuen Export aber noch anders ist, wird hervorgehoben.
+
 Im Vergleich des Entwurfs zählen die Antworten der Klassenleitungen: Wen sie
 als neu bestätigt haben (»Stimmt«) und wessen Abgang sie bestätigt haben,
 steht nicht mehr in *Neu* und *Nicht mehr dabei*, sondern zugeklappt darunter

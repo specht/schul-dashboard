@@ -78,6 +78,13 @@
     .dp-corrections-title { margin-top: 1.2em; font-weight: 600; }
     .dp-correction-angekommen td, .dp-correction-erledigt td, .dp-correction-geht-nicht td { color: var(--pv-muted, #6b7280); }
     .dp-who-official, .dp-wontfix { font-size: 0.85em; color: var(--pv-muted, #6b7280); }
+    /* the to-do list of the corrections: the progress, what is done quieter,
+       what a newer export still lacks marked */
+    .dp-corrections { width: 100%; }
+    .dp-progress { height: 8px; max-width: 30em; margin: 0.2em 0 0.6em; border-radius: 4px; background: var(--pv-hover, #e9ecef); overflow: hidden; }
+    .dp-progress-bar { height: 100%; background: var(--acc, #3b7a57); transition: width 0.3s; }
+    .dp-corrections tr[data-finished='true'] > td { color: var(--pv-muted, #6b7280); }
+    .dp-corrections tr.dp-correction-nicht-angekommen > td.dp-correction-state, .dp-late { color: var(--acc-text, #8a5a00); font-weight: 600; }
     .dp-notify-subject { margin: 0.8em 0 0.4em; }
     .dp-notify-body { white-space: pre-wrap; font-size: 0.9em; padding: 0.8em; border: 1px solid var(--pv-line, #e1e4e8); border-radius: 8px; max-height: 50vh; overflow-y: auto; }
     .dp-date label { display: block; margin-bottom: 0.2em; }
@@ -553,8 +560,9 @@
         let wontfix = null;
         $(document).on('click', '.bu_sl_wontfix', function (e) {
             const b = $(e.currentTarget);
-            wontfix = { review: b.data('review'), done: true };
-            if (b.data('missing')) wontfix.missing = b.data('missing'); else wontfix.student = b.data('student');
+            // (attr: the ids as written, .data() would turn digits into numbers)
+            wontfix = { review: b.attr('data-review'), done: true, row: b.closest('tr') };
+            if (b.attr('data-missing')) wontfix.missing = b.attr('data-missing'); else wontfix.student = b.attr('data-student');
             $('#dp_wontfix_name').text(' – ' + b.data('name'));
             $('#ti_wontfix_reason').val('');
             $('#dpWontfixModal').modal('show');
@@ -564,13 +572,44 @@
             const reason = $('#ti_wontfix_reason').val().trim();
             if (!wontfix) return;
             if (!reason) { $('#ti_wontfix_reason').trigger('focus'); return; }
-            api_call('/api/schuelerliste/done', Object.assign({ reason: reason }, wontfix), function (data) { if (data.success) reload_here(); });
+            const row = wontfix.row;
+            delete wontfix.row;
+            api_call('/api/schuelerliste/done', Object.assign({ reason: reason }, wontfix), function (data) {
+                if (!data.success) return;
+                $('#dpWontfixModal').modal('hide');
+                replace_correction(row, data);
+            });
         });
+        // ticked off in place: the row as the server has it now, the counts
+        // and the progress again – no reload
+        function replace_correction(row, data) {
+            if (!data.row || !row || !row.length) { reload_here(); return; }
+            row.replaceWith(data.row);
+            count_corrections();
+        }
+        function count_corrections() {
+            const box = $('.dp-corrections-box');
+            const all = box.find('tr.dp-correction');
+            const open = all.filter("[data-finished='false']").length;
+            box.find('.dp-open-count').text(open);
+            box.find('.dp-progress').attr('aria-valuenow', all.length - open);
+            box.find('.dp-progress-bar').css('width', (all.length ? 100 * (all.length - open) / all.length : 0) + '%');
+            box.find('.dp-corrections-group').each(function () {
+                $(this).find('.dp-group-open').text($(this).find("tr.dp-correction[data-finished='false']").length);
+            });
+            box.find('.dp-late').prop('hidden', box.find('tr.dp-correction-nicht-angekommen').length === 0);
+        }
         $(document).on('click', '.bu_sl_done', function (e) {
             const b = $(e.currentTarget);
-            const payload = { review: b.data('review'), done: b.data('done') === true || b.data('done') === 'true' };
-            if (b.data('missing')) payload.missing = b.data('missing'); else payload.student = b.data('student');
-            api_call('/api/schuelerliste/done', payload, function (data) { if (data.success) reload_here(); });
+            const payload = { review: b.attr('data-review'), done: b.attr('data-done') === 'true' };
+            if (b.attr('data-noted') === 'true') payload.noted = true;
+            if (b.attr('data-missing')) payload.missing = b.attr('data-missing'); else payload.student = b.attr('data-student');
+            b.closest('td').find('button').prop('disabled', true);
+            const row = b.closest('tr');
+            api_call('/api/schuelerliste/done', payload, function (data) {
+                if (!data.success) { b.closest('td').find('button').prop('disabled', false); return; }
+                replace_correction(row, data);
+            });
         });
         $(document).on('click', '.bu_sl_take_override', function (e) {
             const b = $(e.currentTarget);

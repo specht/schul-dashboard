@@ -73,6 +73,29 @@
     .dp-of-rufname { flex: 1 1 12em; min-width: 0; }
     .dp-of-geschlecht { flex: 0 1 12em; }
     .dp-row-actions { white-space: nowrap; text-align: right; }
+    /* the Klassenleitungen's check: one bar for all lists, a small one per
+       row; green confirmed, the accent in progress, grey not opened yet */
+    .dp-review-summary { margin: 0.4em 0 0.8em; max-width: 60em; }
+    .dp-review-bar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; background: color-mix(in srgb, var(--pv-ink, #1f2328) 10%, transparent); }
+    .dp-seg { display: block; min-width: 4px; }
+    .dp-seg-done, .dp-dot-done, .dp-mini-done > span { background: var(--pv-ok, #2f8a46); }
+    .dp-seg-working, .dp-dot-working, .dp-mini-working > span { background: var(--acc, #c77d12); }
+    .dp-seg-opened, .dp-dot-opened, .dp-mini-opened > span { background: color-mix(in srgb, var(--acc, #c77d12) 40%, transparent); }
+    .dp-seg-waiting, .dp-dot-waiting { background: color-mix(in srgb, var(--pv-ink, #1f2328) 25%, transparent); }
+    .dp-seg-nobody { background: transparent; }
+    .dp-dot-nobody { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pv-ink, #1f2328) 35%, transparent); }
+    .dp-review-legend { display: flex; flex-wrap: wrap; gap: 0.3em 1.1em; margin-top: 0.4em; font-size: 0.9em; color: var(--pv-muted, #5f6368); }
+    .dp-legend-item { white-space: nowrap; }
+    .dp-legend-rows { margin-left: auto; white-space: nowrap; }
+    .dp-dot { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 0.4em; vertical-align: 0.05em; }
+    .dp-mini { display: inline-block; width: 4em; height: 6px; margin-right: 0.5em; border-radius: 3px; background: color-mix(in srgb, var(--pv-ink, #1f2328) 12%, transparent); overflow: hidden; vertical-align: middle; }
+    .dp-mini > span { display: block; height: 100%; }
+    /* today's design in dark has no tokens: light tracks */
+    body.dark:not(.ui-preview) .dp-review-bar, body.dark:not(.ui-preview) .dp-mini { background: rgba(255, 255, 255, 0.12); }
+    body.dark:not(.ui-preview) .dp-seg-waiting, body.dark:not(.ui-preview) .dp-dot-waiting { background: rgba(255, 255, 255, 0.3); }
+    body.dark:not(.ui-preview) .dp-dot-nobody { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.4); }
+    .dp-review-checked, .dp-review-status { white-space: nowrap; }
+    .dp-nobody { color: var(--acc-text, #8a5a00); font-weight: 600; }
     .dp-notify { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em 0.8em; margin: 0.6em 0 0.3em; }
     .dp-notify input { width: auto; }
     .dp-corrections-title { margin-top: 1.2em; font-weight: 600; }

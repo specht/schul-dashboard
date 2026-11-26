@@ -760,17 +760,47 @@ class Main < Sinatra::Base
             else
                 io.puts "<p class='dp-release'><strong>Noch nicht freigegeben:</strong> nur die Datenpflege sieht den Entwurf (<a href='/schuelerliste'>so sehen ihn die Klassenleitungen</a>). Freigegeben wird er mit der ersten Mail oder hier. <button type='button' class='btn btn-secondary btn-sm' id='bu_sl_release' data-released='true'>Für Klassenleitungen freigeben</button></p>"
             end
+            # where each list is: bestätigt, in Arbeit (answers, not confirmed
+            # yet), geöffnet (nothing answered yet), noch nicht geöffnet
+            # (no teacher: the Datenpflege's own list, e.g. 11 without an LK)
+            state_of = lambda do |klasse, o|
+                if o[:confirmed] then :done
+                elsif o[:checked] > 0 || o[:corrections] > 0 then :working
+                elsif o[:opened] then :opened
+                elsif schuelerliste_teachers(klasse).empty? then :nobody
+                else :waiting end
+            end
+            states = overview.to_h { |klasse, o| [klasse, state_of.(klasse, o)] }
+            labels = { :done => 'bestätigt', :working => 'in Arbeit', :opened => 'geöffnet', :waiting => 'noch nicht geöffnet', :nobody => 'niemand zuständig' }
+            counts = labels.keys.to_h { |k| [k, states.values.count(k)] }
+            rows_total = overview.values.sum { |o| o[:total] }
+            rows_checked = overview.values.sum { |o| o[:checked] }
+            io.puts "<div class='dp-review-summary'>"
+            io.puts "<div class='dp-review-bar' role='img' aria-label='#{labels.map { |k, l| "#{counts[k]} #{l}" }.join(', ')}'>"
+            labels.each_key do |k|
+                next if counts[k] == 0
+                io.puts "<span class='dp-seg dp-seg-#{k}' style='flex: #{counts[k]}' title='#{counts[k]} #{labels[k]}'></span>"
+            end
+            io.puts "</div>"
+            io.puts "<div class='dp-review-legend'>" + labels.reject { |k, _| k == :nobody && counts[k] == 0 }.map { |k, l| "<span class='dp-legend-item'><span class='dp-dot dp-dot-#{k}'></span><strong>#{counts[k]}</strong> #{l}</span>" }.join(' ') +
+                    (rows_total > 0 ? " <span class='dp-legend-rows'>Zeilen geprüft: <strong>#{rows_checked}</strong> von #{rows_total}</span>" : '') + "</div>"
+            io.puts "</div>"
             io.puts "<div class='dp-scroll'><table class='table table-sm dp-list dp-review-list'><thead><tr><th>Klasse / LK</th><th>Prüft</th><th>Geprüft</th><th>Korrekturen</th><th>Stand</th><th>Benachrichtigt</th></tr></thead><tbody>"
             overview.each_pair do |klasse, o|
                 names = schuelerliste_teachers(klasse).map { |e| (@@user_info[e] || {})[:display_last_name] || e }
+                state = states[klasse]
                 status = if o[:confirmed] then "bestätigt am #{fmt.(o[:confirmed][:confirmed_at])}"
-                         elsif o[:opened] then "geöffnet am #{fmt.(o[:opened][:last_at])}"
+                         elsif o[:opened] then "#{state == :working ? 'in Arbeit, ' : ''}geöffnet am #{fmt.(o[:opened][:last_at])}"
+                         elsif state == :nobody then 'niemand zuständig'
                          else 'noch nicht geöffnet' end
-                io.puts "<tr data-klasse='#{sl_h(klasse)}'><td><a href='/schuelerliste?klasse=#{CGI.escape(klasse)}'>#{sl_h(schuelerliste_short(klasse))}</a></td>"
-                io.puts "<td>#{names.empty? ? "<span class='text-danger'>keine</span>" : sl_h(names.join(', '))}</td>"
+                io.puts "<tr data-klasse='#{sl_h(klasse)}' data-state='#{state}'><td><a href='/schuelerliste?klasse=#{CGI.escape(klasse)}'>#{sl_h(schuelerliste_short(klasse))}</a></td>"
+                io.puts "<td>#{names.empty? ? "<span class='dp-nobody'>keine</span>" : sl_h(names.join(', '))}</td>"
                 same = o[:unchanged] > 0 ? "#{o[:unchanged]} unverändert" : ''
                 checked = o[:total] > 0 ? "#{o[:checked]} von #{o[:total]}#{same.empty? ? '' : ", #{same}"}" : same
-                io.puts "<td>#{checked}</td><td>#{o[:corrections]}</td><td class='dp-review-status'>#{sl_h(status)}</td>"
+                # the share of the rows to check (all of it once confirmed)
+                share = o[:confirmed] ? 100 : (o[:total] > 0 ? (100.0 * o[:checked] / o[:total]).round : 0)
+                bar = "<span class='dp-mini dp-mini-#{state}' aria-hidden='true'><span style='width: #{share}%'></span></span>"
+                io.puts "<td class='dp-review-checked'>#{bar}<span>#{checked}</span></td><td>#{o[:corrections]}</td><td class='dp-review-status'><span class='dp-dot dp-dot-#{state}'></span>#{sl_h(status)}</td>"
                 io.puts "<td>#{o[:notified] ? "#{fmt.(o[:notified][:at])}#{o[:notified][:count].to_i > 1 ? " (#{o[:notified][:count]}×)" : ''}" : ''}</td></tr>"
             end
             io.puts "</tbody></table></div>"

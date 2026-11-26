@@ -841,6 +841,10 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await expect(row).toContainText('noch nicht geöffnet');
     // Elli is in the draft as in the dashboard: no row to check on its own
     await expect(row).toContainText('0 von 3, 1 unverändert');
+    // how far each list is, coloured, and all of them in one bar
+    await expect(row).toHaveAttribute('data-state', 'waiting');
+    await expect(page.locator('.dp-review-legend')).toContainText('noch nicht geöffnet');
+    await expect(page.locator('.dp-review-bar .dp-seg-waiting')).toHaveCount(1);
 
     // the mail: one per Klassenleitung, with the link
     await page.locator('#ti_sl_deadline').fill('2099-12-01');
@@ -885,6 +889,9 @@ test('Schülerliste prüfen: Stand, Mail an die Klassenleitungen, Korrekturen', 
     await page.goto('/datenpflege');
     await expect(row.locator('.dp-review-status')).toContainText('geöffnet am');
     await expect(row).toContainText('2 von 3, 1 unverändert');
+    await expect(row).toHaveAttribute('data-state', 'working');
+    await expect(row.locator('.dp-review-status')).toContainText('in Arbeit');
+    await expect(row.locator('.dp-mini-working > span')).toHaveAttribute('style', /width: 67%/);
     const corrections = page.locator('.dp-corrections');
     await expect(page.locator('.dp-corrections-title')).toContainText('2 offen von 2');
     // by what is to do: »nur im Dashboard« and »fehlt« apart; what the
@@ -1037,6 +1044,9 @@ test('Schülerliste prüfen: in 11 und 12 die Lehrkräfte der Leistungskurse', a
     const year = page.locator('.dp-review-list tr[data-klasse="11"]');
     await expect(year).toContainText('11 ohne LK');
     await expect(year).toContainText('keine');
+    // nobody gets a mail for it: not »noch nicht geöffnet«
+    await expect(year.locator('.dp-review-status')).toHaveText('niemand zuständig');
+    await expect(year).toHaveAttribute('data-state', 'nobody');
     group = (await lk.getAttribute('data-klasse'))!;
 
     // the LK teacher's list: why they may see students who aren't their tutees

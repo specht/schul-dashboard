@@ -11,8 +11,8 @@ class Main < Sinatra::Base
         # that is the same for all students the teacher picked; text: the
         # whole text of the mail, changed by the teacher for this student
         data = parse_request_data(:required_keys => [:email, :reason, :details, :lesson_key, :lesson_offset, :datum],
-                                  :optional_keys => [:comment, :text],
-                                  :types => {:lesson_offset => Integer},
+                                  :optional_keys => [:comment, :text, :stunde],
+                                  :types => {:lesson_offset => Integer, :stunde => Object},
                                   :max_value_lengths => {:details => 2048, :comment => 2048, :text => LessonMailTemplates::MAX_BODY_LENGTH},
                                   :max_body_length => 16 * 1024)
         comment = data[:comment].to_s.strip
@@ -26,6 +26,11 @@ class Main < Sinatra::Base
         data[:datum] = Date.today.strftime('%Y-%m-%d') if Main.class_mail_klasse(data[:lesson_key])
         assert(data[:datum] =~ /\A\d{4}-\d{2}-\d{2}\z/ && (Date.parse(data[:datum]) rescue nil), 'bad date')
         assert(DEVELOPMENT || Date.parse(data[:datum]) <= Date.today, 'lesson in the future')
+        # a lesson without a course (Otium): one LessonInfo per day and lesson
+        stunde = (data[:stunde].is_a?(Integer) && data[:stunde] >= 0 && data[:stunde] < 100) ? data[:stunde] : nil
+        data[:lesson_offset] = Main.vertretung_mail_offset(data[:datum], stunde || 0) if Main.vertretung_mail_klasse(data[:lesson_key])
+        # subject and teacher of a Vertretung, kept with the mail
+        context = Main.lesson_mail_context(data[:lesson_key], data[:email], data[:datum], stunde)
         # rules of the reason (/unterrichtsmails): own templates in the state
         # 'test' only for admins, their mails go to the sender alone
         # (mail-bot-repl.rb); reasons the Otium sends only for the Otium
@@ -49,18 +54,20 @@ class Main < Sinatra::Base
         ts_i = Time.now.to_i - 1 if test
         tag = RandomTag.generate(24)
         datum = Date.today.strftime('%Y-%m-%d')
-        neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i, :test => test, :comment => comment.empty? ? nil : comment, :text => text.empty? ? nil : text})
+        neo4j_query_expect_one(<<~END_OF_QUERY, {:tag => tag, :teacher_email => @session_user[:email], :sus_email => data[:email], :reason => data[:reason], :details => data[:details], :lesson_key => data[:lesson_key], :lesson_offset => data[:lesson_offset], :datum => data[:datum], :ts => ts_i, :test => test, :comment => comment.empty? ? nil : comment, :text => text.empty? ? nil : text, :stunde => stunde, :ctx_fach => context[:fach], :ctx_teacher => context[:lesson_teacher]})
             MATCH (ut:User {email: $teacher_email})
             MATCH (us:User {email: $sus_email})
             MERGE (l:Lesson {key: $lesson_key})
             MERGE (i:LessonInfo {offset: $lesson_offset})-[:BELONGS_TO]->(l)
             CREATE (us)<-[:SENT_TO]-(m:Mail {tag: $tag, reason: $reason, details: $details, ts: $ts})-[:SENT_BY]->(ut)
-            SET m.test = CASE WHEN $test THEN true ELSE null END, m.comment = $comment, m.text = $text, m.datum = $datum
+            SET m.test = CASE WHEN $test THEN true ELSE null END, m.comment = $comment, m.text = $text, m.datum = $datum,
+                m.stunde = $stunde, m.fach = $ctx_fach, m.lesson_teacher = $ctx_teacher
             CREATE (m)-[:REGARDING]->(i)
             RETURN m;
         END_OF_QUERY
 
         entry = {
+            :lesson_offset => data[:lesson_offset],
             :tag => tag,
             :reason => data[:reason],
             :test => test,
@@ -133,7 +140,8 @@ class Main < Sinatra::Base
         stored = stored_lesson_mail_templates
         template = LessonMailTemplates.effective(stored, mail[:reason])
         assert(template, 'unknown reason')
-        vars = Main.lesson_mail_vars(row['sus_email'], row['lesson_key'], @session_user[:email], mail[:details], mail[:comment], mail[:datum])
+        vars = Main.lesson_mail_vars(row['sus_email'], row['lesson_key'], @session_user[:email], mail[:details], mail[:comment], mail[:datum],
+            {:fach => mail[:fach], :lesson_teacher => mail[:lesson_teacher]}.compact)
         rendered = LessonMailTemplates.render(template, vars, mail[:text])
         if mail[:test] == true
             info = LessonMailTemplates.find(stored, mail[:reason]) || {}

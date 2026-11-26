@@ -376,7 +376,7 @@ var jitsi_refresh_config = {
 };
 var tablet_set_info = #{@@tablet_sets.to_json};
 var ha_amt_lesson_keys = #{get_ha_amt_lesson_keys.to_json};
-var schueler_for_klasse = #{(teacher_logged_in? ? @@schueler_for_klasse : {}).map { |klasse, l| [klasse, l.map { |x| {email: x, display_first_name: @@user_info[x][:display_first_name], display_last_name: @@user_info[x][:display_last_name]}}]}.to_h.to_json};
+var schueler_for_klasse = #{((teacher_logged_in? || user_with_role_logged_in?(:otium)) ? @@schueler_for_klasse : {}).map { |klasse, l| [klasse, l.map { |x| {email: x, display_first_name: @@user_info[x][:display_first_name], display_last_name: @@user_info[x][:display_last_name]}}]}.to_h.to_json};
 
 
 function clear_polling_handler() {
@@ -2773,17 +2773,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             let allow = false;
-            if (typeof(event.lesson_key) !== 'undefined' &&
-                event.lesson_offset !== null &&
-                event.lesson_offset >= 0 &&
-                // mails also days after the lesson, not before it
-                (#{DEVELOPMENT ? 'true' : 'false'} || (typeof(event.datum) === 'string' && event.datum <= '#{Date.today.strftime('%Y-%m-%d')}')))
-            {
-                if ('#{user_with_role_logged_in?(:otium) ? 'true' : 'false'}' === 'true') {
-                    allow = true;
-                    event = Object.assign({}, event);
-                    event.schueler_for_lesson = schueler_for_klasse[event.klassen[0][0]];
-                } else if ('#{teacher_logged_in? ? 'true' : 'false'}' === 'true') {
+            // mails also days after the lesson, not before it
+            let mail_date_ok = #{DEVELOPMENT ? 'true' : 'false'} || (typeof(event.datum) === 'string' && event.datum <= '#{Date.today.strftime('%Y-%m-%d')}');
+            let mail_course_ok = typeof(event.lesson_key) !== 'undefined' && event.lesson_offset !== null && event.lesson_offset >= 0;
+            if ('#{user_with_role_logged_in?(:otium) ? 'true' : 'false'}' === 'true') {
+                // The Otium sends for any lesson of a class, also a Vertretung
+                if (mail_date_ok && (event.lesson || typeof(event.lesson_key) !== 'undefined')) {
+                    let mail_otium = lesson_mail_otium_event(event);
+                    if (mail_otium !== null) {
+                        allow = true;
+                        event = mail_otium;
+                    }
+                }
+            } else if (mail_course_ok && mail_date_ok) {
+                if ('#{teacher_logged_in? ? 'true' : 'false'}' === 'true') {
                     if (my_lessons.indexOf(event.lesson_key) >= 0) {
                         if ((event.schueler_for_lesson ?? []).length > 0) {
                             allow = true;

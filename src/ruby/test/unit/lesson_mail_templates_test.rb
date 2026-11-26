@@ -324,6 +324,28 @@ class LessonMailTemplatesTest < Minitest::Test
         assert_equal({:baseline => 50, :last => 60}, LessonMailTemplates.overview_visit({:baseline => nil, :last => 50}, 60))
     end
 
+    # The Vertretungsplan entry for a lesson: its teacher instead and subject;
+    # for a course only an entry about it (parallel courses).
+    def test_substitution
+        v = {'2026-11-26' => [
+            {:stunde => 1, :klassen_alt => ['5a'], :klassen_neu => ['5a'], :lehrer_alt => ['Sc'], :lehrer_neu => ['We'], :fach_alt => 'Ma', :fach_neu => 'Ma'},
+            {:stunde => 3, :klassen_alt => [], :klassen_neu => ['5a', '5b'], :lehrer_alt => [], :lehrer_neu => ['Xy'], :fach_alt => '', :fach_neu => 'Vtr'},
+            {:stunde => 4, :klassen_alt => ['5a'], :klassen_neu => ['5a'], :lehrer_alt => ['Re'], :lehrer_neu => ['Zz'], :fach_alt => 'Re', :fach_neu => 'Re'},
+        ]}
+        assert_equal({:lehrer => 'We', :fach => 'Ma'}, LessonMailTemplates.substitution(v, '2026-11-26', 1, '5a'))
+        assert_equal({:lehrer => 'We', :fach => 'Ma'}, LessonMailTemplates.substitution(v, '2026-11-26', 1, '5a', {:lehrer => ['Sc'], :fach => 'Ma'}))
+        # only in klassen_neu, no old teacher: found for the class (no course)
+        assert_equal({:lehrer => 'Xy', :fach => 'Vtr'}, LessonMailTemplates.substitution(v, '2026-11-26', 3, '5b'))
+        # Ethik in the same lesson as the covered Religion: not its entry
+        assert_nil LessonMailTemplates.substitution(v, '2026-11-26', 4, '5a', {:lehrer => ['Et'], :fach => 'Eth'})
+        assert_equal 'Zz', LessonMailTemplates.substitution(v, '2026-11-26', 4, '5a', {:lehrer => ['Re'], :fach => 'Re'})[:lehrer]
+        assert_nil LessonMailTemplates.substitution(v, '2026-11-26', 2, '5a')
+        assert_nil LessonMailTemplates.substitution(v, '2026-11-25', 1, '5a')
+        assert_nil LessonMailTemplates.substitution(v, '2026-11-26', 1, '6a')
+        assert_nil LessonMailTemplates.substitution(nil, '2026-11-26', 1, '5a')
+        assert_nil LessonMailTemplates.substitution(v, '2026-11-26', nil, '5a')
+    end
+
     def test_new_template_body_is_valid
         assert_empty LessonMailTemplates.template_errors('Betreff', LessonMailTemplates::NEW_TEMPLATE_BODY)
     end

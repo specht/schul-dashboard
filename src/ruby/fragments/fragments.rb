@@ -2789,7 +2789,14 @@ class Main
             sus_email = row['u.email']
             lesson_key = row['l.key']
             # class teachers' mails hang at no lesson (CLASS_MAIL_KEY_PREFIX)
-            fach = Main.class_mail_klasse(lesson_key) ? 'KL' : ((@@lessons[:lesson_keys][lesson_key] || {})[:fach] || '?')
+            fach = if Main.class_mail_klasse(lesson_key)
+                'KL'
+            elsif Main.vertretung_mail_klasse(lesson_key)
+                # a Vertretung without a course: its subject as kept with the mail
+                row['m'][:fach] || 'Vtr'
+            else
+                (@@lessons[:lesson_keys][lesson_key] || {})[:fach] || '?'
+            end
             reason = row['m'][:reason]
             ts = row['m'][:ts]
             # the day it was sent (or will be, while it waits)

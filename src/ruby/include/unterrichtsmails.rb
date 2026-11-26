@@ -14,6 +14,14 @@ LESSON_MAIL_PREVIEW_STUDENTS = {
 CLASS_MAIL_KEY_PREFIX = '_klassenleitung_'
 CLASS_MAIL_FACH = 'Klassenleitung'
 
+# The Otium sends its mails for any lesson, also a Vertretung the dashboard
+# cannot put into a course (no lesson count): those hang at
+# '_vertretung_<klasse>' with one LessonInfo per day and lesson (see
+# vertretung_mail_offset). Subject and teacher of a Vertretung come from the
+# Vertretungsplan and are kept with the mail.
+VERTRETUNG_KEY_PREFIX = '_vertretung_'
+VERTRETUNG_FACH = 'Vertretung'
+
 class Main < Sinatra::Base
     # the class of a class teacher's mail key, nil for a lesson key
     def self.class_mail_klasse(lesson_key)
@@ -31,6 +39,35 @@ class Main < Sinatra::Base
         (date - Date.new(2000, 1, 1)).to_i
     end
 
+    def self.vertretung_mail_klasse(lesson_key)
+        return nil unless lesson_key.to_s.start_with?(VERTRETUNG_KEY_PREFIX)
+        klasse = lesson_key.to_s[VERTRETUNG_KEY_PREFIX.size..]
+        @@klassen_order.include?(klasse) ? klasse : nil
+    end
+
+    # a lesson without a course: day and lesson (stunde) in one number
+    def self.vertretung_mail_offset(datum, stunde)
+        (Date.parse(datum.to_s) - Date.new(2000, 1, 1)).to_i * 100 + stunde.to_i
+    end
+
+    # Subject and teacher of the lesson as the Vertretungsplan has them, for
+    # the student's class: {:fach (display name, only for lessons without a
+    # course), :lesson_teacher (e-mail)}; empty when the lesson is as planned.
+    def self.lesson_mail_context(lesson_key, sus_email, datum, stunde)
+        klasse = (@@user_info[sus_email] || {})[:klasse]
+        # a course: only an entry about it; no course (Vertretung): the class's
+        course = @@lessons[:lesson_keys][lesson_key]
+        lesson = course ? {:lehrer => course[:lehrer] || [], :fach => course[:fach]} : nil
+        sub = LessonMailTemplates.substitution(@@vertretungen, datum, stunde, klasse, lesson)
+        context = {}
+        context[:lesson_teacher] = @@shorthands[sub[:lehrer]] if sub && sub[:lehrer]
+        if vertretung_mail_klasse(lesson_key)
+            fach = sub ? sub[:fach] : nil
+            context[:fach] = fach ? (@@faecher[fach] || fach) : VERTRETUNG_FACH
+        end
+        context.compact
+    end
+
     def klassenleitung_of?(klasse)
         teacher_logged_in? && (@@klassenleiter[klasse] || []).include?(@session_user[:shorthand])
     end
@@ -42,6 +79,10 @@ class Main < Sinatra::Base
         klasse = Main.class_mail_klasse(lesson_key)
         if klasse
             klassenleitung_of?(klasse) && (@@schueler_for_klasse[klasse] || []).include?(sus_email)
+        elsif (vklasse = Main.vertretung_mail_klasse(lesson_key))
+            # the Otium, for a lesson without a course (Vertretung): a student
+            # of that class
+            user_with_role_logged_in?(:otium) && (@@schueler_for_klasse[vklasse] || []).include?(sus_email)
         else
             !@@lessons[:lesson_keys][lesson_key].nil?
         end
@@ -64,17 +105,19 @@ class Main < Sinatra::Base
     # preview alike. The person who sends the mail signs it and gets the
     # replies – for Otium mails the teacher on Otium duty; the lesson's
     # teacher is {Lehrkraft der Stunde}.
-    # datum: the lesson's day ('YYYY-MM-DD'), for {Datum}
-    def self.lesson_mail_vars(sus_email, lesson_key, sender_email, details, comment = nil, datum = nil)
+    # datum: the lesson's day ('YYYY-MM-DD'), for {Datum}; context: from the
+    # Vertretungsplan (lesson_mail_context), kept with the mail
+    def self.lesson_mail_vars(sus_email, lesson_key, sender_email, details, comment = nil, datum = nil, context = {})
+        context ||= {}
         sus = @@user_info[sus_email]
         lesson = @@lessons[:lesson_keys][lesson_key] || {}
         sender = @@user_info[sender_email] || {}
-        lesson_teacher = @@user_info[lesson_mail_lesson_teacher(lesson_key)] || sender
+        lesson_teacher = @@user_info[context[:lesson_teacher]] || @@user_info[lesson_mail_lesson_teacher(lesson_key)] || sender
         {
             :first_name => sus[:display_first_name],
             :name => sus[:display_name],
             :klasse => tr_klasse(sus[:klasse]),
-            :fach => class_mail_klasse(lesson_key) ? CLASS_MAIL_FACH : (lesson[:pretty_fach] || lesson[:fach]),
+            :fach => context[:fach] || (class_mail_klasse(lesson_key) ? CLASS_MAIL_FACH : (lesson[:pretty_fach] || lesson[:fach])),
             :note => details,
             :comment => comment,
             :datum => datum,
@@ -201,7 +244,8 @@ class Main < Sinatra::Base
     post '/api/preview_lesson_mail' do
         assert(teacher_logged_in? || user_with_role_logged_in?(:otium))
         data = parse_request_data(:required_keys => [:email, :reason, :details, :lesson_key],
-                                  :optional_keys => [:comment, :datum],
+                                  :optional_keys => [:comment, :datum, :stunde],
+                                  :types => {:stunde => Object},
                                   :max_value_lengths => {:details => 2048, :comment => 2048}, :max_body_length => 8192)
         stored = stored_lesson_mail_templates
         info = LessonMailTemplates.find(stored, data[:reason])
@@ -210,7 +254,8 @@ class Main < Sinatra::Base
         assert(@@user_info[data[:email]] && !@@user_info[data[:email]][:teacher], 'unknown student')
         assert(lesson_mail_key_allowed?(data[:lesson_key], data[:email]), 'unknown lesson')
         template = LessonMailTemplates.effective(stored, data[:reason])
-        rendered = LessonMailTemplates.render(template, Main.lesson_mail_vars(data[:email], data[:lesson_key], @session_user[:email], data[:details], data[:comment], data[:datum]))
+        rendered = LessonMailTemplates.render(template, Main.lesson_mail_vars(data[:email], data[:lesson_key], @session_user[:email], data[:details], data[:comment], data[:datum],
+            Main.lesson_mail_context(data[:lesson_key], data[:email], data[:datum], data[:stunde])))
         respond(:subject => rendered[:subject], :html => rendered[:html], :text => rendered[:text])
     end
 

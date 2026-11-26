@@ -73,14 +73,16 @@ class MailBotRepl < Sinatra::Base
                     klassenleitung = (@@klassenleiter[klasse] || []).map { |shorthand| @@shorthands[shorthand] }.compact
                 end
                 # the lesson's teacher hears about mails others send (Otium)
+                # the teacher of the lesson: the one of a Vertretung, kept with the mail
                 envelope = LessonMailTemplates.envelope(test: test, sender: lehrer_email, student: sus_email,
-                                                        lesson_teacher: Main.lesson_mail_lesson_teacher(lesson_key),
+                                                        lesson_teacher: mail[:lesson_teacher] || Main.lesson_mail_lesson_teacher(lesson_key),
                                                         klassenleitung: klassenleitung)
                 # no addresses or details (about a student) in the log
                 debug "Sending parent mail #{tag} / #{lesson_key} / #{lesson_offset} / #{reason}#{test ? ' (test)' : ''}"
                 template = LessonMailTemplates.effective(templates, reason)
                 raise "no text for #{reason}" if template.nil?
-                vars = Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details, mail[:comment], mail[:datum])
+                vars = Main.lesson_mail_vars(sus_email, lesson_key, lehrer_email, details, mail[:comment], mail[:datum],
+                                             {:fach => mail[:fach], :lesson_teacher => mail[:lesson_teacher]}.compact)
                 # a text the teacher changed for this student, else the template's
                 rendered = LessonMailTemplates.render(template, vars, mail[:text])
                 if test

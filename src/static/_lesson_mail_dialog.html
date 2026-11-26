@@ -234,7 +234,7 @@ function update_mail_preview() {
         let seq = ++mail_preview_seq;
         let comment = (mail_individual() && email_div_rows[email]) ? email_div_rows[email].comment.val().trim() : '';
         let details = mail_individual() ? '' : $('#ti_mail_details').val().trim();
-        api_call('/api/preview_lesson_mail', {email: email, reason: reason, details: details, comment: comment, lesson_key: mail_event.lesson_key, datum: mail_event.datum ?? ''}, function(data) {
+        api_call('/api/preview_lesson_mail', {email: email, reason: reason, details: details, comment: comment, lesson_key: mail_event.lesson_key, datum: mail_event.datum ?? '', stunde: mail_event.stunde ?? null}, function(data) {
             if (seq !== mail_preview_seq || !data.success) return;
             $('#mail_preview_subject').text(data.subject);
             // rendered and escaped by the server
@@ -295,6 +295,29 @@ function generate_mail_pending_row(entry, sus_info) {
     return row;
 }
 
+// The Otium's mail for a lesson: the students of the one class it is about,
+// as always its (first) class; a Vertretung may have its class only among
+// the new ones (no old class) – then that one. Never several classes
+// together. A lesson without a course (a Vertretung the dashboard can't put
+// into one) gets a place of its own per class, day and lesson
+// (VERTRETUNG_KEY_PREFIX, include/unterrichtsmails.rb). null: no class.
+function lesson_mail_otium_event(event) {
+    let groups = (event.klassen || []).map((x) => Array.isArray(x) ? x : [x]);
+    let klasse = (groups.find((g) => g.length > 0 && !!g[0]) || [])[0];
+    if (!klasse) return null;
+    let students = schueler_for_klasse[klasse] ?? [];
+    if (students.length === 0) return null;
+    let result = Object.assign({}, event);
+    result.schueler_for_lesson = students;
+    if (!(typeof(event.lesson_key) !== 'undefined' && event.lesson_key !== 0 && event.lesson_offset !== null && event.lesson_offset >= 0)) {
+        let [y, m, d] = String(event.datum).split('-').map((x) => parseInt(x, 10));
+        let days = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2000, 0, 1)) / 86400000);
+        result.lesson_key = '_vertretung_' + klasse;
+        result.lesson_offset = days * 100 + (parseInt(event.stunde, 10) || 0);
+    }
+    return result;
+}
+
 function lesson_mail_open(event, students, done) {
     $('#div_email_sus_table').empty();
     email_div_rows = {};
@@ -339,7 +362,7 @@ function lesson_mail_open(event, students, done) {
                 clearTimeout(mail_view_timer);
                 if (!mail_view.prop('open') || mail_event === null) return;
                 mail_view_timer = setTimeout(function() {
-                    api_call('/api/preview_lesson_mail', {email: sus_info.email, reason: $('#ti_mail_reason').val(), details: '', comment: comment.val().trim(), lesson_key: mail_event.lesson_key, datum: mail_event.datum ?? ''}, function(data) {
+                    api_call('/api/preview_lesson_mail', {email: sus_info.email, reason: $('#ti_mail_reason').val(), details: '', comment: comment.val().trim(), lesson_key: mail_event.lesson_key, datum: mail_event.datum ?? '', stunde: mail_event.stunde ?? null}, function(data) {
                         if (!data.success) return;
                         mail_view_subject.text(data.subject);
                         if (!row_info.text_edited) mail_text.val(data.text);
@@ -414,7 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             let email = queue.shift();
             let row = email_div_rows[email];
-            api_call('/api/send_email', {email: email, reason: reason, details: details, comment: individual ? row.comment.val().trim() : '', text: (individual && row.text_edited) ? row.mail_text.val() : '', lesson_key: event.lesson_key, lesson_offset: event.lesson_offset, datum: event.datum}, function(data) {
+            api_call('/api/send_email', {email: email, reason: reason, details: details, comment: individual ? row.comment.val().trim() : '', text: (individual && row.text_edited) ? row.mail_text.val() : '', lesson_key: event.lesson_key, lesson_offset: event.lesson_offset, datum: event.datum, stunde: event.stunde ?? null}, function(data) {
                 if (!data.success) {
                     mail_reason_changed();
                     return;

@@ -34,6 +34,7 @@ export const ROLE_ACCOUNTS: Record<string, string> = {
   gev: 'gev@beispielschule.de', // parent council
   externe_ag: 'externe.ag@beispielschule.de', // external club leader
   sv: 'elli.mustermann@mail.beispielschule.de', // student with student council roles
+  otium: 'otium.aufsicht@beispielschule.de', // teacher on Otium duty (role OTIUM)
 };
 
 type Factor = 'email' | 'otp';

@@ -424,6 +424,29 @@ module LessonMailTemplates
         errors
     end
 
+    # The Vertretungsplan entry for a student's class in a lesson (stunde) on
+    # a day: who taught it instead and which subject – the mail names that
+    # teacher as {Lehrkraft der Stunde} (an Otium mail: who sent the child
+    # out). vertretungen: {datum => [entry]} as the parser reads them.
+    # Returns {:lehrer, :fach}, nil when there is none.
+    # lesson: the course's regular {:lehrer (shorthands), :fach}; then the
+    # entry must be about it (its old teacher or subject) – in parallel
+    # courses (Religion and Ethik) only the one that is covered.
+    def self.substitution(vertretungen, datum, stunde, klasse, lesson = nil)
+        return nil if datum.nil? || stunde.nil? || klasse.nil?
+        entry = ((vertretungen || {})[datum.to_s] || []).find do |e|
+            next false unless e[:stunde].to_i == stunde.to_i &&
+                ((e[:klassen_neu] || []).to_a + (e[:klassen_alt] || []).to_a).include?(klasse)
+            next true if lesson.nil?
+            !((e[:lehrer_alt] || []).to_a & (lesson[:lehrer] || []).to_a).empty? ||
+                (!lesson[:fach].to_s.empty? && e[:fach_alt].to_s == lesson[:fach].to_s)
+        end
+        return nil if entry.nil?
+        fach = entry[:fach_neu].to_s.strip
+        fach = entry[:fach_alt].to_s.strip if fach.empty?
+        {:lehrer => (entry[:lehrer_neu] || []).to_a.first, :fach => fach.empty? ? nil : fach}
+    end
+
     # The class's overview of sent mails marks what came in since the teacher
     # last looked (each teacher, each class). Reloads within half an hour
     # count as the same visit, so the marks stay while one looks.

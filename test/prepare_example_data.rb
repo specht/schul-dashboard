@@ -66,6 +66,9 @@ append_lines(File.join(target, 'lehrer', 'lehrer.csv'), [
     'sms.zwei@beispielschule.de,Sz,m,Zwei,Sven,,',
     # extended staff: Kürzel with a leading underscore (Gruppenbildung Kollegium)
     'sozialarbeit@beispielschule.de,_Ss,w,Sozial,Sarah,,',
+    # a teacher on Otium duty: sends the Otium's mails for any lesson
+    # (lesson-mail-templates.spec.ts)
+    'otium.aufsicht@beispielschule.de,Ot,w,Otium,Olga,,',
 ])
 append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'sekretariat@beispielschule.de,w,Sekretariat,Sabine,',
@@ -102,6 +105,7 @@ append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'DATENTRESOR_HOTLINE' => ['clarke@beispielschule.de'],
     # an external calendar in the timetable (design-preview-ical-import.spec.ts)
     'CAN_IMPORT_ICAL' => ['clarke@beispielschule.de'],
+    'OTIUM' => ['otium.aufsicht@beispielschule.de'],
 }.each_pair do |role, emails|
     append_lines(File.join(target, 'roles', 'roles.txt'), [">> #{role}"] + emails)
 end

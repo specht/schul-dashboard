@@ -1,4 +1,4 @@
-import { test, expect, login, dashboardDialog, showDayInTimetable, ACCOUNTS } from './fixtures';
+import { test, expect, login, dashboardDialog, showDayInTimetable, ACCOUNTS, ROLE_ACCOUNTS } from './fixtures';
 import type { Page } from '@playwright/test';
 
 // /unterrichtsmails: admins change the texts teachers send to parents from a
@@ -592,4 +592,40 @@ test('Mails aus dem Unterricht: Übersicht zeigt neue Mails seit dem letzten Bes
   } finally {
     expect((await colleague.request.post('/api/cancel_email', { data: { tag } })).status()).toBe(200);
   }
+});
+
+// The Otium sends for any lesson, also a Vertretung the dashboard can't put
+// into a course: such a lesson has a place of its own per class, day and
+// lesson ('_vertretung_<klasse>'), only for the Otium and only for students
+// of that class; {Fach} is »Vertretung« unless the Vertretungsplan says more.
+test('Mails aus dem Unterricht: Otium schickt auch bei Vertretungsstunden', async ({ page, newUserPage }) => {
+  await login(page, ROLE_ACCOUNTS.otium);
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+  const [y, m, d] = today.split('-').map((x) => parseInt(x, 10));
+  const offset = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2000, 0, 1)) / 86400000) * 100 + 3;
+  const mail = { email: ACCOUNTS.schueler, reason: 'disturbance_otium', details: 'Lärm', lesson_key: '_vertretung_5a', lesson_offset: 0, datum: today, stunde: 3 };
+
+  const preview = await page.request.post('/api/preview_lesson_mail', { data: mail });
+  expect(preview.status()).toBe(200);
+  expect((await preview.json()).text).toContain('im Fach Vertretung ein derart ausgeprägtes Störverhalten (Lärm)');
+
+  const sent = await page.request.post('/api/send_email', { data: mail });
+  expect(sent.status()).toBe(200);
+  const entry = (await sent.json()).entry;
+  // the server sets the place: day and lesson
+  expect(entry.lesson_offset).toBe(offset);
+  const pending = await (await page.request.post('/api/get_pending_mails', { data: { lesson_key: '_vertretung_5a', lesson_offset: offset } })).json();
+  expect(pending.results[ACCOUNTS.schueler].map((x: any) => x.tag)).toContain(entry.tag);
+  expect((await page.request.post('/api/cancel_email', { data: { tag: entry.tag } })).status()).toBe(200);
+
+  // only students of that class
+  expect((await page.request.post('/api/send_email', { data: { ...mail, email: ACCOUNTS.schueler_oberstufe } })).status()).not.toBe(200);
+  // only the Otium
+  const teacher = await newUserPage();
+  await login(teacher, ACCOUNTS.teacher);
+  expect((await teacher.request.post('/api/send_email', { data: { ...mail, reason: 'praise' } })).status()).not.toBe(200);
+  // a lesson with a course as before
+  const regular = await page.request.post('/api/send_email', { data: { ...mail, lesson_key: 'Ma_5a', lesson_offset: 0 } });
+  expect(regular.status()).toBe(200);
+  expect((await page.request.post('/api/cancel_email', { data: { tag: (await regular.json()).entry.tag } })).status()).toBe(200);
 });

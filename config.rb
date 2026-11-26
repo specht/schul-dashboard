@@ -351,6 +351,9 @@ end
 #   the web service joins it, to write there
 # - DATA_RELOAD_RESTARTS = false: services don't restart when the data
 #   changes (test stack, whose services the E2E tests share)
+# - NEW_DESIGN_FOR_ALL_FROM = 'YYYY-MM-DD': from when everyone has the new
+#   design, instead of the date in design_preview.rb (test stack: later, its
+#   tests use the opt-in)
 # Without them the generated files stay as they were.
 if defined?(DATA_REPO_WRITABLE) && DATA_REPO_WRITABLE
     docker_compose[:services][:ruby][:volumes] += ["#{INPUT_DATA_PATH}:/data-repo"]
@@ -372,6 +375,11 @@ end
 if defined?(DATA_RELOAD_RESTARTS) && !DATA_RELOAD_RESTARTS
     docker_compose[:services].each_value do |v|
         v[:environment] << 'DASHBOARD_DATA_RELOAD=off'
+    end
+end
+if defined?(NEW_DESIGN_FOR_ALL_FROM) && NEW_DESIGN_FOR_ALL_FROM
+    docker_compose[:services].each_value do |v|
+        v[:environment] << "DASHBOARD_NEW_DESIGN_FOR_ALL_FROM=#{NEW_DESIGN_FOR_ALL_FROM}"
     end
 end
 unless DOCKER_NETWORK_RUBY_IP.nil?

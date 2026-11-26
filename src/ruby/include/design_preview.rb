@@ -12,7 +12,29 @@ class Main < Sinatra::Base
     # runs in production mode).
     UI_PREVIEW_FOR = DEVELOPMENT ? :all : :admins
 
+    # From this day on the new design is everyone's, with no way back (on
+    # every account and the login pages). The old design stays in the code for
+    # a few days, until the use is stable, then it goes. Only admins can still
+    # switch to it, to compare while fixing (profile, quick switch) – a
+    # switch-off from before the day doesn't count for them either.
+    # (the test stack sets a later day: DASHBOARD_NEW_DESIGN_FOR_ALL_FROM, config.rb)
+    NEW_DESIGN_FOR_ALL_FROM = (Date.parse(ENV['DASHBOARD_NEW_DESIGN_FOR_ALL_FROM']) rescue nil) || Date.new(2026, 12, 1)
+
+    def self.new_design_for_all?(today = Date.today)
+        today >= NEW_DESIGN_FOR_ALL_FROM
+    end
+
+    # an account's look (fields of the User node: ui_preview, ui_preview_ts),
+    # once it may have the new design
+    def self.ui_preview_for_account(fields, admin, today = Date.today)
+        fields ||= {}
+        return !!fields[:ui_preview] unless new_design_for_all?(today)
+        return true unless admin
+        !(fields[:ui_preview] == false && fields[:ui_preview_ts].to_i >= NEW_DESIGN_FOR_ALL_FROM.to_time.to_i)
+    end
+
     def ui_preview_allowed?
+        return user_logged_in? if Main.new_design_for_all?
         # test persons an admin chose (/design_feedback), whatever the stage
         return true if user_logged_in? && (@session_user || {})[:ui_preview_granted]
         case UI_PREVIEW_FOR
@@ -27,12 +49,13 @@ class Main < Sinatra::Base
         # (manage_monitor embeds them with the admin's session)
         return false if ((request.path rescue '') || '').start_with?('/monitor')
         return ui_preview_account? if user_logged_in?
-        ui_preview_public_page? && UI_PREVIEW_COOKIE_VALUES.include?(ui_preview_cookie)
+        return false unless ui_preview_public_page?
+        Main.new_design_for_all? || UI_PREVIEW_COOKIE_VALUES.include?(ui_preview_cookie)
     end
 
     # the account's own setting (logged in)
     def ui_preview_account?
-        ui_preview_allowed? && !!(@session_user || {})[:ui_preview]
+        ui_preview_allowed? && Main.ui_preview_for_account(@session_user, admin_logged_in?)
     end
 
     # Logged out (the login and code pages) there is no account to ask, so
@@ -248,8 +271,10 @@ class Main < Sinatra::Base
                                   :max_body_length => 4096, :max_value_lengths => {:reason => DESIGN_FEEDBACK_MAX_LENGTH})
         assert(%w(on off).include?(data[:mode]))
         on = data[:mode] == 'on'
-        # switching off is always allowed, switching on only for the current stage
+        # switching off is always allowed (from the day everyone has the new
+        # design: only for admins), switching on only for the current stage
         assert(ui_preview_allowed?) if on
+        assert(admin_logged_in?, 'no way back') if !on && Main.new_design_for_all?
         neo4j_query(<<~END_OF_QUERY, :email => @session_user[:email], :on => on, :ts => Time.now.to_i)
             MATCH (u:User {email: $email})
             SET u.ui_preview = $on

@@ -141,14 +141,14 @@
                             <input #{@session_user[:new_design] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="neu" data-off="alt" data-onstyle="secondary" data-offstyle="secondary" id='design_css_switch'>
                         </div>
                     </div>
-                    <div class="col-md-12" style="margin-top: 1em; #{ui_preview_allowed? ? '' : 'display: none;'}">
+                    <div class="col-md-12" style="margin-top: 1em; #{ui_preview_allowed? && (!Main.new_design_for_all? || admin_logged_in?) ? '' : 'display: none;'}">
                         <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: 1em;">
                             <div>
-                                <label for="ui_preview_switch" style="margin: 0; font-weight: bold;">Neues Design (Vorschau)</label>
-                                <div class="text-muted" style="font-size: 0.9em;">#{teacher_logged_in? && !ui_preview? ? 'Probieren Sie aus, woran wir gerade arbeiten. Sie können jederzeit zurückwechseln – über Feedback freuen wir uns.' : 'Probier aus, woran wir gerade arbeiten. Du kannst jederzeit zurückwechseln – über Feedback freuen wir uns.'}</div>
+                                <label for="ui_preview_switch" style="margin: 0; font-weight: bold;">#{Main.new_design_for_all? ? 'Neues Design' : 'Neues Design (Vorschau)'}</label>
+                                <div class="text-muted" style="font-size: 0.9em;">#{Main.new_design_for_all? ? 'Seit dem 1. Dezember für alle. Nur Admins können es noch ausschalten, um beim Beheben von Fehlern mit dem bisherigen Design zu vergleichen.' : (teacher_logged_in? && !ui_preview? ? 'Probieren Sie aus, woran wir gerade arbeiten. Sie können jederzeit zurückwechseln – über Feedback freuen wir uns.' : 'Probier aus, woran wir gerade arbeiten. Du kannst jederzeit zurückwechseln – über Feedback freuen wir uns.')}</div>
                                 #{ui_preview? ? "<button type='button' class='btn btn-link btn-sm p-0 bu-open-design-feedback' id='bu_profile_design_feedback'>Feedback geben</button>" : ''}
                             </div>
-                            <input #{@session_user[:ui_preview] ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="an" data-off="aus" data-onstyle="secondary" data-offstyle="secondary" id='ui_preview_switch'>
+                            <input #{ui_preview_account? ? 'checked' : ''} type="checkbox" data-toggle="toggle" data-on="an" data-off="aus" data-onstyle="secondary" data-offstyle="secondary" id='ui_preview_switch'>
                         </div>
                     </div>
                     <div class="col-md-12" style="margin-top: 0.75em; #{(admin_logged_in? && ui_preview_allowed?) ? '' : 'display: none;'}">

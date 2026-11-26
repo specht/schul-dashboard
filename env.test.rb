@@ -32,6 +32,11 @@ INTERNAL_PATH = './.test-stack/internal'
 DATA_REPO_WRITABLE = true
 DATA_RELOAD_RESTARTS = false
 
+# Das neue Design für alle: im Test-Stack erst später – seine Tests arbeiten
+# mit dem Opt-in, bis das alte Design entfernt ist (der Umstieg selbst:
+# design_switch_test.rb).
+NEW_DESIGN_FOR_ALL_FROM = '2099-01-01'
+
 NEXTCLOUD_INSTALL_PATH = nil
 NEXTCLOUD_PHP_COMMAND = ['true']
 

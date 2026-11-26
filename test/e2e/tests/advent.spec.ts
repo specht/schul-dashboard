@@ -32,10 +32,13 @@ test('Mathe im Advent im neuen Design', async ({ page, browser, baseURL }, testI
     await login(page, ACCOUNTS.schueler); // 5a
     await page.goto('/');
     await expect(page.locator('body')).toHaveClass(/ui-preview/);
-    await showDayInTimetable(page, day);
+    // (the new design has its own arrows: straight to the day)
+    await page.waitForFunction(() => !!(window as unknown as { calendar?: unknown }).calendar);
+    await page.evaluate((iso) => (window as unknown as { calendar: { gotoDate: (d: string) => void } }).calendar.gotoDate(iso), `${year}-12-03`);
     const entry = mobile
       ? page.locator('.pv-ag-allday', { hasText: 'Mathe im Advent' })
-      : page.locator('.fc-event', { hasText: 'Mathe im Advent' });
+      // (the week has one each day so far: the one of 3 December)
+      : page.locator(`[data-date="${year}-12-03"] .fc-event`, { hasText: 'Mathe im Advent' });
     await expect(entry.first()).toBeVisible({ timeout: 15_000 });
     // the task of the day, in a new tab
     await page.evaluate(() => { window.open = ((url: string) => { (window as unknown as { opened: string }).opened = url; return null; }) as typeof window.open; });

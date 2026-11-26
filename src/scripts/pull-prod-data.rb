@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # Copies the production data into the local development instance: the Neo4j
-# database and DATA_PATH/{raw,gen,vplan}.
+# database, DATA_PATH/{raw,gen,vplan} and INTERNAL_PATH (drafts of the
+# Datenpflege, uploads, report cards …) without its keys and the server's own
+# state (INTERNAL_EXCLUDES); local files in INTERNAL_PATH stay.
 #
 #   ./pull-prod-data.rb                     show what would happen (changes nothing)
 #   ./pull-prod-data.rb --srsly             do it (database and files)
@@ -22,8 +24,9 @@
 # don't exist on the server are deleted), the old database is moved to
 # DATA_PATH/neo4j.previous and the dump is loaded into a fresh Neo4j.
 #
-# Deliberately not copied: DATA_PATH/mails (mail contents), INTERNAL_PATH
-# (keys, internal documents) and INPUT_DATA_PATH (its own repository).
+# Deliberately not copied: DATA_PATH/mails (mail contents), from
+# INTERNAL_PATH the keys and the server's own state (INTERNAL_EXCLUDES; kept
+# locally as they are) and INPUT_DATA_PATH (its own repository).
 
 require 'fileutils'
 require 'json'
@@ -32,6 +35,11 @@ require 'tmpdir'
 require 'zlib'
 
 DATA_DIRS = %w(raw gen vplan)
+# not from INTERNAL_PATH: the production keys (SSO, the data repository's
+# deploy key), the heartbeats and data version of the server's services
+# (they'd restart and misreport the local ones), logs, temporary files
+INTERNAL_EXCLUDES = %w(sso-keys data-repo-deploy-key data-repo-deploy-key.pub data-repo-known-hosts
+                       nextcloud-share-move-rpc status data-version debug lowriter_home)
 SSH_OPTIONS = ['-o', 'BatchMode=yes']
 # reserve on the local disk on top of the files and the new database
 FREE_SPACE_RESERVE = 2 * 1024 ** 3
@@ -89,6 +97,8 @@ fail!('env.rb ist keine Entwicklungskonfiguration (DEVELOPMENT ist nicht true).'
 local_data_path = File.expand_path(DATA_PATH)
 fail!("DATA_PATH #{local_data_path} existiert nicht.") unless File.directory?(local_data_path)
 local_neo4j = File.join(local_data_path, 'neo4j')
+local_internal_path = File.expand_path(INTERNAL_PATH)
+fail!("INTERNAL_PATH #{local_internal_path} existiert nicht.") unless File.directory?(local_internal_path)
 local_neo4j_previous = local_neo4j + '.previous'
 
 # ./config.rb always exits with 0, whatever docker compose returns – so
@@ -172,19 +182,22 @@ end
 # --- read the server's configuration (read-only) ---------------------------
 
 step "Lese die Konfiguration auf #{prod_host}"
-info_code = 'load "./env.rb"; require "json"; puts JSON.generate(project: PROJECT_NAME, development: DEVELOPMENT, data_path: File.expand_path(DATA_PATH))'
+info_code = 'load "./env.rb"; require "json"; puts JSON.generate(project: PROJECT_NAME, development: DEVELOPMENT, data_path: File.expand_path(DATA_PATH), internal_path: File.expand_path(INTERNAL_PATH))'
 prod = JSON.parse(ssh_capture(prod_host, "cd #{Shellwords.escape(prod_checkout)} && ruby -e #{Shellwords.escape(info_code)}").lines.last)
 fail!('Der Server ist als Entwicklungsinstanz konfiguriert – falscher Host?') if prod['development']
 fail!("Unerwarteter DATA_PATH auf dem Server: #{prod['data_path'].inspect}") unless prod['data_path'].to_s.start_with?('/') && prod['data_path'].size > 1
+fail!("Unerwarteter INTERNAL_PATH auf dem Server: #{prod['internal_path'].inspect}") unless prod['internal_path'].to_s.start_with?('/') && prod['internal_path'].size > 1
 container_filter = "--filter label=com.docker.compose.project=#{Shellwords.escape(prod['project'])} --filter label=com.docker.compose.service=ruby"
 prod_container = ssh_capture(prod_host, "docker ps -q #{container_filter}").strip
 fail!('Auf dem Server läuft kein ruby-Container.') if do_db && prod_container.empty?
 STDERR.puts "Projekt #{prod['project']}, DATA_PATH #{prod['data_path']}"
 
-def rsync_command(host, remote_dir, local_dir, bwlimit, dry_run:)
-    cmd = ['rsync', '-rlt', '--delete',
+def rsync_command(host, remote_dir, local_dir, bwlimit, dry_run:, excludes: [], delete: true)
+    cmd = ['rsync', '-rlt'] + (delete ? ['--delete'] : []) + [
            '-e', (['ssh'] + SSH_OPTIONS).join(' '),
            '--rsync-path=nice -n 19 ionice -c3 rsync']
+    # (excluded paths are neither copied nor deleted locally)
+    cmd += excludes.map { |e| "--exclude=/#{e}" }
     cmd << "--bwlimit=#{bwlimit}" if bwlimit > 0
     cmd += dry_run ? ['--dry-run', '--stats'] : ['--info=progress2']
     cmd + ["#{host}:#{remote_dir}/", "#{local_dir}/"]
@@ -206,21 +219,30 @@ def file_device(path)
     File.stat(path).dev
 end
 
+# what to mirror: [label, remote dir, local dir, excludes, delete local extras]
+# (internal: local files the server doesn't have stay – outputs of local
+# scripts, older copies)
+syncs = DATA_DIRS.map { |dir| [dir, File.join(prod['data_path'], dir), File.join(local_data_path, dir), [], true] } +
+        [['internal', prod['internal_path'], local_internal_path, INTERNAL_EXCLUDES, false]]
+
 needed = 0
 growth = 0
 if do_files
     step 'Prüfe die Dateien (Probelauf von rsync)'
     remote_usage = {}
     du_command = "cd #{Shellwords.escape(prod['data_path'])} && for d in #{DATA_DIRS.join(' ')}; do " \
-                 "[ -d \"$d\" ] && nice -n 19 ionice -c3 du -s --block-size=1 \"$d\"; done; true"
+                 "[ -d \"$d\" ] && nice -n 19 ionice -c3 du -s --block-size=1 \"$d\"; done; " \
+                 "printf 'internal\\t'; nice -n 19 ionice -c3 du -s --block-size=1 #{Shellwords.escape(prod['internal_path'])} | cut -f1; true"
     ssh_capture(prod_host, du_command).each_line do |line|
+        if line.start_with?("internal\t")
+            remote_usage['internal'] = line.split("\t")[1].to_i
+            next
+        end
         size, dir = line.split("\t", 2)
         remote_usage[dir.to_s.strip] = size.to_i
     end
-    DATA_DIRS.each do |dir|
-        remote_dir = File.join(prod['data_path'], dir)
-        local_dir = File.join(local_data_path, dir)
-        stats = IO.popen(rsync_command(prod_host, remote_dir, local_dir, 0, dry_run: true), &:read)
+    syncs.each do |dir, remote_dir, local_dir, excludes, delete|
+        stats = IO.popen(rsync_command(prod_host, remote_dir, local_dir, 0, dry_run: true, excludes: excludes, delete: delete), &:read)
         fail!("rsync-Probelauf für #{dir} fehlgeschlagen.") unless $?.success?
         transfer = stats[/Total transferred file size: ([\d,.]+)/, 1].to_s.delete(',.').to_i
         deleted = stats[/Number of deleted files: ([\d,.]+)/, 1].to_s.delete(',.').to_i
@@ -230,7 +252,7 @@ if do_files
         delta = remote_usage.key?(dir) ? remote_usage[dir] - local : transfer
         growth += delta
         needed = [needed, growth].max
-        STDERR.puts format('%-6s %8d Dateien zu übertragen (%s), %d lokal zu löschen; Server %s, lokal %s, %s %s',
+        STDERR.puts format('%-8s %8d Dateien zu übertragen (%s), %d lokal zu löschen; Server %s, lokal %s, %s %s',
                            dir, count, human(transfer), deleted, human(remote_usage[dir] || 0), human(local),
                            delta >= 0 ? 'Zuwachs' : 'frei werden', human(delta.abs))
     end
@@ -258,6 +280,7 @@ step 'Ablauf'
 STDERR.puts "- Datenbank auf dem Server lesend exportieren und herunterladen" if do_db
 STDERR.puts "- Entwicklungsinstanz anhalten (./config.rb stop)"
 STDERR.puts "- #{DATA_DIRS.join(', ')} spiegeln (lokal fehlende Dateien werden gelöscht)" if do_files
+STDERR.puts "- internal holen, ohne #{INTERNAL_EXCLUDES.join(', ')} (lokale Dateien bleiben)" if do_files
 if do_db
     STDERR.puts "- #{local_neo4j_previous} löschen" if File.directory?(local_neo4j_previous)
     STDERR.puts "- #{local_neo4j} → #{local_neo4j_previous}, Dump in eine leere Neo4j laden"
@@ -301,9 +324,9 @@ Dir.mktmpdir('pull-prod-data-') do |tmp|
     stop_dev_stack!
 
     if do_files
-        DATA_DIRS.each do |dir|
+        syncs.each do |dir, remote_dir, local_dir, excludes, delete|
             step "Spiegele #{dir}"
-            run!(*rsync_command(prod_host, File.join(prod['data_path'], dir), File.join(local_data_path, dir), bwlimit, dry_run: false))
+            run!(*rsync_command(prod_host, remote_dir, local_dir, bwlimit, dry_run: false, excludes: excludes, delete: delete))
         end
     end
 

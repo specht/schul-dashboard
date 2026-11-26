@@ -341,8 +341,19 @@ test('Mails aus dem Unterricht: eigene Vorlage anlegen, testen, freischalten, au
   await page.reload();
   await page.locator('#ti_lesson_mail_reason').selectOption(reason);
   await expect(page.locator('#bu_lesson_mail_color')).toContainText('Gras');
-  // the reason's colour in front of it in the choice of reasons
-  expect(await page.locator('.lesson-mail-reason-chip').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(74, 160, 63)');
+  // the reason's colour as a dot in front of it, in the button and in the
+  // list before every reason; choosing from the list shows that reason
+  const reasonButton = page.locator('#bu_lesson_mail_reason');
+  await expect(reasonButton).toContainText(name);
+  expect(await reasonButton.locator('.lesson-mail-dot').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(74, 160, 63)');
+  await reasonButton.click();
+  const material = page.locator('.lesson-mail-reason-item[data-reason="material"]');
+  await expect(material).toBeVisible();
+  expect(await material.locator('.lesson-mail-dot').evaluate((e) => getComputedStyle(e).backgroundColor)).toBe('rgb(250, 211, 28)');
+  await material.click();
+  await expect(reasonButton).toContainText('Material fehlt');
+  await expect(page.locator('#ti_lesson_mail_label')).toHaveValue('Material fehlt');
+  await page.locator('#ti_lesson_mail_reason').selectOption(reason);
   await expect(page.locator('.lesson-mail-swatch[aria-label="Gras"]')).toHaveAttribute('aria-checked', 'true');
 
   // names are unique

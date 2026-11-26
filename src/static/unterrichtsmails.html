@@ -140,7 +140,9 @@
         opacity: 0.6;
     }
 
-    /* the reason with its colour in front, inside the field */
+    /* the reason: a button with its colour as a small dot, the list with a
+       dot before every reason (a native select can't show colours); the
+       select stays underneath as the model, out of sight */
     .lesson-mail-reason-select {
         position: relative;
         display: block;
@@ -148,21 +150,59 @@
         max-width: 100%;
     }
 
-    .lesson-mail-reason-select > select {
-        width: auto;
-        max-width: 100%;
-    }
-
-    .lesson-mail-reason-chip {
+    .lesson-mail-reason-model {
         position: absolute;
-        left: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
+        left: 0;
+        top: 0;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
         pointer-events: none;
     }
 
-    .lesson-mail-reason-select > select {
-        padding-left: 2.3rem;
+    .lesson-mail-reason-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55em;
+        width: auto;
+        min-width: 14em;
+        max-width: 100%;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .lesson-mail-reason-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .lesson-mail-reason-menu {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .lesson-mail-reason-item {
+        display: flex;
+        align-items: center;
+        gap: 0.55em;
+    }
+
+    /* the reason chosen: quiet, not the bright blue of an active item */
+    .lesson-mail-reason-item.active, .lesson-mail-reason-item.active:hover {
+        background: var(--pv-hover, rgba(128, 128, 128, 0.15));
+        color: inherit;
+        font-weight: 600;
+    }
+
+    .lesson-mail-dot {
+        flex: none;
+        width: 0.7em;
+        height: 0.7em;
+        border-radius: 50%;
+        background: var(--sw, transparent);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
     }
 
     /* (kept on the screen: the button may stand at its right edge) */
@@ -252,10 +292,13 @@
             </p>
             <div class='api_messages' style='display: none;'></div>
             <div class='lesson-mail-reason-row'>
-                <label for='ti_lesson_mail_reason'>Grund</label>
-                <span class='lesson-mail-reason-select'>
-                    <span class='lesson-mail-color-chip lesson-mail-reason-chip' aria-hidden='true'></span>
-                    <select id='ti_lesson_mail_reason' class='form-control'></select>
+                <label id='lesson_mail_reason_label' for='bu_lesson_mail_reason'>Grund</label>
+                <span class='lesson-mail-reason-select dropdown'>
+                    <select id='ti_lesson_mail_reason' class='lesson-mail-reason-model' tabindex='-1' aria-hidden='true'></select>
+                    <button type='button' id='bu_lesson_mail_reason' class='form-control lesson-mail-reason-toggle' data-toggle='dropdown' data-boundary='viewport' aria-haspopup='listbox' aria-expanded='false'>
+                        <span class='lesson-mail-dot' aria-hidden='true'></span><span class='lesson-mail-reason-name'></span><i class='#{ui_preview? ? 'ti ti-chevron-down' : 'fa fa-caret-down'} lesson-mail-color-caret' aria-hidden='true'></i>
+                    </button>
+                    <div class='dropdown-menu lesson-mail-reason-menu' role='listbox' aria-labelledby='lesson_mail_reason_label'></div>
                 </span>
                 <button id='bu_new_lesson_mail' class='btn btn-outline-secondary'><i class='fa fa-plus'></i>&nbsp;&nbsp;Neue Vorlage</button>
                 <span id='lesson_mail_status' class='text-muted'></span>
@@ -404,6 +447,39 @@
                 option.textContent = 'Neue Vorlage';
                 select.appendChild(option);
             }
+            // the visible list: a dot in the reason's colour before each
+            let menu = document.querySelector('.lesson-mail-reason-menu');
+            menu.textContent = '';
+            for (let option of select.options) {
+                let t = templates.find(function (x) { return x.reason === option.value; }) || current || {};
+                let item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'dropdown-item lesson-mail-reason-item';
+                item.setAttribute('role', 'option');
+                item.dataset.reason = option.value;
+                let dot = document.createElement('span');
+                dot.className = 'lesson-mail-dot';
+                dot.setAttribute('aria-hidden', 'true');
+                dot.style.setProperty('--sw', t.color || 'transparent');
+                item.appendChild(dot);
+                item.appendChild(document.createTextNode(option.textContent));
+                item.addEventListener('click', function (e) {
+                    select.value = e.currentTarget.dataset.reason;
+                    select.dispatchEvent(new Event('change'));
+                });
+                menu.appendChild(item);
+            }
+        }
+
+        // the button shows the reason chosen, with its colour
+        function paint_reason() {
+            let option = select.options[select.selectedIndex];
+            document.querySelector('.lesson-mail-reason-name').textContent = option ? option.textContent : '';
+            document.querySelector('.lesson-mail-reason-toggle .lesson-mail-dot').style.setProperty('--sw', current ? current.color : 'transparent');
+            document.querySelectorAll('.lesson-mail-reason-item').forEach(function (item) {
+                item.setAttribute('aria-selected', item.dataset.reason === select.value ? 'true' : 'false');
+                item.classList.toggle('active', item.dataset.reason === select.value);
+            });
         }
 
         for (let name of Object.keys(placeholders)) {
@@ -503,7 +579,7 @@
             current = t;
             fill_select();
             select.value = t.reason;
-            document.querySelector('.lesson-mail-reason-chip').style.setProperty('--sw', t.color);
+            paint_reason();
             subject.value = t.subject;
             body.value = t.body;
             note.value = t.example_note;

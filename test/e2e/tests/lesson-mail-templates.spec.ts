@@ -314,6 +314,11 @@ test('Mails aus dem Unterricht: eigene Vorlage anlegen, testen, freischalten, au
   await page.locator('#ti_lesson_mail_label').fill(name);
   await page.locator('#ti_lesson_mail_note_hint').fill('Turnbeutel');
   await page.locator('#ti_lesson_mail_cc_klassenleitung').check();
+  // the colour from the Cling palette: a new one starts with »Golf«, a click picks another
+  await expect(page.getByRole('radio', { name: 'Golf' })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('radio', { name: 'Gras' }).click();
+  await expect(page.getByRole('radio', { name: 'Gras' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radio', { name: 'Golf' })).toHaveAttribute('aria-checked', 'false');
   await page.locator('#ti_lesson_mail_body').fill('Liebe Eltern,\n\n{Vorname} hatte heute kein Sportzeug dabei{Notiz}.\n\nViele Grüße\n{Lehrkraft}');
   await expect(page.locator('#lesson_mail_preview_body')).toContainText('Max hatte heute kein Sportzeug dabei');
   await page.locator('#bu_save_lesson_mail').click();
@@ -322,10 +327,14 @@ test('Mails aus dem Unterricht: eigene Vorlage anlegen, testen, freischalten, au
   await expect(option).toHaveText(`${name} (Test)`);
   const reason = (await option.getAttribute('value'))!;
   expect(reason).toMatch(/^eigen_/);
+  // saved with its colour
+  await page.reload();
+  await page.locator('#ti_lesson_mail_reason').selectOption(reason);
+  await expect(page.getByRole('radio', { name: 'Gras' })).toHaveAttribute('aria-checked', 'true');
 
   // names are unique
   const twice = await page.request.post('/api/create_lesson_mail_template', {
-    data: { label: name, color: '#204a87', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'x', body: 'y' },
+    data: { label: name, color: '#143b86', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'x', body: 'y' },
   });
   expect((await twice.json()).errors).toContain(`Eine Vorlage »${name}« gibt es schon.`);
 
@@ -396,7 +405,7 @@ test('Mails aus dem Unterricht: Testvorlage im Mail-Dialog', async ({ page }, te
   const name = `Probe ${testInfo.project.name} ${Date.now()}`;
   await login(page, ACCOUNTS.admin);
   const created = await page.request.post('/api/create_lesson_mail_template', {
-    data: { label: name, color: '#204a87', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe im Fach {Fach}', body: 'Liebe Eltern,\n\n{Vorname} war heute da.\n\n{Lehrkraft}' },
+    data: { label: name, color: '#143b86', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe im Fach {Fach}', body: 'Liebe Eltern,\n\n{Vorname} war heute da.\n\n{Lehrkraft}' },
   });
   const reason = (await created.json()).reason;
   expect(reason).toMatch(/^eigen_/);
@@ -412,7 +421,7 @@ test('Mails aus dem Unterricht: Testvorlage im Mail-Dialog', async ({ page }, te
   await expect(pending).toContainText(`Test, nur an ${ACCOUNTS.admin}`);
   // test mails go out right away (the mail bot is not part of the test stack)
   await expect(notice).toContainText(ACCOUNTS.admin);
-  const rules = { label: name, color: '#204a87', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' };
+  const rules = { label: name, color: '#143b86', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' };
 
   // switched on, the same student can get the real mail: a test mail does
   // not count as the one mail per reason and student
@@ -444,7 +453,7 @@ test('Mails aus dem Unterricht: Testvorlage im Mail-Dialog', async ({ page }, te
 test('Mails aus dem Unterricht: eigene Vorlagen legen nur Admins an', async ({ page }) => {
   await login(page, ACCOUNTS.teacher);
   expect((await page.request.post('/api/create_lesson_mail_template', {
-    data: { label: 'Darf nicht', color: '#204a87', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'x', body: 'y' },
+    data: { label: 'Darf nicht', color: '#143b86', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'x', body: 'y' },
   })).status()).not.toBe(200);
   // unknown reasons are refused when sending
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
@@ -520,7 +529,7 @@ test('Mails aus dem Unterricht: auch Tage nach der Stunde, mit Datum', async ({ 
   const nextWeek = berlin(new Date(Date.now() + 7 * 24 * 3600 * 1000));
   const name = `Datum ${testInfo.project.name} ${Date.now()}`;
   const created = await page.request.post('/api/create_lesson_mail_template', {
-    data: { label: name, color: '#204a87', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: '{Vorname} hat {Datum} gefehlt.' },
+    data: { label: name, color: '#143b86', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: '{Vorname} hat {Datum} gefehlt.' },
   });
   const reason = (await created.json()).reason;
   const preview = async (datum: string) => (await (await page.request.post('/api/preview_lesson_mail', {
@@ -565,7 +574,7 @@ test('Mails aus dem Unterricht: auch Tage nach der Stunde, mit Datum', async ({ 
 
   // tidy up
   await page.request.post('/api/save_lesson_mail_template', {
-    data: { reason, label: name, color: '#204a87', status: 'hidden', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' },
+    data: { reason, label: name, color: '#143b86', status: 'hidden', sender: 'teachers', cc_klassenleitung: false, note_hint: '', subject: 'Probe', body: 'Probe' },
   });
 });
 

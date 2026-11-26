@@ -167,13 +167,13 @@ class LessonMailTemplatesTest < Minitest::Test
     # what is stored wins; a built-in reason is never a test
     def test_stored_rules_win
         stored = {
-            'late' => {:label => 'Zu spät', :color => '#000000', :status => 'hidden', :sender => 'otium',
+            'late' => {:label => 'Zu spät', :color => '#474d4d', :status => 'hidden', :sender => 'otium',
                        :cc_klassenleitung => true, :note_hint => ''},
             'praise' => {:status => 'test', :cc_klassenleitung => false},
             'disturbance_otium' => {:cc_klassenleitung => false},
         }
         late = LessonMailTemplates.find(stored, 'late')
-        assert_equal ['Zu spät', '#000000', '#ffffff', 'hidden', 'otium', true, ''],
+        assert_equal ['Zu spät', '#474d4d', '#ffffff', 'hidden', 'otium', true, ''],
                      late.values_at(:label, :color, :text_color, :status, :sender, :cc_klassenleitung, :note_hint)
         assert_equal 'active', LessonMailTemplates.find(stored, 'praise')[:status]
         refute LessonMailTemplates.find(stored, 'disturbance_otium')[:cc_klassenleitung]
@@ -183,16 +183,32 @@ class LessonMailTemplatesTest < Minitest::Test
     end
 
     def test_rule_errors
-        good = {:label => 'Turnbeutel', :color => '#204a87', :status => 'active', :sender => 'teachers',
+        good = {:label => 'Turnbeutel', :color => '#143b86', :status => 'active', :sender => 'teachers',
                 :cc_klassenleitung => false, :note_hint => 'Sport'}
         assert_empty LessonMailTemplates.rule_errors(good, {}, nil, true)
         assert_empty LessonMailTemplates.rule_errors(good.merge(:label => 'Verspätung'), {}, 'late', false)
         assert_match(/Zustand/, LessonMailTemplates.rule_errors(good.merge(:status => 'test'), {}, 'late', false).first)
         assert_empty LessonMailTemplates.rule_errors(good.merge(:status => 'test'), {}, nil, true)
         assert_match(/Farbe/, LessonMailTemplates.rule_errors(good.merge(:color => 'red'), {}, nil, true).first)
+        # only colours of the palette
+        assert_match(/Palette/, LessonMailTemplates.rule_errors(good.merge(:color => '#204a87'), {}, nil, true).first)
         assert_match(/schickt/, LessonMailTemplates.rule_errors(good.merge(:sender => 'alle'), {}, nil, true).first)
         assert_match(/Klassenleitung/, LessonMailTemplates.rule_errors(good.merge(:cc_klassenleitung => 'ja'), {}, nil, true).first)
         assert_match(/zu lang/, LessonMailTemplates.rule_errors(good.merge(:note_hint => 'x' * 61), {}, nil, true).first)
+    end
+
+    # colours from the Cling palette: the built-in ones from before as chosen,
+    # any other stored colour the nearest of the palette
+    def test_colours_from_the_palette
+        assert LessonMailTemplates::BUILTIN_COLORS.values.all? { |c| Cling.include?(c) }
+        assert Cling.include?(LessonMailTemplates::DEFAULT_CUSTOM_COLOR)
+        assert_equal '#fad31c', LessonMailTemplates.cling_color('#fce94f')
+        assert_equal '#bc2326', LessonMailTemplates.cling_color('#CC0000')
+        assert_equal '#4aa03f', LessonMailTemplates.cling_color('#4aa03f')
+        assert_equal '#143b86', LessonMailTemplates.cling_color('#204a87')
+        assert_nil LessonMailTemplates.cling_color('kaputt')
+        # what is stored from before shows as its replacement
+        assert_equal '#fad31c', LessonMailTemplates.find({'material' => {:color => '#fce94f'}}, 'material')[:color]
     end
 
     def test_own_templates_have_no_default

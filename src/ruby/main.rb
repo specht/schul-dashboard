@@ -15,6 +15,7 @@ require 'kramdown'
 require 'mail'
 require './lesson_mail_templates.rb'
 require './design_tokens.rb'
+require './cling.rb'
 require './fach_code.rb'
 require './vertretung_lesson_key.rb'
 require './student_lessons.rb'
@@ -486,6 +487,15 @@ class SetupDatabase
                             WHERE t.body IN $old
                             SET t.body = $body
                         END_OF_QUERY
+                    end
+                    # once: colours from before the Cling palette become
+                    # their replacement (the built-in ones as chosen, others
+                    # the nearest)
+                    neo4j_query("MATCH (t:LessonMailTemplate) RETURN t.reason AS reason, t.color AS color;").each do |row|
+                        next if row['color'].nil? || Cling.include?(row['color'])
+                        replacement = LessonMailTemplates.cling_color(row['color'])
+                        next unless replacement
+                        neo4j_query("MATCH (t:LessonMailTemplate {reason: $reason}) SET t.color = $color;", :reason => row['reason'], :color => replacement)
                     end
                 end
                 transaction do

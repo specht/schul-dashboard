@@ -1,5 +1,6 @@
 require 'cgi'
 require 'date'
+require_relative 'cling'
 
 # Texts of the mails teachers send to parents from a lesson ("Mails aus dem
 # Unterricht", timetable → Mail). Admins can change them on
@@ -298,17 +299,31 @@ module LessonMailTemplates
     SENDERS = %w(teachers otium).freeze
     MAX_LABEL_LENGTH = 60
     MAX_NOTE_HINT_LENGTH = 60
-    DEFAULT_CUSTOM_COLOR = '#729fcf'
+    # colours come from the Cling palette (cling.rb), as everywhere
+    DEFAULT_CUSTOM_COLOR = '#31a8e0'
 
     BUILTIN_COLORS = {
-        'material' => '#fce94f',
-        'homework' => '#fcaf3e',
-        'signature' => '#f57900',
-        'disturbance' => '#ef2929',
-        'disturbance_otium' => '#cc0000',
+        'material' => '#fad31c',
+        'homework' => '#faaa21',
+        'signature' => '#f1753f',
+        'disturbance' => '#ea2830',
+        'disturbance_otium' => '#bc2326',
         'late' => '#7b67ae',
         'praise' => '#4aa03f',
     }.freeze
+
+    # the colours before the palette (Tango) and what they became; any other
+    # colour becomes the nearest of the palette
+    LEGACY_COLORS = {
+        '#fce94f' => '#fad31c', '#fcaf3e' => '#faaa21', '#f57900' => '#f1753f',
+        '#ef2929' => '#ea2830', '#cc0000' => '#bc2326', '#729fcf' => '#31a8e0',
+    }.freeze
+
+    def self.cling_color(color)
+        c = color.to_s.downcase
+        return c if Cling.include?(c)
+        LEGACY_COLORS[c] || Cling.nearest(c)
+    end
 
     # the rules the built-in reasons start with
     BUILTIN_RULES = Hash[REASONS.map do |reason|
@@ -328,13 +343,14 @@ module LessonMailTemplates
         !!(reason.to_s =~ /\A#{CUSTOM_PREFIX}[0-9a-z]{4,16}\z/)
     end
 
+    # a colour of the palette
     def self.valid_color?(color)
-        !!(color.to_s =~ /\A#[0-9a-fA-F]{6}\z/)
+        Cling.include?(color)
     end
 
     # black or white, whichever reads better on the colour
     def self.text_color(color)
-        return '#000000' unless valid_color?(color)
+        return '#000000' unless color.to_s =~ /\A#[0-9a-fA-F]{6}\z/
         r, g, b = color[1, 6].scan(/../).map { |x| x.to_i(16) }
         (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#000000' : '#ffffff'
     end
@@ -361,7 +377,8 @@ module LessonMailTemplates
                           :cc_klassenleitung => false, :note_hint => ''} : BUILTIN_RULES[reason]
         entry ||= {}
         label = entry[:label].to_s.strip.empty? ? start[:label] : entry[:label].to_s
-        color = valid_color?(entry[:color]) ? entry[:color] : start[:color]
+        # (one from before the palette: its replacement)
+        color = cling_color(entry[:color]) || start[:color]
         status = STATUSES.include?(entry[:status]) ? entry[:status] : start[:status]
         # a built-in reason is never a test
         status = 'active' if !custom && status == 'test'
@@ -415,7 +432,7 @@ module LessonMailTemplates
     # :status, :sender, :cc_klassenleitung, :note_hint)
     def self.rule_errors(data, stored, own_reason, custom)
         errors = label_errors(data[:label], stored, own_reason)
-        errors << 'Die Farbe ist ungültig.' unless valid_color?(data[:color])
+        errors << 'Bitte eine Farbe aus der Palette wählen.' unless valid_color?(data[:color])
         statuses = custom ? STATUSES : STATUSES - ['test']
         errors << 'Der Zustand ist ungültig.' unless statuses.include?(data[:status])
         errors << 'Ungültig, wer die Mail schickt.' unless SENDERS.include?(data[:sender])

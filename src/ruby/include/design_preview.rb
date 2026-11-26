@@ -833,27 +833,11 @@ class Main < Sinatra::Base
     # Hackschule sprite editor (http://clingeverything.com/color-palette),
     # without black and white (weak as scheme colours): 42, six rows of seven
     # on phones
-    CLING_COLOURS = [
-        ['#ffe617', 'Narzisse'], ['#fad31c', 'Sonnengelb'], ['#fdb717', 'Senf'],
-        ['#faaa21', 'Zirkusorange'], ['#f1753f', 'Kürbis'], ['#ed5724', 'Mandarine'],
-        ['#ef4538', 'Lachs'], ['#ea2830', 'Kaki'], ['#bc2326', 'Rubin'],
-        ['#8c0c03', 'Scharlach'], ['#e5185d', 'Pink'], ['#f384ae', 'Rosa'],
-        ['#fac6d2', 'Zartrosa'], ['#b296c7', 'Flieder'], ['#7b67ae', 'Lavendel'],
-        ['#5f3577', 'Violett'], ['#c1d18a', 'Seladon'], ['#799155', 'Olive'],
-        ['#80bc42', 'Bambus'], ['#4aa03f', 'Gras'], ['#16884a', 'Kleegrün'],
-        ['#003f2e', 'Wald'], ['#c3def1', 'Wolke'], ['#55beed', 'Traumblau'],
-        ['#31a8e0', 'Golf'], ['#238acc', 'Azur'], ['#0d60ae', 'Himmel'],
-        ['#143b86', 'Indigo'], ['#001b4a', 'Marine'], ['#7dcdc2', 'Meerschaum'],
-        ['#00a8a8', 'Blaugrün'], ['#12959f', 'Pfau'], ['#094e54', 'Tiefsee'],
-        ['#381e11', 'Schokolade'], ['#c05c20', 'Terrakotta'], ['#bf9b6b', 'Kamel'],
-        ['#e9d4a7', 'Leinen'], ['#e7e6e1', 'Stein'], ['#cfd0d2', 'Rauch'],
-        ['#8a8b8f', 'Stahl'], ['#778590', 'Schiefer'], ['#474d4d', 'Anthrazit'],
-    ]
+    CLING_COLOURS = Cling::COLOURS
 
     # light colours get a dark check mark, dark ones a white one
     def cling_light?(hex)
-        r, g, b = hex[1, 6].scan(/../).map { |x| x.to_i(16) / 255.0 }
-        0.299 * r + 0.587 * g + 0.114 * b > 0.6
+        Cling.light?(hex)
     end
 
     def design_preview_scheme_picker_html

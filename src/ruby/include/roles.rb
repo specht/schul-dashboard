@@ -54,7 +54,8 @@ AVAILABLE_ROLES = {
     :can_manage_lab9 => 'kann Lab9-Projekte verwalten',
     :unterstufenparty => 'Unterstufenparty',
     :can_import_ical => 'kann einen externen Kalender einbinden',
-    :can_manage_data => 'kann Schüler- und Stundenplandaten einspielen',
+    :can_manage_data => 'kann Schülerdaten einspielen',
+    :can_manage_timetable => 'kann Stundenplandaten einspielen',
 }
 
 ROLE_TRANSITIONS = <<~END_OF_STRING
@@ -63,7 +64,7 @@ ROLE_TRANSITIONS = <<~END_OF_STRING
     schueler => can_receive_messages can_use_nextcloud
     sv => can_write_messages can_create_polls can_use_mailing_lists can_create_events unterstufenparty
     technikteam => can_write_messages can_book_tablets can_create_polls can_use_mailing_lists can_create_events can_manage_tablets can_manage_tech_problems can_report_tech_problems can_see_all_timetables
-    admin => can_upload_files can_book_tablets can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems can_open_project_wifi sv_admin sv_editor unterstufenparty can_manage_data
+    admin => can_upload_files can_book_tablets can_manage_news can_manage_monitors can_manage_tablets can_manage_tech_problems can_report_tech_problems can_open_project_wifi sv_admin sv_editor unterstufenparty can_manage_data can_manage_timetable
     schulbuchverein => can_use_mailing_lists can_use_nextcloud can_use_sms_gateway
     technikamt => can_report_tech_problems
     developer => can_manage_project_wifi_access can_open_project_wifi

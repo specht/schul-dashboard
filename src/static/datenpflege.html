@@ -4,137 +4,13 @@
         background-image: none;
         background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
     }
-    /* the tables take the whole width; running text keeps a line length that reads */
-    .dp-page { max-width: none; padding-block: 1em 3em; }
-    .dp-page p, .dp-page .alert, .dp-page .dp-form { max-width: 60em; }
-    .dp-page h5 { margin-top: 1.4em; }
-    .dp-form { display: flex; flex-wrap: wrap; gap: 0.6em 1em; align-items: flex-end; }
-    .dp-form label { display: block; margin-bottom: 0.2em; }
-    .dp-scroll { max-width: 100%; overflow-x: auto; }
-    .dp-klassen { width: auto; }
-    .dp-klassen input { width: 6em; }
-    .dp-section summary { cursor: pointer; }
-    .dp-section { margin-bottom: 0.5em; }
-    .dp-section .dp-hint { margin: 0.3em 0; }
-    .dp-list { width: auto; margin: 0.3em 0 0.8em; }
-    .dp-list th, .dp-list td { padding: 0.2em 1.2em 0.2em 0; white-space: nowrap; vertical-align: top; }
-    .dp-klassen-box { margin-top: 1em; }
-    .dp-list .ti_email { width: 15em; }
-    .dp-list .ti_link { width: 16em; }
-    .dp-list .ti_row_klasse { display: inline-block; width: 12em; vertical-align: middle; }
-    .dp-dropped td:last-child, .dp-removed td:last-child, .dp-added td:last-child { white-space: nowrap; }
-    .dp-klassen-box summary { cursor: pointer; }
-    /* changes as in a word diff: old struck through on red, new on green */
-    .dp-what { color: var(--pv-muted, #666); margin-right: 0.3em; }
-    .dp-old, .dp-new { padding: 0.05em 0.25em; border-radius: 4px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
-    /* text and ground set together, so both read on every scheme, light and dark */
-    .dp-old { background: #ffe4e1; color: #8e1519; text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: rgba(142, 21, 25, 0.5); }
-    .dp-new { background: #d3f3db; color: #0d4f20; text-decoration: none; }
-    body.dark .dp-old { background: #4a1c1f; color: #ffb8b2; text-decoration-color: rgba(255, 184, 178, 0.55); }
-    body.dark .dp-new { background: #163a22; color: #93e2a8; }
-    .dp-old + .dp-new { margin-left: 0.2em; }
-    /* what the Klassenleitung said about a row (the check of the draft) */
-    .dp-teacher-note { color: var(--acc-text, #8a5a00); white-space: normal; }
-    .dp-none { font-style: italic; text-decoration: none; }
-    .dp-actions { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: center; margin-top: 1em; }
-    .dp-actions .dp-spacer { flex: 1; }
-    .dp-files { width: auto; }
-    .dp-file-aktuell td { font-weight: bold; }
-    /* the drop area for the export (like the bank statements' upload) */
-    .dp-form { align-items: flex-start; }
-    .dp-drop {
-        flex: 1 1 22em;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0.35em;
-        min-height: 8.5em;
-        margin: 0;
-        padding: 1.2em;
-        border: 2px dashed var(--pv-line, #bbb);
-        border-radius: 14px;
-        color: var(--pv-muted, #666);
-        text-align: center;
-        cursor: pointer;
-        transition: background-color 0.15s, border-color 0.15s;
-    }
-    .dp-form label.dp-drop { display: flex; margin: 0; }
-    .dp-drop .ti { font-size: 2rem; line-height: 1; }
-    .dp-drop:hover, .dp-drop.dp-over, .dp-drop:focus-within {
-        border-color: var(--acc-text, #888);
-        background-color: var(--acc-soft, rgba(0, 0, 0, 0.04));
-        color: var(--pv-ink, inherit);
-    }
-    .dp-drop-file { font-weight: 600; color: var(--pv-ink, inherit); overflow-wrap: anywhere; }
-    .dp-date { flex: none; }
-    .dp-override-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6em 1em; margin: 0.5em 0 1.5em; }
-    .dp-override-form label { display: block; margin-bottom: 0.2em; }
-    .dp-of-student { flex: 1 1 18em; min-width: 0; }
-    .dp-of-rufname { flex: 1 1 12em; min-width: 0; }
-    .dp-of-geschlecht { flex: 0 1 12em; }
-    .dp-row-actions { white-space: nowrap; text-align: right; }
-    /* the Klassenleitungen's check: one bar for all lists, a small one per
-       row; green confirmed, the accent in progress, grey not opened yet */
-    .dp-review-summary { margin: 0.4em 0 0.8em; max-width: 60em; }
-    .dp-review-bar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; background: color-mix(in srgb, var(--pv-ink, #1f2328) 10%, transparent); }
-    .dp-seg { display: block; min-width: 4px; }
-    .dp-seg-done, .dp-dot-done, .dp-mini-done > span { background: var(--pv-ok, #2f8a46); }
-    .dp-seg-working, .dp-dot-working, .dp-mini-working > span { background: var(--acc, #c77d12); }
-    .dp-seg-opened, .dp-dot-opened, .dp-mini-opened > span { background: color-mix(in srgb, var(--acc, #c77d12) 40%, transparent); }
-    .dp-seg-waiting, .dp-dot-waiting { background: color-mix(in srgb, var(--pv-ink, #1f2328) 25%, transparent); }
-    .dp-seg-nobody { background: transparent; }
-    .dp-dot-nobody { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pv-ink, #1f2328) 35%, transparent); }
-    .dp-review-legend { display: flex; flex-wrap: wrap; gap: 0.3em 1.1em; margin-top: 0.4em; font-size: 0.9em; color: var(--pv-muted, #5f6368); }
-    .dp-legend-item { white-space: nowrap; }
-    .dp-legend-rows { margin-left: auto; white-space: nowrap; }
-    .dp-dot { display: inline-block; width: 0.6em; height: 0.6em; border-radius: 50%; margin-right: 0.4em; vertical-align: 0.05em; }
-    .dp-mini { display: inline-block; width: 4em; height: 6px; margin-right: 0.5em; border-radius: 3px; background: color-mix(in srgb, var(--pv-ink, #1f2328) 12%, transparent); overflow: hidden; vertical-align: middle; }
-    .dp-mini > span { display: block; height: 100%; }
-    /* today's design in dark has no tokens: light tracks */
-    body.dark:not(.ui-preview) .dp-review-bar, body.dark:not(.ui-preview) .dp-mini { background: rgba(255, 255, 255, 0.12); }
-    body.dark:not(.ui-preview) .dp-seg-waiting, body.dark:not(.ui-preview) .dp-dot-waiting { background: rgba(255, 255, 255, 0.3); }
-    body.dark:not(.ui-preview) .dp-dot-nobody { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.4); }
-    .dp-review-checked, .dp-review-status { white-space: nowrap; }
-    .dp-nobody { color: var(--acc-text, #8a5a00); font-weight: 600; }
-    .dp-notify { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em 0.8em; margin: 0.6em 0 0.3em; }
-    .dp-notify input { width: auto; }
-    .dp-corrections-title { margin-top: 1.2em; font-weight: 600; }
-    .dp-correction-angekommen td, .dp-correction-erledigt td, .dp-correction-geht-nicht td { color: var(--pv-muted, #6b7280); }
-    .dp-who-official, .dp-wontfix { font-size: 0.85em; color: var(--pv-muted, #6b7280); }
-    /* the to-do list of the corrections: the progress, what is done quieter,
-       what a newer export still lacks marked */
-    .dp-corrections { width: 100%; }
-    .dp-progress { height: 8px; max-width: 30em; margin: 0.2em 0 0.6em; border-radius: 4px; background: var(--pv-hover, #e9ecef); overflow: hidden; }
-    .dp-progress-bar { height: 100%; background: var(--acc, #3b7a57); transition: width 0.3s; }
-    .dp-corrections tr[data-finished='true'] > td { color: var(--pv-muted, #6b7280); }
-    .dp-corrections tr.dp-correction-nicht-angekommen > td.dp-correction-state, .dp-late { color: var(--acc-text, #8a5a00); font-weight: 600; }
-    .dp-notify-subject { margin: 0.8em 0 0.4em; }
-    .dp-notify-body { white-space: pre-wrap; font-size: 0.9em; padding: 0.8em; border: 1px solid var(--pv-line, #e1e4e8); border-radius: 8px; max-height: 50vh; overflow-y: auto; }
-    .dp-date label { display: block; margin-bottom: 0.2em; }
-    .dp-manual-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6em 1em; margin: 0.5em 0 1.5em; }
-    .dp-manual-form label { display: block; margin-bottom: 0.2em; }
-    .dp-mf-wide { flex: 1 1 16em; min-width: 0; }
-    .dp-mf-mid { flex: 1 1 10em; min-width: 0; }
-    .dp-mf-small { flex: 0 1 8em; min-width: 0; }
-    /* while the services read the data again (about half a minute): a bar
-       that is seen wherever the page is scrolled, the page rests meanwhile */
-    .dp-reloading { position: fixed; left: 50%; bottom: calc(2.6em + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-                    z-index: 1060; display: flex; gap: 0.6em; align-items: flex-start; width: max-content; max-width: calc(100vw - 2em);
-                    padding: 0.7em 1.1em; border-radius: 10px; background: #1f2328; color: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
-    body.dark .dp-reloading { background: #e8e9ec; color: #1f2328; }
-    .dp-reloading i { font-size: 1.2em; line-height: 1.2; }
-    .dp-reloading .dp-spin { animation: dp-spin 1s linear infinite; }
-    @keyframes dp-spin { to { transform: rotate(360deg); } }
-    body.dp-busy .dp-page { pointer-events: none; opacity: 0.55; transition: opacity 0.2s; }
-    /* phones in the new design: above the tab bar */
-    @media (max-width: 767px) { body.ui-preview .dp-reloading { bottom: calc(5em + env(safe-area-inset-bottom, 0px)); } }
 </style>
+#{File.read('/static/_datenpflege_style.html')}
+#{File.read('/static/_datenpflege_shared.html')}
 <div class='container-fluid white'>
     <div class='dp-page'>
-        <h2>Datenpflege</h2>
+        <h2>Datenpflege Schüler:innen</h2>
         <div class='api_messages' style='display: none;'></div>
-        <h4>Schüler:innen</h4>
         #{print_datenpflege()}
         #{print_schuelerliste_overview()}
         #{print_schuelerliste_tutors()}
@@ -171,7 +47,6 @@
                 <button class='btn btn-success' id='bu_apply'>Übernehmen</button>
             </div>
         </div>
-        #{print_stundenplan_datenpflege()}
     </div>
 </div>
 
@@ -302,36 +177,7 @@
             window.location.reload();
         }
 
-        // after a change: the services read the data again (about half a
-        // minute); a bar says so where it is seen, the page rests, and it
-        // reloads once the web service answers with a new time
-        function wait_for_reload(before) {
-            $('body').addClass('dp-busy');
-            // Tabler in the new design, Fork Awesome in today's
-            const preview = document.body.classList.contains('ui-preview');
-            const bar = $("<div class='dp-reloading' role='status' aria-live='polite' data-testid='dp-reloading'><i aria-hidden='true'></i><span></span></div>");
-            bar.find('i').addClass(preview ? 'ti ti-loader-2 dp-spin' : 'fa fa-spinner fa-spin');
-            bar.find('span').text('Gespeichert. Die Daten werden neu geladen – das dauert etwa eine halbe Minute, dann erscheint die Seite neu.');
-            $('body').append(bar);
-            const started = Date.now();
-            const poll = function () {
-                fetch('/api/data_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-                    .then((r) => r.ok ? r.json() : null)
-                    .catch(() => null)
-                    .then(function (info) {
-                        if (info && info.loaded_at && info.loaded_at !== before) {
-                            reload_here();
-                        } else if (Date.now() - started > 5 * 60 * 1000) {
-                            $('body').removeClass('dp-busy');
-                            bar.find('i').attr('class', preview ? 'ti ti-alert-triangle' : 'fa fa-exclamation-triangle');
-                            bar.find('span').text('Neu laden dauert ungewöhnlich lange – bitte die Dienste prüfen.');
-                        } else {
-                            setTimeout(poll, 3000);
-                        }
-                    });
-            };
-            setTimeout(poll, 3000);
-        }
+        function wait_for_reload(before) { dp_wait_for_reload(before, reload_here); }
 
         function after_change(data) {
             if (!data.ok) {
@@ -531,13 +377,7 @@
         });
 
         // ---- the data repo: a failed push, a planned list withdrawn ----
-        $('#bu_push').click(function (e) {
-            $(e.currentTarget).prop('disabled', true);
-            api_call('/api/datenpflege/push', {}, function (data) {
-                if (data.ok) reload_here();
-                else { $(e.currentTarget).prop('disabled', false); message(data.message); }
-            });
-        });
+        dp_bind_push(reload_here, message);
         $(document).on('click', '.bu_delete_list', function (e) {
             const date = $(e.currentTarget).data('date');
             const shown = date.split('-').reverse().join('.');
@@ -760,91 +600,6 @@
             dashboardConfirm(`${b.data('name')} ist dann wieder im Dashboard, solange die LUSD sie:ihn führt.`,
                 function () { api_call('/api/datenpflege/gone/remove', { email: b.data('email') }, after_change); },
                 { title: 'Zurücknehmen', confirm: 'Zurücknehmen' });
-        });
-
-        // ---------- the timetable: the Untis export (ZIP), compared first ----------
-        let sp_token = null;
-        function sp_message(text) {
-            $('#dp_sp_message').text(text || '').prop('hidden', !text);
-        }
-        function sp_show(data) {
-            if (!data.ok) {
-                sp_token = null;
-                $('#dp_sp_preview').empty();
-                $('#dp_sp_apply').prop('hidden', true);
-                sp_message(data.message || 'Die Datei konnte nicht verglichen werden.');
-                return;
-            }
-            sp_message(data.txt_wins ? 'Für diesen Tag gibt es eine TXT-Datei, die Vorrang hätte – bitte einen anderen Tag wählen.' : null);
-            sp_token = data.token;
-            $('#dp_sp_preview').html(data.html);
-            $('#dp_sp_apply').prop('hidden', !data.can_apply || data.txt_wins);
-            $('#dp_sp_replace').prop('hidden', !data.replacing);
-            $('#ti_sp_replace').prop('checked', false);
-            $('#bu_sp_apply').prop('disabled', !!data.replacing);
-        }
-        function sp_upload(file) {
-            if (!file) return;
-            $('#dp_sp_drop .dp-drop-file').text(file.name).prop('hidden', false);
-            if (file.size > 5 * 1024 * 1024) {
-                sp_message('Die Datei ist zu groß (höchstens 5 MB).');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function () {
-                const content = String(reader.result).replace(/^data:[^,]*,/, '');
-                api_call('/api/datenpflege/stundenplan/upload', { filename: file.name, content: content, date: $('#ti_sp_date').val() }, sp_show);
-            };
-            reader.readAsDataURL(file);
-            $('#ti_sp_file').val('');
-        }
-        $('#ti_sp_file').on('change', function (e) { sp_upload(e.currentTarget.files[0]); });
-        const sp_drop = document.getElementById('dp_sp_drop');
-        if (sp_drop) {
-            ['dragenter', 'dragover'].forEach(function (type) {
-                sp_drop.addEventListener(type, function (e) { e.preventDefault(); sp_drop.classList.add('dp-over'); });
-            });
-            ['dragleave', 'drop'].forEach(function (type) {
-                sp_drop.addEventListener(type, function (e) { e.preventDefault(); sp_drop.classList.remove('dp-over'); });
-            });
-            sp_drop.addEventListener('drop', function (e) {
-                const file = e.dataTransfer && e.dataTransfer.files[0];
-                if (file) sp_upload(file);
-            });
-        }
-        // another day: compared with the timetable valid until then
-        $('#ti_sp_date').on('change', function () {
-            if (!sp_token) return;
-            api_call('/api/datenpflege/stundenplan/preview', { token: sp_token, date: $('#ti_sp_date').val() }, sp_show);
-        });
-        $('#ti_sp_replace').on('change', function (e) { $('#bu_sp_apply').prop('disabled', !e.currentTarget.checked); });
-        $('#bu_sp_apply').click(function (e) {
-            if (!sp_token) return;
-            const day = $('#ti_sp_date').val().split('-').reverse().join('.');
-            dashboardConfirm(`Der Stundenplan gilt dann ab dem ${day} für alle.`, function () {
-                $('#bu_sp_apply').prop('disabled', true);
-                api_call('/api/datenpflege/stundenplan/apply', { token: sp_token, date: $('#ti_sp_date').val(), replace: $('#ti_sp_replace').is(':checked') }, function (data) {
-                    if (!data.ok) $('#bu_sp_apply').prop('disabled', false);
-                    else sp_token = null;
-                    after_change(data);
-                });
-            }, { title: 'Stundenplan übernehmen', confirm: 'Übernehmen' });
-        });
-        $('#bu_sp_discard').click(function () {
-            if (!sp_token) return;
-            api_call('/api/datenpflege/stundenplan/discard', { token: sp_token }, function () {
-                sp_token = null;
-                $('#dp_sp_preview').empty();
-                $('#dp_sp_apply').prop('hidden', true);
-                $('#dp_sp_drop .dp-drop-file').text('').prop('hidden', true);
-                sp_message(null);
-            });
-        });
-        $(document).on('click', '.bu_sp_delete', function (e) {
-            const date = e.currentTarget.getAttribute('data-date');
-            dashboardConfirm(`Der für den ${date.split('-').reverse().join('.')} geplante Stundenplan wird gelöscht; bis dahin bleibt der bisherige.`, function () {
-                api_call('/api/datenpflege/stundenplan/delete', { date: date }, after_change);
-            }, { title: 'Geplanten Stundenplan löschen', confirm: 'Löschen', danger: true });
         });
 
         $('#bu_rollback').click(function () {

@@ -2668,7 +2668,7 @@ class Main < Sinatra::Base
                 # if schueler_logged_in? && @session_user[:klassenstufe] <= 6
                 #     nav_items << ['/mittagessen', 'Mittagessen', 'fa fa-cutlery']
                 # end
-                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer) || user_with_role_logged_in?(:can_manage_data)
+                if admin_logged_in? || user_who_can_upload_files_logged_in? || user_who_can_manage_news_logged_in? || user_who_can_manage_monitors_logged_in? || user_who_can_manage_tablets_logged_in? || user_with_role_logged_in?(:developer) || user_with_role_logged_in?(:can_manage_data) || user_with_role_logged_in?(:can_manage_timetable)
                     nav_items << :admin
                 end
                 if (schueler_logged_in? && @session_user[:klasse] == PK5_CURRENT_KLASSE)
@@ -2751,7 +2751,10 @@ class Main < Sinatra::Base
                         io.puts "<a class='dropdown-item nav-icon' href='/admin'><div class='icon'><i class='fa fa-wrench'></i></div><span class='label'>Administration</span></a>"
                     end
                     if user_with_role_logged_in?(:can_manage_data)
-                        io.puts "<a class='dropdown-item nav-icon' href='/datenpflege'><div class='icon'><i class='fa fa-database'></i></div><span class='label'>Datenpflege</span></a>"
+                        io.puts "<a class='dropdown-item nav-icon' href='/datenpflege'><div class='icon'><i class='fa fa-database'></i></div><span class='label'>Datenpflege Schüler:innen</span></a>"
+                    end
+                    if user_with_role_logged_in?(:can_manage_timetable)
+                        io.puts "<a class='dropdown-item nav-icon' href='/datenpflege_stundenplan'><div class='icon'><i class='fa fa-calendar'></i></div><span class='label'>Datenpflege Stundenplan</span></a>"
                     end
                     if user_who_can_manage_tablets_logged_in?
                         io.puts "<a class='dropdown-item nav-icon' href='/bookings'><div class='icon'><i class='fa fa-bookmark'></i></div><span class='label'>Buchungen</span></a>"

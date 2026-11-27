@@ -87,6 +87,8 @@ append_lines(File.join(target, 'extra-dashboard-accounts.csv'), [
     'CAN_MANAGE_LAB8' => ['zeugnis.admin@beispielschule.de'],
     'CAN_MANAGE_LAB9' => ['zeugnis.admin@beispielschule.de'],
     'CAN_MANAGE_ANTIKENFAHRT' => ['zeugnis.admin@beispielschule.de'],
+    # the timetable only, not the students' data (datenpflege-stundenplan.spec.ts)
+    'CAN_MANAGE_TIMETABLE' => ['zeugnis.admin@beispielschule.de'],
     'TECHNIKTEAM' => ['technik@beispielschule.de'],
     'CAN_USE_AULA' => ['technik@beispielschule.de'],
     'CAN_MANAGE_NEWS' => ['technik@beispielschule.de'],

@@ -1,0 +1,44 @@
+<!-- what both Datenpflege pages share (/datenpflege, /datenpflege_stundenplan); read as it is, no Ruby inside -->
+<script>
+    // after a change: the services read the data again (about half a
+    // minute); a bar says so where it is seen, the page rests, and it
+    // reloads once the web service answers with a new time
+    function dp_wait_for_reload(before, reload_here) {
+        $('body').addClass('dp-busy');
+        // Tabler in the new design, Fork Awesome in today's
+        const preview = document.body.classList.contains('ui-preview');
+        const bar = $("<div class='dp-reloading' role='status' aria-live='polite' data-testid='dp-reloading'><i aria-hidden='true'></i><span></span></div>");
+        bar.find('i').addClass(preview ? 'ti ti-loader-2 dp-spin' : 'fa fa-spinner fa-spin');
+        bar.find('span').text('Gespeichert. Die Daten werden neu geladen – das dauert etwa eine halbe Minute, dann erscheint die Seite neu.');
+        $('body').append(bar);
+        const started = Date.now();
+        const poll = function () {
+            fetch('/api/data_status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                .then((r) => r.ok ? r.json() : null)
+                .catch(() => null)
+                .then(function (info) {
+                    if (info && info.loaded_at && info.loaded_at !== before) {
+                        reload_here();
+                    } else if (Date.now() - started > 5 * 60 * 1000) {
+                        $('body').removeClass('dp-busy');
+                        bar.find('i').attr('class', preview ? 'ti ti-alert-triangle' : 'fa fa-exclamation-triangle');
+                        bar.find('span').text('Neu laden dauert ungewöhnlich lange – bitte die Dienste prüfen.');
+                    } else {
+                        setTimeout(poll, 3000);
+                    }
+                });
+        };
+        setTimeout(poll, 3000);
+    }
+
+    // a push that failed: once more (the commits are there already)
+    function dp_bind_push(reload_here, message) {
+        $('#bu_push').click(function (e) {
+            $(e.currentTarget).prop('disabled', true);
+            api_call('/api/datenpflege/push', {}, function (data) {
+                if (data.ok) reload_here();
+                else { $(e.currentTarget).prop('disabled', false); message(data.message); }
+            });
+        });
+    }
+</script>

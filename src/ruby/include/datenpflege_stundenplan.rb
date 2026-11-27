@@ -1,4 +1,5 @@
-# Datenpflege, the timetable (/datenpflege, role can_manage_data): the Untis
+# Datenpflege, the timetable (/datenpflege_stundenplan, role
+# can_manage_timetable – the students' data has its own page and role): the Untis
 # export – an HTML export of the teacher and class timetables as a ZIP – is
 # uploaded with the day it applies from and compared with the timetable
 # valid until then, read by the same parser the services use (lessons per
@@ -167,7 +168,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/datenpflege/stundenplan/upload' do
-        require_data_manager!
+        require_timetable_manager!
         data = parse_request_data(:required_keys => [:filename, :content, :date],
                                   :max_body_length => STUNDENPLAN_MAX_UPLOAD * 4 / 3 + 4096,
                                   :max_value_lengths => { :content => STUNDENPLAN_MAX_UPLOAD * 4 / 3 + 16, :filename => 200 })
@@ -192,7 +193,7 @@ class Main < Sinatra::Base
 
     # the same upload for another day
     post '/api/datenpflege/stundenplan/preview' do
-        require_data_manager!
+        require_timetable_manager!
         data = parse_request_data(:required_keys => [:token, :date])
         day = datenpflege_valid_date(data[:date])
         assert(day, 'invalid date')
@@ -204,7 +205,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/datenpflege/stundenplan/apply' do
-        require_data_manager!
+        require_timetable_manager!
         data = parse_request_data(:required_keys => [:token, :date], :optional_keys => [:replace],
                                   :types => { :replace => Object })
         day = datenpflege_valid_date(data[:date])
@@ -234,7 +235,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/datenpflege/stundenplan/discard' do
-        require_data_manager!
+        require_timetable_manager!
         data = parse_request_data(:required_keys => [:token])
         path = stundenplan_pending_path(data[:token])
         File.delete(path) if File.exist?(path)
@@ -243,7 +244,7 @@ class Main < Sinatra::Base
 
     # a plan for a day still to come, before it applies
     post '/api/datenpflege/stundenplan/delete' do
-        require_data_manager!
+        require_timetable_manager!
         data = parse_request_data(:required_keys => [:date])
         day = datenpflege_valid_date(data[:date])
         assert(day && day > Date.today, 'only a plan still to come')
@@ -257,16 +258,21 @@ class Main < Sinatra::Base
         respond(:ok => true, :reload => DataVersion.restarts?)
     end
 
-    # the section on /datenpflege: the plans there are, the upload
+    # /datenpflege_stundenplan: the plan in force, the plans there are, the upload
     def print_stundenplan_datenpflege
-        require_data_manager!
+        require_timetable_manager!
         today = Date.today.strftime('%Y-%m-%d')
         sources = stundenplan_sources
         current = sources.keys.select { |d| d <= today }.max
         h = ->(x) { CGI.escapeHTML(x.to_s) }
         StringIO.open do |io|
             io.puts "<div class='dp-stundenplan'>"
-            io.puts "<h4>Stundenplan</h4>"
+            in_force = current ? "der Stundenplan aus <strong>#{h.(File.basename(sources[current]))}</strong>" : 'noch kein Stundenplan'
+            io.puts "<p class='dp-current'>Im Dashboard: #{in_force}, gelesen am <span id='data_loaded_at'>#{@@data_loaded_at.strftime('%d.%m.%Y, %H:%M:%S')}</span>.</p>"
+            unless DataRepo.writable?
+                io.puts "<div class='alert alert-warning'>Das Datenverzeichnis ist hier nicht beschreibbar: Hochladen und Vergleichen geht, Übernehmen nicht (DATA_REPO_WRITABLE in env.rb).</div>"
+            end
+            io.puts print_data_repo_unpushed
             io.puts "<p class='text-muted'>Der HTML-Export der Lehrer- und Klassenpläne aus Untis als ZIP. Hochladen ändert noch nichts: Erst kommt der Vergleich mit dem Stundenplan, der bis zum gewählten Tag gilt – jede geänderte Stunde je Klasse, die Aufsichten und Kürzel, die das Dashboard nicht kennt. Übernommen gilt er ab diesem Tag; einen geplanten kannst du bis dahin wieder löschen.</p>"
             unless sources.empty?
                 io.puts "<details class='dp-section dp-sp-plans'><summary>Stundenpläne: <strong class='dp-count'>#{sources.size}</strong></summary>"

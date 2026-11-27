@@ -34,8 +34,19 @@ class Main < Sinatra::Base
     DATENPFLEGE_RUFNAME = /\A[\p{L}\p{M}][\p{L}\p{M}' .\-]{0,39}\z/u
     DATENPFLEGE_DRAFT = 'entwurf.json'
 
+    # the students' data (/datenpflege)
     def require_data_manager!
         require_user_with_role!(:can_manage_data)
+    end
+
+    # the timetable (/datenpflege_stundenplan, include/datenpflege_stundenplan.rb)
+    def require_timetable_manager!
+        require_user_with_role!(:can_manage_timetable)
+    end
+
+    # what both pages share: the data repo's push, the time the data was read
+    def require_data_or_timetable_manager!
+        assert(user_with_role_logged_in?(:can_manage_data) || user_with_role_logged_in?(:can_manage_timetable))
     end
 
     def datenpflege_pending_path(token, ext = 'json')
@@ -999,7 +1010,7 @@ class Main < Sinatra::Base
     end
 
     post '/api/datenpflege/push' do
-        require_data_manager!
+        require_data_or_timetable_manager!
         begin
             DataRepo.push(DataRepo.root)
             datenpflege_note_push(nil)
@@ -1051,6 +1062,21 @@ class Main < Sinatra::Base
         respond(:ok => true, :reload => DataVersion.restarts?)
     end
 
+    # commits the data repo has, but the remote not yet (both pages)
+    def print_data_repo_unpushed
+        require_data_or_timetable_manager!
+        error_path = File.join(DATENPFLEGE_PENDING_DIR, DATENPFLEGE_PUSH_ERROR)
+        unpushed = DataRepo.writable? && DataRepo.push? ? DataRepo.unpushed(DataRepo.root).to_i : 0
+        return '' unless unpushed > 0 || File.exist?(error_path)
+        StringIO.open do |io|
+            io.puts "<div class='alert alert-warning dp-unpushed'>"
+            io.puts "<p><strong>Noch nicht geschoben:</strong> #{unpushed == 1 ? 'eine Änderung ist' : "#{unpushed} Änderungen sind"} im Daten-Repository auf dem Server committet, aber nicht geschoben.</p>"
+            io.puts "<p class='text-muted'>#{dp_h(File.read(error_path))}</p>" if File.exist?(error_path)
+            io.puts "<p><button class='btn btn-secondary' id='bu_push'>Erneut schieben</button></p></div>"
+            io.string
+        end
+    end
+
     def print_datenpflege
         require_data_manager!
         StringIO.open do |io|
@@ -1073,14 +1099,7 @@ class Main < Sinatra::Base
                     io.puts "</div>"
                 end
             end
-            error_path = File.join(DATENPFLEGE_PENDING_DIR, DATENPFLEGE_PUSH_ERROR)
-            unpushed = DataRepo.writable? && DataRepo.push? ? DataRepo.unpushed(DataRepo.root).to_i : 0
-            if unpushed > 0 || File.exist?(error_path)
-                io.puts "<div class='alert alert-warning dp-unpushed'>"
-                io.puts "<p><strong>Noch nicht geschoben:</strong> #{unpushed == 1 ? 'eine Änderung ist' : "#{unpushed} Änderungen sind"} im Daten-Repository auf dem Server committet, aber nicht geschoben.</p>"
-                io.puts "<p class='text-muted'>#{dp_h(File.read(error_path))}</p>" if File.exist?(error_path)
-                io.puts "<p><button class='btn btn-secondary' id='bu_push'>Erneut schieben</button></p></div>"
-            end
+            io.puts print_data_repo_unpushed
             changes = datenpflege_uncommitted
             unless changes.empty?
                 io.puts "<div class='dp-uncommitted'>"

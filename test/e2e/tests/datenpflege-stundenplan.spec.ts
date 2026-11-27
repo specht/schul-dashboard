@@ -1,7 +1,8 @@
-import { test, expect, login, ACCOUNTS } from './fixtures';
+import { test, expect, login, ACCOUNTS, ROLE_ACCOUNTS } from './fixtures';
 import { untisZip, type Lesson } from './untis-zip';
 
-// The timetable on /datenpflege: the Untis export (teacher and class
+// The timetable on /datenpflege_stundenplan (its own role, apart from the
+// students' data on /datenpflege): the Untis export (teacher and class
 // timetables as a ZIP) uploaded with the day it applies from, compared with
 // the timetable valid until then, applied as stundenplan/<day>.zip and, as a
 // plan still to come, deleted again. The example timetable (5a, 11, 12 with
@@ -25,9 +26,12 @@ test('Datenpflege: Stundenplan aus Untis hochladen, vergleichen, übernehmen, al
   test.skip(testInfo.project.name !== 'desktop', 'one data repository for everybody');
   test.setTimeout(90_000);
   await login(page, ACCOUNTS.admin);
-  await page.goto('/datenpflege');
+  await page.goto('/datenpflege_stundenplan');
+  await expect(page.locator('.dp-page h2')).toHaveText('Datenpflege Stundenplan');
   const section = page.locator('.dp-stundenplan');
-  await expect(section.locator('h4')).toHaveText('Stundenplan');
+  await expect(section.locator('.dp-current')).toContainText('Im Dashboard: der Stundenplan aus');
+  // the students' data is on its own page
+  await expect(page.locator('#dp_drop')).toHaveCount(0);
 
   // not a ZIP: said, nothing to apply
   await section.locator('#ti_sp_file').setInputFiles({ name: 'plan.txt', mimeType: 'text/plain', buffer: Buffer.from('kein zip') });
@@ -83,4 +87,24 @@ test('Stundenplan hochladen nur mit der Rolle', async ({ page }) => {
   expect(r.ok()).toBe(false);
   const d = await page.request.post('/api/datenpflege/stundenplan/delete', { data: { date: DAY } });
   expect(d.ok()).toBe(false);
+  await page.goto('/datenpflege_stundenplan');
+  await expect(page).not.toHaveURL(/datenpflege/);
+});
+
+// Two roles: the timetable's (can_manage_timetable) doesn't open the
+// students' data (can_manage_data), and the other way round for teachers.
+test('Datenpflege: die Rolle für den Stundenplan sieht nur den Stundenplan', async ({ page }) => {
+  await login(page, ROLE_ACCOUNTS.zeugnis_admin);
+  await page.goto('/datenpflege_stundenplan');
+  await expect(page.locator('.dp-page h2')).toHaveText('Datenpflege Stundenplan');
+  await expect(page.locator('#dp_sp_drop')).toBeVisible();
+  // the upload is allowed (a file that is no ZIP: said so)
+  const r = await page.request.post('/api/datenpflege/stundenplan/upload', { data: { filename: 'x.zip', content: Buffer.from('kein zip').toString('base64'), date: DAY } });
+  expect(r.ok()).toBe(true);
+  expect((await r.json()).ok).toBe(false);
+  expect((await page.request.post('/api/data_status', { data: {} })).ok()).toBe(true);
+  // the students' data is not
+  await page.goto('/datenpflege');
+  await expect(page).not.toHaveURL(/datenpflege/);
+  expect((await page.request.post('/api/datenpflege/schueler/draft', { data: {} })).ok()).toBe(false);
 });

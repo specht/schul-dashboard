@@ -2583,7 +2583,8 @@ test('Neues Design: Mehr am Handy, Kacheln gut verteilt, Menü nach Themen', asy
     // Verwaltung: groups by topic, the new labels
     const verwaltung = menu.locator('.pv-nav-section[data-section="verwaltung"]');
     await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Schulkalender' })).toHaveCount(1);
-    await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Datenpflege' })).toHaveCount(1);
+    await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Datenpflege Schüler:innen' })).toHaveCount(1);
+    await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Datenpflege Stundenplan' })).toHaveCount(1);
     await expect(verwaltung.locator('.pv-nav-entry', { hasText: 'Termine verwalten' })).toHaveCount(0);
     // every page in one place only (one highlight): the library in Schule
     const hrefs = await menu.locator('.pv-nav-section .pv-nav-entry').evaluateAll((list) => list.map((a) => a.getAttribute('href')));

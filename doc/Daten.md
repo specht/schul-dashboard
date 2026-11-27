@@ -157,9 +157,11 @@ Lehrer- und Klassenpläne aus Untis kommen, gepackt als ZIP
 (`stundenplan/JJJJ-MM-TT.zip`, gilt wie die TXT-Dateien ab dem Datum 
 im Namen; die Pausenaufsichten stehen mit in den Lehrerplänen).
 
-Wer die Rolle für die Datenpflege hat, lädt das ZIP unter Admin → 
-**Datenpflege** im Abschnitt *Stundenplan* hoch und wählt den Tag, ab 
-dem es gilt. Hochladen ändert noch nichts: Das Dashboard vergleicht den 
+Wer die Rolle `can_manage_timetable` hat (Admins haben sie immer), lädt 
+das ZIP unter Admin → **Datenpflege Stundenplan** hoch und wählt den 
+Tag, ab dem es gilt. Die Rolle ist von der für die Schülerdaten 
+(`can_manage_data`) getrennt: Wer den Stundenplan pflegt, sieht die 
+Schülerdaten nicht und umgekehrt. Hochladen ändert noch nichts: Das Dashboard vergleicht den 
 Export mit dem Stundenplan, der bis zu diesem Tag gilt, und zeigt
 
 - wie viele Stunden sich ändern, neu dazukommen oder entfallen,
@@ -223,9 +225,9 @@ Dabei ist zu beachten:
 
 ### Datenpflege im Dashboard
 
-Wer Daten einspielen darf (Rolle `can_manage_data`, Admins haben sie immer),
-findet unter
-Admin → **Datenpflege** den Abgleich mit der LUSD:
+Wer Schülerdaten einspielen darf (Rolle `can_manage_data`, Admins haben sie
+immer), findet unter
+Admin → **Datenpflege Schüler:innen** den Abgleich mit der LUSD:
 
 1. Den Export aus der LUSD (Excel oder CSV) in das Feld ziehen und den Tag
    wählen, ab dem die Liste gelten soll.

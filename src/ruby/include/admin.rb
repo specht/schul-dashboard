@@ -1,6 +1,6 @@
 class Main < Sinatra::Base
     # the admin page's own pages (also found by the search, quick_search.rb)
-    ADMIN_PAGE_LINKS = [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Neues Design: Testpersonen und Feedback', 'fa-comment-o'], ['/design_palettes', 'Farbschemata neues Design', 'fa-paint-brush'], ['/datenpflege', 'Datenpflege', 'fa-upload']]
+    ADMIN_PAGE_LINKS = [['/dienste', 'Dienste', 'fa-heartbeat'], ['/sus_ohne_kurse', 'SuS ohne Kurse'], ['/sms_anmeldung', 'SMS-Anmeldung', 'fa-mobile'], ['/unterrichtsmails', 'Mails aus dem Unterricht', 'fa-envelope-o'], ['/design_feedback', 'Neues Design: Testpersonen und Feedback', 'fa-comment-o'], ['/design_palettes', 'Farbschemata neues Design', 'fa-paint-brush'], ['/datenpflege', 'Datenpflege Schüler:innen', 'fa-upload'], ['/datenpflege_stundenplan', 'Datenpflege Stundenplan', 'fa-calendar']]
 
     # Reloads the input data (/data) in every service, see data_version.rb.
     post '/api/reload_data' do
@@ -12,7 +12,7 @@ class Main < Sinatra::Base
     # When this service read the data (the admin page polls it while the
     # services start again).
     post '/api/data_status' do
-        require_data_manager!
+        require_data_or_timetable_manager!
         respond(:loaded_at => @@data_loaded_at.strftime('%d.%m.%Y, %H:%M:%S'))
     end
 

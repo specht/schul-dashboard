@@ -1,0 +1,127 @@
+#{this_is_a_page_for_user_with_role(:can_manage_timetable)}
+<style>
+    body {
+        background-image: none;
+        background-color: #{(@session_user || {})[:dark] ? '#000' : '#fff'};
+    }
+</style>
+#{File.read('/static/_datenpflege_style.html')}
+#{File.read('/static/_datenpflege_shared.html')}
+<div class='container-fluid white'>
+    <div class='dp-page'>
+        <h2>Datenpflege Stundenplan</h2>
+        <div class='api_messages' style='display: none;'></div>
+        #{print_stundenplan_datenpflege()}
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // a reload comes back to where the page was scrolled
+        const PLACE = 'dp_sp_place';
+        function reload_here() {
+            try { sessionStorage.setItem(PLACE, JSON.stringify({ at: Date.now(), y: window.scrollY })); } catch (e) { }
+            window.location.reload();
+        }
+        try {
+            const place = JSON.parse(sessionStorage.getItem(PLACE) || 'null');
+            sessionStorage.removeItem(PLACE);
+            if (place && Date.now() - place.at < 10 * 60 * 1000) window.scrollTo(0, place.y);
+        } catch (e) { }
+
+        // ---------- the timetable: the Untis export (ZIP), compared first ----------
+        let sp_token = null;
+        function sp_message(text) {
+            $('#dp_sp_message').text(text || '').prop('hidden', !text);
+        }
+        function sp_show(data) {
+            if (!data.ok) {
+                sp_token = null;
+                $('#dp_sp_preview').empty();
+                $('#dp_sp_apply').prop('hidden', true);
+                sp_message(data.message || 'Die Datei konnte nicht verglichen werden.');
+                return;
+            }
+            sp_message(data.txt_wins ? 'Für diesen Tag gibt es eine TXT-Datei, die Vorrang hätte – bitte einen anderen Tag wählen.' : null);
+            sp_token = data.token;
+            $('#dp_sp_preview').html(data.html);
+            $('#dp_sp_apply').prop('hidden', !data.can_apply || data.txt_wins);
+            $('#dp_sp_replace').prop('hidden', !data.replacing);
+            $('#ti_sp_replace').prop('checked', false);
+            $('#bu_sp_apply').prop('disabled', !!data.replacing);
+        }
+        function sp_upload(file) {
+            if (!file) return;
+            $('#dp_sp_drop .dp-drop-file').text(file.name).prop('hidden', false);
+            if (file.size > 5 * 1024 * 1024) {
+                sp_message('Die Datei ist zu groß (höchstens 5 MB).');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function () {
+                const content = String(reader.result).replace(/^data:[^,]*,/, '');
+                api_call('/api/datenpflege/stundenplan/upload', { filename: file.name, content: content, date: $('#ti_sp_date').val() }, sp_show);
+            };
+            reader.readAsDataURL(file);
+            $('#ti_sp_file').val('');
+        }
+        $('#ti_sp_file').on('change', function (e) { sp_upload(e.currentTarget.files[0]); });
+        const sp_drop = document.getElementById('dp_sp_drop');
+        if (sp_drop) {
+            ['dragenter', 'dragover'].forEach(function (type) {
+                sp_drop.addEventListener(type, function (e) { e.preventDefault(); sp_drop.classList.add('dp-over'); });
+            });
+            ['dragleave', 'drop'].forEach(function (type) {
+                sp_drop.addEventListener(type, function (e) { e.preventDefault(); sp_drop.classList.remove('dp-over'); });
+            });
+            sp_drop.addEventListener('drop', function (e) {
+                const file = e.dataTransfer && e.dataTransfer.files[0];
+                if (file) sp_upload(file);
+            });
+        }
+        // another day: compared with the timetable valid until then
+        $('#ti_sp_date').on('change', function () {
+            if (!sp_token) return;
+            api_call('/api/datenpflege/stundenplan/preview', { token: sp_token, date: $('#ti_sp_date').val() }, sp_show);
+        });
+        $('#ti_sp_replace').on('change', function (e) { $('#bu_sp_apply').prop('disabled', !e.currentTarget.checked); });
+        $('#bu_sp_apply').click(function (e) {
+            if (!sp_token) return;
+            const day = $('#ti_sp_date').val().split('-').reverse().join('.');
+            dashboardConfirm(`Der Stundenplan gilt dann ab dem ${day} für alle.`, function () {
+                $('#bu_sp_apply').prop('disabled', true);
+                api_call('/api/datenpflege/stundenplan/apply', { token: sp_token, date: $('#ti_sp_date').val(), replace: $('#ti_sp_replace').is(':checked') }, function (data) {
+                    if (!data.ok) $('#bu_sp_apply').prop('disabled', false);
+                    else sp_token = null;
+                    after_change(data);
+                });
+            }, { title: 'Stundenplan übernehmen', confirm: 'Übernehmen' });
+        });
+        $('#bu_sp_discard').click(function () {
+            if (!sp_token) return;
+            api_call('/api/datenpflege/stundenplan/discard', { token: sp_token }, function () {
+                sp_token = null;
+                $('#dp_sp_preview').empty();
+                $('#dp_sp_apply').prop('hidden', true);
+                $('#dp_sp_drop .dp-drop-file').text('').prop('hidden', true);
+                sp_message(null);
+            });
+        });
+        $(document).on('click', '.bu_sp_delete', function (e) {
+            const date = e.currentTarget.getAttribute('data-date');
+            dashboardConfirm(`Der für den ${date.split('-').reverse().join('.')} geplante Stundenplan wird gelöscht; bis dahin bleibt der bisherige.`, function () {
+                api_call('/api/datenpflege/stundenplan/delete', { date: date }, after_change);
+            }, { title: 'Geplanten Stundenplan löschen', confirm: 'Löschen', danger: true });
+        });
+
+        // after a change: the services read the data again, then the page
+        function after_change(data) {
+            if (!data.ok) {
+                sp_message(data.message || 'Das hat nicht geklappt.');
+                return;
+            }
+            if (data.reload) dp_wait_for_reload($('#data_loaded_at').text(), reload_here);
+            else reload_here();
+        }
+        dp_bind_push(reload_here, sp_message);
+    });
+</script>

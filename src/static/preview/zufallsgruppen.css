@@ -1,0 +1,116 @@
+/* Neues Design: Gruppenbildung (zufallsgruppen.html). The page brings its own
+   card (white at 85 %) and fixed colours for today's design; here it takes
+   the new design's surface and tokens instead, so that it reads in light and
+   dark (in dark the text was light on the light card). The settings are
+   labelled rows, on phones the label above its options. The projector view
+   (#zg_beamer) stays light on purpose and keeps its colours. */
+
+.ui-preview .zg-container {
+    background: var(--pv-surface);
+    color: var(--pv-ink);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-radius: 16px;
+}
+
+.ui-preview .zg-container h1,
+.ui-preview .zg-container h4,
+.ui-preview .zg-container h5 {
+    color: var(--pv-ink);
+}
+
+.ui-preview .zg-legend,
+.ui-preview .zg-container #zg_result_info {
+    color: var(--pv-muted);
+}
+
+.ui-preview .zg-warning {
+    color: var(--acc-text);
+}
+
+/* who is there: chips (tap to leave out), the ones left out quiet */
+.ui-preview .zg-chip {
+    background: var(--acc-soft);
+    border-color: transparent;
+    color: var(--acc-text);
+}
+
+.ui-preview .zg-chip.absent {
+    background: transparent;
+    border-color: var(--pv-line);
+    color: var(--pv-muted);
+}
+
+.ui-preview .zg-chip.zg-extra.absent {
+    color: var(--pv-muted);
+}
+
+.ui-preview .zg-chip.zg-extra.absent .zg-avatar::after {
+    color: var(--pv-ink);
+}
+
+/* the drawn groups on the page */
+.ui-preview .zg-container .zg-group {
+    background: var(--pv-surface);
+    border-color: var(--pv-line);
+    color: var(--pv-ink);
+    box-shadow: none;
+}
+
+.ui-preview .zg-container .zg-group.shuffling .zg-name {
+    color: var(--pv-muted);
+}
+
+/* staff groups: who may use them */
+.ui-preview .zg-access {
+    background: transparent;
+    border-color: var(--pv-line);
+}
+
+.ui-preview .zg-access .zg-person {
+    background: var(--pv-hover);
+    border-color: transparent;
+    color: var(--pv-ink);
+}
+
+.ui-preview .zg-access .zg-person button {
+    color: var(--pv-muted);
+}
+
+/* the settings: label and options in one row, the options top-aligned */
+.ui-preview .zg-settings .zg-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 16px;
+}
+
+.ui-preview .zg-settings .zg-label {
+    flex: 0 0 12em;
+    min-width: 0;
+}
+
+.ui-preview .zg-settings label.zg-choice {
+    margin: 0;
+}
+
+.ui-preview .zg-settings .zg-row > .zg-legend {
+    flex-basis: 100%;
+}
+
+@media (max-width: 767px) {
+    .ui-preview .zg-container {
+        margin: 0;
+        padding: 16px;
+    }
+    /* phones: the label above its options */
+    .ui-preview .zg-settings .zg-row {
+        margin-bottom: 14px;
+    }
+    .ui-preview .zg-settings .zg-label {
+        flex-basis: 100%;
+    }
+    .ui-preview .zg-container h1 {
+        font-size: 1.8rem;
+    }
+}

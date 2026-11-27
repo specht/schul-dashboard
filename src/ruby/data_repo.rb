@@ -77,6 +77,16 @@ module DataRepo
         path
     end
 
+    # a file as it is (a ZIP, an image)
+    def self.write_binary(root, rel, content)
+        check_path!(rel)
+        path = File.join(root, rel)
+        tmp = "#{path}.#{SecureRandom.hex(4)}.tmp"
+        File.binwrite(tmp, content)
+        File.rename(tmp, path)
+        path
+    end
+
     # rel => 'neu' (untracked) or 'geändert' for the given paths with changes
     # that are not committed.
     def self.uncommitted(root, rels)

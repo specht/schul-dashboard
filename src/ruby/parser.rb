@@ -793,6 +793,17 @@ class Parser
         return nil
     end
 
+    # Untis' names of some classes as the dashboard has them
+    TIMETABLE_KLASSE_TR = {
+        '8?' => '8o', '8ω' => '8o', '8w' => '8o',
+        '9?' => '9o', '9ω' => '9o', '9w' => '9o',
+        '7e/8e' => '7e_8e',
+    }.freeze
+
+    def self.timetable_klasse(klasse)
+        TIMETABLE_KLASSE_TR[klasse] || klasse
+    end
+
     # Returns start date => path for all timetable sources, sorted by date.
     # Sources are TXT files in txt_dir and Untis HTML exports (teacher
     # timetables) as ZIP files in /data/stundenplan. If both exist for
@@ -1156,14 +1167,7 @@ class Parser
             end
             previous_rows = rows
             rows.each do |parts|
-                klasse = parts[1]
-                klasse = '8o' if klasse == '8?'
-                klasse = '8o' if klasse == '8ω'
-                klasse = '8o' if klasse == '8w'
-                klasse = '9o' if klasse == '9?'
-                klasse = '9o' if klasse == '9ω'
-                klasse = '9o' if klasse == '9w'
-                klasse = '7e_8e' if klasse == '7e/8e'
+                klasse = Parser.timetable_klasse(parts[1])
                 cache_key = parts[2, parts.size - 2].join('/')
                 line_cache[cache_key] ||= Set.new()
                 line_cache[cache_key] << klasse
@@ -1171,14 +1175,7 @@ class Parser
             rows.each do |parts|
                 unr = parts[0].to_i
                 unr = use_tr[unr] || unr
-                klasse = parts[1]
-                klasse = '8o' if klasse == '8?'
-                klasse = '8o' if klasse == '8ω'
-                klasse = '8o' if klasse == '8w'
-                klasse = '9o' if klasse == '9?'
-                klasse = '9o' if klasse == '9ω'
-                klasse = '9o' if klasse == '9w'
-                klasse = '7e_8e' if klasse == '7e/8e'
+                klasse = Parser.timetable_klasse(parts[1])
 
                 lehrer = parts[2]
                 if @use_mock_names

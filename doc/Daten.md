@@ -150,6 +150,30 @@ Anführungsstrichen. Die Spalten haben folgende Bedeutungen:
 Wir sehen hier auch, dass Kurse problemlos zusammengelegt werden 
 können, z.B. findet der Latein-Leistungskurs gemeinsam für die 11. und 12. Klassen statt.
 
+### Untis-Export als ZIP hochladen
+
+Statt einer TXT-Datei kann der Stundenplan auch als HTML-Export der 
+Lehrer- und Klassenpläne aus Untis kommen, gepackt als ZIP 
+(`stundenplan/JJJJ-MM-TT.zip`, gilt wie die TXT-Dateien ab dem Datum 
+im Namen; die Pausenaufsichten stehen mit in den Lehrerplänen).
+
+Wer die Rolle für die Datenpflege hat, lädt das ZIP unter Admin → 
+**Datenpflege** im Abschnitt *Stundenplan* hoch und wählt den Tag, ab 
+dem es gilt. Hochladen ändert noch nichts: Das Dashboard vergleicht den 
+Export mit dem Stundenplan, der bis zu diesem Tag gilt, und zeigt
+
+- wie viele Stunden sich ändern, neu dazukommen oder entfallen,
+- je Klasse jede geänderte Stunde (bisher und neu),
+- geänderte Pausenaufsichten,
+- Kürzel und Klassen, die das Dashboard nicht kennt (deren Unterricht 
+  erschiene bei niemandem).
+
+Erst *Übernehmen* legt die Datei im Datenrepository ab (als Commit) und 
+lädt die Daten neu. Gibt es für den Tag schon ein ZIP, muss man das 
+Ersetzen bestätigen; eine TXT-Datei für denselben Tag hätte Vorrang, 
+deshalb lehnt das Dashboard das Hochladen dann ab. Ein geplanter 
+Stundenplan (Datum in der Zukunft) lässt sich bis dahin wieder löschen.
+
 
 
 ## Schüler:innen

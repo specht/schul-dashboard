@@ -34,10 +34,10 @@ for (const preview of [false, true]) {
       await expect(page.locator('.sp-head h2')).toHaveText('Mallory Mustermann');
       await expect(page.locator('.sp-sub')).toContainText('Klasse 5a');
       await expect(page.locator('.sp-sub')).toContainText('Klassenleitung');
-      await expect(page.locator('.sp-facts dt')).toHaveText(['Geburtsdatum', 'Geschlecht', 'Bildungsgang', 'Stufe', 'E-Mail', 'E-Mail der Eltern', 'Letzter Zugriff']);
+      await expect(page.locator('.sp-facts dt')).toHaveText(['Geburtsdatum', 'Geschlecht', 'Bildungsgang', 'Stufe', 'E-Mail', 'E-Mail der Eltern', 'Alle Lehrkräfte', 'Letzter Zugriff']);
       if (preview) {
         // the new design's copy fields, the subjects as chips in their colour
-        await expect(page.locator('.sp-facts .pv-copy')).toHaveCount(2);
+        await expect(page.locator('.sp-facts .pv-copy')).toHaveCount(3);
         await expect(page.locator('.sp-facts .pv-copy').nth(1)).toContainText(/^eltern\./);
         await expect(page.locator('.sp-facts input')).toHaveCount(0);
         await expect(page.locator('.sp-lessons tbody tr .pv-dir-lk')).toHaveCount(await page.locator('.sp-lessons tbody tr').count());
@@ -53,8 +53,14 @@ for (const preview of [false, true]) {
       await expect(page.locator('.sp-lessons tbody a[href^="/timetable/"]').first()).toBeVisible();
       // the lessons of the whole class lead to the class list, a course's to its own
       await expect(page.locator('.sp-lessons tbody td:nth-child(4) a').first()).toHaveAttribute('href', /^\/directory\//);
-      // no list of teachers below 11
-      await expect(page.locator('.sp-facts dt', { hasText: 'Alle Lehrkräfte' })).toHaveCount(0);
+      // below 11: the list of the class's teachers
+      const teachers = page.locator('.sp-facts dd').filter({ has: page.locator('.sp-hint') });
+      await expect(teachers.locator('.sp-hint')).toHaveText(/^Verteiler an (die Lehrkraft|alle \d+ Lehrkräfte) der Klasse 5a$/);
+      if (preview) await expect(teachers.locator('.pv-copy')).toContainText(/^lehrer\.5a@/);
+      else await expect(teachers.locator('input')).toHaveValue(/^lehrer\.5a@/);
+      // the lessons by lessons per week, most first
+      const hours = (await page.locator('.sp-lessons tbody td.sp-num').allTextContents()).map((t) => parseInt(t, 10) || 0);
+      expect(hours).toEqual([...hours].sort((a, b) => b - a));
       // the ways on: the timetable, the class list with the row marked
       const id = page.url().split('/').pop();
       await expect(page.locator('#bu_sp_timetable')).toHaveAttribute('href', `/timetable/${id}`);

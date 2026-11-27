@@ -5,9 +5,10 @@
 # (directory.rb), the lessons as in the student's timetable.
 class Main < Sinatra::Base
     # the order of the lessons: the LKs first (they matter most in 11/12),
-    # then by subject; rows are {:key, :info, :fach}
+    # then by lessons per week, most first, then by subject; rows are
+    # {:key, :info, :fach, :hours}
     def self.schueler_seite_order(rows)
-        rows.sort_by { |r| [Main.schuelerliste_lk_lesson?(r[:info]) ? 0 : 1, r[:fach].downcase, r[:key]] }
+        rows.sort_by { |r| [Main.schuelerliste_lk_lesson?(r[:info]) ? 0 : 1, -(r[:hours] || 0), r[:fach].downcase, r[:key]] }
     end
 
     def schueler_seite_email(id)
@@ -105,9 +106,12 @@ class Main < Sinatra::Base
             end
             facts << ['E-Mail', :email]
             facts << ['E-Mail der Eltern', :eltern]
-            # upper school: a list to all who teach the student (main.rb)
+            # all who teach the student: in 11/12 the student's own list
+            # (main.rb), below the class's teachers (lehrer.<klasse>@…)
             teachers_list = "lehrer.#{email.split('@').first}@#{MAILING_LIST_DOMAIN}".downcase
-            facts << ['Alle Lehrkräfte', :lehrer] if (@@mailing_lists[teachers_list] || {})[:teachers_of] == email
+            own_list = (@@mailing_lists[teachers_list] || {})[:teachers_of] == email
+            teachers_list = "lehrer.#{klasse}@#{MAILING_LIST_DOMAIN}".downcase unless own_list || oberstufe
+            facts << ['Alle Lehrkräfte', :lehrer] if own_list || (!oberstufe && @@mailing_lists[teachers_list])
             facts << ['Letzter Zugriff', h.(directory_last_access_label(last_access))]
             io.puts "<h4>Angaben</h4>"
             io.puts "<dl class='sp-facts'>"
@@ -120,7 +124,11 @@ class Main < Sinatra::Base
                 elsif value == :lehrer
                     schueler_seite_copy(io, teachers_list)
                     n = (@@mailing_lists[teachers_list][:recipients] || []).size
-                    io.puts "<div class='sp-hint'>Verteiler an #{n == 1 ? 'die Lehrkraft' : "die #{n} Lehrkräfte"}, die #{h.(user[:first_name])} #{n == 1 ? 'unterrichtet' : 'unterrichten'}#{user[:tutor] ? ', mit Tutor:in' : ''}</div>"
+                    if own_list
+                        io.puts "<div class='sp-hint'>Verteiler an #{n == 1 ? 'die Lehrkraft' : "die #{n} Lehrkräfte"}, die #{h.(user[:first_name])} #{n == 1 ? 'unterrichtet' : 'unterrichten'}#{user[:tutor] ? ', mit Tutor:in' : ''}</div>"
+                    else
+                        io.puts "<div class='sp-hint'>Verteiler an #{n == 1 ? 'die Lehrkraft' : "alle #{n} Lehrkräfte"} der Klasse #{h.(tr_klasse(klasse))}</div>"
+                    end
                 else
                     io.puts value
                 end

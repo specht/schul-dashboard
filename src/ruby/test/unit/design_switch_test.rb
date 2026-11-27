@@ -5,7 +5,14 @@ require_relative 'test_helper'
 class DesignSwitchTest < Minitest::Test
     def setup
         skip 'needs the test stack (./test.sh unit)' unless in_test_stack?
-        Dir.chdir(APP_ROOT) { require_app 'include/design_preview' }
+        # what design_preview.rb needs when it loads (DEVELOPMENT, Cling):
+        # loaded here, else the test depends on which tests ran before it
+        Dir.chdir(APP_ROOT) do
+            require ENV['DASHBOARD_CREDENTIALS'] || './credentials.rb'
+            require_app 'cling'
+            require_app 'design_tokens'
+            require_app 'include/design_preview'
+        end
         @day = Main::NEW_DESIGN_FOR_ALL_FROM
     end
 

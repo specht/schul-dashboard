@@ -1,7 +1,9 @@
 /* Neues Design: Terminfinder (/terminfinder, preview/terminfinder.js). Who,
    how long, then the week: one row per day with a bar of the day (free for
    all in the accent, busy darker the more people are busy) and the common
-   free times as buttons. */
+   free times as buttons – or, as »Stundenpläne«, the week as in the
+   timetable with one column per person, class or room, the lessons in their
+   subject's colour and the common free times in the accent between them. */
 
 .ui-preview .pv-tf .pv-tf-lead {
     max-width: 62ch;
@@ -148,6 +150,9 @@
 /* ---------- how long: a segmented switch ---------- */
 
 .ui-preview .pv-tf .pv-tf-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 28px;
     margin-bottom: 22px;
 }
 
@@ -161,7 +166,8 @@
     background: var(--pv-hover);
 }
 
-.ui-preview .pv-tf .pv-tf-duration {
+.ui-preview .pv-tf .pv-tf-duration,
+.ui-preview .pv-tf .pv-tf-view {
     padding: 5px 12px;
     border: 0;
     border-radius: 9px;
@@ -172,7 +178,8 @@
     font-variant-numeric: tabular-nums;
 }
 
-.ui-preview .pv-tf .pv-tf-duration.active {
+.ui-preview .pv-tf .pv-tf-duration.active,
+.ui-preview .pv-tf .pv-tf-view.active {
     background: var(--pv-surface);
     color: var(--pv-ink);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
@@ -374,6 +381,235 @@
     color: var(--pv-muted);
 }
 
+/* ---------- the timetables side by side (»Stundenpläne«) ---------- */
+
+.ui-preview .pv-tf .pv-tf-grid-scroll {
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+.ui-preview .pv-tf .pv-tf-grid {
+    display: grid;
+    grid-template-columns: 3rem repeat(var(--pv-tf-days), minmax(0, 1fr));
+    /* lanes stay readable: wider than the page scrolls sideways */
+    min-width: calc(3rem + var(--pv-tf-days) * var(--pv-tf-lanes) * 2.6rem);
+    column-gap: 6px;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-head {
+    padding: 4px 0 6px;
+    color: var(--pv-ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 0;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-day-name {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-past-head {
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-tf .pv-tf-grid-head .pv-tf-note {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ui-preview .pv-tf .pv-tf-lane-names,
+.ui-preview .pv-tf .pv-tf-lanes {
+    display: grid;
+    grid-template-columns: repeat(var(--pv-tf-lanes), minmax(0, 1fr));
+    gap: 2px;
+}
+
+.ui-preview .pv-tf .pv-tf-lane-names {
+    margin-top: 4px;
+}
+
+.ui-preview .pv-tf .pv-tf-lane-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--pv-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-axis,
+.ui-preview .pv-tf .pv-tf-grid-day {
+    position: relative;
+    height: var(--pv-tf-height);
+}
+
+.ui-preview .pv-tf .pv-tf-grid-hour {
+    position: absolute;
+    right: 6px;
+    transform: translateY(-50%);
+    color: var(--pv-muted);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-day {
+    border-radius: 8px;
+    background: var(--pv-hover);
+    overflow: hidden;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--pv-line);
+}
+
+/* what is over: quieter */
+.ui-preview .pv-tf .pv-tf-grid-over {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    background: color-mix(in srgb, var(--pv-surface) 55%, transparent);
+    pointer-events: none;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-holiday {
+    display: flex;
+    justify-content: center;
+    padding-top: 12px;
+}
+
+/* the common free times: the accent, under the columns, a button */
+.ui-preview .pv-tf .pv-tf-grid-free {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2px 4px 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-weight: 600;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-free:hover,
+.ui-preview .pv-tf .pv-tf-grid-free:focus-visible {
+    background: color-mix(in srgb, var(--acc) 30%, var(--acc-soft));
+}
+
+.ui-preview .pv-tf .pv-tf-lanes {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: 0 2px;
+    pointer-events: none;
+}
+
+.ui-preview .pv-tf .pv-tf-lane {
+    position: relative;
+    min-width: 0;
+}
+
+/* a column without a timetable this week */
+.ui-preview .pv-tf .pv-tf-lane-none {
+    background: repeating-linear-gradient(135deg, transparent 0 6px, var(--pv-line) 6px 7px);
+}
+
+.ui-preview .pv-tf .pv-tf-lesson {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 1px 3px;
+    border-radius: 4px;
+    background: var(--pv-tf-bg, var(--acc));
+    color: var(--pv-tf-ink, var(--acc-ink));
+    font-size: 0.72rem;
+    line-height: 1.2;
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.ui-preview .pv-tf .pv-tf-lesson-label {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ui-preview .pv-tf .pv-tf-lesson-room {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* a substitution or a change: a ring in the text's colour */
+.ui-preview .pv-tf .pv-tf-lesson-changed {
+    box-shadow: inset 0 0 0 2px var(--pv-tf-ink, var(--acc-ink));
+}
+
+/* cancelled: no colour, crossed out (still not busy) */
+.ui-preview .pv-tf .pv-tf-lesson-off {
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+    border: 1px dashed var(--pv-line);
+    box-shadow: none;
+}
+
+.ui-preview .pv-tf .pv-tf-lesson-off .pv-tf-lesson-label {
+    text-decoration: line-through;
+}
+
+/* a break duty: busy, quietly */
+.ui-preview .pv-tf .pv-tf-lesson-duty {
+    background: repeating-linear-gradient(135deg, var(--pv-surface) 0 5px, var(--pv-line) 5px 7px);
+    color: var(--pv-ink);
+}
+
+/* a group: darker the more of them are busy */
+.ui-preview .pv-tf .pv-tf-group-busy {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--pv-muted) calc(var(--share, 1) * 70%), transparent);
+    pointer-events: auto;
+}
+
+/* phones: the days as a switch, one day with its columns */
+.ui-preview .pv-tf .pv-tf-daytabs {
+    display: flex;
+    margin-top: 10px;
+}
+
+.ui-preview .pv-tf .pv-tf-daytab {
+    flex: 1 1 0;
+    min-width: 0;
+    display: inline-flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 2px;
+}
+
+.ui-preview .pv-tf .pv-tf-grid-one .pv-tf-lesson {
+    font-size: 0.8rem;
+}
+
 /* ---------- the dialog of a time ---------- */
 
 .ui-preview #tfSlotModal .pv-tf-slot-who {
@@ -434,7 +670,12 @@
         display: flex;
         flex-wrap: nowrap;
     }
-    .ui-preview .pv-tf .pv-tf-duration {
+    .ui-preview .pv-tf .pv-tf-option {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+    .ui-preview .pv-tf .pv-tf-duration,
+    .ui-preview .pv-tf .pv-tf-view {
         flex: 1 1 0;
         min-width: 0;
         padding: 5px 2px;

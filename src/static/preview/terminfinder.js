@@ -1,8 +1,11 @@
 // Neues Design: Terminfinder (/terminfinder, include/terminfinder.rb). A
-// teacher adds people, classes or groups (the same list as for Termine,
-// recipients.json) and sees, day by day, when all of them are free for the
-// chosen duration. Only lessons count (with substitutions and cancellations);
-// the server sends busy times only. A time opens a dialog; »Termin anlegen«
+// teacher adds people, classes, groups (the same list as for Termine,
+// recipients.json) or rooms and sees, day by day, when all of them are free
+// for the chosen duration. Only lessons count (with substitutions and
+// cancellations). Two views: »Freie Zeiten« (one bar per day, busy times
+// only) and »Stundenpläne« (the week as in the timetable, one column per
+// person, class or room side by side, the common free times between them).
+// A time opens a dialog; »Termin anlegen«
 // carries date, time and participants to /events (preview/events.js) through
 // sessionStorage, not the address, so that no names end up in a URL.
 (function () {
@@ -15,7 +18,9 @@
     var DAY_START = 8 * 60;         // … and start with the first lesson, at the latest 8 Uhr
     var MAX_PEOPLE = 150;           // TERMINFINDER_MAX_PEOPLE
     var MAX_RESULTS = 8;
+    var MAX_TIMETABLES = 10;        // TERMINFINDER_MAX_TIMETABLES
     var STORE_DURATION = 'pv_tf_duration';
+    var STORE_VIEW = 'pv_tf_view';
     var DRAFT = 'pv_terminfinder';  // read by preview/events.js
     // groups that make no sense here (parents have no timetable, the whole
     // student body is more than one can ask)
@@ -28,6 +33,12 @@
     var cache = {};                 // week + people -> answer of the server
     var answer = null;              // the shown answer
     var request_no = 0;
+    var view = 'free';              // 'free' or 'grid'
+    var tt_cache = {};              // week + keys -> lessons of the timetables
+    var tt_answer = null;           // the shown lessons
+    var tt_key = null;              // … for this week + keys
+    var tt_request_no = 0;
+    var phone_day = null;           // the day shown on phones (grid), 0–4
     var ui = {};
 
     function el(tag, cls, text) {
@@ -78,6 +89,18 @@
     }
     function label_of(key) { return ((window.recipients || {})[key] || {}).label || key; }
     function people_text(n) { return n === 1 ? '1 Person' : n + ' Personen'; }
+    function rooms_text(n) { return n === 1 ? '1 Raum' : n + ' Räume'; }
+    function is_room(key) { return key.charAt(0) === '@'; }
+    // a column's name in the grid: the room, the class, a person's last name
+    function short_of(key) {
+        if (is_room(key)) return key.slice(1);
+        var k = /^\/klasse\/(.+)$/.exec(key);
+        if (k) return k[1];
+        var label = label_of(key).replace(/\s*\(.*\)\s*$/, '');
+        if ((window.recipients[key] || {}).entries) return label;
+        var words = label.split(/\s+/);
+        return words[words.length - 1];
+    }
 
     // ---------- who ----------
 
@@ -113,7 +136,7 @@
             var r = window.recipients[key];
             // people first (teachers before students), then groups; the label's
             // start before a later word
-            var rank = (label.indexOf(terms[0]) === 0 ? 0 : 4) + (r.entries ? 2 : (r.teacher ? 0 : 1));
+            var rank = (label.indexOf(terms[0]) === 0 ? 0 : 4) + (r.entries ? 2 : (r.room ? 3 : (r.teacher ? 0 : 1)));
             found.push({ key: key, rank: rank, label: label_of(key) });
         });
         found.sort(function (a, b) { return a.rank - b.rank || a.label.localeCompare(b.label, 'de'); });
@@ -132,7 +155,7 @@
             b.setAttribute('role', 'option');
             b.dataset.key = item.key;
             b.appendChild(el('span', 'pv-tf-result-name', item.label));
-            var sub = r.entries ? 'Gruppe, ' + people_text(members(item.key).length) : (r.teacher ? 'Lehrkraft' : 'Schülerin oder Schüler');
+            var sub = r.entries ? 'Gruppe, ' + people_text(members(item.key).length) : (r.room ? 'Raum' : (r.teacher ? 'Lehrkraft' : 'Schülerin oder Schüler'));
             b.appendChild(el('span', 'pv-tf-result-sub', sub));
             b.addEventListener('mousedown', function (e) { e.preventDefault(); });
             b.addEventListener('click', function (e) { add(e.currentTarget.dataset.key); });
@@ -189,7 +212,9 @@
     function render_facts() {
         var list = emails();
         var parts = [];
-        if (list.length) parts.push(people_text(list.length));
+        var rooms = list.filter(is_room).length;
+        if (list.length - rooms) parts.push(people_text(list.length - rooms));
+        if (rooms) parts.push(rooms_text(rooms));
         if (answer && answer.missing.length) {
             var names = answer.missing.map(function (e) { return label_of(e); });
             var shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ' und ' + (names.length - 3) + ' weitere' : '');
@@ -231,6 +256,220 @@
             render_facts();
             render_days();
         });
+    }
+
+    // ---------- the timetables side by side (grid) ----------
+
+    // one column per chip: a person, a class (5–10) or a room with its own
+    // timetable; other groups (and 11, 12) as how many of them are busy
+    function lanes() {
+        return chosen.slice(0, MAX_TIMETABLES).map(function (key) {
+            var r = window.recipients[key] || {};
+            var k = /^\/klasse\/(.+)$/.exec(key);
+            var own = r.room || !r.entries || (k && (window.pv_tf_klassen || []).indexOf(k[1]) >= 0);
+            return { key: key, timetable: !!own };
+        });
+    }
+    function lanes_key() {
+        return week_key(monday) + '/' + lanes().filter(function (l) { return l.timetable; }).map(function (l) { return l.key; }).join(',');
+    }
+    function load_timetables() {
+        var keys = lanes().filter(function (l) { return l.timetable; }).map(function (l) { return l.key; });
+        var ck = lanes_key();
+        if (!keys.length) { tt_answer = { timetables: {} }; tt_key = ck; render_days(); return; }
+        if (tt_cache[ck]) { tt_answer = tt_cache[ck]; tt_key = ck; render_days(); return; }
+        var no = ++tt_request_no;
+        ui.days.classList.add('pv-tf-loading');
+        api_call('/api/terminfinder_timetables', { week: week_key(monday), keys: keys }, function (data) {
+            if (no !== tt_request_no) return;
+            ui.days.classList.remove('pv-tf-loading');
+            if (!data.success) return;
+            tt_cache[ck] = data;
+            tt_answer = data;
+            tt_key = ck;
+            render_days();
+        });
+    }
+
+    function render_grid(start, today, now_min) {
+        if (!tt_answer || tt_key !== lanes_key()) { load_timetables(); return; }
+        var shown = lanes();
+        var span = DAY_END - start;
+        var pct = function (m) { return ((m - start) / span * 100) + '%'; };
+        if (chosen.length > MAX_TIMETABLES) {
+            ui.days.appendChild(el('p', 'pv-tf-empty', 'Nebeneinander zeigt der Terminfinder höchstens ' + MAX_TIMETABLES + ' Stundenpläne, hier die ersten ' + MAX_TIMETABLES + '.'));
+        }
+        var days = [];
+        for (var i = 0; i < 5; i++) {
+            var d = new Date(monday);
+            d.setDate(d.getDate() + i);
+            days.push(d);
+        }
+        // phones: one day, chosen above
+        var one = PHONE.matches;
+        if (one) {
+            if (phone_day === null) {
+                phone_day = 0;
+                days.forEach(function (d, i) { if (ymd(d) === today) phone_day = i; });
+            }
+            var tabs = el('div', 'pv-tf-durations pv-tf-daytabs');
+            tabs.setAttribute('role', 'radiogroup');
+            tabs.setAttribute('aria-label', 'Tag');
+            days.forEach(function (d, i) {
+                var b = el('button', 'btn pv-tf-view pv-tf-daytab' + (i === phone_day ? ' active' : ''));
+                b.type = 'button';
+                b.setAttribute('role', 'radio');
+                b.setAttribute('aria-checked', i === phone_day ? 'true' : 'false');
+                b.appendChild(el('span', 'pv-weekday', WD[d.getDay()]));
+                b.appendChild(el('span', 'pv-tf-daytab-date', d.getDate() + '.'));
+                b.addEventListener('click', function () { phone_day = i; render_days(); });
+                tabs.appendChild(b);
+            });
+            ui.days.appendChild(tabs);
+            days = [days[phone_day]];
+        }
+        var grid = el('div', 'pv-tf-grid' + (one ? ' pv-tf-grid-one' : ''));
+        grid.style.setProperty('--pv-tf-days', String(days.length));
+        grid.style.setProperty('--pv-tf-lanes', String(shown.length));
+        grid.style.setProperty('--pv-tf-height', Math.round(span * (one ? 1.0 : 0.8)) + 'px');
+
+        // the heads: day, note, the columns' names
+        grid.appendChild(el('div', 'pv-tf-grid-corner'));
+        days.forEach(function (d) {
+            var date = ymd(d);
+            var head = el('div', 'pv-tf-grid-head' + (date < today ? ' pv-tf-grid-past-head' : ''));
+            var line = el('div', 'pv-tf-grid-day-name');
+            line.appendChild(el('span', 'pv-weekday', WD[d.getDay()]));
+            line.appendChild(el('span', 'pv-tf-date', d.getDate() + '.' + (d.getMonth() + 1) + '.'));
+            head.appendChild(line);
+            var note = day_note(date);
+            if (note) head.appendChild(el('div', 'pv-tf-note', note.title));
+            var names = el('div', 'pv-tf-lane-names');
+            shown.forEach(function (l) {
+                var n = el('span', 'pv-tf-lane-name', short_of(l.key));
+                n.title = label_of(l.key);
+                names.appendChild(n);
+            });
+            head.appendChild(names);
+            grid.appendChild(head);
+        });
+
+        // the hours
+        var axis = el('div', 'pv-tf-grid-axis');
+        axis.setAttribute('aria-hidden', 'true');
+        for (var h = Math.ceil(start / 60); h < DAY_END / 60; h++) {
+            var t = el('span', 'pv-tf-grid-hour', h + ':00');
+            t.style.top = pct(h * 60);
+            axis.appendChild(t);
+        }
+        grid.appendChild(axis);
+
+        days.forEach(function (d) {
+            var date = ymd(d);
+            var col = el('div', 'pv-tf-grid-day');
+            col.dataset.date = date;
+            for (var h = Math.ceil(start / 60); h < DAY_END / 60; h++) {
+                var line = el('span', 'pv-tf-grid-line');
+                line.style.top = pct(h * 60);
+                col.appendChild(line);
+            }
+            var note = day_note(date);
+            if (note && note.kind === 'holiday') {
+                col.classList.add('pv-tf-grid-holiday');
+                col.appendChild(el('span', 'pv-tf-none', 'Kein Schultag.'));
+                grid.appendChild(col);
+                return;
+            }
+            // what is over
+            var over = date < today ? DAY_END : (date === today ? Math.min(DAY_END, Math.max(start, now_min)) : start);
+            if (over > start) {
+                var past = el('span', 'pv-tf-grid-over');
+                past.style.top = '0';
+                past.style.height = pct(over);
+                col.appendChild(past);
+            }
+            // the common free times, under the columns
+            var from = Math.max(start, Math.ceil(over / 5) * 5);
+            if (from < DAY_END) {
+                windows(stretches(busy_of(date), from, DAY_END), null).forEach(function (w) {
+                    var b = el('button', 'pv-tf-grid-free');
+                    b.type = 'button';
+                    b.style.top = pct(w.from);
+                    b.style.height = 'calc(' + pct(w.to) + ' - ' + pct(w.from) + ')';
+                    b.setAttribute('aria-label', 'Alle frei von ' + hhmm(w.from) + ' bis ' + hhmm(w.to) + ' Uhr');
+                    b.appendChild(el('span', 'pv-tf-grid-free-time', hhmm(w.from) + '–' + hhmm(w.to)));
+                    b.addEventListener('click', function () { open_slot(date, w, null); });
+                    col.appendChild(b);
+                });
+            }
+            var cols = el('div', 'pv-tf-lanes');
+            shown.forEach(function (l, i) {
+                var lane = el('div', 'pv-tf-lane');
+                lane.dataset.key = l.key;
+                if (l.timetable) {
+                    var list = (tt_answer.timetables || {})[l.key];
+                    if (list === null || list === undefined) lane.classList.add('pv-tf-lane-none');
+                    (list || []).forEach(function (x) {
+                        if (x.date !== date) return;
+                        lane.appendChild(lesson_block(x, pct, l.key));
+                    });
+                } else {
+                    // a group: how many of them are busy
+                    var who = members(l.key).filter(function (e) { return answer.people[e]; });
+                    var busy = [];
+                    who.forEach(function (email) {
+                        (answer.people[email][date] || []).forEach(function (p) {
+                            busy.push({ email: email, from: minutes(p[0]), to: minutes(p[1]) });
+                        });
+                    });
+                    stretches(busy, start, DAY_END).forEach(function (p) {
+                        if (!p.busy.length) return;
+                        var seg = el('span', 'pv-tf-group-busy');
+                        seg.style.top = pct(p.from);
+                        seg.style.height = 'calc(' + pct(p.to) + ' - ' + pct(p.from) + ')';
+                        seg.style.setProperty('--share', String(Math.max(0.25, p.busy.length / Math.max(1, who.length))));
+                        seg.title = label_of(l.key) + ': ' + p.busy.length + ' von ' + who.length + ' belegt, ' + hhmm(p.from) + ' bis ' + hhmm(p.to);
+                        lane.appendChild(seg);
+                    });
+                }
+                cols.appendChild(lane);
+            });
+            col.appendChild(cols);
+            grid.appendChild(col);
+        });
+        var scroll = el('div', 'pv-tf-grid-scroll');
+        scroll.appendChild(grid);
+        ui.days.appendChild(scroll);
+    }
+
+    // a lesson in its subject's colour (as in the timetable), cancelled ones
+    // quiet and crossed out, break duties hatched
+    function lesson_block(x, pct, key) {
+        var from = minutes(x.from), to = minutes(x.to);
+        var b = el('div', 'pv-tf-lesson');
+        b.style.top = pct(from);
+        b.style.height = 'calc(' + pct(to) + ' - ' + pct(from) + ')';
+        var code = (x.label.split(/[\s_\-(]/)[0] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (x.off) b.classList.add('pv-tf-lesson-off');
+        else if (x.duty) b.classList.add('pv-tf-lesson-duty');
+        else if (code) {
+            b.style.setProperty('--pv-tf-bg', 'var(--subj-' + code + ', var(--acc))');
+            b.style.setProperty('--pv-tf-ink', 'var(--subj-' + code + '-ink, var(--acc-ink))');
+        }
+        if (x.changed) b.classList.add('pv-tf-lesson-changed');
+        // narrow columns: the subject first, then the room (a room's own
+        // column: who is in it); everything in the tooltip
+        var first = x.duty ? 'Aufsicht' : (x.label.split(/[\s(]/)[0] || x.label);
+        var second = x.room || x.label.slice(first.length).replace(/[()]/g, ' ').trim();
+        b.appendChild(el('span', 'pv-tf-lesson-label', first));
+        if (second) b.appendChild(el('span', 'pv-tf-lesson-room', second));
+        var what = [label_of(key) + ':', x.duty ? 'Aufsicht' : x.label];
+        if (x.room) what.push('(' + x.room + ')');
+        what.push(hhmm(from) + ' bis ' + hhmm(to));
+        if (x.off) what.push('– fällt aus');
+        else if (x.changed) what.push('– Vertretung oder Änderung');
+        b.title = what.join(' ');
+        return b;
     }
 
     // the day's busy times per person, in minutes
@@ -306,6 +545,7 @@
         var now = new Date();
         var today = ymd(now);
         var now_min = now.getHours() * 60 + now.getMinutes();
+        if (view === 'grid') { render_grid(start, today, now_min); return; }
         var scale = el('div', 'pv-tf-scale');
         scale.setAttribute('aria-hidden', 'true');
         for (var h = Math.ceil(start / 60); h <= DAY_END / 60; h += 2) {
@@ -425,7 +665,7 @@
             date: slot.date,
             start: hhmm0(m),
             end: hhmm0(m + duration),
-            recipients: chosen.filter(function (k) { return k !== pv_tf_me.email; }),
+            recipients: chosen.filter(function (k) { return k !== pv_tf_me.email && !is_room(k); }),
         };
         try { sessionStorage.setItem(DRAFT, JSON.stringify(draft)); } catch (e) {}
         window.location.href = '/events';
@@ -488,6 +728,17 @@
         load();
     }
 
+    function set_view(v) {
+        view = v === 'grid' ? 'grid' : 'free';
+        try { localStorage.setItem(STORE_VIEW, view); } catch (e) {}
+        Array.prototype.forEach.call(document.querySelectorAll('.pv-tf-views .pv-tf-view'), function (b) {
+            var on = b.dataset.view === view;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-checked', on ? 'true' : 'false');
+        });
+        if (answer) render_days();
+    }
+
     function set_duration(m) {
         duration = m;
         try { localStorage.setItem(STORE_DURATION, String(m)); } catch (e) {}
@@ -517,6 +768,13 @@
         try { stored = parseInt(localStorage.getItem(STORE_DURATION) || '60', 10); } catch (e) {}
         if ([30, 45, 60, 90, 120].indexOf(stored) < 0) stored = 60;
         set_duration(stored);
+        var stored_view = 'free';
+        try { stored_view = localStorage.getItem(STORE_VIEW) || 'free'; } catch (e) {}
+        set_view(stored_view);
+        Array.prototype.forEach.call(document.querySelectorAll('.pv-tf-views .pv-tf-view'), function (b) {
+            b.addEventListener('click', function (e) { set_view(e.currentTarget.dataset.view); });
+        });
+        PHONE.addEventListener('change', function () { if (answer) render_days(); });
         Array.prototype.forEach.call(document.querySelectorAll('.pv-tf-duration'), function (b) {
             b.addEventListener('click', function (e) { set_duration(parseInt(e.currentTarget.dataset.minutes, 10)); });
         });
@@ -543,6 +801,10 @@
         install_swipe();
         render_days();
         load_recipients(pv_tf_me.id, function () {
+            // rooms: searched like people, busy while a lesson is in them
+            (window.pv_tf_rooms || []).forEach(function (r) {
+                window.recipients['@' + r] = { label: 'Raum ' + r, room: true };
+            });
             if (window.recipients[pv_tf_me.email]) chosen.push(pv_tf_me.email);
             changed();
         });

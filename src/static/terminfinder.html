@@ -1,26 +1,35 @@
 #{this_is_a_page_for_logged_in_teachers}#{this_page_is_only_in_the_new_design}
 <div class='container pv-tf'>
     <h2>Terminfinder</h2>
-    <p class='pv-tf-lead'>Wann haben alle frei? Füge Personen, Klassen oder Gruppen hinzu. Es zählt nur der Stundenplan mit Vertretungen und Ausfällen, Termine bleiben privat.</p>
+    <p class='pv-tf-lead'>Wann haben alle frei? Füge Personen, Klassen, Gruppen oder Räume hinzu. Es zählt nur der Stundenplan mit Vertretungen und Ausfällen, Termine bleiben privat.</p>
     <div class='api_messages' style='display: none;'></div>
     <div class='pv-tf-people'>
         <label class='pv-tf-label' for='ti_tf_search'>Wer?</label>
         <div class='pv-tf-search'>
             <i class='ti ti-search' aria-hidden='true'></i>
-            <input id='ti_tf_search' class='form-control' type='search' autocomplete='off' placeholder='Person, Klasse oder Gruppe suchen' aria-controls='tf_results' aria-expanded='false' />
+            <input id='ti_tf_search' class='form-control' type='search' autocomplete='off' placeholder='Person, Klasse, Gruppe oder Raum suchen' aria-controls='tf_results' aria-expanded='false' />
             <div id='tf_results' class='pv-tf-results' role='listbox' hidden></div>
         </div>
         <div class='pv-tf-chips' aria-live='polite'></div>
         <div class='pv-tf-facts'></div>
     </div>
     <div class='pv-tf-options'>
-        <span class='pv-tf-label' id='lb_tf_duration'>Dauer</span>
-        <div class='pv-tf-durations' role='radiogroup' aria-labelledby='lb_tf_duration'>
-            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='30'>30 Min.</button>
-            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='45'>45 Min.</button>
-            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='60'>1 Std.</button>
-            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='90'>1½ Std.</button>
-            <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='120'>2 Std.</button>
+        <div class='pv-tf-option'>
+            <span class='pv-tf-label' id='lb_tf_duration'>Dauer</span>
+            <div class='pv-tf-durations' role='radiogroup' aria-labelledby='lb_tf_duration'>
+                <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='30'>30 Min.</button>
+                <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='45'>45 Min.</button>
+                <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='60'>1 Std.</button>
+                <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='90'>1½ Std.</button>
+                <button type='button' class='btn pv-tf-duration' role='radio' data-minutes='120'>2 Std.</button>
+            </div>
+        </div>
+        <div class='pv-tf-option'>
+            <span class='pv-tf-label' id='lb_tf_view'>Ansicht</span>
+            <div class='pv-tf-durations pv-tf-views' role='radiogroup' aria-labelledby='lb_tf_view'>
+                <button type='button' class='btn pv-tf-view' role='radio' data-view='free' id='bu_tf_view_free'>Freie Zeiten</button>
+                <button type='button' class='btn pv-tf-view' role='radio' data-view='grid' id='bu_tf_view_grid'>Stundenpläne</button>
+            </div>
         </div>
     </div>
     <div class='pv-tf-week'>
@@ -64,4 +73,7 @@
 <script>
 var pv_tf_me = #{({:id => @session_user[:id], :email => @session_user[:email]}).to_json};
 var pv_tf_can_create_events = #{user_with_role_logged_in?(:can_create_events) ? 'true' : 'false'};
+// rooms to search, classes with a timetable of their own (not 11, 12: courses)
+var pv_tf_rooms = #{ROOM_ORDER.select { |r| @@room_ids[r] }.to_json};
+var pv_tf_klassen = #{@@klassen_id.keys.reject { |k| k.to_i >= 11 }.to_json};
 </script>#{design_preview_page_script('terminfinder')}

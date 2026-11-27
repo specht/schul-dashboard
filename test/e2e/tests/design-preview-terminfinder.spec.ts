@@ -2,9 +2,11 @@ import { test, expect, login, ACCOUNTS, displayedSchoolWeek, isoDate } from './f
 import type { CDPSession, Page } from '@playwright/test';
 
 // Neues Design: Terminfinder (/terminfinder, include/terminfinder.rb,
-// preview/terminfinder.js). A teacher adds people, classes or groups and
-// sees per day when all of them are free for the chosen duration; only
-// lessons count, the server answers with busy times only. A time becomes a
+// preview/terminfinder.js). A teacher adds people, classes, groups or rooms
+// and sees per day when all of them are free for the chosen duration; only
+// lessons count, the busy times come without what someone has. The view
+// »Stundenpläne« shows the timetables side by side (a few, with the
+// lessons as the timetable shows them). A time becomes a
 // new event on /events with date, time and participants. Only in the new
 // design for now: the old design has neither the page nor the menu entry.
 // The lessons are those of the example data in the shown week, so the
@@ -131,6 +133,102 @@ test('Neues Design: Terminfinder findet gemeinsame freie Zeiten', async ({ page 
   }
 });
 
+// »Stundenpläne«: the week as in the timetable, one column per person,
+// room and class; the common free times between them, clickable
+test('Neues Design: Terminfinder zeigt Stundenpläne nebeneinander, auch einen Raum', async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
+  const monday = displayedSchoolWeek()[0];
+  monday.setHours(7, 0, 0, 0);
+  await page.clock.install({ time: monday });
+  await login(page, ACCOUNTS.admin);
+  await page.request.post('/api/set_ui_preview', { data: { mode: 'on' } });
+  try {
+    await page.goto('/terminfinder');
+    await expect(page.locator('.pv-tf-chip')).toHaveCount(1);
+    await expect(page.locator('#bu_tf_view_free')).toHaveAttribute('aria-checked', 'true');
+    await page.locator('#bu_tf_view_grid').click();
+    await expect(page.locator('#bu_tf_view_grid')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('.pv-tf-grid')).toBeVisible();
+
+    // a room: found by its number, as a room
+    await page.locator('#ti_tf_search').fill('108');
+    await expect(page.locator('.pv-tf-result').first()).toContainText('Raum 108');
+    await expect(page.locator('.pv-tf-result').first().locator('.pv-tf-result-sub')).toHaveText('Raum');
+    await page.locator('#ti_tf_search').press('Enter');
+    await expect(page.locator('.pv-tf-facts')).toHaveText('1 Person, 1 Raum');
+    await add(page, 'klasse 5a');
+    const answered = page.waitForResponse((r) => r.url().endsWith('/api/terminfinder_timetables') && r.request().postDataJSON().keys.length === 4);
+    const busyAnswered = page.waitForResponse((r) => r.url().endsWith('/api/terminfinder_week') && r.request().postDataJSON().emails.includes(ACCOUNTS.teacher));
+    await add(page, 'torst');
+    const response = await answered;
+    expect(response.status()).toBe(200);
+    const data = await response.json();
+    const busy = (await (await busyAnswered).json()) as Answer;
+    expect(Object.keys(data.timetables)).toEqual([ACCOUNTS.admin, '@108', '/klasse/5a', ACCOUNTS.teacher]);
+    // the lessons with what the timetable shows of them, nothing else
+    const allowed = ['changed', 'date', 'duty', 'from', 'label', 'off', 'room', 'to'];
+    let count = 0;
+    for (const lessons of Object.values(data.timetables) as Record<string, unknown>[][]) {
+      for (const l of lessons) {
+        expect(Object.keys(l).every((k) => allowed.includes(k)), JSON.stringify(l)).toBe(true);
+        expect(l.label as string).not.toMatch(/[<>]/);
+        count++;
+      }
+    }
+    expect(count).toBeGreaterThan(0);
+    expect(data.timetables['@108'].length).toBeGreaterThan(0);
+    // the room is busy for the free times as well
+    expect(Object.keys(busy.people)).toContain('@108');
+
+    // one column per chip, named
+    const phone = testInfo.project.name === 'mobile';
+    await expect(page.locator('.pv-tf-grid-day')).toHaveCount(phone ? 1 : 5);
+    await expect(page.locator('.pv-tf-grid-head').first().locator('.pv-tf-lane-name')).toHaveText(['Clarke', '108', '5a', /^Torsten/]);
+    const shownDates = await page.locator('.pv-tf-grid-day').evaluateAll((ds) => ds.map((d) => (d as HTMLElement).dataset.date!));
+    const expected = (data.timetables['@108'] as { date: string }[]).filter((l) => shownDates.includes(l.date)).length;
+    await expect(page.locator('.pv-tf-lane[data-key="@108"] .pv-tf-lesson')).toHaveCount(expected);
+
+    // the common free times: long enough, nobody busy in them
+    const free = await page.locator('.pv-tf-grid-day').evaluateAll((ds) => ds.flatMap((d) =>
+      Array.from(d.querySelectorAll('.pv-tf-grid-free')).map((b) => ({ date: (d as HTMLElement).dataset.date!, text: b.getAttribute('aria-label')! }))));
+    expect(free.length).toBeGreaterThan(0);
+    for (const f of free) {
+      const m = f.text.match(/^Alle frei von (\d{1,2}:\d{2}) bis (\d{1,2}:\d{2}) Uhr$/);
+      expect(m, f.text).not.toBeNull();
+      const from = minutes(m![1]), to = minutes(m![2]);
+      expect(to - from).toBeGreaterThanOrEqual(60);
+      for (const [who, days] of Object.entries(busy.people)) {
+        for (const [a, b] of days[f.date] || []) {
+          expect(minutes(b) <= from || minutes(a) >= to, `${who} busy ${a}–${b} in ${f.date} ${f.text}`).toBe(true);
+        }
+      }
+    }
+
+    // phones: one day at a time
+    if (phone) {
+      await expect(page.locator('.pv-tf-daytab')).toHaveCount(5);
+      await page.locator('.pv-tf-daytab').nth(2).click();
+      await expect(page.locator('.pv-tf-grid-day')).toHaveAttribute('data-date', isoDate(new Date(monday.getTime() + 2 * 86400000)));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+
+    // a free time: the dialog; the room is no participant of the event
+    const band = page.locator('.pv-tf-grid-free').first();
+    await band.click();
+    await expect(page.locator('#tfSlotModal')).toBeVisible();
+    await expect(page.locator('#tfSlotModal .pv-tf-slot-who')).toContainText('Frei von');
+    await page.locator('#bu_tf_create_event').click();
+    await expect(page).toHaveURL(/\/events$/);
+    await expect(page.locator('#composeModal .recipients_list .recipient')).toHaveText([/^Klasse 5a/, /Torstenson/]);
+
+    // the view stays chosen
+    await page.goto('/terminfinder');
+    await expect(page.locator('#bu_tf_view_grid')).toHaveAttribute('aria-checked', 'true');
+  } finally {
+    await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
+  }
+});
+
 async function drag(client: CDPSession, page: Page, from: { x: number; y: number }, to: { x: number; y: number }, ms: number) {
   const steps = 10;
   await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [from] });
@@ -193,5 +291,11 @@ test('Terminfinder: nur im neuen Design und nur für Lehrkräfte', async ({ page
   await login(student, ACCOUNTS.schueler);
   const r = await student.request.post('/api/terminfinder_week', { data: { week: '2026-47', emails: [ACCOUNTS.admin] } });
   expect(r.status()).not.toBe(200);
+  const t = await student.request.post('/api/terminfinder_timetables', { data: { week: '2026-47', keys: [ACCOUNTS.admin] } });
+  expect(t.status()).not.toBe(200);
   await context.close();
+  // a few timetables side by side, not more
+  const many = Array.from({ length: 11 }, (_, i) => `x${i}@beispielschule.de`);
+  const m = await page.request.post('/api/terminfinder_timetables', { data: { week: '2026-47', keys: many } });
+  expect(m.status()).not.toBe(200);
 });

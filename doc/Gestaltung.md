@@ -314,8 +314,20 @@ Aktionen und das Verhalten am Handy.
   gemeinsamen freien Zeiten als Knöpfe. Gibt es keine, nennt die Zeile die
   Zeiten, in denen alle bis auf eine Person frei sind, leiser und mit
   »ohne …«. Vergangene Tage sind eine leise Zeile.
-- Es zählt nur der Stundenplan; der Server schickt nur belegte Zeiten,
-  nie, was jemand hat. Eine Zeit öffnet einen kleinen Dialog (am Handy ein
+- Räume lassen sich wie Personen hinzufügen; ein Raum ist belegt, solange
+  dort Unterricht ist.
+- Zwei Ansichten, als Umschalter neben der Dauer: »Freie Zeiten« (die
+  Leisten) und »Stundenpläne«: die Woche wie im Stundenplan, je Person,
+  Klasse oder Raum eine Spalte nebeneinander (höchstens zehn), oben mit
+  kurzem Namen, die Stunden in ihrer Fachfarbe, Ausfall leise und
+  durchgestrichen, Aufsichten schraffiert; andere Gruppen als eine Spalte,
+  dunkler, je mehr belegt sind. Die gemeinsamen freien Zeiten liegen in der
+  Akzentfarbe hinter den Spalten und lassen sich anklicken. Am Handy ein Tag
+  mit den Tagen als Umschalter darüber.
+- Es zählt nur der Stundenplan, Termine bleiben privat. Für »Freie Zeiten«
+  schickt der Server nur belegte Zeiten; »Stundenpläne« zeigt, was eine
+  Lehrkraft im Stundenplan der Person, Klasse oder des Raums ohnehin sieht.
+  Eine Zeit öffnet einen kleinen Dialog (am Handy ein
   Sheet) mit dem Beginn und »Termin anlegen«, das Datum, Zeit und
   Teilnehmer an »Neuer Termin« übergibt (über `sessionStorage`, nicht über
   die Adresse).

@@ -51,6 +51,10 @@ for (const preview of [false, true]) {
       expect(await rows.count()).toBeGreaterThan(0);
       await expect(rows.first().locator('td')).toHaveCount(4);
       await expect(page.locator('.sp-lessons tbody a[href^="/timetable/"]').first()).toBeVisible();
+      // the lessons of the whole class lead to the class list, a course's to its own
+      await expect(page.locator('.sp-lessons tbody td:nth-child(4) a').first()).toHaveAttribute('href', /^\/directory\//);
+      // no list of teachers below 11
+      await expect(page.locator('.sp-facts dt', { hasText: 'Alle Lehrkräfte' })).toHaveCount(0);
       // the ways on: the timetable, the class list with the row marked
       const id = page.url().split('/').pop();
       await expect(page.locator('#bu_sp_timetable')).toHaveAttribute('href', `/timetable/${id}`);
@@ -80,7 +84,16 @@ test('Schülerseite in der Oberstufe: Leistungskurse, Tutor:in, Kurslisten', asy
   await page.goto('/');
   await open(page, 'alice', 'Alice Mustermann');
   await expect(page.locator('.sp-sub')).toContainText('Klasse 11');
-  await expect(page.locator('.sp-facts dt')).toContainText(['Leistungskurse', 'Tutor:in']);
+  await expect(page.locator('.sp-facts dt')).toContainText(['Leistungskurse', 'Tutor:in', 'Alle Lehrkräfte']);
+  // a list to everyone who teaches her: the address, how many it reaches
+  const list = page.locator('.sp-facts dd').filter({ has: page.locator('.sp-hint') });
+  await expect(list.locator('input')).toHaveValue(/^lehrer\.alice\.mustermann@/);
+  await expect(list.locator('.sp-hint')).toHaveText(/^Verteiler an (die Lehrkraft, die Alice unterrichtet|die \d+ Lehrkräfte, die Alice unterrichten)/);
+  const address = await list.locator('input').inputValue();
+  // not in the overview of all lists
+  await page.goto('/mailing_lists');
+  await expect(page.locator('body')).not.toContainText(address);
+  await page.goBack();
   // in 11 every lesson is a course with its own list
   const groups = page.locator('.sp-lessons tbody tr td:nth-child(4) a');
   expect(await groups.count()).toBeGreaterThan(0);

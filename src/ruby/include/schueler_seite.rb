@@ -15,12 +15,7 @@ class Main < Sinatra::Base
     # lessons per week of a lesson in the timetable valid today (0 if it has
     # none now)
     def schueler_seite_hours(lesson_key)
-        start_date = (@@lessons[:start_date_for_date] || {})[Date.today.strftime('%Y-%m-%d')]
-        start_date ||= ((@@lessons[:timetables] || {}).keys.select { |d| d <= Date.today.strftime('%Y-%m-%d') }.max)
-        return 0 if start_date.nil?
-        lesson = ((@@lessons[:timetables] || {})[start_date] || {})[lesson_key]
-        return 0 if lesson.nil?
-        (lesson[:stunden] || {}).values.map(&:size).sum
+        Main.lesson_hours_now(lesson_key)
     end
 
     def schueler_seite_teacher_link(shorthand)
@@ -104,6 +99,9 @@ class Main < Sinatra::Base
             end
             facts << ['E-Mail', :email]
             facts << ['E-Mail der Eltern', :eltern]
+            # upper school: a list to all who teach the student (main.rb)
+            teachers_list = "lehrer.#{email.split('@').first}@#{MAILING_LIST_DOMAIN}".downcase
+            facts << ['Alle Lehrkräfte', :lehrer] if (@@mailing_lists[teachers_list] || {})[:teachers_of] == email
             facts << ['Letzter Zugriff', h.(directory_last_access_label(last_access))]
             io.puts "<h4>Angaben</h4>"
             io.puts "<dl class='sp-facts'>"
@@ -113,6 +111,10 @@ class Main < Sinatra::Base
                     schueler_seite_copy(io, user[:email])
                 elsif value == :eltern
                     schueler_seite_copy(io, "eltern.#{user[:email]}")
+                elsif value == :lehrer
+                    schueler_seite_copy(io, teachers_list)
+                    n = (@@mailing_lists[teachers_list][:recipients] || []).size
+                    io.puts "<div class='sp-hint'>Verteiler an #{n == 1 ? 'die Lehrkraft' : "die #{n} Lehrkräfte"}, die #{h.(user[:first_name])} #{n == 1 ? 'unterrichtet' : 'unterrichten'}#{user[:tutor] ? ', mit Tutor:in' : ''}</div>"
                 else
                     io.puts value
                 end
@@ -149,7 +151,7 @@ class Main < Sinatra::Base
                     group = if members > 0 && (members != klasse_size || oberstufe)
                         "<a href='/directory/#{h.(CGI.escape(r[:key]))}'>#{h.(info[:pretty_folder_name] || r[:fach])}</a> (#{members})"
                     else
-                        "Klasse #{h.(tr_klasse(klasse))}"
+                        "<a href='/directory/#{h.(CGI.escape(klasse))}'>Klasse #{h.(tr_klasse(klasse))}</a>"
                     end
                     io.puts "<tr data-lesson='#{h.(r[:key])}'><td>#{chip}<span class='sp-fach'>#{h.(r[:fach])}</span></td><td>#{teachers.empty? ? '–' : teachers.join(', ')}</td><td class='sp-num'>#{r[:hours] > 0 ? r[:hours] : '–'}</td><td>#{group}</td></tr>"
                 end

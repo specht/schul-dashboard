@@ -1380,7 +1380,11 @@ class Main < Sinatra::Base
                 remaining_mailing_lists.delete(list_email)
             end
         end
-        # the lists of the Oberstufen-Kurse are not shown
+        # the lists of the Oberstufen-Kurse are not shown, nor the teachers
+        # of an upper-school student (on the student's page)
+        @@mailing_lists.each_pair do |list_email, info|
+            remaining_mailing_lists.delete(list_email) if info[:teachers_of]
+        end
         Main.iterate_kurse do |lesson_key|
             info = @@lessons[:lesson_keys][lesson_key]
             ['', 'eltern.'].each do |extra|

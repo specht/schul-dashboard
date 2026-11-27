@@ -1574,6 +1574,26 @@ class Main < Sinatra::Base
         end
     end
 
+    # lessons per week of a lesson in the timetable valid today (0 if it
+    # has none now)
+    def self.lesson_hours_now(lesson_key)
+        today = Date.today.strftime('%Y-%m-%d')
+        timetables = @@lessons[:timetables] || {}
+        start_date = (@@lessons[:start_date_for_date] || {})[today] || timetables.keys.select { |d| d <= today }.max
+        return 0 if start_date.nil?
+        lesson = (timetables[start_date] || {})[lesson_key]
+        return 0 if lesson.nil?
+        (lesson[:stunden] || {}).values.map(&:size).sum
+    end
+
+    # a student's lessons in the timetable valid now (all of them while
+    # there is none, in the summer)
+    def self.current_lessons_of_student(email)
+        keys = (@@lessons_for_user[email] || []).select { |key| @@lessons[:lesson_keys][key] }
+        now = keys.select { |key| lesson_hours_now(key) > 0 }
+        now.empty? ? keys : now
+    end
+
     def self.update_mailing_lists()
         self.update_antikenfahrt_groups()
         self.update_forschertage_groups()
@@ -1659,6 +1679,28 @@ class Main < Sinatra::Base
             @@mailing_lists[email][:recipients] = all_teachers.to_a.sort
         end
 
+        # the teachers of an upper-school student (lehrer.<the address's
+        # name>@…): who teaches them now, and the tutor. For teachers (the
+        # student's page shows it, include/schueler_seite.rb), not in the
+        # overview of all lists (:teachers_of, directory.rb)
+        @@user_info.each_pair do |email, user|
+            next if user[:teacher] || user[:klasse].nil? || (user[:klassenstufe] || 0) < 11
+            teachers = Set.new()
+            Main.current_lessons_of_student(email).each do |lesson_key|
+                (@@lessons[:lesson_keys][lesson_key][:lehrer] || []).each do |shorthand|
+                    teachers << @@shorthands[shorthand] if @@shorthands[shorthand]
+                end
+            end
+            teachers << user[:tutor] if user[:tutor] && @@user_info[user[:tutor]]
+            next if teachers.empty?
+            list_email = "lehrer.#{email.split('@').first}@#{MAILING_LIST_DOMAIN}".downcase
+            next if @@mailing_lists.include?(list_email)
+            @@mailing_lists[list_email] = {
+                :label => "Lehrkräfte von #{user[:display_name]}",
+                :recipients => teachers.to_a.sort,
+                :teachers_of => email,
+            }
+        end
         @@mailing_lists["lehrer@#{MAILING_LIST_DOMAIN}"] = {
             :label => "Gesamtes Kollegium",
             :recipients => @@user_info.keys.select do |email|

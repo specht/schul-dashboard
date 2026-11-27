@@ -30,6 +30,25 @@ class Main < Sinatra::Base
         "<a href='/timetable/#{h.(teacher[:id])}'>#{h.(teacher[:display_name])}</a>"
     end
 
+    # a subject's short code as a chip in its colour (new design, as the LKs
+    # in the class list: .pv-dir-lk)
+    def schueler_seite_chip(code, title)
+        h = ->(x) { CGI.escapeHTML(x.to_s) }
+        key = DesignTokens.subject_key(code)
+        style = key ? " style='--c: var(--subj-#{key}); --ci: var(--subj-#{key}-ink)'" : ''
+        "<span class='pv-dir-lk'#{style} title='#{h.(title)}'>#{h.(code)}</span>"
+    end
+
+    # an address to copy: the new design's copy field (pv_copy, filled in
+    # the browser), today's field with the clipboard button otherwise
+    def schueler_seite_copy(io, address)
+        if ui_preview?
+            io.puts "<span class='sp-copy' data-copy='#{CGI.escapeHTML(address)}'>#{CGI.escapeHTML(address)}</span>"
+        else
+            print_email_field(io, CGI.escapeHTML(address))
+        end
+    end
+
     def print_schueler_seite
         require_teacher!
         email = schueler_seite_email(request.path.split('/')[2])
@@ -66,15 +85,22 @@ class Main < Sinatra::Base
                 RETURN u.last_access;
             END_OF_QUERY
             facts = []
-            facts << ['Geburtsdatum', user[:geburtstag] ? (Date.parse(user[:geburtstag]).strftime('%d.%m.%Y') rescue h.(user[:geburtstag])) : '–']
+            facts << ['Geburtsdatum', user[:geburtstag] ? (Date.parse(user[:geburtstag]).strftime('%d.%m.%Y') rescue h.(user[:geburtstag])) : 'nicht hinterlegt']
             facts << ['Geschlecht', h.({ 'm' => 'männlich', 'w' => 'weiblich', 'd' => 'divers' }[user[:geschlecht]] || user[:geschlecht] || '–')]
             facts << ['Bildungsgang', h.(tr_bildungsgang(user[:bildungsgang]) || '–')]
             facts << ['Stufe', h.(user[:klassenstufe] || '–')]
             if oberstufe
                 lks = directory_lks[email] || []
-                facts << ['Leistungskurse', lks.empty? ? '–' : h.(lks.map { |x| x[:name] }.join(', '))]
+                lk_text = if lks.empty?
+                    'keine'
+                elsif ui_preview?
+                    "<span class='pv-dir-lks'>#{lks.map { |x| schueler_seite_chip(x[:label], "LK #{x[:name]}") }.join}</span>"
+                else
+                    h.(lks.map { |x| x[:name] }.join(', '))
+                end
+                facts << ['Leistungskurse', lk_text]
                 tutor = user[:tutor] && @@user_info[user[:tutor]]
-                facts << ['Tutor:in', tutor ? schueler_seite_teacher_link(tutor[:shorthand]) : '–']
+                facts << ['Tutor:in', tutor ? schueler_seite_teacher_link(tutor[:shorthand]) : 'keine Angabe']
             end
             facts << ['E-Mail', :email]
             facts << ['E-Mail der Eltern', :eltern]
@@ -84,9 +110,9 @@ class Main < Sinatra::Base
             facts.each do |label, value|
                 io.puts "<dt>#{label}</dt><dd>"
                 if value == :email
-                    print_email_field(io, h.(user[:email]))
+                    schueler_seite_copy(io, user[:email])
                 elsif value == :eltern
-                    print_email_field(io, h.("eltern.#{user[:email]}"))
+                    schueler_seite_copy(io, "eltern.#{user[:email]}")
                 else
                     io.puts value
                 end
@@ -113,8 +139,11 @@ class Main < Sinatra::Base
                 io.puts "<thead><tr><th>Fach</th><th>Lehrkraft</th><th class='sp-num'>Std.</th><th>Lerngruppe</th></tr></thead><tbody>"
                 rows.each do |r|
                     info = r[:info]
-                    subject = DesignTokens.subject_key(info[:fach])
-                    dot = subject ? "<span class='sp-dot' style='background: var(--subj-#{subject}, var(--acc))' aria-hidden='true'></span>" : "<span class='sp-dot' aria-hidden='true'></span>"
+                    # the new design: the subject's short code in its colour before the name
+                    # (a course's code: »LA-L108« is Latein LK, »La« as in the LK chips)
+                    code = info[:fach].to_s.split(/[_\s-]/).first.to_s
+                    code = code.capitalize if code.size > 1 && code == code.upcase
+                    chip = ui_preview? ? schueler_seite_chip(code, r[:fach]) : ''
                     teachers = (info[:lehrer] || []).map { |s| schueler_seite_teacher_link(s) }
                     members = (@@schueler_for_lesson[r[:key]] || []).size
                     group = if members > 0 && (members != klasse_size || oberstufe)
@@ -122,7 +151,7 @@ class Main < Sinatra::Base
                     else
                         "Klasse #{h.(tr_klasse(klasse))}"
                     end
-                    io.puts "<tr data-lesson='#{h.(r[:key])}'><td>#{dot}#{h.(r[:fach])}</td><td>#{teachers.empty? ? '–' : teachers.join(', ')}</td><td class='sp-num'>#{r[:hours] > 0 ? r[:hours] : '–'}</td><td>#{group}</td></tr>"
+                    io.puts "<tr data-lesson='#{h.(r[:key])}'><td>#{chip}<span class='sp-fach'>#{h.(r[:fach])}</span></td><td>#{teachers.empty? ? '–' : teachers.join(', ')}</td><td class='sp-num'>#{r[:hours] > 0 ? r[:hours] : '–'}</td><td>#{group}</td></tr>"
                 end
                 io.puts "</tbody></table></div>"
             end

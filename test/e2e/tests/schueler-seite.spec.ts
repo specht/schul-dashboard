@@ -35,8 +35,17 @@ for (const preview of [false, true]) {
       await expect(page.locator('.sp-sub')).toContainText('Klasse 5a');
       await expect(page.locator('.sp-sub')).toContainText('Klassenleitung');
       await expect(page.locator('.sp-facts dt')).toHaveText(['Geburtsdatum', 'Geschlecht', 'Bildungsgang', 'Stufe', 'E-Mail', 'E-Mail der Eltern', 'Letzter Zugriff']);
-      await expect(page.locator('.sp-facts dd input').first()).toHaveValue(/^[^@\s]+@/);
-      await expect(page.locator('.sp-facts dd input').nth(1)).toHaveValue(/^eltern\./);
+      if (preview) {
+        // the new design's copy fields, the subjects as chips in their colour
+        await expect(page.locator('.sp-facts .pv-copy')).toHaveCount(2);
+        await expect(page.locator('.sp-facts .pv-copy').nth(1)).toContainText(/^eltern\./);
+        await expect(page.locator('.sp-facts input')).toHaveCount(0);
+        await expect(page.locator('.sp-lessons tbody tr .pv-dir-lk')).toHaveCount(await page.locator('.sp-lessons tbody tr').count());
+      } else {
+        await expect(page.locator('.sp-facts dd input').first()).toHaveValue(/^[^@\s]+@/);
+        await expect(page.locator('.sp-facts dd input').nth(1)).toHaveValue(/^eltern\./);
+        await expect(page.locator('.pv-dir-lk')).toHaveCount(0);
+      }
       // the lessons: subject, teacher (to the teacher's timetable), hours
       const rows = page.locator('.sp-lessons tbody tr');
       expect(await rows.count()).toBeGreaterThan(0);
@@ -52,6 +61,14 @@ for (const preview of [false, true]) {
       await page.goBack();
       await page.waitForURL(/\/schueler\//);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      if (preview) {
+        // the new class list: the student's dialog leads to the page
+        await page.goto('/directory/5a');
+        await page.locator('.pv-dir-row', { hasText: 'Mallory' }).locator('.pv-dir-name').click();
+        await page.locator('#bu_dir_student_page').click();
+        await page.waitForURL(new RegExp(`/schueler/${id}$`));
+        await expect(page.locator('.sp-head h2')).toHaveText('Mallory Mustermann');
+      }
     } finally {
       if (preview) await page.request.post('/api/set_ui_preview', { data: { mode: 'off' } });
     }

@@ -20,9 +20,11 @@
     .sp-lessons { width: auto; min-width: 100%; }
     .sp-lessons td, .sp-lessons th { vertical-align: top; }
     .sp-lessons .sp-num { text-align: right; font-variant-numeric: tabular-nums; }
-    .sp-dot { display: inline-block; width: 0.6em; height: 0.6em; margin-right: 0.5em; border-radius: 50%; vertical-align: 0.05em; background: var(--pv-line, transparent); }
-    /* today's design has no subject colours */
-    body:not(.ui-preview) .sp-dot { display: none; }
+    /* the new design: the subject's chip before its name, the name top-aligned with the picture */
+    .sp-lessons .pv-dir-lk { margin-right: 0.5em; }
+    /* the new design gives page titles room above (!important there) */
+    .ui-preview .sp-page .sp-title h2 { margin-top: 0.2rem !important; margin-bottom: 4px !important; }
+    .ui-preview .sp-facts .pv-copy { max-width: 26em; }
     .sp-none { color: var(--pv-muted, #5f6368); }
     @media (max-width: 575px) {
         /* phones: the label above its value */
@@ -35,3 +37,12 @@
     <div class='api_messages' style='display: none;'></div>
     #{print_schueler_seite()}
 </div>
+<script>
+    // the new design: the addresses as its copy fields (pv_copy, preview.js)
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.pv_copy) return;
+        document.querySelectorAll('.sp-copy').forEach(function (span) {
+            span.replaceWith(pv_copy.field(span.dataset.copy, { what: 'Adresse' }));
+        });
+    });
+</script>

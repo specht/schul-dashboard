@@ -348,6 +348,13 @@
             b.addEventListener('click', function () { letters([s.email]); });
             foot.appendChild(b);
         }
+        // teachers: the student's page (lessons and teachers, /schueler/<id>)
+        if (teacher && s.id) {
+            var page = el('a', 'btn btn-secondary', 'Schülerseite');
+            page.id = 'bu_dir_student_page';
+            page.href = '/schueler/' + encodeURIComponent(s.id);
+            foot.appendChild(page);
+        }
         var close = el('button', 'btn btn-secondary', 'Schließen');
         close.type = 'button';
         close.setAttribute('data-dismiss', 'modal');

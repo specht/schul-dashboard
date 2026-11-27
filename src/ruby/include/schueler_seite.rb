@@ -4,6 +4,12 @@
 # Nothing a teacher couldn't see before – the same fields as the class list
 # (directory.rb), the lessons as in the student's timetable.
 class Main < Sinatra::Base
+    # the order of the lessons: the LKs first (they matter most in 11/12),
+    # then by subject; rows are {:key, :info, :fach}
+    def self.schueler_seite_order(rows)
+        rows.sort_by { |r| [Main.schuelerliste_lk_lesson?(r[:info]) ? 0 : 1, r[:fach].downcase, r[:key]] }
+    end
+
     def schueler_seite_email(id)
         return nil unless id.is_a?(String) && id =~ /\A[a-z0-9]{1,32}\z/
         @@user_info.each_pair do |email, user|
@@ -131,7 +137,7 @@ class Main < Sinatra::Base
             end.compact
             # lessons the timetable has now (others ended or start later)
             rows = rows.select { |r| r[:hours] > 0 } if rows.any? { |r| r[:hours] > 0 }
-            rows.sort_by! { |r| [r[:fach].downcase, r[:key]] }
+            rows = Main.schueler_seite_order(rows)
             klasse_size = (@@schueler_for_klasse[klasse] || []).size
             io.puts "<h4>Unterricht</h4>"
             if rows.empty?

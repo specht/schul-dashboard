@@ -100,7 +100,7 @@ test('Schülerseite in der Oberstufe: Leistungskurse, Tutor:in, Kurslisten', asy
   await expect(groups.first()).toHaveAttribute('href', /^\/directory\//);
 });
 
-test('Schülerseite nur für Lehrkräfte, unbekannte Seiten sagen es', async ({ page, browser }) => {
+test('Schülerseite nur für Lehrkräfte: Schüler:innen und Abgemeldete bekommen nichts zu sehen', async ({ page, browser }) => {
   await login(page, ACCOUNTS.teacher);
   await page.goto('/schueler/doesnotexist');
   await expect(page.locator('.sp-page')).toContainText('Diese Seite gibt es nicht');
@@ -112,10 +112,42 @@ test('Schülerseite nur für Lehrkräfte, unbekannte Seiten sagen es', async ({ 
   await page.goto(href!.replace('/timetable/', '/schueler/'));
   await expect(page.locator('.sp-page')).toContainText('Diese Seite gibt es nicht');
 
+  // a real student's page: the id of Mallory (5a) and of Alice (11)
+  const ids: Record<string, string> = {};
+  for (const [q, name] of [['mallo', 'Mallory Mustermann'], ['alice', 'Alice Mustermann']]) {
+    await page.goto('/');
+    await page.locator('#bu_quick_search').click();
+    await page.locator('#ti_quick_search').fill(q);
+    const h = await page.locator('.quick-search-row', { hasText: name }).locator('.quick-search-main').getAttribute('href');
+    ids[name] = h!.split('/').pop()!;
+  }
+
+  // students: redirected before anything is shown, neither a classmate's
+  // page nor their own, nor someone's from another year
   const context = await browser.newContext();
   const student = await context.newPage();
-  await login(student, ACCOUNTS.schueler);
-  await student.goto('/schueler/doesnotexist');
-  await expect(student).not.toHaveURL(/\/schueler\//);
+  await login(student, ACCOUNTS.schueler); // Max, 5a
+  await student.goto('/');
+  const own = await student.evaluate(() => (window as any).timetable_id as string);
+  expect(own).toMatch(/^[a-z0-9]+$/);
+  expect(Object.values(ids)).not.toContain(own);
+  for (const id of [ids['Mallory Mustermann'], ids['Alice Mustermann'], own, 'doesnotexist']) {
+    const r = await student.request.get(`/schueler/${id}`, { maxRedirects: 0 });
+    expect(r.status(), id).toBe(303);
+    const body = await r.text();
+    for (const leak of ['Mustermann', 'Geburtsdatum', 'eltern.', 'sp-facts', 'Unterricht']) {
+      expect(body, `${id}: ${leak}`).not.toContain(leak);
+    }
+    await student.goto(`/schueler/${id}`);
+    await expect(student).not.toHaveURL(/\/schueler\//);
+    await expect(student.locator('.sp-page')).toHaveCount(0);
+  }
   await context.close();
+
+  // not logged in at all: the same
+  const anonymous = await browser.newContext();
+  const r = await anonymous.request.get(`/schueler/${ids['Alice Mustermann']}`, { maxRedirects: 0 });
+  expect([302, 303]).toContain(r.status());
+  expect(await r.text()).not.toContain('Mustermann');
+  await anonymous.close();
 });

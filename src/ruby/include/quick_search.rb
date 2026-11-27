@@ -56,8 +56,8 @@ class Main < Sinatra::Base
                     :label => user[:display_name],
                     :sub => "Klasse #{tr_klasse(klasse)}",
                     :terms => [user[:first_name], user[:last_name], user[:display_name]].join(' '),
-                    :href => "/directory/#{CGI.escape(klasse)}#quick=#{user[:id]}",
-                    :actions => [['Stundenplan', "/timetable/#{user[:id]}"]],
+                    :href => "/schueler/#{user[:id]}",
+                    :actions => [['Klassenliste', "/directory/#{CGI.escape(klasse)}#quick=#{user[:id]}"], ['Stundenplan', "/timetable/#{user[:id]}"]],
                 }
             end
         end

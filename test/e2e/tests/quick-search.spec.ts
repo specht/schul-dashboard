@@ -5,7 +5,7 @@ import { test, expect, login, ACCOUNTS } from './fixtures';
 // Example data: Max, Elli and Mallory Mustermann are in 5a (class teacher
 // Clarke, Cl), Alice in 11; Torstenson (Ts) teaches but leads no class.
 
-test('Lehrkraft findet die Klasse einer Schülerin und landet bei ihr in der Klassenliste', async ({ page }) => {
+test('Lehrkraft findet eine Schülerin, ihre Seite und ihre Zeile in der Klassenliste', async ({ page }) => {
   await login(page, ACCOUNTS.teacher);
   await page.locator('#bu_quick_search').click();
   const input = page.locator('#ti_quick_search');
@@ -15,7 +15,9 @@ test('Lehrkraft findet die Klasse einer Schülerin und landet bei ihr in der Kla
   await expect(result).toContainText('Klasse 5a');
   // nobody else matches
   await expect(page.locator('.quick-search-row')).toHaveCount(1);
-  await result.locator('.quick-search-main').click();
+  // the name leads to the student's page, »Klassenliste« to her row
+  await expect(result.locator('.quick-search-main')).toHaveAttribute('href', /^\/schueler\//);
+  await result.locator('.quick-search-action', { hasText: 'Klassenliste' }).click();
   await page.waitForURL(/\/directory\/5a#quick=/);
   const row = page.locator('tr.user_row.quick-search-highlight');
   await expect(row).toHaveCount(1);
@@ -60,8 +62,8 @@ test('Suche mit der Tastatur: Klassen, Kürzel und Namensanfänge', async ({ pag
   await page.keyboard.press('/');
   await input.fill('alice');
   await input.press('Enter');
-  await page.waitForURL(/\/directory\/11#quick=/);
-  await expect(page.locator('tr.quick-search-highlight')).toContainText('Alice');
+  await page.waitForURL(/\/schueler\//);
+  await expect(page.locator('.sp-head h2')).toHaveText('Alice Mustermann');
 
 });
 

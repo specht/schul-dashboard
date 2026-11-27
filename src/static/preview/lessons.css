@@ -1182,3 +1182,92 @@ body:not(.pv-kb-none) .pv-kb-hint {
         padding-right: 14px;
     }
 }
+
+/* ---------- the Klassenarbeitskalender in the course book ---------- */
+
+/* the course's own tests on the day's first lesson: in the accent, they
+   matter for the plan; the class's other tests quietly below */
+.ui-preview .pv-kb-tests {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.ui-preview .pv-kb-test {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 5px;
+    max-width: 100%;
+    padding: 1px 9px;
+    border-radius: 8px;
+    background: var(--acc-soft);
+    color: var(--acc-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.ui-preview .pv-kb-test .ti {
+    margin-top: 2px;
+}
+
+.ui-preview .pv-kb-test-other {
+    margin-bottom: 3px;
+    font-size: 0.82rem;
+    color: var(--pv-muted);
+}
+
+/* the pane of one lesson: the day's tests and »Klassenarbeit eintragen« */
+.ui-preview .pv-kb-tests-pane {
+    margin: 0 0 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--pv-line);
+}
+
+.ui-preview .pv-kb-tests-title {
+    margin-bottom: 4px;
+    font-weight: 700;
+    color: var(--pv-ink);
+}
+
+.ui-preview .pv-kb-tests-none {
+    color: var(--pv-muted);
+    font-size: 0.9rem;
+}
+
+.ui-preview .pv-kb-tests-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 3px 0;
+    font-size: 0.92rem;
+    color: var(--pv-muted);
+}
+
+.ui-preview .pv-kb-tests-row.pv-kb-tests-own {
+    color: var(--pv-ink);
+    font-weight: 600;
+}
+
+.ui-preview .pv-kb-tests-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ui-preview .pv-kb-tests-link {
+    flex: none;
+    font-weight: 500;
+}
+
+.ui-preview .pv-kb-test-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.ui-preview #kbTestModal .pv-kb-test-when {
+    margin-bottom: 12px;
+    color: var(--pv-muted);
+}

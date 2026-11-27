@@ -6,7 +6,56 @@ class Main < Sinatra::Base
         return '' unless ui_preview?
         info = @@lessons[:lesson_keys][lesson_key] || {}
         data = {:title => info[:pretty_folder_name] || lesson_key}
+        # the Klassenarbeitskalender (include/tests.rb): the course's classes
+        # and subject, to enter a test for a lesson, and the tests there are
+        data[:klassen] = (info[:klassen] || []).map { |k| {:klasse => k, :label => tr_klasse(k)} }
+        data[:fach] = info[:fach]
+        data[:tests] = lesson_tests(lesson_key)
         "\nvar pv_lessons = #{data.to_json.gsub('</', '<\\/')};"
+    end
+
+    # The tests (Klassenarbeitskalender) of the course's classes in this
+    # school year, for the course book: its own subject's (:own) and the
+    # other subjects' of the class, with who entered them. The calendar
+    # shows all of them to every teacher already.
+    def lesson_tests(lesson_key)
+        info = @@lessons[:lesson_keys][lesson_key] || {}
+        klassen = info[:klassen] || []
+        return [] if klassen.empty?
+        rows = neo4j_query(<<~END_OF_QUERY, :klassen => klassen, :from => @@config[:first_school_day].to_s)
+            MATCH (t:Test)-[:ORGANIZED_BY]->(u:User)
+            WHERE t.klasse IN $klassen AND COALESCE(t.deleted, false) = false
+              AND COALESCE(t.end_datum, t.datum) >= $from
+            RETURN t, u.email;
+        END_OF_QUERY
+        rows.map do |row|
+            t = row['t']
+            by = @@user_info[row['u.email']] || {}
+            {
+                :id => t[:id],
+                :klasse => t[:klasse],
+                :klasse_label => tr_klasse(t[:klasse]),
+                :datum => t[:datum],
+                :end_datum => t[:end_datum] || t[:datum],
+                :typ => t[:typ],
+                :fach => t[:fach],
+                :fach_label => @@faecher[t[:fach]] || t[:fach],
+                :kommentar => t[:kommentar] || '',
+                :public => t[:public_for_klasse] == 'yes',
+                :own => t[:fach] == info[:fach],
+                :mine => row['u.email'] == @session_user[:email],
+                :by => by[:shorthand] || '',
+            }
+        end.sort_by { |x| [x[:datum], x[:klasse], x[:fach].to_s] }
+    end
+
+    # the course book again after a test was entered there
+    post '/api/lesson_tests' do
+        require_teacher!
+        data = parse_request_data(:required_keys => [:lesson_key], :max_value_lengths => {:lesson_key => 256})
+        assert(@@lessons[:lesson_keys][data[:lesson_key]])
+        assert(may_edit_lessons?(data[:lesson_key]))
+        respond(:tests => lesson_tests(data[:lesson_key]))
     end
 
     # the new design's part of /lessons (preview/lessons.js), only for those

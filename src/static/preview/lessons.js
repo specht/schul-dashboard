@@ -22,7 +22,12 @@
 //   - the pane: a title (the selected lesson, "Noch nicht gespeichert"
 //     below it while there are changes), sections without boxes,
 //     Speichern always in view at the bottom, Umplanen as a menu (a sheet
-//     on phones); removing lessons asks first.
+//     on phones); removing lessons asks first;
+//   - the Klassenarbeitskalender (include/tests.rb): a lesson on a day with
+//     a test of the course's class shows it (its own subject's in the
+//     accent, the class's other ones quietly), and the pane of a lesson
+//     lists them and enters a new one for that day (»Klassenarbeit
+//     eintragen«), which goes into the calendar.
 (function () {
     var data = window.pv_lessons;
     if (!data || !window.pv_list || !document.body.classList.contains('ui-preview')) return;
@@ -79,6 +84,168 @@
     }
 
     function plural(n, one, many) { return n === 1 ? '1 ' + one : n + ' ' + many; }
+
+    // ---------- the Klassenarbeitskalender ----------
+    // the types as the calendar has them (tests.html)
+    var TEST_TYPES = [['KA', 'Klassenarbeit'], ['LEK', 'LEK'], ['Vokabeltest', 'Vokabeltest'], ['Exkursion', 'Exkursion'],
+        ['Fahrt', 'Fahrt'], ['Workshop', 'Workshop'], ['MSA', 'MSA'], ['Vera', 'Vera'], ['Elternabend', 'Elternabend']];
+    function type_label(typ) {
+        var found = TEST_TYPES.filter(function (x) { return x[0] === typ; });
+        return found.length ? found[0][1] : (typ || '');
+    }
+    function tests_on(datum) {
+        return (data.tests || []).filter(function (t) { return datum >= t.datum && datum <= t.end_datum; });
+    }
+    // "Klassenarbeit: Bruchrechnung", the class's others with subject and
+    // who: "LEK Englisch (Ts)"; with several classes, which one
+    function test_text(t, other) {
+        var text = type_label(t.typ);
+        if (other) text += ' ' + t.fach_label + (t.by ? ' (' + t.by + ')' : '');
+        if ((data.klassen || []).length > 1) text += ', ' + t.klasse_label;
+        if (!other && t.kommentar) text += ': ' + t.kommentar;
+        return text;
+    }
+    function reload_tests() {
+        api_call('/api/lesson_tests', { lesson_key: window.lesson_key }, function (r) {
+            if (!r.success) return;
+            data.tests = r.tests || [];
+            render_rows();
+            render_tests_pane();
+        });
+    }
+
+    // the pane of one lesson: the day's tests, »Klassenarbeit eintragen«
+    var tests_pane = null;
+    function render_tests_pane() {
+        if (!tests_pane) return;
+        tests_pane.textContent = '';
+        var sel = selected_offsets();
+        var m = sel.length === 1 ? meta[sel[0]] : null;
+        tests_pane.hidden = !(m && m.datum && (data.klassen || []).length);
+        if (tests_pane.hidden) return;
+        tests_pane.appendChild(el('div', 'pv-kb-tests-title', 'Tests an diesem Tag'));
+        var list = tests_on(m.datum);
+        if (!list.length) tests_pane.appendChild(el('div', 'pv-kb-tests-none', 'Keine eingetragen.'));
+        list.forEach(function (t) {
+            var row = el('div', 'pv-kb-tests-row' + (t.own ? ' pv-kb-tests-own' : ''));
+            row.appendChild(el('span', 'pv-kb-tests-text', test_text(t, !t.own) + (t.own && t.by && !t.mine ? ' (' + t.by + ')' : '')));
+            var a = el('a', 'pv-kb-tests-link', 'Im Kalender');
+            a.href = '/tests/' + encodeURIComponent(t.klasse);
+            row.appendChild(a);
+            tests_pane.appendChild(row);
+        });
+        var b = el('button', 'btn btn-secondary btn-sm pv-kb-test-add');
+        b.type = 'button';
+        b.id = 'bu_kb_test_add';
+        b.appendChild(icon('calendar-plus'));
+        b.appendChild(el('span', null, 'Klassenarbeit eintragen'));
+        b.addEventListener('click', function () { open_test_dialog(sel[0]); });
+        tests_pane.appendChild(b);
+    }
+
+    var test_modal = null, test_offset = null;
+    function field(body, label, input, id) {
+        var group = el('div', 'form-group');
+        var l = el('label', null, label);
+        l.setAttribute('for', id);
+        input.id = id;
+        group.appendChild(l);
+        group.appendChild(input);
+        body.appendChild(group);
+        return group;
+    }
+    function build_test_modal() {
+        test_modal = el('div', 'modal pv-sheet pv-kb-modal');
+        test_modal.id = 'kbTestModal';
+        test_modal.tabIndex = -1;
+        test_modal.setAttribute('role', 'dialog');
+        test_modal.setAttribute('aria-labelledby', 'lb_kb_test_title');
+        var dialog = el('div', 'modal-dialog modal-dialog-centered');
+        dialog.setAttribute('role', 'document');
+        var content = el('div', 'modal-content');
+        var header = el('div', 'modal-header');
+        var h = el('h5', 'modal-title', 'Klassenarbeit eintragen');
+        h.id = 'lb_kb_test_title';
+        header.appendChild(h);
+        var body = el('div', 'modal-body');
+        body.appendChild(el('p', 'pv-kb-test-when'));
+        var typ = el('select', 'form-control');
+        TEST_TYPES.forEach(function (x) {
+            var o = el('option', null, x[1]);
+            o.value = x[0];
+            typ.appendChild(o);
+        });
+        field(body, 'Was', typ, 'ti_kb_test_typ');
+        var klasse = el('select', 'form-control');
+        (data.klassen || []).forEach(function (k) {
+            var o = el('option', null, 'Klasse ' + k.label);
+            o.value = k.klasse;
+            klasse.appendChild(o);
+        });
+        field(body, 'Klasse', klasse, 'ti_kb_test_klasse').hidden = (data.klassen || []).length < 2;
+        var comment = el('input', 'form-control');
+        comment.type = 'text';
+        comment.maxLength = 200;
+        comment.placeholder = 'zum Beispiel das Thema';
+        field(body, 'Kommentar', comment, 'ti_kb_test_comment');
+        var check = el('div', 'form-check');
+        var box = el('input', 'form-check-input');
+        box.type = 'checkbox';
+        box.id = 'ti_kb_test_public';
+        var bl = el('label', 'form-check-label', 'Auch im Stundenplan der Klasse anzeigen');
+        bl.setAttribute('for', 'ti_kb_test_public');
+        check.appendChild(box);
+        check.appendChild(bl);
+        body.appendChild(check);
+        var foot = el('div', 'modal-footer');
+        var cancel = el('button', 'btn btn-secondary', 'Abbrechen');
+        cancel.type = 'button';
+        cancel.setAttribute('data-dismiss', 'modal');
+        var save = el('button', 'btn btn-success', 'Eintragen');
+        save.type = 'button';
+        save.id = 'bu_kb_test_save';
+        save.addEventListener('click', save_test);
+        foot.appendChild(cancel);
+        foot.appendChild(save);
+        content.appendChild(header);
+        content.appendChild(body);
+        content.appendChild(foot);
+        dialog.appendChild(content);
+        test_modal.appendChild(dialog);
+        document.body.appendChild(test_modal);
+    }
+    function open_test_dialog(o) {
+        if (!meta[o] || !meta[o].datum) return;
+        if (!test_modal) build_test_modal();
+        test_offset = o;
+        var d = date_label(meta[o].datum);
+        test_modal.querySelector('.pv-kb-test-when').textContent = d.weekday + ', ' + d.date + ', ' + (data.title || '');
+        document.getElementById('ti_kb_test_typ').value = 'KA';
+        document.getElementById('ti_kb_test_comment').value = '';
+        document.getElementById('ti_kb_test_public').checked = false;
+        document.getElementById('bu_kb_test_save').disabled = false;
+        $(test_modal).modal('show');
+    }
+    function save_test() {
+        var m = meta[test_offset];
+        if (!m || !m.datum) return;
+        var button = document.getElementById('bu_kb_test_save');
+        button.disabled = true;
+        api_call('/api/save_test', {
+            klasse: document.getElementById('ti_kb_test_klasse').value,
+            datum: m.datum,
+            end_datum: m.datum,
+            fach: data.fach,
+            kommentar: document.getElementById('ti_kb_test_comment').value.trim(),
+            typ: document.getElementById('ti_kb_test_typ').value,
+            public_for_klasse: document.getElementById('ti_kb_test_public').checked ? 'yes' : 'no',
+        }, function (r) {
+            button.disabled = false;
+            if (!r.success || !r.ok) return;
+            $(test_modal).modal('hide');
+            reload_tests();
+        });
+    }
 
     // ---------- the rows ----------
     var rows_ready = false;
@@ -205,6 +372,25 @@
         var cell = tr.querySelector('.pv-kb-what');
         if (!cell) return;
         cell.textContent = '';
+        // the day's tests, on its first lesson
+        if (meta[o] && meta[o].first && meta[o].datum) {
+            var tests = tests_on(meta[o].datum);
+            var own = tests.filter(function (t) { return t.own; });
+            var other = tests.filter(function (t) { return !t.own; });
+            if (own.length) {
+                var box = el('div', 'pv-kb-tests');
+                own.forEach(function (t) {
+                    var c = el('span', 'pv-kb-test');
+                    c.appendChild(icon('file-text'));
+                    c.appendChild(el('span', null, test_text(t, false)));
+                    box.appendChild(c);
+                });
+                cell.appendChild(box);
+            }
+            if (other.length) {
+                cell.appendChild(el('div', 'pv-kb-test-other', 'In der Klasse: ' + other.map(function (t) { return test_text(t, true); }).join(', ')));
+            }
+        }
         var i = info(o);
         var thema = str(i.thema);
         var topic = str(i.stundenthema_text);
@@ -393,6 +579,7 @@
                 : '';
         }
         if (umplanen) umplanen.disabled = $('.bu-umplanen').prop('disabled');
+        render_tests_pane();
     }
 
     function umplanen_menu(e) {
@@ -475,6 +662,9 @@
         var scroller = el('div', 'pv-kb-pane-body');
         pane.insertBefore(scroller, foot);
         [hint, pane.querySelector('.status_label')].forEach(function (x) { if (x) scroller.appendChild(x); });
+        tests_pane = el('div', 'pv-kb-tests-pane');
+        tests_pane.hidden = true;
+        scroller.appendChild(tests_pane);
         if (items) scroller.appendChild(items);
         // what follows the items (Kursbuch-PDF) moves to the header
         Array.prototype.slice.call(pane.children).forEach(function (c) {
@@ -842,6 +1032,7 @@
         du_texts();
         pane_title();
         // the other dialogs of the page: sheets on phones
+        render_tests_pane();
         ['feedbackModal', 'breakoutRoomsModal', 'tabletSetModal', 'emailListModal'].forEach(function (id) {
             var m = document.getElementById(id);
             if (m) m.classList.add('pv-sheet', 'pv-kb-modal');
